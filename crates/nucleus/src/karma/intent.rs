@@ -10,10 +10,9 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 
 use super::{
-    IntentStatus,
     CanonicalHash, Capability, DecimalValue, DelegationGrantRevision, GrantAuthorityDecision,
-    GrantAuthorityRequest, GrantBudget, GrantTarget, LiteralValue, LocalId, Slug, TimestampMs,
-    TypedUid, canonical_hash,
+    GrantAuthorityRequest, GrantBudget, GrantTarget, IntentStatus, LiteralValue, LocalId, Slug,
+    TimestampMs, TypedUid, canonical_hash,
 };
 use crate::karma::KarmaBoundaryError;
 
@@ -28,7 +27,8 @@ pub enum KarmaIntentSchema {
 /// The states K5.2 can actually produce. The full `IntentStatus` vocabulary is
 /// already frozen in `state.rs`; this slice only ever writes these two, because
 /// every other state arrives with execution.
-pub const K5_2_INTENT_STATES: [IntentStatus; 2] = [IntentStatus::Authorized, IntentStatus::Cancelled];
+pub const K5_2_INTENT_STATES: [IntentStatus; 2] =
+    [IntentStatus::Authorized, IntentStatus::Cancelled];
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]

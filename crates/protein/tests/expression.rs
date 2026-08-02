@@ -55,6 +55,7 @@ async fn focus_queue_is_a_protein() {
 
     e.act(
         Action::CreateConcept {
+            lingua: "g_local".into(),
             name: "before".into(),
             parents: vec![],
         },
@@ -63,22 +64,24 @@ async fn focus_queue_is_a_protein() {
     .await
     .unwrap();
     e.act(
-        Action::AddLink {
-            from: "exercise".into(),
-            kind: "before".into(),
-            to: "shower".into(),
+        Action::AssertRecord {
+            subject: "exercise".into(),
+            predicate: "before".into(),
+            object: Some("shower".into()),
             quantity: None,
+            unit: None,
         },
         None,
     )
     .await
     .unwrap();
     e.act(
-        Action::AddLink {
-            from: "shower".into(),
-            kind: "before".into(),
-            to: "breakfast".into(),
+        Action::AssertRecord {
+            subject: "shower".into(),
+            predicate: "before".into(),
+            object: Some("breakfast".into()),
             quantity: None,
+            unit: None,
         },
         None,
     )
@@ -117,6 +120,7 @@ async fn concept_dag_filter_and_provenance_include() {
     // Lingua: apple -> fruit -> food
     e.act(
         Action::CreateConcept {
+            lingua: "g_local".into(),
             name: "food".into(),
             parents: vec![],
         },
@@ -126,6 +130,7 @@ async fn concept_dag_filter_and_provenance_include() {
     .unwrap();
     e.act(
         Action::CreateConcept {
+            lingua: "g_local".into(),
             name: "fruit".into(),
             parents: vec!["food".into()],
         },
@@ -135,6 +140,7 @@ async fn concept_dag_filter_and_provenance_include() {
     .unwrap();
     e.act(
         Action::CreateConcept {
+            lingua: "g_local".into(),
             name: "apple".into(),
             parents: vec!["fruit".into()],
         },
@@ -146,10 +152,7 @@ async fn concept_dag_filter_and_provenance_include() {
         .await
         .unwrap()
         .unwrap();
-    store::sqlx::query("UPDATE record SET concept_uid = ? WHERE uid = ?")
-        .bind(&apple_uid)
-        .bind(&apples)
-        .execute(&e.store.pool)
+    store::assertions::set_identity(&e.store.pool, &apples, Some(&apple_uid), None)
         .await
         .unwrap();
 
@@ -295,12 +298,12 @@ async fn the_wire_format_is_json_all_the_way() {
         "source": "record",
         "where": [ { "quantity_lt": 0.0 }, { "kind_eq": "plain" } ],
         "include": { "facts": { "limit": 3 } },
-        "order": [ { "topo": "before" }, { "asc": "created_at" } ],
+        "order": [ { "link": { "kind": "before", "higher": "from" } }, { "asc": "created_at" } ],
         "limit": 10
     });
     let parsed: Protein = serde_json::from_value(json).unwrap();
     assert!(matches!(parsed.source, Source::Record));
     assert_eq!(parsed.filter.len(), 2);
-    assert!(matches!(parsed.order[0], Order::Topo(_)));
+    assert!(matches!(parsed.order[0], Order::Link(_)));
     assert_eq!(parsed.limit, Some(10));
 }

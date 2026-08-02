@@ -229,7 +229,7 @@ impl Engine {
     async fn record_concept(&self, record_uid: &str) -> Result<Option<String>, EngineError> {
         Ok(store::records::get(&self.store.pool, record_uid)
             .await?
-            .and_then(|r| r.concept_uid))
+            .and_then(|r| r.identity_predicate_uid))
     }
 
     async fn concept_family(

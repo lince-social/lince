@@ -820,7 +820,6 @@ impl CalendarSchedule {
         ))
     }
 
-
     fn validate_previous(
         &self,
         provider: &dyn TimeZoneProvider,
@@ -889,8 +888,7 @@ impl CalendarSchedule {
         for _ in 0..MAX_CALENDAR_SEARCH_STEPS {
             match self.cadence.civil_at_or_reason(self.anchor, index) {
                 Ok(candidate) => {
-                    if candidate >= self.anchor
-                        && after.is_none_or(|previous| candidate > previous)
+                    if candidate >= self.anchor && after.is_none_or(|previous| candidate > previous)
                     {
                         return Ok(LocalCandidate::Value(candidate));
                     }

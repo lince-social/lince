@@ -76,9 +76,20 @@ async fn post_message(store: &Store, conversation_uid: &str, body: &str) -> Stri
     )
     .await
     .unwrap();
-    store::links::add(&store.pool, &thread.uid, &thread_of, conversation_uid, None)
-        .await
-        .unwrap();
+    store::assertions::assert(
+        &store.pool,
+        store::assertions::NewAssertion {
+            subject_uid: &thread.uid,
+            predicate_uid: &thread_of,
+            object_uid: Some(conversation_uid),
+            role: store::assertions::AssertionRole::Ordinary,
+            quantity: None,
+            unit_uid: None,
+            asserted_by: None,
+        },
+    )
+    .await
+    .unwrap();
 
     let message = records::create(
         &store.pool,
@@ -92,9 +103,20 @@ async fn post_message(store: &Store, conversation_uid: &str, body: &str) -> Stri
     )
     .await
     .unwrap();
-    store::links::add(&store.pool, &message.uid, &message_in, &thread.uid, None)
-        .await
-        .unwrap();
+    store::assertions::assert(
+        &store.pool,
+        store::assertions::NewAssertion {
+            subject_uid: &message.uid,
+            predicate_uid: &message_in,
+            object_uid: Some(&thread.uid),
+            role: store::assertions::AssertionRole::Ordinary,
+            quantity: None,
+            unit_uid: None,
+            asserted_by: None,
+        },
+    )
+    .await
+    .unwrap();
     message.uid
 }
 

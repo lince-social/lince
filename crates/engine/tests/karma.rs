@@ -33,7 +33,9 @@ async fn plain(e: &Engine, slug: &str, quantity: f64) -> String {
     .expect("record")
     .uid;
     if quantity != 0.0 {
-        e.append_user(&uid, quantity).await.expect("a starting level");
+        e.append_user(&uid, quantity)
+            .await
+            .expect("a starting level");
     }
     uid
 }
@@ -151,7 +153,9 @@ async fn a_rule_fires_the_moment_the_world_changes_and_says_why() {
         "@apples.stock",
         "<3",
         "one",
-        vec![Consequence::SetQuantity { value: Some(dec("1")) }],
+        vec![Consequence::SetQuantity {
+            value: Some(dec("1")),
+        }],
     )
     .await;
 
@@ -161,7 +165,11 @@ async fn a_rule_fires_the_moment_the_world_changes_and_says_why() {
 
     // Down to 2, and the alert raises itself with no beat in between.
     e.append_user(&apples, -3.0).await.unwrap();
-    assert_eq!(level(&e, &alert).await, 1.0, "the change itself must fire it");
+    assert_eq!(
+        level(&e, &alert).await,
+        1.0,
+        "the change itself must fire it"
+    );
 
     // The change is an ordinary entry — deliberately, so a balance reads the
     // same whether a person or a rule moved it. What makes it accountable is
@@ -204,7 +212,9 @@ async fn a_rule_acts_at_most_once_per_period_however_often_it_is_poked() {
         "@apples.stock",
         ">0",
         "one",
-        vec![Consequence::AddQuantity { delta: Some(dec("1")) }],
+        vec![Consequence::AddQuantity {
+            delta: Some(dec("1")),
+        }],
     )
     .await;
 
@@ -237,7 +247,9 @@ async fn a_rule_can_be_read_as_a_named_cell() {
         "@income / 2",
         "<0",
         "value",
-        vec![Consequence::SetQuantity { value: Some(dec("0")) }],
+        vec![Consequence::SetQuantity {
+            value: Some(dec("0")),
+        }],
     )
     .await;
     watching(
@@ -310,7 +322,9 @@ async fn a_paused_rule_stops_acting_and_stops_being_read() {
         "@apples.stock",
         ">0",
         "one",
-        vec![Consequence::AddQuantity { delta: Some(dec("1")) }],
+        vec![Consequence::AddQuantity {
+            delta: Some(dec("1")),
+        }],
     )
     .await;
 
@@ -328,7 +342,11 @@ async fn a_paused_rule_stops_acting_and_stops_being_read() {
 
     e.append_user(&apples, -1.0).await.unwrap();
     e.fire_due_rules(Utc::now()).await.unwrap();
-    assert_eq!(level(&e, &counter).await, 0.0, "a paused rule acts for nobody");
+    assert_eq!(
+        level(&e, &counter).await,
+        0.0,
+        "a paused rule acts for nobody"
+    );
 }
 
 // ------------------------------------------------------- outward consequences
@@ -438,7 +456,9 @@ async fn an_outward_payload_that_is_not_readable_is_refused_where_it_is_written(
         .act(
             engine::actions::Action::CreateRecurrence {
                 target: watched,
-                consequences: vec![Consequence::RunCommand { command: "  ".into() }],
+                consequences: vec![Consequence::RunCommand {
+                    command: "  ".into(),
+                }],
                 condition: None,
                 gate: None,
                 carry: None,
@@ -450,5 +470,62 @@ async fn an_outward_payload_that_is_not_readable_is_refused_where_it_is_written(
             None,
         )
         .await;
-    assert!(refused.is_err(), "a consequence with nothing to run must not store");
+    assert!(
+        refused.is_err(),
+        "a consequence with nothing to run must not store"
+    );
+}
+
+#[tokio::test]
+async fn a_declared_frequency_is_what_a_condition_reads() {
+    // The end of the loop: a Frequency declared on its own, named by a rule's
+    // condition, and beating on its own step rather than on a cadence copied
+    // into the rule. `freq(@daily)` resolves to the Frequency table now, so one
+    // declaration serves every rule that reads it.
+    let e = engine().await;
+    let pear = plain(&e, "pear", 0.0).await;
+
+    let anchor = Utc::now() - TimeDelta::days(3);
+    store::frequency::create(
+        &e.store.pool,
+        store::frequency::NewFrequency {
+            slug: "daily",
+            head: "Daily",
+            every: nucleus::karma::CadenceStep {
+                days: 1,
+                ..Default::default()
+            },
+            anchor_at: anchor,
+            request_id: "freq-req-1",
+            actor_uid: None,
+        },
+        Utc::now(),
+    )
+    .await
+    .unwrap();
+
+    // The rule is anchored back too, so it has a preceding date and therefore a
+    // window to read the beat across.
+    support::declare_rule(
+        &e,
+        &pear,
+        Cadence::every_days(1),
+        &anchor.to_rfc3339(),
+        Some("freq(@daily)"),
+        Some("always"),
+        Some("value"),
+        vec![Consequence::CaptureEntry {
+            amount: dec("0"),
+            concept: None,
+        }],
+    )
+    .await;
+
+    e.fire_due_rules(Utc::now()).await.unwrap();
+    // Not zero is the whole point: before the Frequency table answered,
+    // `freq(@daily)` found no rule on a record called `daily` and read zero.
+    assert!(
+        level(&e, &pear).await > 0.0,
+        "a declared frequency beats, and the condition reads those beats"
+    );
 }

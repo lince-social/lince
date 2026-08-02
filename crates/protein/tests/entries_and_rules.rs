@@ -213,10 +213,13 @@ async fn a_rule_and_its_dates_arrive_as_one_query() {
         .act(
             Action::CreateRecurrence {
                 target: checking.clone(),
-                consequences: vec![nucleus::karma::Consequence::CaptureEntry { amount: nucleus::DecimalValue::parse_inferred("-1200").unwrap(), concept: Some(rent.clone()) }],
-condition: None,
-gate: None,
-carry: None,
+                consequences: vec![nucleus::karma::Consequence::CaptureEntry {
+                    amount: nucleus::DecimalValue::parse_inferred("-1200").unwrap(),
+                    concept: Some(rent.clone()),
+                }],
+                condition: None,
+                gate: None,
+                carry: None,
                 note: Some("rent".to_string()),
                 cadence: Cadence::every_days(7),
                 anchor_at: Some((Utc::now() - Duration::days(1)).to_rfc3339()),
@@ -268,10 +271,13 @@ async fn an_applied_date_leaves_the_pending_inbox() {
         .act(
             Action::CreateRecurrence {
                 target: checking.clone(),
-                consequences: vec![nucleus::karma::Consequence::CaptureEntry { amount: nucleus::DecimalValue::parse_inferred("-1200").unwrap(), concept: Some(rent) }],
-condition: None,
-gate: None,
-carry: None,
+                consequences: vec![nucleus::karma::Consequence::CaptureEntry {
+                    amount: nucleus::DecimalValue::parse_inferred("-1200").unwrap(),
+                    concept: Some(rent),
+                }],
+                condition: None,
+                gate: None,
+                carry: None,
                 note: None,
                 cadence: Cadence::every_days(1),
                 anchor_at: Some(due.to_rfc3339()),
@@ -329,10 +335,13 @@ async fn a_paused_rule_is_listed_with_its_state_so_it_can_be_resumed() {
         .act(
             Action::CreateRecurrence {
                 target: checking.clone(),
-                consequences: vec![nucleus::karma::Consequence::CaptureEntry { amount: nucleus::DecimalValue::parse_inferred("-9").unwrap(), concept: None }],
-condition: None,
-gate: None,
-carry: None,
+                consequences: vec![nucleus::karma::Consequence::CaptureEntry {
+                    amount: nucleus::DecimalValue::parse_inferred("-9").unwrap(),
+                    concept: None,
+                }],
+                condition: None,
+                gate: None,
+                carry: None,
                 note: None,
                 cadence: Cadence::every_weeks(1),
                 anchor_at: Some((Utc::now() - Duration::days(1)).to_rfc3339()),

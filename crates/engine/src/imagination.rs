@@ -17,10 +17,7 @@ use crate::error::EngineError;
 /// There is no separate frequency list any more. A rule carries the schedule
 /// it repeats on, so "what fires when" is one question with one answer here and
 /// in the heartbeat.
-pub async fn build_snapshot(
-    store: &Store,
-    now: DateTime<Utc>,
-) -> Result<Snapshot, EngineError> {
+pub async fn build_snapshot(store: &Store, now: DateTime<Utc>) -> Result<Snapshot, EngineError> {
     let mut quantities = std::collections::HashMap::new();
     let mut slugs = std::collections::HashMap::new();
     for r in store::records::list_all(&store.pool).await? {
@@ -159,7 +156,10 @@ pub async fn demand(
             .collect();
     let mut in_family: std::collections::HashSet<String> = Default::default();
     for r in store::records::list_all(&store.pool).await? {
-        if r.concept_uid.as_ref().is_some_and(|c| family.contains(c)) {
+        if r.identity_predicate_uid
+            .as_ref()
+            .is_some_and(|c| family.contains(c))
+        {
             in_family.insert(r.uid);
         }
     }

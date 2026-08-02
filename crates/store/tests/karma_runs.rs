@@ -60,10 +60,11 @@ async fn frozen_epoch_runs_exact_program_revisions_in_cell_order() {
         fuel: 100,
         max_expression_depth: 16,
     };
-    let first = process_next_occurrence(&store.pool, limits, NonZeroU32::new(1).unwrap(), now, None)
-        .await
-        .unwrap()
-        .unwrap();
+    let first =
+        process_next_occurrence(&store.pool, limits, NonZeroU32::new(1).unwrap(), now, None)
+            .await
+            .unwrap()
+            .unwrap();
     assert_eq!(first.runs.len(), 1);
     assert!(!first.completed);
     let frozen = list_epochs(&store.pool).await.unwrap().pop().unwrap();
@@ -87,10 +88,11 @@ async fn frozen_epoch_runs_exact_program_revisions_in_cell_order() {
         now,
     )
     .await;
-    let second = process_next_occurrence(&store.pool, limits, NonZeroU32::new(1).unwrap(), now, None)
-        .await
-        .unwrap()
-        .unwrap();
+    let second =
+        process_next_occurrence(&store.pool, limits, NonZeroU32::new(1).unwrap(), now, None)
+            .await
+            .unwrap()
+            .unwrap();
     assert_eq!(second.runs.len(), 1);
     assert!(second.completed);
     assert!(!has_pending_occurrences(&store.pool).await.unwrap());
@@ -1110,7 +1112,15 @@ async fn accepting_with_a_grant_authorizes_one_intent_and_spends_its_budget() {
     .await;
 
     // Without a grant the acceptance is inert: no intent, exactly as before.
-    let inert = accept(&store, &candidate.candidate_hash, 1, None, "accept-inert", now).await;
+    let inert = accept(
+        &store,
+        &candidate.candidate_hash,
+        1,
+        None,
+        "accept-inert",
+        now,
+    )
+    .await;
     let store::karma::candidates::CandidateReviewCommit::Committed { intent, .. } = &inert else {
         panic!("expected a committed acceptance");
     };
@@ -1129,12 +1139,16 @@ async fn accepting_with_a_grant_authorizes_one_intent_and_spends_its_budget() {
     )
     .await;
     let store::karma::candidates::CandidateReviewCommit::Committed {
-        intent, intent_fact, ..
+        intent,
+        intent_fact,
+        ..
     } = &authorized
     else {
         panic!("expected a committed authorization");
     };
-    let intent_hash = intent.clone().expect("an authorized acceptance has an intent");
+    let intent_hash = intent
+        .clone()
+        .expect("an authorized acceptance has an intent");
     assert!(intent_fact.is_some(), "the intent joins the Ledger too");
 
     let row = store::karma::intents::get(&store.pool, &intent_hash)
@@ -1152,10 +1166,11 @@ async fn accepting_with_a_grant_authorizes_one_intent_and_spends_its_budget() {
     assert_eq!(row.intent.authorization.budget.intents_before, 0);
     assert_eq!(row.intent.authorization.budget.intents_after, 1);
     // Authority never outlives the consent that granted it.
-    let revision = store::karma::grants::get_revision(&store.pool, &row.grant_uid, &row.grant_revision_hash)
-        .await
-        .unwrap()
-        .unwrap();
+    let revision =
+        store::karma::grants::get_revision(&store.pool, &row.grant_uid, &row.grant_revision_hash)
+            .await
+            .unwrap()
+            .unwrap();
     assert_eq!(row.intent.deadline, revision.revision.spec.expires_at);
 
     let state = store::karma::intents::get_state(&store.pool, &intent_hash)
@@ -1296,7 +1311,10 @@ async fn revoking_a_grant_cancels_its_intents_and_releases_their_budget() {
         .unwrap()
         .unwrap();
     assert_eq!(state.status, nucleus::karma::IntentStatus::Cancelled);
-    assert_eq!(state.cancelled_reason.as_deref(), Some("karma_grant_revoked"));
+    assert_eq!(
+        state.cancelled_reason.as_deref(),
+        Some("karma_grant_revoked")
+    );
     assert_eq!(state.state_revision, 2);
     let second_state = store::karma::intents::get_state(&store.pool, &second_intent_hash)
         .await
@@ -1331,7 +1349,10 @@ async fn revoking_a_grant_cancels_its_intents_and_releases_their_budget() {
         Some(&history[0].event_hash),
         "a transition chains to the one it replaced"
     );
-    assert_eq!(history[1].transition.cause_request_id, "revoke-with-intents");
+    assert_eq!(
+        history[1].transition.cause_request_id,
+        "revoke-with-intents"
+    );
     assert_eq!(state.current_event_hash, history[1].event_hash);
     let second_history = store::karma::intents::history(&store.pool, &second_intent_hash)
         .await
@@ -1640,7 +1661,10 @@ async fn accept(
 }
 
 /// Drive the real pipeline until one `act` candidate exists.
-async fn act_candidate(store: &Store, now: DateTime<Utc>) -> store::karma::candidates::KarmaCandidateRow {
+async fn act_candidate(
+    store: &Store,
+    now: DateTime<Utc>,
+) -> store::karma::candidates::KarmaCandidateRow {
     let frequency = active_frequency(store, now).await;
     active_program_definition(
         store,
@@ -1809,7 +1833,8 @@ async fn create_grant_with(
             grant: nucleus::karma::DelegationGrantSpec {
                 schema: nucleus::karma::DelegationGrantSchema::V1,
                 purpose: "Authorize the test pantry restock".to_string(),
-                program_uid: TypedUid::new(ReferenceKind::Program, program_uid.to_string()).unwrap(),
+                program_uid: TypedUid::new(ReferenceKind::Program, program_uid.to_string())
+                    .unwrap(),
                 program_revision: nucleus::karma::GrantProgramRevisionScope::AnyActive,
                 candidate_templates: templates,
                 capabilities: CapabilitySet::new([nucleus::karma::Capability::RecordAddQuantity]),

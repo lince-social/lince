@@ -171,9 +171,7 @@ async fn a_correction_stays_in_the_category_it_was_captured_under() {
         to: "2026-04-01T00:00:00Z".parse().unwrap(),
         concept_uid: Some(&food),
     };
-    let totals = store::ledger::totals(&e.store.pool, &window)
-        .await
-        .unwrap();
+    let totals = store::ledger::totals(&e.store.pool, &window).await.unwrap();
     // -15 + 15 - 150 = -150. The category shows what was actually spent.
     assert_eq!(totals.net.to_string(), "-150");
 }
@@ -264,9 +262,7 @@ async fn voiding_returns_the_quantity_to_the_category_it_came_from() {
         to: "2026-04-01T00:00:00Z".parse().unwrap(),
         concept_uid: Some(&food),
     };
-    let totals = store::ledger::totals(&e.store.pool, &window)
-        .await
-        .unwrap();
+    let totals = store::ledger::totals(&e.store.pool, &window).await.unwrap();
     assert_eq!(totals.net.to_string(), "0");
     assert_eq!(totals.count, 2);
 }
@@ -410,9 +406,7 @@ async fn generic_compensation_cannot_bypass_an_entry() {
     // Compensating the Fact directly would return the quantity while the entry
     // still read `applied` — the Ledger and the thing describing it would
     // disagree with no way to tell which is right.
-    let bypass = e
-        .act(Action::Compensate { fact: fact_uid }, None)
-        .await;
+    let bypass = e.act(Action::Compensate { fact: fact_uid }, None).await;
     assert!(bypass.is_err());
     assert_eq!(level(&e).await, "-15");
 

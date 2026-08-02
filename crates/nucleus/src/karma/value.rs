@@ -3,8 +3,8 @@ use std::fmt;
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 
 use super::{
-    Confidence, DatumState, DurationMs, KarmaBoundaryError, LocalId, Probability,
-    ReferenceKind, ResolvedReference, Slug, TimestampMs, TypedUid,
+    Confidence, DatumState, DurationMs, KarmaBoundaryError, LocalId, Probability, ReferenceKind,
+    ResolvedReference, Slug, TimestampMs, TypedUid,
     exact::{MAX_DECIMAL_SCALE, canonical_decimal_string, parse_canonical_decimal},
 };
 
@@ -340,7 +340,12 @@ impl DecimalValue {
         let mut denom = 1_i128;
         if shift > 0 {
             let numer = left.checked_mul(right)?;
-            return round_ratio(numer.checked_mul(pow10(shift.unsigned_abs())?)?, 1, scale, rounding);
+            return round_ratio(
+                numer.checked_mul(pow10(shift.unsigned_abs())?)?,
+                1,
+                scale,
+                rounding,
+            );
         }
         if shift < 0 {
             // Divide the operands down before multiplying them up, but only by
@@ -364,18 +369,18 @@ impl DecimalValue {
 
     /// Divide by another decimal at a declared scale and rounding. Expressed
     /// through `mul_ratio` so there is one rounding implementation, not two.
-    pub fn div_exact(
-        self,
-        divisor: Self,
-        scale: u8,
-        rounding: Rounding,
-    ) -> Option<RoundedDecimal> {
+    pub fn div_exact(self, divisor: Self, scale: u8, rounding: Rounding) -> Option<RoundedDecimal> {
         if divisor.mantissa == 0 {
             return None; // division by zero is a typed failure, not an infinity
         }
         // self / divisor == self * (10^divisor.scale / divisor.mantissa) / 10^self.scale,
         // and the trailing 10^self.scale is what `mul_ratio`'s shift handles.
-        self.mul_ratio(pow10(u32::from(divisor.scale))?, divisor.mantissa, scale, rounding)
+        self.mul_ratio(
+            pow10(u32::from(divisor.scale))?,
+            divisor.mantissa,
+            scale,
+            rounding,
+        )
     }
 
     /// Parse canonical decimal text whose scale is whatever it happens to
@@ -563,10 +568,7 @@ impl ValueType {
     pub fn is_additive(&self) -> bool {
         matches!(
             self,
-            Self::I64
-                | Self::Decimal { .. }
-                | Self::Duration
-                | Self::Quantity { .. }
+            Self::I64 | Self::Decimal { .. } | Self::Duration | Self::Quantity { .. }
         )
     }
 

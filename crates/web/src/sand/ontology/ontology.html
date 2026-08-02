@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Ontology</title>
+  <script src="/board/frame.js"></script>
+  <style>
+    :root { color-scheme: dark; --bg:#0d1117; --panel:#161b22; --line:#30363d; --text:#e6edf3; --muted:#8b949e; --accent:#58a6ff; --bad:#f85149; }
+    * { box-sizing: border-box; }
+    body { margin:0; padding:14px; background:var(--bg); color:var(--text); font:13px/1.45 system-ui,sans-serif; }
+    header { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+    h1 { margin:0; font-size:16px; flex:1; }
+    .dot { width:8px; height:8px; border-radius:50%; background:var(--bad); }
+    .dot.live { background:#3fb950; }
+    .error { color:var(--bad); min-height:1.4em; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:12px; align-items:start; }
+    section { border:1px solid var(--line); border-radius:9px; background:var(--panel); overflow:hidden; }
+    h2 { margin:0; padding:9px 11px; font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); border-bottom:1px solid var(--line); }
+    .body { padding:10px; display:grid; gap:8px; }
+    .row { display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
+    input,select,button { min-width:0; border:1px solid var(--line); border-radius:6px; background:var(--bg); color:var(--text); padding:6px 8px; font:inherit; }
+    input,select { flex:1; }
+    button { cursor:pointer; background:#21262d; }
+    button:hover { border-color:var(--accent); }
+    button.danger:hover { border-color:var(--bad); color:var(--bad); }
+    .list { display:grid; gap:5px; max-height:250px; overflow:auto; }
+    .item { display:grid; gap:3px; border:1px solid #21262d; border-radius:7px; padding:7px; }
+    .item-main { display:flex; gap:7px; align-items:center; }
+    .item-main strong { flex:1; overflow-wrap:anywhere; }
+    .meta { color:var(--muted); font-size:11px; overflow-wrap:anywhere; }
+    .badge { color:var(--accent); }
+    label { color:var(--muted); font-size:11px; }
+    .wide { grid-column:1 / -1; }
+  </style>
+</head>
+<body>
+  <header><h1>Ontology</h1><span id="dot" class="dot"></span></header>
+  <div id="error" class="error"></div>
+  <div class="grid">
+    <section>
+      <h2>Linguas</h2>
+      <div class="body">
+        <div id="linguas" class="list"></div>
+        <div class="row"><input id="lingua-name" placeholder="New Lingua" /><select id="lingua-visibility"><option>private</option><option>shared</option><option>public</option></select><button id="create-lingua">Create</button></div>
+      </div>
+    </section>
+
+    <section>
+      <h2>Concepts and hierarchy</h2>
+      <div class="body">
+        <div class="row"><input id="concept-name" placeholder="backend" /><select id="concept-lingua"></select><button id="create-concept">Create</button></div>
+        <div class="row"><select id="membership-concept"></select><span>in</span><select id="membership-lingua"></select><button id="adopt-concept">Include</button><button id="remove-concept-lingua">Remove</button></div>
+        <div class="row"><select id="child-concept"></select><span>is a</span><select id="parent-concept"></select><button id="add-parent">Connect</button><button id="remove-parent">Disconnect</button></div>
+        <div id="concepts" class="list"></div>
+      </div>
+    </section>
+
+    <section class="wide">
+      <h2>Record assertions</h2>
+      <div class="body">
+        <div class="row"><select id="assert-subject"></select><select id="assert-predicate"></select><select id="assert-object"><option value="">no object — tag</option></select><button id="assert-record">Assert</button><button id="set-identity">Set identity</button></div>
+        <div id="assertions" class="list"></div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+  (() => {
+    const H = window.LinceWidgetHost;
+    const $ = (id) => document.getElementById(id);
+    let linguas = [], concepts = [], records = [], assertions = [];
+    H.onLive((live) => $("dot").classList.toggle("live", live));
+
+    function option(value, text) { const node=document.createElement("option"); node.value=value; node.textContent=text; return node; }
+    function fill(select, rows, label, keepFirst=false) {
+      const old=select.value, first=keepFirst ? select.firstElementChild : null;
+      select.replaceChildren(); if (first) select.appendChild(first);
+      for (const row of rows) select.appendChild(option(row.uid, label(row)));
+      if ([...select.options].some((item) => item.value===old)) select.value=old;
+    }
+    function recordName(uid) { const row=records.find((item)=>item.uid===uid); return row ? (row.head || row.slug || uid) : uid; }
+    function conceptName(uid) { const row=concepts.find((item)=>item.uid===uid); return row ? `@${row.name}` : uid; }
+    function fail(error) { $("error").textContent=error && error.message ? error.message : String(error); }
+    async function act(payload) { $("error").textContent=""; try { const outcome=await H.act(payload); subscribe(); return outcome; } catch (error) { fail(error); throw error; } }
+
+    function render() {
+      fill($("concept-lingua"), linguas, (row)=>row.name);
+      fill($("membership-lingua"), linguas, (row)=>row.name);
+      fill($("membership-concept"), concepts, (row)=>`@${row.name}`);
+      fill($("child-concept"), concepts, (row)=>`@${row.name}`);
+      fill($("parent-concept"), concepts, (row)=>`@${row.name}`);
+      fill($("assert-predicate"), concepts, (row)=>`@${row.name}`);
+      fill($("assert-subject"), records, (row)=>row.head || row.slug || row.uid);
+      const empty=option("", "no object — tag");
+      $("assert-object").replaceChildren(empty, ...records.map((row)=>option(row.uid,row.head || row.slug || row.uid)));
+
+      $("linguas").replaceChildren(...linguas.map((lingua)=>{
+        const card=document.createElement("div"); card.className="item";
+        const main=document.createElement("div"); main.className="item-main";
+        const name=document.createElement("strong"); name.textContent=lingua.name;
+        const rename=document.createElement("button"); rename.textContent="Rename";
+        rename.onclick=()=>{const next=prompt("Lingua name",lingua.name); if(next&&next.trim()) act({action:"rename-lingua",lingua:lingua.uid,name:next.trim()});};
+        const remove=document.createElement("button"); remove.className="danger"; remove.textContent="Delete";
+        remove.disabled=lingua.uid==="g_local"; remove.title=remove.disabled ? "The local Lingua is permanent" : "Delete this Lingua collection";
+        remove.onclick=()=>act({action:"delete-lingua",lingua:lingua.uid});
+        main.append(name,rename,remove); const meta=document.createElement("div"); meta.className="meta"; meta.textContent=`${lingua.visibility} · ${(lingua.concepts||[]).length} concepts`;
+        card.append(main,meta); return card;
+      }));
+
+      $("concepts").replaceChildren(...concepts.map((concept)=>{
+        const card=document.createElement("div"); card.className="item";
+        const main=document.createElement("div"); main.className="item-main";
+        const name=document.createElement("strong"); name.className="badge"; name.textContent=`@${concept.name}`;
+        const rename=document.createElement("button"); rename.textContent="Rename";
+        rename.onclick=()=>{const next=prompt("Concept name",concept.name); if(next&&next.trim()) act({action:"rename-concept",concept:concept.uid,name:next.trim()});};
+        const remove=document.createElement("button"); remove.className="danger"; remove.textContent="Delete"; remove.onclick=()=>act({action:"delete-concept",concept:concept.uid});
+        main.append(name,rename,remove); const meta=document.createElement("div"); meta.className="meta";
+        const ancestry=(concept.parents||[]).length ? `is a ${(concept.parents||[]).map(conceptName).join(", ")}` : "root concept";
+        const homes=(concept.linguas||[]).map((uid)=>{const lingua=linguas.find((item)=>item.uid===uid); return lingua ? lingua.name : uid;});
+        meta.textContent=`${ancestry} · ${homes.length ? homes.join(", ") : "no Lingua"}`;
+        card.append(main,meta); return card;
+      }));
+
+      $("assertions").replaceChildren(...assertions.map((assertion)=>{
+        const card=document.createElement("div"); card.className="item";
+        const main=document.createElement("div"); main.className="item-main";
+        const text=document.createElement("strong"); text.textContent=`${recordName(assertion.subject)} ${conceptName(assertion.predicate)}${assertion.object ? ` [${recordName(assertion.object)}]` : ""}`;
+        const remove=document.createElement("button"); remove.className="danger"; remove.textContent="Retract"; remove.onclick=()=>act({action:"retract-assertion",assertion:assertion.uid});
+        main.append(text,remove); const meta=document.createElement("div"); meta.className="meta"; meta.textContent=assertion.role;
+        card.append(main,meta); return card;
+      }));
+    }
+
+    let subscriptions=[];
+    function subscribe() {
+      for (const stop of subscriptions) if (typeof stop === "function") stop();
+      subscriptions=[
+        H.subscribeProtein("ontology-linguas", {source:"lingua"}, ({rows})=>{linguas=rows||[]; render();}),
+        H.subscribeProtein("ontology-concepts", {source:"concept"}, ({rows})=>{concepts=rows||[]; render();}),
+        H.subscribeProtein("ontology-records", {source:"record",limit:2000}, ({rows})=>{records=rows||[]; render();}),
+        H.subscribeProtein("ontology-assertions", {source:"assertion"}, ({rows})=>{assertions=rows||[]; render();}),
+      ];
+    }
+    subscribe();
+
+    $("create-lingua").onclick=()=>{const name=$("lingua-name").value.trim(); if(name) act({action:"create-lingua",name,visibility:$("lingua-visibility").value}).then(()=>$("lingua-name").value="");};
+    $("create-concept").onclick=()=>{const name=$("concept-name").value.trim(),lingua=$("concept-lingua").value; if(name&&lingua) act({action:"create-concept",lingua,name,parents:[]}).then(()=>$("concept-name").value="");};
+    $("adopt-concept").onclick=()=>{const concept=$("membership-concept").value,lingua=$("membership-lingua").value; if(concept&&lingua) act({action:"adopt-concept",concept,lingua});};
+    $("remove-concept-lingua").onclick=()=>{const concept=$("membership-concept").value,lingua=$("membership-lingua").value; if(concept&&lingua) act({action:"remove-concept-from-lingua",concept,lingua});};
+    $("add-parent").onclick=()=>{const concept=$("child-concept").value,parent=$("parent-concept").value; if(concept&&parent) act({action:"add-concept-parent",concept,parent});};
+    $("remove-parent").onclick=()=>{const concept=$("child-concept").value,parent=$("parent-concept").value; if(concept&&parent) act({action:"remove-concept-parent",concept,parent});};
+    $("assert-record").onclick=()=>{const subject=$("assert-subject").value,predicate=$("assert-predicate").value,object=$("assert-object").value||null; if(subject&&predicate) act({action:"assert-record",subject,predicate,object});};
+    $("set-identity").onclick=()=>{const subject=$("assert-subject").value,predicate=$("assert-predicate").value; if(subject&&predicate) act({action:"set-identity",subject,predicate});};
+  })();
+  </script>
+</body>
+</html>

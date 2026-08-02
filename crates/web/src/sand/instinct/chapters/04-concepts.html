@@ -1,0 +1,124 @@
+      <!-- ============================= 4. CONCEPTS ========================= -->
+      <article class="chapter" data-chapter="Concepts">
+        <p class="chapter__eyebrow">Chapter 4 — Vocabulary</p>
+        <h1>Concepts</h1>
+        <p>
+          A <strong>concept</strong> is a word with a stable meaning, written with an
+          <code>@</code>: <code>@task</code>, <code>@apple</code>, <code>@expense</code>. On its own
+          a concept says nothing. It becomes information when you <strong>apply</strong> it to a
+          record — and that single act is the one mechanism underneath everything in this chapter
+          and the last one.
+        </p>
+        <div class="figure">
+          <div class="figure__frame">
+<pre class="mermaid">graph LR
+  S["Record: write the spec"] -- "@task" --> N["(nothing else)"]
+  S2["Record: write the spec"] -- "@part-of" --> O["Record: Project A"]</pre>
+          </div>
+          <p class="figure__caption">Apply a concept and stop: a tag. Apply it and name a second record: a link. Same statement, one optional half.</p>
+        </div>
+        <p>
+          That is the whole model. A statement about a record always has a concept; whether it also
+          names a <em>second</em> record is what makes people call it a tag in one breath and a link
+          in the next. Lince does not store them differently.
+        </p>
+
+        <h2>How many can a record have?</h2>
+        <p>
+          As many as are true. A record can be <code>@urgent</code> and <code>@billable</code> and
+          <code>@health</code> at once — these are ordinary statements and they do not compete.
+        </p>
+        <p>
+          One statement is special. A record may have at most one <strong>identity</strong> — the
+          constrained answer to "what kind of thing is this?", used where something needs exactly
+          one answer to work with. Setting a new identity replaces the old one. Everything else
+          accumulates.
+        </p>
+        <div class="figure">
+          <div class="figure__frame">
+<pre class="mermaid">graph LR
+  T["Toothbrush"] -- identity --> A["@toothbrush"]
+  T -- ordinary --> B["@health"]
+  T -- ordinary --> C["@cost"]</pre>
+          </div>
+          <p class="figure__caption">One identity, any number of ordinary statements. Having an identity does not stop a record being other things too.</p>
+        </div>
+        <p>
+          Records without an identity are perfectly valid. Reach for one when some feature needs a
+          single stable answer, not as a habit.
+        </p>
+
+        <h2>Concepts know how they relate</h2>
+        <p>
+          Concepts are not a fixed list handed to you. They are a vocabulary you grow, and they
+          record how they widen into each other:
+        </p>
+        <div class="figure">
+          <div class="figure__frame">
+<pre class="mermaid">graph LR
+  A["@apple"] --> B["@fruit"]
+  B --> C["@food"]
+  D["@bread"] --> C</pre>
+          </div>
+          <p class="figure__caption">An apple is a fruit; a fruit is food. Nobody had to say an apple is food.</p>
+        </div>
+        <p>
+          So a Protein filtered on <strong>Concept</strong> <code>food</code> returns your apples
+          and your bread, because it walks that graph for you. Ask a broad question, get everything
+          underneath it; ask a narrow one, get only that branch. You never maintain the "is also a"
+          list by hand, and a concept may widen into more than one parent — <code>@food</code> can
+          sit under both <code>@substance</code> and <code>@cost</code>.
+        </p>
+        <p>
+          Widening applies to links too, because a link's kind is a concept. A statement naming a
+          specific project still answers a query for the general kind — you do not need to add a
+          redundant tag beside it.
+        </p>
+
+        <h2>Tag or link?</h2>
+        <p>
+          Since both are the same statement, the question is only ever: <em>is there a second record
+          worth naming?</em>
+        </p>
+        <div class="chapter__pair">
+          <div>
+            <h2>Leave it unary</h2>
+            <ul>
+              <li>The word alone is the whole point: <code>@urgent</code>, <code>@billable</code>.</li>
+              <li>There is nothing on the other end you would ever open.</li>
+            </ul>
+          </div>
+          <div>
+            <h2>Name the object</h2>
+            <ul>
+              <li>The other end is a real thing: a project, a person, another task.</li>
+              <li>You want to open it, count what points at it, or ask it what it owns.</li>
+            </ul>
+          </div>
+        </div>
+        <p>
+          If you find yourself creating <code>@project-a</code>, <code>@project-b</code>,
+          <code>@project-c</code> as separate words, that is the signal to make Project A a record
+          and link to it instead. Vocabulary that grows one word per <em>thing</em> is a sign the
+          thing wanted to be a record.
+        </p>
+
+        <h2>Where you set them</h2>
+        <p>
+          The <strong>Record</strong> sand's Links section makes statements that name a second
+          record. The <strong>Ontology</strong> sand is where you work with the vocabulary itself:
+          apply a concept with no object (leave the object as "no object — tag"), set a record's
+          identity, retract a statement, and connect concepts so one widens into another.
+        </p>
+        <div class="chapter__note">
+          <p>
+            One subtlety worth knowing before you write reporting queries. Filtering on
+            <strong>Concept</strong> asks about the record a change happened <em>to</em>. There is a
+            separate question — what the change itself was classified as — and the two are kept
+            apart deliberately: "what did I spend on food" selects records by <code>@budget</code>
+            but changes by <code>@food</code>. Collapsing them is how a query quietly answers
+            something other than what you asked.
+          </p>
+        </div>
+      </article>
+

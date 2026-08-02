@@ -89,7 +89,10 @@ async fn a_thousand_cent_additions_reach_exactly_ten() {
     for _ in 0..1000 {
         float_total += 0.01;
     }
-    assert_ne!(float_total, 10.0, "the float this replaces really does drift");
+    assert_ne!(
+        float_total, 10.0,
+        "the float this replaces really does drift"
+    );
 }
 
 #[tokio::test]
@@ -120,7 +123,12 @@ async fn sign_filtered_windows_stay_exact() {
     let now = Utc::now();
 
     for value in ["0.1", "-0.3", "0.2"] {
-        append(&store, &uid, DecimalValue::parse_canonical(1, value).unwrap()).await;
+        append(
+            &store,
+            &uid,
+            DecimalValue::parse_canonical(1, value).unwrap(),
+        )
+        .await;
     }
 
     let window = TimeDelta::hours(1).num_seconds();
@@ -151,10 +159,12 @@ async fn no_real_quantity_column_survives() {
         ("fact", vec!["delta_mantissa", "delta_scale"]),
         ("record", vec!["quantity_mantissa", "quantity_scale"]),
     ] {
-        let rows = sqlx::query(&format!("SELECT name, type FROM pragma_table_info('{table}')"))
-            .fetch_all(&store.pool)
-            .await
-            .expect("pragma");
+        let rows = sqlx::query(&format!(
+            "SELECT name, type FROM pragma_table_info('{table}')"
+        ))
+        .fetch_all(&store.pool)
+        .await
+        .expect("pragma");
         let found: Vec<(String, String)> = rows
             .iter()
             .map(|r| (r.get::<String, _>("name"), r.get::<String, _>("type")))

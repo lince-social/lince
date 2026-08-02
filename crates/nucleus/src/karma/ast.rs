@@ -269,7 +269,9 @@ pub enum DeclaredUnit {
     /// The dimensions cancel. `total ÷ budget` is a ratio, and saying so is a
     /// real statement about the rule, not an absence of one.
     Dimensionless,
-    Unit { unit: TypedUid },
+    Unit {
+        unit: TypedUid,
+    },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]

@@ -429,10 +429,16 @@ mod tests {
 
     #[test]
     fn setting_a_quantity_is_not_cumulative_but_still_moves_one() {
-        let rule = Consequences::new(vec![Consequence::SetQuantity { value: Some(dec("-1")) }])
-            .expect("legal");
+        let rule = Consequences::new(vec![Consequence::SetQuantity {
+            value: Some(dec("-1")),
+        }])
+        .expect("legal");
         assert!(rule.moves_quantity());
-        assert_eq!(rule.declared_delta(), None, "setting a level is not a delta");
+        assert_eq!(
+            rule.declared_delta(),
+            None,
+            "setting a level is not a delta"
+        );
         assert!(rule.capture_amount().is_none());
         assert!(rule.capture_concept().is_none());
     }
@@ -449,7 +455,9 @@ mod tests {
     #[test]
     fn a_stored_list_round_trips() {
         let rule = Consequences::new(vec![
-            Consequence::SetQuantity { value: Some(dec("-1")) },
+            Consequence::SetQuantity {
+                value: Some(dec("-1")),
+            },
             Consequence::AddConcept {
                 concept: "today".into(),
             },

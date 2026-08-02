@@ -49,7 +49,10 @@ pub fn decimal_columns(value: DecimalValue) -> (String, i64) {
 
 /// Read a decimal from a row's `<prefix>_mantissa` / `<prefix>_scale` columns.
 /// A row that cannot be parsed is a corrupt Ledger, not a zero: say so.
-pub fn read_decimal(row: &sqlx::sqlite::SqliteRow, prefix: &str) -> Result<DecimalValue, StoreError> {
+pub fn read_decimal(
+    row: &sqlx::sqlite::SqliteRow,
+    prefix: &str,
+) -> Result<DecimalValue, StoreError> {
     let mantissa: String = row
         .try_get(format!("{prefix}_mantissa").as_str())
         .map_err(StoreError::from)?;
@@ -65,8 +68,7 @@ pub fn parse_decimal(mantissa: &str, scale: i64) -> Result<DecimalValue, StoreEr
         .map_err(|_| exact_error(format!("mantissa {mantissa:?} is not an integer")))?;
     let scale = u8::try_from(scale)
         .map_err(|_| exact_error(format!("decimal scale {scale} out of range")))?;
-    DecimalValue::from_mantissa(scale, mantissa)
-        .map_err(|err| exact_error(err.to_string()))
+    DecimalValue::from_mantissa(scale, mantissa).map_err(|err| exact_error(err.to_string()))
 }
 
 /// `target - current` — the delta that moves a level to a target exactly.

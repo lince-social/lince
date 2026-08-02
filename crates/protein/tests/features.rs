@@ -5,8 +5,8 @@ use engine::Engine;
 use engine::actions::Action;
 use nucleus::RecordKind;
 use protein::{
-    Aggregate, AggregateOp, GroupBy, Include, LinkDirection, LinksInclude, Predicate, Protein,
-    Source, ThreadsInclude,
+    Aggregate, AggregateOp, DateComparison, GroupBy, Include, LinkDirection, LinksInclude,
+    Predicate, Protein, Source, ThreadsInclude, WorkDateField,
 };
 
 async fn engine() -> Engine {
@@ -229,6 +229,7 @@ async fn links_include_is_explicit_and_supports_multiple_kinds() {
     for kind in ["before", "contributes"] {
         e.act(
             Action::CreateConcept {
+                lingua: "g_local".into(),
                 name: kind.into(),
                 parents: vec![],
             },
@@ -238,22 +239,24 @@ async fn links_include_is_explicit_and_supports_multiple_kinds() {
         .unwrap();
     }
     e.act(
-        Action::AddLink {
-            from: a.clone(),
-            kind: "before".into(),
-            to: b.clone(),
-            quantity: Some(1.0),
+        Action::AssertRecord {
+            subject: a.clone(),
+            predicate: "before".into(),
+            object: Some(b.clone()),
+            quantity: Some("1".into()),
+            unit: None,
         },
         None,
     )
     .await
     .unwrap();
     e.act(
-        Action::AddLink {
-            from: c,
-            kind: "contributes".into(),
-            to: a.clone(),
+        Action::AssertRecord {
+            subject: c,
+            predicate: "contributes".into(),
+            object: Some(a.clone()),
             quantity: None,
+            unit: None,
         },
         None,
     )
@@ -262,7 +265,6 @@ async fn links_include_is_explicit_and_supports_multiple_kinds() {
 
     let mut none = base(Source::Record, vec![Predicate::UidEq(a.clone())]);
     none.include.links = Some(LinksInclude {
-        kind: None,
         kinds: vec![],
         direction: LinkDirection::Both,
         depth: 0,
@@ -277,7 +279,6 @@ async fn links_include_is_explicit_and_supports_multiple_kinds() {
 
     let mut both = base(Source::Record, vec![Predicate::UidEq(a.clone())]);
     both.include.links = Some(LinksInclude {
-        kind: None,
         kinds: vec!["before".into(), "contributes".into()],
         direction: LinkDirection::Both,
         depth: 0,
@@ -303,20 +304,10 @@ async fn links_include_is_explicit_and_supports_multiple_kinds() {
     assert_eq!(links.len(), 1);
     assert_eq!(links[0]["kind"], "before");
 
-    let legacy: Protein = serde_json::from_value(serde_json::json!({
-        "source": "record",
-        "where": [{ "uid_eq": a }],
-        "include": { "links": { "kind": "before" } }
-    }))
-    .unwrap();
-    let rows = protein::execute(&e.store, &legacy).await.unwrap();
-    assert_eq!(rows[0]["links"].as_array().unwrap().len(), 1);
-
     // The "*" wildcard includes links of EVERY kind (Record's all-links
     // view), still honoring direction.
     let mut all = base(Source::Record, vec![Predicate::UidEq(a.clone())]);
     all.include.links = Some(LinksInclude {
-        kind: None,
         kinds: vec!["*".into()],
         direction: LinkDirection::Both,
         depth: 0,
@@ -334,13 +325,14 @@ async fn links_include_is_explicit_and_supports_multiple_kinds() {
 }
 
 #[tokio::test]
-async fn linked_to_filters_by_tag_cluster_with_include_and_exclude() {
+async fn relation_filters_by_tag_cluster_with_include_and_exclude() {
     // Multi-valued cluster tags (Stage 8b, Phase 5): a record is tagged into
-    // clusters by `tag`-kind links to cluster records. `linked_to` filters on
+    // clusters by `tag`-kind links to cluster records. `relation` filters on
     // them; `any`/`not`/`all` compose "Tasks OR ProjectA but NOT ProjectB".
     let e = engine().await;
     e.act(
         Action::CreateConcept {
+            lingua: "g_local".into(),
             name: "tag".into(),
             parents: vec![],
         },
@@ -363,11 +355,12 @@ async fn linked_to_filters_by_tag_cluster_with_include_and_exclude() {
         let to = to.to_string();
         async move {
             e.act(
-                Action::AddLink {
-                    from,
-                    kind: "tag".into(),
-                    to,
+                Action::AssertRecord {
+                    subject: from,
+                    predicate: "tag".into(),
+                    object: Some(to),
                     quantity: None,
+                    unit: None,
                 },
                 None,
             )
@@ -384,18 +377,21 @@ async fn linked_to_filters_by_tag_cluster_with_include_and_exclude() {
     // (Tasks OR ProjectA) AND NOT ProjectB.
     let filter = vec![Predicate::All(vec![
         Predicate::Any(vec![
-            Predicate::LinkedTo {
+            Predicate::Relation {
                 kind: "tag".into(),
-                to: "tasks".into(),
+                direction: LinkDirection::Out,
+                other: Some("tasks".into()),
             },
-            Predicate::LinkedTo {
+            Predicate::Relation {
                 kind: "tag".into(),
-                to: "project-a".into(),
+                direction: LinkDirection::Out,
+                other: Some("project-a".into()),
             },
         ]),
-        Predicate::Not(Box::new(Predicate::LinkedTo {
+        Predicate::Not(Box::new(Predicate::Relation {
             kind: "tag".into(),
-            to: "project-b".into(),
+            direction: LinkDirection::Out,
+            other: Some("project-b".into()),
         })),
     ])];
     let rows = protein::execute(&e.store, &base(Source::Record, filter))
@@ -611,7 +607,7 @@ async fn saved_protein_is_a_record() {
 
     let ast = serde_json::json!({
         "source": "record",
-        "where": [ { "quantity_lt": 0.0 } ]
+        "where": [{ "all": [{ "quantity_lt": 0.0 }] }]
     });
     e.act(
         Action::SaveProtein {
@@ -793,4 +789,140 @@ async fn auth_source_is_gated_by_read_permission_for_a_remote_subject() {
         !local.is_empty(),
         "the local Cell (subject: None) always sees it"
     );
+}
+
+#[tokio::test]
+async fn nested_record_filters_cover_text_dates_relations_and_assignee() {
+    let e = engine().await;
+    for kind in ["part-of", "assigned-to"] {
+        e.act(
+            Action::CreateConcept {
+                lingua: "g_local".into(),
+                name: kind.into(),
+                parents: vec![],
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    }
+    let root = make(&e, "root", RecordKind::Plain, 0.0).await;
+    let middle = make(&e, "middle", RecordKind::Plain, 0.0).await;
+    let leaf = make(&e, "leaf", RecordKind::Plain, 0.0).await;
+    let design = make(&e, "design-task", RecordKind::Plain, -1.0).await;
+    let ana = make(&e, "ana", RecordKind::Person, 1.0).await;
+    for (from, kind, to) in [
+        (&middle, "part-of", &root),
+        (&leaf, "part-of", &middle),
+        (&design, "assigned-to", &ana),
+    ] {
+        e.act(
+            Action::AssertRecord {
+                subject: from.clone(),
+                predicate: kind.into(),
+                object: Some(to.clone()),
+                quantity: None,
+                unit: None,
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    }
+    store::records::set_extension(
+        &e.store.pool,
+        &middle,
+        "work",
+        &serde_json::json!({"start":"2026-08-01", "due":"2026-08-10"}),
+    )
+    .await
+    .unwrap();
+
+    // (negative design text) OR (has both a parent and a child).
+    let query = base(
+        Source::Record,
+        vec![Predicate::Any(vec![
+            Predicate::All(vec![
+                Predicate::QuantityLt(0.0),
+                Predicate::TextContains("DESIGN".into()),
+                Predicate::Relation {
+                    kind: "assigned-to".into(),
+                    direction: LinkDirection::Out,
+                    other: Some("ana".into()),
+                },
+            ]),
+            Predicate::All(vec![
+                Predicate::Relation {
+                    kind: "part-of".into(),
+                    direction: LinkDirection::In,
+                    other: None,
+                },
+                Predicate::Relation {
+                    kind: "part-of".into(),
+                    direction: LinkDirection::Out,
+                    other: None,
+                },
+                Predicate::WorkDate {
+                    field: WorkDateField::Due,
+                    op: DateComparison::Lte,
+                    value: Some("2026-08-10".into()),
+                },
+            ]),
+        ])],
+    );
+    let rows = protein::execute(&e.store, &query).await.unwrap();
+    let ids: std::collections::HashSet<&str> =
+        rows.iter().filter_map(|row| row["uid"].as_str()).collect();
+    assert_eq!(
+        ids,
+        std::collections::HashSet::from([middle.as_str(), design.as_str()])
+    );
+}
+
+#[test]
+fn filter_groups_allow_ten_indents_and_reject_eleven() {
+    fn nested(levels: usize) -> Predicate {
+        let mut predicate = Predicate::UidEq("record".into());
+        for _ in 0..=levels {
+            predicate = Predicate::All(vec![predicate]);
+        }
+        predicate
+    }
+    assert!(protein::validate(&base(Source::Record, vec![nested(10)])).is_ok());
+    let error = protein::validate(&base(Source::Record, vec![nested(11)])).unwrap_err();
+    assert!(error.to_string().contains("protein_filter_depth_exceeded"));
+}
+
+#[test]
+fn filter_groups_cannot_be_negated() {
+    let query = base(
+        Source::Record,
+        vec![Predicate::Not(Box::new(Predicate::All(vec![
+            Predicate::KindEq("plain".into()),
+        ])))],
+    );
+    let error = protein::validate(&query).unwrap_err();
+    assert!(
+        error
+            .to_string()
+            .contains("protein_filter_group_negation_unsupported")
+    );
+}
+
+#[test]
+fn legacy_link_include_spelling_is_rejected() {
+    let result = serde_json::from_value::<Protein>(serde_json::json!({
+        "source": "record",
+        "include": { "links": { "kind": "tag" } }
+    }));
+    assert!(result.is_err());
+}
+
+#[test]
+fn legacy_filter_field_is_rejected() {
+    let result = serde_json::from_value::<Protein>(serde_json::json!({
+        "source": "record",
+        "filter": [{ "kind_eq": "plain" }]
+    }));
+    assert!(result.is_err());
 }

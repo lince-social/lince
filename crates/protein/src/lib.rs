@@ -15,7 +15,7 @@
 //! by total/concept/classification/kind/cause_kind/day, exact and
 //! unit-separated — the statistics workhorse, and equally at home totalling
 //! spending, stock consumption, or hours);
-//! ordering `topo(kind)` + field asc/desc; limit. Rows come out as JSON — the
+//! ordering by record fields and directed link rules; limit. Rows come out as JSON — the
 //! wire shape sands consume. Live subscriptions ride the engine's `fact_bus`
 //! (see `affects`): snapshot, then re-execute on relevant commits.
 //!
@@ -56,6 +56,7 @@ pub fn error_code(error: &ProteinError) -> Option<String> {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Protein {
     pub source: Source,
     #[serde(default, rename = "where")]
@@ -120,6 +121,10 @@ pub enum Source {
     Fact,
     /// The Lingua vocabulary.
     Concept,
+    /// Named collections of shared Concepts.
+    Lingua,
+    /// Current Record assertions: unary classifications and binary relations.
+    Assertion,
     /// Transfers with their derived status (blueprint VIII.1). The first row
     /// is `kind: "transfer_context"`, carrying server-derived viewer identity,
     /// creation capability, and blocker codes even when no transfers exist;
@@ -167,6 +172,14 @@ pub enum Source {
     /// is `uid` and `revision`: revising or voiding requires both, and a Fact
     /// has neither because a Fact is not editable.
     Entry,
+    /// Named beats a condition reads as `freq(@slug)`.
+    ///
+    /// A Frequency is a slug and a step, and that is all a row carries. The
+    /// beats themselves are not here and are not stored anywhere: `Cadence` is
+    /// pure, so a surface wanting the next date or the next twelve months
+    /// derives them from `every` and `anchor_at` rather than reading a table
+    /// that would have to be kept in sync with the step.
+    Frequency,
     /// Standing recurring declarations and the dates they produce.
     ///
     /// Rows are heterogeneous by `kind`: `"recurrence"` for a rule, and
@@ -195,15 +208,24 @@ pub enum Predicate {
     /// Lingua-DAG aware: `concept_in("food")` matches records tagged `@apple`
     /// through `apple -> fruit -> food` (blueprint III.1/VII.1).
     ConceptIn(String),
-    /// Link filter: matches records that have a link of `kind` (a Lingua
-    /// concept, e.g. `tag` / `assigned-to`) pointing to the record resolved
-    /// from `to` (e.g. a "Tasks" cluster record). Multi-valued — a record may
-    /// carry many such links — and the natural home for cluster tags. Compose
-    /// include/exclude with `any` / `not` / `all`, e.g. Tasks OR ProjectA but
-    /// NOT ProjectB.
-    LinkedTo {
+    /// Generic Record-link predicate. `other = None` asks whether a link of
+    /// this kind exists in the selected direction; otherwise `other` is
+    /// resolved as a Record slug/uid and must be the opposite endpoint.
+    Relation {
         kind: String,
-        to: String,
+        #[serde(default)]
+        direction: LinkDirection,
+        #[serde(default)]
+        other: Option<String>,
+    },
+    /// Case-insensitive search across a Record's head and body.
+    TextContains(String),
+    /// A comparison against the existing `work.start` or `work.due` date.
+    WorkDate {
+        field: WorkDateField,
+        op: DateComparison,
+        #[serde(default)]
+        value: Option<String>,
     },
     /// Promise source: state is one of these. Transfer source: at least one
     /// bundled promise currently has one of these states.
@@ -269,6 +291,24 @@ pub enum Predicate {
     OrganIn(Vec<String>),
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum WorkDateField {
+    Start,
+    Due,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DateComparison {
+    Eq,
+    Lt,
+    Lte,
+    Gt,
+    Gte,
+    Exists,
+}
+
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Include {
     pub facts: Option<FactsInclude>,
@@ -312,10 +352,8 @@ pub struct PromisesInclude {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct LinksInclude {
-    /// Legacy single-kind spelling. New sands should use `kinds`.
-    #[serde(default)]
-    pub kind: Option<String>,
     /// Explicit link kinds to include. Empty means no links; a `"*"` entry
     /// means EVERY kind (Record's all-links view).
     #[serde(default)]
@@ -328,7 +366,7 @@ pub struct LinksInclude {
     pub depth: usize,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum LinkDirection {
     Both,
@@ -355,12 +393,25 @@ fn default_messages_limit() -> usize {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Order {
-    /// Topological sort over the named link-kind graph, restricted to the
-    /// result set — the focus queue (blueprint Window 1b). Ties keep the
-    /// order produced by the remaining keys.
-    Topo(String),
     Asc(String),
     Desc(String),
+    /// A directed link is an ordering rule. `higher: from` means the source
+    /// endpoint is earlier in the result; `to` reverses that meaning.
+    Link(LinkOrder),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct LinkOrder {
+    pub kind: String,
+    pub higher: LinkEndpoint,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum LinkEndpoint {
+    From,
+    To,
 }
 
 /// Execute a Protein snapshot for the local Cell. Output rows are JSON — the
@@ -390,6 +441,7 @@ pub async fn execute_for_with_signer(
     subject: Option<&str>,
     installed_signer_actor: Option<&str>,
 ) -> Result<Vec<Value>, ProteinError> {
+    validate(protein)?;
     let visible = match subject {
         None => None,
         Some(s) => Some(store::visibility::visible_targets(&store.pool, s).await?),
@@ -408,9 +460,12 @@ pub async fn execute_for_with_signer(
         Source::Fact => execute_facts(store, protein, visible).await?,
         Source::Timeline => execute_timeline(store, protein, visible).await?,
         Source::Entry => execute_entries(store, protein, visible).await?,
+        Source::Frequency => execute_frequency(store).await?,
         Source::Recurrence => execute_recurrence(store, protein, visible).await?,
         // Lingua is shared vocabulary by design (III): concepts travel freely.
         Source::Concept => execute_concepts(store, protein).await?,
+        Source::Lingua => execute_linguas(store, protein).await?,
+        Source::Assertion => execute_assertions(store, protein).await?,
         Source::Transfer => {
             execute_transfers(
                 store,
@@ -450,6 +505,67 @@ pub async fn execute_for_with_signer(
             execute_karma(store, protein).await?
         }
     })
+}
+
+const MAX_FILTER_INDENT: usize = 10;
+
+pub fn validate(protein: &Protein) -> Result<(), ProteinError> {
+    fn visit(predicate: &Predicate, group_depth: usize) -> Result<(), ProteinError> {
+        match predicate {
+            Predicate::All(children) | Predicate::Any(children) => {
+                if group_depth > MAX_FILTER_INDENT {
+                    return Err(store::sqlx::Error::Protocol(
+                        "protein_filter_depth_exceeded:filter groups may be indented at most 10 levels"
+                            .into(),
+                    ));
+                }
+                for child in children {
+                    visit(child, group_depth + 1)?;
+                }
+            }
+            Predicate::Not(child) => {
+                if matches!(child.as_ref(), Predicate::All(_) | Predicate::Any(_)) {
+                    return Err(store::sqlx::Error::Protocol(
+                        "protein_filter_group_negation_unsupported:not may only wrap a condition"
+                            .into(),
+                    ));
+                }
+                visit(child, group_depth)?;
+            }
+            Predicate::WorkDate { op, value, .. } => {
+                if *op != DateComparison::Exists {
+                    let valid = value.as_deref().is_some_and(|date| {
+                        chrono::NaiveDate::parse_from_str(date, "%Y-%m-%d").is_ok()
+                    });
+                    if !valid {
+                        return Err(store::sqlx::Error::Protocol(
+                            "protein_work_date_invalid:work date must be YYYY-MM-DD".into(),
+                        ));
+                    }
+                }
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+
+    for predicate in &protein.filter {
+        visit(predicate, 0)?;
+    }
+    // UID is deliberately an internal, final tie-breaker for Record Proteins.
+    // It must never become a visible/authorable ordering choice: a saved
+    // Protein says what matters, while head + uid make every result stable.
+    if protein.source == Source::Record
+        && protein
+            .order
+            .iter()
+            .any(|order| matches!(order, Order::Asc(field) | Order::Desc(field) if field == "uid"))
+    {
+        return Err(store::sqlx::Error::Protocol(
+            "protein_record_uid_order_internal:uid is the implicit final Record tie-breaker".into(),
+        ));
+    }
+    Ok(())
 }
 
 /// Build the recipient-specific hosted/replica payload at the same visibility
@@ -1044,16 +1160,21 @@ async fn execute_karma(store: &Store, protein: &Protein) -> Result<Vec<Value>, P
     }
     for handle in store::karma::grants::list_handles(&store.pool).await? {
         let revoked = handle.status == nucleus::karma::GrantStatus::Revoked;
-        let head_is_active = handle.active_revision_hash.as_ref() == Some(&handle.head_revision_hash);
+        let head_is_active =
+            handle.active_revision_hash.as_ref() == Some(&handle.head_revision_hash);
         let can_activate = !revoked && !head_is_active;
-        let head = store::karma::grants::get_revision(&store.pool, &handle.record_uid, &handle.head_revision_hash)
-            .await?
-            .ok_or_else(|| {
-                karma_query_error(
-                    "protein_karma_grant_revision_missing",
-                    handle.head_revision_hash.as_str(),
-                )
-            })?;
+        let head = store::karma::grants::get_revision(
+            &store.pool,
+            &handle.record_uid,
+            &handle.head_revision_hash,
+        )
+        .await?
+        .ok_or_else(|| {
+            karma_query_error(
+                "protein_karma_grant_revision_missing",
+                handle.head_revision_hash.as_str(),
+            )
+        })?;
         rows.push(json!({
             "object_kind": "grant",
             "uid": handle.record_uid,
@@ -1195,7 +1316,7 @@ async fn execute_karma(store: &Store, protein: &Protein) -> Result<Vec<Value>, P
         let (field, descending) = match order {
             Order::Asc(field) => (field, false),
             Order::Desc(field) => (field, true),
-            Order::Topo(_) => unreachable!("validated Karma order rejects topo"),
+            Order::Link(_) => unreachable!("validated Karma order rejects link ordering"),
         };
         filtered.sort_by(|left, right| {
             let ordering = karma_sort_value(left, field).cmp(&karma_sort_value(right, field));
@@ -1256,10 +1377,10 @@ fn validate_karma_order(order: &[Order]) -> Result<(), ProteinError> {
     for value in order {
         let field = match value {
             Order::Asc(field) | Order::Desc(field) => field.as_str(),
-            Order::Topo(_) => {
+            Order::Link(_) => {
                 return Err(karma_query_error(
                     "protein_karma_unsupported_order",
-                    "topological ordering is not defined for Karma object rows",
+                    "link ordering is only defined for Record rows",
                 ));
             }
         };
@@ -1284,7 +1405,6 @@ fn karma_query_error(code: &str, message: impl std::fmt::Display) -> ProteinErro
     store::sqlx::Error::Protocol(format!("{code}:{message}"))
 }
 
-
 // ------------------------------------------------------------------- records
 
 /// Records matching a Protein's filter, ignoring aggregate/order/limit — the
@@ -1296,6 +1416,33 @@ pub async fn matching_records(
     protein: &Protein,
     visible: Option<&HashSet<String>>,
 ) -> Result<Vec<store::records::RecordRow>, ProteinError> {
+    fn supported(predicate: &Predicate) -> bool {
+        match predicate {
+            Predicate::All(children) | Predicate::Any(children) => children.iter().all(supported),
+            Predicate::Not(child) => supported(child),
+            Predicate::QuantityLt(_)
+            | Predicate::QuantityLte(_)
+            | Predicate::QuantityGt(_)
+            | Predicate::QuantityGte(_)
+            | Predicate::QuantityEq(_)
+            | Predicate::UidEq(_)
+            | Predicate::KindEq(_)
+            | Predicate::SlugEq(_)
+            | Predicate::ConceptIn(_)
+            | Predicate::Relation { .. }
+            | Predicate::TextContains(_)
+            | Predicate::WorkDate { .. }
+            | Predicate::Near { .. }
+            | Predicate::OrganEq(_)
+            | Predicate::OrganIn(_) => true,
+            _ => false,
+        }
+    }
+    if protein.filter.iter().any(|predicate| !supported(predicate)) {
+        return Err(store::sqlx::Error::Protocol(
+            "protein_record_unsupported_predicate:predicate is not defined for Records".into(),
+        ));
+    }
     let all = store::records::list_all(&store.pool).await?;
     let ctx = PredicateCtx::prepare(store, &protein.filter).await?;
     let mut rows: Vec<store::records::RecordRow> = Vec::new();
@@ -1328,6 +1475,12 @@ async fn execute_records(
     }
 
     let mut out = Vec::with_capacity(rows.len());
+    let concept_names: HashMap<String, String> = store::concepts::list_all(&store.pool)
+        .await?
+        .into_iter()
+        .map(|concept| (concept.uid, concept.canonical_name))
+        .collect();
+    let work = store::records::all_extensions(&store.pool, "work").await?;
     for r in rows {
         let record_unit_uid = r.unit_uid.clone();
         let mut row = json!({
@@ -1337,9 +1490,14 @@ async fn execute_records(
             "head": r.head,
             "body": r.body,
             "quantity": r.quantity_f64(),
-            "concept": r.concept_uid,
+            "concept": r.identity_predicate_uid,
             "unit": r.unit_uid,
             "organ": r.organ_uid,
+            "concept_name": r.identity_predicate_uid.as_ref().and_then(|uid| concept_names.get(uid)),
+            "created_at": r.created_at,
+            "updated_at": r.updated_at,
+            "start_date": work.get(&r.uid).and_then(|value| value.get("start")).and_then(Value::as_str),
+            "due_date": work.get(&r.uid).and_then(|value| value.get("due")).and_then(Value::as_str),
         });
         attach_includes(
             store,
@@ -1363,7 +1521,10 @@ fn aggregate_records(rows: &[store::records::RecordRow], agg: &Aggregate) -> Vec
         std::collections::BTreeMap::new();
     for r in rows {
         let key = match agg.by {
-            GroupBy::Concept => r.concept_uid.clone().unwrap_or_else(|| UNCLASSIFIED.into()),
+            GroupBy::Concept => r
+                .identity_predicate_uid
+                .clone()
+                .unwrap_or_else(|| UNCLASSIFIED.into()),
             GroupBy::Kind => r.kind.clone(),
             GroupBy::Total => TOTAL.into(),
             // fact-source group keys are meaningless on records
@@ -1408,38 +1569,167 @@ async fn order_records(
     mut rows: Vec<store::records::RecordRow>,
     order: &[Order],
 ) -> Result<Vec<store::records::RecordRow>, ProteinError> {
-    // apply field keys first (stable sorts in reverse order), topo last so the
-    // graph wins and field keys become the tie-break inside/among chains
+    // Every Record Protein has a deterministic, human-readable base order.
+    // Authored order items are applied afterwards as stable, higher-priority
+    // rules, so an empty `order` intentionally does not serialize this fact.
+    rows.sort_by(|left, right| {
+        left.head
+            .to_lowercase()
+            .cmp(&right.head.to_lowercase())
+            .then_with(|| left.uid.cmp(&right.uid))
+    });
+    let need_work = order.iter().any(|key| matches!(key, Order::Asc(field) | Order::Desc(field) if field == "start_date" || field == "due_date"));
+    let work = if need_work {
+        store::records::all_extensions(&store.pool, "work").await?
+    } else {
+        HashMap::new()
+    };
+    let concept_names: HashMap<String, String> = store::concepts::list_all(&store.pool)
+        .await?
+        .into_iter()
+        .map(|concept| (concept.uid, concept.canonical_name))
+        .collect();
+    let mut assignees = HashMap::new();
+    if order.iter().any(
+        |key| matches!(key, Order::Asc(field) | Order::Desc(field) if field == "assignee_name"),
+    ) {
+        if let Some(kind_uid) = store::concepts::resolve(&store.pool, "assigned-to").await? {
+            for link in store::assertions::binary_of_predicate(&store.pool, &kind_uid).await? {
+                if let Some(person) = store::records::get(&store.pool, &link.object_uid).await? {
+                    assignees.entry(link.subject_uid).or_insert(person.head);
+                }
+            }
+        }
+    }
+    // Stable sorting from lowest to highest priority makes the first authored
+    // item decisive. A link rule only rearranges connected rows; graph ties
+    // and cycles retain the lower-priority order passed into topo_order.
     for key in order.iter().rev() {
         match key {
             Order::Asc(f) | Order::Desc(f) => {
                 let desc = matches!(key, Order::Desc(_));
                 rows.sort_by(|a, b| {
-                    let ord = match f.as_str() {
-                        "quantity" => a.quantity_f64().total_cmp(&b.quantity_f64()),
-                        "slug" => a.slug.cmp(&b.slug),
-                        _ => std::cmp::Ordering::Equal, // created_at: list_all is already oldest-first
-                    };
-                    if desc { ord.reverse() } else { ord }
+                    let ord = record_field_cmp(a, b, f, &concept_names, &assignees, &work);
+                    if desc
+                        && !record_field_is_missing(a, f, &concept_names, &assignees, &work)
+                        && !record_field_is_missing(b, f, &concept_names, &assignees, &work)
+                    {
+                        ord.reverse()
+                    } else {
+                        ord
+                    }
                 });
             }
-            Order::Topo(_) => {}
-        }
-    }
-    if let Some(Order::Topo(kind)) = order.iter().find(|o| matches!(o, Order::Topo(_))) {
-        if let Some(kind_uid) = store::concepts::resolve(&store.pool, kind).await? {
-            let edges = store::links::edges_of_kind(&store.pool, &kind_uid).await?;
-            let uids: Vec<String> = rows.iter().map(|r| r.uid.clone()).collect();
-            let ordered = nucleus::graph::topo_order(&uids, &edges);
-            let mut by_uid: HashMap<String, store::records::RecordRow> =
-                rows.into_iter().map(|r| (r.uid.clone(), r)).collect();
-            rows = ordered
-                .into_iter()
-                .filter_map(|uid| by_uid.remove(&uid))
-                .collect();
+            Order::Link(rule) => {
+                if let Some(kind_uid) = store::concepts::resolve(&store.pool, &rule.kind).await? {
+                    let edges =
+                        store::assertions::edges_of_predicate(&store.pool, &kind_uid).await?;
+                    let edges = if rule.higher == LinkEndpoint::From {
+                        edges
+                    } else {
+                        edges
+                            .into_iter()
+                            .map(|edge| nucleus::graph::Edge {
+                                from: edge.to,
+                                to: edge.from,
+                                quantity: edge.quantity,
+                            })
+                            .collect()
+                    };
+                    let uids: Vec<String> = rows.iter().map(|r| r.uid.clone()).collect();
+                    let ordered = nucleus::graph::topo_order(&uids, &edges);
+                    let mut by_uid: HashMap<String, store::records::RecordRow> =
+                        rows.into_iter().map(|r| (r.uid.clone(), r)).collect();
+                    rows = ordered
+                        .into_iter()
+                        .filter_map(|uid| by_uid.remove(&uid))
+                        .collect();
+                }
+            }
         }
     }
     Ok(rows)
+}
+
+fn record_field_is_missing(
+    row: &store::records::RecordRow,
+    field: &str,
+    concepts: &HashMap<String, String>,
+    assignees: &HashMap<String, String>,
+    work: &HashMap<String, Value>,
+) -> bool {
+    match field {
+        "slug" => row.slug.is_none(),
+        "concept_name" | "concept" => row
+            .identity_predicate_uid
+            .as_ref()
+            .and_then(|uid| concepts.get(uid))
+            .is_none(),
+        "assignee_name" | "assignee" => !assignees.contains_key(&row.uid),
+        "start_date" => work
+            .get(&row.uid)
+            .and_then(|value| value.get("start"))
+            .and_then(Value::as_str)
+            .is_none(),
+        "due_date" => work
+            .get(&row.uid)
+            .and_then(|value| value.get("due"))
+            .and_then(Value::as_str)
+            .is_none(),
+        _ => false,
+    }
+}
+
+fn record_field_cmp(
+    left: &store::records::RecordRow,
+    right: &store::records::RecordRow,
+    field: &str,
+    concepts: &HashMap<String, String>,
+    assignees: &HashMap<String, String>,
+    work: &HashMap<String, Value>,
+) -> std::cmp::Ordering {
+    fn optional(left: Option<String>, right: Option<String>) -> std::cmp::Ordering {
+        match (left, right) {
+            (Some(a), Some(b)) => a.cmp(&b),
+            (Some(_), None) => std::cmp::Ordering::Less,
+            (None, Some(_)) => std::cmp::Ordering::Greater,
+            (None, None) => std::cmp::Ordering::Equal,
+        }
+    }
+    let work_date = |row: &store::records::RecordRow, name: &str| {
+        work.get(&row.uid)
+            .and_then(|value| value.get(name))
+            .and_then(Value::as_str)
+            .map(str::to_owned)
+    };
+    match field {
+        "title" | "head" => left.head.cmp(&right.head),
+        "description" | "body" => left.body.cmp(&right.body),
+        "uid" => left.uid.cmp(&right.uid),
+        "slug" => optional(left.slug.clone(), right.slug.clone()),
+        "kind" => left.kind.cmp(&right.kind),
+        "quantity" => left.quantity_f64().total_cmp(&right.quantity_f64()),
+        "concept_name" | "concept" => optional(
+            left.identity_predicate_uid
+                .as_ref()
+                .and_then(|uid| concepts.get(uid))
+                .cloned(),
+            right
+                .identity_predicate_uid
+                .as_ref()
+                .and_then(|uid| concepts.get(uid))
+                .cloned(),
+        ),
+        "assignee_name" | "assignee" => optional(
+            assignees.get(&left.uid).cloned(),
+            assignees.get(&right.uid).cloned(),
+        ),
+        "start_date" => optional(work_date(left, "start"), work_date(right, "start")),
+        "due_date" => optional(work_date(left, "due"), work_date(right, "due")),
+        "created_at" => left.created_at.cmp(&right.created_at),
+        "updated_at" => left.updated_at.cmp(&right.updated_at),
+        _ => std::cmp::Ordering::Equal,
+    }
 }
 
 async fn attach_includes(
@@ -1600,14 +1890,6 @@ async fn resolve_link_kind_uids(
     links: &LinksInclude,
 ) -> Result<Vec<String>, ProteinError> {
     let mut requested = Vec::new();
-    if let Some(kind) = links
-        .kind
-        .as_deref()
-        .map(str::trim)
-        .filter(|kind| !kind.is_empty())
-    {
-        requested.push(kind.to_string());
-    }
     for kind in &links.kinds {
         let kind = kind.trim();
         if !kind.is_empty() && !requested.iter().any(|existing| existing == kind) {
@@ -1630,16 +1912,15 @@ async fn links_for_record(
     record_uid: &str,
     links: &LinksInclude,
 ) -> Result<Vec<Value>, ProteinError> {
-    let wants_all = links.kind.as_deref().map(str::trim) == Some("*")
-        || links.kinds.iter().any(|kind| kind.trim() == "*");
+    let wants_all = links.kinds.iter().any(|kind| kind.trim() == "*");
     let rows = if wants_all {
-        store::links::all_links(&store.pool).await?
+        store::assertions::all_binary(&store.pool).await?
     } else {
         let kind_uids = resolve_link_kind_uids(store, links).await?;
         if kind_uids.is_empty() {
             return Ok(vec![]);
         }
-        store::links::links_of_kinds(&store.pool, &kind_uids).await?
+        store::assertions::binary_of_predicates(&store.pool, &kind_uids).await?
     };
 
     // BFS over the loaded kind-graph: hop 1 = direct links (depth 0/1 —
@@ -1652,8 +1933,8 @@ async fn links_for_record(
     for hop in 1..=max_hops {
         let mut next: HashSet<String> = HashSet::new();
         for link in &rows {
-            let outgoing = frontier.contains(&link.from);
-            let incoming = frontier.contains(&link.to);
+            let outgoing = frontier.contains(&link.subject_uid);
+            let incoming = frontier.contains(&link.object_uid);
             if !outgoing && !incoming {
                 continue;
             }
@@ -1664,9 +1945,9 @@ async fn links_for_record(
                 continue;
             }
             let other = if outgoing {
-                link.to.clone()
+                link.object_uid.clone()
             } else {
-                link.from.clone()
+                link.subject_uid.clone()
             };
             if !visited.contains(&other) {
                 next.insert(other.clone());
@@ -1676,14 +1957,14 @@ async fn links_for_record(
             }
             out.push(json!({
                 "uid": link.uid,
-                "from": link.from,
-                "to": link.to,
-                "kind_uid": link.kind_uid,
-                "kind": link.kind,
+                "from": link.subject_uid,
+                "to": link.object_uid,
+                "kind_uid": link.predicate_uid,
+                "kind": link.predicate,
                 "direction": if outgoing { "out" } else { "in" },
                 "other": other,
                 "hop": hop,
-                "quantity": link.quantity,
+                "quantity": link.quantity.map(|value| value.to_f64()),
                 "created_at": link.created_at,
             }));
         }
@@ -1709,28 +1990,33 @@ async fn threads_for_record(
     };
     let reply_to = store::concepts::resolve(&store.pool, "reply-to").await?;
     let references = store::concepts::resolve(&store.pool, "references").await?;
-    let threads = store::links::records_to(&store.pool, &thread_of, record_uid).await?;
+    let threads =
+        store::assertions::subjects_pointing_to(&store.pool, &thread_of, record_uid).await?;
     let mut out = Vec::new();
     for thread in threads {
         if thread.kind != "thread" || !thread.quantity.is_positive() {
             continue;
         }
         let mut messages = Vec::new();
-        for message in store::links::records_to(&store.pool, &message_in, &thread.uid).await? {
+        for message in
+            store::assertions::subjects_pointing_to(&store.pool, &message_in, &thread.uid).await?
+        {
             if message.kind != "message" || !message.quantity.is_positive() {
                 continue;
             }
             let parent_message_uid = match &reply_to {
-                Some(reply_to) => store::links::records_from(&store.pool, &message.uid, reply_to)
-                    .await?
-                    .into_iter()
-                    .next()
-                    .map(|r| r.uid),
+                Some(reply_to) => {
+                    store::assertions::objects_from_subject(&store.pool, &message.uid, reply_to)
+                        .await?
+                        .into_iter()
+                        .next()
+                        .map(|r| r.uid)
+                }
                 None => None,
             };
             let record_references = match &references {
                 Some(references) => {
-                    store::links::records_from(&store.pool, &message.uid, references)
+                    store::assertions::objects_from_subject(&store.pool, &message.uid, references)
                         .await?
                         .into_iter()
                         .map(|record| {
@@ -1813,10 +2099,14 @@ async fn creator_info(
 struct PredicateCtx {
     /// concept name/uid -> the DAG family (root + descendants) as a set.
     concept_families: HashMap<String, HashSet<String>>,
+    /// Record uid -> every directly asserted predicate, unary or binary.
+    record_concepts: HashMap<String, Vec<String>>,
     /// `near.of` anchor token -> the anchor's place (None if it has none).
     anchors: HashMap<String, Option<nucleus::place::Place>>,
-    /// (kind, to) token -> set of record uids that have a `kind`-link to `to`.
-    link_sources: HashMap<(String, String), HashSet<String>>,
+    /// (kind, direction, optional opposite endpoint) -> matching Records.
+    relations: HashMap<(String, LinkDirection, Option<String>), HashSet<String>>,
+    /// Batched `work` extension values, loaded only when a work-date leaf is used.
+    work: Option<HashMap<String, Value>>,
     /// organ token (slug or uid) -> resolved organ uid (`None` = unresolvable).
     organs: HashMap<String, Option<String>>,
 }
@@ -1825,8 +2115,10 @@ impl PredicateCtx {
     async fn prepare(store: &Store, preds: &[Predicate]) -> Result<Self, ProteinError> {
         let mut ctx = PredicateCtx {
             concept_families: HashMap::new(),
+            record_concepts: HashMap::new(),
             anchors: HashMap::new(),
-            link_sources: HashMap::new(),
+            relations: HashMap::new(),
+            work: None,
             organs: HashMap::new(),
         };
         for p in preds {
@@ -1838,6 +2130,12 @@ impl PredicateCtx {
     async fn prepare_one(&mut self, store: &Store, p: &Predicate) -> Result<(), ProteinError> {
         match p {
             Predicate::ConceptIn(name) => {
+                if self.record_concepts.is_empty() {
+                    self.record_concepts = store::ledger::all_record_concepts(&store.pool)
+                        .await?
+                        .into_iter()
+                        .collect();
+                }
                 let family = match store::concepts::resolve(&store.pool, name).await? {
                     Some(uid) => store::concepts::descendants_including(&store.pool, &uid)
                         .await?
@@ -1854,22 +2152,54 @@ impl PredicateCtx {
                 };
                 self.anchors.insert(of.clone(), place);
             }
-            Predicate::LinkedTo { kind, to } => {
-                let sources = match (
-                    store::concepts::resolve(&store.pool, kind).await?,
-                    store::records::resolve(&store.pool, to).await?,
-                ) {
-                    (Some(kind_uid), Some(target)) => {
-                        store::links::records_to(&store.pool, &kind_uid, &target.uid)
-                            .await?
-                            .into_iter()
-                            .map(|r| r.uid)
-                            .collect()
-                    }
-                    _ => HashSet::new(),
+            Predicate::Relation {
+                kind,
+                direction,
+                other,
+            } => {
+                let key = (kind.clone(), *direction, other.clone());
+                if self.relations.contains_key(&key) {
+                    return Ok(());
+                }
+                let Some(kind_uid) = store::concepts::resolve(&store.pool, kind).await? else {
+                    self.relations.insert(key, HashSet::new());
+                    return Ok(());
                 };
-                self.link_sources
-                    .insert((kind.clone(), to.clone()), sources);
+                let other_uid = match other {
+                    Some(token) => match store::records::resolve(&store.pool, token).await? {
+                        Some(record) => Some(record.uid),
+                        None => {
+                            self.relations.insert(key, HashSet::new());
+                            return Ok(());
+                        }
+                    },
+                    None => None,
+                };
+                let predicates =
+                    store::concepts::descendants_including(&store.pool, &kind_uid).await?;
+                let mut matches = HashSet::new();
+                for link in
+                    store::assertions::binary_of_predicates(&store.pool, &predicates).await?
+                {
+                    if matches!(*direction, LinkDirection::Out | LinkDirection::Both)
+                        && other_uid.as_ref().is_none_or(|uid| uid == &link.object_uid)
+                    {
+                        matches.insert(link.subject_uid.clone());
+                    }
+                    if matches!(*direction, LinkDirection::In | LinkDirection::Both)
+                        && other_uid
+                            .as_ref()
+                            .is_none_or(|uid| uid == &link.subject_uid)
+                    {
+                        matches.insert(link.object_uid);
+                    }
+                }
+                self.relations.insert(key, matches);
+            }
+            Predicate::WorkDate { .. } => {
+                if self.work.is_none() {
+                    self.work = Some(store::records::all_extensions(&store.pool, "work").await?);
+                }
             }
             Predicate::OrganEq(token) => {
                 let resolved = store::records::resolve(&store.pool, token)
@@ -1948,13 +2278,57 @@ impl PredicateCtx {
                 Predicate::KindEq(k) => r.kind == *k,
                 Predicate::SlugEq(s) => r.slug.as_deref() == Some(s.as_str()),
                 Predicate::ConceptIn(name) => {
-                    matches!((&r.concept_uid, self.concept_families.get(name)),
-                        (Some(c), Some(family)) if family.contains(c))
+                    self.concept_families.get(name).is_some_and(|family| {
+                        self.record_concepts
+                            .get(&r.uid)
+                            .is_some_and(|concepts| concepts.iter().any(|c| family.contains(c)))
+                    })
                 }
-                Predicate::LinkedTo { kind, to } => self
-                    .link_sources
-                    .get(&(kind.clone(), to.clone()))
-                    .is_some_and(|sources| sources.contains(&r.uid)),
+                Predicate::Relation {
+                    kind,
+                    direction,
+                    other,
+                } => self
+                    .relations
+                    .get(&(kind.clone(), *direction, other.clone()))
+                    .is_some_and(|records| records.contains(&r.uid)),
+                Predicate::TextContains(query) => {
+                    let query = query.to_lowercase();
+                    r.head.to_lowercase().contains(&query) || r.body.to_lowercase().contains(&query)
+                }
+                Predicate::WorkDate { field, op, value } => {
+                    let date = self
+                        .work
+                        .as_ref()
+                        .and_then(|work| work.get(&r.uid))
+                        .and_then(|work| {
+                            let key = match field {
+                                WorkDateField::Start => "start",
+                                WorkDateField::Due => "due",
+                            };
+                            work.get(key)
+                                .and_then(Value::as_str)
+                                .filter(|date| !date.is_empty())
+                        });
+                    match op {
+                        DateComparison::Exists => date.is_some(),
+                        DateComparison::Eq => {
+                            date.zip(value.as_deref()).is_some_and(|(a, b)| a == b)
+                        }
+                        DateComparison::Lt => {
+                            date.zip(value.as_deref()).is_some_and(|(a, b)| a < b)
+                        }
+                        DateComparison::Lte => {
+                            date.zip(value.as_deref()).is_some_and(|(a, b)| a <= b)
+                        }
+                        DateComparison::Gt => {
+                            date.zip(value.as_deref()).is_some_and(|(a, b)| a > b)
+                        }
+                        DateComparison::Gte => {
+                            date.zip(value.as_deref()).is_some_and(|(a, b)| a >= b)
+                        }
+                    }
+                }
                 Predicate::StateIn(_) => true, // promise-source predicate: vacuous on records
                 // Transfer-source predicates are validated and evaluated by
                 // `execute_transfers`; they remain vacuous on Record queries.
@@ -2011,10 +2385,37 @@ async fn execute_promises(
     protein: &Protein,
     visible: Option<&HashSet<String>>,
 ) -> Result<Vec<Value>, ProteinError> {
-    let states: Option<&Vec<String>> = protein.filter.iter().find_map(|p| match p {
-        Predicate::StateIn(s) => Some(s),
-        _ => None,
-    });
+    fn matches(
+        promise: &store::misc::PromiseRow,
+        predicate: &Predicate,
+    ) -> Result<bool, ProteinError> {
+        Ok(match predicate {
+            Predicate::All(children) => children
+                .iter()
+                .map(|child| matches(promise, child))
+                .collect::<Result<Vec<_>, _>>()?
+                .into_iter()
+                .all(|matched| matched),
+            Predicate::Any(children) => children
+                .iter()
+                .map(|child| matches(promise, child))
+                .collect::<Result<Vec<_>, _>>()?
+                .into_iter()
+                .any(|matched| matched),
+            Predicate::Not(child) => !matches(promise, child)?,
+            Predicate::StateIn(states) => {
+                states.iter().any(|state| state == promise.state.as_str())
+            }
+            Predicate::UidEq(uid) => uid == &promise.uid,
+            _ => {
+                return Err(store::sqlx::Error::Protocol(
+                    "protein_promise_unsupported_predicate:predicate is not defined for promises"
+                        .into(),
+                ));
+            }
+        })
+    }
+
     let mut out = Vec::new();
     for p in store::misc::list_promises(&store.pool).await? {
         if let Some(visible) = visible {
@@ -2028,10 +2429,15 @@ async fn execute_promises(
                 continue;
             }
         }
-        if let Some(states) = states {
-            if !states.iter().any(|s| s == p.state.as_str()) {
-                continue;
+        let mut selected = true;
+        for predicate in &protein.filter {
+            if !matches(&p, predicate)? {
+                selected = false;
+                break;
             }
+        }
+        if !selected {
+            continue;
         }
         out.push(json!({
             "uid": p.uid,
@@ -2208,7 +2614,7 @@ async fn execute_facts(
         record_unit.insert(r.uid.clone(), r.unit_uid.clone());
         // Identity concept first, so `group_by: concept` keys on what the thing
         // IS rather than on whichever tag happens to sort first.
-        let mut concepts: Vec<String> = r.concept_uid.clone().into_iter().collect();
+        let mut concepts: Vec<String> = r.identity_predicate_uid.clone().into_iter().collect();
         if let Some(extra) = counts_as.get(&r.uid) {
             for concept in extra {
                 if !concepts.contains(concept) {
@@ -2443,6 +2849,27 @@ async fn execute_entries(
 }
 
 /// Standing rules and the dates they imply.
+/// Every declared beat.
+///
+/// Deliberately unfiltered: the whole point of a Frequency is that it is a
+/// short, shared list a condition picks names out of, and a surface offering
+/// completions needs all of them anyway.
+async fn execute_frequency(store: &Store) -> Result<Vec<Value>, ProteinError> {
+    let mut rows = Vec::new();
+    for frequency in store::frequency::all(&store.pool).await? {
+        rows.push(serde_json::json!({
+            "kind": "frequency",
+            "uid": frequency.uid,
+            "slug": frequency.slug,
+            "head": frequency.head,
+            "every": frequency.every,
+            "anchor_at": frequency.anchor_at,
+            "created_at": frequency.created_at,
+        }));
+    }
+    Ok(rows)
+}
+
 async fn execute_recurrence(
     store: &Store,
     protein: &Protein,
@@ -2661,7 +3088,9 @@ async fn execute_timeline(
             nucleus::DecimalValue,
         >|
          -> Result<(), ProteinError> {
-            let slot = totals.entry(unit.clone()).or_insert_with(store::exact::zero);
+            let slot = totals
+                .entry(unit.clone())
+                .or_insert_with(store::exact::zero);
             *slot = slot.aligned_add(f.delta).ok_or_else(timeline_overflow)?;
             Ok(())
         };
@@ -2685,7 +3114,8 @@ async fn execute_timeline(
     // ---------------------------------------------------------------- declared
     // Everything ahead is something somebody already stated: a rule's date or a
     // promise. Nothing is extrapolated from the past.
-    let mut expected: std::collections::BTreeMap<(String, String), DeltaBucket> = Default::default();
+    let mut expected: std::collections::BTreeMap<(String, String), DeltaBucket> =
+        Default::default();
     let mut contributors: Vec<Value> = Vec::new();
     let forward_from = if now > from { now } else { from };
     let mut projection_truncated = false;
@@ -2835,17 +3265,17 @@ async fn execute_timeline(
     } else {
         None
     };
-    let scalar = |totals: &std::collections::BTreeMap<String, nucleus::DecimalValue>| match &single_unit
-    {
-        Some(unit) => Value::String(
-            totals
-                .get(unit)
-                .copied()
-                .unwrap_or_else(store::exact::zero)
-                .to_string(),
-        ),
-        None => Value::Null,
-    };
+    let scalar =
+        |totals: &std::collections::BTreeMap<String, nucleus::DecimalValue>| match &single_unit {
+            Some(unit) => Value::String(
+                totals
+                    .get(unit)
+                    .copied()
+                    .unwrap_or_else(store::exact::zero)
+                    .to_string(),
+            ),
+            None => Value::Null,
+        };
 
     let mut rows = vec![json!({
         "kind": "timeline_context",
@@ -2974,13 +3404,92 @@ async fn execute_concepts(store: &Store, protein: &Protein) -> Result<Vec<Value>
         if !name_matches {
             continue;
         }
+        let lingua_uids = store::linguas::lingua_uids_for_concept(&store.pool, &c.uid).await?;
         out.push(json!({
             "uid": c.uid,
             "name": c.canonical_name,
             "instinct": c.instinct,
             "parents": c.parents,
+            "linguas": lingua_uids,
         }));
         if protein.limit.is_some_and(|l| out.len() >= l) {
+            break;
+        }
+    }
+    Ok(out)
+}
+
+async fn execute_linguas(store: &Store, protein: &Protein) -> Result<Vec<Value>, ProteinError> {
+    let mut out = Vec::new();
+    for lingua in store::linguas::list(&store.pool).await? {
+        if !protein.filter.iter().all(|predicate| match predicate {
+            Predicate::UidEq(uid) => lingua.uid == *uid,
+            Predicate::SlugEq(name) => lingua.name == *name,
+            _ => true,
+        }) {
+            continue;
+        }
+        out.push(json!({
+            "uid": lingua.uid,
+            "name": lingua.name,
+            "owner_organ": lingua.owner_organ,
+            "visibility": lingua.visibility,
+            "concepts": store::linguas::concept_uids(&store.pool, &lingua.uid).await?,
+            "created_at": lingua.created_at,
+        }));
+        if protein.limit.is_some_and(|limit| out.len() >= limit) {
+            break;
+        }
+    }
+    Ok(out)
+}
+
+async fn execute_assertions(store: &Store, protein: &Protein) -> Result<Vec<Value>, ProteinError> {
+    let concept_names: HashMap<String, String> = store::concepts::list_all(&store.pool)
+        .await?
+        .into_iter()
+        .map(|concept| (concept.uid, concept.canonical_name))
+        .collect();
+    let mut family: Option<HashSet<String>> = None;
+    for predicate in &protein.filter {
+        if let Predicate::ConceptIn(name) = predicate {
+            family = Some(match store::concepts::resolve(&store.pool, name).await? {
+                Some(uid) => store::concepts::descendants_including(&store.pool, &uid)
+                    .await?
+                    .into_iter()
+                    .collect(),
+                None => HashSet::new(),
+            });
+        }
+    }
+    let mut out = Vec::new();
+    for assertion in store::assertions::list_active(&store.pool).await? {
+        if family
+            .as_ref()
+            .is_some_and(|family| !family.contains(&assertion.predicate_uid))
+        {
+            continue;
+        }
+        if !protein.filter.iter().all(|predicate| match predicate {
+            Predicate::UidEq(uid) => assertion.uid == *uid,
+            Predicate::ConceptIn(_) => true,
+            _ => true,
+        }) {
+            continue;
+        }
+        out.push(json!({
+            "uid": assertion.uid,
+            "subject": assertion.subject_uid,
+            "predicate": assertion.predicate_uid,
+            "predicate_name": concept_names.get(&assertion.predicate_uid),
+            "object": assertion.object_uid,
+            "role": assertion.role,
+            "quantity": assertion.quantity.map(|value| value.to_string()),
+            "unit": assertion.unit_uid,
+            "asserted_by": assertion.asserted_by,
+            "created_at": assertion.created_at,
+        }));
+        if protein.limit.is_some_and(|limit| out.len() >= limit) {
             break;
         }
     }
@@ -3781,7 +4290,9 @@ fn transfer_predicate_name(predicate: &Predicate) -> &'static str {
         Predicate::QuantityGte(_) => "quantity_gte",
         Predicate::QuantityEq(_) => "quantity_eq",
         Predicate::KindEq(_) => "kind_eq",
-        Predicate::LinkedTo { .. } => "linked_to",
+        Predicate::Relation { .. } => "relation",
+        Predicate::TextContains(_) => "text_contains",
+        Predicate::WorkDate { .. } => "work_date",
         Predicate::StateIn(_) => "state_in",
         Predicate::AtSince(_) => "at_since",
         Predicate::AtBefore(_) => "at_before",
@@ -3992,7 +4503,7 @@ impl TransferPredicateCtx {
                                 .record_uid
                                 .as_ref()
                                 .and_then(|uid| row.records_by_uid.get(uid))
-                                .and_then(|record| record.concept_uid.as_ref())
+                                .and_then(|record| record.identity_predicate_uid.as_ref())
                                 .is_some_and(|concept| family.contains(concept))
                         })
                     },
@@ -4006,7 +4517,7 @@ impl TransferPredicateCtx {
                                         .record_uid
                                         .as_ref()
                                         .and_then(|uid| row.records_by_uid.get(uid))
-                                        .and_then(|record| record.concept_uid.as_ref())
+                                        .and_then(|record| record.identity_predicate_uid.as_ref())
                                 })
                                 .is_some_and(|concept| family.contains(concept))
                         })
@@ -5814,10 +6325,10 @@ fn validate_transfer_order(order: &[Order]) -> Result<(), ProteinError> {
     for key in order {
         let field = match key {
             Order::Asc(field) | Order::Desc(field) => field.as_str(),
-            Order::Topo(_) => {
+            Order::Link(_) => {
                 return Err(transfer_query_error(
                     "protein_transfer_unsupported_order",
-                    "topo ordering is not defined for Transfers",
+                    "link ordering is only defined for Record rows",
                 ));
             }
         };
@@ -5852,7 +6363,7 @@ fn order_transfers(rows: &mut [TransferOutput], order: &[Order]) {
             let (field, descending) = match key {
                 Order::Asc(field) => (field.as_str(), false),
                 Order::Desc(field) => (field.as_str(), true),
-                Order::Topo(_) => continue,
+                Order::Link(_) => continue,
             };
             let compared = compare_transfer_field(left, right, field);
             if !compared.is_eq() {
@@ -6096,7 +6607,7 @@ async fn execute_transfers(
                 .record_uid
                 .as_ref()
                 .and_then(|r| records_by_uid.get(r))
-                .and_then(|record| record.concept_uid.clone())
+                .and_then(|record| record.identity_predicate_uid.clone())
                 .unwrap_or_else(|| "(none)".into());
             *balance.entry(key).or_insert(0.0) += p.delta;
         }
@@ -7781,7 +8292,7 @@ async fn execute_transfers(
                     let record = p.record_uid.as_ref().and_then(|uid| records_by_uid.get(uid));
                     let concept = signed
                         .and_then(|promise| promise.concept_uid.as_deref())
-                        .or_else(|| record.and_then(|record| record.concept_uid.as_deref()));
+                        .or_else(|| record.and_then(|record| record.identity_predicate_uid.as_deref()));
                     let unit = signed.and_then(|promise| promise.unit_uid.as_deref());
                     let signed_delta = signed.map_or(p.delta, |promise| promise.delta);
                     let person = signed
@@ -8575,7 +9086,7 @@ impl TransferViewer {
 // -------------------------------------------------------- canned Proteins
 
 /// The focus queue (blueprint Window 1b), as the Protein it always was:
-/// active plain Needs, `topo(order_kind)`, oldest-first tie-break.
+/// active plain Needs, ordered by its directed link kind, oldest-first tie-break.
 pub fn focus_queue(order_kind: &str) -> Protein {
     Protein {
         source: Source::Record,
@@ -8586,7 +9097,10 @@ pub fn focus_queue(order_kind: &str) -> Protein {
         include: Include::default(),
         aggregate: None,
         order: vec![
-            Order::Topo(order_kind.into()),
+            Order::Link(LinkOrder {
+                kind: order_kind.into(),
+                higher: LinkEndpoint::From,
+            }),
             Order::Asc("created_at".into()),
         ],
         limit: None,

@@ -90,7 +90,8 @@ async fn save_protein_creates_updates_deletes_and_reactivates() {
     assert_eq!(
         store::records::quantity(&e.store.pool, &created)
             .await
-            .unwrap().map(|q| q.to_f64()),
+            .unwrap()
+            .map(|q| q.to_f64()),
         Some(0.0)
     );
 
@@ -112,7 +113,8 @@ async fn save_protein_creates_updates_deletes_and_reactivates() {
     assert_eq!(
         store::records::quantity(&e.store.pool, &created)
             .await
-            .unwrap().map(|q| q.to_f64()),
+            .unwrap()
+            .map(|q| q.to_f64()),
         Some(1.0)
     );
 }
@@ -144,5 +146,29 @@ async fn save_protein_refuses_to_clobber_a_non_protein_slug() {
         )
         .await
         .is_err()
+    );
+}
+
+#[tokio::test]
+async fn save_protein_requires_the_canonical_root_group() {
+    let e = engine().await;
+    let result = e
+        .act(
+            Action::SaveProtein {
+                slug: "views.legacy-flat".into(),
+                head: "Legacy flat".into(),
+                ast: json!({
+                    "source": "record",
+                    "where": [{ "kind_eq": "plain" }, { "quantity_gt": 0 }]
+                }),
+            },
+            None,
+        )
+        .await;
+    assert!(
+        result
+            .unwrap_err()
+            .to_string()
+            .contains("saved filters must have one root")
     );
 }

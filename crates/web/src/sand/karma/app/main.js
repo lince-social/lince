@@ -22,12 +22,69 @@ import {
 import { renderEntries, wireCapture, wireEntryFilter } from "./entries.js";
 import { renderRules, wireRecurrenceForm } from "./recurrence.js";
 import { renderGraph, wireGraph } from "./graph.js";
+import { renderCanvas, wireCanvas } from "./canvas.js";
+import { renderBuilder, wireBuilder } from "./builder.js";
+import { renderFrequencies, wireFrequencyForm } from "./frequency.js";
 
 const byId = (id) => document.getElementById(id);
 
 const elements = {
   liveDot: byId("live-dot"),
   notice: byId("notice"),
+
+  karmaCanvas: byId("karma-canvas"),
+  canvasEmpty: byId("canvas-empty"),
+  openRulesPanel: byId("open-rules-panel"),
+  closeRulesPanel: byId("close-rules-panel"),
+  rulesPanel: byId("rules-panel"),
+
+  // --- rule builder
+  ruleBuilderForm: byId("rule-builder-form"),
+  conditionInput: byId("condition-input"),
+  conditionSuggest: byId("condition-suggest"),
+  conditionChips: byId("condition-chips"),
+  conditionError: byId("condition-error"),
+  conditionBank: byId("condition-bank"),
+  conditionBankEmpty: byId("condition-bank-empty"),
+  conditionBankToggle: byId("condition-bank-toggle"),
+  builderGate: byId("builder-gate"),
+  builderGateValue: byId("builder-gate-value"),
+  builderGateValueField: byId("builder-gate-value-field"),
+  builderTarget: byId("builder-target"),
+  builderConsequence: byId("builder-consequence"),
+  builderAmount: byId("builder-amount"),
+  builderAmountField: byId("builder-amount-field"),
+  builderConcept: byId("builder-concept"),
+  builderConceptField: byId("builder-concept-field"),
+  builderCommand: byId("builder-command"),
+  builderCommandField: byId("builder-command-field"),
+  consequenceBank: byId("consequence-bank"),
+  consequenceBankEmpty: byId("consequence-bank-empty"),
+  consequenceBankToggle: byId("consequence-bank-toggle"),
+  recordSearch: byId("record-search"),
+  recordResults: byId("record-results"),
+  recordResultsEmpty: byId("record-results-empty"),
+  builderSubmit: byId("builder-submit"),
+  builderReset: byId("builder-reset"),
+
+  // --- frequencies
+  toggleFrequencyForm: byId("toggle-frequency-form"),
+  frequencyForm: byId("frequency-form"),
+  cancelFrequency: byId("cancel-frequency"),
+  frequencySlug: byId("frequency-slug"),
+  frequencyPreset: byId("frequency-preset"),
+  freqYears: byId("freq-years"),
+  freqMonths: byId("freq-months"),
+  freqWeeks: byId("freq-weeks"),
+  freqDays: byId("freq-days"),
+  freqHours: byId("freq-hours"),
+  freqMinutes: byId("freq-minutes"),
+  freqSeconds: byId("freq-seconds"),
+  freqMilliseconds: byId("freq-milliseconds"),
+  frequencyAnchor: byId("frequency-anchor"),
+  frequencyPreview: byId("frequency-preview"),
+  frequencyList: byId("frequency-list"),
+  frequencyEmpty: byId("frequency-empty"),
 
   captureForm: byId("capture-form"),
   captureRecord: byId("capture-record"),
@@ -105,7 +162,11 @@ const elements = {
 
 /** Keep the two resource pickers in step with what actually exists. */
 function renderRecordPickers() {
-  for (const select of [elements.captureRecord, elements.ruleRecord]) {
+  for (const select of [
+    elements.captureRecord,
+    elements.ruleRecord,
+    elements.builderTarget,
+  ]) {
     const chosen = select.value;
     replaceChildren(
       select,
@@ -145,9 +206,12 @@ function render() {
   renderNotice();
   renderRecordPickers();
   renderConceptOptions();
+  renderBuilder(elements);
+  renderFrequencies(elements);
   renderEntries(elements);
   renderRules(elements);
   renderGraph(elements);
+  renderCanvas(elements);
 }
 
 function start() {
@@ -164,10 +228,13 @@ function start() {
     return;
   }
 
+  wireBuilder(elements);
+  wireFrequencyForm(elements);
   wireCapture(elements);
   wireEntryFilter(elements, subscribeEntries);
   wireRecurrenceForm(elements);
   wireGraph(elements);
+  wireCanvas(elements);
 
   onChange(render);
   subscribeAll();

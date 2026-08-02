@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Instinct</title>
+  <script src="/board/frame.js"></script>
+  <script src="/board/vendor/mermaid.min.js"></script>
+  <link rel="stylesheet" href="/board/lynx-ui.css" />
+  <!--
+    Instinct — the sand you read to learn Lince.
+
+    Replaces the old flat "Tutorial" sand with a chaptered document. Chapter 1
+    ("First Steps") is the practical frontend walkthrough; the rest go concept
+    by concept in dependency order. Diagrams are mermaid, converted from the
+    typst `visual-text` blocks in `docs/Sand: First Steps.md` — that source uses
+    single-dash `->` edges and unquoted `()` in labels, both of which the
+    mermaid parser rejects, so nothing there is copy-pasteable as-is.
+
+    RENDER LAZILY. mermaid measures rendered text to size its nodes, so a graph
+    inside a `display:none` chapter comes out mis-sized. Each chapter's graphs
+    render the first time that chapter is shown, then are left alone.
+
+    This sand reads nothing and writes nothing: no Protein, no Actions. It is
+    prose. The only host capability it wants is bridge_state.
+  -->
+  <style>
+    :root{
+      color-scheme:dark;
+      --text-strong:#f6f8fb;
+      --text-soft:#c8d0dc;
+      --text-muted:#788190;
+      --border:rgba(255,255,255,.08);
+      --border-strong:rgba(255,255,255,.16);
+      --surface:#171a1f;
+      --surface-raised:#1d2128;
+      --accent:#6366f1;
+      font-family:"IBM Plex Sans",Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;width:100%;height:100%;overflow:hidden;background:transparent}
+    button{font:inherit;cursor:pointer}
+
+    .instinct{
+      display:flex;flex-direction:column;width:100%;height:100%;
+      border:1px solid var(--border);border-radius:4px;
+      background:var(--surface);color:var(--text-strong);
+      overflow-wrap:anywhere;
+    }
+
+    /* ---- chapter nav: scrolls sideways instead of squeezing on narrow cards */
+    .instinct__nav{
+      display:flex;gap:4px;flex:0 0 auto;padding:8px;
+      border-bottom:1px solid var(--border);
+      overflow-x:auto;scrollbar-width:thin;
+    }
+    .instinct__tab{
+      flex:0 0 auto;padding:5px 10px;border:1px solid transparent;border-radius:3px;
+      background:transparent;color:var(--text-muted);
+      font-size:12px;font-weight:600;white-space:nowrap;
+    }
+    .instinct__tab:hover{color:var(--text-strong);background:rgba(255,255,255,.04)}
+    .instinct__tab.is-active{
+      border-color:var(--border-strong);background:var(--surface-raised);color:var(--text-strong);
+    }
+    .instinct__tab-index{margin-right:6px;color:var(--text-muted);font-variant-numeric:tabular-nums}
+    .instinct__tab.is-active .instinct__tab-index{color:var(--accent)}
+
+    .instinct__body{flex:1 1 auto;min-height:0;overflow:auto;padding:24px}
+
+    .instinct__foot{
+      display:flex;align-items:center;justify-content:space-between;gap:8px;
+      flex:0 0 auto;padding:8px;border-top:1px solid var(--border);
+    }
+    .instinct__step{
+      padding:5px 10px;border:1px solid var(--border);border-radius:3px;
+      background:var(--surface-raised);color:var(--text-soft);font-size:12px;
+    }
+    .instinct__step:hover:not(:disabled){border-color:var(--border-strong);color:var(--text-strong)}
+    .instinct__step:disabled{opacity:.3;cursor:not-allowed}
+    .instinct__where{color:var(--text-muted);font-size:11px;text-align:center;min-width:0}
+
+    /* ---- chapters */
+    .chapter{display:none}
+    .chapter.is-active{display:block}
+    .chapter__eyebrow{
+      margin:0 0 8px;color:var(--text-muted);
+      font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+    }
+    .chapter h1{margin:0 0 10px;font-size:24px;line-height:1.12}
+    .chapter h2{margin:26px 0 8px;font-size:15px;color:var(--text-strong)}
+    .chapter p{margin:0 0 10px;color:var(--text-soft);font-size:14px;line-height:1.5}
+    .chapter ul{display:grid;gap:8px;margin:10px 0 0;padding:0;list-style:none}
+    .chapter li{
+      position:relative;padding-left:18px;
+      color:var(--text-soft);font-size:13px;line-height:1.45;
+    }
+    .chapter li::before{
+      content:"";position:absolute;left:0;top:.62em;
+      width:6px;height:6px;border-radius:2px;background:var(--text-muted);
+    }
+    .chapter ol{display:grid;gap:8px;margin:10px 0 0;padding-left:20px}
+    .chapter ol li{padding-left:2px}
+    .chapter ol li::before{content:none}
+    .chapter ul+p,.chapter ol+p,.chapter__pair+p{margin-top:12px}
+    .chapter strong{color:var(--text-strong);font-weight:700}
+    .chapter code{
+      padding:1px 4px;border-radius:3px;background:rgba(255,255,255,.07);
+      color:var(--text-strong);font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:.92em;
+    }
+
+    /* two columns ONLY where two things are genuinely being compared */
+    .chapter__pair{
+      display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+      gap:18px;margin-top:12px;
+    }
+    .chapter__pair>*{min-width:0}
+    .chapter__note{
+      margin-top:18px;padding:14px;border:1px solid var(--border);border-radius:4px;
+      background:rgba(255,255,255,.03);
+    }
+    .chapter__note p:last-child{margin-bottom:0}
+
+    /* ---- diagrams sit inline in the prose, never in a parallel column */
+    .figure{margin:14px 0 16px}
+    .figure__frame{
+      padding:12px;border:1px solid var(--border);border-radius:4px;
+      background:var(--surface-raised);overflow-x:auto;
+    }
+    .figure pre.mermaid{margin:0;text-align:center;font-family:inherit;white-space:normal}
+    .figure pre.mermaid:not([data-rendered]){
+      color:var(--text-muted);font-size:11px;
+      font-family:"IBM Plex Mono",ui-monospace,monospace;text-align:left;white-space:pre-wrap;
+    }
+    .figure svg{max-width:100%;height:auto}
+    .figure__caption{
+      margin:6px 2px 0;color:var(--text-muted);font-size:11.5px;line-height:1.4;
+    }
+  </style>
+</head>
+<body>
+  <section class="instinct">
+    <nav class="instinct__nav" id="nav" aria-label="Chapters"></nav>
+
+    <div class="instinct__body" id="body">
+
+      <!--CHAPTERS-->
+
+    </div>
+
+    <footer class="instinct__foot">
+      <button class="instinct__step" id="prev" type="button">← Previous</button>
+      <span class="instinct__where" id="where"></span>
+      <button class="instinct__step" id="next" type="button">Next →</button>
+    </footer>
+  </section>
+
+  <script>
+    (() => {
+      const chapters = [...document.querySelectorAll(".chapter")];
+      const nav = document.getElementById("nav");
+      const bodyEl = document.getElementById("body");
+      const prev = document.getElementById("prev");
+      const next = document.getElementById("next");
+      const where = document.getElementById("where");
+      let current = -1;
+
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: "dark",
+        securityLevel: "strict",
+        flowchart: { htmlLabels: true, useMaxWidth: true, curve: "basis" },
+      });
+
+      // Tabs.
+      const tabs = chapters.map((chapter, index) => {
+        const tab = document.createElement("button");
+        tab.type = "button";
+        tab.className = "instinct__tab";
+        const number = document.createElement("span");
+        number.className = "instinct__tab-index";
+        number.textContent = String(index + 1);
+        tab.append(number, document.createTextNode(chapter.dataset.chapter || `Chapter ${index + 1}`));
+        tab.addEventListener("click", () => show(index));
+        nav.append(tab);
+        return tab;
+      });
+
+      // mermaid sizes nodes by MEASURING rendered text, so a graph inside a
+      // `display:none` chapter comes out wrong. Render on first activation
+      // only, and never again — `data-rendered` is both the guard and the flag
+      // the stylesheet uses to drop the raw-source fallback styling.
+      // Render one graph at a time through `mermaid.render(id, text)` rather
+      // than `mermaid.run({ nodes })`. `run()` ignores the id already on an
+      // element and derives its own from `Date.now()`, so any two diagrams in a
+      // batch that finish inside the same millisecond get the SAME id — and
+      // every graph in the batch lands in the first container while the rest
+      // stay empty. Passing the id ourselves is the only way to guarantee one
+      // svg per figure.
+      let diagramSeq = 0;
+
+      async function renderDiagrams(chapter) {
+        const pending = [...chapter.querySelectorAll("pre.mermaid:not([data-rendered])")];
+        for (const node of pending) {
+          node.dataset.rendered = "1";
+          try {
+            const { svg } = await mermaid.render(`instinct-diagram-${++diagramSeq}`, node.textContent);
+            node.innerHTML = svg;
+          } catch (error) {
+            // A bad graph must never take the prose down with it: leave that
+            // one showing its source and keep rendering the others.
+            delete node.dataset.rendered;
+            console.warn("instinct: diagram failed to render", error);
+          }
+        }
+      }
+
+      // `remember: false` for the restore-driven first render. The host's
+      // patchCardState persists the workspace, so remembering the chapter we
+      // just READ back would make merely opening the sand dirty the board.
+      function show(index, { remember = true } = {}) {
+        const next_ = Math.max(0, Math.min(chapters.length - 1, index));
+        if (next_ === current) return;
+        current = next_;
+        chapters.forEach((chapter, i) => chapter.classList.toggle("is-active", i === next_));
+        tabs.forEach((tab, i) => {
+          const active = i === next_;
+          tab.classList.toggle("is-active", active);
+          tab.setAttribute("aria-current", String(active));
+        });
+        prev.disabled = next_ === 0;
+        next.disabled = next_ === chapters.length - 1;
+        where.textContent = `${next_ + 1} / ${chapters.length} · ${chapters[next_].dataset.chapter || ""}`;
+        bodyEl.scrollTop = 0;
+        tabs[next_].scrollIntoView({ block: "nearest", inline: "nearest" });
+        void renderDiagrams(chapters[next_]);
+        // Remember the chapter per card, so reopening the board lands you back
+        // where you were reading. Falls back silently outside a board.
+        if (remember) {
+          try { window.LinceWidgetHost?.patchCardState?.({ instinct: { chapter: next_ } }); } catch {}
+        }
+      }
+
+      prev.addEventListener("click", () => show(current - 1));
+      next.addEventListener("click", () => show(current + 1));
+
+      // Restore the reading position if the host has one; otherwise chapter 1.
+      let restored = false;
+      if (typeof window.LinceWidgetHost?.onCardState === "function") {
+        window.LinceWidgetHost.onCardState((state) => {
+          if (restored) return;
+          restored = true;
+          const saved = Number(state?.instinct?.chapter);
+          show(Number.isFinite(saved) ? saved : 0, { remember: false });
+        });
+      }
+      if (!restored) show(0, { remember: false });
+    })();
+  </script>
+</body>
+</html>

@@ -28,9 +28,7 @@
 //! not move a number, so a timeline has nothing to draw for them.
 
 use crate::NucleusError;
-use crate::karma::{
-    Cadence, Carry, Condition, ConditionError, DecimalValue, ExactResolver, Gate,
-};
+use crate::karma::{Cadence, Carry, Condition, ConditionError, DecimalValue, ExactResolver, Gate};
 use chrono::{DateTime, Utc};
 use std::collections::HashMap;
 
@@ -341,8 +339,8 @@ pub fn proj_condition(
     gate: Gate,
     carry: Carry,
 ) -> Result<ProjCondition, NucleusError> {
-    let condition = Condition::parse(source)
-        .map_err(|error| NucleusError::Parse(error.to_string()))?;
+    let condition =
+        Condition::parse(source).map_err(|error| NucleusError::Parse(error.to_string()))?;
     Ok(ProjCondition {
         condition,
         gate,

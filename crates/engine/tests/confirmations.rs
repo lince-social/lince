@@ -126,7 +126,8 @@ fn role_specific_claims_gate_an_idempotent_settlement() {
         assert_eq!(
             store::records::quantity(&engine.store.pool, &apples)
                 .await
-                .unwrap().map(|q| q.to_f64()),
+                .unwrap()
+                .map(|q| q.to_f64()),
             Some(5.0)
         );
     });
@@ -246,7 +247,8 @@ fn partial_settlement_rejects_stale_review_and_compensates_only_private_applicat
         assert_eq!(
             store::records::quantity(&engine.store.pool, &apples)
                 .await
-                .unwrap().map(|q| q.to_f64()),
+                .unwrap()
+                .map(|q| q.to_f64()),
             Some(8.0)
         );
         let progress =
@@ -325,7 +327,8 @@ fn partial_settlement_rejects_stale_review_and_compensates_only_private_applicat
         assert_eq!(
             store::records::quantity(&engine.store.pool, &apples)
                 .await
-                .unwrap().map(|q| q.to_f64()),
+                .unwrap()
+                .map(|q| q.to_f64()),
             Some(10.0),
             "compensation reverses only the private Record application"
         );
@@ -372,7 +375,8 @@ fn partial_settlement_rejects_stale_review_and_compensates_only_private_applicat
         assert_eq!(
             store::records::quantity(&engine.store.pool, &apples)
                 .await
-                .unwrap().map(|q| q.to_f64()),
+                .unwrap()
+                .map(|q| q.to_f64()),
             Some(7.0),
             "the later slice applies only its own reviewed local delta"
         );
@@ -390,10 +394,10 @@ fn balance_is_advisory_and_conversation_uses_generic_threads() {
             .unwrap();
         let ana_balance = plain(&engine, "chat.ana.balance", 0.0).await;
         let carlos_balance = plain(&engine, "chat.carlos.balance", 300.0).await;
-        store::records::set_concept(&engine.store.pool, &ana_balance, Some(&balance))
+        store::assertions::set_identity(&engine.store.pool, &ana_balance, Some(&balance), None)
             .await
             .unwrap();
-        store::records::set_concept(&engine.store.pool, &carlos_balance, Some(&balance))
+        store::assertions::set_identity(&engine.store.pool, &carlos_balance, Some(&balance), None)
             .await
             .unwrap();
         let fixture = create_transfer(

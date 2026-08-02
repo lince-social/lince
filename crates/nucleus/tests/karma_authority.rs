@@ -2,10 +2,9 @@ use std::collections::BTreeSet;
 
 use nucleus::karma::{
     CanonicalHash, Capability, CapabilitySet, DelegationGrantRevision, DelegationGrantSchema,
-    DelegationGrantSpec, GrantAuthorityDenial, GrantAuthorityRequest, GrantProgramRevisionScope,
-    GrantBudget, GrantRevisionChange, GrantTarget, GrantTargetScope, GrantTemplateScope,
-    ReferenceKind, Slug,
-    TimestampMs, TypedUid, canonical_hash,
+    DelegationGrantSpec, GrantAuthorityDenial, GrantAuthorityRequest, GrantBudget,
+    GrantProgramRevisionScope, GrantRevisionChange, GrantTarget, GrantTargetScope,
+    GrantTemplateScope, ReferenceKind, Slug, TimestampMs, TypedUid, canonical_hash,
 };
 
 const PERSON_UID: &str = "p_01ARZ3NDEKTSV4RRFFQ69G5FAV";

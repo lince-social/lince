@@ -3,6 +3,7 @@
 //! (AniccaDB later) must not change the engine or Protein contracts.
 
 pub mod action_intents;
+pub mod assertions;
 pub mod auth;
 pub mod communication;
 pub mod concepts;
@@ -10,9 +11,10 @@ pub mod config;
 pub mod entries;
 pub mod exact;
 pub mod facts;
+pub mod frequency;
 pub mod karma;
 pub mod ledger;
-pub mod links;
+pub mod linguas;
 pub mod misc;
 pub mod organs;
 pub mod places;
@@ -55,6 +57,7 @@ impl Store {
                 sqlx::migrate::MigrateError::Execute(e) => e,
                 other => sqlx::Error::Protocol(other.to_string()),
             })?;
+        linguas::ensure_local(&pool).await?;
         Ok(Store { pool })
     }
 
@@ -75,6 +78,7 @@ impl Store {
                 sqlx::migrate::MigrateError::Execute(e) => e,
                 other => sqlx::Error::Protocol(other.to_string()),
             })?;
+        linguas::ensure_local(&pool).await?;
         Ok(Store { pool })
     }
 }

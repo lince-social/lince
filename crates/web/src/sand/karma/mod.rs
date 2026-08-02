@@ -55,6 +55,10 @@ const APP_FORMAT_JS: &str = include_str!("app/format.js");
 const APP_ENTRIES_JS: &str = include_str!("app/entries.js");
 const APP_RECURRENCE_JS: &str = include_str!("app/recurrence.js");
 const APP_GRAPH_JS: &str = include_str!("app/graph.js");
+const APP_CANVAS_JS: &str = include_str!("app/canvas.js");
+const APP_BLOCKS_JS: &str = include_str!("app/blocks.js");
+const APP_BUILDER_JS: &str = include_str!("app/builder.js");
+const APP_FREQUENCY_JS: &str = include_str!("app/frequency.js");
 
 pub(crate) fn package() -> LincePackage {
     let manifest = PackageManifest {
@@ -89,6 +93,13 @@ pub(crate) fn package() -> LincePackage {
         APP_RECURRENCE_JS.as_bytes().to_vec(),
     );
     assets.insert("app/graph.js".into(), APP_GRAPH_JS.as_bytes().to_vec());
+    assets.insert("app/canvas.js".into(), APP_CANVAS_JS.as_bytes().to_vec());
+    assets.insert("app/blocks.js".into(), APP_BLOCKS_JS.as_bytes().to_vec());
+    assets.insert("app/builder.js".into(), APP_BUILDER_JS.as_bytes().to_vec());
+    assets.insert(
+        "app/frequency.js".into(),
+        APP_FREQUENCY_JS.as_bytes().to_vec(),
+    );
 
     LincePackage::new_archive(
         Some("karma.lince".into()),
@@ -110,6 +121,9 @@ fn document(manifest: &PackageManifest) -> String {
                 title { (manifest.title.as_str()) }
                 link rel="stylesheet" href="styles.css";
                 script src="/board/frame.js" {}
+                // The canvas's camera is d3-zoom, not a force graph — same
+                // always-registered vendor route the relations sand uses.
+                script src="/board/vendor/d3.v7.min.js" {}
             }
             body {
                 (body::body())
@@ -131,6 +145,7 @@ mod tests {
         let assets = package.asset_paths().collect::<Vec<_>>();
 
         assert!(html.contains("/board/frame.js"));
+        assert!(html.contains("/board/vendor/d3.v7.min.js"));
         assert!(html.contains("app/main.js"));
         for asset in [
             "styles.css",
@@ -139,6 +154,10 @@ mod tests {
             "app/entries.js",
             "app/recurrence.js",
             "app/graph.js",
+            "app/canvas.js",
+            "app/blocks.js",
+            "app/builder.js",
+            "app/frequency.js",
         ] {
             assert!(assets.contains(&asset), "missing {asset}");
         }
@@ -182,8 +201,94 @@ mod tests {
             "step-seconds",
             "step-milliseconds",
         ] {
-            assert!(html.contains(field), "the {field} component must be typeable");
+            assert!(
+                html.contains(field),
+                "the {field} component must be typeable"
+            );
         }
+    }
+
+    #[test]
+    fn the_main_view_is_a_canvas_behind_a_rules_panel() {
+        // The face of the sand is a static card deck a camera pans over, not
+        // the form — every rule control still lives on the page, just tucked
+        // behind the corner's "+ Rule" button instead of being the first
+        // thing shown.
+        let html = package().html_document();
+        assert!(
+            html.contains(r#"id="karma-canvas""#),
+            "the card deck's canvas"
+        );
+        assert!(
+            html.contains(r#"id="rules-panel""#),
+            "the tucked-away form panel"
+        );
+        assert!(
+            html.contains(r#"id="open-rules-panel""#),
+            "the button that opens it"
+        );
+        assert!(
+            html.contains(r#"class="sand-tools""#),
+            "the kanban-style hover corner"
+        );
+        assert!(
+            html.contains(r#"class="page-corner""#),
+            "the corner triangle itself"
+        );
+    }
+
+    #[test]
+    fn the_panel_leads_with_the_builder_then_frequencies_then_the_slop() {
+        // The order is the point. A rule is authored from its three parts at
+        // the top, the beats those parts read are declared under it, and the
+        // pre-rewrite surface sits below a divider that says what it is rather
+        // than passing for a peer of the sections above it.
+        let html = package().html_document();
+        let builder = html.find("rule-builder-form").expect("the builder");
+        let frequency = html.find("frequency-form").expect("frequency CRUD");
+        let slop = html.find("slop down here").expect("the honest divider");
+        let capture = html.find("capture-form").expect("the older surface");
+        assert!(builder < frequency, "the builder comes first");
+        assert!(frequency < slop, "frequencies sit above the divider");
+        assert!(slop < capture, "everything older sits below it");
+    }
+
+    #[test]
+    fn a_condition_is_written_with_blocks_and_a_threshold_and_a_consequence() {
+        // The three parts of the drawing, in order, each with the control that
+        // authors it: an input that completes block names, a threshold that
+        // needs no number for its two commonest settings, and a consequence
+        // that can be borrowed from a rule that already does it.
+        let html = package().html_document();
+        assert!(
+            html.contains(r#"id="condition-input""#),
+            "the block-completing input"
+        );
+        assert!(
+            html.contains(r#"id="condition-suggest""#),
+            "the completion list"
+        );
+        assert!(
+            html.contains(r#"id="condition-chips""#),
+            "the blocks it names"
+        );
+        assert!(html.contains(r#"id="builder-gate""#), "the threshold");
+        assert!(
+            html.contains(r#"id="builder-consequence""#),
+            "the consequence"
+        );
+        assert!(
+            html.contains(r#"id="record-search""#),
+            "find a record by head or slug"
+        );
+        assert!(
+            html.contains(r#"id="condition-bank""#),
+            "conditions other rules read"
+        );
+        assert!(
+            html.contains(r#"id="consequence-bank""#),
+            "consequences they run"
+        );
     }
 
     #[test]
@@ -192,7 +297,10 @@ mod tests {
         // sand never called — so the only way to fix a wrong figure was to
         // delete the rule and lose its identity. The form does both jobs.
         let html = package().html_document();
-        assert!(html.contains("recurrence-submit"), "the submit label switches");
+        assert!(
+            html.contains("recurrence-submit"),
+            "the submit label switches"
+        );
         assert!(
             super::APP_RECURRENCE_JS.contains("revise-recurrence"),
             "revising must be reachable"
@@ -225,8 +333,14 @@ mod tests {
         // `freq(...)`, then a rule referencing another rule's rhythm exists
         // only in tests, and "check daily, act monthly" stays unsayable.
         let html = package().html_document();
-        assert!(html.contains("freq(@rule)"), "a rhythm must be a readable term");
-        assert!(html.contains("value(@rule)"), "so must another rule's number");
+        assert!(
+            html.contains("freq(@rule)"),
+            "a rhythm must be a readable term"
+        );
+        assert!(
+            html.contains("value(@rule)"),
+            "so must another rule's number"
+        );
         assert!(
             html.contains("sum_pos"),
             "and the two flow directions, which a net cannot answer"
@@ -257,7 +371,10 @@ mod tests {
         // in tests. Each kind needs a control, or the feature is unreachable.
         let html = package().html_document();
         for kind in ["capture-entry", "add-quantity", "set-quantity"] {
-            assert!(html.contains(kind), "the {kind} consequence needs a control");
+            assert!(
+                html.contains(kind),
+                "the {kind} consequence needs a control"
+            );
         }
         assert!(html.contains("rule-concept-action"), "concept consequences");
         for action in [r#"value="add""#, r#"value="remove""#, r#"value="move""#] {

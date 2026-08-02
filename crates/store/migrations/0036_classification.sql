@@ -24,19 +24,6 @@
 -- through concept_parent, so classifying a Fact @ice-cream makes it answer a
 -- query for @food and for @cost with no list to maintain.
 
--- A Record's ADDITIONAL concepts. `record.concept_uid` stays as the identity
--- concept -- what the thing is -- because Transfer matching and sync resolve
--- through it; this table carries everything it also counts as. Concept queries
--- read the union of the two.
-CREATE TABLE record_concept (
-    record_uid  TEXT NOT NULL REFERENCES record(uid),
-    concept_uid TEXT NOT NULL REFERENCES concept(uid),
-    at          TEXT NOT NULL,
-    actor_uid   TEXT,
-    UNIQUE(record_uid, concept_uid)
-);
-CREATE INDEX idx_record_concept_concept ON record_concept(concept_uid);
-
 -- Classification of a MOVEMENT, as an append-only log of assertions.
 --
 -- This is a sidecar keyed on fact_uid rather than a column on `fact`, and that

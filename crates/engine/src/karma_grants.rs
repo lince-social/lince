@@ -211,7 +211,7 @@ impl Engine {
                 request_id,
                 grant_uid,
                 expected_handle_revision,
-            actor_person_uid: principal.uid(),
+                actor_person_uid: principal.uid(),
             },
             now,
             principal.sign(),

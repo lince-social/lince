@@ -1,5 +1,5 @@
 //! Stage 8b foundation: the record-metadata Actions the table sand and record
-//! editor need — `edit-record-text`, `set-slug`, `set-concept`, `set-unit`,
+//! editor need — `edit-record-text`, `set-slug`, `set-identity`, `set-unit`,
 //! `set-extension`. Each must apply the store mutation AND drop an annotation
 //! fact so live subscriptions refresh (blueprint VII.4).
 
@@ -148,7 +148,7 @@ async fn set_slug_renames_and_clears() {
 }
 
 #[tokio::test]
-async fn set_concept_and_unit_classify_and_clear() {
+async fn set_identity_and_unit_classify_and_clear() {
     let e = engine().await;
     let uid = plain(&e, "apples").await;
     store::concepts::create(&e.store.pool, "fruit", &[])
@@ -159,9 +159,9 @@ async fn set_concept_and_unit_classify_and_clear() {
         .unwrap();
 
     e.act(
-        Action::SetConcept {
-            target: uid.clone(),
-            concept: Some("fruit".into()),
+        Action::SetIdentity {
+            subject: uid.clone(),
+            predicate: Some("fruit".into()),
         },
         None,
     )
@@ -187,15 +187,15 @@ async fn set_concept_and_unit_classify_and_clear() {
     let kg = store::concepts::resolve(&e.store.pool, "kilogram")
         .await
         .unwrap();
-    assert_eq!(row.concept_uid, fruit);
+    assert_eq!(row.identity_predicate_uid, fruit);
     assert_eq!(row.unit_uid, kg);
 
     // unknown concept name is an error
     assert!(
         e.act(
-            Action::SetConcept {
-                target: uid.clone(),
-                concept: Some("nope".into())
+            Action::SetIdentity {
+                subject: uid.clone(),
+                predicate: Some("nope".into()),
             },
             None
         )
@@ -205,9 +205,9 @@ async fn set_concept_and_unit_classify_and_clear() {
 
     // None clears
     e.act(
-        Action::SetConcept {
-            target: uid.clone(),
-            concept: None,
+        Action::SetIdentity {
+            subject: uid.clone(),
+            predicate: None,
         },
         None,
     )
@@ -218,7 +218,7 @@ async fn set_concept_and_unit_classify_and_clear() {
             .await
             .unwrap()
             .unwrap()
-            .concept_uid
+            .identity_predicate_uid
             .is_none()
     );
 }
@@ -240,7 +240,10 @@ async fn compensate_reverses_a_quantity_fact() {
         .await
         .unwrap();
     assert_eq!(
-        store::records::quantity(&e.store.pool, &uid).await.unwrap().map(|q| q.to_f64()),
+        store::records::quantity(&e.store.pool, &uid)
+            .await
+            .unwrap()
+            .map(|q| q.to_f64()),
         Some(5.0)
     );
     let fact_uid = out.facts[0].uid.clone();
@@ -253,7 +256,10 @@ async fn compensate_reverses_a_quantity_fact() {
     assert_eq!(comp.facts.len(), 1);
     assert_eq!(comp.facts[0].delta, store::exact::from_f64(-5.0));
     assert_eq!(
-        store::records::quantity(&e.store.pool, &uid).await.unwrap().map(|q| q.to_f64()),
+        store::records::quantity(&e.store.pool, &uid)
+            .await
+            .unwrap()
+            .map(|q| q.to_f64()),
         Some(0.0)
     );
 }
@@ -436,7 +442,7 @@ async fn record_threads_and_messages_are_records_plus_links() {
         .unwrap()
         .unwrap();
     assert_eq!(
-        store::links::records_from(&e.store.pool, &first, &references)
+        store::assertions::objects_from_subject(&e.store.pool, &first, &references)
             .await
             .unwrap()
             .into_iter()
@@ -461,12 +467,65 @@ async fn record_threads_and_messages_are_records_plus_links() {
 }
 
 #[tokio::test]
-async fn link_actions_annotate_affected_records() {
+async fn thread_and_message_deletion_use_normal_record_delete_permission() {
+    let e = engine().await;
+    let subject = plain(&e, "thread-delete-subject").await;
+    let thread = e
+        .act(
+            Action::CreateThread {
+                target: subject,
+                head: "Protected thread".into(),
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    let message = e
+        .act(
+            Action::CreateMessage {
+                thread: thread.clone(),
+                body: "Protected message".into(),
+                parent: None,
+                references: vec![],
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    let bystander = user_with(&e, "Bystander", "thread-delete-bystander", &[]).await;
+
+    for target in [&thread, &message] {
+        let err = e
+            .act(
+                Action::DeleteRecord {
+                    target: target.to_string(),
+                },
+                Some(bystander.to_string()),
+            )
+            .await
+            .expect_err("thread and message deletion must use record:delete permission");
+        assert!(err.to_string().contains("forbidden"));
+        assert!(
+            store::records::get(&e.store.pool, target)
+                .await
+                .unwrap()
+                .is_some()
+        );
+    }
+}
+
+#[tokio::test]
+async fn binary_assertion_actions_annotate_affected_records() {
     let e = engine().await;
     let a = plain(&e, "link-a").await;
     let b = plain(&e, "link-b").await;
     e.act(
         Action::CreateConcept {
+            lingua: "g_local".into(),
             name: "contributes".into(),
             parents: vec![],
         },
@@ -477,27 +536,33 @@ async fn link_actions_annotate_affected_records() {
 
     let added = e
         .act(
-            Action::AddLink {
-                from: a.clone(),
-                kind: "contributes".into(),
-                to: b.clone(),
+            Action::AssertRecord {
+                subject: a.clone(),
+                predicate: "contributes".into(),
+                object: Some(b.clone()),
                 quantity: None,
+                unit: None,
             },
             None,
         )
         .await
         .unwrap();
     assert_eq!(added.facts.len(), 2);
-    assert!(added.facts.iter().all(|fact| fact.delta == store::exact::from_f64(0.0)));
+    assert!(
+        added
+            .facts
+            .iter()
+            .all(|fact| fact.delta == store::exact::from_f64(0.0))
+    );
     assert!(added.facts.iter().any(|fact| fact.record_uid == a));
     assert!(added.facts.iter().any(|fact| fact.record_uid == b));
 
     let removed = e
         .act(
-            Action::RemoveLink {
-                from: a.clone(),
-                kind: "contributes".into(),
-                to: b.clone(),
+            Action::RetractRecord {
+                subject: a.clone(),
+                predicate: "contributes".into(),
+                object: Some(b.clone()),
             },
             None,
         )
@@ -507,13 +572,14 @@ async fn link_actions_annotate_affected_records() {
 }
 
 #[tokio::test]
-async fn relink_order_rewrites_adjacent_order_links() {
+async fn assertion_order_rewrites_adjacent_relationships() {
     let e = engine().await;
     let a = plain(&e, "order-a").await;
     let b = plain(&e, "order-b").await;
     let c = plain(&e, "order-c").await;
     e.act(
         Action::CreateConcept {
+            lingua: "g_local".into(),
             name: "order".into(),
             parents: vec![],
         },
@@ -522,11 +588,12 @@ async fn relink_order_rewrites_adjacent_order_links() {
     .await
     .unwrap();
     e.act(
-        Action::AddLink {
-            from: a.clone(),
-            kind: "order".into(),
-            to: c.clone(),
+        Action::AssertRecord {
+            subject: a.clone(),
+            predicate: "order".into(),
+            object: Some(c.clone()),
             quantity: None,
+            unit: None,
         },
         None,
     )
@@ -535,8 +602,8 @@ async fn relink_order_rewrites_adjacent_order_links() {
 
     let out = e
         .act(
-            Action::RelinkOrder {
-                kind: "order".into(),
+            Action::SetAssertionOrder {
+                predicate: "order".into(),
                 ordered: vec![a.clone(), b.clone(), c.clone()],
                 reverse: false,
             },
@@ -550,7 +617,7 @@ async fn relink_order_rewrites_adjacent_order_links() {
         .await
         .unwrap()
         .unwrap();
-    let edges = store::links::edges_of_kind(&e.store.pool, &kind_uid)
+    let edges = store::assertions::edges_of_predicate(&e.store.pool, &kind_uid)
         .await
         .unwrap();
     assert_eq!(edges.len(), 2);

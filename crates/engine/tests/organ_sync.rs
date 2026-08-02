@@ -101,7 +101,7 @@ async fn donation_flows_between_two_cells_and_feeds_the_decision_queue() {
         .await
         .unwrap();
     let apples = plain(&a, "apples.stock", 10.0).await;
-    store::records::set_concept(&a.store.pool, &apples, Some(&apple))
+    store::assertions::set_identity(&a.store.pool, &apples, Some(&apple), None)
         .await
         .unwrap();
     store::visibility::grant(&a.store.pool, "organ", Some(&b_organ), &apples)
@@ -117,7 +117,8 @@ async fn donation_flows_between_two_cells_and_feeds_the_decision_queue() {
     assert_eq!(
         store::records::quantity(&b.store.pool, &apples)
             .await
-            .unwrap().map(|q| q.to_f64()),
+            .unwrap()
+            .map(|q| q.to_f64()),
         Some(10.0)
     );
     assert_eq!(
@@ -133,7 +134,8 @@ async fn donation_flows_between_two_cells_and_feeds_the_decision_queue() {
     assert_eq!(
         store::records::quantity(&b.store.pool, &apples)
             .await
-            .unwrap().map(|q| q.to_f64()),
+            .unwrap()
+            .map(|q| q.to_f64()),
         Some(10.0)
     );
 
@@ -168,7 +170,7 @@ async fn donation_flows_between_two_cells_and_feeds_the_decision_queue() {
     .unwrap();
     let my_apples = plain(&b, "my.apples", -3.0).await;
     let bia = person(&b, "bia").await;
-    store::records::set_concept(&b.store.pool, &my_apples, Some(&apple))
+    store::assertions::set_identity(&b.store.pool, &my_apples, Some(&apple), None)
         .await
         .unwrap();
     store::misc::insert_promise(
@@ -243,7 +245,8 @@ async fn tampered_facts_are_quarantined_on_import() {
     assert_eq!(
         store::records::quantity(&b.store.pool, &apples)
             .await
-            .unwrap().map(|q| q.to_f64()),
+            .unwrap()
+            .map(|q| q.to_f64()),
         Some(0.0)
     );
 }
@@ -285,7 +288,9 @@ async fn declared_precision_survives_the_sync_wire() {
     assert_eq!(wire_sync(&a, &b, &b_organ).await, 1);
 
     assert_eq!(
-        store::organs::quarantine_count(&b.store.pool).await.unwrap(),
+        store::organs::quarantine_count(&b.store.pool)
+            .await
+            .unwrap(),
         0,
         "an exact delta's scale survives the wire, so signatures still verify"
     );

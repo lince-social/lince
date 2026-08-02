@@ -10,11 +10,11 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use nucleus::karma::{
-    BinaryOperator, CapabilitySet, DecimalPrecision, DecimalValue, DeclaredUnit, EvaluationErrorCode,
-    EvaluationLimits, ExpressionAst, FrozenEvaluationContext, LiteralValue, LocalId, NodeAst,
-    NodeOperation, OutputRef, PortContract, ProgramAst, ProgramSchema, ProofIssueCode, ProofStatus,
-    ReferenceKind, Rounding, Sensitivity, Slug, TypedUid, ValueType, evaluate_program,
-    prove_program,
+    BinaryOperator, CapabilitySet, DecimalPrecision, DecimalValue, DeclaredUnit,
+    EvaluationErrorCode, EvaluationLimits, ExpressionAst, FrozenEvaluationContext, LiteralValue,
+    LocalId, NodeAst, NodeOperation, OutputRef, PortContract, ProgramAst, ProgramSchema,
+    ProofIssueCode, ProofStatus, ReferenceKind, Rounding, Sensitivity, Slug, TypedUid, ValueType,
+    evaluate_program, prove_program,
 };
 
 const KG: &str = "c_01ARZ3NDEKTSV4RRFFQ69G5FAV";
@@ -41,7 +41,10 @@ fn scaling_a_quantity_by_a_plain_decimal_keeps_its_unit() {
     )
     .unwrap();
 
-    assert_eq!(result.outputs.get(&id("answer")), Some(&quantity("1.80", KG)));
+    assert_eq!(
+        result.outputs.get(&id("answer")),
+        Some(&quantity("1.80", KG))
+    );
     // 12.00 * 0.15 needs four digits and was asked for two, but the two it did
     // not need were zeros, so nothing was discarded.
     assert!(result.rounding.is_empty());
@@ -102,7 +105,11 @@ fn each_rounding_rule_gives_the_answer_it_names() {
             Some(&decimal(expected)),
             "{rounding:?} should produce {expected}"
         );
-        assert_eq!(result.rounding.len(), 1, "{rounding:?} discarded a remainder");
+        assert_eq!(
+            result.rounding.len(),
+            1,
+            "{rounding:?} discarded a remainder"
+        );
     }
 }
 
@@ -383,7 +390,10 @@ fn cancellation_never_drops_a_digit_that_would_change_the_rounding() {
 
     let half_up = value.mul_exact(one, 2, Rounding::HalfUp).unwrap();
     assert!(!half_up.exact);
-    assert_eq!(half_up.value, DecimalValue::parse_canonical(2, "0.13").unwrap());
+    assert_eq!(
+        half_up.value,
+        DecimalValue::parse_canonical(2, "0.13").unwrap()
+    );
 
     let half_even = value.mul_exact(one, 2, Rounding::HalfEven).unwrap();
     assert!(!half_even.exact);

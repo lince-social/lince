@@ -136,13 +136,15 @@ fn a_sale_applies_only_reviewed_occurrences_owned_by_the_signer() {
         assert_eq!(
             store::records::quantity(&engine.store.pool, &bike)
                 .await
-                .unwrap().map(|q| q.to_f64()),
+                .unwrap()
+                .map(|q| q.to_f64()),
             Some(0.0)
         );
         assert_eq!(
             store::records::quantity(&engine.store.pool, &ana_balance)
                 .await
-                .unwrap().map(|q| q.to_f64()),
+                .unwrap()
+                .map(|q| q.to_f64()),
             Some(300.0)
         );
         assert_eq!(

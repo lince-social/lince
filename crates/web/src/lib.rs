@@ -748,6 +748,14 @@ pub async fn serve_cell_api_only(
             "/board/vendor/d3.LICENSE.txt",
             get(static_assets::d3_license),
         )
+        .route(
+            "/board/vendor/mermaid.min.js",
+            get(static_assets::mermaid_js),
+        )
+        .route(
+            "/board/vendor/mermaid.LICENSE.txt",
+            get(static_assets::mermaid_license),
+        )
         .route("/api/auth/login", post(login))
         .route("/auth/login", post(login))
         .route("/host/auth/login", post(login))

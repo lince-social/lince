@@ -600,22 +600,33 @@ fn set_relation<T: Ord>(old: &BTreeSet<T>, new: &BTreeSet<T>) -> ScopeRelation {
 /// Absence of a limit is unlimited, so adding one narrows and dropping one
 /// widens. Where both sides carry a limit, the replacement may only go lower.
 fn budget_relation(old: &GrantBudget, new: &GrantBudget) -> ScopeRelation {
-    let intents = limit_relation(old.max_intents.as_ref(), new.max_intents.as_ref(), |old, new| {
-        // A smaller cap is the narrower one.
-        old.cmp(new)
-    });
-    let window = limit_relation(old.per_window.as_ref(), new.per_window.as_ref(), |old, new| {
-        // Conservative on purpose: a replacement counts as narrower only when it
-        // allows no more events over no shorter a window. A lower rate carrying a
-        // bigger burst is Mixed, not narrower, and is refused.
-        match (new.count.cmp(&old.count), new.duration_ms.get().cmp(&old.duration_ms.get())) {
-            (std::cmp::Ordering::Equal, std::cmp::Ordering::Equal) => std::cmp::Ordering::Equal,
-            (std::cmp::Ordering::Greater, _) | (_, std::cmp::Ordering::Less) => {
-                std::cmp::Ordering::Less
+    let intents = limit_relation(
+        old.max_intents.as_ref(),
+        new.max_intents.as_ref(),
+        |old, new| {
+            // A smaller cap is the narrower one.
+            old.cmp(new)
+        },
+    );
+    let window = limit_relation(
+        old.per_window.as_ref(),
+        new.per_window.as_ref(),
+        |old, new| {
+            // Conservative on purpose: a replacement counts as narrower only when it
+            // allows no more events over no shorter a window. A lower rate carrying a
+            // bigger burst is Mixed, not narrower, and is refused.
+            match (
+                new.count.cmp(&old.count),
+                new.duration_ms.get().cmp(&old.duration_ms.get()),
+            ) {
+                (std::cmp::Ordering::Equal, std::cmp::Ordering::Equal) => std::cmp::Ordering::Equal,
+                (std::cmp::Ordering::Greater, _) | (_, std::cmp::Ordering::Less) => {
+                    std::cmp::Ordering::Less
+                }
+                _ => std::cmp::Ordering::Greater,
             }
-            _ => std::cmp::Ordering::Greater,
-        }
-    });
+        },
+    );
     let quantity = limit_relation(
         old.quantity_limit.as_ref(),
         new.quantity_limit.as_ref(),

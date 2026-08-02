@@ -215,7 +215,7 @@
       function listSpec(tag) {
         return {
           source: "record",
-          filter: [{ linked_to: { kind: "tagged", to: tag } }],
+          where: [{ relation: { kind: "tagged", direction: "out", other: tag } }],
           include: {
             links: { kinds: ["participant"], direction: "out" },
             // threads come oldest-first and truncate at the limit, so we ask

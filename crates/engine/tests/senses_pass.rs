@@ -4,8 +4,8 @@
 use chrono::{DateTime, Utc};
 use engine::Engine;
 use engine::actions::Action;
-use nucleus::{Cause, NewFact, PromiseState, RecordKind};
 use nucleus::karma::{Cadence, Consequence};
+use nucleus::{Cause, NewFact, PromiseState, RecordKind};
 
 mod support;
 use store::records::NewRecord;
@@ -70,7 +70,7 @@ async fn demand_token_samples_the_hourly_histogram() {
         .await
         .unwrap();
     let apples = plain(&e, "apples.stock", 0.0).await;
-    store::records::set_concept(&e.store.pool, &apples, Some(&food))
+    store::assertions::set_identity(&e.store.pool, &apples, Some(&food), None)
         .await
         .unwrap();
     plain(&e, "mirror", 0.0).await;
@@ -131,7 +131,7 @@ async fn senses_heartbeat_arm_drafts_decisions_once() {
         .await
         .unwrap();
     let apples = plain(&e, "apples.stock", -3.0).await;
-    store::records::set_concept(&e.store.pool, &apples, Some(&food))
+    store::assertions::set_identity(&e.store.pool, &apples, Some(&food), None)
         .await
         .unwrap();
 

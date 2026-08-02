@@ -124,7 +124,8 @@ fn mul(a: DecimalValue, b: DecimalValue) -> Result<DecimalValue, ConditionError>
     // Exact if it fits. Only a product of two already-precise values needs
     // rounding, and then it rounds once, here, rather than drifting.
     if scale <= MAX_DECIMAL_SCALE as u16 {
-        return DecimalValue::from_mantissa(scale as u8, mantissa).map_err(|_| ConditionError::Overflow);
+        return DecimalValue::from_mantissa(scale as u8, mantissa)
+            .map_err(|_| ConditionError::Overflow);
     }
     downscale(scale.min(255) as u8, mantissa, MAX_DECIMAL_SCALE).ok_or(ConditionError::Overflow)
 }
@@ -167,11 +168,21 @@ pub enum Gate {
     NonZero,
     /// The old `=*`: fire whatever the number is, including zero.
     Always,
-    Lt { value: DecimalValue },
-    Le { value: DecimalValue },
-    Gt { value: DecimalValue },
-    Ge { value: DecimalValue },
-    Eq { value: DecimalValue },
+    Lt {
+        value: DecimalValue,
+    },
+    Le {
+        value: DecimalValue,
+    },
+    Gt {
+        value: DecimalValue,
+    },
+    Ge {
+        value: DecimalValue,
+    },
+    Eq {
+        value: DecimalValue,
+    },
 }
 
 impl Gate {
@@ -183,20 +194,20 @@ impl Gate {
         if text == "!=0" {
             return Ok(Gate::NonZero);
         }
-        let (build, rest): (fn(DecimalValue) -> Gate, &str) = if let Some(r) = text.strip_prefix("<=")
-        {
-            ((|v| Gate::Le { value: v }), r)
-        } else if let Some(r) = text.strip_prefix(">=") {
-            ((|v| Gate::Ge { value: v }), r)
-        } else if let Some(r) = text.strip_prefix("==") {
-            ((|v| Gate::Eq { value: v }), r)
-        } else if let Some(r) = text.strip_prefix('<') {
-            ((|v| Gate::Lt { value: v }), r)
-        } else if let Some(r) = text.strip_prefix('>') {
-            ((|v| Gate::Gt { value: v }), r)
-        } else {
-            return Err(ConditionError::Parse(format!("`{text}` is not a gate")));
-        };
+        let (build, rest): (fn(DecimalValue) -> Gate, &str) =
+            if let Some(r) = text.strip_prefix("<=") {
+                ((|v| Gate::Le { value: v }), r)
+            } else if let Some(r) = text.strip_prefix(">=") {
+                ((|v| Gate::Ge { value: v }), r)
+            } else if let Some(r) = text.strip_prefix("==") {
+                ((|v| Gate::Eq { value: v }), r)
+            } else if let Some(r) = text.strip_prefix('<') {
+                ((|v| Gate::Lt { value: v }), r)
+            } else if let Some(r) = text.strip_prefix('>') {
+                ((|v| Gate::Gt { value: v }), r)
+            } else {
+                return Err(ConditionError::Parse(format!("`{text}` is not a gate")));
+            };
         let value = DecimalValue::parse_inferred(rest.trim())
             .map_err(|_| ConditionError::Parse(format!("`{text}` has no number")))?;
         Ok(build(value))
@@ -288,8 +299,7 @@ pub struct Condition {
 
 impl Condition {
     pub fn parse(source: &str) -> Result<Condition, ConditionError> {
-        let expr =
-            Expr::parse(source).map_err(|error| ConditionError::Parse(error.to_string()))?;
+        let expr = Expr::parse(source).map_err(|error| ConditionError::Parse(error.to_string()))?;
         Ok(Condition {
             source: source.to_string(),
             expr,
@@ -306,7 +316,10 @@ impl Condition {
         self.expr.tokens()
     }
 
-    pub fn evaluate(&self, resolver: &mut dyn ExactResolver) -> Result<DecimalValue, ConditionError> {
+    pub fn evaluate(
+        &self,
+        resolver: &mut dyn ExactResolver,
+    ) -> Result<DecimalValue, ConditionError> {
         evaluate(&self.expr, resolver)
     }
 }
@@ -503,7 +516,10 @@ mod tests {
         map.set("quantity", "apples.stock", "8");
         let condition = Condition::parse("@apples.stock").unwrap();
         let gate = Gate::parse("<3").unwrap();
-        assert_eq!(decide(&condition, &gate, &Carry::One, &mut map).unwrap(), None);
+        assert_eq!(
+            decide(&condition, &gate, &Carry::One, &mut map).unwrap(),
+            None
+        );
 
         map.set("quantity", "apples.stock", "2");
         let carried = decide(&condition, &gate, &Carry::One, &mut map)
@@ -536,7 +552,10 @@ mod tests {
         assert_eq!(eval("(@a > @b) || (@b > 10)", &mut map).to_string(), "1");
         // Short-circuit: the right side is never read, so an unknown reference
         // there is not an error the person has to care about.
-        assert_eq!(eval("(@b > 10) && @nothing.here", &mut map).to_string(), "0");
+        assert_eq!(
+            eval("(@b > 10) && @nothing.here", &mut map).to_string(),
+            "0"
+        );
     }
 
     #[test]

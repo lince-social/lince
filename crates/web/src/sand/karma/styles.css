@@ -19,8 +19,14 @@
   box-sizing: border-box;
 }
 
+html,
+body {
+  height: 100%;
+}
+
 body {
   margin: 0;
+  overflow: hidden;
   background: var(--bg);
   color: var(--text);
   font-size: 14px;
@@ -28,45 +34,144 @@ body {
 }
 
 .karmaApp {
-  display: grid;
-  gap: 14px;
-  padding: 14px;
-  max-width: 1200px;
-  margin: 0 auto;
+  position: relative;
+  height: 100vh;
+  overflow: hidden;
 }
 
-/* ------------------------------------------------------------------ toolbar */
+/* --------------------------------------------------------------- main view */
+/* The canvas is the sand's face: a fixed deck of record cards a person pans
+   and zooms with the same drag/wheel gestures as the relations sand, minus
+   any physics — nothing here needs to settle because nothing pulls on
+   anything else. */
 
-.toolbar {
+.canvasView {
+  position: absolute;
+  inset: 0;
+}
+
+#karma-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none;
+}
+
+#karma-canvas:active {
+  cursor: grabbing;
+}
+
+.canvasEmpty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.notice {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 60px;
+  z-index: 20;
+}
+
+/* ------------------------------------------------------------- sand-tools */
+/* Ported from the kanban sand: the lower-right corner carries the connection
+   state and hides every button behind it until hovered or focused. */
+
+.sand-tools {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 35;
+  width: 16px;
+  height: 16px;
+}
+
+.sand-tools__row {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: none;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius) 0 0 0;
+  background: var(--panel);
+}
+
+.sand-tools:hover .sand-tools__row,
+.sand-tools:focus-within .sand-tools__row {
+  display: flex;
+}
+
+.sand-tools:hover > .page-corner,
+.sand-tools:focus-within > .page-corner {
+  display: none;
+}
+
+.page-corner {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  background: #6b7c8c;
+  clip-path: polygon(100% 0, 100% 100%, 0 100%);
+}
+
+.page-corner[data-live="true"] {
+  background: var(--accent);
+}
+
+/* ------------------------------------------------------------- side panel */
+/* Every rule-authoring and history control the sand has ever had, unmoved —
+   just tucked behind the "+ Rule" button instead of being the first thing
+   the sand shows. Ported from the relations sand's own side panel. */
+
+.sidePanel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  width: min(430px, 92vw);
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--line);
+  background: var(--bg);
+  box-shadow: -12px 0 30px rgba(0, 0, 0, 0.35);
+}
+
+.sidePanel[hidden] {
+  display: none;
+}
+
+.sidePanelHead {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--line);
 }
 
-.eyebrow {
-  color: var(--muted);
-  font-size: 0.72rem;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-}
-
-.toolbar h1 {
+.sidePanelHead h2 {
   margin: 0;
-  font-size: 1.3rem;
+  font-size: 1rem;
 }
 
-.liveDot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: #6b7c8c;
-  display: inline-block;
-}
-
-.liveDot[data-live="true"] {
-  background: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-dim);
+.sidePanelBody {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  display: grid;
+  gap: 14px;
+  align-content: start;
 }
 
 /* ------------------------------------------------------------------- panels */
@@ -641,4 +746,251 @@ button {
   .noteField {
     flex: 1 1 100%;
   }
+}
+
+/* ------------------------------------------------------------ rule builder */
+
+.builderPanel {
+  display: grid;
+  gap: 14px;
+}
+
+.builderStep {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+}
+
+.builderStepHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.builderStep h3 {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* The condition editor. A contenteditable holding the same text the parser
+   reads — the chips are drawn over that text, never stored instead of it. */
+
+.smartInputWrap {
+  position: relative;
+}
+
+.smartInput {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  cursor: text;
+}
+
+.smartInput:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-dim);
+}
+
+.smartInput::placeholder {
+  color: var(--muted);
+}
+
+/* The blocks the condition names, drawn beneath the source rather than over
+   it. Aligning chips on top of live text needs exact font metrics and breaks
+   the moment a chip is wider than the token it covers. */
+.chipStrip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-height: 22px;
+}
+
+.tokenChip {
+  display: inline-block;
+  padding: 1px 7px;
+  margin: 0 1px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  font-family: "IBM Plex Sans", sans-serif;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.tokenChip[data-kind="frequency"] {
+  border-color: rgba(127, 178, 229, 0.5);
+  color: var(--expected);
+}
+
+.tokenChip[data-kind="record"] {
+  border-color: rgba(143, 227, 170, 0.45);
+  color: var(--accent);
+}
+
+.tokenChip[data-kind="unknown"] {
+  border-color: rgba(242, 133, 127, 0.5);
+  color: var(--loss);
+}
+
+/* The suggestion list. Overlaid rather than inline so accepting a block never
+   reflows the formula out from under the caret. */
+
+.suggestList {
+  position: absolute;
+  z-index: 5;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  max-height: 220px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.45);
+}
+
+.suggestList[hidden] {
+  display: none;
+}
+
+.suggestItem {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 9px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.suggestItem[aria-selected="true"],
+.suggestItem:hover {
+  background: var(--accent-dim);
+}
+
+.suggestName {
+  font-weight: 600;
+}
+
+.suggestMeta {
+  color: var(--muted);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 11px;
+}
+
+.fieldError {
+  margin: 0;
+  color: var(--loss);
+  font-size: 12px;
+}
+
+.fieldError[hidden] {
+  display: none;
+}
+
+/* Conditions and consequences already written elsewhere, offered for reuse. */
+
+.bankList,
+.recordResults {
+  display: grid;
+  gap: 4px;
+  max-height: 190px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.bankList[hidden] {
+  display: none;
+}
+
+.bankItem,
+.recordResult {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--panel);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bankItem:hover,
+.recordResult:hover,
+.bankItem:focus-visible,
+.recordResult:focus-visible {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+}
+
+.bankItemSource,
+.recordResultSlug {
+  color: var(--muted);
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.recordResultQuantity {
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------------------------------------------------------- frequency */
+
+.frequencyPanel .stepGrid {
+  margin: 0;
+}
+
+.frequencyBeat {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* --------------------------------------------------------------------- slop */
+
+.slopDivider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.slopDivider::before,
+.slopDivider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
 }

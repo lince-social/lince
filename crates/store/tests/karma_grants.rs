@@ -79,9 +79,13 @@ async fn the_grant_lifecycle_moves_authority_only_at_explicit_steps() {
     );
     assert_eq!(activate_fact.delta, store::exact::from_f64(1.0));
     assert_eq!(record_quantity(&store, &created.record_uid).await, 1.0);
-    let evaluation = evaluate_active(&store.pool, &created.record_uid, &request(&program.record_uid))
-        .await
-        .unwrap();
+    let evaluation = evaluate_active(
+        &store.pool,
+        &created.record_uid,
+        &request(&program.record_uid),
+    )
+    .await
+    .unwrap();
     assert!(evaluation.decision.allowed);
     assert_eq!(evaluation.handle_revision, Some(2));
     assert_eq!(
@@ -123,11 +127,15 @@ async fn the_grant_lifecycle_moves_authority_only_at_explicit_steps() {
         vec![GrantAuthorityDenial::CapabilityMissing]
     );
     assert!(
-        evaluate_active(&store.pool, &created.record_uid, &request(&program.record_uid))
-            .await
-            .unwrap()
-            .decision
-            .allowed
+        evaluate_active(
+            &store.pool,
+            &created.record_uid,
+            &request(&program.record_uid)
+        )
+        .await
+        .unwrap()
+        .decision
+        .allowed
     );
 
     let (revoked, revoke_fact) = committed(
@@ -190,10 +198,14 @@ async fn the_grant_lifecycle_moves_authority_only_at_explicit_steps() {
     // Every revision ever published stays readable; only the live pointer moved.
     assert_eq!(count(&store, "karma_grant_revision").await, 2);
     assert!(
-        get_revision(&store.pool, &created.record_uid, &created.head_revision_hash)
-            .await
-            .unwrap()
-            .is_some()
+        get_revision(
+            &store.pool,
+            &created.record_uid,
+            &created.head_revision_hash
+        )
+        .await
+        .unwrap()
+        .is_some()
     );
 }
 
@@ -207,7 +219,11 @@ async fn narrowing_a_draft_grant_never_activates_it() {
     let (created, _) = committed(
         create(
             &store.pool,
-            create_input(&program.record_uid, "narrow.draft", "grant-create-narrow-draft"),
+            create_input(
+                &program.record_uid,
+                "narrow.draft",
+                "grant-create-narrow-draft",
+            ),
             now(0),
             signer,
         )
@@ -286,12 +302,18 @@ async fn replay_is_exact_and_stale_expectations_write_nothing() {
     let program = host_program(&store, "grant.replay", "grant-program-2").await;
     let input = create_input(&program.record_uid, "replay.one", "grant-create-replay");
 
-    let (created, created_fact) =
-        committed(create(&store.pool, input.clone(), now(0), signer).await.unwrap());
+    let (created, created_fact) = committed(
+        create(&store.pool, input.clone(), now(0), signer)
+            .await
+            .unwrap(),
+    );
     let facts_after_create = count(&store, "fact").await;
 
-    let (replayed_handle, replayed_fact) =
-        replayed(create(&store.pool, input.clone(), now(9), signer).await.unwrap());
+    let (replayed_handle, replayed_fact) = replayed(
+        create(&store.pool, input.clone(), now(9), signer)
+            .await
+            .unwrap(),
+    );
     assert_eq!(replayed_handle, created);
     assert_eq!(replayed_fact, created_fact);
     assert_eq!(count(&store, "fact").await, facts_after_create);
@@ -377,7 +399,11 @@ async fn only_a_proven_subset_of_a_live_program_can_be_granted() {
     let other = host_program(&store, "grant.other", "grant-program-5").await;
 
     // The Program must exist.
-    let mut unknown = create_input(&program.record_uid, "unknown.program", "grant-create-unknown");
+    let mut unknown = create_input(
+        &program.record_uid,
+        "unknown.program",
+        "grant-create-unknown",
+    );
     unknown.grant.program_uid = uid(ReferenceKind::Program, MISSING_GRANT_UID);
     assert!(create(&store.pool, unknown, now(0), signer).await.is_err());
 
@@ -391,7 +417,11 @@ async fn only_a_proven_subset_of_a_live_program_can_be_granted() {
     // Grant management capability is never delegable through a grant.
     let mut escalating = create_input(&program.record_uid, "escalate", "grant-create-escalate");
     escalating.grant.capabilities = CapabilitySet::new([Capability::KarmaGrantWiden]);
-    assert!(create(&store.pool, escalating, now(2), signer).await.is_err());
+    assert!(
+        create(&store.pool, escalating, now(2), signer)
+            .await
+            .is_err()
+    );
 
     let (created, _) = committed(
         create(
@@ -484,7 +514,11 @@ async fn only_the_signing_principal_may_hold_or_change_a_grant() {
     let (created, _) = committed(
         create(
             &store.pool,
-            create_input(&program.record_uid, "principal.one", "grant-create-principal"),
+            create_input(
+                &program.record_uid,
+                "principal.one",
+                "grant-create-principal",
+            ),
             now(2),
             signer,
         )
@@ -620,7 +654,9 @@ async fn authority_denies_on_each_dimension_separately() {
             GrantAuthorityDenial::ProgramRevisionMismatch,
         ),
         (
-            with(&allowed, |r| r.candidate_template = slug("record.set-quantity")),
+            with(&allowed, |r| {
+                r.candidate_template = slug("record.set-quantity")
+            }),
             GrantAuthorityDenial::CandidateTemplateMismatch,
         ),
         (
@@ -918,7 +954,11 @@ async fn a_revoked_grant_can_be_replaced_by_an_identical_one() {
     let (replacement, _) = committed(
         create(
             &store.pool,
-            create_input(&program.record_uid, "replace.two", "grant-create-replacement"),
+            create_input(
+                &program.record_uid,
+                "replace.two",
+                "grant-create-replacement",
+            ),
             now(2),
             signer,
         )

@@ -57,19 +57,22 @@ async fn sum_variants_split_inflow_outflow_and_lag() {
     assert_eq!(
         store::facts::sum_window(pool, &apples, 3 * day, now)
             .await
-            .unwrap().to_f64(),
+            .unwrap()
+            .to_f64(),
         -2.0
     );
     assert_eq!(
         store::facts::sum_pos_window(pool, &apples, 3 * day, now)
             .await
-            .unwrap().to_f64(),
+            .unwrap()
+            .to_f64(),
         2.0
     );
     assert_eq!(
         store::facts::sum_neg_window(pool, &apples, 3 * day, now)
             .await
-            .unwrap().to_f64(),
+            .unwrap()
+            .to_f64(),
         -4.0
     );
 

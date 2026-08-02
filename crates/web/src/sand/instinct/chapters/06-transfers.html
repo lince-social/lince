@@ -1,0 +1,66 @@
+      <!-- ============================= 6. TRANSFERS ======================== -->
+      <article class="chapter" data-chapter="Transfers">
+        <p class="chapter__eyebrow">Chapter 6 — Between people</p>
+        <h1>Transfers</h1>
+        <p>
+          A Need in your Cell and a Contribution in someone else's do not meet by themselves.
+          A <strong>Transfer</strong> is how the two sides agree to move something across the
+          boundary.
+        </p>
+        <div class="figure">
+          <div class="figure__frame">
+<pre class="mermaid">graph LR
+  A["Person A"] --> C["1 unit of currency"]
+  B["Person B"] --> D["2 apples"]
+  C <--> D</pre>
+          </div>
+          <p class="figure__caption">A trade: each side has what the other is short of.</p>
+        </div>
+        <p>
+          Nothing about that picture is special-cased for money. <strong>Lince has no money in it.</strong>
+          A currency is an ordinary record used as a unit, and converting between currencies is a
+          rule you write — exactly like converting hours to days. A trade of apples for hours needs
+          no new machinery.
+        </p>
+
+        <h2>It does not have to be even</h2>
+        <p>
+          A Transfer where only one side moves is a donation. A Transfer whose other side is
+          enormous, or vague, or far away, is a request:
+        </p>
+        <div class="figure">
+          <div class="figure__frame">
+<pre class="mermaid">graph LR
+  A["Person A: 1 unit"] --> B["Person B: a brazillion apples"]</pre>
+          </div>
+          <p class="figure__caption">Wildly lopsided, and still a perfectly valid Transfer to record.</p>
+        </div>
+        <p>And it does not have to be two-sided at all:</p>
+        <div class="figure">
+          <div class="figure__frame">
+<pre class="mermaid">graph LR
+  A["A"] --> B["B"]
+  B --> C["C"]
+  C --> A</pre>
+          </div>
+          <p class="figure__caption">A three-party loop: nobody trades with one partner, everyone is settled.</p>
+        </div>
+
+        <h2>What a Transfer actually is</h2>
+        <p>
+          A Transfer bundles <strong>promises</strong> — each one saying who owes what to whom, in
+          which unit, by when. Its status is derived from the states of those promises rather than
+          set by hand, which is why the Transfer sand can tell you what stage a deal is at without
+          anyone maintaining a status field.
+        </p>
+        <ul>
+          <li>Terms are versioned: a Transfer's signed revision is part of what everyone agreed to.</li>
+          <li>Participants have roles — creator, participant, invitee, observer — and a Protein can filter by yours.</li>
+          <li>Settlement moves the quantities on both sides at once, leaving facts behind on each.</li>
+        </ul>
+        <p>
+          The same shape covers a marketplace purchase, splitting a bill, planning a party, or a
+          project where four people each bring something different. It is one mechanism because it
+          was one idea all along: a Need on one side, a Contribution on the other.
+        </p>
+      </article>

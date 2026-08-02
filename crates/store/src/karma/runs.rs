@@ -100,8 +100,7 @@ pub async fn process_next_occurrence(
             .members
             .get(ordinal)
             .ok_or_else(|| protocol("Program epoch cursor is outside its frozen member set"))?;
-        let prepared =
-            evaluate_member(pool, &occurrence, &epoch, member, limits, resolver).await?;
+        let prepared = evaluate_member(pool, &occurrence, &epoch, member, limits, resolver).await?;
         let (stored, advanced) = persist_run(pool, &epoch, prepared, now).await?;
         runs.push(stored);
         epoch = advanced;

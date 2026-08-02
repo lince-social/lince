@@ -2,12 +2,12 @@ use std::{collections::BTreeMap, num::NonZeroU32};
 
 use nucleus::karma::{
     CadenceAst, CadenceBound, CadenceStepAst, CanonicalHash, CivilDateTime, CivilWeekday,
-    CompiledSchedule, DslErrorKind, DurationBinding, DurationMs, FoldPolicy,
-    FrequencyAst, FrequencyCadenceAst, FrequencyCompileErrorKind, FrequencyParameterDefinition,
+    CompiledSchedule, DslErrorKind, DurationBinding, DurationMs, FoldPolicy, FrequencyAst,
+    FrequencyCadenceAst, FrequencyCompileErrorKind, FrequencyParameterDefinition,
     FrequencyParameterValue, FrequencySchema, FrequencyTimerAst, GapPolicy, InactiveGapPolicy,
-    InvalidDay, LocalId, MissedPolicy, OverloadPolicy, PositiveIntegerBinding,
-    RephasePolicy, Slug, TimeZoneId, TzdbRevision, TzdbVersion, WeekdaySet, canonical_hash,
-    format_frequency, parse_frequency,
+    InvalidDay, LocalId, MissedPolicy, OverloadPolicy, PositiveIntegerBinding, RephasePolicy, Slug,
+    TimeZoneId, TzdbRevision, TzdbVersion, WeekdaySet, canonical_hash, format_frequency,
+    parse_frequency,
 };
 
 #[test]
@@ -491,4 +491,3 @@ fn duration(milliseconds: i64) -> DurationBinding {
 fn nonzero(value: u32) -> NonZeroU32 {
     NonZeroU32::new(value).unwrap()
 }
-

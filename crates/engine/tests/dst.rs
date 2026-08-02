@@ -9,8 +9,8 @@
 
 use chrono::{DateTime, Utc};
 use engine::Engine;
-use nucleus::{Cause, NewFact, RecordKind};
 use nucleus::karma::{Cadence, Consequence};
+use nucleus::{Cause, NewFact, RecordKind};
 
 mod support;
 use store::records::NewRecord;
@@ -162,7 +162,12 @@ async fn quantities(e: &Engine) -> Vec<(String, f64)> {
         .await
         .unwrap()
         .into_iter()
-        .map(|r| (r.slug.clone().unwrap_or_else(|| r.uid.clone()), r.quantity_f64()))
+        .map(|r| {
+            (
+                r.slug.clone().unwrap_or_else(|| r.uid.clone()),
+                r.quantity_f64(),
+            )
+        })
         .collect();
     all.sort_by(|x, y| x.0.cmp(&y.0));
     all

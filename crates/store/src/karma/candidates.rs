@@ -236,7 +236,13 @@ where
     );
     fact.signature = sign(&fact.hash);
     crate::facts::insert(&mut tx, &fact).await?;
-    crate::records::bump_quantity(&mut tx, &candidate.proposal.program_uid, crate::exact::zero(), &at).await?;
+    crate::records::bump_quantity(
+        &mut tx,
+        &candidate.proposal.program_uid,
+        crate::exact::zero(),
+        &at,
+    )
+    .await?;
     let snoozed_until = match &input.response {
         CandidateReviewAction::Snooze { until } => Some(*until),
         CandidateReviewAction::Accept | CandidateReviewAction::Dismiss => None,
@@ -319,9 +325,10 @@ where
                     "only an accepted candidate can name an authorizing Karma grant",
                 ));
             }
-            let actor = input.actor_person_uid.as_deref().ok_or_else(|| {
-                protocol("authorizing a Karma intent requires an acting Person")
-            })?;
+            let actor = input
+                .actor_person_uid
+                .as_deref()
+                .ok_or_else(|| protocol("authorizing a Karma intent requires an acting Person"))?;
             let intent = crate::karma::intents::authorize_accepted_candidate_tx(
                 &mut tx,
                 &input.candidate_hash,

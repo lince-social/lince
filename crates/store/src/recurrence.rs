@@ -228,10 +228,11 @@ pub async fn for_record(
     pool: &SqlitePool,
     record_uid: &str,
 ) -> Result<Vec<Recurrence>, StoreError> {
-    let rows = sqlx::query("SELECT * FROM recurrence WHERE record_uid = ? ORDER BY created_at DESC")
-        .bind(record_uid)
-        .fetch_all(pool)
-        .await?;
+    let rows =
+        sqlx::query("SELECT * FROM recurrence WHERE record_uid = ? ORDER BY created_at DESC")
+            .bind(record_uid)
+            .fetch_all(pool)
+            .await?;
     rows.iter().map(map_recurrence).collect()
 }
 
@@ -661,7 +662,10 @@ async fn skipped_dates(
         .bind(recurrence_uid)
         .fetch_all(pool)
         .await?;
-    Ok(rows.iter().map(|row| row.get::<String, _>("due_at")).collect())
+    Ok(rows
+        .iter()
+        .map(|row| row.get::<String, _>("due_at"))
+        .collect())
 }
 
 /// The entry that applied one date, found by the request id that names it.

@@ -32,7 +32,7 @@
     .dot.live { background: var(--text); }
     .dot.busy { background: var(--muted); animation: pulse 1s ease-in-out infinite; }
     @keyframes pulse { 50% { opacity: .35; } }
-    .rec { border: 0; border-radius: 0; margin-bottom: 4px; overflow: hidden; }
+    .rec { margin-bottom: 4px; overflow: hidden; }
     .rec > .t { display: flex; align-items: center; gap: .5rem;
                 padding: 5px; background: var(--bg); box-shadow: var(--lynx-shadow-x) var(--lynx-shadow-y) var(--lynx-shadow-blur) var(--lynx-shadow-color); }
     .rec > .t .name { font-weight: 600; color: var(--text); flex: 1; word-break: break-word; }
@@ -64,6 +64,7 @@
        author-origin cascade tie the kanban board's `.bulkbar[hidden]` already
        works around) — this needs to win by specificity, not rely on order. */
     #thread-new[hidden] { display: none; }
+    #thread-edit[hidden] { display: none; }
     .inline { display: flex; gap: .4rem; align-items: center; }
     .inline input, .inline select { flex: 1; min-width: 0; }
     .inline button { flex: 0 0 auto; }
@@ -76,6 +77,11 @@
     .logrow.open .span { color: var(--text); }
     .logrow button { border: 0; background: none; color: var(--muted); cursor: pointer; padding: 0 2px; }
     .logrow button:hover { color: var(--text); }
+    .logrow.editing { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: end; }
+    .logrow.editing input { min-width: 0; }
+    .logrow.editing .log-actions { display: inline-flex; gap: 3px; }
+    .worklog-new { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 4px; align-items: end; }
+    .worklog-new input { min-width: 0; }
     .total { font-size: .72rem; color: var(--muted); }
     .msg { border-top: 0; padding: 4px 0; font-size: .78rem; }
     .msg-meta { font-size: .68rem; color: var(--muted); margin-bottom: 2px;
@@ -83,6 +89,13 @@
     .msg-delete { border: 0; background: none; color: var(--muted); padding: 0;
       cursor: pointer; font-size: .68rem; }
     .msg-delete:hover { color: var(--text); }
+    .msg-actions { display: inline-flex; gap: 4px; margin-left: auto; }
+    .msg-edit { border: 0; background: none; color: var(--muted); padding: 0;
+      cursor: pointer; font-size: .68rem; }
+    .msg-edit:hover { color: var(--text); }
+    .message-edit { display: grid; gap: 4px; }
+    .message-edit textarea { min-height: 64px; }
+    .message-edit__actions { display: flex; gap: 4px; justify-content: flex-end; }
     .msg .body { white-space: pre-wrap; word-break: break-word; }
     .msg img { max-width: 100%; border-radius: 6px; margin-top: .25rem; display: block; }
     .msg .ref { display: inline-block; border: var(--hairline) solid var(--accent); border-radius: 2px;
@@ -105,7 +118,7 @@
     }
     /* Creation mode: the SAME fields the display shows on a get, writable and
        empty. Entered via the group's `recordCreate` event ("New task"). */
-    #create { display: none; border: 0; border-radius: 0; overflow: hidden; }
+    #create { display: none; overflow: hidden; }
     #create.open { display: block; }
     #create .t { padding: 5px; background: var(--bg); font-weight: 600; color: var(--text); }
     #create .fields { border-bottom: 0; }
@@ -133,7 +146,7 @@
     <button id="btn-collapse" type="button" class="lynx-button tbtn" title="Hide (Esc)">✕</button>
   </div>
 
-  <div id="create">
+  <div id="create" class="lynx-box">
     <div class="t">New record</div>
     <div class="fields">
       <div class="frow edit"><span class="k">Head</span><input id="c-head" class="lynx-input" type="text" autocomplete="off" /></div>
@@ -148,7 +161,7 @@
     </div>
   </div>
 
-  <div id="focus" class="rec" hidden>
+  <div id="focus" class="rec lynx-box" hidden>
     <div class="t">
       <span class="name" id="f-name"></span>
       <span class="q" id="f-qty"></span>
@@ -180,6 +193,12 @@
           <span id="w-total" class="total"></span>
         </div>
         <div id="worklog-list" class="loglist"></div>
+        <div class="worklog-new">
+          <input id="w-log-start" class="lynx-input" type="datetime-local" aria-label="Work log start" />
+          <input id="w-log-end" class="lynx-input" type="datetime-local" aria-label="Work log end" />
+          <button id="w-log-add" type="button" class="lynx-button">Add log</button>
+        </div>
+        <span id="w-log-error" class="err" hidden></span>
       </div>
     </details>
 
@@ -218,6 +237,11 @@
           <input id="th-name" class="lynx-input" type="text" placeholder="Thread name" autocomplete="off" />
           <button id="th-create" type="button" class="lynx-button lynx-button--primary accent">Create</button>
           <button id="th-cancel" type="button" class="lynx-button">Cancel</button>
+        </div>
+        <div id="thread-edit" class="inline" hidden>
+          <input id="th-edit-name" class="lynx-input" type="text" placeholder="Thread name" autocomplete="off" />
+          <button id="th-save" type="button" class="lynx-button lynx-button--primary accent">Save</button>
+          <button id="th-edit-cancel" type="button" class="lynx-button">Cancel</button>
         </div>
         <div id="comments-list"></div>
         <div class="inline">
@@ -271,8 +295,11 @@
     let row = null;           // the focused record's latest protein row
     let fieldsDirty = false;  // user is typing: live updates must not clobber
     let workDirty = false;
+    let workLogEdit = null; // { at, start, end }
     let activeThreadUid = null; // which of the record's threads is showing/composing
     let threadSearch = ""; // filters the thread TAB LIST only, not which is active
+    let threadEditUid = null;
+    let messageEdit = null; // { uid, draft }
     // uid -> {head, slug, kind}; slug -> uid. For pickers, chips, @references.
     let names = {};
     let slugToUid = {};
@@ -334,10 +361,13 @@
       if (typeof unsubscribe === "function") unsubscribe();
       fieldsDirty = false;
       workDirty = false;
+      workLogEdit = null;
       activeThreadUid = null; // a different record's threads are unrelated
       threadSearch = "";
       $("thread-search").value = "";
       $("thread-new").hidden = true;
+      closeThreadEdit();
+      messageEdit = null;
       unsubscribe = H.subscribeProtein(
         "provenance",
         {
@@ -426,10 +456,13 @@
       creating = false;
       fieldsDirty = false;
       workDirty = false;
+      workLogEdit = null;
       activeThreadUid = null;
       threadSearch = "";
       $("thread-search").value = "";
       $("thread-new").hidden = true;
+      closeThreadEdit();
+      messageEdit = null;
       $("title").textContent = "Record";
       $("focus").hidden = true;
       $("create").classList.remove("open");
@@ -570,7 +603,7 @@
         const uid = resolveToken(m[1]);
         if (uid && uid !== sourceUid && !seen.has(uid)) {
           seen.add(uid);
-          await act({ action: "add-link", from: sourceUid, kind: "references", to: uid });
+          await act({ action: "assert-record", subject: sourceUid, predicate: "references", object: uid });
         }
       }
     }
@@ -602,6 +635,26 @@
       };
     }
     const openLog = (work) => work.logs.find((l) => !l.end);
+    function datetimeInputValue(iso) {
+      const date = new Date(iso);
+      if (Number.isNaN(date.getTime())) return "";
+      const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+      return local.toISOString().slice(0, 16);
+    }
+    function parseLog(startValue, endValue, otherOpen = false) {
+      const start = new Date(startValue);
+      const end = endValue ? new Date(endValue) : null;
+      if (!startValue || Number.isNaN(start.getTime())) return { error: "A work log needs a valid start time." };
+      if (endValue && (!end || Number.isNaN(end.getTime()))) return { error: "The end time is invalid." };
+      if (end && end < start) return { error: "The end must be after the start." };
+      if (!end && otherOpen) return { error: "Pause the running log before opening another." };
+      return { log: { start: start.toISOString(), end: end ? end.toISOString() : null } };
+    }
+    function setWorkLogError(message = "") {
+      const error = $("w-log-error");
+      error.textContent = message;
+      error.hidden = !message;
+    }
     function fmtMinutes(min) {
       if (min >= 60) return `${Math.floor(min / 60)}h${String(Math.round(min % 60)).padStart(2, "0")}`;
       return `${Math.round(min)}min`;
@@ -623,8 +676,44 @@
         const end = log.end ? new Date(log.end) : new Date();
         const minutes = Math.max(0, (end - new Date(log.start)) / 60000);
         total += minutes;
+        const editing = workLogEdit?.at === at;
         const rowEl = document.createElement("div");
-        rowEl.className = log.end ? "logrow" : "logrow open";
+        rowEl.className = editing ? "logrow editing" : log.end ? "logrow" : "logrow open";
+        if (editing) {
+          const startInput = document.createElement("input");
+          startInput.className = "lynx-input";
+          startInput.type = "datetime-local";
+          startInput.value = datetimeInputValue(workLogEdit.start);
+          startInput.setAttribute("aria-label", "Work log start");
+          const endInput = document.createElement("input");
+          endInput.className = "lynx-input";
+          endInput.type = "datetime-local";
+          endInput.value = workLogEdit.end ? datetimeInputValue(workLogEdit.end) : "";
+          endInput.setAttribute("aria-label", "Work log end");
+          const actions = document.createElement("span");
+          actions.className = "log-actions";
+          const cancel = document.createElement("button");
+          cancel.type = "button";
+          cancel.textContent = "Cancel";
+          cancel.addEventListener("click", () => { workLogEdit = null; setWorkLogError(); renderWork(); });
+          const save = document.createElement("button");
+          save.type = "button";
+          save.textContent = "Save";
+          save.addEventListener("click", () => {
+            const otherOpen = work.logs.some((candidate, index) => index !== at && !candidate.end);
+            const parsed = parseLog(startInput.value, endInput.value, otherOpen);
+            if (parsed.error) { setWorkLogError(parsed.error); return; }
+            const work2 = workData();
+            work2.logs[at] = parsed.log;
+            workLogEdit = null;
+            setWorkLogError();
+            saveWork(work2);
+          });
+          actions.append(cancel, save);
+          rowEl.append(startInput, endInput, actions);
+          list.appendChild(rowEl);
+          return;
+        }
         const span = document.createElement("span");
         span.className = "span";
         span.textContent = `${shortDate(log.start)} · ${fmtMinutes(minutes)}${log.end ? "" : " (running)"}`;
@@ -638,7 +727,16 @@
           work2.logs.splice(at, 1);
           saveWork(work2);
         });
-        rowEl.append(span, del);
+        const edit = document.createElement("button");
+        edit.type = "button";
+        edit.textContent = "✎";
+        edit.title = "Edit this worklog entry";
+        edit.addEventListener("click", () => {
+          workLogEdit = { at, start: log.start, end: log.end || "" };
+          setWorkLogError();
+          renderWork();
+        });
+        rowEl.append(span, edit, del);
         list.appendChild(rowEl);
       });
       const est = work.estimate_min !== null ? ` / est ${fmtMinutes(work.estimate_min)}` : "";
@@ -703,13 +801,23 @@
       running.end = new Date().toISOString();
       saveWork(work);
     });
+    $("w-log-add").addEventListener("click", () => {
+      const work = workData();
+      const parsed = parseLog($("w-log-start").value, $("w-log-end").value, Boolean(openLog(work)));
+      if (parsed.error) { setWorkLogError(parsed.error); return; }
+      work.logs.push(parsed.log);
+      $("w-log-start").value = "";
+      $("w-log-end").value = "";
+      setWorkLogError();
+      saveWork(work);
+    });
 
     // ---- links: assignees / all links (A → B) ---------------------------------
     const linksOf = (kind, direction) => (Array.isArray(row?.links) ? row.links : [])
       .filter((l) => l.kind === kind && l.direction === direction && l.hop === 1);
     const nameOf = (uid) => (names[uid] && (names[uid].head || names[uid].slug)) || String(uid).slice(0, 8);
     const resolveToken = (token) => slugToUid[token] || (names[token] ? token : null);
-    function chip(label, { onRemove, onClick, dataset } = {}) {
+    function chip(label, { onEdit, onRemove, onClick, dataset } = {}) {
       const el = document.createElement("span");
       el.className = onClick ? "chip nav" : "chip";
       const text = document.createElement("span");
@@ -717,6 +825,14 @@
       el.appendChild(text);
       if (dataset) for (const [k, v] of Object.entries(dataset)) el.dataset[k] = v;
       if (onClick) el.addEventListener("click", onClick);
+      if (onEdit) {
+        const edit = document.createElement("button");
+        edit.type = "button";
+        edit.textContent = "✎";
+        edit.title = "Rename thread";
+        edit.addEventListener("click", (e) => { e.stopPropagation(); onEdit(); });
+        el.appendChild(edit);
+      }
       if (onRemove) {
         const x = document.createElement("button");
         x.type = "button";
@@ -753,7 +869,7 @@
       for (const l of linksOf("assigned-to", "out")) {
         aList.appendChild(chip(nameOf(l.other), {
           dataset: { assignee: l.other },
-          onRemove: () => act({ action: "remove-link", from: row.uid, kind: "assigned-to", to: l.other })
+          onRemove: () => act({ action: "retract-record", subject: row.uid, predicate: "assigned-to", object: l.other })
             .catch((err) => console.warn(err)),
         }));
       }
@@ -780,7 +896,7 @@
         remove.type = "button";
         remove.textContent = "✕";
         remove.title = "Remove this link";
-        remove.addEventListener("click", () => act({ action: "remove-link", from: l.from, kind: l.kind, to: l.to })
+        remove.addEventListener("click", () => act({ action: "retract-record", subject: l.from, predicate: l.kind, object: l.to })
           .catch((err) => console.warn(err)));
         rowEl.append(fromChip, arrow, toChip, remove);
         lList.appendChild(rowEl);
@@ -796,7 +912,7 @@
     $("a-add").addEventListener("click", () => {
       const to = $("a-pick").value;
       if (!row || !to) return;
-      act({ action: "add-link", from: row.uid, kind: "assigned-to", to }).catch((err) => console.warn(err));
+      act({ action: "assert-record", subject: row.uid, predicate: "assigned-to", object: to }).catch((err) => console.warn(err));
     });
     $("l-add").addEventListener("click", async () => {
       const kind = $("l-kind").value.trim();
@@ -806,7 +922,7 @@
       if (!to || to === row.uid) return;
       try {
         // A → B: this record links to the target with the chosen kind.
-        await act({ action: "add-link", from: row.uid, kind, to });
+        await act({ action: "assert-record", subject: row.uid, predicate: kind, object: to });
         $("l-target").value = "";
       } catch (err) { console.warn(err); }
     });
@@ -832,6 +948,9 @@
     // so a stale/optimistic viewer snapshot here can never over-grant.
     function canDelete(item) {
       const viewer = typeof H.getViewer === "function" ? H.getViewer() : null;
+      // Local mode has no actor and the engine deliberately permits normal
+      // record deletion there. Do not hide a control the backend will allow.
+      if (!viewer || viewer.id == null) return true;
       const perms = Array.isArray(viewer?.permissions) ? viewer.permissions : [];
       if (perms.includes("record:delete")) return true;
       if (perms.includes("record:delete_own")) {
@@ -840,7 +959,21 @@
       return false;
     }
     function deleteRecordItem(uid) {
+      // Deleting a thread or message uses the exact same action as deleting a
+      // normal Record. The engine calls check_delete_permission for this
+      // action, so this UI hint is never the authorization boundary.
       return act({ action: "delete-record", target: uid }).catch((err) => console.warn(err));
+    }
+    function closeThreadEdit() {
+      threadEditUid = null;
+      $("thread-edit").hidden = true;
+    }
+    function openThreadEdit(thread) {
+      threadEditUid = thread.uid;
+      $("thread-new").hidden = true;
+      $("th-edit-name").value = thread.head || "";
+      $("thread-edit").hidden = false;
+      $("th-edit-name").focus();
     }
     function activeThread() {
       const threads = commentThreads();
@@ -876,17 +1009,62 @@
           const label = document.createElement("span");
           label.textContent = [m.sender, when].filter(Boolean).join(" · ");
           meta.appendChild(label);
+          const actions = document.createElement("span");
+          actions.className = "msg-actions";
+          const edit = document.createElement("button");
+          edit.type = "button";
+          edit.className = "msg-edit";
+          edit.textContent = "edit";
+          edit.addEventListener("click", () => {
+            messageEdit = { uid: m.uid, draft: String(m.body || "") };
+            renderComments();
+          });
+          actions.appendChild(edit);
           if (canDeleteMsg) {
             const del = document.createElement("button");
             del.type = "button";
             del.className = "msg-delete";
             del.textContent = "delete";
             del.addEventListener("click", () => deleteRecordItem(m.uid));
-            meta.appendChild(del);
+            actions.appendChild(del);
           }
+          meta.appendChild(actions);
           el.appendChild(meta);
         }
-        el.appendChild(renderMessageBody(String(m.body || "")));
+        if (messageEdit?.uid === m.uid) {
+          const form = document.createElement("div");
+          form.className = "message-edit";
+          const area = document.createElement("textarea");
+          area.className = "lynx-textarea";
+          area.value = messageEdit.draft;
+          area.setAttribute("aria-label", "Message body");
+          area.addEventListener("input", () => { messageEdit.draft = area.value; });
+          const actions = document.createElement("div");
+          actions.className = "message-edit__actions";
+          const cancel = document.createElement("button");
+          cancel.type = "button";
+          cancel.className = "lynx-button";
+          cancel.textContent = "Cancel";
+          cancel.addEventListener("click", () => { messageEdit = null; renderComments(); });
+          const save = document.createElement("button");
+          save.type = "button";
+          save.className = "lynx-button lynx-button--primary accent";
+          save.textContent = "Save";
+          save.addEventListener("click", async () => {
+            const body = messageEdit?.draft.trim();
+            if (body == null || !body) return;
+            try {
+              await act({ action: "edit-record-text", target: m.uid, body });
+              messageEdit = null;
+            } catch (err) { console.warn(err); }
+          });
+          actions.append(cancel, save);
+          form.append(area, actions);
+          el.appendChild(form);
+          setTimeout(() => area.focus(), 0);
+        } else {
+          el.appendChild(renderMessageBody(String(m.body || "")));
+        }
         list.appendChild(el);
       }
     }
@@ -901,6 +1079,7 @@
         const el = chip(t.head || "thread", {
           dataset: { thread: t.uid },
           onClick: () => { activeThreadUid = t.uid; renderComments(); },
+          onEdit: () => openThreadEdit(t),
           onRemove: canDelete(t) ? () => deleteRecordItem(t.uid) : undefined,
         });
         el.classList.toggle("active", !!current && t.uid === current.uid);
@@ -921,6 +1100,7 @@
       renderThreadTabs(commentThreads(), activeThread());
     });
     $("th-cancel").addEventListener("click", () => { $("thread-new").hidden = true; });
+    $("th-edit-cancel").addEventListener("click", closeThreadEdit);
     $("th-create").addEventListener("click", async () => {
       const name = $("th-name").value.trim();
       if (!row || !name) return;
@@ -933,6 +1113,18 @@
     $("th-name").addEventListener("keydown", (e) => {
       if (e.key === "Enter") { e.preventDefault(); $("th-create").click(); }
       else if (e.key === "Escape") { $("thread-new").hidden = true; }
+    });
+    $("th-save").addEventListener("click", async () => {
+      const head = $("th-edit-name").value.trim();
+      if (!threadEditUid || !head) return;
+      try {
+        await act({ action: "edit-record-text", target: threadEditUid, head });
+        closeThreadEdit();
+      } catch (err) { console.warn(err); }
+    });
+    $("th-edit-name").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); $("th-save").click(); }
+      else if (e.key === "Escape") { closeThreadEdit(); }
     });
     // Body -> nodes via the shared K6 renderer (same blocks everywhere);
     // regex fallback keeps @hops + images when the module is unavailable.
@@ -1001,7 +1193,7 @@
             const uid = resolveToken(m[1]);
             if (uid && !seen.has(uid)) {
               seen.add(uid);
-              await act({ action: "add-link", from: messageUid, kind: "references", to: uid });
+              await act({ action: "assert-record", subject: messageUid, predicate: "references", object: uid });
             }
           }
         }

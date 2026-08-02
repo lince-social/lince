@@ -13,6 +13,16 @@ pub async fn create(
     canonical_name: &str,
     parents: &[&str],
 ) -> Result<String, StoreError> {
+    let lingua_uid = crate::linguas::ensure_local(pool).await?;
+    create_in(pool, &lingua_uid, canonical_name, parents).await
+}
+
+pub async fn create_in(
+    pool: &SqlitePool,
+    lingua_uid: &str,
+    canonical_name: &str,
+    parents: &[&str],
+) -> Result<String, StoreError> {
     let uid = nucleus::new_uid("c");
     sqlx::query("INSERT INTO concept (uid, canonical_name, created_at) VALUES (?, ?, ?)")
         .bind(&uid)
@@ -27,6 +37,7 @@ pub async fn create(
             .execute(pool)
             .await?;
     }
+    crate::linguas::adopt(pool, lingua_uid, &uid).await?;
     Ok(uid)
 }
 
@@ -50,6 +61,93 @@ pub async fn add_name(
         .execute(pool)
         .await?;
     Ok(())
+}
+
+pub async fn rename(
+    pool: &SqlitePool,
+    concept_uid: &str,
+    canonical_name: &str,
+) -> Result<bool, StoreError> {
+    Ok(
+        sqlx::query("UPDATE concept SET canonical_name = ? WHERE uid = ?")
+            .bind(canonical_name)
+            .bind(concept_uid)
+            .execute(pool)
+            .await?
+            .rows_affected()
+            > 0,
+    )
+}
+
+pub async fn add_parent(
+    pool: &SqlitePool,
+    concept_uid: &str,
+    parent_uid: &str,
+) -> Result<(), StoreError> {
+    if concept_uid == parent_uid
+        || descendants_including(pool, concept_uid)
+            .await?
+            .contains(&parent_uid.to_string())
+    {
+        return Err(sqlx::Error::Protocol(
+            "concept hierarchy must remain acyclic".into(),
+        ));
+    }
+    sqlx::query(
+        "INSERT INTO concept_parent (concept_uid, parent_uid) VALUES (?, ?)
+         ON CONFLICT(concept_uid, parent_uid) DO NOTHING",
+    )
+    .bind(concept_uid)
+    .bind(parent_uid)
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+pub async fn remove_parent(
+    pool: &SqlitePool,
+    concept_uid: &str,
+    parent_uid: &str,
+) -> Result<bool, StoreError> {
+    Ok(
+        sqlx::query("DELETE FROM concept_parent WHERE concept_uid = ? AND parent_uid = ?")
+            .bind(concept_uid)
+            .bind(parent_uid)
+            .execute(pool)
+            .await?
+            .rows_affected()
+            > 0,
+    )
+}
+
+pub async fn delete(pool: &SqlitePool, concept_uid: &str) -> Result<bool, StoreError> {
+    let mut transaction = pool.begin().await?;
+    sqlx::query("DELETE FROM concept_name WHERE concept_uid = ?")
+        .bind(concept_uid)
+        .execute(&mut *transaction)
+        .await?;
+    sqlx::query("DELETE FROM concept_parent WHERE concept_uid = ? OR parent_uid = ?")
+        .bind(concept_uid)
+        .bind(concept_uid)
+        .execute(&mut *transaction)
+        .await?;
+    sqlx::query("DELETE FROM concept_equivalence WHERE a_uid = ? OR b_uid = ?")
+        .bind(concept_uid)
+        .bind(concept_uid)
+        .execute(&mut *transaction)
+        .await?;
+    sqlx::query("DELETE FROM lingua_concept WHERE concept_uid = ?")
+        .bind(concept_uid)
+        .execute(&mut *transaction)
+        .await?;
+    let deleted = sqlx::query("DELETE FROM concept WHERE uid = ?")
+        .bind(concept_uid)
+        .execute(&mut *transaction)
+        .await?
+        .rows_affected()
+        > 0;
+    transaction.commit().await?;
+    Ok(deleted)
 }
 
 /// Resolve `@name`: canonical first, then any language name, then uid.
@@ -124,6 +222,8 @@ pub async fn adopt(
             .execute(pool)
             .await?;
     }
+    let lingua_uid = crate::linguas::ensure_local(pool).await?;
+    crate::linguas::adopt(pool, &lingua_uid, uid).await?;
     Ok(())
 }
 

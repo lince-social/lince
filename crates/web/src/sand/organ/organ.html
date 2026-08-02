@@ -62,6 +62,27 @@
       <section id="detail" hidden>
         <div class="d-head" id="d-head"></div>
         <div class="d-url" id="d-url"></div>
+        <div class="panel" id="contact-panel" hidden>
+          <div class="row">
+            <label for="c-trust">Trust</label>
+            <select id="c-trust">
+              <option value="unknown">Unknown</option>
+              <option value="known">Known</option>
+              <option value="blocked">Blocked</option>
+            </select>
+          </div>
+          <div class="row">
+            <label for="c-proximity">Proximity</label>
+            <input id="c-proximity" type="number" min="0" step="1" />
+          </div>
+          <div class="row">
+            <button class="primary" id="c-block" type="button">Block</button>
+            <span class="status" id="c-status"></span>
+          </div>
+          <p class="hint">Trust and proximity only — sync policy and quarantine live
+            elsewhere. <code>blocked</code> is terminal: import, discovery, export,
+            and delivery all reject it.</p>
+        </div>
         <div class="panel">
           <div class="row">
             <label class="check"><input type="checkbox" id="fs-enabled" /> File sync to disk</label>
@@ -96,7 +117,7 @@
     H.subscribeProtein("organs", {
       source: "record",
       where: [{ kind_eq: "organ" }],
-      include: { extension: { namespace: "lince.file_sync" } },
+      include: { extension: { namespace: "lince.file_sync" }, contact: true },
       order: [{ asc: "head" }],
     }, ({ rows }) => {
       organs = Array.isArray(rows) ? rows : [];
@@ -119,6 +140,12 @@
         badge.className = "badge" + (enabled ? " on" : "");
         badge.textContent = enabled ? "sync on" : "sync off";
         li.append(name, badge);
+        if (o.contact) {
+          const trust = document.createElement("span");
+          trust.className = "badge" + (o.contact.trust === "known" ? " on" : "");
+          trust.textContent = o.contact.trust;
+          li.append(trust);
+        }
         li.onclick = () => { selectedUid = o.uid; renderList(); renderDetail(); };
         ul.appendChild(li);
       }
@@ -140,6 +167,22 @@
       $("fs-path").value = cfg.path || "";
       $("fs-status").textContent = "";
       $("fs-status").className = "status";
+
+      const contactPanel = $("contact-panel");
+      contactPanel.hidden = !row.contact;
+      if (row.contact) {
+        $("c-trust").value = row.contact.trust || "unknown";
+        $("c-proximity").value = row.contact.proximity ?? 0;
+        $("c-block").textContent = row.contact.trust === "blocked" ? "Unblock" : "Block";
+      }
+      $("c-status").textContent = "";
+      $("c-status").className = "status";
+    }
+
+    function reportContactError(err) {
+      const status = $("c-status");
+      status.className = "status err";
+      status.textContent = "Error: " + (err && err.message ? err.message : err);
     }
 
     $("fs-save").addEventListener("click", () => {
@@ -155,6 +198,33 @@
           status.className = "status err";
           status.textContent = "Error: " + (err && err.message ? err.message : err);
         });
+    });
+
+    $("c-trust").addEventListener("change", () => {
+      const row = selected();
+      if (!row) return;
+      const trust = $("c-trust").value;
+      H.act({ action: "set-contact-trust", target: row.uid, trust })
+        .then(() => { $("c-status").className = "status"; $("c-status").textContent = "Saved."; })
+        .catch(reportContactError);
+    });
+
+    $("c-proximity").addEventListener("change", () => {
+      const row = selected();
+      if (!row) return;
+      const proximity = Math.max(0, Math.trunc(Number($("c-proximity").value) || 0));
+      H.act({ action: "set-contact-proximity", target: row.uid, proximity })
+        .then(() => { $("c-status").className = "status"; $("c-status").textContent = "Saved."; })
+        .catch(reportContactError);
+    });
+
+    $("c-block").addEventListener("click", () => {
+      const row = selected();
+      if (!row) return;
+      const trust = row.contact && row.contact.trust === "blocked" ? "known" : "blocked";
+      H.act({ action: "set-contact-trust", target: row.uid, trust })
+        .then(() => { $("c-status").className = "status"; $("c-status").textContent = "Saved."; })
+        .catch(reportContactError);
     });
   </script>
 </body>

@@ -144,16 +144,33 @@
     const boundary = target.closest("[data-lynx-tooltip-boundary], .lynx-field, .sand") || document.documentElement;
     const targetBox = target.getBoundingClientRect();
     const boundaryBox = boundary.getBoundingClientRect();
-    const width = Math.min(180, target.dataset.lynxTooltip.length * 6 + 10);
+    const width = Math.min(180, Math.max(1, boundaryBox.width - 4), target.dataset.lynxTooltip.length * 6 + 10);
+    const height = 24;
+    target.style.setProperty("--lynx-tooltip-max-width", `${width}px`);
     delete target.dataset.lynxTooltipAlign;
+    delete target.dataset.lynxTooltipSide;
     if (targetBox.left + targetBox.width / 2 - width / 2 < boundaryBox.left) target.dataset.lynxTooltipAlign = "left";
     if (targetBox.left + targetBox.width / 2 + width / 2 > boundaryBox.right) target.dataset.lynxTooltipAlign = "right";
+    if (targetBox.top - height - 4 < boundaryBox.top) target.dataset.lynxTooltipSide = "bottom";
   }
 
-  document.addEventListener("pointerover", alignTooltip);
+  document.addEventListener("pointerover", (event) => {
+    const target = event.target.closest?.("[data-lynx-tooltip]");
+    if (target) delete target.dataset.lynxTooltipDismissed;
+    alignTooltip(event);
+  });
+  document.addEventListener("pointerout", (event) => {
+    const target = event.target.closest?.("[data-lynx-tooltip]");
+    if (target && !target.contains(event.relatedTarget)) delete target.dataset.lynxTooltipDismissed;
+  });
   document.addEventListener("focusin", alignTooltip);
+  document.addEventListener("focusout", (event) => {
+    const target = event.target.closest?.("[data-lynx-tooltip]");
+    if (target && !target.contains(event.relatedTarget)) delete target.dataset.lynxTooltipDismissed;
+  });
 
   document.addEventListener("click", (event) => {
+    event.target.closest?.("[data-lynx-tooltip]")?.setAttribute("data-lynx-tooltip-dismissed", "");
     const target = event.target.closest("[data-lynx-dialog-open], [data-lynx-dialog-close], [data-lynx-dropdown-button], [data-lynx-select-option], [data-lynx-tab]");
     if (!target) return;
     if (target.hasAttribute("data-lynx-select-option")) {

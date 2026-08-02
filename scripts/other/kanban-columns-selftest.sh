@@ -6,7 +6,8 @@
 #     state (cardState.kanban.lanesDef)
 #   - RANGE columns (3..10): rows bucket into the range; moving a card in
 #     writes the range's representative (first) value via set-quantity
-#   - CONCEPT columns (@food): rows bucket by concept; moving writes set-concept
+#   - CONCEPT columns (@food): rows bucket by ordinary assertions; moving
+#     asserts an ordinary tag without changing Record identity
 #   - concept UIDs resolve to NAMES (source:"concept" subscription) on chips
 #   - PRESETS: built-ins apply in one tap; "save current as preset" writes a
 #     sand-configuration record (create-record kind=sand + set-extension
@@ -138,6 +139,9 @@ cat > "$WORK/harness.html" <<'HTML'
     window.__inbound({ type: "snapshot", id: "card-kanban:kanban-concepts", rows: [
       { uid: "c_food", name: "food" },
     ]});
+    window.__inbound({ type: "snapshot", id: "card-kanban:kanban-assertions", rows: [
+      { uid: "a_food", subject: "r_b", predicate: "c_food", object: null, role: "ordinary" },
+    ]});
     window.__inbound({ type: "snapshot", id: "card-kanban:kanban-presets", rows: [
       { uid: "r_preset", kind: "sand", head: "My preset", quantity: 1,
         extension: { columns: [
@@ -154,7 +158,7 @@ cat > "$WORK/harness.html" <<'HTML'
       && JSON.stringify(presetSub.protein.where || []).includes('"kind_eq":"sand"')
       && JSON.stringify(presetSub.protein.include || {}).includes('"kanban.columns"');
 
-    // 1. Concept names resolve on card chips (row carries the uid c_food).
+    // 1. Ordinary assertion names resolve on card chips.
     results.concept_chip = [...doc().querySelectorAll(".concept-chip")]
       .some((c) => c.textContent === "@food");
 
@@ -193,12 +197,12 @@ cat > "$WORK/harness.html" <<'HTML'
     doc().querySelector('.cards[data-lane="pile"]')
       .dispatchEvent(new DragEvent("drop", { dataTransfer: dt, bubbles: true }));
     await wait(120);
-    results.range_move = acts().some((a) => a && a.action === "set-quantity"
-      && a.target === "r_a" && a.value === 3)
+    results.range_move = acts().some((a) => a && a.action === "transition-record"
+      && a.subject === "r_a" && a.quantity === 3)
       && laneOf("Alpha") === "pile";
 
     // 5. Concept column: swap in a preset-less concept lane via the sheet, then
-    //    moving Gamma into it writes set-concept.
+    //    moving Gamma into it asserts an ordinary state concept.
     doc().getElementById("open-columns").click();
     await wait(50);
     setInput(colRows()[0].querySelector(".col-value"), "@food");
@@ -213,17 +217,47 @@ cat > "$WORK/harness.html" <<'HTML'
     doc().querySelector('.cards[data-lane="backlog"]')
       .dispatchEvent(new DragEvent("drop", { dataTransfer: dt2, bubbles: true }));
     await wait(120);
-    results.concept_move = acts().some((a) => a && a.action === "set-concept"
-      && a.target === "r_c" && a.concept === "food");
+    results.concept_move = acts().some((a) => a && a.action === "transition-record"
+      && a.subject === "r_c" && Array.isArray(a.assert) && a.assert.includes("food"))
+      && !acts().some((a) => a && a.action === "set-identity");
 
-    // 6. Built-in preset applies in one tap.
+    // 6. A combined state column changes quantity and ordinary state concepts:
+    // Todo -> WIP asserts @wip, sets -1, and retracts @todo, without identity.
+    window.__inbound({ type: "snapshot", id: "card-kanban:kanban-assertions", rows: [
+      { uid: "a_todo", subject: "r_a", predicate: "c_todo", object: null, role: "ordinary" },
+      { uid: "a_food", subject: "r_b", predicate: "c_food", object: null, role: "ordinary" },
+    ]});
+    window.__inbound({ type: "snapshot", id: "card-kanban:kanban-concepts", rows: [
+      { uid: "c_food", name: "food" }, { uid: "c_todo", name: "todo" }, { uid: "c_wip", name: "wip" },
+    ]});
+    doc().getElementById("open-columns").click();
+    await wait(50);
+    setInput(colRows()[0].querySelector(".col-value"), "0 @todo");
+    const wipRow = colRows().find((row) => row.querySelector(".col-label").value === "WIP");
+    setInput(wipRow.querySelector(".col-value"), "-1 @wip");
+    doc().getElementById("columns-save").click();
+    await wait(100);
+    window.__sent.length = 0;
+    const dt3 = new DataTransfer();
+    dt3.setData("text/lince-record", "r_a");
+    doc().querySelector('.cards[data-lane="wip"]')
+      .dispatchEvent(new DragEvent("drop", { dataTransfer: dt3, bubbles: true }));
+    await wait(180);
+    const transitions = acts().filter((a) => a && a.action === "transition-record" && a.subject === "r_a");
+    results.combined_transition = transitions.length === 1
+      && transitions[0].quantity === -1
+      && Array.isArray(transitions[0].assert) && transitions[0].assert.includes("wip")
+      && Array.isArray(transitions[0].retract) && transitions[0].retract.includes("todo")
+      && !acts().some((a) => a && a.action === "set-identity");
+
+    // 7. Built-in preset applies in one tap.
     doc().getElementById("open-columns").click();
     await wait(50);
     doc().querySelector('[data-apply-preset="Todo / WIP / Done"]').click();
     await wait(150);
     results.builtin_preset = JSON.stringify(colTitles()) === JSON.stringify(["Todo", "WIP", "Done"]);
 
-    // 7. Saved preset record: listed, applies, deletes via deactivate.
+    // 8. Saved preset record: listed, applies, deletes via deactivate.
     results.preset_listed = [...doc().querySelectorAll(".preset-name")]
       .some((n) => n.textContent === "My preset");
     doc().querySelector('[data-apply-preset="My preset"]').click();
@@ -235,7 +269,7 @@ cat > "$WORK/harness.html" <<'HTML'
     results.preset_delete = acts().some((a) => a && a.action === "deactivate"
       && a.target === "r_preset");
 
-    // 8. Save current as preset -> create-record kind=sand + set-extension.
+    // 9. Save current as preset -> create-record kind=sand + set-extension.
     window.__sent.length = 0;
     doc().getElementById("preset-name").value = "Mine";
     doc().getElementById("preset-save").click();
@@ -246,7 +280,7 @@ cat > "$WORK/harness.html" <<'HTML'
       && a.target === "r_created" && a.namespace === "kanban.columns"
       && JSON.stringify(a.fds || {}).includes('"columns"'));
 
-    // 9. Hide empty columns: Cold holds every card? Move all to Hot first —
+    // 10. Hide empty columns: Cold holds every card? Move all to Hot first —
     //    bulk path: select Alpha+Beta+Gamma via ctrl-click, bulk move to Hot.
     doc().getElementById("sheet-columns")
       .querySelector('[data-close="sheet-columns"]').click();
@@ -263,8 +297,8 @@ cat > "$WORK/harness.html" <<'HTML'
     doc().getElementById("bulk-lane").value = "hot";
     doc().getElementById("bulk-move").click();
     await wait(150);
-    const setQs = acts().filter((a) => a && a.action === "set-quantity" && a.value === 1);
-    results.bulk_move = setQs.length >= 2 && laneOf("Alpha") === "hot" && laneOf("Gamma") === "hot";
+    const transitionsToHot = acts().filter((a) => a && a.action === "transition-record" && a.quantity === 1);
+    results.bulk_move = transitionsToHot.length >= 2 && laneOf("Alpha") === "hot" && laneOf("Gamma") === "hot";
 
     doc().getElementById("open-columns").click();
     await wait(50);
@@ -300,7 +334,8 @@ check lanesdef_persisted "column config was not persisted via patch-card-state (
 check range_buckets     "a row inside 3..10 did not bucket into the range column"
 check range_move        "moving into a range column did not write its representative value"
 check concept_buckets   "a row did not bucket into the @concept column"
-check concept_move      "moving into a concept column did not write set-concept"
+check concept_move      "moving into a concept column did not use the atomic transition"
+check combined_transition "Todo -> WIP did not atomically add @wip, set quantity, and remove @todo"
 check builtin_preset    "built-in preset did not apply"
 check preset_listed     "saved preset record is not listed"
 check preset_applies    "saved preset record did not apply"
@@ -311,4 +346,4 @@ check bulk_bar          "ctrl-click selection did not show the bulk bar with a c
 check bulk_move         "bulk move did not move the selected cards"
 check hide_empty        "hide-empty did not hide the empty columns"
 
-[ "$fail" -eq 0 ] && echo "PASS: K3 column system (config CRUD, ranges, @concept columns, presets as sand-config records, concept names, hide, bulk move)" || exit 1
+[ "$fail" -eq 0 ] && echo "PASS: K3 column system (config CRUD, ranges, ordinary @concept state columns, presets as sand-config records, concept names, hide, bulk move)" || exit 1

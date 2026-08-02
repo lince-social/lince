@@ -8,6 +8,18 @@ use sqlx::{Row, Sqlite, SqlitePool, Transaction};
 
 use crate::StoreError;
 use crate::exact::{decimal_columns, read_decimal};
+use crate::sync_ops::OpKind;
+
+/// Log one local `set` op on the `record` table (Ontology §11 op log).
+async fn log_set(
+    pool: &SqlitePool,
+    uid: &str,
+    field: &str,
+    value: serde_json::Value,
+) -> Result<(), StoreError> {
+    crate::sync_ops::log_local(pool, "record", uid, field, OpKind::Set, Some(value.to_string()))
+        .await
+}
 
 #[derive(Debug, Clone)]
 pub struct RecordRow {
@@ -105,8 +117,18 @@ pub async fn create(pool: &SqlitePool, new: NewRecord<'_>) -> Result<RecordRow, 
     // action. No local organ yet (early bootstrap, most unit tests, and the
     // organ-bootstrap insert itself, which bypasses this fn) = no stamp,
     // origin stays "unknown" rather than erroring.
-    if let Some(organ) = crate::organs::local(pool).await? {
-        set_organ_origin(pool, &uid, Some(&organ.uid)).await?;
+    let origin = crate::organs::local(pool).await?.map(|organ| organ.uid);
+    if let Some(organ_uid) = origin.as_deref() {
+        set_organ_origin(pool, &uid, Some(organ_uid)).await?;
+    }
+    log_set(pool, &uid, "kind", serde_json::json!(new.kind.as_str())).await?;
+    log_set(pool, &uid, "head", serde_json::json!(new.head)).await?;
+    log_set(pool, &uid, "body", serde_json::json!(new.body)).await?;
+    if let Some(slug) = new.slug {
+        log_set(pool, &uid, "slug", serde_json::json!(slug)).await?;
+    }
+    if let Some(organ_uid) = origin.as_deref() {
+        log_set(pool, &uid, "organ_uid", serde_json::json!(organ_uid)).await?;
     }
     get(pool, &uid).await.map(|r| r.expect("just inserted"))
 }
@@ -156,6 +178,25 @@ pub async fn quantity(pool: &SqlitePool, uid: &str) -> Result<Option<DecimalValu
     .transpose()
 }
 
+/// Read a live Record's exact quantity while participating in a larger write
+/// transaction (for example, a Kanban state transition that also changes
+/// assertions). Keeping this beside `quantity` prevents callers from opening a
+/// second connection and observing a different level mid-transition.
+pub async fn quantity_in_transaction(
+    tx: &mut Transaction<'_, Sqlite>,
+    uid: &str,
+) -> Result<Option<DecimalValue>, StoreError> {
+    sqlx::query(
+        "SELECT quantity_mantissa, quantity_scale FROM record
+          WHERE uid = ? AND deleted_at IS NULL",
+    )
+    .bind(uid)
+    .fetch_optional(&mut **tx)
+    .await?
+    .map(|row| read_decimal(&row, "quantity"))
+    .transpose()
+}
+
 /// ISO timestamp a record was created — threads/messages surface this so a
 /// Record-style UI can show "when" without RecordRow carrying it
 /// everywhere (most callers never need it).
@@ -184,7 +225,11 @@ pub async fn mark_deleted(pool: &SqlitePool, uid: &str) -> Result<bool, StoreErr
     .bind(uid)
     .execute(pool)
     .await?;
-    Ok(res.rows_affected() > 0)
+    let deleted = res.rows_affected() > 0;
+    if deleted {
+        crate::sync_ops::log_local(pool, "record", uid, "", OpKind::Tombstone, None).await?;
+    }
+    Ok(deleted)
 }
 
 /// Every record, oldest first — the Protein `source: record` base set.
@@ -244,6 +289,7 @@ pub async fn set_extension(
     namespace: &str,
     fds: &serde_json::Value,
 ) -> Result<(), StoreError> {
+    let old = get_extension(pool, record_uid, namespace).await?;
     sqlx::query(
         "INSERT INTO record_extension (record_uid, namespace, fds) VALUES (?, ?, ?)
          ON CONFLICT(record_uid, namespace)
@@ -254,6 +300,52 @@ pub async fn set_extension(
     .bind(fds.to_string())
     .execute(pool)
     .await?;
+    // Ops are per KEY inside the namespace, so two Cells editing different
+    // keys of one namespace never clobber each other's whole blob.
+    let empty = serde_json::Map::new();
+    match (old.as_ref().and_then(|v| v.as_object()), fds.as_object()) {
+        (old_map, Some(new_map)) => {
+            let old_map = old_map.unwrap_or(&empty);
+            for (key, value) in new_map {
+                if old_map.get(key) != Some(value) {
+                    crate::sync_ops::log_local(
+                        pool,
+                        "record_extension",
+                        record_uid,
+                        &format!("{namespace}.{key}"),
+                        OpKind::Set,
+                        Some(value.to_string()),
+                    )
+                    .await?;
+                }
+            }
+            for key in old_map.keys() {
+                if !new_map.contains_key(key) {
+                    crate::sync_ops::log_local(
+                        pool,
+                        "record_extension",
+                        record_uid,
+                        &format!("{namespace}.{key}"),
+                        OpKind::Tombstone,
+                        None,
+                    )
+                    .await?;
+                }
+            }
+        }
+        // A non-object namespace value replicates as one opaque field.
+        (_, None) => {
+            crate::sync_ops::log_local(
+                pool,
+                "record_extension",
+                record_uid,
+                namespace,
+                OpKind::Set,
+                Some(fds.to_string()),
+            )
+            .await?;
+        }
+    }
     Ok(())
 }
 
@@ -302,6 +394,11 @@ pub async fn all_extensions(
 /// Edit a record's text (head/title and/or body). Not the quantity cache, so a
 /// plain `UPDATE` is allowed; provenance/live-refresh is the engine's job via an
 /// annotation fact. `None` leaves a field untouched.
+///
+/// Logs NO ops: text edits sync as `crdt` ops through `engine::collab`
+/// (Ontology §11 "Merge") and this fn is their raw materializer. The create
+/// path still logs head/body `set` ops so a never-collab-edited record's text
+/// travels; import gives crdt history precedence over those.
 pub async fn set_text(
     pool: &SqlitePool,
     uid: &str,
@@ -346,6 +443,7 @@ pub async fn set_slug(pool: &SqlitePool, uid: &str, slug: Option<&str>) -> Resul
     if res.rows_affected() == 0 {
         return Err(sqlx::Error::RowNotFound);
     }
+    log_set(pool, uid, "slug", serde_json::json!(slug)).await?;
     Ok(())
 }
 
@@ -386,6 +484,7 @@ pub async fn set_unit(
     if res.rows_affected() == 0 {
         return Err(sqlx::Error::RowNotFound);
     }
+    log_set(pool, uid, "unit_uid", serde_json::json!(unit_uid)).await?;
     Ok(())
 }
 

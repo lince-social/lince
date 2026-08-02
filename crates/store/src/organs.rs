@@ -129,6 +129,18 @@ pub struct Contact {
     pub proximity: u32,
     pub sync_out: bool,
     pub sync_in: bool,
+    /// Their op-log seq as we last acknowledged it (catch-up checkpoint).
+    pub last_synced_seq: i64,
+    /// `replica` (local rows, deltas + reconciliation) or `live` (Protein WS
+    /// against the remote, zero local rows).
+    pub mode: String,
+    /// Seconds between catch-up pulls; 0 disables the cycle (reactive deltas
+    /// and reconnect catch-up still run).
+    pub catchup_interval_secs: i64,
+    /// The last address a SIGNED exchange succeeded from — a cached hint,
+    /// never identity (Ontology §11 "Peers"). Only the verified handshake
+    /// writes it; discovery announces alone never do.
+    pub last_seen_addr: Option<String>,
 }
 
 /// Register a remote organ contact: an organ record carrying the REMOTE
@@ -184,6 +196,19 @@ pub async fn set_trust(pool: &SqlitePool, organ_uid: &str, trust: &str) -> Resul
     Ok(())
 }
 
+pub async fn set_proximity(
+    pool: &SqlitePool,
+    organ_uid: &str,
+    proximity: u32,
+) -> Result<(), StoreError> {
+    sqlx::query("UPDATE organ_contact SET proximity = ? WHERE record_uid = ?")
+        .bind(proximity as i64)
+        .bind(organ_uid)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
 pub async fn set_sync_policy(
     pool: &SqlitePool,
     organ_uid: &str,
@@ -209,7 +234,62 @@ fn map_contact(r: sqlx::sqlite::SqliteRow) -> Contact {
         proximity: r.get::<i64, _>("proximity") as u32,
         sync_out: r.get::<i64, _>("sync_out") != 0,
         sync_in: r.get::<i64, _>("sync_in") != 0,
+        last_synced_seq: r.get("last_synced_seq"),
+        mode: r.get("mode"),
+        catchup_interval_secs: r.get("catchup_interval_secs"),
+        last_seen_addr: r.get("last_seen_addr"),
     }
+}
+
+/// Record the address a signed exchange just succeeded from. The signature is
+/// what authorizes the update — never trust-on-IP.
+pub async fn set_last_seen_addr(
+    pool: &SqlitePool,
+    organ_uid: &str,
+    addr: Option<&str>,
+) -> Result<(), StoreError> {
+    sqlx::query("UPDATE organ_contact SET last_seen_addr = ? WHERE record_uid = ?")
+        .bind(addr)
+        .bind(organ_uid)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+/// Advance the catch-up checkpoint: the peer's op seq we have fully applied.
+pub async fn set_last_synced_seq(
+    pool: &SqlitePool,
+    organ_uid: &str,
+    seq: i64,
+) -> Result<(), StoreError> {
+    sqlx::query("UPDATE organ_contact SET last_synced_seq = ? WHERE record_uid = ?")
+        .bind(seq)
+        .bind(organ_uid)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+pub async fn set_mode(pool: &SqlitePool, organ_uid: &str, mode: &str) -> Result<(), StoreError> {
+    sqlx::query("UPDATE organ_contact SET mode = ? WHERE record_uid = ?")
+        .bind(mode)
+        .bind(organ_uid)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+pub async fn set_catchup_interval(
+    pool: &SqlitePool,
+    organ_uid: &str,
+    secs: i64,
+) -> Result<(), StoreError> {
+    sqlx::query("UPDATE organ_contact SET catchup_interval_secs = ? WHERE record_uid = ?")
+        .bind(secs)
+        .bind(organ_uid)
+        .execute(pool)
+        .await?;
+    Ok(())
 }
 
 pub async fn contact(pool: &SqlitePool, organ_uid: &str) -> Result<Option<Contact>, StoreError> {
@@ -237,63 +317,8 @@ pub async fn contacts(pool: &SqlitePool) -> Result<Vec<Contact>, StoreError> {
     .collect())
 }
 
-// --------------------------------------------------- outbox (blueprint XV)
-
-#[derive(Debug, Clone)]
-pub struct OutboxRow {
-    pub uid: String,
-    pub organ_uid: String,
-    pub payload: String,
-    pub attempts: i64,
-}
-
-pub async fn outbox_enqueue(
-    pool: &SqlitePool,
-    organ_uid: &str,
-    payload: &str,
-) -> Result<String, StoreError> {
-    let uid = nucleus::new_uid("o");
-    sqlx::query(
-        "INSERT INTO sync_outbox (uid, organ_uid, payload, created_at) VALUES (?, ?, ?, ?)",
-    )
-    .bind(&uid)
-    .bind(organ_uid)
-    .bind(payload)
-    .bind(Utc::now().to_rfc3339())
-    .execute(pool)
-    .await?;
-    Ok(uid)
-}
-
-/// Queued or previously-failed rows, oldest first — failures retry.
-pub async fn outbox_due(pool: &SqlitePool) -> Result<Vec<OutboxRow>, StoreError> {
-    Ok(sqlx::query(
-        "SELECT uid, organ_uid, payload, attempts FROM sync_outbox
-          WHERE status IN ('queued', 'failed') ORDER BY created_at",
-    )
-    .fetch_all(pool)
-    .await?
-    .into_iter()
-    .map(|r| OutboxRow {
-        uid: r.get("uid"),
-        organ_uid: r.get("organ_uid"),
-        payload: r.get("payload"),
-        attempts: r.get("attempts"),
-    })
-    .collect())
-}
-
-pub async fn outbox_mark(pool: &SqlitePool, uid: &str, sent: bool) -> Result<(), StoreError> {
-    sqlx::query(
-        "UPDATE sync_outbox SET status = ?, attempts = attempts + 1, sent_at = ? WHERE uid = ?",
-    )
-    .bind(if sent { "sent" } else { "failed" })
-    .bind(sent.then(|| Utc::now().to_rfc3339()))
-    .bind(uid)
-    .execute(pool)
-    .await?;
-    Ok(())
-}
+// The op-based bounded outbox lives in `crate::sync_ops` (queued by the op
+// log itself; drained by `Engine::drain_outbox`).
 
 /// Record a rejected import row (blueprint XI.1: reject the row, keep the
 /// package, remember why).

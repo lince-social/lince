@@ -72,6 +72,19 @@ pub async fn insert(tx: &mut Transaction<'_, Sqlite>, f: &Fact) -> Result<(), St
     .bind(&f.signature)
     .execute(&mut **tx)
     .await?;
+    // Facts join the op log (Ontology §11) — except imported ones, whose
+    // original op the sync import path appends under its origin identity.
+    if f.cause.kind != CauseKind::Sync {
+        crate::sync_ops::log_local_tx(
+            tx,
+            "fact",
+            &f.uid,
+            "",
+            crate::sync_ops::OpKind::Fact,
+            None,
+        )
+        .await?;
+    }
     Ok(())
 }
 

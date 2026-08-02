@@ -46,6 +46,7 @@
 .lynx-button {
   position: relative;
   display: inline-flex;
+  flex: 0 0 auto;
   min-height: var(--control-height, 25px);
   align-items: center;
   justify-content: center;
@@ -74,7 +75,7 @@
 .lynx-button:disabled { color: var(--secondary-ink, var(--muted)); cursor: not-allowed; opacity: .65; }
 
 .lynx-icon-button {
-  width: var(--control-height, 25px);
+  width: auto;
   min-width: var(--control-height, 25px);
   padding: 0;
   border-color: transparent;
@@ -292,18 +293,21 @@ input.lynx-check__input:checked { border-color: var(--accent); background: var(-
   z-index: 100;
   display: none;
   width: max-content;
-  max-width: 180px;
+  max-width: var(--lynx-tooltip-max-width, 180px);
   padding: var(--space-1, 2px) var(--space-2, 4px);
   border: var(--hairline, .5px) solid var(--tooltip-ink);
   color: var(--tooltip-ink);
   background: var(--tooltip);
   font-size: 12px;
   pointer-events: none;
+  overflow-wrap: anywhere;
   transform: translateX(-50%);
 }
 [data-lynx-tooltip]:hover::after, [data-lynx-tooltip]:focus-visible::after { display: block; }
+[data-lynx-tooltip][data-lynx-tooltip-dismissed]::after { display: none; }
 [data-lynx-tooltip-align="left"]::after { right: auto; left: 0; transform: none; }
 [data-lynx-tooltip-align="right"]::after { right: 0; left: auto; transform: none; }
+[data-lynx-tooltip-side="bottom"]::after { top: calc(100% + var(--space-2, 4px)); bottom: auto; }
 
 .lynx-dialog {
   width: min(680px, calc(100vw - 16px));

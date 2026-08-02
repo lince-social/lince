@@ -26,6 +26,10 @@ const FLAT_PROTEIN_ERROR = "lince:protein-error";
 const FLAT_LANE_JOIN = "lince:lane-join";
 const FLAT_LANE_SEND = "lince:lane-send";
 const FLAT_LANE_EVENT = "lince:lane-event";
+const FLAT_COLLAB_JOIN = "lince:collab-join";
+const FLAT_COLLAB_LEAVE = "lince:collab-leave";
+const FLAT_COLLAB_UPDATE = "lince:collab-update";
+const FLAT_COLLAB_STATE = "lince:collab-state";
 const FLAT_LIVE = "lince:live";
 const FLAT_PATCH_CARD_STATE = "lince:patch-card-state";
 const FLAT_ARCHIVE_WORKSPACE = "lince:archive-workspace";
@@ -250,6 +254,10 @@ export function createWidgetBridge({
   // the whole board is a single connection and the transport suppresses
   // self-echo — a server round-trip would never come back to this board.
   const joinedRooms = new Set();
+  // Live collab docs (Ontology §11 "Collab"): recordUid -> Set<instanceId>
+  // that joined it. One server-side join per record regardless of how many
+  // sands on this board edit it; snapshots fan out to every member frame.
+  const collabMembers = new Map();
 
   function frameForInstance(instanceId) {
     return getFrames().find(
@@ -361,6 +369,30 @@ export function createWidgetBridge({
       return;
     }
 
+    if (type === "collab_state" || type === "collab_change") {
+      const recordUid = String(message.record_uid || "");
+      const members = collabMembers.get(recordUid);
+      if (!members) {
+        return;
+      }
+      for (const instanceId of [...members]) {
+        if (!frameForInstance(instanceId)) {
+          members.delete(instanceId);
+          continue;
+        }
+        postFrame(instanceId, {
+          type: FLAT_COLLAB_STATE,
+          recordUid,
+          snapshotBase64: String(message.snapshot_base64 || ""),
+        });
+      }
+      if (members.size === 0) {
+        collabMembers.delete(recordUid);
+        sendTransport({ type: "collab_leave", record_uid: recordUid });
+      }
+      return;
+    }
+
     if (type === "terminal_opened" || type === "terminal_data" || type === "terminal_exit") {
       const entry = terminalSessions.get(String(message.id || ""));
       if (!entry) {
@@ -460,6 +492,15 @@ export function createWidgetBridge({
     // ABI events keep flowing.
     for (const room of joinedRooms) {
       sendTransport({ type: "lane_join", room });
+    }
+    // Re-join collab docs too: the fresh join replays a full snapshot, which
+    // heals whatever the sand's doc missed while the socket was down.
+    for (const recordUid of collabMembers.keys()) {
+      sendTransport({
+        type: "collab_join",
+        id: `collab:${recordUid}`,
+        record_uid: recordUid,
+      });
     }
     for (const instanceId of flatFrames) {
       postFrame(instanceId, { type: FLAT_LIVE, live: true });
@@ -1076,6 +1117,57 @@ export function createWidgetBridge({
 
     if (data.type === FLAT_LANE_SEND) {
       handleFlatLaneSend(data);
+      return;
+    }
+
+    if (data.type === FLAT_COLLAB_JOIN) {
+      const recordUid = String(data.recordUid || "");
+      const instanceId = String(data.instanceId || "");
+      if (!recordUid || !instanceId) {
+        return;
+      }
+      let members = collabMembers.get(recordUid);
+      if (!members) {
+        members = new Set();
+        collabMembers.set(recordUid, members);
+      }
+      members.add(instanceId);
+      // Always (re)send the join — the reply's snapshot is what a NEW member
+      // frame needs even when this board already joined server-side.
+      sendTransport({
+        type: "collab_join",
+        id: `collab:${recordUid}`,
+        record_uid: recordUid,
+      });
+      return;
+    }
+
+    if (data.type === FLAT_COLLAB_LEAVE) {
+      const recordUid = String(data.recordUid || "");
+      const members = collabMembers.get(recordUid);
+      if (members) {
+        members.delete(String(data.instanceId || ""));
+        if (members.size === 0) {
+          collabMembers.delete(recordUid);
+          sendTransport({ type: "collab_leave", record_uid: recordUid });
+        }
+      }
+      return;
+    }
+
+    if (data.type === FLAT_COLLAB_UPDATE) {
+      const recordUid = String(data.recordUid || "");
+      const members = collabMembers.get(recordUid);
+      // Only frames that joined the doc may write to it.
+      if (!recordUid || !members || !members.has(String(data.instanceId || ""))) {
+        return;
+      }
+      sendTransport({
+        type: "collab_update",
+        id: `collab-up:${recordUid}`,
+        record_uid: recordUid,
+        update_base64: String(data.updateBase64 || ""),
+      });
       return;
     }
 

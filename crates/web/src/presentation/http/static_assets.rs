@@ -94,6 +94,38 @@ pub async fn mermaid_license() -> Response {
     )))
 }
 
+/// Vendored loro-crdt (JS/wasm, npm loro-crdt pinned to the SAME version as
+/// the Rust `loro` crate) for the client collab layer (Ontology §11 "Collab").
+/// Same always-registered rule as d3/mermaid above. The three files MUST stay
+/// siblings under `/board/vendor/`: `loro-index.js` is the ESM entry
+/// re-exporting `./loro_wasm.js`, whose default `init()` resolves
+/// `loro_wasm_bg.wasm` relative to `import.meta.url`. License beside them
+/// (AGENTS.md rule).
+pub async fn loro_index_js() -> Response {
+    asset_response(js(include_bytes!(
+        "../../../src/sand/collab/vendor/loro-index.js"
+    )))
+}
+
+pub async fn loro_wasm_js() -> Response {
+    asset_response(js(include_bytes!(
+        "../../../src/sand/collab/vendor/loro_wasm.js"
+    )))
+}
+
+pub async fn loro_wasm_bg() -> Response {
+    asset_response(EmbeddedAsset {
+        bytes: include_bytes!("../../../src/sand/collab/vendor/loro_wasm_bg.wasm"),
+        content_type: "application/wasm",
+    })
+}
+
+pub async fn loro_license() -> Response {
+    asset_response(text(include_bytes!(
+        "../../../src/sand/collab/vendor/LoroLicense"
+    )))
+}
+
 fn embedded_asset(path: &str) -> Option<EmbeddedAsset> {
     match path {
         "styles.css" => Some(css(include_bytes!("../../../static/styles.css"))),

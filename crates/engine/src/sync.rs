@@ -1,387 +1,538 @@
-//! Sync (blueprint XV.2): facts replicate. A package is a visibility-filtered
-//! bundle of records + their signed facts; import re-appends through the one
-//! write path (idempotent by fact uid, deltas commute) preserving the origin
-//! author and signature. Rows travel by uid; slugs are local suggestions.
+//! Sync (Ontology §11): the unit of sync is the op, not the row. Every local
+//! write became a field-level op in the `sync_op` log; this module moves op
+//! BATCHES between Organs (reactive deltas through the bounded outbox,
+//! catch-up through per-contact checkpoints) and applies incoming ops with
+//! per-field LWW, idempotent by `(actor_organ, hlc)`. Facts keep their signed,
+//! hash-chained semantics and simply ride the log as kind `fact`.
 
 use chrono::Utc;
 use nucleus::{Cause, CauseKind, Fact, NewFact};
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
-use store::Store;
+use store::sync_ops::{self, OpKind, OpRow};
 
 use crate::Engine;
 use crate::error::EngineError;
 
+/// One op on the wire: the log row minus its local seq, plus the full signed
+/// Fact for kind=`fact` (hydrated at serve time — the log stores no copy).
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RecordSeed {
+pub struct WireOp {
+    pub tbl: String,
     pub uid: String,
-    pub slug: Option<String>,
+    pub field: String,
     pub kind: String,
-    pub head: String,
-    pub identity_predicate_uid: Option<String>,
-    pub unit_uid: Option<String>,
-    /// True origin organ, carried through relaying (blueprint: Protein-driven
-    /// Sync). `#[serde(default)]` so packages from an older peer still import.
-    #[serde(default)]
-    pub organ_uid: Option<String>,
+    pub value: Option<String>,
+    pub hlc: i64,
+    pub actor_organ: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub fact: Option<Fact>,
 }
 
-/// One concept riding a package (blueprint III.2: unknown concepts travel with
-/// the data that speaks them; importing adopts uid + lineage).
+/// A batch of ops from one Organ's log — the ONLY sync payload.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ConceptSeed {
-    pub uid: String,
-    pub name: String,
-    #[serde(default)]
-    pub parents: Vec<String>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AssertionSeed {
-    pub uid: String,
-    pub subject_uid: String,
-    pub predicate_uid: String,
-    pub object_uid: Option<String>,
-    pub quantity: Option<String>,
-    pub unit_uid: Option<String>,
-    pub asserted_by: Option<String>,
-    pub created_at: String,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Package {
+pub struct OpBatch {
     pub from_organ: String,
-    #[serde(default)]
-    pub concepts: Vec<ConceptSeed>,
-    pub records: Vec<RecordSeed>,
-    #[serde(default)]
-    pub assertions: Vec<AssertionSeed>,
-    pub facts: Vec<Fact>,
+    pub ops: Vec<WireOp>,
 }
 
 impl Engine {
-    /// Export the records visible to `subject` plus their facts (blueprint XV).
-    /// The visibility gate is the same one Protein uses — one boundary. The
-    /// concepts the records speak (and their ancestors) ride along.
-    pub async fn export_package(
-        &self,
-        subject: &str,
-        from_organ: &str,
-    ) -> Result<Package, EngineError> {
-        let visible = store::visibility::visible_targets(&self.store.pool, subject).await?;
-        let mut records = Vec::new();
-        let mut facts = Vec::new();
-        let mut concept_uids: Vec<String> = Vec::new();
-        for r in store::records::list_all(&self.store.pool).await? {
-            if !visible.contains(&r.uid) {
-                continue;
-            }
-            for c in [&r.identity_predicate_uid, &r.unit_uid]
-                .into_iter()
-                .flatten()
-            {
-                for ancestor in store::concepts::ancestors_including(&self.store.pool, c).await? {
-                    if !concept_uids.contains(&ancestor) {
-                        concept_uids.push(ancestor);
-                    }
-                }
-            }
-            // Lineage: keep the record's true origin if it already has one
-            // (relaying through an intermediate organ), else this Cell is the
-            // origin — stamp `from_organ` (blueprint: Sync/File Sync carry
-            // origin so a downstream Protein `organ_eq` still resolves).
-            let organ_uid = r.organ_uid.clone().or_else(|| Some(from_organ.to_string()));
-            records.push(RecordSeed {
-                uid: r.uid.clone(),
-                slug: r.slug,
-                kind: r.kind,
-                head: r.head,
-                identity_predicate_uid: r.identity_predicate_uid,
-                unit_uid: r.unit_uid,
-                organ_uid,
+    /// Turn log rows into wire ops, hydrating facts from the read model.
+    pub async fn hydrate_ops(&self, rows: Vec<OpRow>) -> Result<Vec<WireOp>, EngineError> {
+        let mut out = Vec::with_capacity(rows.len());
+        for row in rows {
+            let fact = if row.kind == "fact" {
+                store::facts::get(&self.store.pool, &row.uid).await?
+            } else {
+                None
+            };
+            out.push(WireOp {
+                tbl: row.tbl,
+                uid: row.uid,
+                field: row.field,
+                kind: row.kind,
+                value: row.value,
+                hlc: row.hlc,
+                actor_organ: row.actor_organ,
+                fact,
             });
-            facts.extend(store::facts::for_record(&self.store.pool, &r.uid, 10_000).await?);
         }
-        facts.sort_by(|a, b| a.at.cmp(&b.at));
-        let selected: HashSet<&str> = records.iter().map(|record| record.uid.as_str()).collect();
-        let assertions = export_assertions(&self.store, &selected, &mut concept_uids).await?;
-        let all = store::concepts::list_all(&self.store.pool).await?;
-        let concepts = concept_uids
-            .into_iter()
-            .filter_map(|uid| {
-                all.iter().find(|c| c.uid == uid).map(|c| ConceptSeed {
-                    uid: c.uid.clone(),
-                    name: c.canonical_name.clone(),
-                    parents: c.parents.clone(),
-                })
-            })
-            .collect();
-        Ok(Package {
-            from_organ: from_organ.to_string(),
-            concepts,
-            records,
-            assertions,
-            facts,
-        })
+        Ok(out)
     }
 
-    /// Export a Package selected by an arbitrary Protein instead of a
-    /// visibility subject — the primitive File Sync (and any future
-    /// Protein-scoped organ sync) shares with `export_package`. No visibility
-    /// gating: the caller's Protein IS the selection rule (e.g. combine
-    /// `organ_eq` with any other filter to pick exactly what leaves).
-    pub async fn export_package_by_protein(
+    /// Serve the catch-up feed: ops past a checkpoint, hydrated, plus the
+    /// current head seq. One indexed rowid-range query — an empty answer means
+    /// converged.
+    pub async fn ops_after(
         &self,
-        protein: &protein::Protein,
-        from_organ: &str,
-    ) -> Result<Package, EngineError> {
-        let matched = protein::matching_records(&self.store, protein, None).await?;
-        let mut records = Vec::new();
-        let mut facts = Vec::new();
-        let mut concept_uids: Vec<String> = Vec::new();
-        for r in matched {
-            for c in [&r.identity_predicate_uid, &r.unit_uid]
-                .into_iter()
-                .flatten()
-            {
-                for ancestor in store::concepts::ancestors_including(&self.store.pool, c).await? {
-                    if !concept_uids.contains(&ancestor) {
-                        concept_uids.push(ancestor);
-                    }
-                }
-            }
-            let organ_uid = r.organ_uid.clone().or_else(|| Some(from_organ.to_string()));
-            records.push(RecordSeed {
-                uid: r.uid.clone(),
-                slug: r.slug,
-                kind: r.kind,
-                head: r.head,
-                identity_predicate_uid: r.identity_predicate_uid,
-                unit_uid: r.unit_uid,
-                organ_uid,
-            });
-            facts.extend(store::facts::for_record(&self.store.pool, &r.uid, 10_000).await?);
-        }
-        facts.sort_by(|a, b| a.at.cmp(&b.at));
-        let selected: HashSet<&str> = records.iter().map(|record| record.uid.as_str()).collect();
-        let assertions = export_assertions(&self.store, &selected, &mut concept_uids).await?;
-        let all = store::concepts::list_all(&self.store.pool).await?;
-        let concepts = concept_uids
-            .into_iter()
-            .filter_map(|uid| {
-                all.iter().find(|c| c.uid == uid).map(|c| ConceptSeed {
-                    uid: c.uid.clone(),
-                    name: c.canonical_name.clone(),
-                    parents: c.parents.clone(),
-                })
-            })
-            .collect();
-        Ok(Package {
-            from_organ: from_organ.to_string(),
-            concepts,
-            records,
-            assertions,
-            facts,
-        })
+        after: i64,
+        limit: i64,
+    ) -> Result<(Vec<WireOp>, i64), EngineError> {
+        let rows = sync_ops::after(&self.store.pool, after, limit).await?;
+        let head = rows
+            .last()
+            .map(|row| row.seq)
+            .unwrap_or(sync_ops::max_seq(&self.store.pool).await?.max(after));
+        Ok((self.hydrate_ops(rows).await?, head))
     }
 
-    /// File Sync (blueprint: Sync/CRDT — Protein-driven target selection):
-    /// write the Protein-selected records + their facts to one JSON file at
-    /// `path`, the disk-organ analogue of `enqueue_sync_to`. Not queued — the
-    /// caller (a Karma signal/frequency, a CLI command) decides the cadence.
-    pub async fn sync_to_disk(
-        &self,
-        path: &std::path::Path,
-        protein: &protein::Protein,
-    ) -> Result<usize, EngineError> {
-        let organ = store::organs::local(&self.store.pool)
-            .await?
-            .map(|o| o.uid)
-            .unwrap_or_default();
-        let package = self.export_package_by_protein(protein, &organ).await?;
-        let count = package.records.len();
-        let json = serde_json::to_vec_pretty(&package).map_err(EngineError::Json)?;
-        if let Some(parent) = path.parent() {
-            std::fs::create_dir_all(parent).map_err(EngineError::Io)?;
-        }
-        std::fs::write(path, json).map_err(EngineError::Io)?;
-        Ok(count)
-    }
-
-    /// Import a package a File Sync wrote to disk (this Cell's own export, or
-    /// another organ's, dropped at a shared path) — mirrors `import_package`.
-    pub async fn sync_from_disk(&self, path: &std::path::Path) -> Result<Vec<Fact>, EngineError> {
-        let raw = std::fs::read(path).map_err(EngineError::Io)?;
-        let package: Package = serde_json::from_slice(&raw).map_err(EngineError::Json)?;
-        self.import_package(&package).await
-    }
-
-    /// Import a package: ensure the records exist locally by uid, then re-append
-    /// their facts (idempotent, authorship preserved). Returns facts newly
-    /// applied. Rejected rows land in the quarantine list (blueprint XI.1);
-    /// packages from blocked organs are rejected wholesale (XV).
-    pub async fn import_package(&self, package: &Package) -> Result<Vec<Fact>, EngineError> {
-        // blocked rejects everything everywhere (blueprint XV.2)
-        if let Some(contact) = store::organs::contact(&self.store.pool, &package.from_organ).await?
-        {
+    /// Apply a batch of remote ops. Returns how many were newly applied.
+    /// Idempotent by op identity `(actor_organ, hlc)`; rejected rows land in
+    /// quarantine and the rest of the batch still applies; batches from
+    /// blocked organs are rejected wholesale.
+    pub async fn import_op_batch(&self, batch: &OpBatch) -> Result<usize, EngineError> {
+        if let Some(contact) = store::organs::contact(&self.store.pool, &batch.from_organ).await? {
             if contact.trust == "blocked" {
                 return Err(EngineError::Consequence(format!(
                     "organ {} is blocked",
-                    package.from_organ
+                    batch.from_organ
                 )));
             }
         }
-        // concepts first: records reference them (one-tap adoption, III.2)
-        for concept in &package.concepts {
-            store::concepts::adopt(
-                &self.store.pool,
-                &concept.uid,
-                &concept.name,
-                Some(&package.from_organ),
-                &concept.parents,
-            )
-            .await?;
-        }
-        for seed in &package.records {
-            ensure_record(&self.store, seed, &package.from_organ).await?;
-        }
-        for assertion in &package.assertions {
-            store::assertions::import_active(
-                &self.store.pool,
-                store::assertions::ImportedAssertion {
-                    uid: &assertion.uid,
-                    subject_uid: &assertion.subject_uid,
-                    predicate_uid: &assertion.predicate_uid,
-                    object_uid: assertion.object_uid.as_deref(),
-                    quantity: assertion
-                        .quantity
-                        .as_deref()
-                        .map(nucleus::DecimalValue::parse_inferred)
-                        .transpose()
-                        .map_err(|error| EngineError::Consequence(error.to_string()))?,
-                    unit_uid: assertion.unit_uid.as_deref(),
-                    asserted_by: assertion.asserted_by.as_deref(),
-                    created_at: &assertion.created_at,
-                },
-            )
-            .await?;
-        }
-        let mut applied = Vec::new();
-        for fact in &package.facts {
-            // two-layer tamper model (XI): the chain step guards content->hash,
-            // the signature guards hash->author
-            if !nucleus::fact::verify_chain_step(fact) {
+        let pool = &self.store.pool;
+        let from = Some(batch.from_organ.as_str());
+        let mut applied = 0usize;
+        let mut touched: Vec<String> = Vec::new();
+        for op in &batch.ops {
+            let Some(kind) = OpKind::parse(&op.kind) else {
                 store::organs::quarantine(
-                    &self.store.pool,
-                    &package.from_organ,
-                    "chain step does not verify",
-                    &serde_json::to_string(fact).unwrap_or_default(),
+                    pool,
+                    &batch.from_organ,
+                    "unknown op kind",
+                    &serde_json::to_string(op).unwrap_or_default(),
                 )
                 .await?;
                 continue;
-            }
-            if fact.signature.is_some()
-                && !crate::trust::verify_fact(&self.store, fact)
-                    .await
-                    .unwrap_or(false)
-            {
-                store::organs::quarantine(
-                    &self.store.pool,
-                    &package.from_organ,
-                    "signature does not verify",
-                    &serde_json::to_string(fact).unwrap_or_default(),
-                )
-                .await?;
-                continue;
-            }
-            let imported = NewFact {
-                uid: Some(fact.uid.clone()), // idempotent by uid
-                record_uid: fact.record_uid.clone(),
-                delta: fact.delta,
-                at: Some(fact.at),
-                actor_uid: fact.actor_uid.clone(), // origin author survives replication
-                cause: Cause {
-                    kind: CauseKind::Sync,
-                    uid: Some(package.from_organ.clone()),
-                },
-                payload: fact.payload.clone(),
             };
-            // Sync-imported facts keep the ORIGIN signature so downstream Cells
-            // can still verify the original author; we re-seal for the local
-            // chain but carry the origin signature forward.
-            let mut news = imported;
-            let signer = self.signer.lock().await.clone();
-            let mut tx = self.store.pool.begin().await?;
-            if store::facts::exists(&mut tx, news.uid.as_ref().unwrap()).await? {
-                tx.rollback().await?;
-                continue;
-            }
-            news.actor_uid.get_or_insert_with(|| {
-                signer
-                    .as_ref()
-                    .map(|s| s.actor_uid.clone())
-                    .unwrap_or_default()
-            });
-            let prev = store::facts::last_hash(&mut tx).await?;
-            let mut sealed = nucleus::fact::seal(news, &prev, Utc::now());
-            sealed.signature = fact.signature.clone(); // origin authorship
-            store::facts::insert(&mut tx, &sealed).await?;
-            store::records::bump_quantity(
-                &mut tx,
-                &sealed.record_uid,
-                sealed.delta,
-                &Utc::now().to_rfc3339(),
-            )
-            .await?;
-            tx.commit().await?;
-            applied.push(sealed);
-        }
-        Ok(applied)
-    }
-}
-
-async fn export_assertions(
-    store: &Store,
-    selected: &HashSet<&str>,
-    concept_uids: &mut Vec<String>,
-) -> Result<Vec<AssertionSeed>, EngineError> {
-    let mut out = Vec::new();
-    for assertion in store::assertions::list_active(&store.pool).await? {
-        if assertion.role == "identity"
-            || !selected.contains(assertion.subject_uid.as_str())
-            || assertion
-                .object_uid
-                .as_deref()
-                .is_some_and(|object| !selected.contains(object))
-        {
-            continue;
-        }
-        let spoken_concepts =
-            std::iter::once(assertion.predicate_uid.as_str()).chain(assertion.unit_uid.as_deref());
-        for concept in spoken_concepts {
-            for ancestor in store::concepts::ancestors_including(&store.pool, concept).await? {
-                if !concept_uids.contains(&ancestor) {
-                    concept_uids.push(ancestor);
+            match (op.tbl.as_str(), kind) {
+                ("fact", OpKind::Fact) => {
+                    if self.import_fact_op(op, &batch.from_organ).await? {
+                        applied += 1;
+                        if let Some(fact) = &op.fact {
+                            touched.push(fact.record_uid.clone());
+                        }
+                    }
+                }
+                ("record", OpKind::Set) => {
+                    // LWW against the stored stamp BEFORE appending this op.
+                    let prior =
+                        sync_ops::latest_hlc_for_field(pool, "record", &op.uid, &op.field).await?;
+                    let tomb =
+                        sync_ops::latest_hlc_for_field(pool, "record", &op.uid, "").await?;
+                    if sync_ops::append(
+                        pool, &op.tbl, &op.uid, &op.field, kind,
+                        op.value.as_deref(), op.hlc, &op.actor_organ, from,
+                    )
+                    .await?
+                    .is_none()
+                    {
+                        continue; // duplicate identity
+                    }
+                    nucleus::hlc::observe(op.hlc);
+                    if op.hlc <= prior.unwrap_or(i64::MIN) {
+                        continue; // older than the stored value: log only
+                    }
+                    if let Some(tomb) = tomb {
+                        if op.hlc <= tomb {
+                            continue; // deleted stays deleted; late sets lose
+                        }
+                    }
+                    // Once collab history exists, the record-doc owns text:
+                    // a late create-era head/body set op is log-only. The
+                    // op's undelete power still applies — it won its HLC race.
+                    if (op.field == "head" || op.field == "body")
+                        && store::record_docs::has_crdt_history(pool, &op.uid).await?
+                    {
+                        if tomb.is_some() {
+                            store::sync_apply::undelete_record(pool, &op.uid).await?;
+                            applied += 1;
+                            touched.push(op.uid.clone());
+                        }
+                        continue;
+                    }
+                    let value: serde_json::Value = op
+                        .value
+                        .as_deref()
+                        .and_then(|raw| serde_json::from_str(raw).ok())
+                        .unwrap_or(serde_json::Value::Null);
+                    store::sync_apply::ensure_record_stub(
+                        pool,
+                        &op.uid,
+                        if op.field == "kind" {
+                            value.as_str().unwrap_or("plain")
+                        } else {
+                            "plain"
+                        },
+                        &op.actor_organ,
+                    )
+                    .await?;
+                    store::sync_apply::set_record_field(
+                        pool,
+                        &op.uid,
+                        &op.field,
+                        &value,
+                        tomb.is_some(), // newer set undeletes
+                    )
+                    .await?;
+                    applied += 1;
+                    touched.push(op.uid.clone());
+                }
+                ("record", OpKind::Tombstone) => {
+                    let prior =
+                        sync_ops::latest_hlc_for_field(pool, "record", &op.uid, "").await?;
+                    let latest_set =
+                        sync_ops::latest_set_hlc_for_row(pool, "record", &op.uid).await?;
+                    if sync_ops::append(
+                        pool, &op.tbl, &op.uid, &op.field, kind, None,
+                        op.hlc, &op.actor_organ, from,
+                    )
+                    .await?
+                    .is_none()
+                    {
+                        continue;
+                    }
+                    nucleus::hlc::observe(op.hlc);
+                    if op.hlc <= prior.unwrap_or(i64::MIN) {
+                        continue;
+                    }
+                    // Alive iff the latest set beats the latest tombstone —
+                    // "undelete is a newer write". A concurrent newer edit
+                    // keeps the record alive; otherwise the tombstone lands.
+                    if op.hlc > latest_set.unwrap_or(i64::MIN) {
+                        store::sync_apply::tombstone_record(pool, &op.uid).await?;
+                        applied += 1;
+                        touched.push(op.uid.clone());
+                    }
+                }
+                ("record_extension", OpKind::Set | OpKind::Tombstone) => {
+                    let prior = sync_ops::latest_hlc_for_field(
+                        pool, "record_extension", &op.uid, &op.field,
+                    )
+                    .await?;
+                    if sync_ops::append(
+                        pool, &op.tbl, &op.uid, &op.field, kind,
+                        op.value.as_deref(), op.hlc, &op.actor_organ, from,
+                    )
+                    .await?
+                    .is_none()
+                    {
+                        continue;
+                    }
+                    nucleus::hlc::observe(op.hlc);
+                    if op.hlc <= prior.unwrap_or(i64::MIN) {
+                        continue;
+                    }
+                    store::sync_apply::ensure_record_stub(pool, &op.uid, "plain", &op.actor_organ)
+                        .await?;
+                    // Field is "{namespace}.{key}" — keys have no dots,
+                    // namespaces may. No dot at all = whole-value namespace.
+                    match op.field.rsplit_once('.') {
+                        Some((namespace, key)) => match kind {
+                            OpKind::Set => {
+                                let value = op
+                                    .value
+                                    .as_deref()
+                                    .and_then(|raw| serde_json::from_str(raw).ok())
+                                    .unwrap_or(serde_json::Value::Null);
+                                store::sync_apply::set_extension_key(
+                                    pool, &op.uid, namespace, key, value,
+                                )
+                                .await?;
+                            }
+                            _ => {
+                                store::sync_apply::tombstone_extension_key(
+                                    pool, &op.uid, namespace, key,
+                                )
+                                .await?;
+                            }
+                        },
+                        None => {
+                            let value = op
+                                .value
+                                .as_deref()
+                                .and_then(|raw| serde_json::from_str(raw).ok())
+                                .unwrap_or(serde_json::Value::Null);
+                            store::sync_apply::set_extension_whole(pool, &op.uid, &op.field, &value)
+                                .await?;
+                        }
+                    }
+                    applied += 1;
+                    touched.push(op.uid.clone());
+                }
+                ("record_assertion", OpKind::Set | OpKind::Tombstone) => {
+                    let prior =
+                        sync_ops::latest_hlc_for_field(pool, "record_assertion", &op.uid, "")
+                            .await?;
+                    if sync_ops::append(
+                        pool, &op.tbl, &op.uid, &op.field, kind,
+                        op.value.as_deref(), op.hlc, &op.actor_organ, from,
+                    )
+                    .await?
+                    .is_none()
+                    {
+                        continue;
+                    }
+                    nucleus::hlc::observe(op.hlc);
+                    if op.hlc <= prior.unwrap_or(i64::MIN) {
+                        continue; // later HLC wins per assertion uid
+                    }
+                    match kind {
+                        OpKind::Set => {
+                            let Some(value) = op
+                                .value
+                                .as_deref()
+                                .and_then(|raw| serde_json::from_str::<serde_json::Value>(raw).ok())
+                            else {
+                                continue;
+                            };
+                            if let Some(subject) = value.get("subject_uid").and_then(|v| v.as_str())
+                            {
+                                store::sync_apply::ensure_record_stub(
+                                    pool, subject, "plain", &op.actor_organ,
+                                )
+                                .await?;
+                                touched.push(subject.to_string());
+                            }
+                            store::sync_apply::upsert_assertion(pool, &op.uid, &value).await?;
+                        }
+                        _ => {
+                            store::sync_apply::retract_assertion(pool, &op.uid).await?;
+                        }
+                    }
+                    applied += 1;
+                }
+                ("concept", OpKind::Set | OpKind::Tombstone) => {
+                    let prior =
+                        sync_ops::latest_hlc_for_field(pool, "concept", &op.uid, &op.field).await?;
+                    if sync_ops::append(
+                        pool, &op.tbl, &op.uid, &op.field, kind,
+                        op.value.as_deref(), op.hlc, &op.actor_organ, from,
+                    )
+                    .await?
+                    .is_none()
+                    {
+                        continue;
+                    }
+                    nucleus::hlc::observe(op.hlc);
+                    if op.hlc <= prior.unwrap_or(i64::MIN) {
+                        continue;
+                    }
+                    match kind {
+                        OpKind::Set => {
+                            let name = op
+                                .value
+                                .as_deref()
+                                .and_then(|raw| {
+                                    serde_json::from_str::<serde_json::Value>(raw).ok()
+                                })
+                                .and_then(|v| v.as_str().map(str::to_string))
+                                .unwrap_or_default();
+                            if !name.is_empty() {
+                                store::sync_apply::upsert_concept(
+                                    pool, &op.uid, &name, &op.actor_organ,
+                                )
+                                .await?;
+                            }
+                        }
+                        _ => {
+                            store::sync_apply::delete_concept(pool, &op.uid).await?;
+                        }
+                    }
+                    applied += 1;
+                }
+                ("record", OpKind::Crdt) => {
+                    let Some(value) = op.value.as_deref() else {
+                        store::organs::quarantine(
+                            pool,
+                            &batch.from_organ,
+                            "crdt op without a payload",
+                            &serde_json::to_string(op).unwrap_or_default(),
+                        )
+                        .await?;
+                        continue;
+                    };
+                    if sync_ops::append(
+                        pool, &op.tbl, &op.uid, &op.field, kind,
+                        Some(value), op.hlc, &op.actor_organ, from,
+                    )
+                    .await?
+                    .is_none()
+                    {
+                        continue; // duplicate identity
+                    }
+                    nucleus::hlc::observe(op.hlc);
+                    match store::sync_apply::record_deleted(pool, &op.uid).await? {
+                        // Tombstone freeze: a deleted record's doc takes no
+                        // more updates — the op stays in the log for relay.
+                        Some(true) => continue,
+                        Some(false) => {}
+                        None => {
+                            store::sync_apply::ensure_record_stub(
+                                pool,
+                                &op.uid,
+                                "plain",
+                                &op.actor_organ,
+                            )
+                            .await?;
+                        }
+                    }
+                    match self.apply_remote_crdt(&op.uid, value).await? {
+                        Ok(()) => {
+                            applied += 1;
+                            touched.push(op.uid.clone());
+                        }
+                        Err(reason) => {
+                            store::organs::quarantine(
+                                pool,
+                                &batch.from_organ,
+                                &reason,
+                                &serde_json::to_string(op).unwrap_or_default(),
+                            )
+                            .await?;
+                        }
+                    }
+                }
+                _ => {
+                    store::organs::quarantine(
+                        pool,
+                        &batch.from_organ,
+                        "op kind does not fit its table",
+                        &serde_json::to_string(op).unwrap_or_default(),
+                    )
+                    .await?;
                 }
             }
         }
-        out.push(AssertionSeed {
-            uid: assertion.uid,
-            subject_uid: assertion.subject_uid,
-            predicate_uid: assertion.predicate_uid,
-            object_uid: assertion.object_uid,
-            quantity: assertion.quantity.map(|quantity| quantity.to_string()),
-            unit_uid: assertion.unit_uid,
-            asserted_by: assertion.asserted_by,
-            created_at: assertion.created_at,
-        });
+        // One refresh signal per touched record, not per op: a zero-delta
+        // Sync fact wakes Protein subscribers (and stays out of the op log —
+        // facts::insert skips CauseKind::Sync).
+        touched.sort();
+        touched.dedup();
+        for record_uid in touched {
+            if store::records::get(pool, &record_uid).await?.is_some() {
+                let _ = self
+                    .append(
+                        NewFact {
+                            uid: None,
+                            record_uid,
+                            delta: nucleus::fact::zero_delta(),
+                            at: None,
+                            actor_uid: None,
+                            cause: Cause {
+                                kind: CauseKind::Sync,
+                                uid: Some(batch.from_organ.clone()),
+                            },
+                            payload: Some("{\"sync\":true}".to_string()),
+                        },
+                        Utc::now(),
+                    )
+                    .await;
+            }
+        }
+        Ok(applied)
     }
-    Ok(out)
+
+    /// Import one fact op: two-layer tamper model (XI) — the chain step guards
+    /// content→hash, the signature guards hash→author. Re-seals for the local
+    /// chain but keeps the ORIGIN signature. Returns whether the fact is new.
+    async fn import_fact_op(&self, op: &WireOp, from_organ: &str) -> Result<bool, EngineError> {
+        let pool = &self.store.pool;
+        let Some(fact) = &op.fact else {
+            store::organs::quarantine(
+                pool,
+                from_organ,
+                "fact op without its fact",
+                &serde_json::to_string(op).unwrap_or_default(),
+            )
+            .await?;
+            return Ok(false);
+        };
+        if !nucleus::fact::verify_chain_step(fact) {
+            store::organs::quarantine(
+                pool,
+                from_organ,
+                "chain step does not verify",
+                &serde_json::to_string(fact).unwrap_or_default(),
+            )
+            .await?;
+            return Ok(false);
+        }
+        if fact.signature.is_some()
+            && !crate::trust::verify_fact(&self.store, fact)
+                .await
+                .unwrap_or(false)
+        {
+            store::organs::quarantine(
+                pool,
+                from_organ,
+                "signature does not verify",
+                &serde_json::to_string(fact).unwrap_or_default(),
+            )
+            .await?;
+            return Ok(false);
+        }
+        // The op joins the log under its ORIGIN identity (relay); dedupe by
+        // identity first, then by fact uid.
+        if sync_ops::append(
+            pool,
+            "fact",
+            &op.uid,
+            "",
+            OpKind::Fact,
+            None,
+            op.hlc,
+            &op.actor_organ,
+            Some(from_organ),
+        )
+        .await?
+        .is_none()
+        {
+            return Ok(false);
+        }
+        nucleus::hlc::observe(op.hlc);
+        store::sync_apply::ensure_record_stub(pool, &fact.record_uid, "plain", &op.actor_organ)
+            .await?;
+        let imported = NewFact {
+            uid: Some(fact.uid.clone()), // idempotent by uid
+            record_uid: fact.record_uid.clone(),
+            delta: fact.delta,
+            at: Some(fact.at),
+            actor_uid: fact.actor_uid.clone(), // origin author survives
+            cause: Cause {
+                kind: CauseKind::Sync,
+                uid: Some(from_organ.to_string()),
+            },
+            payload: fact.payload.clone(),
+        };
+        let mut news = imported;
+        let signer = self.signer.lock().await.clone();
+        let mut tx = self.store.pool.begin().await?;
+        if store::facts::exists(&mut tx, news.uid.as_ref().unwrap()).await? {
+            tx.rollback().await?;
+            return Ok(false);
+        }
+        news.actor_uid.get_or_insert_with(|| {
+            signer
+                .as_ref()
+                .map(|s| s.actor_uid.clone())
+                .unwrap_or_default()
+        });
+        let prev = store::facts::last_hash(&mut tx).await?;
+        let mut sealed = nucleus::fact::seal(news, &prev, Utc::now());
+        sealed.signature = fact.signature.clone(); // origin authorship
+        store::facts::insert(&mut tx, &sealed).await?;
+        store::records::bump_quantity(
+            &mut tx,
+            &sealed.record_uid,
+            sealed.delta,
+            &Utc::now().to_rfc3339(),
+        )
+        .await?;
+        tx.commit().await?;
+        let _ = self.bus.send(sealed);
+        Ok(true)
+    }
 }
 
-/// The introduction handshake (blueprint XV.2/XI.1): who I am, where I live,
-/// and my public keys — enough for a peer to register me as a contact and
-/// verify my signed facts.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Introduction {
     pub organ_uid: String,
@@ -446,49 +597,69 @@ pub struct OpenPromiseExport {
 }
 
 impl Engine {
-    /// Queue a visibility-filtered package for a contact. Blocked and
-    /// non-`sync_out` contacts are refused. Returns the outbox row uid.
-    pub async fn enqueue_sync_to(&self, organ_uid: &str) -> Result<String, EngineError> {
-        let contact = store::organs::contact(&self.store.pool, organ_uid)
-            .await?
-            .ok_or_else(|| EngineError::UnknownRecord(organ_uid.into()))?;
-        if contact.trust == "blocked" || !contact.sync_out {
-            return Err(EngineError::Consequence(format!(
-                "organ {organ_uid} is not a sync-out contact"
-            )));
-        }
-        let from = store::organs::local(&self.store.pool)
-            .await?
-            .map(|o| o.uid)
-            .unwrap_or_default();
-        // the ONE visibility gate: the package is what the subject may see
-        let package = self.export_package(organ_uid, &from).await?;
-        let payload = serde_json::to_string(&package).map_err(EngineError::Json)?;
-        Ok(store::organs::outbox_enqueue(&self.store.pool, organ_uid, &payload).await?)
-    }
-
-    /// Drain the outbox through a sender (the HTTP boundary in production, an
-    /// in-memory wire in tests). Failures stay queued and retry next drain.
+    /// Drain the bounded outbox through a sender (the HTTP boundary in
+    /// production, an in-memory wire in tests): one op batch per contact,
+    /// hydrated from the log by seq. On success the delivered rows are
+    /// deleted (seq-guarded — an op replaced while in flight stays queued);
+    /// on failure attempts bump and everything stays queued. Returns batches
+    /// delivered.
     pub async fn drain_outbox<F, Fut>(&self, mut send: F) -> Result<usize, EngineError>
     where
-        F: FnMut(store::organs::Contact, Package) -> Fut,
+        F: FnMut(store::organs::Contact, OpBatch) -> Fut,
         Fut: std::future::Future<Output = Result<(), String>>,
     {
-        let mut sent = 0;
-        for row in store::organs::outbox_due(&self.store.pool).await? {
-            let Some(contact) = store::organs::contact(&self.store.pool, &row.organ_uid).await?
-            else {
-                store::organs::outbox_mark(&self.store.pool, &row.uid, false).await?;
+        let pool = &self.store.pool;
+        let Some(from_organ) = store::organs::local(pool).await?.map(|o| o.uid) else {
+            return Ok(0);
+        };
+        let due = sync_ops::outbox_due(pool).await?;
+        let mut sent = 0usize;
+        let mut index = 0usize;
+        while index < due.len() {
+            let contact_uid = due[index].contact_organ.clone();
+            let mut rows = Vec::new();
+            while index < due.len() && due[index].contact_organ == contact_uid {
+                rows.push(due[index].clone());
+                index += 1;
+            }
+            let Some(contact) = store::organs::contact(pool, &contact_uid).await? else {
+                sync_ops::outbox_clear_contact(pool, &contact_uid).await?;
                 continue;
             };
-            let Ok(package) = serde_json::from_str::<Package>(&row.payload) else {
-                store::organs::outbox_mark(&self.store.pool, &row.uid, false).await?;
+            if contact.trust == "blocked" || !contact.sync_out {
+                sync_ops::outbox_clear_contact(pool, &contact_uid).await?;
                 continue;
+            }
+            let mut log_rows = Vec::new();
+            let mut kept = Vec::new();
+            for row in rows {
+                match sync_ops::get_by_seq(pool, row.seq).await? {
+                    Some(op) => {
+                        log_rows.push(op);
+                        kept.push(row);
+                    }
+                    // Pruned from the log while queued: nothing to send.
+                    None => sync_ops::outbox_delete(pool, &row).await?,
+                }
+            }
+            if kept.is_empty() {
+                continue;
+            }
+            log_rows.sort_by_key(|op| op.seq);
+            let batch = OpBatch {
+                from_organ: from_organ.clone(),
+                ops: self.hydrate_ops(log_rows).await?,
             };
-            let ok = send(contact, package).await.is_ok();
-            store::organs::outbox_mark(&self.store.pool, &row.uid, ok).await?;
-            if ok {
-                sent += 1;
+            match send(contact, batch).await {
+                Ok(()) => {
+                    for row in &kept {
+                        sync_ops::outbox_delete(pool, row).await?;
+                    }
+                    sent += 1;
+                }
+                Err(_) => {
+                    sync_ops::outbox_bump_attempts(pool, &contact_uid).await?;
+                }
             }
         }
         Ok(sent)
@@ -569,47 +740,3 @@ impl Engine {
     }
 }
 
-async fn ensure_record(
-    store: &Store,
-    seed: &RecordSeed,
-    fallback_organ: &str,
-) -> Result<(), EngineError> {
-    if store::records::get(&store.pool, &seed.uid).await?.is_some() {
-        return Ok(());
-    }
-    // Insert with the ORIGIN uid so cross-organ joins line up (blueprint XV.2).
-    // A slug is a local suggestion, never identity — drop it on collision.
-    let slug_taken = match &seed.slug {
-        Some(slug) => store::records::resolve(&store.pool, slug).await?.is_some(),
-        None => false,
-    };
-    // Older peers may not send `organ_uid` yet — fall back to the sending
-    // organ so lineage still resolves (blueprint: Protein-driven Sync).
-    let organ_uid = seed
-        .organ_uid
-        .clone()
-        .or_else(|| Some(fallback_organ.to_string()));
-    let now = Utc::now().to_rfc3339();
-    store::sqlx::query(
-        "INSERT INTO record (uid, slug, kind, head, body, quantity_mantissa, quantity_scale, unit_uid, organ_uid, created_at, updated_at)
-         VALUES (?, ?, ?, ?, '', '0', 0, ?, ?, ?, ?)",
-    )
-    .bind(&seed.uid)
-    .bind(if slug_taken { None } else { seed.slug.clone() })
-    .bind(&seed.kind)
-    .bind(&seed.head)
-    .bind(&seed.unit_uid)
-    .bind(&organ_uid)
-    .bind(&now)
-    .bind(&now)
-    .execute(&store.pool)
-    .await?;
-    store::assertions::set_identity(
-        &store.pool,
-        &seed.uid,
-        seed.identity_predicate_uid.as_deref(),
-        None,
-    )
-    .await?;
-    Ok(())
-}

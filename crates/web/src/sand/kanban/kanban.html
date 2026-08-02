@@ -225,7 +225,7 @@
     <button class="sheet-backdrop" type="button" data-close="sheet-columns"></button>
     <div class="sheet-panel">
       <div class="sheet-head"><h2>Columns</h2><button type="button" data-close="sheet-columns">Close</button></div>
-      <p class="sheet-sub" data-lynx-tooltip="Done is quantity 1 — you only need to know if you want to change it.">Columns bucket cards by <b>quantity</b>: a value (<code>1</code>), a range (<code>3..10</code> — moving a card in writes the range's first value), or a concept (<code>@food</code> — moving writes <code>set-identity</code>). Done is quantity 1; you only need to know that if you want to change it. The checkbox hides a column.</p>
+      <p class="sheet-sub" data-lynx-tooltip="Done is quantity 1 — you only need to know if you want to change it.">Columns match in order by a quantity, concepts, or both (<code>-2 @wip</code>). Moving a card writes the column quantity and ordinary concepts, and removes the previous column's concepts. A Record's identity (such as <code>@task</code>) is never changed. Done is quantity 1; you only need to know that if you want to change it. The checkbox hides a column.</p>
       <div id="columns-list" class="field-block"></div>
       <div class="sheet-actions start">
         <button id="column-add" type="button">+ Add column</button>
@@ -266,10 +266,11 @@
     const columnsEl = $("columns");
 
     // ---- lanes (the column system, K3) --------------------------------------
-    // A column is {key,label} plus HOW it buckets: a quantity `value` (with an
-    // optional `to` making it a RANGE — moving a card in writes the
-    // representative `value`), or a `concept` name/uid (moving writes
-    // `set-identity`). cardState.kanban.lanesDef overrides the defaults; the
+    // A column is {key,label} plus its state: an optional quantity `value`
+    // (with an optional `to` making it a RANGE) and ordinary unary `concepts`.
+    // All declared parts match; columns themselves are tried in saved order.
+    // Moving writes the target state and removes the preceding lane's concepts,
+    // never touching the Record's one identity assertion. cardState.kanban.lanesDef overrides the defaults; the
     // Columns sheet edits it; presets swap it in one tap.
     const DEFAULT_LANES = [
       { key: "backlog", label: "Backlog", value: 0, color: "#6e7681" },
@@ -290,12 +291,15 @@
       for (const l of raw) {
         if (!l || !l.key) continue;
         const lane = { key: String(l.key), label: String(l.label || l.key) };
-        if (typeof l.concept === "string" && l.concept.trim()) {
-          lane.concept = l.concept.trim();
-        } else if (Number.isFinite(Number(l.value))) {
+        // `concept` was the old identity-column shape. Read it as an ordinary
+        // state tag so existing boards keep working without retaining that bug.
+        const concepts = Array.isArray(l.concepts) ? l.concepts : (typeof l.concept === "string" ? [l.concept] : []);
+        lane.concepts = [...new Set(concepts.map((concept) => String(concept).trim()).filter(Boolean))];
+        if (Number.isFinite(Number(l.value))) {
           lane.value = Number(l.value);
           if (l.to !== undefined && Number.isFinite(Number(l.to)) && Number(l.to) >= lane.value) lane.to = Number(l.to);
-        } else continue;
+        }
+        if (lane.value === undefined && !lane.concepts.length) continue;
         if (typeof l.color === "string" && HEX_COLOR_RE.test(l.color)) lane.color = l.color;
         out.push(lane);
       }
@@ -311,15 +315,16 @@
       const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
       return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     }
-    function conceptMatchesLane(rowConcept, lane) {
-      if (!rowConcept) return false;
-      return rowConcept === lane.concept || conceptNames[rowConcept] === lane.concept;
+    let ordinaryConcepts = {}; // record uid -> active ordinary unary predicate UIDs
+    function conceptMatches(concepts, wanted) {
+      return concepts.some((concept) => concept === wanted || conceptNames[concept] === wanted);
     }
     function laneBuckets(row, lane) {
       const q = Number(row.quantity) || 0;
-      if (lane.concept) return conceptMatchesLane(row.concept, lane);
-      if (lane.to !== undefined) return q >= lane.value && q <= lane.to;
-      return q === lane.value;
+      const quantityMatches = lane.value === undefined || (lane.to !== undefined
+        ? q >= lane.value && q <= lane.to : q === lane.value);
+      const concepts = ordinaryConcepts[row.uid] || [];
+      return quantityMatches && lane.concepts.every((concept) => conceptMatches(concepts, concept));
     }
     function laneFor(row) {
       for (const lane of lanes) if (laneBuckets(row, lane)) return lane.key;
@@ -469,11 +474,20 @@
     }
     resubscribe(null); // covers preview/selftest runs with no board card state
 
-    // ---- side subscriptions: concept names + column presets ------------------
-    // Rows carry concept UIDs; resolve display NAMES from the Lingua source.
+    // ---- side subscriptions: concept names, ordinary tags + column presets ---
     H.subscribeProtein("kanban-concepts", { source: "concept" }, ({ rows: incoming }) => {
       conceptNames = {};
       for (const c of incoming || []) if (c && c.uid) conceptNames[c.uid] = c.name;
+      render();
+    });
+    H.subscribeProtein("kanban-assertions", { source: "assertion" }, ({ rows: incoming }) => {
+      ordinaryConcepts = {};
+      for (const assertion of incoming || []) {
+        // Kanban state is deliberately an ordinary unary assertion, never a
+        // Record identity and never a binary relationship.
+        if (assertion?.role !== "ordinary" || assertion.object || !assertion.subject || !assertion.predicate) continue;
+        (ordinaryConcepts[assertion.subject] ||= []).push(assertion.predicate);
+      }
       render();
     });
     // Column presets are sand-configuration RECORDS (kind `sand`, extension
@@ -533,7 +547,9 @@
 
     // ---- creation: delegated to the pinned Record sand -------------------------
     function createInLane(lane) {
-      H.emit("recordCreate", { record: { kind: "plain", quantity: lane.value ?? 0 } });
+      H.emit("recordCreate", {
+        record: { kind: "plain", quantity: lane.value ?? 0, assertions: lane.concepts || [] },
+      });
     }
 
     // ---- sheets ---------------------------------------------------------------
@@ -728,19 +744,23 @@
         { key: "finished", label: "Finished", value: 1, color: "#3fb950" },
       ] },
     ];
-    const laneValueText = (lane) => lane.concept ? `@${lane.concept}`
-      : lane.to !== undefined ? `${lane.value}..${lane.to}` : String(lane.value);
+    const laneValueText = (lane) => [
+      lane.value === undefined ? "" : (lane.to !== undefined ? `${lane.value}..${lane.to}` : String(lane.value)),
+      ...(lane.concepts || []).map((concept) => `@${concept}`),
+    ].filter(Boolean).join(" ");
     function parseLaneValue(text) {
       const t = String(text || "").trim();
       if (!t) return null;
-      if (t.startsWith("@")) { const c = t.slice(1).trim(); return c ? { concept: c } : null; }
-      const range = t.match(/^(-?\d+(?:\.\d+)?)\s*\.\.\s*(-?\d+(?:\.\d+)?)$/);
+      const concepts = [...new Set([...t.matchAll(/(?:^|\s)@([^\s@]+)/g)].map((match) => match[1]))];
+      const quantityText = t.replace(/(?:^|\s)@[^\s@]+/g, "").trim();
+      if (!quantityText) return concepts.length ? { concepts } : null;
+      const range = quantityText.match(/^(-?\d+(?:\.\d+)?)\s*\.\.\s*(-?\d+(?:\.\d+)?)$/);
       if (range) {
         const from = Number(range[1]); const to = Number(range[2]);
-        return to >= from ? { value: from, to } : null;
+        return to >= from ? { value: from, to, concepts } : null;
       }
-      const n = Number(t);
-      return Number.isFinite(n) ? { value: n } : null;
+      const n = Number(quantityText);
+      return Number.isFinite(n) ? { value: n, concepts } : null;
     }
     function freshLaneKey(label, taken) {
       const base = String(label || "column").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "column";
@@ -791,12 +811,12 @@
         value.type = "text";
         value.className = "col-value";
         value.value = laneValueText(lane);
-        value.dataset.lynxTooltip = "A quantity (1), a range (3..10), or a concept (@food)";
+        value.dataset.lynxTooltip = "A quantity (1), a range (3..10), concepts (@todo @wip), or both (-2 @wip)";
         value.addEventListener("input", () => {
           const parsed = parseLaneValue(value.value);
           value.classList.toggle("col-err", !parsed);
           if (parsed) {
-            delete lane.value; delete lane.to; delete lane.concept;
+            delete lane.value; delete lane.to; delete lane.concept; delete lane.concepts;
             Object.assign(lane, parsed);
           }
         });
@@ -823,7 +843,7 @@
     $("column-add").addEventListener("click", () => {
       if (!draftLanes) return;
       let v = 0;
-      const used = new Set(draftLanes.filter((l) => l.concept === undefined).map((l) => l.value));
+      const used = new Set(draftLanes.filter((l) => l.value !== undefined).map((l) => l.value));
       while (used.has(v)) v -= 1;
       draftLanes.push({ key: "", label: "", value: v, color: "#6e7681" });
       renderColumnsSheet();
@@ -834,8 +854,9 @@
       const next = [];
       for (const lane of draftLanes) {
         const labelText = String(lane.label || "").trim();
-        const bucket = lane.concept ? { concept: lane.concept }
-          : Number.isFinite(lane.value) ? { value: lane.value, ...(lane.to !== undefined ? { to: lane.to } : {}) }
+        const concepts = [...new Set((lane.concepts || (lane.concept ? [lane.concept] : [])).map((concept) => String(concept).trim()).filter(Boolean))];
+        const bucket = (Number.isFinite(lane.value) || concepts.length)
+          ? { ...(Number.isFinite(lane.value) ? { value: lane.value, ...(lane.to !== undefined ? { to: lane.to } : {}) } : {}), ...(concepts.length ? { concepts } : {}) }
           : null;
         if (!bucket || !labelText) continue;
         const key = lane.key && !taken.has(lane.key) ? lane.key : freshLaneKey(labelText, taken);
@@ -1143,13 +1164,16 @@
       if (mode !== "head") el.appendChild(cardBodyNode(row, mode));
       // no quantity/slug here (bug #2): the column TITLE already says what
       // column the card is on, and the slug is only useful inside Record.
-      if (row.concept) {
+      const visibleConcepts = [...new Set([row.concept, ...(ordinaryConcepts[row.uid] || [])].filter(Boolean))];
+      if (visibleConcepts.length) {
         const meta = document.createElement("div");
         meta.className = "card-meta";
-        const chip = document.createElement("span");
-        chip.className = "concept-chip";
-        chip.textContent = `@${conceptLabel(row.concept)}`;
-        meta.appendChild(chip);
+        for (const concept of visibleConcepts) {
+          const chip = document.createElement("span");
+          chip.className = "concept-chip";
+          chip.textContent = `@${conceptLabel(concept)}`;
+          meta.appendChild(chip);
+        }
         el.appendChild(meta);
       }
       // hover-only overlay (2026-07-18): the select checkbox and the three
@@ -1189,34 +1213,41 @@
       return el;
     }
 
-    // Optimistic move (old optimisticMoveCard/rollbackBoard, over rows instead
-    // of server HTML): apply locally, write the typed Action, roll back on
-    // reject. A value/range column writes its representative `value` through
-    // `set-quantity`; a concept column writes `set-identity`.
-    function move(uid, laneKey) {
+    // A move changes only ordinary state assertions and an optional quantity;
+    // the identity assertion is intentionally outside this protocol.
+    async function move(uid, laneKey) {
       const row = rows.find((r) => r.uid === uid);
       const lane = laneByKey(laneKey);
       if (!row || !lane) return;
       if (laneBuckets(row, lane)) return; // already there (range keeps its exact quantity)
-      if (lane.concept) {
-        const previous = row.concept;
-        row.concept = conceptUidFor(lane.concept);
-        render();
-        act({ action: "set-identity", subject: uid, predicate: lane.concept }).catch((err) => {
-          console.warn(err);
-          row.concept = previous;
-          render();
-        });
-        return;
+      const source = laneByKey(laneFor(row));
+      const previousQuantity = row.quantity;
+      const previousConcepts = [...(ordinaryConcepts[uid] || [])];
+      const targetConcepts = lane.concepts || [];
+      const sourceConcepts = source?.concepts || [];
+      const additions = targetConcepts.filter((concept) => !conceptMatches(previousConcepts, concept));
+      const removals = sourceConcepts.filter((concept) => !targetConcepts.includes(concept) && conceptMatches(previousConcepts, concept));
+      ordinaryConcepts[uid] = [...previousConcepts];
+      for (const concept of additions) {
+        const conceptUid = conceptUidFor(concept) || concept;
+        if (!ordinaryConcepts[uid].includes(conceptUid)) ordinaryConcepts[uid].push(conceptUid);
       }
-      const previous = row.quantity;
-      row.quantity = lane.value;
+      if (lane.value !== undefined) row.quantity = lane.value;
       render();
-      act({ action: "set-quantity", target: uid, value: lane.value }).catch((err) => {
+      try {
+        await act({
+          action: "transition-record",
+          subject: uid,
+          assert: additions,
+          retract: removals,
+          ...(lane.value !== undefined ? { quantity: lane.value } : {}),
+        });
+      } catch (err) {
         console.warn(err);
-        row.quantity = previous;
+        row.quantity = previousQuantity;
+        ordinaryConcepts[uid] = previousConcepts;
         render();
-      });
+      }
     }
 
     render();

@@ -322,6 +322,11 @@ pub struct Include {
     pub extension: Option<ExtensionInclude>,
     /// Promise fold to a future instant (blueprint XII via V.3): `projected`.
     pub projection: Option<ProjectionInclude>,
+    /// This organ's `organ_contact` row (trust, proximity), when one exists
+    /// (blueprint XV) — `null` for a record with no contact sidecar, e.g. the
+    /// local organ itself.
+    #[serde(default)]
+    pub contact: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -811,6 +816,7 @@ async fn execute_karma(store: &Store, protein: &Protein) -> Result<Vec<Value>, P
         || protein.include.availability
         || protein.include.extension.is_some()
         || protein.include.projection.is_some()
+        || protein.include.contact
     {
         return Err(karma_query_error(
             "protein_karma_include_unsupported",
@@ -1796,6 +1802,12 @@ async fn attach_includes(
             store::records::get_extension(&store.pool, record_uid, &extension.namespace)
                 .await?
                 .unwrap_or(Value::Null);
+    }
+    if include.contact {
+        row["contact"] = store::organs::contact(&store.pool, record_uid)
+            .await?
+            .map(|c| json!({ "trust": c.trust, "proximity": c.proximity }))
+            .unwrap_or(Value::Null);
     }
     if let Some(projection) = &include.projection {
         // the promise fold (V.3/XII): quantity + Σ deltas of agreed/active
@@ -5076,6 +5088,7 @@ fn transfer_settlement_preview_filter(protein: &Protein) -> Result<(&str, f64), 
         || protein.include.availability
         || protein.include.extension.is_some()
         || protein.include.projection.is_some()
+        || protein.include.contact
     {
         return Err(transfer_query_error(
             "protein_transfer_settlement_preview_invalid_query",
@@ -5248,6 +5261,7 @@ fn transfer_bulk_completion_filter(protein: &Protein) -> Result<(&str, Vec<Strin
         || protein.include.availability
         || protein.include.extension.is_some()
         || protein.include.projection.is_some()
+        || protein.include.contact
     {
         return Err(transfer_query_error(
             "protein_transfer_bulk_completion_invalid_query",

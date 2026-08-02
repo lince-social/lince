@@ -333,9 +333,9 @@ pub const DEFAULT_INTERVAL: std::time::Duration = std::time::Duration::from_secs
 /// with `{ enabled: true, path: "..." }`, spawn its watch loop. A tick
 /// immediately reconciles disk against whatever's already selected for that
 /// organ, so the very first tick after boot writes out the current records —
-/// there's no separate "initial dump" step. Toggling the config later (via
-/// the Organ sand) only takes effect on the next boot; a live-reactive
-/// start/stop supervisor is future work.
+/// there's no separate "initial dump" step. Kept for tests / callers that
+/// only want a one-shot seed; `spawn_supervisor` below is the live-reactive
+/// version wired at boot.
 pub async fn spawn_configured_watchers(
     engine: std::sync::Arc<Engine>,
 ) -> Result<Vec<tokio::task::JoinHandle<()>>, EngineError> {
@@ -372,4 +372,121 @@ pub async fn spawn_configured_watchers(
         ));
     }
     Ok(handles)
+}
+
+/// What `lince.file_sync` wants for one organ right now — `None` means
+/// disabled/unset/no path.
+fn desired_watch(config: Option<serde_json::Value>) -> Option<PathBuf> {
+    let config = config?;
+    let enabled = config
+        .get("enabled")
+        .and_then(|v| v.as_bool())
+        .unwrap_or(false);
+    let path = config.get("path").and_then(|v| v.as_str()).unwrap_or("");
+    (enabled && !path.trim().is_empty()).then(|| PathBuf::from(path))
+}
+
+/// Start/stop `organ_uid`'s watch loop to match its current `lince.file_sync`
+/// extension, diffing against what the supervisor already has running.
+async fn reconcile_one(
+    engine: &std::sync::Arc<Engine>,
+    organ_uid: &str,
+    running: &mut HashMap<String, (PathBuf, tokio::task::JoinHandle<()>)>,
+) -> Result<(), EngineError> {
+    let config =
+        store::records::get_extension(&engine.store.pool, organ_uid, "lince.file_sync").await?;
+    let desired = desired_watch(config);
+    match (desired, running.get(organ_uid)) {
+        (Some(path), Some((current, _))) if *current == path => {}
+        (Some(path), existing) => {
+            if let Some((_, handle)) = existing {
+                handle.abort();
+            }
+            let handle = spawn_watch(
+                engine.clone(),
+                path.clone(),
+                organ_uid.to_string(),
+                DEFAULT_INTERVAL,
+            );
+            running.insert(organ_uid.to_string(), (path, handle));
+        }
+        (None, Some(_)) => {
+            if let Some((_, handle)) = running.remove(organ_uid) {
+                handle.abort();
+            }
+        }
+        (None, None) => {}
+    }
+    Ok(())
+}
+
+/// Reconcile every `kind=organ` record's watch loop against its current
+/// `lince.file_sync` extension — the seed pass, and the resync used after a
+/// missed fact_bus event (broadcast lag).
+async fn reconcile_all(
+    engine: &std::sync::Arc<Engine>,
+    running: &mut HashMap<String, (PathBuf, tokio::task::JoinHandle<()>)>,
+) -> Result<(), EngineError> {
+    let protein = protein::Protein {
+        source: protein::Source::Record,
+        filter: vec![protein::Predicate::KindEq("organ".to_string())],
+        include: Default::default(),
+        aggregate: None,
+        order: vec![],
+        limit: None,
+    };
+    let organs = protein::matching_records(&engine.store, &protein, None).await?;
+    let seen: HashSet<String> = organs.iter().map(|o| o.uid.clone()).collect();
+    for organ in &organs {
+        reconcile_one(engine, &organ.uid, running).await?;
+    }
+    let vanished: Vec<String> = running
+        .keys()
+        .filter(|uid| !seen.contains(*uid))
+        .cloned()
+        .collect();
+    for uid in vanished {
+        if let Some((_, handle)) = running.remove(&uid) {
+            handle.abort();
+        }
+    }
+    Ok(())
+}
+
+/// A `SetExtension` on `lince.file_sync` fires an annotation fact whose
+/// payload is `{"extension": "lince.file_sync"}` (`Action::SetExtension` in
+/// `actions.rs`) — cheap enough to string-match without parsing JSON.
+fn fact_may_touch_file_sync(fact: &nucleus::Fact) -> bool {
+    fact.payload
+        .as_deref()
+        .is_some_and(|p| p.contains("lince.file_sync"))
+}
+
+/// Live-reactive replacement for a one-shot boot call: seeds every enabled
+/// organ's watch loop, then listens on the fact bus and starts/stops loops
+/// as `lince.file_sync` extensions change — toggling File Sync from the
+/// Organ sand takes effect on the spot, no reboot required. A broadcast lag
+/// (slow consumer, full channel) triggers a full resync rather than trusting
+/// partial state.
+pub fn spawn_supervisor(engine: std::sync::Arc<Engine>) -> tokio::task::JoinHandle<()> {
+    tokio::spawn(async move {
+        let mut running: HashMap<String, (PathBuf, tokio::task::JoinHandle<()>)> = HashMap::new();
+        let _ = reconcile_all(&engine, &mut running).await;
+        let mut bus = engine.subscribe();
+        loop {
+            match bus.recv().await {
+                Ok(fact) => {
+                    let should_reconcile =
+                        fact_may_touch_file_sync(&fact) || running.contains_key(&fact.record_uid);
+                    if should_reconcile {
+                        let _ = reconcile_one(&engine, &fact.record_uid, &mut running).await;
+                    }
+                }
+                Err(tokio::sync::broadcast::error::RecvError::Lagged(_)) => {
+                    let _ = reconcile_all(&engine, &mut running).await;
+                }
+                Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
+            }
+        }
+    })
 }

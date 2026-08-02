@@ -38,6 +38,15 @@ pub async fn create_in(
             .await?;
     }
     crate::linguas::adopt(pool, lingua_uid, &uid).await?;
+    crate::sync_ops::log_local(
+        pool,
+        "concept",
+        &uid,
+        "canonical_name",
+        crate::sync_ops::OpKind::Set,
+        Some(serde_json::json!(canonical_name).to_string()),
+    )
+    .await?;
     Ok(uid)
 }
 
@@ -68,15 +77,25 @@ pub async fn rename(
     concept_uid: &str,
     canonical_name: &str,
 ) -> Result<bool, StoreError> {
-    Ok(
-        sqlx::query("UPDATE concept SET canonical_name = ? WHERE uid = ?")
-            .bind(canonical_name)
-            .bind(concept_uid)
-            .execute(pool)
-            .await?
-            .rows_affected()
-            > 0,
-    )
+    let renamed = sqlx::query("UPDATE concept SET canonical_name = ? WHERE uid = ?")
+        .bind(canonical_name)
+        .bind(concept_uid)
+        .execute(pool)
+        .await?
+        .rows_affected()
+        > 0;
+    if renamed {
+        crate::sync_ops::log_local(
+            pool,
+            "concept",
+            concept_uid,
+            "canonical_name",
+            crate::sync_ops::OpKind::Set,
+            Some(serde_json::json!(canonical_name).to_string()),
+        )
+        .await?;
+    }
+    Ok(renamed)
 }
 
 pub async fn add_parent(
@@ -146,6 +165,17 @@ pub async fn delete(pool: &SqlitePool, concept_uid: &str) -> Result<bool, StoreE
         .await?
         .rows_affected()
         > 0;
+    if deleted {
+        crate::sync_ops::log_local_tx(
+            &mut transaction,
+            "concept",
+            concept_uid,
+            "",
+            crate::sync_ops::OpKind::Tombstone,
+            None,
+        )
+        .await?;
+    }
     transaction.commit().await?;
     Ok(deleted)
 }

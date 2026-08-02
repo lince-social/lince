@@ -19,6 +19,7 @@
   const actionWaiters = new Map(); // reqId -> {resolve, reject}
   const terminalSessions = new Map(); // sessionId -> callbacks + open waiter
   const laneHandlers = new Set(); // {room, handler}
+  const collabHandlers = new Map(); // recordUid -> Set<handler(snapshotBase64)>
   let live = false;
   const liveHandlers = new Set();
   let signingState = Object.freeze({
@@ -150,6 +151,11 @@
         }
         break;
       }
+      case "lince:collab-state": {
+        const handlers = collabHandlers.get(data.recordUid);
+        if (handlers) for (const h of [...handlers]) h(data.snapshotBase64 || "");
+        break;
+      }
       case "lince:lane-event":
         for (const entry of laneHandlers) if (entry.room === data.room) entry.handler(data.payload, data.from);
         break;
@@ -246,6 +252,33 @@
       const entry = { room, handler };
       laneHandlers.add(entry);
       return () => laneHandlers.delete(entry);
+    },
+
+    // Live collab (Ontology §11 "Collab"): join a record's shared Loro doc.
+    // `handler(snapshotBase64)` fires with the server doc's snapshot on join
+    // and again on every change (a sibling session typing, or a peer Organ
+    // syncing in) — import the bytes into the sand's LoroDoc; imports dedupe
+    // by version vector. Returns a leave fn. Send local edits with
+    // `collabUpdate` (base64 Loro update bytes since the last send).
+    collabJoin(recordUid, handler) {
+      if (typeof handler !== "function") return () => {};
+      let handlers = collabHandlers.get(recordUid);
+      if (!handlers) {
+        handlers = new Set();
+        collabHandlers.set(recordUid, handlers);
+      }
+      handlers.add(handler);
+      post({ type: "lince:collab-join", recordUid });
+      return () => {
+        handlers.delete(handler);
+        if (handlers.size === 0) {
+          collabHandlers.delete(recordUid);
+          post({ type: "lince:collab-leave", recordUid });
+        }
+      };
+    },
+    collabUpdate(recordUid, updateBase64) {
+      post({ type: "lince:collab-update", recordUid, updateBase64: String(updateBase64 || "") });
     },
 
     onLive(handler) {

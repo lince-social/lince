@@ -410,6 +410,10 @@ code) serve the Organ sand.
   selecting one runs the normal introduction + challenge flow and, on
   confirmation, adds it to contacts. Display names are untrusted labels —
   the UI must never present a name as identity.
+(Scope revised by the iroh box below: the code is required on FIRST contact
+through discovery and skippable over an already-verified channel. What it
+defends changed — not key substitution on the wire, which iroh retires, but
+a relay attacker announcing their own NodeId under a friend's display name.)
 Built: the verification code (Signal safety-number pattern) —
 `engine::peers::verification_code` derives base32 (A-Z2-7) of the first 25
 bits of `sha256(sorted both organs' pubkeys)` → 5 chars like `Y3HS4`;
@@ -420,6 +424,980 @@ only `/organ/pair`'s own reply carries the local derivation for the UI.
 - [ ] Physical-proximity signals (same-LAN sighting, BLE, UWB) are a
   post-sync feature — §13; discovery here only finds peers, it never
   scores nearness.
+
+### The Organ/Sync refactor
+
+The Part 1 / Part 2 framing is dropped (2026-08-03) — it was scaffolding
+for a conversation, not a real boundary, and everything below is one
+refactor of how Organs identify each other and sync. The list is ordered
+by dependency, not by release. The goal it converges on: **two Lince
+instances find each other on a network, talk, exchange keys, become
+contacts, and sync exactly what each chooses to share — with an
+internet-reachable Cell whose app_users edit Records live.**
+
+Earlier stages (do these first):
+1. iroh endpoint with a per-Cell node key; ALPN `lince/sync/1` carrying
+   today's inbox/ops JSON bodies on QUIC streams; `remote_node_id()`
+   replaces per-request signature verification. Op-batch payload signing
+   stays, now domain-prefixed.
+   Carried forward from stage 1 into stage 2, deliberately and not silently:
+   - **Per-connection resource bound.** `MAX_FRAME_BYTES` caps one frame; the
+     `accept_bi` loop caps neither the frame COUNT nor the connection
+     lifetime, so one authenticated peer can hold a connection and issue
+     unlimited requests. Same reasoning as the frame cap: authenticated is
+     not the same as trusted with unbounded resources.
+   - **Connection logging.** `wire::tracing_debug` is currently a no-op
+     because the engine crate carries no `tracing` dependency, which would
+     make stage 2's discovery failures invisible. Add the dependency or
+     surface the error to the caller before discovery lands.
+   - **A batch/peer mismatch is a SECURITY event**, not an import failure,
+     and today both come back as `WireResponse::Error` and are
+     indistinguishable to the client. Give it a distinguishable code.
+2. `lan_discovery.rs` retired for iroh mDNS; `GET /organ/nearby` re-backed.
+3. ALPN accept policy, default closed (`accept_unknown = false`).
+1b. Roster-of-one, BEFORE any key is ever published or QR'd. The signed
+   roster format lands with exactly one member Cell, so the string people
+   save is final from the first exchange. Multi-device UX (enrolment,
+   device panel, race-dial) arrives later without stranding anyone. The
+   insurance is needed before publishing, not before the first connection.
+4. Threads as individual replica: the synced unit is one Record per
+   relationship holding MANY threads, as Records joined by Assertions, so
+   a new topic needs no new grant.
+   Brings with it:
+   - **individual replica**, the new per-record-per-contact sync axis
+     (grant, accept, revoke, feed-serve filtering, and an import gate that
+     drops ops for revoked grants). This is the single largest item here —
+     larger than the iroh refactor — and the import gate is load-bearing
+     security, not bookkeeping: a bug there lets a contact write to
+     Records that were never shared. Scoped by the `replica_root` column
+     (see the Threads box): traverse once at grant time, never per op.
+   - a conversation view in the Record sand, over message Records.
+   - invites into notifications.
+   - at-rest encryption of `record.head`/`body` and `sync_op.value`.
+   Messages are plain Records synced as `set` ops — no Loro, no sealed
+   bodies, no append-only special case, and `collab.rs` is untouched by
+   this item. Either party may edit or delete anything shared; that is
+   accepted rather than constrained.
+5. First-contact key exchange, ranked strongest first. Only the ACQUISITION
+   of a NodeId is ever at risk; once held, connections to it cannot be
+   intercepted. So offer, in this order:
+   a. **QR code in person** — the local Organ renders its NodeId as a QR,
+      the other scans it. The visual channel cannot be relayed and you can
+      see who you are handing it to. Best available, and the reason to
+      build it first.
+   b. **Paste it into a messaging app you already trust** (Signal, etc.).
+      Equally strong: that channel is already authenticated to that human.
+   c. Discovery + conversation alone — weakest; a live relay passes it.
+      Acceptable only because (a) and (b) cover the real flows.
+   **The verification code leaves the plan entirely** — decided 2026-08-02.
+   It only ever defended REMOTE first contact with no other trusted
+   channel. Every flow this product actually has is in-person (show a QR)
+   or already-trusted (paste into an existing chat), and in both the code
+   is redundant ceremony. `engine::peers::verification_code` stays in the
+   tree as an optional "verify this contact" panel for anyone pairing
+   remotely; no normal flow shows it.
+   What the original 5 chars were reaching for — "which of these forty
+   peers in a stadium is my friend" — is DISAMBIGUATION, not security, and
+   the honest fix is different: show a short fingerprint of each peer's
+   NodeId beside its untrusted display name in the nearby list. Derived
+   from the real key, so it cannot be spoofed by a name, and it answers
+   "which row is them" without pretending to be a security check.
+   In-thread: a share-my-key button, and adding the peer as a known Organ
+   with a name the local user types. Manual paste in the Organ sand kept.
+   QR also solves the blocked-mDNS case (guest wifi, hotels, corporate):
+   embed NodeId AND current addresses in the QR and no discovery mechanism
+   is needed at all for an in-person exchange.
+5b. Local at-rest encryption of thread message bodies, and a send queue
+   that flushes on next connect. Both are what make threads honest rather
+   than demo-grade — see the Threads box.
+5c. Multi-Cell Organs — PULLED EARLIER because the key
+   format everyone saves must be right the first time. One published
+   identity key, several Cells, a signed roster. See the box below for the
+   `(actor_organ, hlc)` split this requires. Dial policy: RACE all known
+   Cells and take the first that answers, with a preference order only as
+   a tiebreak (prefer a LAN-local Cell for latency, the always-on one for
+   bulk). No leader election — leaders exist for consensus, and an op log
+   with CRDTs converges without one.
+   The gap this must close, or "one key is all they save" stays false:
+   a contact learns roster v2 only by reaching a Cell listed in roster v1,
+   so adding a laptop while the old Cells are off or lost strands the new
+   one forever. Fix: publish the SIGNED ROSTER under the Organ identity key
+   via pkarr — it stores signed records addressed by an ed25519 public key,
+   which is exactly what the identity key is. Then identity key → current
+   Cells resolves with no prior roster and the saved key is genuinely
+   self-sufficient.
+   **What pkarr is, in one line:** a phone book whose lookup key is your
+   public key. You publish a small signed blob into the BitTorrent DHT;
+   anyone knowing the public key fetches it and verifies the signature.
+   Nothing to do with Lince Records — the "record" in "resource record" is
+   a DNS-style entry. The size limit is the DHT's per-entry byte cap
+   (mainline BEP44: 1000 bytes) and a roster fits with room to spare: a
+   NodeId is 32 bytes, so five Cells plus a version counter, expiry and
+   signature lands near 250 bytes. DHT entries expire in hours, so
+   something must republish on a timer — a natural job for the always-on
+   Cell, and a reason a laptop-only Organ should republish at every boot.
+   **Republishing needs no private key.** It re-broadcasts an
+   already-signed blob, so the VPS Cell can do it while holding no
+   identity-signing material — do not let "the VPS republishes the roster"
+   become "the VPS signs the roster" and quietly undo the key split.
+   Naming, because this is where the bugs will live: each Cell's database
+   holds TWO `kind=organ` Records.
+   - The **Cell Record** — this running instance, this laptop. What
+     `organs::local()` returns today (fixed slug). Its uid is stamped as
+     `sync_op.actor_organ` on every op written here, which is what keeps
+     ops from the laptop and the phone distinguishable and the
+     `(actor_organ, hlc)` uniqueness intact.
+   - The **Organ Record** — the person across all their devices. Holds the
+     published identity key and the Cell roster. What `record.organ_uid`
+     points at, so a Record reads as coming from *you*, not from *your
+     laptop*.
+   Today these are one row doing both jobs, so every existing call site
+   says `organs::local()` meaning "who am I" and "who authored this"
+   interchangeably. After the split each one has to be re-read and
+   assigned, and both ways of getting it wrong are bad: a site that means
+   identity but keeps using the Cell uid makes one person look like three
+   different Organs to everyone else; a site that means authorship but uses
+   the Organ uid brings back the HLC collision that silently swallows
+   remote ops. Audit every caller, do not pattern-match.
+   The audit has one funnel: `store::organs::local()` (`organs.rs:76`,
+   fixed slug) is what every caller goes through. Two already-known
+   examples of each meaning — `collab.rs` passes `&local.uid` as
+   `actor_organ`, which means the CELL; `records.rs:121-131` stamps the
+   origin through `set_organ_origin`, which means the ORGAN.
+   Note also that `record.organ_uid` is `Option<String>` and the origin is
+   stamped by a separate call after insert, so the split lands on a field
+   that can already be NULL — existing rows with no origin need a defined
+   meaning before the audit lands, not after.
+
+#### What the split gives the product: profile vs device
+
+The distinction earns its cost only if each side owns real things. It does:
+
+- [ ] **Organ Record = the public profile.** Display name, description,
+  avatar, published identity key, the Cell roster, discovery preference
+  (visible / relay-only / dark). This is what a contact saves, what a QR
+  encodes, what goes on a website. It survives every device change.
+- [ ] **Cell Record = this device.** Device label ("laptop", "phone",
+  "vps"), its node key, whether it is always-on, and every local-only
+  setting that has no business travelling: File Sync paths, storage
+  config, local cache sizes. Never published except as a roster entry.
+- [ ] Organ sand grows two panels accordingly: **Profile** (identity, the
+  shareable key + QR, display name) and **Devices** (roster list with
+  labels, last-seen, add, revoke).
+- [ ] Enrolling a new device is pairing with YOURSELF, and deserves its
+  own flow rather than reusing contact pairing: an existing Cell shows a
+  QR carrying its NodeId plus a single-use, short-lived enrolment token;
+  the new Cell scans, connects, proves the token, and is signed into the
+  roster. Single-use and short-lived because this QR grants membership in
+  your identity, which is strictly more than a contact QR grants.
+- [ ] Who may sign roster changes — the question enrolment forces. Cells
+  carry a flag for whether they hold identity-signing material; the Organ
+  key lives only on flagged Cells, and unflagged ones sync like any member
+  but cannot enrol or revoke.
+  Which Cells get the flag is a genuine question, and "the VPS is the
+  least trusted machine" is too glib — a phone is stolen on the street far
+  more often than a datacentre is breached. The honest comparison is that
+  they fail in different ways:
+  - A personal device is likely to be lost or stolen, but that failure is
+    LOUD. You know the moment it happens, and revoking it from another
+    device is exactly what the roster is for. Full-disk encryption turns
+    the theft into a non-event — the thief holds a brick.
+  - A VPS cannot be pickpocketed and can be hardened far below a laptop's
+    attack surface (no browser, no GUI, keys-only SSH). But the hosting
+    provider holds permanent hypervisor-level access — disk snapshots,
+    memory, and compliance with legal process — which you cannot remove,
+    cannot detect, and did not consent to per-incident. That failure is
+    SILENT.
+  Detectability is what should decide it, not raw probability. A stolen
+  laptop you revoke within the hour. A quietly compromised VPS holding the
+  identity key lets an attacker sign a NEW roster adding their own device,
+  and lock the real owner out of their own identity permanently, with no
+  moment at which anything looked wrong.
+  This framing is superseded by the root/operational split below, which
+  dissolves most of the question: once no running Cell holds the root, the
+  VPS-versus-laptop comparison stops being about the identity at all.
+
+#### Key compromise: the root/operational split, and honest recovery
+
+The problem, stated without flinching: if an attacker obtains the Organ
+identity private key, they can sign a roster adding their own device, sign
+ops as the owner, and BE that Organ to everyone holding the public key.
+There is no central authority to report it to. Worse, the attacker can do
+exactly what the victim can — both can announce "I was compromised, here
+is my new key" — so contacts face a claim and a counter-claim with no
+referee. Any mechanism that lets the owner recover is a mechanism the
+attacker can also attempt to walk. That is the whole difficulty, and no
+design removes it; designs only change who has to be fooled.
+
+Three principles, in order of leverage.
+
+**1. Make the catastrophic case rare — root offline, operational keys
+online.** This is the standard shape (TLS roots and intermediates, SSH
+CAs, PGP primary keys with subkeys, Signal identity keys with prekeys) and
+it is the single highest-value change here:
+- [ ] The Organ **root key** signs two things only — the Cell roster and
+  key successions — and lives OFFLINE: a hardware token, or a printed or
+  drawer-kept drive. It is on no running Cell, not the laptop and not the
+  VPS. Using it is a deliberate, occasional act.
+- [ ] Each Cell holds an **operational key**, certified by the root, used
+  for everything routine. Compromise of a device is then compromise of one
+  revocable credential, not of the identity.
+- [ ] **The signed roster IS the certificate** — simplified 2026-08-03.
+  There is no separate certificate object to define, sign, store, ship and
+  validate. A roster entry already names a Cell, its operational key and
+  its NodeId, and the roster already carries a monotonic version and an
+  expiry; being listed in the current root-signed roster IS what certifies
+  an operational key, and being dropped from the next one is what revokes
+  it. One signed blob does membership, certification, versioning and
+  expiry together.
+- [ ] This retires the earlier "identity-signing Cells" flag. Enrolling or
+  revoking a device requires the root — which is correct: those are rare
+  acts and SHOULD feel deliberate.
+- [ ] It also largely answers the provider-access worry. A VPS snapshot
+  yields an operational key the owner can revoke, not the identity. The
+  thing that could not be defended is simply no longer there to steal.
+
+**2. Make substitution VISIBLE — detection beats recovery.** A compromise
+noticed in a day is survivable; one noticed in a year is not.
+- [ ] Contacts store the full **key-succession chain** for each Organ, not
+  just the current key. A succession is accepted only if it chains from a
+  key already held. Anything else is a loud, blocking warning that
+  requires a human decision — NEVER a silent update. This is the cheap
+  approximation of key transparency (CONIKS, Certificate Transparency),
+  and it converts a silent takeover into a visible alarm.
+- [ ] **Pre-signed revocation certificate**, generated at key creation and
+  stored offline beside the root. It does not prove a new key is genuine,
+  but it kills the old one immediately — damage limitation that works even
+  when identity cannot yet be re-established. PGP has done this for
+  decades and it costs nothing.
+- [ ] ~~**Time-locked succession**~~ — RECOMMENDED CUT (2026-08-03),
+  pending confirmation. A new root taking effect only after a veto window
+  requires peers to agree about time, requires the victim to be online and
+  watching during the window, and adds a second state machine to the one
+  part of the system that must never be subtly wrong. What it defends is
+  the case where the key was COPIED and the owner still holds it — which
+  is precisely the case the pre-signed revocation certificate already
+  handles, immediately and with no clock assumptions. Near-zero security
+  loss for a real drop in complexity.
+
+**3. Recovery stays deliberately simple.** M-of-N social recovery was
+considered and REJECTED (2026-08-03): every recovery path is also an
+attack path, and a quorum scheme adds a second door that must be defended,
+audited, and kept from becoming cheaper to walk than stealing the key. It
+buys convenience in a rare event at the cost of permanent attack surface.
+Not worth it here.
+
+What remains is enough, because layers 1 and 2 have already made the
+catastrophic case rare and visible:
+- [ ] Publish the pre-signed revocation certificate. The old key is dead
+  immediately, whatever happens next.
+- [ ] Re-establish through the channels that worked the first time — QR in
+  person, or a chat app already authenticated to that human. Tedious,
+  completely safe, and no new mechanism to attack.
+- [ ] Existing threads help more than they appear to: key theft is not the
+  same as data theft. An announcement arriving inside a long shared thread
+  from someone who knows its history is strong evidence when the attacker
+  took a key but not a database.
+The honest summary: with the root offline, losing it requires physical
+access to a drawer or a token. That is a threat model a person can
+actually reason about, which is worth more than a clever protocol.
+- [ ] Revocation is a roster version bump plus republish (monotonic
+  counter, so an old roster cannot be replayed to re-add a stolen device).
+  **Who can do it — contradiction resolved 2026-08-03.** An earlier line
+  said "from any identity-holding Cell", written before the root/
+  operational split retired identity-holding Cells entirely. Under
+  root-offline there are none, so signing a new roster ALWAYS requires the
+  root. That is the correct cost and it is the point of the split, but it
+  must be stated plainly rather than discovered during a theft: revoking a
+  stolen device means going to the drawer.
+  Two things keep this from being painful. Roster entry EXPIRY means a
+  stolen Cell loses authority on its own even if the owner never reaches
+  the root — self-limiting credentials doing the work that urgency would
+  otherwise have to. And the pre-signed revocation certificate is
+  generated at key creation and stored offline WITH the root, so the
+  drawer trip yields both acts at once.
+- [ ] **Two tiers of publishing** — the resolution of "I want an
+  add-me-in-Lince key without exposing my devices."
+  The identity key itself is safe to publish anywhere: on its own it is
+  an identifier and reveals nothing. The exposure is not in the key, it is
+  in what the key RESOLVES TO. So split it:
+  - **Public tier (the DHT record, readable by anyone with the key):**
+    the front-door Cell only — the always-on VPS. One address. A stranger
+    who finds the key on a website learns that one machine exists and
+    nothing else.
+  - **Contact tier (shared over an already-authenticated connection):**
+    the full roster, so contacts can reach personal devices directly for
+    speed instead of always paying the front-door hop.
+  Personal devices then never appear in any PUBLIC record, and incoming
+  strangers land on the front door. Contacts holding the roster do dial
+  them directly — that is what the contact tier is for, and it is what the
+  race-all-Cells dial policy above races over. "Never found" scopes to
+  non-contacts only; personal Cells are not outbound-only.
+- [ ] Front-door mechanics, currently undefined and needed for
+  "add me in Lince" to actually work: a stranger's invite arrives at the
+  VPS, whose owner may be on a phone that is not in the public record and
+  may be offline. The front door QUEUES the invite until a personal Cell
+  syncs, reusing the offline send queue rather than forwarding live. The
+  VPS holds no identity-signing material, so it cannot accept on the
+  owner's behalf — it can only hold the request until a Cell that can
+  decide sees it.
+  What the untiered version would have leaked to anyone holding the
+  published key: how many devices the Organ has, each one's current IP,
+  and which are online right now — which is to say whether the owner is
+  home, travelling, or asleep. That is a daily-pattern leak to the entire
+  internet, and it is the reason the tiers exist.
+  A contact you already sync with necessarily learns which Cell it is
+  talking to; that is unavoidable and harmless. The tiering is about
+  non-contacts.
+  Cost to accept: if the front door is down, a stranger cannot reach the
+  Organ at all. Existing contacts, holding the full roster, still can.
+5d. **Compatibility and revocation floor** — the guarantee that shipping
+   more Lince never strands old keys or leaves a lost device authorized
+   forever. This must land EARLY: every one of these is cheap now and
+   brutal to retrofit once keys are in other people's hands.
+   - Version the ALPN strings (`lince/sync/1`, `lince/thread/1`). A
+     protocol change bumps to `/2` and both are served during transition,
+     so an old peer gets old behaviour rather than a broken half-upgrade.
+   - Key succession: the OLD identity key signs a statement endorsing the
+     NEW one, so an Organ can rotate without every contact re-pairing.
+     Build the signed succession record now even if the UI lands later.
+   - Roster versioning with a monotonic counter: a contact accepts only a
+     roster NEWER than the one it holds. This is what makes removing a
+     stolen device stick — an old roster cannot be replayed to re-add it.
+   - Roster entry expiry (not-after): a Cell that stops syncing fresh
+     rosters loses authority on its own. Self-limiting credentials beat
+     remembering to revoke.
+   - Pin iroh to an exact version (`=x.y.z`), as Loro already is. Its API
+     has broken across releases; an unpinned bump is a silent protocol
+     change between two Cells on different builds.
+   - Fail closed on the unknown: an unrecognised op `kind`, grant version,
+     or frame type quarantines rather than crashing or silently applying.
+     A newer Organ syncing to an older one must degrade, never widen.
+6. `live` mode — the only name for it; "live login" is retired as a phrase
+   because it is the same thing. An app_user logs into a hosted Cell,
+   Record sand streams that Organ's data into memory, full CRDT text
+   editing, nothing persisted locally. This item is where the collab code
+   written blind in the previous phase finally gets RUN and made to work —
+   it has only ever been type-checked. Includes:
+   - the read-permission gate on `collab_join` (today any authenticated
+     session can join any record's doc by uid);
+   - `read`+`write` permission is exactly what enables CRDT editing — collab
+     is not a separate privilege, it is what having those permissions means;
+   - presence: cursor position plus who it is, where identity is shown only
+     to a viewer with `read user` permission. Without it the sand still
+     renders the cursors, unnamed. Presence is ephemeral — lanes, never
+     the op log.
+   Needs a hostname, certs and a reverse proxy; browsers speak HTTPS, not
+   QUIC-to-a-NodeId, so this item has no iroh dependency and must not be
+   blocked by the refactor.
+
+Ordering note: item 6 is independent of items 1–5. If the iroh refactor
+turns out to break things, item 6 lands first or last — it must never be
+held hostage by transport work.
+
+Later stages (depend on the above):
+
+These assume the decisions above (iroh transport, NodeId addressing, no
+dual address kind, live = in-memory session, multi-Cell already landed).
+
+**They open with the VPS**, because everything after improves once the
+user's own always-on infrastructure exists:
+- Run `iroh-relay` on the VPS. It needs a public IP, a DNS name, and TLS
+  (the relay speaks HTTPS/WebSocket to nodes); point the Cells at it as
+  their configured relay instead of the default public ones. From then on
+  the Organ's own machine carries its own connection metadata.
+- Self-host address publishing too (a pkarr/DNS publisher), so reachability
+  does not depend on n0's infrastructure either.
+- Run a Cell on the VPS as a member of the Organ roster: the always-on
+  device that makes offline delivery work without either laptop being up.
+- Only then does relay-only mode (below) cost nothing that matters — the
+  relay being depended on is the user's own.
+
+- Replica bootstrap and initial snapshot, over iroh streams.
+- `record_editor` sand, `Note` rename, kanban/relation/table embeds — all
+  consumers of the collab binding, unaffected by transport.
+- `_ack` frames and richer presence (selection ranges, idle states) on top
+  of the cursor presence in stage 6.
+- Audit, retention, pruning: checkpoint-gated op pruning. Unchanged by
+  iroh — it is op-log work.
+- Discovery UI polish and proximity signals, now fed by iroh discovery
+  rather than the retired multicast announce.
+- Self-hosted `iroh-relay` on the user's VPS, so the Organ's own
+  infrastructure carries its own connection metadata.
+- Store-and-forward threads through a THIRD Organ, if ever wanted — the
+  only scenario that reintroduces message-layer sealing, and then only
+  with an audited ratchet.
+- Live mode via iroh for hostname-less Cells: your Cell fronts a remote
+  Organ that has no public door.
+
+### Transport: iroh (supersedes the HTTP peer plumbing above)
+
+Decided 2026-08-02. The Peers prose above describes code that WORKS and
+stays running until the iroh path replaces it piece by piece — it is
+superseded, not wrong. What changes is only how two Organs find and reach
+each other; the op log, checkpoints, Loro merge, trust, visibility, and
+`sync_out`/`sync_in` are untouched by any of this.
+
+The reason is not elegance, it is reach: `lan_discovery.rs` is UDP
+multicast, so it cannot find a peer off the local segment at any amount of
+polish, and nothing in the current design traverses a NAT. iroh is QUIC
+with an ed25519 keypair as the node identity, address resolution by
+DNS/pkarr/mDNS, hole punching, and relay fallback when hole punching
+fails. Verified against docs.rs before deciding: `SecretKey::from_bytes(&[u8;
+32])` seeds an endpoint from an EXISTING ed25519 secret, and `NodeId` is
+`PublicKey`, a 32-byte compressed Edwards point that derefs to `[u8; 32]`.
+So the Organ keypair COULD have been the node identity byte for byte.
+
+Decided 2026-08-02 not to do that — **node key ≠ identity key, from day
+one, even on a single-Cell Organ.** They answer different questions:
+
+- The **node key** authenticates a LIVE CONNECTION. Its public half is the
+  NodeId, which is the address; it is used in the QUIC/TLS handshake and
+  answers "is the endpoint I just dialed really that endpoint." Per Cell,
+  generated at first boot, never leaves the device, cheap to rotate.
+- The **identity key** authenticates DURABLE BYTES. It signs op batches,
+  facts, and the Cell roster, and answers "who wrote this" a year later
+  from a backup with no connection in sight. Per Organ, published, and the
+  thing `identity_key` + `trust.rs` already hold.
+
+The security argument, which is why this is the choice even though fusing
+them is simpler: the node key is on the network constantly and lives on
+every device including the least trusted one. If it is also the identity
+key, then compromising any running Cell means forging that Organ's history
+forever. Split, a stolen node key costs one connection identity and the
+attacker still cannot sign a single op. Separating later is far more
+expensive than separating now — every published key everyone already holds
+would become wrong.
+
+What gets shared is still ONE string: the NodeId. On first connect the peer
+sends its Organ identity key and a signature binding that key to this
+NodeId, so both halves arrive over an already-authenticated connection and
+the binding is proven, not assumed. No `node_id` column on the wire and
+nothing for a human to copy twice.
+
+Replaced by iroh:
+- [ ] `lan_discovery.rs` in full — the multicast announce, the `Announce`
+  struct, the nearby-expiry bookkeeping. iroh's mDNS discovery covers the
+  LAN case and DNS/pkarr covers the case multicast never could. `GET
+  /organ/nearby` survives as a route, backed by iroh's discovery stream.
+- [ ] `organ_contact.last_seen_addr` as a routing input — resolution is
+  iroh's job. Keep the column as a debugging breadcrumb or drop it.
+- [ ] Per-request signing as TRANSPORT auth: `request_signing_payload` /
+  `response_signing_payload` / `timestamp_fresh` / the 120s replay window.
+  An iroh connection is mutually authenticated at handshake, so
+  `connection.remote_node_id()` gives what `verify_signed_request` returns
+  today. The substitution is one line in each of three handlers; the JSON
+  request and response bodies stay byte-identical, carried on a QUIC
+  bi-stream under ALPN `lince/sync/1`.
+- [ ] `GET /organ/introduction` as a challenge: connecting IS the proof.
+  The route stays for key/name exchange, but it no longer establishes
+  anything the connection did not already establish.
+
+NOT replaced — payload signing stays. Op-batch signatures are durable
+provenance that must survive store-and-forward through a relaying Organ,
+where transport auth proves nothing about the origin. Transport auth
+answers "who is on this socket"; payload signing answers "who wrote this
+op." Only the first is iroh's.
+
+**The verification code, and why QR retires it** — settled 2026-08-03.
+Under iroh the address IS the key, so dialing a NodeId reaches that keypair
+or nothing: no wire left to substitute on. The residual threat is only
+MISDELIVERY — being handed the wrong NodeId. On a discovery list that is
+real: an attacker announces their own NodeId under the display name
+"Eduardo's laptop", you dial them, the handshake honestly succeeds, and
+they relay your "what did we do last Thursday?" to the real friend and the
+answer back. A conversational challenge does not defeat a live relay.
+
+But a QR code scanned in person does, completely, and so does pasting the
+key into a chat app already authenticated to that human. Both channels are
+unrelayable. Since every flow this product has is one of those two, the
+code defends a case that no longer occurs, and a security step users are
+taught to click past is worse than no step.
+- [ ] Dropped from all normal flows. Kept as an optional verify panel for
+  remote pairing, where (a) and (b) are genuinely unavailable.
+- [ ] Nearby lists show a short NodeId fingerprint beside the untrusted
+  display name — disambiguation among many peers, explicitly not a
+  security check, and impossible to spoof by choosing a name.
+- [ ] Manual paste-a-key in the Organ sand is trust-on-first-use on the
+  identity key. Fine when the key came from somewhere you trust; label it
+  as TOFU in the UI rather than implying the typing verified anything.
+- [x] Signing-payload domain prefix — take the stronger option: prefix
+  `lince/peer/1\n`. Colliding with TLS 1.3 CertificateVerify was already
+  impossible (that blob carries 64 spaces and a fixed context string), so
+  this is safe-by-design replacing safe-by-luck, and it costs one line
+  while the code is being rewritten anyway.
+- [ ] Accept policy — NEW surface, the cost of a published key. Today an
+  unknown peer cannot get past `verify_signed_request` because we hold no
+  key for them. Under iroh, anyone holding the published NodeId can open a
+  connection. So the ALPN handler must gate by contact state: a known
+  contact gets `lince/sync/1`; an unknown NodeId gets `lince/thread/1` and
+  nothing else, rate-limited to ONE pending invite per NodeId; `blocked`
+  gets the connection closed. Plus a discoverable on/off switch.
+  Default is CLOSED: `lince.discovery.accept_unknown = false` — an unknown
+  NodeId is refused at the ALPN gate, so publishing the key advertises
+  reachability to people who already know you and grants nothing to anyone
+  else. Turning it on is what opens the invite door, and the discovery UI
+  must SAY so: the headline flow (meet a stranger on the LAN) needs
+  the toggle on, and a nearby list that silently refuses everyone reads as
+  broken.
+- [ ] Privacy cost of publishing the key — it is a PRIVACY issue, not a
+  security one, and the distinction matters. Reaching a Cell across the
+  internet works because discovery publishes NodeId → current addresses,
+  so anyone holding the published key can resolve that Cell's current IP.
+  Nobody thereby reads your data or forges your signature; what leaks is
+  roughly WHERE you are (city-level geolocation) and WHEN you are online.
+  For a key pasted on a personal website, that is a daily-pattern and
+  approximate-home-location leak to anyone who looks.
+  It is the same mechanism that makes beach-then-home work, so it is not
+  separable — but it IS optional: relay-only mode publishes no direct
+  addresses, and peers see only the relay. The cost is a latency and
+  bandwidth hop plus dependence on that relay, which is why the later stages open
+  with running `iroh-relay` on the user's own VPS. Depending on your own
+  machine is not a dependency problem.
+- [ ] Discovery mechanisms, concretely, because "internet discovery" is
+  vague. iroh offers: **mDNS** (multicast, LAN only, finds peers on the
+  same network); **DNS discovery** (nodes publish addresses to a DNS
+  server — n0's by default); **pkarr/Mainline DHT** (signed address
+  records on the BitTorrent DHT, no central party); and **static** (you
+  supply the address). "Turning it on" is an Endpoint builder option, not
+  a user action — so it becomes one Organ-sand setting: reachable over the
+  internet on/off, and by which mechanism. **Default ON** (DHT + DNS): a
+  Cell that is not resolvable across the internet cannot serve the case
+  that motivates the whole design — the VPS telling the phone about a
+  change the laptop made. Off is the deliberate choice, not the default.
+  Configured through the ordinary extension/config table (`lince.discovery`
+  already exists), never a build flag. One wrinkle: discovery is an
+  Endpoint builder option fixed at construction, so changing it restarts
+  the endpoint — reuse the File Sync live-supervisor pattern (§2) that
+  already restarts watchers on a config Fact, rather than demanding a
+  reboot.
+- [ ] What a relay actually does, since the mental model matters: both
+  Cells hold a standing connection to it, so it is a mailbox that is
+  always reachable. To reach B, A first sends through the relay — and
+  immediately both sides start exchanging the addresses they observe and
+  firing probe packets straight at each other. Those outbound probes punch
+  a return path through each side's NAT or firewall, and when they meet,
+  the connection UPGRADES to direct and the relay leaves the data path.
+  So the user's model is right: point at the relay, find each other there,
+  continue peer-to-peer. The one correction is the failure case — against
+  a symmetric NAT or a strict firewall the punch never lands, and traffic
+  keeps flowing through the relay for the life of the connection. It is a
+  rendezvous AND a fallback, not only a rendezvous.
+  Both VPS jobs coexist on one box: `iroh-relay` on its public address,
+  and a Lince Cell that is a member of the Organ roster. They are separate
+  processes with separate ports and no interaction.
+- [ ] IPv6: prefer it wherever available. NAT exists only because IPv4 ran
+  out; with IPv6 every device can have a globally routable address, so
+  there is no translation layer to defeat and direct connections succeed
+  far more often. iroh already binds dual-stack and races v4/v6 paths, so
+  the Lince-side work is only to not get in the way — bind both, publish
+  v6 addresses in discovery, hardcode no v4 assumptions. The remaining
+  gate is outside Lince entirely: the ISP must hand out IPv6 and the home
+  router must have it enabled. Even then most routers keep a stateful
+  inbound firewall, so hole punching is still needed — but punching a
+  firewall pinhole is far more reliable than traversing address
+  translation. IPv6 shrinks the relay's job; it does not remove it.
+- [ ] Multi-Cell Organs (phone + home computer + always-on VPS) — designed
+  2026-08-02. §2 defines a Cell as one running instance and an Organ as the
+  boundary *a* Cell represents; one-Organ-many-Cells is a NEW extension of
+  that split, not something already decided, and it has an op-log
+  consequence that dictates the shape.
+
+  The consequence first: `idx_sync_op_identity` is UNIQUE on
+  `(actor_organ, hlc)` and the comment is explicit that an HLC is unique
+  per actor, so the index IS the op uid AND the import idempotency key.
+  Three Cells appending under one shared uid would be three independent
+  `hlc::next()` clocks in one uniqueness domain — two Cells could mint the
+  same identity for different ops, and because import dedupes on the same
+  key, the collision does not merely fail a constraint, it can swallow a
+  remote op as already-seen. So Cells MUST NOT share a uid.
+
+  Therefore split the two jobs `organ_uid` does today. Each Cell keeps its
+  own local Organ Record and uid (`organs::local()` already resolves a
+  fixed slug per database, so this is what the code does already):
+  `sync_op.actor_organ` is the CELL, HLC uniqueness is untouched, and
+  `last_synced_seq`/checkpoints work per-Cell. Cells are then ordinary
+  full-trust contacts of each other over the existing op log — no new sync
+  path, no new machinery — so "edited on the phone all day, walk in the
+  door, laptop converges" is just sync, with the VPS as the Cell that is
+  always up so the other two never need be online at the same moment.
+  `record.organ_uid` (the §2 origin stamp) carries the SHARED published
+  identity, so records still read as one Organ's to the outside.
+  Two fields, two jobs: identity vs. authorship.
+
+  The published identity is a roster: one Organ key, signed, listing its
+  member Cell uids and NodeIds. An outsider knows only the published key
+  and resolves it to whichever member is reachable.
+
+  Why NOT one shared node key across devices: iroh publishes a discovery
+  record mapping NodeId → current addresses, so two endpoints with the same
+  NodeId each overwrite the other's and a dialer reaches whichever wrote
+  last. Worse, it forces the Organ private key onto the VPS — the least
+  trusted machine — where compromise is compromise of the identity itself,
+  unrevocable in isolation. With per-Cell keys a stolen VPS costs one
+  roster entry: revoke that NodeId, the Organ key never touched it. The
+  key stays safe to publish precisely because it is only ever an identity,
+  never a device.
+- [ ] Verify before building: every `actor_organ` write site (they run
+  through `store::sync_ops::append`, called from `collab.rs` and the
+  append path with `organs::local().uid`) must mean the Cell, and every
+  place reading `record.organ_uid` must mean the published Organ. Nothing
+  else may assume the two are the same value.
+- [ ] Relay metadata: a relay coordinates hole punching and forwards
+  packets for nodes that cannot connect directly. It cannot read anything
+  (QUIC is encrypted end to end) but it observes that A dialed B at a given
+  time. Two things follow. On the LAN no relay participates at all — mDNS
+  finds the peer and the connection is direct, so the whole
+  find-your-friend-in-a-room flow leaks nothing off the network. Across the
+  internet, a successful hole punch leaves the relay with only the
+  coordination; a failed one routes through it. Running Lince on your own
+  machine does NOT make you a relay — a relay must be publicly reachable at
+  a stable address, which is exactly what a node behind NAT is not. The
+  always-on VPS from the Cell-roster box is the natural place to run
+  `iroh-relay`, and then the Organ's own infrastructure carries its own
+  metadata.
+- [ ] Licensing: iroh is MIT OR Apache-2.0, Lince is MIT — compatible, take
+  it under MIT. (The workspace Cargo.toml said `GPL-3.0-or-later` until
+  2026-08-03; the `LICENSE` file has always been MIT, and the manifest was
+  simply never updated after the switch. Fixed.) Unlike loro-wasm (browser JS that had to be vendored and
+  served under CSP), iroh is an ordinary crates.io dependency: pin it in
+  Cargo.toml and carry its MIT text in the licenses dir. No vendoring
+  needed for the obligation, only attribution.
+- [ ] Migration shape — simplified 2026-08-02: NO dual `url | node_id`
+  address kind. That scaffolding only existed to preserve contacts made
+  before the refactor, and local dev databases are expendable here (see the
+  standing "best schema over back-compat" rule). A contact is reached by
+  NodeId, full stop; re-pair the handful of existing ones. The HTTP peer
+  routes stay in the tree until the iroh path has actually run end to end,
+  then they are deleted outright — that is a working-tree precaution, not a
+  schema one.
+
+### Threads: reaching someone before you trust them
+
+Settled 2026-08-03 after two reframes; this paragraph is the current
+version and the boxes below elaborate it.
+
+A thread is how a stranger becomes a contact — trust is established by
+talking, and only then does `trust` go to `known`. First contact is
+verified by QR in person or by a key pasted over an already-trusted chat;
+the derived code is retired from normal flows (see the transport box).
+
+**A thread is not a subsystem. It is Records synced with exactly one
+peer.** Sharing IS granting that peer sync access, and the same act shares
+any Record with any contact — "I choose what to sync with whom, they
+agree, only we see it". That axis is **individual replica**, as distinct
+from the whole-Organ `sync_out`/`sync_in` feed.
+
+Messaging is NOT collab. A message is a Record appended to a thread and
+synced as ordinary `set` ops; two people typing into one string is collab,
+and a conversation is not that. The two mechanisms compose — individual
+replica carries a Record, collab merges a body someone is co-writing —
+but neither is built out of the other.
+
+Why this is a simplification rather than a new feature: it deletes the
+special message-delivery path, reuses the op log and the outbox, and makes
+messaging a *consequence* of sharing. Discovery demotes to ergonomics for
+creating a thread and handing someone access to it.
+
+Deliberately orthogonal to the transport box: a thread works over iroh or
+over signed HTTP, and either box can land without the other.
+
+- [ ] Shape — settled 2026-08-03. The synced unit is a **Record per
+  relationship**, and MANY THREADS live inside it. Three levels, one grant:
+  `Record (kind='conversation', shared with one contact)`
+  → `threads` → `messages`. Clicking "chat" on a discovered stranger
+  creates the Record and its first thread and opens the Record sand on that
+  thread. Adding a second thread later — a different topic with the same
+  person — needs no new grant, no new pairing, no new sync setup, because
+  it is inside a Record already being synced. That is the whole reason to
+  nest rather than make every thread its own Record.
+  A `with` Assertion binds the Record to the contact's Organ Record, as
+  §1/§3 already allow — still no new ACL table.
+- [ ] **The grant cascades via `replica_root`, a denormalized column —
+  simplified 2026-08-03.** Since messaging is not collab, the three levels
+  are three separate Records joined by Assertions — conversation → thread
+  → message. A grant per message Record is absurd and racy (the grant row
+  would have to exist before the peer could legitimately receive the
+  message it describes), so a grant on the conversation must cover every
+  Record inside it.
+  The earlier draft did that with a TRANSITIVE ASSERTION TRAVERSAL at
+  three enforcement points. That is replaced. The insight: **traverse once
+  at grant time, not on every enqueue, serve and import.**
+  - `record.replica_root TEXT NULL` — the uid of the Record whose grants
+    govern this one. NULL means "rides the ordinary feed", which is every
+    Record that exists today, so the migration is a no-op backfill.
+  - A grant is a row `(root_record, contact_organ, …)`. One root, many
+    contacts.
+  - A Record created inside a conversation INHERITS `replica_root` from
+    its parent at creation, which is when the parent is known anyway.
+  - Sharing an arbitrary existing Record makes it its own root
+    (`replica_root = own uid`) and stamps its subtree in ONE walk at that
+    moment — an explicit "adopt into root" operation. New descendants
+    inherit thereafter.
+  The three enforcement points then become the same indexed equality
+  check instead of three graph traversals that must agree:
+  - the outbox enqueue predicate, today
+    `INSERT…SELECT FROM organ_contact WHERE sync_out=1`, which now also
+    admits "a grant on this record's `replica_root` covers this contact";
+  - feed-serve filtering;
+  - the import gate.
+  No depth limit, no cycle handling, no traversal denial-of-service, and
+  no accidental oversharing through an Assertion nobody thought of as a
+  containment edge. Revoking is deleting grant rows; an in-flight Record
+  whose grant vanished mid-transfer fails the same check on arrival.
+  The `sync_outbox` PK still fits with no schema change — what changed is
+  the selection, not the shape.
+  **Three guards, without which this is a regression and not a
+  simplification:**
+  1. `replica_root` is LOCAL-ONLY and IMMUTABLE — never a settable synced
+     field. Otherwise a contact sends a `set` moving a Record between
+     roots and re-scopes what gets shared with third parties.
+  2. On import the root comes from the CHANNEL, not the payload. Ops
+     arrive on a stream already scoped to a grant; assign the root from
+     that context and never read it off the wire.
+  3. ONE root per Record. A Record cannot belong to two roots; a root may
+     be granted to many contacts. That covers every case described and is
+     the narrow form of the consequence recorded below.
+- [ ] **Messaging is NOT collab** — settled 2026-08-03, and it retires the
+  `threads`-Loro-Map plan written a day earlier. Sending a message is
+  appending a Record to a thread; it is not two people typing into one
+  string. So messages are ordinary Records synced as ordinary `set` ops
+  through individual replica, ordered by HLC, and no Loro doc is involved.
+  Concurrent sends do not conflict — they are two different Records, both
+  arrive, both display. Editing a sent message is LWW on that Record.
+  Collab (Loro, real-time merge, presence) stays what it always was: two
+  people editing the SAME record's body at the same time. A conversation
+  is not that.
+  What this deletes, all of it invented and none of it needed:
+  - kind-dependent record-doc layout — `collab.rs` keeps its
+    `doc.getText("body")` assumption untouched, and the "largest engine
+    change the reframe causes" no longer exists;
+  - `record_doc.snapshot` as a place conversations leak, since a thread
+    has no doc — the at-rest surface drops from three copies to two
+    (`record.head`/`body` and `sync_op.value`), with the snapshot relevant
+    only for Records that are separately collab-edited;
+  - unbounded doc growth for chat, and with it the urgency behind shallow
+    snapshots. A thread is rows, not a document.
+- [ ] Efficiency follows from that for free: rendering a thread is a
+  SELECT of the last N messages on an index over (thread, hlc), with older
+  pages fetched on scroll. Nothing is loaded whole into memory, and a
+  ten-year conversation costs the same to open as a new one. Shallow
+  snapshots remain a later concern for genuinely long-lived collab
+  documents, where human authorship bounds the size anyway.
+- [ ] Consequence to accept: one Record, one grant, so ALL threads inside
+  are shared with that contact — you cannot share one thread and withhold
+  another from the same person. That is the right default for a
+  per-relationship Record, and the escape hatch if it is ever wrong is to
+  put the private topic in a different Record.
+- [ ] Record sand gains a conversation view: thread list plus a message
+  composer over the message Records. The existing text binding is the
+  other branch of the same sand, untouched — a Record is either being
+  talked in or being co-written, and the two views never contend.
+- [ ] Collab's role in messaging is exactly this small, and no larger: if
+  both parties happen to OPEN THE SAME message Record, its body behaves
+  like any other collab-edited body — Loro merge, cursors, presence. That
+  is the whole of it. Everything else about a conversation is normal sync.
+  No conversation-specific CRDT, no special layout, no new mechanism.
+- [ ] Individual replica, the new sync axis: today `sync_out`/`sync_in` are
+  per-CONTACT and mean the whole visible feed. Individual replica is
+  per-RECORD-per-contact: this Record syncs to these peers and to nobody
+  else, and does NOT ride the general feed. It is a genuinely new
+  enforcement point, not "the §12 visibility gate with a narrower
+  selector" — §12 asks whether a contact may see the feed at all, and
+  this asks which Records leave the Cell for whom. Both run; neither
+  substitutes for the other.
+- [ ] Bidirectional by agreement: the sharer offers, the receiver accepts,
+  and only then does the Record land in their Cell. Acceptance is what
+  turns "you may see this" into "I keep a copy," and it is also what stops
+  an Organ from pushing unwanted Records into someone's store.
+- [ ] Reach is the individual-replica GRANT — corrected 2026-08-03. The
+  earlier "reach is derived from a live thread Record, deletion IS the
+  revocation" no longer holds: under the reframe a thread is a synced
+  Record and the grant is precisely a stored per-record-per-contact row.
+  Deleting a Record and revoking a grant are now two acts, and conflating
+  them breaks in both directions:
+  - the peer keeps pushing `set` ops for that uid, so a purely local
+    delete leaves them writing to a record that is gone — import must
+    DROP those ops, never resurrect the record. (No Loro copy is involved:
+    messages are not collab, so a thread has no doc.)
+  - `tombstone` is a synced op kind, so if deletion emitted one it would
+    delete THEIR copy of the conversation too, contradicting "both parties
+    keep a copy."
+  So: **deletion = local removal + explicit revocation of the grant**, and
+  the grant is what the ALPN gate and the import path check. Their copy
+  survives, their ops stop being accepted, and nothing is reached into on
+  their Cell — which is exactly §12's honest split between revoke (hard,
+  local, guaranteed) and forget (a request the remote may honour).
+- [ ] Good news on plumbing: `sync_outbox`'s primary key is already
+  `(contact_organ, tbl, uid, field)` — per-contact-per-record. Individual
+  replica fits the existing outbox with no schema change.
+  Scope: a known contact with `sync_out`/`sync_in` still gets
+  `lince/sync/1` and still syncs — cutting a contact off entirely is
+  `trust='blocked'`, which is the terminal switch §2 already defines.
+  Silencing a conversation does not unfriend.
+- [ ] **Revocation level — SETTLED 2026-08-03: at the conversation, i.e.
+  at the individually-synced Record.** The nested shape had moved the
+  grant one level above the thread, so per-thread revocation was no longer
+  expressible without giving up the property that made nesting attractive
+  (a new topic needing no new grant). Resolved in favour of the simple
+  workflow: **reach closes when either party blocks the other, or when
+  either party deletes the individually-synced Record.** Deleting a single
+  thread inside it is then just deleting a Record, with no reach
+  consequence — the conversation is the unit of relationship, and it is
+  the unit of revocation.
+  Symmetric by construction: both sides hold the same switch, and neither
+  needs the other's cooperation. Blocking (`trust='blocked'`, terminal per
+  §2) closes everything with that Organ; deleting the shared Record closes
+  just that conversation. Two switches, both local, both guaranteed —
+  nothing here is a request the remote may decline.
+- [ ] Not Karma grants (K5.1). Those delegate one PERSON's authority to
+  another and are signed by the Person's key. Thread reach is an ORGAN-level
+  question — who may open a stream — resolved before any Action exists.
+  Different axis, different layer; do not fold them together.
+- [ ] An invite is not a thread: `kind='thread_invite'` with a `from`
+  Assertion to the sending Organ. One pending per Organ is a uniqueness
+  check on that Assertion, so a deleted thread cannot become a spam
+  channel. Accepting creates the thread Record; `trust='blocked'` (terminal
+  everywhere per §2) drops the invite before it is written.
+- [ ] Encryption — revised 2026-08-02, and the revision is BOTH simpler and
+  stronger. The earlier plan (static X25519 DH, seal each body) has no
+  forward secrecy: one long-term key stolen in two years decrypts every
+  message ever recorded. Instead: **threads are direct Cell-to-Cell over
+  iroh, and iroh's QUIC/TLS 1.3 already provides authenticated, encrypted,
+  FORWARD-SECRET transport** — ephemeral session keys, discarded after use,
+  so a later key theft yields nothing. What is left is protecting messages
+  AT REST, which is a local storage-key problem, not a DH problem.
+  Message-layer sealing only buys something when a message passes through a
+  THIRD Organ; keep threads direct and it buys nothing while costing
+  forward secrecy. The always-on VPS Cell holds messages when a peer is
+  offline — but that Cell is the user's OWN Organ, so it is not a third
+  party. If store-and-forward through someone else's Organ is ever wanted,
+  that is when sealing returns, and it should return as a real ratchet
+  (`openmls` or an audited Double Ratchet crate), never hand-rolled.
+- [ ] Reach is the GRANT, and revoking it is what stops inbound messages —
+  refused at the import gate, not filtered in the UI. No time limits, no
+  expiring grants. (This bullet formerly said "reach is the thread"; that
+  was the pre-nesting model, superseded by the grant bullet above and by
+  the open decision on revocation level.)
+- [ ] What remains after deletion is exactly one thing: they may send an
+  INVITE to open a new thread, one pending at a time, which lands in
+  notifications. `trust='blocked'` drops invites too.
+- [ ] Invites surface in the notification panel (now on the board base
+  rail, rightmost): who is asking, their key fingerprint, their claimed
+  display name marked as the untrusted label it is. Accepting opens the
+  thread; it does NOT set trust or enable sync.
+- [ ] Key exchange IS the promotion step, and it happens inside the thread:
+  a "send my key" button posts the local Organ's identity key + NodeId as a
+  message; receiving one offers "add as known Organ" with a name field the
+  local user types (never the sender's claimed label). That single action
+  writes the contact, adopts the key, and sets `trust='known'`. The Organ
+  sand keeps the same thing by hand — paste a key, type a name — for
+  contacts who never used a thread.
+- [ ] Message Records must NOT ride the ordinary record sync feed. They are
+  delivered over the thread ALPN only. Otherwise a visibility bug in the
+  normal feed leaks a private conversation to an unrelated contact, and the
+  sealed body would still expose who is talking to whom.
+- [ ] Consequence of dropping message-layer DH: no separate X25519 key is
+  needed at all, and no ed25519→montgomery conversion. One less published
+  key, one less primitive to get wrong.
+- [ ] But be exact about what was traded: dropping DH is stronger IN
+  TRANSIT (forward secrecy) and WEAKER AT REST — without message-layer
+  sealing, thread bodies sit in plaintext SQLite on both ends. That is a
+  real regression against the original "e2e encrypt it" ask, so **local
+  at-rest encryption of message bodies is an EARLY item**, not a someday
+  box. Only with it does "encrypted in transit, forward secret, encrypted
+  at rest" become a true sentence.
+  This also resolves an inconsistency: the VPS was called the least
+  trusted machine when arguing to split node key from identity key, and it
+  cannot then be trusted enough to hold plaintext conversations. Vetting
+  answers are exactly the material an impersonator would want — "what did
+  we do last Thursday" is replayable once read.
+- [ ] Offline delivery, early: a peer with a closed laptop is
+  unreachable, so a local send queue that flushes on next successful
+  connect must exist or the beach case (meet, exchange keys, they go home)
+  fails on the first message. Flush trigger: a Cell coming online
+  announces itself to the contacts it KNOWS, which wakes their queues.
+  Opting out of being pinged is just moving that contact to `unknown` —
+  no separate setting.
+#### At-rest encryption, scoped to individual replica
+
+The earlier plan — skip the op log for message Records — DOES NOT SURVIVE
+the reframe. A thread is now a synced Record, so its ops must exist and
+must ship; an op that is never written cannot sync. So the protection moves
+from "don't log it" to "log it encrypted."
+
+Verified hazard it has to solve: `records::log_set` calls
+`sync_ops::log_local` with the value inline, so a `set` on a body writes
+that body verbatim into `sync_op.value`, and `crdt` ops carry Loro update
+bytes the same way. Encrypting `record.body` alone would leave a plaintext
+copy of everything in the op log.
+
+- [ ] Plumbing prerequisite — SIMPLIFIED 2026-08-03. `records::log_set` is
+  a low-level store function with no notion of grants, so something must
+  tell it that this Record's op values are encrypted. That something is
+  **`replica_root IS NOT NULL`** — the same column that scopes the grant
+  cascade. No separate boolean, and the two scopes cannot drift apart,
+  because "individually replicated" and "encrypted at rest" are by
+  definition the same set of Records. The column must still exist BEFORE
+  the encryption work starts: retrofitting it after rows are written means
+  rewriting history.
+- [ ] Encrypt at the FIELD boundary, above `log_set` — simplified
+  2026-08-03. If `records::set_text` encrypts before calling `log_set`,
+  then the value handed to the op log is ALREADY ciphertext and
+  `sync_op.value` is covered with no second cipher call site. Verified
+  2026-08-03 that this closes the log: `sync_outbox` stores `seq`, a
+  POINTER into `sync_op` (PK `(contact_organ, tbl, uid, field)`, column
+  `seq INTEGER`), so it never holds a value copy and is not a third
+  plaintext store.
+  The wire then needs decrypt-on-send and encrypt-on-import, since the
+  peer holds a different local key — two points, both inside the sync
+  path, replacing the enumerated storage-edge list below.
+- [ ] Scope: individually-replicated Records only. The general feed is not
+  blanket-encrypted — that is a whole-database problem with a different
+  answer (full-disk encryption, SQLCipher) and it is not what is being
+  bought here. What is bought is that private, per-peer material is not
+  legible in a stolen copy of the database.
+- [ ] Boundary: encrypt on write, decrypt on read. NOT applied to the
+  payload before sending — the peer holds a different local key and could
+  not read it. On the wire, iroh's transport encryption is the entire
+  story, forward secrecy included.
+- [ ] TWO plaintext copies exist, and both are covered by the single
+  field-boundary encrypt above:
+  1. `record.head` / `record.body` — the materialised text.
+  2. `sync_op.value` — written inline by `records::log_set` →
+     `sync_ops::log_local`, and therefore already ciphertext.
+  `record_doc.snapshot` was a third copy under the old Loro-thread plan
+  and is no longer one: a thread has no doc. It matters only for Records
+  that are separately collab-edited, and if such a Record is ever
+  individually replicated, `collab.rs::with_doc` and `maybe_compact` need
+  the decrypt too.
+- [ ] **Every reader that does not decrypt sees ciphertext** — the thing
+  most likely to bite mid-implementation, and it fails quietly as garbled
+  text rather than loudly as an error. Enumerate and fix them all:
+  query and projection (§6), Protein reads (§10), search, export/archive,
+  and File Sync's materialisation to disk. A Record that is encrypted at
+  rest must either decrypt for these or be deliberately excluded from
+  them, and which one is a per-consumer decision — File Sync writing an
+  encrypted body to a plaintext file on disk would defeat the whole
+  scheme, while search silently indexing ciphertext is merely useless.
+- [ ] Cipher and key: XChaCha20-Poly1305 with a 32-byte key in a file
+  beside the database at mode 0600. Chosen over the alternatives for
+  specific reasons — an OS keychain does not exist on a headless VPS;
+  deriving from a login password makes data unreadable whenever nobody is
+  logged in, which breaks background sync and is exactly wrong for an
+  always-on Cell; SQLCipher encrypts everything including material that
+  gains nothing from it, and adds a heavy dependency.
+- [ ] What it defends, stated exactly so the UI does not overclaim: a
+  database copied out through a backup, a synced folder, a cloud drive, or
+  a disk pulled from a machine without full-disk encryption. What it does
+  NOT defend: anyone already executing as your user, who can read the key
+  file as easily as the database. It raises the cost of casual
+  exfiltration; it is not a defence against a compromised host.
+- [ ] Consequence to accept: a Cell must hold the key online to serve its
+  own data, so the key is warm whenever Lince runs. That is inherent to
+  a server that answers requests, not a flaw in the choice.
+- [ ] Upgrade path, not the starting point: OS keychain integration where
+  a keychain exists, leaving the file only for headless installs.
 
 ### Op log
 
@@ -519,10 +1497,30 @@ concepts: plain per-field LWW. Physical cleanup after checkpoints pass is
 
 ### Modes: live and replica
 
-- [ ] Per-contact mode on top of `sync_out`/`sync_in`: `live` opens a
-  Protein WS session against the remote Organ (in-memory access, remote
-  change handler is authoritative, zero local rows); `replica` pulls an
-  initial snapshot then rides reactive deltas + reconciliation.
+Corrected 2026-08-02. An earlier pass redefined `live` as "hold the iroh
+connection open" — that was a drift and is withdrawn. Connection pinning is
+a transport tactic, not a mode. The mode is about WHERE THE DATA LIVES, as
+originally written, and it is the same thing the product calls "live
+login":
+
+- [ ] `live` = an in-memory session against a REMOTE Organ. Zero local
+  rows, the remote is authoritative, and the sand renders data streamed
+  into memory that is never persisted locally. Logging into another Lince
+  and editing its Records — with full CRDT on text — IS live mode; there is
+  no second meaning of the word.
+- [ ] `replica` = a local persistent copy. Ops sync both ways, both sides
+  store, checkpoints track what the other has seen.
+- [ ] Transport is orthogonal to the mode. A browser reaching a Cell uses
+  HTTPS/WS; a Cell reaching another Cell uses iroh. Both can serve a live
+  session; neither changes what `live` means.
+- [ ] Where iroh genuinely extends live mode (later option): a Cell with
+  no public hostname cannot be browsed to, but YOUR Cell can reach it over
+  iroh and front it. Your local Lince becomes the door to a remote Organ
+  that has no door of its own.
+- [ ] Until then `sync_out=1` is mode-independent: the outbox drains to
+  every non-blocked contact with the flag set, fact-bus-woken (~250ms
+  coalesce), which is already live-ish in practice. The `mode` column
+  exists and DEFAULT 'replica' but no code branches on it yet.
 - [ ] Organ sand controls the whole pairing per contact: outgoing sync
   (my records go there), incoming sync (their records land here), both, or
   live-only — driven by the existing `sync_out`/`sync_in` flags plus mode.
@@ -754,3 +1752,260 @@ strongest signal:
   stores sightings of KNOWN contacts only, locally, decayed — Lince never
   builds a log of strangers' devices.
 
+
+# Alexandria
+Was a library inside a temple, well maintained and kept, in a city with a port, many travelers where asked to hand their books and manuscripts and receive a copy instead. While there is the common imagination that it was burned, the details are a little conflicting. What remains from the story is the idea of a great body of knowledge, that worked because it was cared for, and the fact that it can suddenly catch fire and be lost. Great care can be put into maintaining and expanding knowledge. It will most likely provide itself useful if used for the meeting of our Needs.
+
+In Lince, the Alexandria vibe means sharing Records as knowledge of what things are, how they work, their consequences, and how to implement them.
+
+That in turn means possibly caring for the building of interfaces and components to access knowledge, learn it and help use it while also helping with the management of knowledge: writing it and sharing it.
+
+Below are some cases for the first steps towards having such alexandria abstraction with lince, a free flow of information to better us all. We must advance our knowledge of how to perform this great task, turning knowledge refinement into a craft. Many have done it in the past, and we now stand in their shoulders. Knowledge can be inbued into components, when it is activated it creates Records with that content. Or maybe knowledge can be data in one specific server, but then you would need to contact such server to access it, if it's gated you loose access. Would it be best if it where inside a binary, inside a sand, in seed? We must find out which one is best, and support ourselves with past work, that made available to all a vast amount of knowledge in the internet, free, maybe we can import it, integrate with it, to jumpstart Alexandria.
+
+# Nutrition - Home Manager.
+
+Implementation checklist for the Home Manager nutrition tab.
+
+- [x] Replace the old Home Manager surface with thin top tabs: Nutrition and Bills.
+- [x] Keep Bills as a thin placeholder tab for this pass.
+- [x] Base nutrition rules on Brazil's current Ministry of Health food guide: prefer in natura and minimally processed foods, use culinary ingredients in small amounts, limit processed foods, avoid ultraprocessed foods.
+- [x] Use TBCA-style per-100g food-composition fields for built-in frontend data.
+- [x] Embed the initial food knowledge base in the Home Manager sand as JavaScript objects, not Lince tables.
+- [x] Include roughly 100 common food objects across fruit, vegetables, legumes, grains, roots, meat, eggs, dairy, nuts, seeds, oils, and Brazilian staples.
+- [x] Include calories, macros, fiber, common vitamin fields, common mineral fields, category, NOVA group, density, and generic-currency price fields where known.
+- [x] Store unknown custom-food micronutrients as `null`, never silently converting an empty edit field to zero.
+- [x] Add a custom alimentum record workflow using `record` plus `record_extension`.
+- [x] Use `record_extension.namespace = "nutrition.alimentum.v1"` for custom alimenta.
+- [x] Merge built-in foods and custom alimentum records in the frontend catalog.
+- [x] Keep marmita plans, optimizer inputs, allocations, prices, and shopping lists as widget/card state.
+- [x] Let the user configure weight, height, sex, age, activity factor, days, pot count, pot volume, meals per day, food min/max, and forced grams.
+- [x] Generate marmita allocation, nutrient totals, shopping list, total price, and price per marmita.
+- [x] Add a lowest-price optimizer using a frontend two-phase simplex linear optimizer with infeasibility reporting.
+- [x] Add visual workflow coverage for tab switching, custom alimentum creation, price editing, plan generation, optimizer run, and shopping-list display.
+
+## Storage Architecture
+
+The built-in nutrition knowledge base is package data. It is compiled into the official Home Manager sand and is never written to Lince persistence. This keeps researched base values deterministic, reviewable, and portable with the widget.
+
+Custom foods are the only nutrition records created by this pass. They are stored as `record` rows with a single `record_extension` payload in the `nutrition.alimentum.v1` namespace. The frontend reads those records through dedicated Home Manager widget actions and merges them with the built-in catalog at render time.
+
+Marmita plans are operational state, not records. Profile settings, food selection, min/max/forced grams, prices, generated allocations, optimizer output, and shopping lists are saved in widget/card state through the bridge, with localStorage only as a preview fallback.
+
+## Data Shape
+
+Built-in and custom foods share this object shape:
+
+```json
+{
+  "id": "builtin:arroz-integral",
+  "name": "Arroz integral cozido",
+  "category": "cereals",
+  "nova": "minimally_processed",
+  "densityGPerMl": 0.78,
+  "pricePerKg": 7.5,
+  "portionG": 100,
+  "nutrients": {
+    "kcal": 124,
+    "proteinG": 2.6,
+    "carbG": 25.8,
+    "fatG": 1.0,
+    "fiberG": 2.7,
+    "calciumMg": 5,
+    "ironMg": 0.3,
+    "magnesiumMg": 43,
+      "potassiumMg": 86,
+      "zincMg": 0.6,
+      "sodiumMg": 1,
+      "phosphorusMg": 83,
+      "seleniumMcg": 5.1,
+      "copperMg": 0.1,
+      "manganeseMg": 0.7,
+      "vitaminCMg": 0,
+      "vitaminAMcg": 0,
+      "vitaminDMcg": 0,
+      "vitaminEMg": 0.2,
+      "vitaminKMcg": 1,
+      "thiaminMg": 0.1,
+      "riboflavinMg": 0,
+      "niacinMg": 1.3,
+      "vitaminB6Mg": 0.1,
+      "folateMcg": 4,
+      "b12Mcg": 0
+  },
+  "source": "Brazil food-guide category and TBCA-compatible planning value per 100g"
+}
+```
+
+Custom records store the same object, without the `builtin:` identity, in:
+
+```json
+{
+  "schema": "nutrition.alimentum.v1",
+  "food": { "...": "same shape" }
+}
+```
+
+## Optimizer
+
+The optimizer minimizes total generic-currency price over food gram variables. It uses a two-phase simplex tableau with these constraints:
+
+- per-food min, max, and forced grams
+- total marmita volume from pot count and pot volume
+- minimum calories from Mifflin-St Jeor estimated expenditure
+- minimum daily protein
+- minimum daily fiber
+
+If the LP is infeasible, the UI reports the violated class of constraint and keeps a generated fallback rather than silently producing a broken plan.
+
+## Sources
+
+- Ministry of Health, `Guia Alimentar para a Populacao Brasileira`, 2nd edition, official Gov.br listing updated 2021-07-29: https://www.gov.br/saude/pt-br/assuntos/saude-brasil/publicacoes-para-promocao-a-saude/guia_alimentar_populacao_brasileira_2ed.pdf/view
+- Ministry of Health PDF mirror in BVS: https://bvsms.saude.gov.br/bvs/publicacoes/guia_alimentar_populacao_brasileira_2ed.pdf
+- TBCA/USP food composition database: https://www.tbca.net.br/
+
+The UI must not claim the current official guide is a food pyramid. It may present a practical hierarchy based on NOVA processing groups. The embedded catalog is a planning database shaped from food-guide categories and TBCA-style per-100g fields; it is not a clinical or labeling-grade copy of TBCA records.
+
+## AniccaDB: Lingua-aware Markdown file projection (proposal)
+
+AniccaDB can make a file-synced Markdown note carry a small, readable view of
+the Record's Lingua state before its ordinary text. This is a **projection** of
+existing tables, not a second database and not a replacement for `record.body`:
+Records, Concepts, and Assertions remain authoritative. The feature belongs to
+File Sync configuration because the generated section is for an interoperable
+file representation, rather than for every Record body in the Cell.
+
+For example, a configured Record could be written as:
+
+```markdown
+---
+@task [[Project A]]
+[Image #1]
+---
+
+Write the project brief.
+```
+
+The delimiters resemble front matter, but this is deliberately **not YAML
+front matter**: each line is Lingua syntax. `@task [[Project A]]` is a binary
+assertion (the note is the subject; `task` is the Concept; `Project A` is the
+object Record). `[Image #1]` is a Record link/reference rendered according to
+the configured mapping; its precise assertion predicate must be explicit in
+the mapping rather than inferred from display text. A unary assertion renders
+as `@task`. Links use titles for people, while retaining a stable Record UID in
+machine-owned metadata or a collision-safe encoding so renamed Records and two
+Records with the same title cannot change their identity.
+
+A `lince.file_sync` configuration should opt in per Organ and define which
+fields and assertion predicates project, their order, link rendering, and
+whether a line is editable from disk. An initial useful configuration shape is
+conceptual rather than a frozen wire format:
+
+```json
+{
+  "lingua_prelude": {
+    "enabled": true,
+    "assertions": ["task", "references"],
+    "include_identity": true,
+    "link_style": "wiki",
+    "disk_editable": true
+  }
+}
+```
+
+File Sync writes `generated prelude + blank separator + record.body`. All
+normal body surfaces receive and edit only `record.body`; they neither display
+nor allow a user to accidentally alter the generated prelude. This avoids
+placing a stale duplicate of assertions in canonical text and makes a normal
+body edit independent of a relation edit.
+
+On export, changing a selected assertion, identity Concept, Record title, or
+the title of an object Record causes File Sync to rewrite every affected
+projection. The generated header must be deterministic (configured ordering,
+then stable UID ordering) so a no-op tick does not churn files. It must also be
+tracked separately from the source body hash, otherwise the File Sync watcher
+would interpret its own rewrite as a user body edit.
+
+On import, the parser first recognizes and removes the delimited prelude. The
+remaining Markdown updates `record.body` through the existing
+`EditRecordText` path. If `disk_editable` is enabled, valid changed prelude
+lines are translated into the corresponding assertion/identity actions;
+otherwise any prelude edit is reported as a conflict and regenerated from the
+database. Ambiguous titles, unsupported syntax, duplicate links, and unknown
+Concepts must never silently create or retarget Records: retain the file,
+report the import error, and leave authoritative state unchanged until the
+user resolves it.
+
+This gives zettelkasten-compatible `[[other note]]` ergonomics while preserving
+the ontology's one-source-of-truth rule. It is also a small database-like
+document view: adding a new property means adding an explicit projection
+mapping, not adding a bespoke Record column or parsing arbitrary prose for
+meaning.
+
+
+# Simulation
+
+DST - Deterministic Simulation Testing.
+
+https://alex-ii.github.io/notes/2018/04/29/distributed_systems_with_deterministic_simulation.html
+
+DST is amazing! The idea (I think) is to have three things:
+        1. The Seed: the user's DNA (la ele).
+        2. The Rules: What events should be bookmarked or stop the simulation?
+        3. The Engine: How will this simulation happen? With the normal flow of time, or a tampered one? Connecting to the outside world with Commands?
+
+        This way we can create futures shown to the user so they can see to the end of their Karma and catch bugs or unintended behavior.
+        This is useful in finantial simulation, or for understanding the costs of time for doing tasks (like the Calendar feature).
+
+        With DST we may duplicate the DNA to change it freely without affecting the user's data, or perhaps not changing persistent data at all,
+        just manipulating data inside the program.
+
+        TigerBeetle is the GOATED db for this, perhaps Lince can learn from it, fork it, or use it with a different schema for Transaction of Records.
+
+        https://youtu.be/sC1B3d9C_sI?si=_HbNMQ9NVegLyS2a
+
+        https://www.youtube.com/watch?v=JoYjji1DZCE
+
+
+        Turso does not use a basic test script that just writes random data to different databases. Instead, Turso utilizes Deterministic Simulation Testing (DST) by completely abstracting the environment—including time, the network, and file system I/O—and replacing it with a pseudo-randomly seeded simulator. [1, 2, 3]
+Because Turso is a ground-up rewrite of SQLite in Rust (originally under the repo name Limbo), they designed the core engine following "TigerStyle" software principles, ensuring that absolutely every background task can be controlled deterministically by a single PRNG seed. [3, 4, 5, 6]
+
+---
+
+## 📂 How It Is Structured
+
+Turso's simulator code is organized inside their repository under their testing directories (such as testing/simulator/). It is broken into four distinct architectural layers: [2, 7, 8]
+
+1.  Simulator (main.rs): The entry point. It generates random configuration setups and interaction plans, executing them sequentially or concurrently inside the runtime loop. [2, 7]
+2.  Model (model.rs): A highly simplified, memory-resident representation of what the database should contain. It tracks atomic actions like insertions and selections to acts as a "source of truth". [2, 7]
+3.  Generation (generation.rs): The code responsible for pseudo-randomly generating interaction plans, mock database tables, and schema workloads based on a configured workload distribution. [2, 7]
+4.  Properties (properties.rs): Defines invariants and core database properties (like transaction atomicity, linearizability, or isolation levels). The engine checks these assertions at every step of the simulation loop. [2, 7, 9]
+
+## 🛠 How the Simulation Logic Works
+
+Turso avoids standard third-party Rust crates that interact directly with the operating system or system clock. Instead, the simulator operates through a strict architectural loop: [10]
+
+- Complete I/O Mocking: The core database code doesn't make standard asynchronous calls directly to Linux io_uring or system threads during simulation. All network requests, file writes, and time delays flow through the simulation layer. [1, 10, 11]
+- The Power of the Seed: The simulator generates an initial random seed. If an impossible-to-find, edge-case data corruption bug occurs after millions of randomized operations, developers can use that exact seed to replay the execution trace identical to how it failed. [1, 3]
+- Fault Injection: Instead of just making normal writes, the simulator intentionally drops network packets, randomly pauses threads, delays storage commits, and shuts down simulated database nodes mid-write to stress-test the MVCC concurrent engine. [11, 12, 13]
+- Dual Protection with Antithesis: Because a custom in-house simulator might have its own logical blind spots, Turso also pairs its DST framework with [Antithesis](https://antithesis.com/). Antithesis is a deterministic hypervisor that runs the compiled database in a virtualized environment to inject low-level OS/hardware faults and catch non-simulated I/O bugs. [14, 15, 16]
+
+If you are interested in seeing how they implement this, you can browse the [Turso GitHub Repository](https://github.com/tursodatabase/turso) to look directly at the simulator's logic and the property invariants they test against. [2]
+Would you like to explore how to write a basic deterministic state model in Rust, or would you prefer to look deeper into how Turso handles its async I/O loop inside the engine? [11, 17]
+
+[1] [https://journal.resonatehq.io](https://journal.resonatehq.io/p/deterministic-simulation-testing)
+[2] [https://github.com](https://github.com/tursodatabase/turso/blob/main/testing/simulator/README.md)
+[3] [https://turso.tech](https://turso.tech/blog/a-deep-look-into-our-new-massive-multitenant-architecture)
+[4] [https://turso.tech](https://turso.tech/blog/introducing-limbo-a-complete-rewrite-of-sqlite-in-rust)
+[5] [https://github.com](https://github.com/tursodatabase/turso)
+[6] [https://s2.dev](https://s2.dev/blog/dst)
+[7] [https://github.com](https://github.com/tursodatabase/turso/blob/main/testing/simulator/README.md)
+[8] [https://mohittalniya.medium.com](https://mohittalniya.medium.com/inside-the-vllm-semantic-router-a-deep-dive-into-intelligent-llm-routing-3e6b42e2a01d)
+[9] [https://www.youtube.com](https://www.youtube.com/watch?v=E__g-Mck62U)
+[10] [https://www.youtube.com](https://www.youtube.com/watch?v=MV0TNq6G5rk)
+[11] [https://dev.to](https://dev.to/arshtechpro/turso-a-rust-rewrite-of-sqlite-setup-guide-and-whether-its-worth-your-time-16lk)
+[12] [https://docs.turso.tech](https://docs.turso.tech/cloud/durability)
+[13] [https://pierrezemb.fr](https://pierrezemb.fr/posts/learn-about-dst/)
+[14] [https://turso.tech](https://turso.tech/blog/turso-the-next-evolution-of-sqlite)
+[15] [https://turso.tech](https://turso.tech/blog/turso-the-next-evolution-of-sqlite)
+[16] [https://github.com](https://github.com/tursodatabase/limbo/blob/main/CONTRIBUTING.md)
+[17] [https://thenewstack.io](https://thenewstack.io/why-we-created-turso-a-rust-based-rewrite-of-sqlite/)

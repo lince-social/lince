@@ -1533,6 +1533,30 @@ body.auth-pending .startup-auth-card {
     display: flex;
 }
 
+/* A pending notification (or an open panel) marks the toggle `is-active`;
+   pop the rail open on its own so a chat request is never hidden behind a
+   hover the user has no reason to perform. */
+.board-base-tools:has(.notification-button.is-active) {
+    width: auto;
+    height: auto;
+}
+
+.board-base-tools:has(.notification-button.is-active) .board-base-tools__corner {
+    display: none;
+}
+
+.board-base-tools:has(.notification-button.is-active) .board-base-tools__row {
+    display: flex;
+}
+
+.board-base-tools .notification-button {
+    position: relative;
+}
+
+.board-base-tools .notification-button.is-active {
+    color: var(--accent, #6366f1);
+}
+
 .board-base-tools__button,
 .board-base-tools .board-zoom-button,
 .board-base-tools .board-zoom-indicator {

@@ -27,10 +27,18 @@ fn sha256_hex(bytes: &[u8]) -> String {
     format!("{:x}", hasher.finalize())
 }
 
+/// Domain separation prefix (Ontology §11, decided 2026-08-02). Every payload
+/// this Organ key signs starts with it, so a signature produced for one purpose
+/// can never be replayed as another. Colliding with TLS 1.3 CertificateVerify
+/// was already impossible — that blob is 64 spaces plus a fixed context string
+/// — so this replaces safe-by-luck with safe-by-design. Bump the version
+/// suffix if the payload SHAPE ever changes; old and new must not verify alike.
+pub const PEER_SIGNING_DOMAIN: &str = "lince/peer/1\n";
+
 /// The exact bytes a peer signs for a request.
 pub fn request_signing_payload(method: &str, path_and_query: &str, ts: &str, body: &[u8]) -> Vec<u8> {
     format!(
-        "{method}\n{path_and_query}\n{ts}\n{}",
+        "{PEER_SIGNING_DOMAIN}{method}\n{path_and_query}\n{ts}\n{}",
         sha256_hex(body)
     )
     .into_bytes()
@@ -38,7 +46,7 @@ pub fn request_signing_payload(method: &str, path_and_query: &str, ts: &str, bod
 
 /// The exact bytes a peer signs for a response body.
 pub fn response_signing_payload(ts: &str, body: &[u8]) -> Vec<u8> {
-    format!("response\n{ts}\n{}", sha256_hex(body)).into_bytes()
+    format!("{PEER_SIGNING_DOMAIN}response\n{ts}\n{}", sha256_hex(body)).into_bytes()
 }
 
 /// `|now - ts| <= window` — bounds replay of a captured exchange.

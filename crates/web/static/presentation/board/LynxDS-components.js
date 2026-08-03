@@ -88,7 +88,7 @@
     if (!target || !text) {
       return target;
     }
-    target.setAttribute("title", String(text));
+    target.dataset.lynxTooltip = String(text);
     target.setAttribute("aria-label", target.getAttribute("aria-label") || String(text));
     return target;
   }

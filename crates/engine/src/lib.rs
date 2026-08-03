@@ -29,6 +29,7 @@ pub mod sync;
 pub mod transfer;
 pub mod transfer_delivery;
 pub mod trust;
+pub mod wire;
 
 use chrono::{DateTime, TimeDelta, Utc};
 

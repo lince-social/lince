@@ -163,16 +163,6 @@ fn render_topbar_actions() -> Markup {
                 span class="pill__dot" {}
                 span id="streams-toggle-label" { "Streams on" }
             }
-            button
-                id="notifications-toggle"
-                class="icon-button notification-button"
-                type="button"
-                aria-label="Abrir notificacoes"
-                aria-expanded="false"
-            {
-                span class="notification-button__mark" aria-hidden="true" { "!" }
-                span id="notifications-count" class="notification-button__count" hidden="" { "0" }
-            }
             a
                 class="icon-button icon-button--ai"
                 href="/ai"
@@ -317,6 +307,20 @@ fn render_board_base_controls() -> Markup {
                         path d="m14.7 4.1 5.2 5.2M3.8 20.2l3.5-.8L19.9 6.8a1.85 1.85 0 0 0-2.6-2.6L4.7 16.7l-.9 3.5Z" {}
                         path d="m12.8 5.3 5.9 5.9" {}
                     }
+                }
+                // Notifications live on the base rail (not the topbar) because
+                // they are a workspace-wide inbox — chat requests from Organs
+                // seen on the network arrive here, not only while editing.
+                button
+                    id="notifications-toggle"
+                    class="lynx-button lynx-icon-button board-base-tools__button notification-button"
+                    type="button"
+                    data-lynx-tooltip="Notificacoes"
+                    aria-label="Abrir notificacoes"
+                    aria-expanded="false"
+                {
+                    span class="notification-button__mark" aria-hidden="true" { "!" }
+                    span id="notifications-count" class="notification-button__count" hidden="" { "0" }
                 }
             }
             span class="board-base-tools__corner" aria-hidden="true" {}

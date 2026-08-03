@@ -59,42 +59,55 @@ impl Signer {
     /// absent. Key bytes stay outside SQLite and are never returned by a read
     /// API or cross-Cell envelope.
     pub fn load_or_create(path: &Path, actor_uid: &str, key_id: &str) -> Result<Self, EngineError> {
-        match std::fs::read(path) {
-            Ok(bytes) => {
-                let secret: [u8; 32] = bytes.try_into().map_err(|_| {
-                    EngineError::Io(std::io::Error::new(
-                        std::io::ErrorKind::InvalidData,
-                        "Cell signing key must contain exactly 32 bytes",
-                    ))
-                })?;
-                Ok(Self::from_bytes(actor_uid, key_id, secret))
+        Ok(Self::from_bytes(
+            actor_uid,
+            key_id,
+            load_or_create_secret(path)?,
+        ))
+    }
+}
+
+/// The 32 raw secret bytes at `path`, generated at mode 0600 on first call.
+///
+/// Factored out of `Signer::load_or_create` so the iroh NODE key can reuse the
+/// exact same on-disk discipline without being a `Signer` — a node key
+/// authenticates a live connection and must never be installed as something
+/// that signs Facts or op batches (Ontology §11: node key ≠ identity key).
+pub fn load_or_create_secret(path: &Path) -> Result<[u8; 32], EngineError> {
+    match std::fs::read(path) {
+        Ok(bytes) => bytes.try_into().map_err(|_| {
+            EngineError::Io(std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                "Cell key file must contain exactly 32 bytes",
+            ))
+        }),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+            if let Some(parent) = path.parent() {
+                std::fs::create_dir_all(parent)?;
             }
-            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
-                if let Some(parent) = path.parent() {
-                    std::fs::create_dir_all(parent)?;
-                }
-                let signer = Self::generate(actor_uid, key_id);
-                let mut options = std::fs::OpenOptions::new();
-                options.write(true).create_new(true);
-                #[cfg(unix)]
-                {
-                    use std::os::unix::fs::OpenOptionsExt as _;
-                    options.mode(0o600);
-                }
-                match options.open(path) {
-                    Ok(mut file) => {
-                        file.write_all(&signer.secret_bytes())?;
-                        file.sync_all()?;
-                        Ok(signer)
-                    }
-                    Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
-                        Self::load_or_create(path, actor_uid, key_id)
-                    }
-                    Err(error) => Err(EngineError::Io(error)),
-                }
+            let secret = Signer::generate("", "").secret_bytes();
+            let mut options = std::fs::OpenOptions::new();
+            options.write(true).create_new(true);
+            #[cfg(unix)]
+            {
+                use std::os::unix::fs::OpenOptionsExt as _;
+                options.mode(0o600);
             }
-            Err(error) => Err(EngineError::Io(error)),
+            match options.open(path) {
+                Ok(mut file) => {
+                    file.write_all(&secret)?;
+                    file.sync_all()?;
+                    Ok(secret)
+                }
+                // Another process won the race and wrote first — read theirs,
+                // so two Cells never disagree about which key this file holds.
+                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+                    load_or_create_secret(path)
+                }
+                Err(error) => Err(EngineError::Io(error)),
+            }
         }
+        Err(error) => Err(EngineError::Io(error)),
     }
 }
 

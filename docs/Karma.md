@@ -941,3 +941,4 @@ now the whole of Karma: Rule, Command, Senses, Trust and the sand all live here.
 Siblings it leans on: `docs/Ontology.md` for the modelling vocabulary,
 `docs/Tool.md` for Protein and Actions, `docs/Transfer.md` for the counterparty
 half of §11, `docs/Simulation.md` for §13.
+

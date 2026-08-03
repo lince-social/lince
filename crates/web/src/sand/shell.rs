@@ -66,7 +66,7 @@ button{cursor:pointer}
 .editPopover .add-card-popover__icon{width:14px;height:14px;color:var(--secondary-ink)}
 .editPopover .edit-popover__section{display:flex;flex-direction:column;gap:var(--space-1,2px)}.editPopover .edit-popover__section+.edit-popover__section{margin-top:var(--space-4,10px)}
 .editPopover .edit-popover__label{color:var(--secondary-ink);font-size:.72rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase}
-.editPopover .edit-popover__row,.editPopover .workspace-popover__footer{display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:var(--space-1,2px)}
+.editPopover .edit-popover__row,.editPopover .workspace-popover__footer{display:flex;align-items:center;justify-content:flex-start;flex-wrap:nowrap;gap:var(--space-1,2px)}
 .editPopover .edit-popover__row .lynx-button,.editPopover .workspace-popover__footer .lynx-button{width:auto;min-width:var(--control-height,25px);padding:0;justify-content:center}
 .editPopover .workspace-list{width:fit-content;gap:var(--space-1,2px)}.editPopover .workspace-item{grid-template-columns:fit-content(12rem) var(--control-height,25px) var(--control-height,25px);gap:var(--space-1,2px)}
 .editPopover .workspace-item__switch{min-height:var(--control-height,25px);padding:0;border-radius:var(--radius-control,2px);font-size:inherit;font-weight:400}.editPopover .workspace-item__name{width:fit-content;min-width:8ch;max-width:12rem;field-sizing:content;min-height:var(--control-height,25px);padding:var(--control-padding-y,3px) var(--control-padding-x,5px);border-color:var(--gray);border-radius:var(--radius-control,2px);background:var(--primary-background);color:var(--primary-ink)}

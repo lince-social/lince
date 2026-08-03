@@ -14,11 +14,12 @@ pub(crate) fn manifest() -> PackageManifest {
         icon: "◈".into(),
         title: "Organ".into(),
         author: "Lince Labs".into(),
-        version: "0.2.0".into(),
-        description: "Lists this Cell's organs, manages contact trust/proximity, and \
-            configures per-organ File Sync to disk."
+        version: "0.3.0".into(),
+        description: "Registers and manages organs, contact trust/proximity, and \
+            per-organ File Sync to disk."
             .into(),
-        details: "Protein-first list of kind=organ records (the local Cell plus its \
+        details: "Protein-first list of kind=organ records: register a new organ with \
+            its name and URL, edit or delete it, and manage the local Cell plus its \
             contacts, `contact` include for trust/proximity). Selecting a contact edits \
             its trust (unknown/known/blocked) and proximity via `set-contact-trust`/ \
             `set-contact-proximity` — a friends-list view, scoped to trust/proximity \
@@ -43,4 +44,30 @@ pub(crate) fn manifest() -> PackageManifest {
 pub(crate) fn package() -> LincePackage {
     LincePackage::new(Some("organ.html".into()), manifest(), HTML)
         .expect("organ official sand should render as a valid package")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{HTML, manifest};
+
+    #[test]
+    fn organ_sand_exposes_lynx_crud_with_a_separate_connection_indicator() {
+        assert!(HTML.contains("/board/lynx-ui.css"));
+        assert!(HTML.contains("/board/lynx-ui.js"));
+        assert!(HTML.contains("action: \"create-record\", kind: \"organ\""));
+        assert!(HTML.contains("id=\"organ-create\""));
+        assert!(HTML.contains("createOrgan()"));
+        assert!(HTML.contains("<section id=\"detail\">"));
+        assert!(HTML.contains("id=\"selected-detail\" hidden"));
+        assert!(HTML.contains("action: \"edit-record-text\""));
+        assert!(HTML.contains("action: \"delete-record\""));
+        assert!(HTML.contains("class=\"sand-tools\""));
+        assert!(HTML.contains("id=\"connection-corner\""));
+        assert!(
+            manifest()
+                .permissions
+                .iter()
+                .any(|permission| permission == "act")
+        );
+    }
 }

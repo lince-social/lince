@@ -144,14 +144,18 @@
     const boundary = target.closest("[data-lynx-tooltip-boundary], .lynx-field, .sand") || document.documentElement;
     const targetBox = target.getBoundingClientRect();
     const boundaryBox = boundary.getBoundingClientRect();
-    const width = Math.min(180, Math.max(1, boundaryBox.width - 4), target.dataset.lynxTooltip.length * 6 + 10);
-    const height = 24;
+    const viewportWidth = document.documentElement.clientWidth;
+    const viewportHeight = document.documentElement.clientHeight;
+    const width = Math.min(180, Math.max(1, boundaryBox.width - 4), Math.max(1, viewportWidth - 4), target.dataset.lynxTooltip.length * 6 + 10);
+    const height = Math.ceil(target.dataset.lynxTooltip.length * 7 / width) * 15 + 10;
     target.style.setProperty("--lynx-tooltip-max-width", `${width}px`);
     delete target.dataset.lynxTooltipAlign;
     delete target.dataset.lynxTooltipSide;
     if (targetBox.left + targetBox.width / 2 - width / 2 < boundaryBox.left) target.dataset.lynxTooltipAlign = "left";
     if (targetBox.left + targetBox.width / 2 + width / 2 > boundaryBox.right) target.dataset.lynxTooltipAlign = "right";
-    if (targetBox.top - height - 4 < boundaryBox.top) target.dataset.lynxTooltipSide = "bottom";
+    const cannotFitAbove = targetBox.top - height - 4 < Math.max(0, boundaryBox.top);
+    const fitsBelow = targetBox.bottom + height + 4 <= Math.min(viewportHeight, boundaryBox.bottom);
+    if (cannotFitAbove && fitsBelow) target.dataset.lynxTooltipSide = "bottom";
   }
 
   document.addEventListener("pointerover", (event) => {

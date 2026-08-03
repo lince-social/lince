@@ -40,7 +40,6 @@ You can create automations and recurrent tasks in lince with Karma rules, there 
 
 With this philosophy we can automate the remembering part of habits, creating a need for them everyday, we can assign work tasks, buy, borrow and donate items, create roadmaps for others to follow, in the areas of production and education, and do much more.
 
-# "Death is only the beginning" - The Mummy.
 
 ### Registry
 We all have different Needs. To satiate them we do personal/professional tasks, acquire personal items, perform economic trades, socialize with others, study... Lince helps you organize the meeting of those Needs. You put your Needs in Lince, the frequent or the one-time ones. You create Records of them, give titles (head) and descriptions (body) and assign a quantity, with that you created data on your Need, now you can play with it, put your finger on it, connect with others, see the bigger picture, automate them, and help others do the same.
@@ -55,7 +54,7 @@ Many great ideas are lost with time. After doing the registry, interconnection a
 
 With this philosophy we can automate the remembering part of habits, creating a need for them everyday, we can assign work tasks, buy, borrow and donate items, create roadmaps for others to follow, in the areas of production and education, and do much more.
 
-## The Death of Lince
+## Interfaceless - The Death of Lince
 
 Most software is repetitive Create, Read, Update, Delete (CRUD) operations. We can create a good general base for basic CRUD software, and continue to expand beyond that. The diversity in what can be created with it is the real power.
 
@@ -83,4 +82,12 @@ It's a Contribution to understanding the whole of possibilities of how you can c
 
 The death of Lince is the death of the Need of Lince. If there is ever any configuration of resources that makes Lince useless, then it's job is fullfilled, there is nothing else to be done, no commit, no push, just vibes. Untill then, a system for self organization that can turn into a dance of the world is, to some, something useful and exciting to build.
 
+How can we kill Lince. Lince is the need for Lince. How can we deliver Lince so that we dont need to do what Lince does. Lince can help us with transactions and automations, with communication and knowledge gathering. With the Need of Lince over we can use it for such great and fun things.
+
+Is our best case scenario to have a hardware that is wearable in the head, something everybody has, like a crown? A Lince Crown? With an hability to scan your surroundings for Needs and Contributions of Lince: a Bed (that Need's to be made), a Need of Apple close to you, that you can Contribute because the big pile of Apples in front of you will not be all consumed in time and will rot.
+
+We want to minimize the time spent managing the meeting of Needs and Contributions. The rest is just doing things, living life. We need a major version of Lince that will kill it. It might be a v2.0.0, but it Needs a lot of thinking: a realistic best case scenario, and the Contributions for it to kill Lince.
+
 A team is being assembled, to fight the battle of killing Lince. Will you join the party?
+
+# "Death is only the beginning" - The Mummy.

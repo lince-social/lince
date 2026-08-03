@@ -4,14 +4,16 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Organ</title>
+  <link rel="stylesheet" href="/board/lynx-ui.css" />
   <script src="/board/frame.js"></script>
+  <script src="/board/lynx-ui.js"></script>
   <style>
     :root { color-scheme: dark; --bg: #101318; --panel: #171c22; --line: #29313b;
             --text: #e6edf3; --muted: #8b949e; --good: #3fb950; --warn: #d29922; }
     * { box-sizing: border-box; }
     body { margin: 0; height: 100vh; overflow: hidden; background: var(--bg); color: var(--text);
            font: 13px/1.45 system-ui, -apple-system, sans-serif; }
-    main { height: 100%; display: grid; grid-template-rows: auto 1fr; gap: 10px; padding: 12px; min-height: 0; }
+    main { position: relative; height: 100%; display: grid; grid-template-rows: auto 1fr; gap: 10px; padding: 12px; min-height: 0; }
     header { display: flex; align-items: center; gap: 8px; }
     h1 { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); flex: 1; }
     .dot { width: 7px; height: 7px; border-radius: 50%; background: #f85149; }
@@ -30,7 +32,7 @@
     .empty { padding: 24px 12px; color: var(--muted); text-align: center; }
     #detail { min-height: 0; overflow: auto; border: 1px solid var(--line); border-radius: 8px;
               background: var(--panel); padding: 12px; display: grid; gap: 10px; align-content: start; }
-    #detail[hidden] { display: none; }
+    #selected-detail[hidden] { display: none; }
     .d-head { font-weight: 650; font-size: 14px; }
     .d-url { color: var(--muted); font-size: 12px; word-break: break-all; }
     .panel { border-top: 1px solid var(--line); padding-top: 10px; display: grid; gap: 8px; }
@@ -46,26 +48,58 @@
     .status.err { color: #f85149; }
     .hint { color: var(--muted); font-size: 11.5px; line-height: 1.5; }
     .placeholder { color: var(--muted); padding: 8px 2px; }
+    .sand-tools { position: absolute; right: 0; bottom: 0; width: 14px; height: 14px; pointer-events: none; }
+    .page-corner { position: absolute; right: 0; bottom: 0; width: 10px; height: 10px; background: #f85149; clip-path: polygon(100% 0, 100% 100%, 0 100%); }
+    .page-corner.live { background: var(--good); }
+    .organ-form { display: grid; gap: 8px; }
+    .organ-form__actions { display: flex; align-items: center; gap: 8px; }
+    .danger { color: #ffb4b0; border-color: rgba(248,81,73,.45); }
+    .danger:hover { background: rgba(248,81,73,.12); }
   </style>
 </head>
-<body>
+<body class="lynx-ui">
   <main>
     <header>
       <h1>Organs</h1>
-      <span id="dot" class="dot"></span>
     </header>
     <div class="cols">
       <section class="list" aria-label="Organs">
         <ul id="organs"></ul>
         <div id="empty" class="empty" hidden>No organs yet.</div>
       </section>
-      <section id="detail" hidden>
+      <section id="detail">
+        <div class="panel">
+          <div class="hint">Register an organ</div>
+          <form id="organ-form" class="organ-form" aria-label="Register organ">
+            <input id="organ-name" class="lynx-input" required maxlength="160" placeholder="Organ name" aria-label="Organ name" />
+            <input id="organ-url" class="lynx-input" required maxlength="2048" placeholder="https://organ.example" aria-label="Organ URL" />
+            <div class="organ-form__actions">
+              <button id="organ-create" class="lynx-button lynx-button--primary primary" type="submit">Register</button>
+              <span id="organ-create-status" class="status" role="status" aria-live="polite"></span>
+            </div>
+          </form>
+        </div>
+        <div id="placeholder" class="placeholder">Select an organ to configure File Sync.</div>
+        <div id="selected-detail" hidden>
         <div class="d-head" id="d-head"></div>
         <div class="d-url" id="d-url"></div>
+        <div class="panel">
+          <div class="row">
+            <input id="o-name" class="lynx-input" maxlength="160" aria-label="Organ name" />
+          </div>
+          <div class="row">
+            <input id="o-url" class="lynx-input" maxlength="2048" aria-label="Organ URL" />
+          </div>
+          <div class="row">
+            <button class="lynx-button lynx-button--primary primary" id="o-save" type="button">Save organ</button>
+            <button class="lynx-button lynx-button--danger danger" id="o-delete" type="button">Delete organ</button>
+            <span class="status" id="o-status"></span>
+          </div>
+        </div>
         <div class="panel" id="contact-panel" hidden>
           <div class="row">
             <label for="c-trust">Trust</label>
-            <select id="c-trust">
+            <select id="c-trust" class="lynx-select">
               <option value="unknown">Unknown</option>
               <option value="known">Known</option>
               <option value="blocked">Blocked</option>
@@ -73,10 +107,10 @@
           </div>
           <div class="row">
             <label for="c-proximity">Proximity</label>
-            <input id="c-proximity" type="number" min="0" step="1" />
+            <input id="c-proximity" class="lynx-input" type="number" min="0" step="1" />
           </div>
           <div class="row">
-            <button class="primary" id="c-block" type="button">Block</button>
+            <button class="lynx-button lynx-button--primary primary" id="c-block" type="button">Block</button>
             <span class="status" id="c-status"></span>
           </div>
           <p class="hint">Trust and proximity only — sync policy and quarantine live
@@ -88,10 +122,10 @@
             <label class="check"><input type="checkbox" id="fs-enabled" /> File sync to disk</label>
           </div>
           <div class="row">
-            <input id="fs-path" placeholder="/path/on/disk" />
+            <input id="fs-path" class="lynx-input" placeholder="/path/on/disk" />
           </div>
           <div class="row">
-            <button class="primary" id="fs-save" type="button">Save</button>
+            <button class="lynx-button lynx-button--primary primary" id="fs-save" type="button">Save</button>
             <span class="status" id="fs-status"></span>
           </div>
           <p class="hint">Every plain record whose origin is <em>this</em> organ mirrors
@@ -102,9 +136,12 @@
             "belongs to this organ" — is a Protein filter, and it's future work, not
             wired up here yet.</p>
         </div>
+        </div>
       </section>
     </div>
-    <div id="placeholder" class="placeholder" hidden>Select an organ to configure File Sync.</div>
+    <div class="sand-tools" aria-label="Organ connection status" data-lynx-tooltip-boundary>
+      <span id="connection-corner" class="page-corner" data-lynx-tooltip="Reconnecting"></span>
+    </div>
   </main>
   <script>
     const H = window.LinceWidgetHost;
@@ -112,7 +149,11 @@
     let organs = [];
     let selectedUid = null;
 
-    H.onLive((live) => $("dot").classList.toggle("live", !!live));
+    H.onLive((live) => {
+      const corner = $("connection-corner");
+      corner.classList.toggle("live", !!live);
+      corner.dataset.lynxTooltip = live ? "Live" : "Reconnecting";
+    });
 
     H.subscribeProtein("organs", {
       source: "record",
@@ -157,11 +198,15 @@
 
     function renderDetail() {
       const row = selected();
-      $("detail").hidden = !row;
+      $("selected-detail").hidden = !row;
       $("placeholder").hidden = !!row;
       if (!row) return;
       $("d-head").textContent = row.head || row.slug || row.uid;
       $("d-url").textContent = row.body || "";
+      $("o-name").value = row.head || "";
+      $("o-url").value = row.body || "";
+      $("o-status").textContent = "";
+      $("o-status").className = "status";
       const cfg = row.extension || {};
       $("fs-enabled").checked = !!cfg.enabled;
       $("fs-path").value = cfg.path || "";
@@ -184,6 +229,85 @@
       status.className = "status err";
       status.textContent = "Error: " + (err && err.message ? err.message : err);
     }
+
+    function reportOrganError(err) {
+      const status = $("o-status");
+      status.className = "status err";
+      status.textContent = "Error: " + (err && err.message ? err.message : err);
+    }
+
+    async function createOrgan() {
+      const head = $("organ-name").value.trim();
+      const body = $("organ-url").value.trim();
+      const status = $("organ-create-status");
+      if (!head || !body) {
+        status.className = "status err";
+        status.textContent = "Name and URL are required.";
+        return;
+      }
+      $("organ-url").setCustomValidity("");
+      const create = $("organ-create");
+      create.disabled = true;
+      status.className = "status";
+      status.textContent = "Registering…";
+      try {
+        const outcome = await H.act({ action: "create-record", kind: "organ", head, body, quantity: 1 });
+        $("organ-name").value = "";
+        $("organ-url").value = "";
+        selectedUid = outcome.created || selectedUid;
+        if (outcome.created && !organs.some((organ) => organ.uid === outcome.created)) {
+          organs = [...organs, {
+            uid: outcome.created,
+            kind: "organ",
+            head,
+            body,
+            extension: null,
+            contact: null,
+          }];
+          renderList();
+          renderDetail();
+        }
+        status.textContent = "Registered.";
+      } catch (err) {
+        const message = err && err.message ? err.message : String(err);
+        status.className = "status err";
+        status.textContent = "Error: " + message;
+        $("organ-url").setCustomValidity(message);
+      } finally {
+        create.disabled = false;
+      }
+    }
+
+    $("organ-form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      void createOrgan();
+    });
+    $("organ-create").addEventListener("click", () => { void createOrgan(); });
+
+    $("o-save").addEventListener("click", () => {
+      const row = selected();
+      if (!row) return;
+      const head = $("o-name").value.trim();
+      const body = $("o-url").value.trim();
+      if (!head || !body) return;
+      const status = $("o-status");
+      status.className = "status";
+      status.textContent = "Saving…";
+      H.act({ action: "edit-record-text", target: row.uid, head, body })
+        .then(() => { status.textContent = "Saved."; })
+        .catch(reportOrganError);
+    });
+
+    $("o-delete").addEventListener("click", () => {
+      const row = selected();
+      if (!row || !window.confirm(`Delete ${row.head || "this organ"}?`)) return;
+      const status = $("o-status");
+      status.className = "status";
+      status.textContent = "Deleting…";
+      H.act({ action: "delete-record", target: row.uid })
+        .then(() => { selectedUid = null; })
+        .catch(reportOrganError);
+    });
 
     $("fs-save").addEventListener("click", () => {
       const row = selected();

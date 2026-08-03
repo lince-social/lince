@@ -141,6 +141,11 @@ pub struct Contact {
     /// never identity (Ontology §11 "Peers"). Only the verified handshake
     /// writes it; discovery announces alone never do.
     pub last_seen_addr: Option<String>,
+    /// The contact's iroh NodeId — the ONLY routing input (Ontology §11
+    /// "Transport: iroh"). Under iroh the address is the key, so this both
+    /// locates and authenticates. `None` for contacts made before the iroh
+    /// path, which must be re-paired.
+    pub node_id: Option<String>,
 }
 
 /// Register a remote organ contact: an organ record carrying the REMOTE
@@ -238,7 +243,44 @@ fn map_contact(r: sqlx::sqlite::SqliteRow) -> Contact {
         mode: r.get("mode"),
         catchup_interval_secs: r.get("catchup_interval_secs"),
         last_seen_addr: r.get("last_seen_addr"),
+        node_id: r.get("node_id"),
     }
+}
+
+/// Bind a contact to the iroh NodeId that reaches them. Written by pairing
+/// (QR, paste, or an introduction over an already-authenticated connection),
+/// never inferred from an inbound connection: adopting the NodeId of whoever
+/// dialed us is exactly how an impostor would claim a contact's row.
+pub async fn set_node_id(
+    pool: &SqlitePool,
+    organ_uid: &str,
+    node_id: Option<&str>,
+) -> Result<(), StoreError> {
+    sqlx::query("UPDATE organ_contact SET node_id = ? WHERE record_uid = ?")
+        .bind(node_id)
+        .bind(organ_uid)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+/// Resolve an inbound connection's authenticated `remote_id()` to a contact.
+/// This is the accept path's whole authorization input: iroh proved possession
+/// of the private half during the QUIC/TLS handshake, so a hit here means the
+/// peer IS that contact — no challenge, no signature, no replay window.
+pub async fn contact_by_node_id(
+    pool: &SqlitePool,
+    node_id: &str,
+) -> Result<Option<Contact>, StoreError> {
+    Ok(sqlx::query(
+        "SELECT c.*, r.slug, r.head, r.body FROM organ_contact c
+           JOIN record r ON r.uid = c.record_uid
+          WHERE c.node_id = ?",
+    )
+    .bind(node_id)
+    .fetch_optional(pool)
+    .await?
+    .map(map_contact))
 }
 
 /// Record the address a signed exchange just succeeded from. The signature is

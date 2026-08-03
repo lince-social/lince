@@ -23,7 +23,7 @@ default-members = ["crates/lince"]
 [workspace.package]
 version = "0.7.0"
 edition = "2024"
-license = "GPL-3.0-or-later"
+license = "MIT"
 repository = "https://github.com/lince-social/lince"
 homepage = "https://lince.social"
 
@@ -55,6 +55,10 @@ gpui = { version = "0.2.2" }
 gpui-component = { version = "0.5.0" }
 gpui-component-assets = { version = "0.5.0" }
 include_dir = "0.7.4"
+# Exact-pinned (Ontology §11 "Compatibility and revocation floor"): two Cells on
+# different iroh builds is a silent protocol change between peers. Bump
+# deliberately, never via a caret range.
+iroh = "=1.0.3"
 jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }
 # Exact-pinned (Ontology §11 Collab): the record-doc CRDT engine. Upgrades are
 # deliberate — bump together with the vendored loro-wasm browser asset.

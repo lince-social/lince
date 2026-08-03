@@ -4,6 +4,7 @@
 
 use engine::Engine;
 use engine::actions::Action;
+use nucleus::RecordKind;
 use protein::{Include, Predicate, Protein, Source};
 
 fn organs_query() -> Protein {
@@ -45,6 +46,53 @@ async fn local_organ_has_no_contact_sidecar() {
     let rows = protein::execute(&e.store, &organs_query()).await.unwrap();
     let row = rows.iter().find(|r| r["uid"] == local).unwrap();
     assert!(row["contact"].is_null());
+}
+
+#[tokio::test]
+async fn organ_records_support_the_sands_register_edit_and_delete_actions() {
+    let e = Engine::open_memory().await.expect("engine");
+    let organ = e
+        .act(
+            Action::CreateRecord {
+                slug: None,
+                kind: RecordKind::Organ,
+                head: "Remote Cell".into(),
+                body: "https://remote.example".into(),
+                quantity: 1.0,
+            },
+            None,
+        )
+        .await
+        .expect("register organ")
+        .created
+        .expect("created organ uid");
+
+    e.act(
+        Action::EditRecordText {
+            target: organ.clone(),
+            head: Some("Renamed Cell".into()),
+            body: Some("https://renamed.example".into()),
+        },
+        None,
+    )
+    .await
+    .expect("edit organ");
+
+    let rows = protein::execute(&e.store, &organs_query()).await.unwrap();
+    let row = rows.iter().find(|row| row["uid"] == organ).unwrap();
+    assert_eq!(row["head"], "Renamed Cell");
+    assert_eq!(row["body"], "https://renamed.example");
+
+    e.act(
+        Action::DeleteRecord {
+            target: organ.clone(),
+        },
+        None,
+    )
+    .await
+    .expect("delete organ");
+    let rows = protein::execute(&e.store, &organs_query()).await.unwrap();
+    assert!(rows.iter().all(|row| row["uid"] != organ));
 }
 
 #[tokio::test]

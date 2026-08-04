@@ -42,13 +42,15 @@ fn loopback(wire: &Wire) -> EndpointAddr {
         .map(|addr| addr.port())
         .next()
         .expect("endpoint is bound");
-    EndpointAddr::new(wire.node_id()).with_ip_addr(SocketAddr::new(
-        IpAddr::V4(Ipv4Addr::LOCALHOST),
-        port,
-    ))
+    EndpointAddr::new(wire.node_id())
+        .with_ip_addr(SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), port))
 }
 
-/// Register `them` as a contact of `us`, reachable at `node_id`.
+/// Register `them` as a KNOWN contact of `us`, reachable at `node_id`.
+///
+/// `set_trust` is explicit because `add_contact` deliberately does not imply
+/// it: recording an address is not a decision to trust, and `known` is exactly
+/// what opens the sync ALPN. A helper named `know` has to do the knowing.
 async fn know(us: &Engine, organ_uid: &str, node_id: &str) {
     store::organs::add_contact(&us.store.pool, organ_uid, None, "peer", "", 0)
         .await
@@ -56,6 +58,9 @@ async fn know(us: &Engine, organ_uid: &str, node_id: &str) {
     store::organs::set_node_id(&us.store.pool, organ_uid, Some(node_id))
         .await
         .expect("node id");
+    store::organs::set_trust(&us.store.pool, organ_uid, "known")
+        .await
+        .expect("trust");
 }
 
 #[tokio::test]
@@ -282,6 +287,262 @@ async fn blocked_organ_is_closed_on_every_alpn() {
     serving.abort();
 }
 
+/// The thread door is CLOSED by default: publishing a NodeId advertises
+/// reachability to people who already know you and grants nothing to anyone
+/// else. Turning it on is what opens the invite door.
+#[tokio::test]
+async fn thread_door_is_closed_to_unknown_organs_by_default() {
+    let (b, _b_organ) = cell("http://b.test").await;
+    let (stranger, _) = cell("http://stranger.test").await;
+
+    let b_wire = Wire::bind(b.clone(), secret(9), Reach::Local)
+        .await
+        .expect("b binds");
+    let s_wire = Wire::bind(stranger.clone(), secret(10), Reach::Local)
+        .await
+        .expect("stranger binds");
+
+    assert!(!b_wire.accept_unknown().await, "default must be closed");
+
+    let b_addr = loopback(&b_wire);
+    let serving = tokio::spawn(async move { b_wire.serve().await });
+
+    let connection = s_wire
+        .endpoint()
+        .connect(b_addr, engine::wire::ALPN_THREAD)
+        .await
+        .expect("handshake succeeds");
+    let closed = connection.closed().await.to_string();
+    assert!(
+        closed.contains("not accepting unknown"),
+        "the thread door must be shut by default, got: {closed}"
+    );
+
+    serving.abort();
+}
+
+/// With the door open, an unknown Organ may fetch an Introduction — that is
+/// what makes pairing from a nearby list possible — and NOTHING else. It must
+/// not be able to push ops.
+#[tokio::test]
+async fn open_thread_door_serves_introduction_only() {
+    let (b, b_organ) = cell("http://b.test").await;
+    let (stranger, stranger_organ) = cell("http://stranger.test").await;
+
+    store::records::set_extension(
+        &b.store.pool,
+        &b_organ,
+        "lince.discovery",
+        &serde_json::json!({ "accept_unknown": true }),
+    )
+    .await
+    .expect("open the door");
+
+    let b_wire = Wire::bind(b.clone(), secret(11), Reach::Local)
+        .await
+        .expect("b binds");
+    let s_wire = Wire::bind(stranger.clone(), secret(12), Reach::Local)
+        .await
+        .expect("stranger binds");
+
+    assert!(b_wire.accept_unknown().await, "the door must now be open");
+
+    let b_addr = loopback(&b_wire);
+    let serving = tokio::spawn(async move { b_wire.serve().await });
+
+    // Introduction is served: this is what pairing needs.
+    let response = s_wire
+        .request(
+            b_addr.clone(),
+            engine::wire::ALPN_THREAD,
+            &WireRequest::Introduction,
+        )
+        .await
+        .expect("introduction is served through the open thread door");
+    match response {
+        WireResponse::Introduction { intro } => assert_eq!(intro.organ_uid, b_organ),
+        other => panic!("expected Introduction, got {other:?}"),
+    }
+
+    // Ops are NOT: an open invite door is not sync reach.
+    store::records::create(
+        &stranger.store.pool,
+        NewRecord {
+            slug: Some("intruder"),
+            kind: RecordKind::Plain,
+            head: "Intruder",
+            body: "should never land",
+            quantity: store::exact::zero(),
+        },
+    )
+    .await
+    .expect("record");
+    let (ops, _) = stranger.ops_after(0, 500).await.expect("ops");
+
+    let response = s_wire
+        .request(
+            b_addr,
+            engine::wire::ALPN_THREAD,
+            &WireRequest::PushOps {
+                batch: OpBatch {
+                    from_organ: stranger_organ,
+                    ops,
+                },
+            },
+        )
+        .await
+        .expect("the call completes");
+    match response {
+        WireResponse::Refused { code, .. } => assert_eq!(code, "not_known"),
+        other => panic!("an unknown Organ must not push ops, got {other:?}"),
+    }
+    assert!(
+        store::records::resolve(&b.store.pool, "intruder")
+            .await
+            .expect("resolve")
+            .is_none(),
+        "nothing may land from the invite door"
+    );
+
+    serving.abort();
+}
+
+/// The LIVE path: `sync_once` is what the background runner calls, so this is
+/// the test that says the iroh transport is actually wired up rather than
+/// merely present. Two Cells converge with no HTTP anywhere.
+#[tokio::test]
+async fn sync_once_converges_two_cells() {
+    let (a, a_organ) = cell("http://a.test").await;
+    let (b, b_organ) = cell("http://b.test").await;
+
+    let a_wire = Wire::bind(a.clone(), secret(20), Reach::Local)
+        .await
+        .expect("a binds");
+    let b_wire = Wire::bind(b.clone(), secret(21), Reach::Local)
+        .await
+        .expect("b binds");
+
+    know(&a, &b_organ, &b_wire.node_id().to_string()).await;
+    know(&b, &a_organ, &a_wire.node_id().to_string()).await;
+    store::organs::set_sync_policy(&a.store.pool, &b_organ, true, true)
+        .await
+        .expect("policy");
+    store::organs::set_sync_policy(&b.store.pool, &a_organ, true, true)
+        .await
+        .expect("policy");
+
+    a_wire.remember_addr(loopback(&b_wire));
+    let serving = {
+        let b_wire = b_wire.clone();
+        tokio::spawn(async move { b_wire.serve().await })
+    };
+
+    store::records::create(
+        &a.store.pool,
+        NewRecord {
+            slug: Some("converged"),
+            kind: RecordKind::Plain,
+            head: "Converged",
+            body: "over quic, no http",
+            quantity: store::exact::zero(),
+        },
+    )
+    .await
+    .expect("record");
+
+    a_wire.sync_once().await.expect("sync pass");
+
+    let landed = store::records::resolve(&b.store.pool, "converged")
+        .await
+        .expect("resolve");
+    assert!(
+        landed.is_some(),
+        "a background sync pass must move the record with no HTTP involved"
+    );
+
+    serving.abort();
+}
+
+/// The offline send queue, which is not a separate mechanism: a peer that is
+/// down leaves ops QUEUED rather than dropped, and a later pass delivers them.
+#[tokio::test]
+async fn ops_for_an_unreachable_peer_stay_queued_and_flush_later() {
+    let (a, a_organ) = cell("http://a.test").await;
+    let (b, b_organ) = cell("http://b.test").await;
+
+    let a_wire = Wire::bind(a.clone(), secret(22), Reach::Local)
+        .await
+        .expect("a binds");
+    let b_wire = Wire::bind(b.clone(), secret(23), Reach::Local)
+        .await
+        .expect("b binds");
+
+    know(&a, &b_organ, &b_wire.node_id().to_string()).await;
+    know(&b, &a_organ, &a_wire.node_id().to_string()).await;
+    store::organs::set_sync_policy(&a.store.pool, &b_organ, true, true)
+        .await
+        .expect("policy");
+
+    a_wire.remember_addr(loopback(&b_wire));
+
+    // B is NOT serving yet — the closed-laptop case.
+    store::records::create(
+        &a.store.pool,
+        NewRecord {
+            slug: Some("beach"),
+            kind: RecordKind::Plain,
+            head: "Beach",
+            body: "sent while they were away",
+            quantity: store::exact::zero(),
+        },
+    )
+    .await
+    .expect("record");
+
+    let _ = a_wire.sync_once().await;
+    assert!(
+        !store::sync_ops::outbox_due(&a.store.pool)
+            .await
+            .expect("outbox")
+            .is_empty(),
+        "undelivered ops must stay queued, not be dropped"
+    );
+
+    // They come home.
+    let serving = {
+        let b_wire = b_wire.clone();
+        tokio::spawn(async move { b_wire.serve().await })
+    };
+    a_wire.sync_once().await.expect("second pass");
+
+    assert!(
+        store::records::resolve(&b.store.pool, "beach")
+            .await
+            .expect("resolve")
+            .is_some(),
+        "the queue must flush on the next successful pass"
+    );
+
+    serving.abort();
+}
+
+#[test]
+fn fingerprint_is_derived_from_the_key_and_stable() {
+    let a = SecretKey::from_bytes(&[42; 32]).public();
+    let b = SecretKey::from_bytes(&[43; 32]).public();
+    assert_eq!(
+        engine::wire::node_fingerprint(&a),
+        engine::wire::node_fingerprint(&a),
+        "deterministic"
+    );
+    assert_ne!(
+        engine::wire::node_fingerprint(&a),
+        engine::wire::node_fingerprint(&b),
+        "different keys must be distinguishable in a nearby list"
+    );
+    assert_eq!(engine::wire::node_fingerprint(&a).len(), 8);
+}
+
 #[test]
 fn node_key_is_stable_across_calls() {
     // The node key is created once at mode 0600 and reused forever after —
@@ -292,4 +553,169 @@ fn node_key_is_stable_across_calls() {
     let second = engine::wire::node_secret(&path).expect("second");
     assert_eq!(first.public(), second.public());
     let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// Adding a contact from a pasted code cannot learn their uid, so the row is
+/// held under an invented one. This is the repair: the next sync pass dials
+/// them, takes their Introduction, and re-files the row under the uid they
+/// declare — without which every batch they ever push is refused as belonging
+/// to a different Organ, and paste-to-add is a silent dead end.
+#[tokio::test]
+async fn a_contact_added_by_code_is_refiled_under_the_uid_they_declare() {
+    let (a, _a_organ) = cell("http://a.test").await;
+    let (b, b_organ) = cell("http://b.test").await;
+
+    // B answers strangers: the thread door is where an Introduction is served
+    // to someone who holds no row for you, which is exactly A's situation.
+    store::records::set_extension(
+        &b.store.pool,
+        &b_organ,
+        "lince.discovery",
+        &serde_json::json!({ "accept_unknown": true }),
+    )
+    .await
+    .expect("open the door");
+
+    let a_wire = Wire::bind(a.clone(), secret(31), Reach::Local)
+        .await
+        .expect("a binds");
+    let b_wire = Wire::bind(b.clone(), secret(32), Reach::Local)
+        .await
+        .expect("b binds");
+    let b_node = b_wire.node_id().to_string();
+    a_wire.remember_addr(loopback(&b_wire));
+    let serving = {
+        let b_wire = b_wire.clone();
+        tokio::spawn(async move { b_wire.serve().await })
+    };
+
+    // What `add-known-organ` leaves behind: a row under an invented uid.
+    let placeholder = format!("o-{b_node}");
+    a.act(
+        engine::actions::Action::AddKnownOrgan {
+            invite: engine::pairing::PairingInvite {
+                node_id: b_node.clone(),
+                root_key: None,
+                label: None,
+                addrs: vec![],
+            }
+            .encode(),
+            name: "Bea".into(),
+        },
+        None,
+    )
+    .await
+    .expect("add by code");
+    assert!(
+        store::organs::contact(&a.store.pool, &placeholder)
+            .await
+            .unwrap()
+            .expect("placeholder row")
+            .pending_introduction,
+        "a row added from a code owes an Introduction"
+    );
+
+    assert_eq!(
+        a_wire.reconcile_pending().await.expect("reconcile"),
+        1,
+        "one row reconciled"
+    );
+
+    // The invented uid is gone and B's own uid is the contact.
+    assert!(
+        store::organs::contact(&a.store.pool, &placeholder)
+            .await
+            .unwrap()
+            .is_none(),
+        "the placeholder must not survive: a batch attributed to it would be \
+         refused, which is the bug being fixed"
+    );
+    let real = store::organs::contact(&a.store.pool, &b_organ)
+        .await
+        .unwrap()
+        .expect("B is now a contact under their own uid");
+    assert!(!real.pending_introduction);
+    assert_eq!(real.trust, "known");
+    assert_eq!(real.node_id.as_deref(), Some(b_node.as_str()));
+    // The name the LOCAL user typed survives the swap — it was never theirs
+    // to declare.
+    assert_eq!(real.head, "Bea");
+
+    serving.abort();
+}
+
+/// The root key TOFU'd from the code is the one thing adding by code actually
+/// verifies. If the Organ answering at that address presents a different one,
+/// reconciliation must refuse rather than quietly adopt the new key.
+#[tokio::test]
+async fn a_root_key_that_does_not_match_the_code_leaves_the_contact_pending() {
+    let (a, _a_organ) = cell("http://a.test").await;
+    let (b, b_organ) = cell("http://b.test").await;
+    let b_root = engine::trust::Signer::generate(&b_organ, engine::roster::ROOT_KEY_ID);
+    b.publish_root_key(&b_root).await.expect("b has a root key");
+
+    store::records::set_extension(
+        &b.store.pool,
+        &b_organ,
+        "lince.discovery",
+        &serde_json::json!({ "accept_unknown": true }),
+    )
+    .await
+    .expect("open the door");
+
+    let a_wire = Wire::bind(a.clone(), secret(33), Reach::Local)
+        .await
+        .expect("a binds");
+    let b_wire = Wire::bind(b.clone(), secret(34), Reach::Local)
+        .await
+        .expect("b binds");
+    let b_node = b_wire.node_id().to_string();
+    a_wire.remember_addr(loopback(&b_wire));
+    let serving = {
+        let b_wire = b_wire.clone();
+        tokio::spawn(async move { b_wire.serve().await })
+    };
+
+    // A code carrying somebody ELSE's root key for B's address.
+    let placeholder = format!("o-{b_node}");
+    a.act(
+        engine::actions::Action::AddKnownOrgan {
+            invite: engine::pairing::PairingInvite {
+                node_id: b_node.clone(),
+                root_key: Some(
+                    engine::trust::Signer::generate("someone-else", "root").public_key_b64(),
+                ),
+                label: None,
+                addrs: vec![],
+            }
+            .encode(),
+            name: "Not Bea".into(),
+        },
+        None,
+    )
+    .await
+    .expect("add by code");
+
+    assert_eq!(
+        a_wire.reconcile_pending().await.expect("reconcile"),
+        0,
+        "a key that does not match the code is not this peer"
+    );
+    assert!(
+        store::organs::contact(&a.store.pool, &placeholder)
+            .await
+            .unwrap()
+            .expect("the pending row stays")
+            .pending_introduction,
+        "left pending for a human to look at, never silently re-keyed"
+    );
+    assert!(
+        store::organs::contact(&a.store.pool, &b_organ)
+            .await
+            .unwrap()
+            .is_none(),
+        "and the mismatched Organ is not adopted"
+    );
+
+    serving.abort();
 }

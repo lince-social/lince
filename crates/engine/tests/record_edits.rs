@@ -612,9 +612,7 @@ async fn refine_turns_unary_assertion_into_binary_under_same_predicate() {
         .unwrap();
     assert_eq!(out.facts.len(), 2);
 
-    let active = store::assertions::list_active(&e.store.pool)
-        .await
-        .unwrap();
+    let active = store::assertions::list_active(&e.store.pool).await.unwrap();
     let task_predicate = store::concepts::resolve(&e.store.pool, "task")
         .await
         .unwrap()

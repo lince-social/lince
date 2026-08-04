@@ -48,9 +48,13 @@
     .status.err { color: #f85149; }
     .hint { color: var(--muted); font-size: 11.5px; line-height: 1.5; }
     .placeholder { color: var(--muted); padding: 8px 2px; }
-    .sand-tools { position: absolute; right: 0; bottom: 0; width: 14px; height: 14px; pointer-events: none; }
-    .page-corner { position: absolute; right: 0; bottom: 0; width: 10px; height: 10px; background: #f85149; clip-path: polygon(100% 0, 100% 100%, 0 100%); }
+    .sand-tools { position: absolute; right: 0; bottom: 0; width: 170px; height: 42px; pointer-events: none; }
+    .page-corner { position: absolute; right: 0; bottom: 0; width: 12px; height: 12px; padding: 0; border: 0; border-radius: 0; background: #f85149; clip-path: polygon(100% 0, 100% 100%, 0 100%); pointer-events: auto; }
     .page-corner.live { background: var(--good); }
+    .local-discovery-tool { position: absolute; right: 8px; bottom: 10px; min-height: 25px; opacity: 0; pointer-events: none; transform: translateY(4px); transition: opacity 120ms ease, transform 120ms ease; white-space: nowrap; }
+    .sand-tools:hover .local-discovery-tool,
+    .sand-tools:focus-within .local-discovery-tool { opacity: 1; pointer-events: auto; transform: none; }
+    .local-discovery-tool[aria-pressed="true"] { color: #d8f5e8; border-color: rgba(63,185,80,.5); }
     .organ-form { display: grid; gap: 8px; }
     .organ-form__actions { display: flex; align-items: center; gap: 8px; }
     .danger { color: #ffb4b0; border-color: rgba(248,81,73,.45); }
@@ -110,12 +114,135 @@
             <input id="c-proximity" class="lynx-input" type="number" min="0" step="1" />
           </div>
           <div class="row">
+            <button class="lynx-button" id="c-talk" type="button">Start a conversation</button>
+            <button class="lynx-button" id="c-login" type="button">Give them a login</button>
             <button class="lynx-button lynx-button--primary primary" id="c-block" type="button">Block</button>
             <span class="status" id="c-status"></span>
           </div>
           <p class="hint">Trust and proximity only — sync policy and quarantine live
             elsewhere. <code>blocked</code> is terminal: import, discovery, export,
             and delivery all reject it.</p>
+        </div>
+        <div class="panel" id="profile-panel" hidden>
+          <div class="row"><strong>Your pairing code</strong></div>
+          <div class="row" id="pf-qr"></div>
+          <div class="row">
+            <input id="pf-invite" class="lynx-input" readonly />
+          </div>
+          <p class="hint">Show this code to someone in person, or paste it into a chat
+            app you already trust. Both are safe for the same reason: nobody can sit in
+            the middle of a code you hand over face to face, or of a conversation that
+            is already proven to be them. It carries the address you are reachable at,
+            so an in-person scan works even on wifi that blocks local discovery.</p>
+          <div class="row"><strong>Your published key</strong></div>
+          <div class="row">
+            <input id="pf-key" class="lynx-input" readonly />
+          </div>
+          <p class="hint">This is what someone saves to reach you, and it stays the
+            same across every device change. Safe to put on a website: on its own it
+            is an identifier, and it grants nothing. Handing it over in person, or
+            pasting it into a chat app you already trust, is what makes first contact
+            safe — neither channel can be relayed by someone in the middle.</p>
+          <div class="row" id="pf-root-state"></div>
+          <div class="row">
+            <input id="pf-root-dest" class="lynx-input" placeholder="/media/usb/lince-root.key" />
+          </div>
+          <div class="row">
+            <button class="lynx-button" id="pf-root-export" type="button">Copy root key out</button>
+            <button class="lynx-button" id="pf-root-detach" type="button">Remove from this device</button>
+            <span class="status" id="pf-status"></span>
+          </div>
+          <p class="hint">The <strong>root key</strong> signs only two things: your
+            device list and key rotations. Everything routine uses a per-device key
+            instead. Keeping the root off this machine is the point — then a stolen or
+            broken-into device costs one revocable credential, not your identity.
+            Copy it to removable media, verify, then remove it here. Enrolling or
+            revoking a device will ask for it back; nothing else changes.</p>
+          <p class="hint"><strong>Removing is only safe once the copy is verified.</strong>
+            Detach checks the copy byte-for-byte first, because there is no authority
+            anywhere that can restore a lost root key.</p>
+        </div>
+        <div class="panel" id="nearby-panel" hidden>
+          <div class="row"><strong>On this network</strong></div>
+          <ul id="nb-list" class="list"></ul>
+          <div class="row" id="nb-empty" class="placeholder">Nobody found yet.</div>
+          <p class="hint">The name beside each row is what that Cell calls itself —
+            a claim, not a verified identity. The short code next to it comes from the
+            key itself and cannot be faked by choosing a name, so use it to tell two
+            rows apart. It is a way to find the right row, not a security check.</p>
+        </div>
+        <div class="panel" id="add-panel">
+          <div class="row"><strong>Add someone by code</strong></div>
+          <div class="row">
+            <input id="ad-invite" class="lynx-input" placeholder="lince1|…" />
+            <button class="lynx-button" id="ad-scan" type="button">Scan</button>
+          </div>
+          <div class="row">
+            <input id="ad-name" class="lynx-input" placeholder="What you want to call them" />
+          </div>
+          <div class="row">
+            <button class="lynx-button lynx-button--primary primary" id="ad-save" type="button">Add as known</button>
+            <span class="status" id="ad-status"></span>
+          </div>
+          <p class="hint">Adding by code trusts it on sight — Lince has no way to check
+            that a pasted code really belongs to who you think, so <em>where you got it
+            from</em> is the whole of the security. From their hands or from a chat you
+            already trust: safe. Forwarded by someone else, or found somewhere public:
+            not. The name is yours to choose and is never taken from the code.</p>
+        </div>
+        <div class="panel" id="devices-panel" hidden>
+          <div class="row"><strong>Devices</strong> <span id="dv-version" class="badge"></span></div>
+          <ul id="dv-list" class="list"></ul>
+          <div class="row" id="dv-stale" hidden>
+            <span class="status err">This device list has expired. Contacts keep using the
+              last one they saw, and no new device can join until it is signed again.</span>
+          </div>
+          <div class="row">
+            <button class="lynx-button lynx-button--primary primary" id="dv-enrol" type="button">Add a device</button>
+            <span class="status" id="dv-status"></span>
+          </div>
+          <div class="row" id="dv-token-row" hidden>
+            <input id="dv-token" class="lynx-input" readonly />
+          </div>
+          <p class="hint">Adding a device is pairing with yourself, so it gets its own
+            one-time code rather than reusing a contact invite — this code grants
+            membership in your identity, which is strictly more. It works once and
+            expires in ten minutes.</p>
+          <p class="hint">Removing a device from this list <em>is</em> the revocation.
+            Contacts accept only a newer list than the one they hold, so an old list
+            cannot be replayed to put a stolen device back.</p>
+        </div>
+        <div class="panel" id="discovery-panel" hidden>
+          <div class="row">
+            <label class="lynx-toggle"><input class="lynx-toggle__input" type="checkbox" id="dc-local" /><span class="lynx-toggle__track" aria-hidden="true"></span><span>Locally online (LAN discovery)</span></label>
+          </div>
+          <div class="row">
+            <label class="lynx-toggle"><input class="lynx-toggle__input" type="checkbox" id="dc-internet" /><span class="lynx-toggle__track" aria-hidden="true"></span><span>Reachable over the internet</span></label>
+          </div>
+          <div class="row">
+            <label class="lynx-toggle"><input class="lynx-toggle__input" type="checkbox" id="dc-accept-unknown" /><span class="lynx-toggle__track" aria-hidden="true"></span><span>Accept chat requests from unknown Organs</span></label>
+          </div>
+          <div class="row">
+            <button class="lynx-button lynx-button--primary primary" id="dc-save" type="button">Save</button>
+            <span class="status" id="dc-status"></span>
+          </div>
+          <p class="hint"><strong>Locally online</strong> advertises this Cell over
+            mDNS and listens for other Lince Cells on this LAN. It does not make
+            unknown Organs trusted or allow them to open a conversation.</p>
+          <p class="hint"><strong>Reachable over the internet</strong> publishes this
+            Cell's address so contacts can find it from anywhere — that is what lets
+            an always-on Cell tell your phone about a change your laptop made. Turning
+            it off keeps you findable only where a direct path already exists. What it
+            costs when on: anyone holding your published key can resolve your current
+            address, which reveals roughly <em>where</em> you are and <em>when</em> you
+            are online. Nobody can read your data or forge your signature either way.</p>
+          <p class="hint"><strong>Accept chat requests from unknown Organs</strong> is
+            OFF by default. While it is off, publishing your key advertises reachability
+            to people who already know you and grants nothing to anyone else — a
+            stranger you meet on the network cannot open a thread with you, so the
+            nearby list will refuse everyone. Turn it on to let first contact happen.</p>
+          <p class="hint">Changing reachability rebinds the connection endpoint. Your
+            Organ key and NodeId do not change, so saved contacts stay valid.</p>
         </div>
         <div class="panel">
           <div class="row">
@@ -139,8 +266,9 @@
         </div>
       </section>
     </div>
-    <div class="sand-tools" aria-label="Organ connection status" data-lynx-tooltip-boundary>
-      <span id="connection-corner" class="page-corner" data-lynx-tooltip="Reconnecting"></span>
+    <div class="sand-tools" aria-label="Organ connection and discovery" data-lynx-tooltip-boundary>
+      <button id="local-discovery-tool" class="lynx-button local-discovery-tool" type="button" aria-pressed="false">Go locally online</button>
+      <button id="connection-corner" class="page-corner" type="button" aria-label="Organ tools" data-lynx-tooltip="Reconnecting"></button>
     </div>
   </main>
   <script>
@@ -164,7 +292,153 @@
       organs = Array.isArray(rows) ? rows : [];
       renderList();
       renderDetail();
+      renderLocalDiscoveryTool();
     });
+
+    // A Protein include carries ONE extension namespace, so discovery needs its
+    // own subscription, merged by uid.
+    let discovery = {};
+    H.subscribeProtein("organs_discovery", {
+      source: "record",
+      where: [{ kind_eq: "organ" }],
+      include: { extension: { namespace: "lince.discovery" } },
+    }, ({ rows }) => {
+      discovery = {};
+      for (const r of (Array.isArray(rows) ? rows : [])) discovery[r.uid] = r.extension || {};
+      renderDetail();
+      renderLocalDiscoveryTool();
+    });
+
+    // The pairing code and its QR, mirrored onto the Organ record.
+    let pairings = {};
+    H.subscribeProtein("organs_pairing", {
+      source: "record",
+      where: [{ kind_eq: "organ" }],
+      include: { extension: { namespace: "lince.pairing" } },
+    }, ({ rows }) => {
+      pairings = {};
+      for (const r of (Array.isArray(rows) ? rows : [])) pairings[r.uid] = r.extension || {};
+      renderDetail();
+    });
+
+    // Organs on the LAN. Transient — not Records — but still a subscription:
+    // the source reads the wire's live list, and the server re-runs it on a
+    // tick, pushing only when it changed. Nothing here polls.
+    H.subscribeProtein("organs_nearby", { source: "nearby" }, ({ rows }) => {
+      renderNearby(Array.isArray(rows) ? rows : []);
+    });
+
+    function renderNearby(rows) {
+      const list = $("nb-list");
+      const panel = $("nearby-panel");
+      panel.hidden = false;
+      list.innerHTML = "";
+      $("nb-empty").hidden = rows.length > 0;
+      for (const peer of rows) {
+        const li = document.createElement("li");
+        const name = document.createElement("span");
+        name.className = "name";
+        // A known contact's own name wins; otherwise show the claim AS a claim.
+        name.textContent = peer.known
+          ? (peer.name || peer.node_id)
+          : (peer.claimed_name ? `“${peer.claimed_name}”` : "unnamed");
+        li.appendChild(name);
+        const fp = document.createElement("span");
+        fp.className = "badge";
+        fp.textContent = peer.fingerprint || "";
+        li.appendChild(fp);
+        if (peer.known) {
+          const badge = document.createElement("span");
+          badge.className = "badge on";
+          badge.textContent = "known";
+          li.appendChild(badge);
+        } else {
+          const add = document.createElement("button");
+          add.className = "lynx-button";
+          add.type = "button";
+          add.textContent = "Add";
+          add.onclick = () => {
+            const chosen = window.prompt("What do you want to call them?", peer.claimed_name || "");
+            if (!chosen) return;
+            $("ad-invite").value = peer.node_id;
+            $("ad-name").value = chosen;
+            $("ad-status").className = "status";
+            $("ad-status").textContent = "Filled in below — check where this came from before adding.";
+          };
+          li.appendChild(add);
+        }
+        list.appendChild(li);
+      }
+    }
+
+
+    // The signed roster, mirrored onto the Organ record for display. The blob
+    // in `organ_roster` stays the source of truth; this is a projection.
+    let rosters = {};
+    H.subscribeProtein("organs_roster", {
+      source: "record",
+      where: [{ kind_eq: "organ" }],
+      include: { extension: { namespace: "lince.roster" } },
+    }, ({ rows }) => {
+      rosters = {};
+      for (const r of (Array.isArray(rows) ? rows : [])) rosters[r.uid] = r.extension || {};
+      renderDetail();
+    });
+
+    function renderDevices(roster) {
+      const list = $("dv-list");
+      list.innerHTML = "";
+      const cells = Array.isArray(roster.cells) ? roster.cells : [];
+      $("dv-version").textContent = roster.version ? "v" + roster.version : "";
+      // Expiry is what makes a device that stopped syncing lose authority on
+      // its own, so it has to be visible rather than silent.
+      const expired = roster.not_after ? new Date(roster.not_after) <= new Date() : false;
+      $("dv-stale").hidden = !expired;
+      for (const cell of cells) {
+        const li = document.createElement("li");
+        const name = document.createElement("span");
+        name.className = "name";
+        name.textContent = cell.label || cell.cell_uid;
+        li.appendChild(name);
+        if (cell.front_door) {
+          const badge = document.createElement("span");
+          badge.className = "badge on";
+          badge.textContent = "front door";
+          li.appendChild(badge);
+        }
+        const fp = document.createElement("span");
+        fp.className = "badge";
+        fp.textContent = String(cell.node_id || "").slice(0, 8).toUpperCase();
+        li.appendChild(fp);
+        if (cells.length > 1) {
+          const remove = document.createElement("button");
+          remove.className = "lynx-button";
+          remove.type = "button";
+          remove.textContent = "Remove";
+          remove.onclick = () => {
+            if (!window.confirm(`Remove ${cell.label || cell.cell_uid}? It stops being part of your identity.`)) return;
+            H.act({ action: "roster-revoke-cell", cell_uid: cell.cell_uid })
+              .then(() => { $("dv-status").className = "status"; $("dv-status").textContent = "Removed."; })
+              .catch(reportDeviceError);
+          };
+          li.appendChild(remove);
+        }
+        list.appendChild(li);
+      }
+    }
+
+    function reportDeviceError(err) {
+      const status = $("dv-status");
+      status.className = "status err";
+      status.textContent = "Error: " + (err && err.message ? err.message : err);
+    }
+
+    // Discovery settings belong to THIS Cell, not to a remote contact — they
+    // configure our own endpoint. `local-organ` is the fixed slug every Cell
+    // resolves its own Organ by.
+    function isLocalOrgan(row) {
+      return row && row.slug === "local-organ";
+    }
 
     function renderList() {
       const ul = $("organs");
@@ -186,6 +460,14 @@
           trust.className = "badge" + (o.contact.trust === "known" ? " on" : "");
           trust.textContent = o.contact.trust;
           li.append(trust);
+          if (o.contact.pending_introduction) {
+            // Added from a code, never connected. Saying so matters: without
+            // it this row looks identical to one that can actually sync.
+            const pending = document.createElement("span");
+            pending.className = "badge";
+            pending.textContent = "not connected yet";
+            li.append(pending);
+          }
         }
         li.onclick = () => { selectedUid = o.uid; renderList(); renderDetail(); };
         ul.appendChild(li);
@@ -212,6 +494,35 @@
       $("fs-path").value = cfg.path || "";
       $("fs-status").textContent = "";
       $("fs-status").className = "status";
+
+      const roster = (rosters[row.uid] || {});
+      $("profile-panel").hidden = !isLocalOrgan(row);
+      $("devices-panel").hidden = !isLocalOrgan(row);
+      if (isLocalOrgan(row)) {
+        const pairing = pairings[row.uid] || {};
+        $("pf-invite").value = pairing.invite || "";
+        // Server-rendered SVG: the sand runs under a CSP that blocks external
+        // scripts, so there is no QR library to load here.
+        $("pf-qr").innerHTML = pairing.qr_svg || "";
+        $("pf-key").value = roster.root_key || "";
+        $("pf-status").textContent = "";
+        $("pf-status").className = "status";
+        renderDevices(roster);
+      }
+
+      const discoveryPanel = $("discovery-panel");
+      discoveryPanel.hidden = !isLocalOrgan(row);
+      if (isLocalOrgan(row)) {
+        const dc = discovery[row.uid] || {};
+        // Defaults must match the engine's: internet ON (a Cell nobody can
+        // resolve cannot serve the case the design exists for), unknown
+        // Organs OFF (publishing a key must grant nothing by itself).
+        $("dc-local").checked = dc.local !== false;
+        $("dc-internet").checked = dc.internet !== false;
+        $("dc-accept-unknown").checked = dc.accept_unknown === true;
+        $("dc-status").textContent = "";
+        $("dc-status").className = "status";
+      }
 
       const contactPanel = $("contact-panel");
       contactPanel.hidden = !row.contact;
@@ -309,6 +620,164 @@
         .catch(reportOrganError);
     });
 
+    // Scanning FILLS THE FIELD and stops there. It deliberately does not add
+    // anyone: a scan proves you pointed a camera at a screen, which is a
+    // strong story about where the code came from but is still that story and
+    // not a verification. The human presses Add.
+    $("ad-scan").addEventListener("click", () => {
+      const status = $("ad-status");
+      status.className = "status";
+      status.textContent = "Opening the camera…";
+      H.scanCode()
+        .then((text) => {
+          if (!text) {
+            status.textContent = "";
+            return;
+          }
+          $("ad-invite").value = text;
+          status.textContent = "Scanned. Give them a name, then add.";
+          $("ad-name").focus();
+        })
+        .catch((err) => {
+          status.className = "status err";
+          status.textContent = (err && err.message) ? err.message : "Could not scan.";
+        });
+    });
+
+    $("ad-save").addEventListener("click", () => {
+      const invite = $("ad-invite").value.trim();
+      const name = $("ad-name").value.trim();
+      const status = $("ad-status");
+      if (!invite || !name) {
+        status.className = "status err";
+        status.textContent = "Both the code and a name are needed.";
+        return;
+      }
+      status.className = "status";
+      status.textContent = "Adding…";
+      H.act({ action: "add-known-organ", invite, name })
+        .then(() => {
+          status.textContent = "Added. Trusted because of where you got the code, not because it "
+            + "was typed. Syncing starts once this Cell reaches them once and learns who they are.";
+          $("ad-invite").value = "";
+          $("ad-name").value = "";
+          // The nearby row's "known" badge follows on the next tick.
+        })
+        .catch((err) => {
+          status.className = "status err";
+          status.textContent = "Error: " + (err && err.message ? err.message : err);
+        });
+    });
+
+    $("dv-enrol").addEventListener("click", () => {
+      const status = $("dv-status");
+      status.className = "status";
+      status.textContent = "Issuing…";
+      H.act({ action: "roster-enrol-token" })
+        .then((out) => {
+          // The plaintext exists here and nowhere else — it is never stored.
+          const token = out && (out.created || out.uid);
+          $("dv-token-row").hidden = !token;
+          $("dv-token").value = token || "";
+          status.textContent = token ? "Use within 10 minutes, once." : "Issued.";
+        })
+        .catch(reportDeviceError);
+    });
+
+    $("pf-root-export").addEventListener("click", () => {
+      const destination = $("pf-root-dest").value.trim();
+      const status = $("pf-status");
+      if (!destination) {
+        status.className = "status err";
+        status.textContent = "Give a path on removable media first.";
+        return;
+      }
+      status.className = "status";
+      status.textContent = "Copying…";
+      H.act({ action: "root-key-export", destination })
+        .then(() => { status.textContent = "Copied. Verify it, then you can remove it here."; })
+        .catch(reportProfileError);
+    });
+
+    $("pf-root-detach").addEventListener("click", () => {
+      const copyAt = $("pf-root-dest").value.trim();
+      const status = $("pf-status");
+      if (!copyAt) {
+        status.className = "status err";
+        status.textContent = "Give the path of the verified copy first.";
+        return;
+      }
+      if (!window.confirm("Remove the root key from this device? The copy is checked byte-for-byte first. Without it here you cannot add or remove devices until you bring it back.")) return;
+      status.className = "status";
+      status.textContent = "Verifying the copy…";
+      H.act({ action: "root-key-detach", copy_at: copyAt })
+        .then(() => { status.textContent = "Removed from this device."; })
+        .catch(reportProfileError);
+    });
+
+    function reportProfileError(err) {
+      const status = $("pf-status");
+      status.className = "status err";
+      status.textContent = "Error: " + (err && err.message ? err.message : err);
+    }
+
+    $("dc-save").addEventListener("click", () => {
+      const row = selected();
+      if (!row || !isLocalOrgan(row)) return;
+      const fds = {
+        local: $("dc-local").checked,
+        internet: $("dc-internet").checked,
+        accept_unknown: $("dc-accept-unknown").checked,
+      };
+      const status = $("dc-status");
+      status.className = "status";
+      status.textContent = "Saving…";
+      H.act({ action: "set-extension", target: row.uid, namespace: "lince.discovery", fds })
+        .then(() => {
+          // The endpoint rebinds in the background when reachability changed
+          // (wire_supervisor watches this same Fact) — no reboot, and the
+          // NodeId is unchanged, so contacts keep working.
+          status.textContent = "Saved.";
+        })
+        .catch((err) => {
+          status.className = "status err";
+          status.textContent = "Error: " + (err && err.message ? err.message : err);
+        });
+    });
+
+    function localOrgan() {
+      return organs.find(isLocalOrgan) || null;
+    }
+
+    function renderLocalDiscoveryTool() {
+      const row = localOrgan();
+      const enabled = row ? (discovery[row.uid] || {}).local !== false : false;
+      const button = $("local-discovery-tool");
+      button.disabled = !row;
+      button.setAttribute("aria-pressed", String(enabled));
+      button.textContent = enabled ? "Go locally offline" : "Go locally online";
+      button.dataset.lynxTooltip = enabled
+        ? "Stop LAN discovery"
+        : "Advertise and find Lince Cells on this LAN";
+    }
+
+    $("local-discovery-tool").addEventListener("click", () => {
+      const row = localOrgan();
+      if (!row) return;
+      const current = discovery[row.uid] || {};
+      const fds = {
+        ...current,
+        local: current.local === false,
+      };
+      const button = $("local-discovery-tool");
+      button.disabled = true;
+      H.act({ action: "set-extension", target: row.uid, namespace: "lince.discovery", fds })
+        .catch((err) => {
+          button.disabled = false;
+          button.textContent = "Error: " + (err && err.message ? err.message : err);
+        });
+    });
+
     $("fs-save").addEventListener("click", () => {
       const row = selected();
       if (!row) return;
@@ -339,6 +808,40 @@
       const proximity = Math.max(0, Math.trunc(Number($("c-proximity").value) || 0));
       H.act({ action: "set-contact-proximity", target: row.uid, proximity })
         .then(() => { $("c-status").className = "status"; $("c-status").textContent = "Saved."; })
+        .catch(reportContactError);
+    });
+
+    // Opening a conversation OFFERS it — the other side still has to accept,
+    // and until they do nothing syncs. It is not a way to put anything into
+    // someone's store.
+    $("c-talk").addEventListener("click", () => {
+      const row = selected();
+      if (!row) return;
+      const title = window.prompt("What is this conversation about?", "Hello");
+      if (!title) return;
+      H.act({ action: "start-conversation", contact: row.uid, title })
+        .then(() => {
+          $("c-status").className = "status";
+          $("c-status").textContent = "Offered. It opens for them once they accept — read it in Conversations.";
+        })
+        .catch(reportContactError);
+    });
+
+    // A login lets them open a live session on THIS Cell, over iroh, acting as
+    // a Person here. No password: the connection already proved which Organ it
+    // is, with a key rather than a secret anyone could retype. What this
+    // decides is who they are once inside.
+    $("c-login").addEventListener("click", () => {
+      const row = selected();
+      if (!row) return;
+      const person_name = window.prompt("What should this Person be called here?", row.head || "");
+      if (!person_name) return;
+      H.act({ action: "grant-organ-login", organ: row.uid, person_name })
+        .then((out) => {
+          $("c-status").className = "status";
+          $("c-status").textContent = (out && out.warnings && out.warnings[0])
+            || "Login granted.";
+        })
         .catch(reportContactError);
     });
 

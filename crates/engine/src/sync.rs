@@ -75,11 +75,69 @@ impl Engine {
         Ok((self.hydrate_ops(rows).await?, head))
     }
 
-    /// Apply a batch of remote ops. Returns how many were newly applied.
-    /// Idempotent by op identity `(actor_organ, hlc)`; rejected rows land in
-    /// quarantine and the rest of the batch still applies; batches from
-    /// blocked organs are rejected wholesale.
+    /// Import ops that arrived on an individual-replica GRANT channel.
+    ///
+    /// `root` comes from the CHANNEL, never from the payload — the peer is
+    /// told which conversation they are pushing into by the request framing,
+    /// and that framing is checked against the local grant table here. A root
+    /// read out of an op would let a grantee name any root they liked.
+    ///
+    /// Enforcement point three of three, and the load-bearing one: a bug here
+    /// lets a contact write to Records that were never shared with them.
+    pub async fn import_grant_batch(
+        &self,
+        root: &str,
+        batch: &OpBatch,
+    ) -> Result<usize, EngineError> {
+        if !store::replica::is_accepted(&self.store.pool, root, &batch.from_organ).await? {
+            return Err(EngineError::Consequence(format!(
+                "no accepted grant on {root} for organ {}",
+                batch.from_organ
+            )));
+        }
+        // Immutability is enforced on ARRIVAL, not merely applied. Three cases:
+        // a Record that already exists must already belong to THIS root;
+        // one that belongs to a different root, or to the general feed, is an
+        // attempt to re-scope an existing uid through a channel that does not
+        // govern it; and one that does not exist yet is created inside the
+        // root by the stamp below.
+        for op in &batch.ops {
+            let existing = match op.tbl.as_str() {
+                "record" => store::replica::root_of(&self.store.pool, &op.uid).await?,
+                _ => store::replica::root_for_op(&self.store.pool, &op.tbl, &op.uid).await?,
+            };
+            let known_row = store::records::get(&self.store.pool, &op.uid)
+                .await?
+                .is_some();
+            if (known_row || existing.is_some()) && existing.as_deref() != Some(root) {
+                store::organs::quarantine(
+                    &self.store.pool,
+                    &batch.from_organ,
+                    "grant channel targeted a record outside its root",
+                    &serde_json::to_string(op).unwrap_or_default(),
+                )
+                .await?;
+                return Err(EngineError::Consequence(
+                    "grant channel targeted a record outside its root".into(),
+                ));
+            }
+        }
+        self.import_ops(batch, Some(root)).await
+    }
+
+    /// Apply a batch of remote ops from the GENERAL feed. Returns how many
+    /// were newly applied. Idempotent by op identity `(actor_organ, hlc)`;
+    /// rejected rows land in quarantine and the rest of the batch still
+    /// applies; batches from blocked organs are rejected wholesale.
     pub async fn import_op_batch(&self, batch: &OpBatch) -> Result<usize, EngineError> {
+        self.import_ops(batch, None).await
+    }
+
+    async fn import_ops(
+        &self,
+        batch: &OpBatch,
+        replica_root: Option<&str>,
+    ) -> Result<usize, EngineError> {
         if let Some(contact) = store::organs::contact(&self.store.pool, &batch.from_organ).await? {
             if contact.trust == "blocked" {
                 return Err(EngineError::Consequence(format!(
@@ -93,6 +151,26 @@ impl Engine {
         let mut applied = 0usize;
         let mut touched: Vec<String> = Vec::new();
         for op in &batch.ops {
+            // The general feed may not touch an individually-replicated
+            // Record. Without this, a contact with ordinary `sync_out` could
+            // write into a conversation shared with someone else entirely by
+            // pushing a plain op batch at its uid — the same re-scoping attack
+            // the grant channel guards against, arriving by the other door.
+            if replica_root.is_none() {
+                if store::replica::root_for_op(pool, &op.tbl, &op.uid)
+                    .await?
+                    .is_some()
+                {
+                    store::organs::quarantine(
+                        pool,
+                        &batch.from_organ,
+                        "general feed targeted an individually-replicated record",
+                        &serde_json::to_string(op).unwrap_or_default(),
+                    )
+                    .await?;
+                    continue;
+                }
+            }
             let Some(kind) = OpKind::parse(&op.kind) else {
                 store::organs::quarantine(
                     pool,
@@ -116,11 +194,18 @@ impl Engine {
                     // LWW against the stored stamp BEFORE appending this op.
                     let prior =
                         sync_ops::latest_hlc_for_field(pool, "record", &op.uid, &op.field).await?;
-                    let tomb =
-                        sync_ops::latest_hlc_for_field(pool, "record", &op.uid, "").await?;
+                    let tomb = sync_ops::latest_hlc_for_field(pool, "record", &op.uid, "").await?;
                     if sync_ops::append(
-                        pool, &op.tbl, &op.uid, &op.field, kind,
-                        op.value.as_deref(), op.hlc, &op.actor_organ, from,
+                        pool,
+                        &op.tbl,
+                        &op.uid,
+                        &op.field,
+                        kind,
+                        op.value.as_deref(),
+                        op.hlc,
+                        &op.actor_organ,
+                        from,
+                        replica_root,
                     )
                     .await?
                     .is_none()
@@ -163,6 +248,8 @@ impl Engine {
                             "plain"
                         },
                         &op.actor_organ,
+                        replica_root,
+                        Some(op.hlc),
                     )
                     .await?;
                     store::sync_apply::set_record_field(
@@ -177,13 +264,20 @@ impl Engine {
                     touched.push(op.uid.clone());
                 }
                 ("record", OpKind::Tombstone) => {
-                    let prior =
-                        sync_ops::latest_hlc_for_field(pool, "record", &op.uid, "").await?;
+                    let prior = sync_ops::latest_hlc_for_field(pool, "record", &op.uid, "").await?;
                     let latest_set =
                         sync_ops::latest_set_hlc_for_row(pool, "record", &op.uid).await?;
                     if sync_ops::append(
-                        pool, &op.tbl, &op.uid, &op.field, kind, None,
-                        op.hlc, &op.actor_organ, from,
+                        pool,
+                        &op.tbl,
+                        &op.uid,
+                        &op.field,
+                        kind,
+                        None,
+                        op.hlc,
+                        &op.actor_organ,
+                        from,
+                        replica_root,
                     )
                     .await?
                     .is_none()
@@ -205,12 +299,23 @@ impl Engine {
                 }
                 ("record_extension", OpKind::Set | OpKind::Tombstone) => {
                     let prior = sync_ops::latest_hlc_for_field(
-                        pool, "record_extension", &op.uid, &op.field,
+                        pool,
+                        "record_extension",
+                        &op.uid,
+                        &op.field,
                     )
                     .await?;
                     if sync_ops::append(
-                        pool, &op.tbl, &op.uid, &op.field, kind,
-                        op.value.as_deref(), op.hlc, &op.actor_organ, from,
+                        pool,
+                        &op.tbl,
+                        &op.uid,
+                        &op.field,
+                        kind,
+                        op.value.as_deref(),
+                        op.hlc,
+                        &op.actor_organ,
+                        from,
+                        replica_root,
                     )
                     .await?
                     .is_none()
@@ -221,8 +326,15 @@ impl Engine {
                     if op.hlc <= prior.unwrap_or(i64::MIN) {
                         continue;
                     }
-                    store::sync_apply::ensure_record_stub(pool, &op.uid, "plain", &op.actor_organ)
-                        .await?;
+                    store::sync_apply::ensure_record_stub(
+                        pool,
+                        &op.uid,
+                        "plain",
+                        &op.actor_organ,
+                        replica_root,
+                        Some(op.hlc),
+                    )
+                    .await?;
                     // Field is "{namespace}.{key}" — keys have no dots,
                     // namespaces may. No dot at all = whole-value namespace.
                     match op.field.rsplit_once('.') {
@@ -251,8 +363,10 @@ impl Engine {
                                 .as_deref()
                                 .and_then(|raw| serde_json::from_str(raw).ok())
                                 .unwrap_or(serde_json::Value::Null);
-                            store::sync_apply::set_extension_whole(pool, &op.uid, &op.field, &value)
-                                .await?;
+                            store::sync_apply::set_extension_whole(
+                                pool, &op.uid, &op.field, &value,
+                            )
+                            .await?;
                         }
                     }
                     applied += 1;
@@ -263,8 +377,16 @@ impl Engine {
                         sync_ops::latest_hlc_for_field(pool, "record_assertion", &op.uid, "")
                             .await?;
                     if sync_ops::append(
-                        pool, &op.tbl, &op.uid, &op.field, kind,
-                        op.value.as_deref(), op.hlc, &op.actor_organ, from,
+                        pool,
+                        &op.tbl,
+                        &op.uid,
+                        &op.field,
+                        kind,
+                        op.value.as_deref(),
+                        op.hlc,
+                        &op.actor_organ,
+                        from,
+                        replica_root,
                     )
                     .await?
                     .is_none()
@@ -277,17 +399,20 @@ impl Engine {
                     }
                     match kind {
                         OpKind::Set => {
-                            let Some(value) = op
-                                .value
-                                .as_deref()
-                                .and_then(|raw| serde_json::from_str::<serde_json::Value>(raw).ok())
-                            else {
+                            let Some(value) = op.value.as_deref().and_then(|raw| {
+                                serde_json::from_str::<serde_json::Value>(raw).ok()
+                            }) else {
                                 continue;
                             };
                             if let Some(subject) = value.get("subject_uid").and_then(|v| v.as_str())
                             {
                                 store::sync_apply::ensure_record_stub(
-                                    pool, subject, "plain", &op.actor_organ,
+                                    pool,
+                                    subject,
+                                    "plain",
+                                    &op.actor_organ,
+                                    replica_root,
+                                    Some(op.hlc),
                                 )
                                 .await?;
                                 touched.push(subject.to_string());
@@ -304,8 +429,16 @@ impl Engine {
                     let prior =
                         sync_ops::latest_hlc_for_field(pool, "concept", &op.uid, &op.field).await?;
                     if sync_ops::append(
-                        pool, &op.tbl, &op.uid, &op.field, kind,
-                        op.value.as_deref(), op.hlc, &op.actor_organ, from,
+                        pool,
+                        &op.tbl,
+                        &op.uid,
+                        &op.field,
+                        kind,
+                        op.value.as_deref(),
+                        op.hlc,
+                        &op.actor_organ,
+                        from,
+                        replica_root,
                     )
                     .await?
                     .is_none()
@@ -321,14 +454,15 @@ impl Engine {
                             let name = op
                                 .value
                                 .as_deref()
-                                .and_then(|raw| {
-                                    serde_json::from_str::<serde_json::Value>(raw).ok()
-                                })
+                                .and_then(|raw| serde_json::from_str::<serde_json::Value>(raw).ok())
                                 .and_then(|v| v.as_str().map(str::to_string))
                                 .unwrap_or_default();
                             if !name.is_empty() {
                                 store::sync_apply::upsert_concept(
-                                    pool, &op.uid, &name, &op.actor_organ,
+                                    pool,
+                                    &op.uid,
+                                    &name,
+                                    &op.actor_organ,
                                 )
                                 .await?;
                             }
@@ -351,8 +485,16 @@ impl Engine {
                         continue;
                     };
                     if sync_ops::append(
-                        pool, &op.tbl, &op.uid, &op.field, kind,
-                        Some(value), op.hlc, &op.actor_organ, from,
+                        pool,
+                        &op.tbl,
+                        &op.uid,
+                        &op.field,
+                        kind,
+                        Some(value),
+                        op.hlc,
+                        &op.actor_organ,
+                        from,
+                        replica_root,
                     )
                     .await?
                     .is_none()
@@ -371,6 +513,8 @@ impl Engine {
                                 &op.uid,
                                 "plain",
                                 &op.actor_organ,
+                                replica_root,
+                                Some(op.hlc),
                             )
                             .await?;
                         }
@@ -482,6 +626,10 @@ impl Engine {
             op.hlc,
             &op.actor_organ,
             Some(from_organ),
+            // Facts do not participate in individual replica today; the
+            // scope is `record` and `record_assertion` rows, which is what a
+            // conversation is made of.
+            None,
         )
         .await?
         .is_none()
@@ -489,8 +637,15 @@ impl Engine {
             return Ok(false);
         }
         nucleus::hlc::observe(op.hlc);
-        store::sync_apply::ensure_record_stub(pool, &fact.record_uid, "plain", &op.actor_organ)
-            .await?;
+        store::sync_apply::ensure_record_stub(
+            pool,
+            &fact.record_uid,
+            "plain",
+            &op.actor_organ,
+            None,
+            Some(op.hlc),
+        )
+        .await?;
         let imported = NewFact {
             uid: Some(fact.uid.clone()), // idempotent by uid
             record_uid: fact.record_uid.clone(),
@@ -605,7 +760,7 @@ impl Engine {
     /// delivered.
     pub async fn drain_outbox<F, Fut>(&self, mut send: F) -> Result<usize, EngineError>
     where
-        F: FnMut(store::organs::Contact, OpBatch) -> Fut,
+        F: FnMut(store::organs::Contact, Option<String>, OpBatch) -> Fut,
         Fut: std::future::Future<Output = Result<(), String>>,
     {
         let pool = &self.store.pool;
@@ -646,11 +801,34 @@ impl Engine {
                 continue;
             }
             log_rows.sort_by_key(|op| op.seq);
-            let batch = OpBatch {
-                from_organ: from_organ.clone(),
-                ops: self.hydrate_ops(log_rows).await?,
-            };
-            match send(contact, batch).await {
+            // Split by root BEFORE sending. General-feed ops and each
+            // conversation's ops leave on different channels, so mixing them
+            // into one batch would either leak a private Record onto the
+            // general feed or force the receiver to trust a root read out of
+            // the payload. One batch per (contact, root).
+            let mut roots: Vec<Option<String>> = Vec::new();
+            for op in &log_rows {
+                if !roots.contains(&op.replica_root) {
+                    roots.push(op.replica_root.clone());
+                }
+            }
+            let mut all_ok = true;
+            for root in roots {
+                let slice: Vec<_> = log_rows
+                    .iter()
+                    .filter(|op| op.replica_root == root)
+                    .cloned()
+                    .collect();
+                let batch = OpBatch {
+                    from_organ: from_organ.clone(),
+                    ops: self.hydrate_ops(slice).await?,
+                };
+                if send(contact.clone(), root, batch).await.is_err() {
+                    all_ok = false;
+                    break;
+                }
+            }
+            match if all_ok { Ok(()) } else { Err(String::new()) } {
                 Ok(()) => {
                     for row in &kept {
                         sync_ops::outbox_delete(pool, row).await?;
@@ -739,4 +917,3 @@ impl Engine {
         Ok(stored)
     }
 }
-

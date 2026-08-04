@@ -42,6 +42,8 @@ toml = { workspace = true }
 tower-http = { workspace = true, features = ["fs", "cors"] }
 transport = { workspace = true, features = ["axum"] }
 tracing = { workspace = true }
+futures = { workspace = true }
+iroh = { workspace = true }
 urlencoding = { workspace = true }
 utils = { workspace = true }
 uuid = { workspace = true, features = ["v4"] }

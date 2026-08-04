@@ -220,3 +220,185 @@ async fn saved_protein_subscription() {
     };
     assert_eq!(rows.len(), 1);
 }
+
+/// The collab read gate (Ontology §11 "Collab").
+///
+/// Before this existed, any authenticated session could join ANY record's doc
+/// by uid and receive its full snapshot — collab was a way AROUND §12
+/// visibility rather than a consumer of it.
+#[tokio::test]
+async fn collab_join_is_refused_for_a_record_the_subject_cannot_see() {
+    let (engine, hub) = setup().await;
+
+    let uid = store::records::create(
+        &engine.store.pool,
+        store::records::NewRecord {
+            slug: Some("private-note"),
+            kind: RecordKind::Plain,
+            head: "Private",
+            body: "not yours",
+            quantity: store::exact::zero(),
+        },
+    )
+    .await
+    .expect("record")
+    .uid;
+
+    // A REMOTE subject: no visibility rule names this record, so default deny.
+    let mut remote = Session::new(
+        engine.clone(),
+        hub.clone(),
+        "conn-remote",
+        Some("p-someone".into()),
+    );
+    let out = remote
+        .handle(ClientMessage::CollabJoin {
+            id: "j".into(),
+            record_uid: uid.clone(),
+        })
+        .await;
+    match out.first() {
+        Some(ServerMessage::Error { code, .. }) => {
+            assert_eq!(code.as_deref(), Some("collab_not_visible"));
+        }
+        other => panic!("a remote subject must not join an invisible doc: {other:?}"),
+    }
+
+    // Writing is gated too — `collab_records` is client-driven state, so a
+    // session that never passed the join gate must not edit by sending an
+    // update directly.
+    let out = remote
+        .handle(ClientMessage::CollabUpdate {
+            id: "u".into(),
+            record_uid: uid.clone(),
+            update_base64: String::new(),
+        })
+        .await;
+    assert!(
+        matches!(out.first(), Some(ServerMessage::Error { code, .. }) if code.as_deref() == Some("collab_not_visible")),
+        "collab writes must be gated independently of the join"
+    );
+
+    // The LOCAL Cell (no subject) sees everything, as it always has.
+    let mut local = Session::new(engine.clone(), hub, "conn-local", None);
+    let out = local
+        .handle(ClientMessage::CollabJoin {
+            id: "j".into(),
+            record_uid: uid,
+        })
+        .await;
+    assert!(
+        matches!(out.first(), Some(ServerMessage::CollabState { .. })),
+        "the local Cell must still join: {out:?}"
+    );
+}
+
+/// Presence carries the cursor to everyone in the room, and the NAME only to a
+/// viewer allowed to read that user.
+#[tokio::test]
+async fn presence_lane_events_carry_the_sender_subject_for_gating() {
+    let (engine, hub) = setup().await;
+    let mut s = Session::new(
+        engine.clone(),
+        hub.clone(),
+        "conn-a",
+        Some("p-alice".into()),
+    );
+    let mut rx = hub.join("room-1");
+
+    s.handle(ClientMessage::LaneJoin {
+        room: "room-1".into(),
+    })
+    .await;
+    s.handle(ClientMessage::LaneSend {
+        room: "room-1".into(),
+        payload: serde_json::json!({ "cursor": 42 }),
+    })
+    .await;
+
+    let event = rx.try_recv().expect("lane event");
+    assert_eq!(event.payload, serde_json::json!({ "cursor": 42 }));
+    assert_eq!(
+        event.from_subject.as_deref(),
+        Some("p-alice"),
+        "the sender's subject must travel so the RECEIVER can decide whether to name it"
+    );
+}
+
+/// The ephemeral tick: how a source that commits no Facts stays live.
+///
+/// The claim being pinned is the efficiency one — an unchanging network
+/// produces NO traffic. Without the comparison this would resend the whole
+/// nearby list every few seconds forever, which is exactly the client-side
+/// poll it replaced, only moved to the server.
+#[tokio::test]
+async fn the_ephemeral_tick_pushes_only_when_the_answer_changed() {
+    let (engine, hub) = setup().await;
+    // Stand in for a LAN: no endpoint is bound, so this is the whole world.
+    let nearby = engine::wire::Nearby::default();
+    nearby.observe("aaa".into(), "AAA".into(), "Laptop".into());
+    engine.attach_nearby(nearby.clone());
+
+    let mut s = Session::new(engine.clone(), hub, "conn-nearby", None);
+    let out = s
+        .handle(ClientMessage::Subscribe {
+            id: "nb".into(),
+            protein: serde_json::from_value(serde_json::json!({ "source": "nearby" })).unwrap(),
+        })
+        .await;
+    let ServerMessage::Snapshot { rows, .. } = &out[0] else {
+        panic!("expected snapshot")
+    };
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0]["known"], false);
+
+    assert!(
+        s.tick_ephemeral().await.is_empty(),
+        "a quiet network must cost no traffic at all"
+    );
+
+    // A peer arriving is a change.
+    nearby.observe("bbb".into(), "BBB".into(), "Phone".into());
+    let updates = s.tick_ephemeral().await;
+    let ServerMessage::Update { rows, id } = &updates[0] else {
+        panic!("expected update")
+    };
+    assert_eq!(id, "nb");
+    assert_eq!(rows.len(), 2);
+    assert!(s.tick_ephemeral().await.is_empty(), "and then quiet again");
+
+    // So is a peer leaving: the list IS the presence.
+    nearby.forget("bbb");
+    let updates = s.tick_ephemeral().await;
+    let ServerMessage::Update { rows, .. } = &updates[0] else {
+        panic!("expected update")
+    };
+    assert_eq!(rows.len(), 1);
+
+    // And so is a change on OUR side: the same peer, now a contact, is a
+    // different answer even though nothing on the network moved.
+    store::organs::add_contact(&engine.store.pool, "o-friend", None, "Marcia", "", 1)
+        .await
+        .unwrap();
+    store::organs::set_node_id(&engine.store.pool, "o-friend", Some("aaa"))
+        .await
+        .unwrap();
+    let updates = s.tick_ephemeral().await;
+    let ServerMessage::Update { rows, .. } = &updates[0] else {
+        panic!("expected update")
+    };
+    assert_eq!(rows[0]["known"], true);
+    assert_eq!(rows[0]["name"], "Marcia");
+}
+
+/// No ephemeral subscription means no timer: the driver arms the tick only
+/// when something needs it, so an ordinary session pays nothing for this.
+#[tokio::test]
+async fn a_session_without_an_ephemeral_source_arms_no_tick() {
+    let (engine, hub) = setup().await;
+    let mut s = Session::new(engine, hub, "conn-plain", None);
+    assert!(!s.has_ephemeral_subscriptions());
+    s.handle(subscribe_focus("q")).await;
+    assert!(!s.has_ephemeral_subscriptions());
+    assert!(s.tick_ephemeral().await.is_empty());
+}

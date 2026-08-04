@@ -1,0 +1,288 @@
+<link rel="stylesheet" href="/board/lynx-ui.css" />
+<script src="/board/lynx-ui.js"></script>
+<style>
+  .cv { display: flex; height: 100%; min-height: 0; font: 13px/1.4 var(--font-body, sans-serif); }
+  .cv__side { width: 220px; flex: 0 0 220px; border-right: 1px solid var(--line, #ddd); overflow-y: auto; }
+  .cv__main { flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  .cv__messages { flex: 1 1 auto; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 6px; }
+  .cv__compose { flex: 0 0 auto; display: flex; gap: 6px; padding: 8px; border-top: 1px solid var(--line, #ddd); }
+  .cv__compose textarea { flex: 1 1 auto; resize: none; height: 44px; }
+  .cv__row { padding: 6px 8px; cursor: pointer; border-bottom: 1px solid var(--line-soft, #eee); }
+  .cv__row.is-selected { background: var(--surface-2, #f2f2f2); }
+  .cv__row small { display: block; opacity: 0.65; }
+  .cv__msg { padding: 6px 8px; border-radius: 8px; background: var(--surface-2, #f2f2f2); max-width: 80%; }
+  .cv__msg.is-mine { align-self: flex-end; background: var(--accent-soft, #dde8ff); }
+  .cv__msg time { display: block; font-size: 11px; opacity: 0.6; }
+  .cv__invite { padding: 8px; border-bottom: 1px solid var(--line, #ddd); background: var(--surface-2, #f6f6f6); }
+  .cv__empty { padding: 12px; opacity: 0.7; }
+  .cv__hint { padding: 8px; font-size: 12px; opacity: 0.75; }
+  .cv__head { padding: 6px 8px; border-bottom: 1px solid var(--line, #ddd); display: flex; gap: 6px; align-items: center; }
+</style>
+
+<div class="cv">
+  <aside class="cv__side">
+    <div id="cv-invites"></div>
+    <div class="cv__head"><strong>Conversations</strong></div>
+    <div id="cv-list"></div>
+    <div class="cv__hint" id="cv-none" hidden>
+      No conversations yet. Start one from a contact in the Organ sand.
+    </div>
+  </aside>
+  <section class="cv__main">
+    <div class="cv__head">
+      <strong id="cv-title">Nothing selected</strong>
+      <button class="lynx-button" id="cv-new-thread" type="button" hidden>New topic</button>
+    </div>
+    <div id="cv-threads"></div>
+    <div class="cv__messages" id="cv-messages"></div>
+    <div class="cv__compose" hidden id="cv-compose-row">
+      <textarea id="cv-compose" class="lynx-input" placeholder="Write a message…"></textarea>
+      <button class="lynx-button lynx-button--primary primary" id="cv-send" type="button">Send</button>
+    </div>
+    <div class="cv__hint" id="cv-status"></div>
+  </section>
+</div>
+
+<script>
+  (function () {
+    const H = window.LinceWidgetHost;
+    const $ = (id) => document.getElementById(id);
+
+    // The graph is assembled here from two subscriptions rather than asked for
+    // as one query: Protein has no "records linked to X" predicate, and the
+    // `links` include already hands over the edges. Nodes and edges arrive
+    // separately and are joined by uid.
+    let conversations = [];
+    let edges = [];           // { from: child, to: parent }
+    let nodes = new Map();    // uid -> record row (threads and messages)
+    let invites = [];
+    let localOrgan = null;
+    let selectedConversation = null;
+    let selectedThread = null;
+
+    // Which Organ is us. Needed to tell my messages from theirs, and the only
+    // honest way to ask: the local Organ is the `kind=organ` Record with no
+    // contact row, because a contact is by definition someone else.
+    H.subscribeProtein("cv_local_organ", {
+      source: "record",
+      where: [{ kind_eq: "organ" }],
+      include: { contact: true },
+    }, ({ rows }) => {
+      const mine = (Array.isArray(rows) ? rows : []).find((r) => r.contact == null);
+      localOrgan = mine ? mine.uid : null;
+      render();
+    });
+
+    const parentOf = (uid) => {
+      const edge = edges.find((e) => e.from === uid);
+      return edge ? edge.to : null;
+    };
+    const childrenOf = (uid, kind) =>
+      edges
+        .filter((e) => e.to === uid)
+        .map((e) => nodes.get(e.from))
+        .filter((row) => row && row.kind === kind);
+
+    // Conversations carry the whole link tree: depth 2 reaches
+    // conversation → thread → message in one pass.
+    H.subscribeProtein("cv_conversations", {
+      source: "record",
+      where: [{ kind_eq: "conversation" }],
+      include: { links: { kinds: ["in"], depth: 2 } },
+      order: [{ desc: "created_at" }],
+    }, ({ rows }) => {
+      conversations = Array.isArray(rows) ? rows : [];
+      const seen = new Map();
+      for (const row of conversations) {
+        for (const link of (row.links || [])) {
+          seen.set(link.uid, { from: link.from, to: link.to });
+        }
+      }
+      edges = [...seen.values()];
+      render();
+    });
+
+    // Threads and messages in one subscription: they are the same question
+    // ("what is inside these conversations"), and splitting it would mean two
+    // recomputes for every message sent.
+    H.subscribeProtein("cv_nodes", {
+      source: "record",
+      where: [{ any: [{ kind_eq: "thread" }, { kind_eq: "message" }] }],
+      // By HLC, not by `created_at`. A conversation is written on two machines
+      // whose clocks disagree, and ordering it by either one's wall clock
+      // interleaves the two sides wrong — which reads as a rendering bug
+      // rather than the clock problem it is.
+      order: [{ asc: "created_hlc" }],
+    }, ({ rows }) => {
+      nodes = new Map();
+      for (const row of (Array.isArray(rows) ? rows : [])) nodes.set(row.uid, row);
+      render();
+    });
+
+    // Invites are ordinary Records of their own kind, so they need no new
+    // Protein source. They are LOCAL — the offer arrived over the wire, but
+    // the note about it never leaves this Cell.
+    H.subscribeProtein("cv_invites", {
+      source: "record",
+      where: [{ kind_eq: "thread_invite" }],
+      include: { extension: { namespace: "lince.invite" } },
+    }, ({ rows }) => {
+      invites = Array.isArray(rows) ? rows : [];
+      render();
+    });
+
+    function status(text, isError) {
+      const node = $("cv-status");
+      node.textContent = text || "";
+      node.style.color = isError ? "var(--danger, #b00)" : "";
+    }
+
+    function renderInvites() {
+      const host = $("cv-invites");
+      host.innerHTML = "";
+      for (const invite of invites) {
+        const box = document.createElement("div");
+        box.className = "cv__invite";
+        const who = document.createElement("div");
+        // The Organ uid, not a display name: whoever is asking chose their own
+        // label, and rendering a claim as a name is how the wrong person gets
+        // trusted. The uid is what the connection actually proved.
+        who.innerHTML = "<strong>Someone wants to talk</strong>";
+        const from = document.createElement("small");
+        from.textContent = (invite.extension && invite.extension.from_organ) || "unknown organ";
+        const title = document.createElement("div");
+        title.textContent = invite.head || "A conversation";
+        const actions = document.createElement("div");
+        const accept = document.createElement("button");
+        accept.className = "lynx-button lynx-button--primary primary";
+        accept.type = "button";
+        accept.textContent = "Accept";
+        accept.onclick = () => {
+          H.act({ action: "accept-thread-invite", invite: invite.uid })
+            .then(() => status("Accepted. This opens the conversation — it does not make them a known contact."))
+            .catch((e) => status(e && e.message ? e.message : "Could not accept.", true));
+        };
+        const decline = document.createElement("button");
+        decline.className = "lynx-button";
+        decline.type = "button";
+        decline.textContent = "Decline";
+        decline.onclick = () => {
+          H.act({ action: "decline-thread-invite", invite: invite.uid })
+            .then(() => status("Declined. They can ask once more later."))
+            .catch((e) => status(e && e.message ? e.message : "Could not decline.", true));
+        };
+        actions.append(accept, decline);
+        box.append(who, from, title, actions);
+        host.appendChild(box);
+      }
+    }
+
+    function renderConversations() {
+      const list = $("cv-list");
+      list.innerHTML = "";
+      $("cv-none").hidden = conversations.length > 0;
+      for (const row of conversations) {
+        const item = document.createElement("div");
+        item.className = "cv__row" + (row.uid === selectedConversation ? " is-selected" : "");
+        item.textContent = row.head || "Untitled";
+        item.onclick = () => {
+          selectedConversation = row.uid;
+          const threads = childrenOf(row.uid, "thread");
+          selectedThread = threads.length ? threads[0].uid : null;
+          render();
+        };
+        list.appendChild(item);
+      }
+    }
+
+    function renderThreads() {
+      const host = $("cv-threads");
+      host.innerHTML = "";
+      if (!selectedConversation) return;
+      const threads = childrenOf(selectedConversation, "thread");
+      for (const thread of threads) {
+        const item = document.createElement("div");
+        item.className = "cv__row" + (thread.uid === selectedThread ? " is-selected" : "");
+        item.textContent = thread.head || "Untitled topic";
+        item.onclick = () => { selectedThread = thread.uid; render(); };
+        host.appendChild(item);
+      }
+    }
+
+    function renderMessages() {
+      const host = $("cv-messages");
+      host.innerHTML = "";
+      if (!selectedThread) {
+        host.innerHTML = '<div class="cv__empty">Pick a topic to read it.</div>';
+        return;
+      }
+      const messages = childrenOf(selectedThread, "message");
+      if (!messages.length) {
+        host.innerHTML = '<div class="cv__empty">Nothing said yet.</div>';
+        return;
+      }
+      for (const message of messages) {
+        const box = document.createElement("div");
+        // `organ` is the origin stamped by the Cell that WROTE the Record, so
+        // authorship is a fact rather than a guess from the text. Until the
+        // local Organ is known nothing is claimed as mine — an unstyled
+        // message is better than one attributed to the wrong side.
+        box.className =
+          "cv__msg" + (localOrgan && message.organ === localOrgan ? " is-mine" : "");
+        const body = document.createElement("div");
+        body.textContent = message.body || message.head || "";
+        const when = document.createElement("time");
+        when.textContent = (message.created_at || "").replace("T", " ").slice(0, 16);
+        box.append(body, when);
+        host.appendChild(box);
+      }
+      host.scrollTop = host.scrollHeight;
+    }
+
+    function render() {
+      renderInvites();
+      renderConversations();
+      renderThreads();
+      renderMessages();
+      const conversation = conversations.find((c) => c.uid === selectedConversation);
+      $("cv-title").textContent = conversation ? (conversation.head || "Untitled") : "Nothing selected";
+      $("cv-new-thread").hidden = !selectedConversation;
+      $("cv-compose-row").hidden = !selectedThread;
+    }
+
+    $("cv-new-thread").addEventListener("click", () => {
+      if (!selectedConversation) return;
+      const title = window.prompt("What is this topic about?");
+      if (!title) return;
+      // A new topic needs no new grant: it is born inside the conversation
+      // that was already shared.
+      H.act({ action: "open-thread", conversation: selectedConversation, title })
+        .then((out) => { selectedThread = out && out.created ? out.created : selectedThread; status(""); })
+        .catch((e) => status(e && e.message ? e.message : "Could not open the topic.", true));
+    });
+
+    function send() {
+      const box = $("cv-compose");
+      const body = box.value.trim();
+      if (!body || !selectedThread) return;
+      box.value = "";
+      H.act({ action: "send-message", thread: selectedThread, body })
+        .then(() => status(""))
+        .catch((e) => {
+          // Put the text back rather than losing it to an error.
+          box.value = body;
+          status(e && e.message ? e.message : "Could not send.", true);
+        });
+    }
+
+    $("cv-send").addEventListener("click", send);
+    $("cv-compose").addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        send();
+      }
+    });
+
+    render();
+  })();
+</script>

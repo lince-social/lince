@@ -194,6 +194,61 @@ input.lynx-check__input {
 }
 .lynx-check input:checked,
 input.lynx-check__input:checked { border-color: var(--accent); background: var(--accent); }
+
+/* Binary setting with a larger target than a checkbox. The native input stays
+   in the accessibility tree; the track is only its visual projection. */
+.lynx-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2, 4px);
+  cursor: pointer;
+}
+.lynx-toggle__input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+.lynx-toggle__track {
+  position: relative;
+  width: 28px;
+  height: 16px;
+  flex: 0 0 auto;
+  /* Sands run in iframes and therefore do not inherit the canvas theme.
+     Keep the switch visible even when a sand supplies no theme tokens. */
+  border: var(--hairline, .5px) solid var(--control-border, var(--border, #667281));
+  border-radius: 999px;
+  background: var(--secondary-background, var(--surface-hover, #28323d));
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.lynx-toggle__track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--secondary-ink, var(--muted, #c0cad5));
+  transition: transform 120ms ease, background 120ms ease;
+}
+.lynx-toggle__input:checked + .lynx-toggle__track {
+  border-color: var(--accent, #6366f1);
+  background: color-mix(in srgb, var(--accent, #6366f1) 32%, transparent);
+}
+.lynx-toggle__input:checked + .lynx-toggle__track::after {
+  background: var(--accent, #6366f1);
+  transform: translateX(12px);
+}
+.lynx-toggle__input:focus-visible + .lynx-toggle__track {
+  outline: 2px solid var(--focus, #8b8dff);
+  outline-offset: 1px;
+}
+.lynx-toggle__input:disabled + .lynx-toggle__track,
+.lynx-toggle:has(.lynx-toggle__input:disabled) { cursor: not-allowed; opacity: .65; }
 .lynx-radio input {
   width: 11px;
   height: 11px;
@@ -346,4 +401,46 @@ input.lynx-check__input:checked { border-color: var(--accent); background: var(-
   background: var(--tooltip);
   font: 12px/1.25 var(--font-body, var(--font-ui, sans-serif));
   pointer-events: none;
+}
+
+/* The camera scan overlay (main.js `runCameraScan`). Chrome, not sand: it sits
+   above every card because the camera belongs to the host, and the sand that
+   asked for a code never sees the stream behind it. */
+.camera-scan-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: rgba(0, 0, 0, 0.86);
+}
+
+.camera-scan-overlay video {
+  max-width: min(92vw, 520px);
+  max-height: 62vh;
+  border-radius: 12px;
+  background: #000;
+}
+
+.camera-scan-overlay__hint {
+  margin: 0;
+  color: #fff;
+  font: 14px/1.4 var(--font-body, var(--font-ui, sans-serif));
+}
+
+.camera-scan-overlay__cancel {
+  padding: 8px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 8px;
+  background: transparent;
+  color: #fff;
+  font: 14px/1.2 var(--font-ui, sans-serif);
+  cursor: pointer;
+}
+
+.camera-scan-overlay__cancel:hover {
+  background: rgba(255, 255, 255, 0.12);
 }

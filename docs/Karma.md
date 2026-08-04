@@ -542,10 +542,6 @@ candidate, never as a privileged path.
       source span and alternatives. A person may edit any field; that edit never
       rewrites the captured model output. Raw audio and photos can be discarded
       after review while keeping the hash and the structured evidence.
-- [ ] **Fiote is a client of that contract, not a privileged path.** Parse "I spent 42 reais on lunch", transcribe a note, read a receipt, rank existing Records — always returning field candidates, never a final mutation, and never silently creating an ambiguous Record. **A model score is not a grant.** Deferred, but the boundary is fixed now so it stays narrow. Be able to run an model to look at your DNA and change it to fit your needs:
-      - [ ] Creating components for the frontend.
-      - [ ] Suggesting Karma, or more Lince ways of doing things.
-      - [ ] Doing imperative changes like: change this, start a call with someone, i did this task...
 
 # 8 — Senses
 
@@ -904,6 +900,16 @@ bar each section's own boxes have to clear.
       through the same Actions.
 - **Emergency-stop, observe-only and stage-effects survive reboot.**
 - **Every vertical in §18 runs end to end** on a fresh Cell.
+
+
+
+# 20 - Fiote: Agent:
+- [ ] **Fiote is a client of that contract, not a privileged path.** Parse "I spent 42 reais on lunch", transcribe a note, read a receipt, rank existing Records — always returning field candidates, never a final mutation, and never silently creating an ambiguous Record. **A model score is not a grant.** Deferred, but the boundary is fixed now so it stays narrow. Be able to run an model to look at your DNA and change it to fit your needs:
+      - [ ] Creating components for the frontend.
+      - [ ] Suggesting Karma, or more Lince ways of doing things.
+      - [ ] Doing imperative changes like: change this, start a call with someone, i did this task...
+
+If harness builders like Pi are just a bunch of markdowns, or if markdowns are really used for agents we could use the file sync feature to make what the agent writes to organize his thoughts to be a markdown file somewhere, and that will be then synced into a lince record because we are listening in that dir for file sync. 
 
 ---
 

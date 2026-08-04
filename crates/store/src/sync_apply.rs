@@ -11,11 +11,18 @@ use crate::StoreError;
 /// Make sure a record row exists for an incoming op (uid is the origin's —
 /// cross-organ joins line up by uid; a slug is a local suggestion, dropped on
 /// collision).
+/// `created_hlc` comes from the op that brought this record into being, NOT
+/// from a fresh stamp. A fresh one would order every imported record by when
+/// it happened to arrive here, which puts a conversation back on local
+/// wall-clock time by another route — the exact thing the column exists to
+/// avoid.
 pub async fn ensure_record_stub(
     pool: &SqlitePool,
     uid: &str,
     kind: &str,
     organ_uid: &str,
+    replica_root: Option<&str>,
+    created_hlc: Option<i64>,
 ) -> Result<(), StoreError> {
     let exists = sqlx::query("SELECT 1 FROM record WHERE uid = ?")
         .bind(uid)
@@ -28,14 +35,16 @@ pub async fn ensure_record_stub(
     let now = Utc::now().to_rfc3339();
     sqlx::query(
         "INSERT INTO record (uid, slug, kind, head, body, quantity_mantissa, quantity_scale,
-                             organ_uid, created_at, updated_at)
-         VALUES (?, NULL, ?, '', '', '0', 0, ?, ?, ?)",
+                             organ_uid, created_at, updated_at, replica_root, created_hlc)
+         VALUES (?, NULL, ?, '', '', '0', 0, ?, ?, ?, ?, ?)",
     )
     .bind(uid)
     .bind(if kind.is_empty() { "plain" } else { kind })
     .bind(organ_uid)
     .bind(&now)
     .bind(&now)
+    .bind(replica_root)
+    .bind(created_hlc)
     .execute(pool)
     .await?;
     Ok(())
@@ -152,14 +161,12 @@ pub async fn set_record_text_raw(
 
 pub async fn tombstone_record(pool: &SqlitePool, uid: &str) -> Result<(), StoreError> {
     let now = Utc::now().to_rfc3339();
-    sqlx::query(
-        "UPDATE record SET deleted_at = ?, slug = NULL, updated_at = ? WHERE uid = ?",
-    )
-    .bind(&now)
-    .bind(&now)
-    .bind(uid)
-    .execute(pool)
-    .await?;
+    sqlx::query("UPDATE record SET deleted_at = ?, slug = NULL, updated_at = ? WHERE uid = ?")
+        .bind(&now)
+        .bind(&now)
+        .bind(uid)
+        .execute(pool)
+        .await?;
     Ok(())
 }
 
@@ -248,6 +255,27 @@ pub async fn upsert_assertion(
     value: &serde_json::Value,
 ) -> Result<(), StoreError> {
     let s = |k: &str| value.get(k).and_then(|v| v.as_str()).map(str::to_string);
+    // An Assertion's predicate is a Concept, and a Concept lives on the
+    // GENERAL feed — so an Assertion arriving through an individual-replica
+    // grant channel can reference a predicate the receiver has never seen.
+    // Without a stub the insert fails the foreign key and the whole
+    // conversation refuses to land.
+    //
+    // The stub carries the uid and no name: naming is the general feed's job
+    // and the real Concept overwrites this the moment it arrives. Depending on
+    // the general feed to carry it would be wrong in the case that matters —
+    // a contact granted ONE conversation and no feed sync at all.
+    if let Some(predicate_uid) = s("predicate_uid") {
+        sqlx::query(
+            "INSERT OR IGNORE INTO concept (uid, canonical_name, created_at)
+             VALUES (?, ?, ?)",
+        )
+        .bind(&predicate_uid)
+        .bind(format!("concept:{predicate_uid}"))
+        .bind(Utc::now().to_rfc3339())
+        .execute(pool)
+        .await?;
+    }
     let res = sqlx::query(
         "INSERT OR IGNORE INTO record_assertion
            (uid, subject_uid, predicate_uid, object_uid, role,
@@ -299,11 +327,12 @@ pub async fn upsert_concept(
     canonical_name: &str,
     origin_organ: &str,
 ) -> Result<(), StoreError> {
-    let name_holder: Option<String> = sqlx::query("SELECT uid FROM concept WHERE canonical_name = ?")
-        .bind(canonical_name)
-        .fetch_optional(pool)
-        .await?
-        .map(|r| r.get("uid"));
+    let name_holder: Option<String> =
+        sqlx::query("SELECT uid FROM concept WHERE canonical_name = ?")
+            .bind(canonical_name)
+            .fetch_optional(pool)
+            .await?
+            .map(|r| r.get("uid"));
     if let Some(holder) = name_holder {
         if holder != uid {
             return Ok(());

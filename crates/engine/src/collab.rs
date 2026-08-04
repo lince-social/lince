@@ -201,6 +201,13 @@ impl crate::Engine {
                 nucleus::hlc::next(),
                 &local.uid,
                 None,
+                // A local collab write inherits whatever root the Record was
+                // born in, resolved from the row rather than assumed: a
+                // co-written Record inside a conversation must not leak onto
+                // the general feed through its crdt ops.
+                store::replica::root_of(&self.store.pool, uid)
+                    .await?
+                    .as_deref(),
             )
             .await?;
         }
@@ -208,6 +215,36 @@ impl crate::Engine {
             .await?;
         self.maybe_compact(uid, write.tail_b64.len()).await?;
         Ok(())
+    }
+
+    /// Whether `subject` may READ this Record — the gate on joining its live
+    /// collab doc (Ontology §11 "Collab").
+    ///
+    /// Before this existed, any authenticated session could join ANY record's
+    /// doc by uid and receive its full snapshot, which made collab a way
+    /// AROUND §12 visibility rather than a consumer of it.
+    ///
+    /// Deliberately the same rule Protein applies: `None` is the local Cell and
+    /// sees everything; a remote subject sees only what `visible_targets`
+    /// says. Default deny, which means an individually-replicated conversation
+    /// — with no visibility rule of its own — is invisible to every remote
+    /// subject without needing a special case.
+    ///
+    /// `read` + `write` IS what enables CRDT editing. Collab is not a separate
+    /// privilege; it is what having those permissions means.
+    pub async fn may_read_record(
+        &self,
+        subject: Option<&str>,
+        record_uid: &str,
+    ) -> Result<bool, EngineError> {
+        let Some(subject) = subject else {
+            return Ok(true);
+        };
+        Ok(
+            store::visibility::visible_targets(&self.store.pool, subject)
+                .await?
+                .contains(record_uid),
+        )
     }
 
     /// The record-doc's full snapshot, base64 — what a joining collab client
@@ -281,6 +318,13 @@ impl crate::Engine {
                 nucleus::hlc::next(),
                 &local.uid,
                 None,
+                // A local collab write inherits whatever root the Record was
+                // born in, resolved from the row rather than assumed: a
+                // co-written Record inside a conversation must not leak onto
+                // the general feed through its crdt ops.
+                store::replica::root_of(&self.store.pool, uid)
+                    .await?
+                    .as_deref(),
             )
             .await?;
         }

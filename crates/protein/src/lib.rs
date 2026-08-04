@@ -7,7 +7,7 @@
 //! **Protein never mutates.** This crate has no write path at all.
 //!
 //! Sources: `record | promise | decision | fact | concept | transfer |
-//! transfer_settlement_preview | transfer_bulk_completion_preview`.
+//! transfer_settlement_preview | transfer_bulk_completion_preview | nearby`.
 //! Boolean predicate tree with Lingua-DAG `concept_in` (what a Record IS) and
 //! `classified_in` (what a CHANGE was for); includes `facts` (provenance),
 //! `promises`, `links` (with tree `depth`), `threads`, `extension`,
@@ -17,7 +17,9 @@
 //! spending, stock consumption, or hours);
 //! ordering by record fields and directed link rules; limit. Rows come out as JSON — the
 //! wire shape sands consume. Live subscriptions ride the engine's `fact_bus`
-//! (see `affects`): snapshot, then re-execute on relevant commits.
+//! (see `affects`): snapshot, then re-execute on relevant commits. A source
+//! reading process state rather than the database (`nearby`) commits no Facts
+//! and so is refreshed by the session's ephemeral tick instead.
 //!
 //! `include: projection` folds **promises** forward (the planned trajectory
 //! from agreed/active commitments). Full rule simulation needs the Karma
@@ -186,6 +188,33 @@ pub enum Source {
     /// `"occurrence"` for one derived date with what became of it. Occurrences
     /// are derived on read, never stored.
     Recurrence,
+    /// Organs announcing themselves on this local network right now.
+    ///
+    /// The only source whose rows come from the process rather than the
+    /// database, and the reason it belongs here anyway is that a sand should
+    /// not need a second way to ask a question. [`Source::Decision`] already
+    /// established the local-only category; this joins it, for a stronger
+    /// reason: a nearby list tells you who is on someone's LAN, which is
+    /// exactly what must never leave the Cell.
+    ///
+    /// Discovery deliberately commits no Facts (the Ledger is not a place to
+    /// record who walked past), so `affects` returns false here and a
+    /// subscription is refreshed by the session's ephemeral tick instead.
+    Nearby,
+}
+
+/// What the calling process knows that the database cannot answer.
+///
+/// The precedent is `installed_signer_actor`: a caller-supplied fact about
+/// this process, passed in rather than looked up, because no query could find
+/// it. Discovery is the same kind of thing. Bundled as a struct so the next
+/// one does not become a sixth positional argument.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Context<'a> {
+    /// Organs on the LAN, as the wire currently sees them. `None` when no
+    /// endpoint is bound — which is also the right answer for a Cell with
+    /// discovery switched off, so it needs no separate signal.
+    pub nearby: Option<&'a [nucleus::nearby::NearbyPeer]>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -446,6 +475,26 @@ pub async fn execute_for_with_signer(
     subject: Option<&str>,
     installed_signer_actor: Option<&str>,
 ) -> Result<Vec<Value>, ProteinError> {
+    execute_for_with_context(
+        store,
+        protein,
+        subject,
+        installed_signer_actor,
+        Context::default(),
+    )
+    .await
+}
+
+/// Execute with everything the calling process knows. The other entry points
+/// are this one with an empty [`Context`] — which is why a source reading the
+/// context must treat "absent" as "nothing to report" rather than an error.
+pub async fn execute_for_with_context(
+    store: &Store,
+    protein: &Protein,
+    subject: Option<&str>,
+    installed_signer_actor: Option<&str>,
+    context: Context<'_>,
+) -> Result<Vec<Value>, ProteinError> {
     validate(protein)?;
     let visible = match subject {
         None => None,
@@ -508,6 +557,12 @@ pub async fn execute_for_with_signer(
                 return Ok(vec![]);
             }
             execute_karma(store, protein).await?
+        }
+        Source::Nearby => {
+            if visible.is_some() {
+                return Ok(vec![]); // who is on your LAN is never exported
+            }
+            execute_nearby(store, protein, context.nearby.unwrap_or(&[])).await?
         }
     })
 }
@@ -800,6 +855,14 @@ pub fn affects(protein: &Protein, _fact: &nucleus::Fact) -> bool {
             | Source::Entry
             | Source::Recurrence
     )
+}
+
+/// Whether this Protein reads process state that commits no Facts, and so can
+/// only be refreshed by re-running it on a tick. The complement of `affects`:
+/// a source is one or the other, never both, and a source that is neither is
+/// simply static.
+pub fn is_ephemeral(protein: &Protein) -> bool {
+    matches!(protein.source, Source::Nearby)
 }
 
 async fn execute_karma(store: &Store, protein: &Protein) -> Result<Vec<Value>, ProteinError> {
@@ -1502,6 +1565,11 @@ async fn execute_records(
             "concept_name": r.identity_predicate_uid.as_ref().and_then(|uid| concept_names.get(uid)),
             "created_at": r.created_at,
             "updated_at": r.updated_at,
+            // Creation order that survives crossing a machine boundary. A
+            // surface showing anything written on more than one Cell — a
+            // conversation above all — must order by this rather than by
+            // `created_at`, which is whatever that machine's clock said.
+            "created_hlc": r.created_hlc,
             "start_date": work.get(&r.uid).and_then(|value| value.get("start")).and_then(Value::as_str),
             "due_date": work.get(&r.uid).and_then(|value| value.get("due")).and_then(Value::as_str),
         });
@@ -1709,6 +1777,14 @@ fn record_field_cmp(
             .map(str::to_owned)
     };
     match field {
+        // Clock-independent creation order. A record predating the column
+        // sorts LAST in both directions (`optional` puts `None` after `Some`,
+        // and the caller does not reverse a comparison involving a missing
+        // field) — an unknown position is not a position at the start of time.
+        "created_hlc" => optional(
+            left.created_hlc.map(|hlc| format!("{hlc:020}")),
+            right.created_hlc.map(|hlc| format!("{hlc:020}")),
+        ),
         "title" | "head" => left.head.cmp(&right.head),
         "description" | "body" => left.body.cmp(&right.body),
         "uid" => left.uid.cmp(&right.uid),
@@ -1806,7 +1882,16 @@ async fn attach_includes(
     if include.contact {
         row["contact"] = store::organs::contact(&store.pool, record_uid)
             .await?
-            .map(|c| json!({ "trust": c.trust, "proximity": c.proximity }))
+            .map(|c| {
+                json!({
+                    "trust": c.trust,
+                    "proximity": c.proximity,
+                    // A surface must be able to say "added, but not yet
+                    // reachable" — otherwise a contact that cannot sync looks
+                    // exactly like one that can.
+                    "pending_introduction": c.pending_introduction,
+                })
+            })
             .unwrap_or(Value::Null);
     }
     if let Some(projection) = &include.projection {
@@ -2496,6 +2581,45 @@ async fn execute_decisions(store: &Store, protein: &Protein) -> Result<Vec<Value
             "kind": d.kind,
             "question": d.question,
             "options": d.options,
+        }));
+        if protein.limit.is_some_and(|l| out.len() >= l) {
+            break;
+        }
+    }
+    Ok(out)
+}
+
+// -------------------------------------------------------------------- nearby
+
+/// Organs announcing on this LAN, joined against contacts by NodeId.
+///
+/// Rows are sorted by `node_id` — the underlying list is a map, and an
+/// arbitrary order would both make the list jump around under a surface and
+/// defeat the session's "push only when it changed" comparison.
+async fn execute_nearby(
+    store: &Store,
+    protein: &Protein,
+    peers: &[nucleus::nearby::NearbyPeer],
+) -> Result<Vec<Value>, ProteinError> {
+    let mut peers = peers.to_vec();
+    peers.sort_by(|a, b| a.node_id.cmp(&b.node_id));
+    let mut out = Vec::new();
+    for peer in peers {
+        // `known` comes from the NodeId, not from anything the peer
+        // broadcast. The retired multicast announce carried an organ uid for
+        // this, which meant telling the whole LAN who you were before anyone
+        // had authenticated.
+        let contact = store::organs::contact_by_node_id(&store.pool, &peer.node_id).await?;
+        out.push(json!({
+            "node_id": peer.node_id,
+            "fingerprint": peer.fingerprint,
+            // Their self-declared label. A claim, never identity.
+            "claimed_name": peer.name,
+            "known": contact.is_some(),
+            // A contact's own name wins where we have one: it is what this
+            // Cell decided to call them, not what they called themselves.
+            "name": contact.as_ref().map(|c| c.head.clone()),
+            "trust": contact.as_ref().map(|c| c.trust.clone()),
         }));
         if protein.limit.is_some_and(|l| out.len() >= l) {
             break;

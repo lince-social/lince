@@ -1,0 +1,12 @@
+-- A contact added from a pasted or scanned code, before anyone has connected.
+--
+-- Adding by code cannot learn the other Organ's uid — only an Introduction
+-- over a real connection can — so such a contact is held under a uid derived
+-- from the NodeId until one happens. That derived uid is NOT the Organ's own,
+-- which means every op batch they push is attributed to a uid the wire cannot
+-- match, and the connection refuses them. The flag marks the rows still owed a
+-- reconciliation, so the sync pass can finish what the paste started.
+--
+-- An explicit column rather than recognising the derived uid by its shape: a
+-- real uid that happened to look derived would otherwise be silently replaced.
+ALTER TABLE organ_contact ADD COLUMN pending_introduction INTEGER NOT NULL DEFAULT 0;

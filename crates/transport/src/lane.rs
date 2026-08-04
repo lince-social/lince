@@ -12,6 +12,14 @@ pub struct LaneEvent {
     pub room: String,
     pub from: String,
     pub payload: Value,
+    /// The sender's Person/app_user subject, when they have one.
+    ///
+    /// Carried SEPARATELY from `from` (a connection id) because presence has
+    /// two halves with different privacy: WHERE a cursor is, which everyone in
+    /// the room may see, and WHO it belongs to, which only a viewer with read
+    /// permission on that user may see. The receiving side resolves this to a
+    /// name or drops it — see `ws::spawn_lane_forwarder`.
+    pub from_subject: Option<String>,
 }
 
 /// Shared across all sessions on a host. Cheap to clone the handle via `Arc`.

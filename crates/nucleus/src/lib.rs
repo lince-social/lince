@@ -19,6 +19,7 @@ pub mod hlc;
 pub mod id;
 pub mod imagination;
 pub mod karma;
+pub mod nearby;
 pub mod place;
 pub mod promise;
 pub mod record;

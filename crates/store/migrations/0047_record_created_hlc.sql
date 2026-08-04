@@ -1,0 +1,17 @@
+-- Creation order that survives crossing a machine boundary.
+--
+-- `created_at` is a local wall clock. Two Cells' clocks disagree, so ordering a
+-- conversation by it interleaves the two sides wrong — and it looks like a
+-- rendering bug rather than the clock problem it is. The op log already carries
+-- an HLC precisely so ordering does not depend on anyone's clock being right;
+-- this denormalizes ONE of those stamps onto the row so a read can use it.
+--
+-- Denormalized for the same reason `replica_root` is: it is written once at
+-- creation and never changes, so a copy can never drift from its source. Note
+-- that `log_local` mints an HLC per FIELD, so a record's several creation ops
+-- have several HLCs — this column is a single stamp taken at creation, which
+-- is what "when this record came into being" actually means.
+--
+-- Null for rows created before this column. Readers must treat null as
+-- "unknown, sort last" rather than as a time.
+ALTER TABLE record ADD COLUMN created_hlc INTEGER;

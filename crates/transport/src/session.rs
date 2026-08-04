@@ -24,6 +24,10 @@ pub struct Session {
     connection_id: String,
     /// Active subscriptions: subscription id -> the Protein to re-run.
     subscriptions: HashMap<String, Protein>,
+    /// The rows last sent for each ephemeral subscription, so the tick can
+    /// push only when the answer actually changed. Without this, a nearby
+    /// panel would resend an identical list every few seconds forever.
+    last_ephemeral: HashMap<String, Vec<serde_json::Value>>,
     joined_rooms: Vec<String>,
     /// Records this connection collab-edits: a committed fact touching one of
     /// them pushes a fresh `CollabChange` snapshot (Ontology §11 "Collab").
@@ -46,6 +50,7 @@ impl Session {
             subject,
             connection_id: connection_id.into(),
             subscriptions: HashMap::new(),
+            last_ephemeral: HashMap::new(),
             joined_rooms: Vec::new(),
             collab_records: HashSet::new(),
             action_intent: None,
@@ -183,11 +188,27 @@ impl Session {
                         room,
                         from: self.connection_id.clone(),
                         payload,
+                        from_subject: self.subject.clone(),
                     });
                 }
                 vec![] // presence is fire-and-forget; senders don't echo to self
             }
             ClientMessage::CollabJoin { id, record_uid } => {
+                // The read gate. Refused BEFORE the snapshot is produced, and
+                // the message says only "not visible" — a distinct "no such
+                // record" would let a caller probe which uids exist.
+                if !self
+                    .engine
+                    .may_read_record(self.subject.as_deref(), &record_uid)
+                    .await
+                    .unwrap_or(false)
+                {
+                    return vec![ServerMessage::Error {
+                        id,
+                        message: "record is not visible to you".into(),
+                        code: Some("collab_not_visible".into()),
+                    }];
+                }
                 match self.engine.collab_snapshot(&record_uid).await {
                     Ok(snapshot_base64) => {
                         self.collab_records.insert(record_uid.clone());
@@ -216,6 +237,22 @@ impl Session {
                 record_uid,
                 update_base64,
             } => {
+                // Writing is gated too, and not merely by having joined:
+                // `collab_records` is client-driven state, so trusting it here
+                // would let a session that never passed the join gate edit by
+                // sending an update directly.
+                if !self
+                    .engine
+                    .may_read_record(self.subject.as_deref(), &record_uid)
+                    .await
+                    .unwrap_or(false)
+                {
+                    return vec![ServerMessage::Error {
+                        id,
+                        message: "record is not visible to you".into(),
+                        code: Some("collab_not_visible".into()),
+                    }];
+                }
                 // Success answers nothing here: the merge commits a refresh
                 // fact, and `on_fact` echoes the merged doc back as a
                 // `CollabChange` to every joined session (including this one —
@@ -247,17 +284,36 @@ impl Session {
         }
     }
 
-    async fn subscribe(&mut self, id: String, protein: Protein) -> Vec<ServerMessage> {
+    /// Run a Protein with everything this process knows that the database
+    /// cannot answer. The single execution path for every subscription, so a
+    /// context-reading source behaves the same on the first snapshot as on
+    /// every refresh.
+    async fn execute(
+        &self,
+        protein: &Protein,
+    ) -> Result<Vec<serde_json::Value>, protein::ProteinError> {
         let signer_actor = self.available_signer_actor().await;
-        match protein::execute_for_with_signer(
+        // Only fetched when the Protein can use it: taking the wire's lock on
+        // every record query would be a cost paid by everything.
+        let nearby = protein::is_ephemeral(protein).then(|| self.engine.nearby_peers());
+        protein::execute_for_with_context(
             &self.engine.store,
-            &protein,
+            protein,
             self.subject.as_deref(),
             signer_actor.as_deref(),
+            protein::Context {
+                nearby: nearby.as_deref(),
+            },
         )
         .await
-        {
+    }
+
+    async fn subscribe(&mut self, id: String, protein: Protein) -> Vec<ServerMessage> {
+        match self.execute(&protein).await {
             Ok(rows) => {
+                if protein::is_ephemeral(&protein) {
+                    self.last_ephemeral.insert(id.clone(), rows.clone());
+                }
                 self.subscriptions.insert(id.clone(), protein);
                 vec![ServerMessage::Snapshot { id, rows }]
             }
@@ -269,38 +325,61 @@ impl Session {
         }
     }
 
-    async fn subscribe_saved(&mut self, id: String, name: String) -> Vec<ServerMessage> {
-        let signer_actor = self.available_signer_actor().await;
-        match protein::execute_saved_with_signer(
-            &self.engine.store,
-            &name,
-            self.subject.as_deref(),
-            signer_actor.as_deref(),
-        )
-        .await
-        {
-            Ok(rows) => {
-                // materialize the saved AST so future `on_fact` recomputes it
-                match load_saved(&self.engine, &name).await {
-                    Ok(protein) => {
-                        self.subscriptions.insert(id.clone(), protein);
+    /// Whether anything here needs the ephemeral tick. The driver arms no
+    /// timer while this is false, so a session that never asks about the
+    /// network costs nothing.
+    pub fn has_ephemeral_subscriptions(&self) -> bool {
+        self.subscriptions.values().any(protein::is_ephemeral)
+    }
+
+    /// Re-run subscriptions whose sources commit no Facts, pushing an Update
+    /// only where the rows differ from what this connection was last sent.
+    ///
+    /// This is what makes a nearby list live without a client-side poll, and
+    /// the comparison is what keeps it quiet: an unchanging network produces
+    /// no traffic at all.
+    pub async fn tick_ephemeral(&mut self) -> Vec<ServerMessage> {
+        let mut out = Vec::new();
+        let ephemeral: Vec<(String, Protein)> = self
+            .subscriptions
+            .iter()
+            .filter(|(_, protein)| protein::is_ephemeral(protein))
+            .map(|(id, protein)| (id.clone(), protein.clone()))
+            .collect();
+        for (id, protein) in ephemeral {
+            match self.execute(&protein).await {
+                Ok(rows) => {
+                    if self.last_ephemeral.get(&id) == Some(&rows) {
+                        continue;
                     }
-                    Err(e) => {
-                        return vec![ServerMessage::Error {
-                            id,
-                            message: e,
-                            code: None,
-                        }];
-                    }
+                    self.last_ephemeral.insert(id.clone(), rows.clone());
+                    out.push(ServerMessage::Update { id, rows });
                 }
-                vec![ServerMessage::Snapshot { id, rows }]
+                Err(e) => out.push(ServerMessage::Error {
+                    id,
+                    message: e.to_string(),
+                    code: protein::error_code(&e),
+                }),
             }
-            Err(e) => vec![ServerMessage::Error {
-                id,
-                message: e.to_string(),
-                code: protein::error_code(&e),
-            }],
         }
+        out
+    }
+
+    async fn subscribe_saved(&mut self, id: String, name: String) -> Vec<ServerMessage> {
+        // Materialize the saved AST first, then run it through the same path
+        // an inline Protein takes: a saved Protein is not a different kind of
+        // question, and executing it separately is how the two drift.
+        let protein = match load_saved(&self.engine, &name).await {
+            Ok(protein) => protein,
+            Err(e) => {
+                return vec![ServerMessage::Error {
+                    id,
+                    message: e,
+                    code: None,
+                }];
+            }
+        };
+        self.subscribe(id, protein).await
     }
 
     async fn act(&self, id: String, action: engine::actions::Action) -> ServerMessage {
@@ -422,19 +501,11 @@ impl Session {
                 });
             }
         }
-        let signer_actor = self.available_signer_actor().await;
         for (id, protein) in &self.subscriptions {
             if !protein::affects(protein, fact) {
                 continue;
             }
-            match protein::execute_for_with_signer(
-                &self.engine.store,
-                protein,
-                self.subject.as_deref(),
-                signer_actor.as_deref(),
-            )
-            .await
-            {
+            match self.execute(protein).await {
                 Ok(rows) => out.push(ServerMessage::Update {
                     id: id.clone(),
                     rows,

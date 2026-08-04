@@ -34,6 +34,7 @@ const FLAT_LIVE = "lince:live";
 const FLAT_PATCH_CARD_STATE = "lince:patch-card-state";
 const FLAT_ARCHIVE_WORKSPACE = "lince:archive-workspace";
 const FLAT_TERMINAL_OPEN = "lince:terminal-open";
+const FLAT_SCAN_CODE = "lince:scan-code";
 const FLAT_TERMINAL_INPUT = "lince:terminal-input";
 const FLAT_TERMINAL_RESIZE = "lince:terminal-resize";
 const FLAT_TERMINAL_CLOSE = "lince:terminal-close";
@@ -224,6 +225,7 @@ export function createWidgetBridge({
   handleShellAction,
   invalidateServerAuth,
   archiveWorkspace,
+  scanCode,
   onError,
 }) {
   let bridgeState = normalizeBridgeState(initialState);
@@ -1026,6 +1028,56 @@ export function createWidgetBridge({
     });
   }
 
+  /// Camera scan, gated the same way a terminal is: the card must hold the
+  /// permission, and the request must come from that card's REAL iframe — a
+  /// page-level impostor posting a stolen instanceId is ignored.
+  ///
+  /// The camera itself never belongs to the sand. `scanCode` is a chrome
+  /// callback: the chrome owns the stream and the preview, and only the
+  /// decoded text is posted back.
+  function handleScanCode(data, source) {
+    const instanceId = String(data.instanceId || "");
+    const scanId = String(data.scanId || "");
+    const permissions =
+      typeof getCardMeta === "function"
+        ? getCardMeta(instanceId)?.permissions
+        : [];
+    const refuse = (message) => {
+      postFrame(instanceId, {
+        type: "lince:scan-result",
+        scanId,
+        ok: false,
+        message,
+      });
+    };
+    if (
+      !instanceId ||
+      !scanId ||
+      !isCurrentFrameSource(instanceId, source) ||
+      !Array.isArray(permissions) ||
+      !permissions.includes("media_capture")
+    ) {
+      refuse("media_capture permission is required");
+      return;
+    }
+    if (typeof scanCode !== "function") {
+      refuse("this host cannot open a camera");
+      return;
+    }
+    void Promise.resolve(scanCode())
+      .then((text) => {
+        postFrame(instanceId, {
+          type: "lince:scan-result",
+          scanId,
+          ok: true,
+          // null is the CANCEL answer, distinct from a failure: the user
+          // closing the camera is not an error a sand should show as one.
+          text: text == null ? null : String(text),
+        });
+      })
+      .catch((error) => refuse(error?.message || "scan failed"));
+  }
+
   function handleTerminalCommand(data, source) {
     const entry = terminalEntry(data);
     if (
@@ -1173,6 +1225,11 @@ export function createWidgetBridge({
 
     if (data.type === FLAT_TERMINAL_OPEN) {
       handleTerminalOpen(data, event.source);
+      return;
+    }
+
+    if (data.type === FLAT_SCAN_CODE) {
+      handleScanCode(data, event.source);
       return;
     }
 

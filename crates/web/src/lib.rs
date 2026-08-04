@@ -56,8 +56,10 @@ struct CellApiState {
     lanes: Arc<LaneHub>,
     listening_port: u16,
     local_auth_required: bool,
-    /// Organs currently announcing on this LAN (Ontology §11 "Peers").
-    nearby: crate::presentation::http::lan_discovery::NearbyPeers,
+    /// The iroh endpoint (Ontology §11 "Transport: iroh"): peer connectivity
+    /// and the LAN nearby list. `None` when binding failed — the Cell still
+    /// serves its own board, it just cannot reach or be reached by peers.
+    wire: crate::presentation::http::wire_supervisor::WireSlot,
     packages: PackageCatalogStore,
     store: Store,
 }
@@ -588,133 +590,6 @@ pub async fn serve_cell_api_only(
         Ok((response_headers, bytes))
     }
 
-    // ---- the organ↔organ HTTP boundary (blueprint XV; no local JWT — the
-    // visibility gate, signatures, and the blocked-organ check do the gating)
-
-    async fn organ_introduction(
-        State(state): State<CellApiState>,
-    ) -> Result<impl IntoResponse, (StatusCode, String)> {
-        state
-            .engine
-            .introduction()
-            .await
-            .map(Json)
-            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))
-    }
-
-    /// Serialize a peer-facing JSON body and sign it with the Organ key, so
-    /// the caller can verify WHO answered (Ontology §11 "Peers" — both
-    /// directions prove possession before anything is trusted).
-    async fn signed_peer_json(
-        state: &CellApiState,
-        body: serde_json::Value,
-    ) -> Result<Response, (StatusCode, String)> {
-        let bytes = serde_json::to_vec(&body)
-            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
-        let mut response = Response::new(Body::from(bytes.clone()));
-        response.headers_mut().insert(
-            header::CONTENT_TYPE,
-            HeaderValue::from_static("application/json"),
-        );
-        if let Some(signed) =
-            crate::presentation::http::peer_auth::response_headers(&state.engine, &bytes).await
-        {
-            for (name, value) in signed {
-                let value = HeaderValue::from_str(&value)
-                    .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
-                response
-                    .headers_mut()
-                    .insert(HeaderName::from_static(name), value);
-            }
-        }
-        Ok(response)
-    }
-
-    async fn organ_inbox(
-        State(state): State<CellApiState>,
-        uri: axum::extract::OriginalUri,
-        headers: HeaderMap,
-        body: axum::body::Bytes,
-    ) -> Result<impl IntoResponse, (StatusCode, String)> {
-        let path_and_query = uri
-            .path_and_query()
-            .map(|value| value.as_str())
-            .unwrap_or("/organ/inbox");
-        let proven = crate::presentation::http::peer_auth::verify_signed_request(
-            &state.engine,
-            "POST",
-            path_and_query,
-            &headers,
-            &body,
-        )
-        .await?;
-        let batch: engine::sync::OpBatch = serde_json::from_slice(&body)
-            .map_err(|error| (StatusCode::BAD_REQUEST, error.to_string()))?;
-        // The batch must belong to the organ that proved the key.
-        if batch.from_organ != proven {
-            return Err((StatusCode::FORBIDDEN, "batch/signer mismatch".into()));
-        }
-        let applied = state
-            .engine
-            .import_op_batch(&batch)
-            .await
-            .map_err(|error| (StatusCode::FORBIDDEN, error.to_string()))?;
-        signed_peer_json(&state, serde_json::json!({ "applied": applied })).await
-    }
-
-    /// The catch-up feed (Ontology §11): ops past the caller's checkpoint —
-    /// one indexed rowid-range query; an empty answer means converged.
-    /// Served only to a caller that proves a stored key (challenge gate).
-    async fn organ_ops(
-        State(state): State<CellApiState>,
-        uri: axum::extract::OriginalUri,
-        headers: HeaderMap,
-        axum::extract::Query(params): axum::extract::Query<
-            std::collections::HashMap<String, String>,
-        >,
-    ) -> Result<impl IntoResponse, (StatusCode, String)> {
-        let path_and_query = uri
-            .path_and_query()
-            .map(|value| value.as_str())
-            .unwrap_or("/organ/ops");
-        crate::presentation::http::peer_auth::verify_signed_request(
-            &state.engine,
-            "GET",
-            path_and_query,
-            &headers,
-            b"",
-        )
-        .await?;
-        let after = params
-            .get("after")
-            .and_then(|value| value.parse::<i64>().ok())
-            .unwrap_or(0);
-        let limit = params
-            .get("limit")
-            .and_then(|value| value.parse::<i64>().ok())
-            .unwrap_or(500)
-            .clamp(1, 2000);
-        let from_organ = store::organs::local(&state.store.pool)
-            .await
-            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?
-            .map(|organ| organ.uid)
-            .unwrap_or_default();
-        let (ops, head) = state
-            .engine
-            .ops_after(after, limit)
-            .await
-            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
-        signed_peer_json(
-            &state,
-            serde_json::json!({
-                "from_organ": from_organ,
-                "ops": ops,
-                "head": head,
-            }),
-        )
-        .await
-    }
-
     /// Organs currently announcing on this LAN — the Organ sand's "nearby"
     /// list. Names are untrusted labels; `known` says whether the announced
     /// organ uid already has a contact row.
@@ -724,65 +599,132 @@ pub async fn serve_cell_api_only(
     ) -> Result<impl IntoResponse, (StatusCode, String)> {
         authenticate_headers(&state, &headers).await?;
         let mut peers = Vec::new();
-        for (fp, peer) in state.nearby.current() {
-            let known = store::organs::contact(&state.store.pool, &peer.organ_uid)
-                .await
-                .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?
-                .is_some();
-            peers.push(serde_json::json!({
-                "fp": fp,
-                "organ_uid": peer.organ_uid,
-                "name": peer.name,
-                "addr": peer.addr,
-                "port": peer.port,
-                "known": known,
-            }));
+        if let Some(wire) = state.wire.read().await.clone() {
+            for peer in wire.nearby().current() {
+                // `known` comes from the NodeId, not from anything the peer
+                // broadcast — the retired multicast announce carried an
+                // organ_uid for this, which meant telling the whole LAN who
+                // you were before anyone had authenticated.
+                let contact = store::organs::contact_by_node_id(&state.store.pool, &peer.node_id)
+                    .await
+                    .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+                peers.push(serde_json::json!({
+                    // The short fingerprint is DISAMBIGUATION among many rows,
+                    // never a security check: under iroh the address already
+                    // is the key.
+                    "fp": peer.fingerprint,
+                    "node_id": peer.node_id,
+                    // Untrusted self-declared label. The UI must render it as
+                    // a claim; a known contact's own name wins where we have
+                    // one.
+                    "name": contact
+                        .as_ref()
+                        .map(|c| c.head.clone())
+                        .unwrap_or_else(|| peer.name.clone()),
+                    "claimed_name": peer.name,
+                    "organ_uid": contact.as_ref().map(|c| c.record_uid.clone()),
+                    "known": contact.is_some(),
+                }));
+            }
         }
         Ok(Json(serde_json::json!({ "peers": peers })))
     }
 
-    #[derive(Deserialize)]
-    struct PairRequest {
-        addr: String,
-        port: u16,
+    /// Ceiling on one camera frame. A scan loop posts frames continuously, and
+    /// a still photograph of a QR code is tens of kilobytes — nothing
+    /// legitimate approaches this.
+    const MAX_FRAME_BYTES: usize = 4 * 1024 * 1024;
+
+    /// Read a QR code out of a single camera frame.
+    ///
+    /// The decode half of the pairing code: rendering already happens here
+    /// because a sand's CSP blocks every external script, and reading belongs
+    /// on the same side for the same reason plus one more — what comes out is
+    /// a code that decides who this Cell trusts, so it is worth having in one
+    /// audited place instead of in every sand that scans.
+    ///
+    /// Nothing is stored and nothing is decided here. The answer goes back to
+    /// the chrome, which fills a field a human still has to act on.
+    async fn qr_decode(
+        State(state): State<CellApiState>,
+        headers: HeaderMap,
+        frame: axum::body::Bytes,
+    ) -> Result<impl IntoResponse, (StatusCode, String)> {
+        authenticate_headers(&state, &headers).await?;
+        if frame.len() > MAX_FRAME_BYTES {
+            return Err((StatusCode::PAYLOAD_TOO_LARGE, "frame too large".into()));
+        }
+        let text = engine::pairing::decode_qr(&frame)
+            .map_err(|error| (StatusCode::BAD_REQUEST, error.to_string()))?;
+        // "No code in this frame" is the ordinary answer while a camera is
+        // pointed at a wall, so it is a 200 with `text: null` — a scan loop
+        // must not have to read failures to know it is still looking.
+        Ok(Json(serde_json::json!({ "text": text })))
     }
 
-    /// Pair with a nearby organ: fetch its introduction, adopt it as a
-    /// contact, and return the verification code BOTH humans should see (the
-    /// Signal safety-number pattern — derived from both organs' keys, never
-    /// transmitted; a mismatch means someone substituted keys on the wire).
+    #[derive(Deserialize)]
+    struct PairRequest {
+        /// A NodeId, or a full `lince1|…` pairing code from a QR or a paste.
+        node_id: String,
+        /// The name the LOCAL user typed. Never the label inside the code:
+        /// that is a claim by whoever made it.
+        #[serde(default)]
+        name: String,
+    }
+
+    /// Pair with an organ by NodeId: dial it, fetch its introduction, adopt it
+    /// as a contact, and bind the NodeId to that contact so it is reachable
+    /// afterwards.
+    ///
+    /// The NodeId may come from the nearby list, a scanned QR, or a paste —
+    /// the route does not care, because under iroh dialing a NodeId reaches
+    /// that keypair or nothing. What is at risk is only ACQUIRING the right
+    /// NodeId, which is why QR-in-person and paste-over-a-trusted-channel are
+    /// the ranked flows and no on-wire verification step is offered here.
+    ///
+    /// This uses the THREAD alpn, not sync: the peer is by definition not yet
+    /// a contact, so the sync door is closed to us and theirs to them.
     async fn organ_pair(
         State(state): State<CellApiState>,
         headers: HeaderMap,
         Json(request): Json<PairRequest>,
     ) -> Result<impl IntoResponse, (StatusCode, String)> {
         authenticate_headers(&state, &headers).await?;
-        let url = format!("http://{}:{}/organ/introduction", request.addr, request.port);
-        let intro: engine::sync::Introduction = reqwest::Client::builder()
-            .timeout(std::time::Duration::from_secs(10))
-            .build()
-            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?
-            .get(&url)
-            .send()
-            .await
-            .map_err(|error| (StatusCode::BAD_GATEWAY, error.to_string()))?
-            .json()
+        let wire = state.wire.read().await.clone().ok_or_else(|| {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                "no iroh endpoint".to_string(),
+            )
+        })?;
+        // Accept either shape. A bare NodeId still works (the nearby list
+        // hands one over); a full code additionally carries addresses, which
+        // is what makes an in-person scan work where mDNS is blocked.
+        let invite = engine::pairing::PairingInvite::decode(&request.node_id).unwrap_or(
+            engine::pairing::PairingInvite {
+                node_id: request.node_id.trim().to_string(),
+                root_key: None,
+                label: None,
+                addrs: Vec::new(),
+            },
+        );
+        let organ_uid = wire
+            .pair_with(&invite, &request.name)
             .await
             .map_err(|error| (StatusCode::BAD_GATEWAY, error.to_string()))?;
-        state
-            .engine
-            .adopt_introduction(&intro, 1)
+        let intro_head = store::records::get(&state.store.pool, &organ_uid)
             .await
-            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?
+            .map(|record| record.head)
+            .unwrap_or_default();
         let code = state
             .engine
-            .pairing_code(&intro.organ_uid)
+            .pairing_code(&organ_uid)
             .await
             .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?
             .unwrap_or_default();
         Ok(Json(serde_json::json!({
-            "organ_uid": intro.organ_uid,
-            "head": intro.head,
+            "organ_uid": organ_uid,
+            "head": intro_head,
             "code": code,
         })))
     }
@@ -801,6 +743,33 @@ pub async fn serve_cell_api_only(
             .await
             .map(Json)
             .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))
+    }
+
+    /// Open a live session against a contact Organ and relay this browser
+    /// socket to it over iroh (Ontology §11 "live mode").
+    ///
+    /// The LOCAL user must be authenticated to use their own Cell as a way
+    /// out: otherwise anyone who could reach this box could borrow its
+    /// identity to open sessions on someone else's.
+    async fn live_connect(
+        ws: WebSocketUpgrade,
+        State(state): State<CellApiState>,
+        Path(organ): Path<String>,
+        headers: HeaderMap,
+    ) -> Response {
+        if let Err((status, message)) = authenticate_headers(&state, &headers).await {
+            return (status, message).into_response();
+        }
+        let Some(wire) = state.wire.read().await.clone() else {
+            return (StatusCode::SERVICE_UNAVAILABLE, "no iroh endpoint").into_response();
+        };
+        ws.on_upgrade(move |socket| async move {
+            if let Err(error) =
+                crate::presentation::http::live_proxy::relay(wire, organ, socket).await
+            {
+                tracing::debug!(%error, "live relay ended");
+            }
+        })
     }
 
     async fn connect(
@@ -882,6 +851,93 @@ pub async fn serve_cell_api_only(
         .set_organ_signer(organ_signer)
         .await
         .map_err(IoError::other)?;
+    // The iroh endpoint (Ontology §11 "Transport: iroh"). Its key is per-CELL
+    // and separate from the organ signer above: the node key authenticates a
+    // live connection, the organ key authenticates durable bytes.
+    //
+    // A bind failure must not stop the Cell from serving — a machine with no
+    // usable network still runs Lince locally. Peers simply stay unreachable.
+    let wire = match engine::wire::node_secret(&key_dir.join("keys").join("node-ed25519-v1.key"))
+        .map_err(IoError::other)
+    {
+        Ok(secret) => {
+            let reach = if discovery_reaches_internet(&cell_store, &local_organ.uid).await {
+                engine::wire::Reach::Internet
+            } else {
+                engine::wire::Reach::Local
+            };
+            match engine::wire::Wire::bind_with_discovery(
+                engine.clone(),
+                secret,
+                reach,
+                Some(local_organ.head.as_str()),
+                discovery_is_local(&cell_store, &local_organ.uid).await,
+            )
+            .await
+            {
+                Ok(wire) => Some(Arc::new(wire)),
+                Err(error) => {
+                    tracing::warn!(%error, "iroh endpoint unavailable; peers unreachable");
+                    None
+                }
+            }
+        }
+        Err(error) => {
+            tracing::warn!(%error, "no node key; peers unreachable");
+            None
+        }
+    };
+    if let Some(wire) = wire.clone() {
+        tokio::spawn(async move { wire.serve().await });
+    }
+    // Held behind a lock because discovery is a builder option: changing it
+    // rebinds the endpoint rather than mutating it, and every reader has to
+    // pick up the replacement (see `wire_supervisor`).
+    let wire_slot: crate::presentation::http::wire_supervisor::WireSlot =
+        Arc::new(tokio::sync::RwLock::new(wire.clone()));
+    // The pairing code, mirrored for the Profile panel to show. Refreshed only
+    // when it actually changes: it lives on the Organ record, which syncs, and
+    // rewriting it every boot would be pure noise on every contact's feed.
+    //
+    // What it contains is exactly what you would hand someone anyway — NodeId,
+    // published root key, current addresses — so there is nothing here a
+    // contact should not already have.
+    if let Some(wire) = wire.clone() {
+        if let Ok(invite) = wire.pairing_invite().await {
+            let encoded = invite.encode();
+            let existing =
+                store::records::get_extension(&cell_store.pool, &local_organ.uid, "lince.pairing")
+                    .await
+                    .ok()
+                    .flatten();
+            let unchanged = existing
+                .as_ref()
+                .and_then(|fields| fields.get("invite").and_then(serde_json::Value::as_str))
+                == Some(encoded.as_str());
+            if !unchanged {
+                let svg = invite.qr_svg().unwrap_or_default();
+                let _ = store::records::set_extension(
+                    &cell_store.pool,
+                    &local_organ.uid,
+                    "lince.pairing",
+                    &serde_json::json!({ "invite": encoded, "qr_svg": svg }),
+                )
+                .await;
+            }
+        }
+    }
+    // The identity floor (Ontology §11). The ROOT key signs only the roster
+    // and key successions; it is generated here so the published format is
+    // final from the first exchange, and it is meant to be MOVED OFFLINE —
+    // a root that stays on a running Cell is the thing the split exists to
+    // avoid. The roster starts at one member and grows when devices are
+    // enrolled; publishing it now is what stops a contact who pairs today
+    // from being stranded by a device added tomorrow.
+    if let Err(error) =
+        publish_local_roster(&engine, &local_organ.uid, &key_dir, wire.as_deref()).await
+    {
+        tracing::warn!(%error, "cannot publish the Cell roster");
+    }
     // Seeds every enabled organ's File Sync watch loop at boot, then keeps
     // them in sync with the `lince.file_sync` extension via the fact bus —
     // toggling File Sync from the Organ sand takes effect immediately, no
@@ -905,7 +961,7 @@ pub async fn serve_cell_api_only(
         lanes: Arc::new(LaneHub::new()),
         listening_port: local_addr.port(),
         local_auth_required,
-        nearby: crate::presentation::http::lan_discovery::NearbyPeers::default(),
+        wire: wire_slot,
         packages,
         store: cell_store,
     };
@@ -918,6 +974,10 @@ pub async fn serve_cell_api_only(
         .route("/board/editor.js", get(static_assets::editor_js))
         .route("/board/lynx-ui.css", get(static_assets::lynx_ui_css))
         .route("/board/lynx-ui.js", get(static_assets::lynx_ui_js))
+        .route(
+            "/board/collab-editor.js",
+            get(static_assets::collab_editor_js),
+        )
         .route("/board/vendor/d3.v7.min.js", get(static_assets::d3_js))
         .route(
             "/board/vendor/d3.LICENSE.txt",
@@ -973,11 +1033,12 @@ pub async fn serve_cell_api_only(
         .route("/sand/{*path}", get(sand_asset))
         .route("/host/media", post(upload_media))
         .route("/host/media/{name}", get(get_media))
-        .route("/organ/introduction", get(organ_introduction))
-        .route("/organ/inbox", post(organ_inbox))
-        .route("/organ/ops", get(organ_ops))
         .route("/organ/nearby", get(organ_nearby))
         .route("/organ/pair", post(organ_pair))
+        .route("/organ/qr-decode", post(qr_decode))
+        // The guest half of live mode: this Cell relays a local browser
+        // socket to a contact Cell over iroh (Ontology §11).
+        .route("/live/{organ}/connect", get(live_connect))
         .route("/organ/open-promises", get(organ_open_promises))
         .route(
             "/organ/transfers/envelopes",
@@ -1042,11 +1103,139 @@ pub async fn serve_cell_api_only(
     // Organ sync (Ontology §11): reactive deltas + catch-up reconciliation
     // against every synced contact, woken by the fact bus.
     crate::presentation::http::sync_runner::spawn_runner(state.clone());
-    // LAN discovery (Ontology §11 "Peers"): announce + listen on the fixed
-    // multicast group; best-effort, gated by `lince.discovery` on the organ.
-    crate::presentation::http::lan_discovery::spawn(state.clone());
+    // Discovery is a builder option, so toggling internet reachability rebinds
+    // the endpoint instead of mutating it — the File Sync supervisor pattern,
+    // applied to the one setting that cannot be changed in place.
+    crate::presentation::http::wire_supervisor::spawn(state.clone(), key_dir.clone());
     status(format!("Cell API listening at http://{local_addr}"));
     axum::serve(listener, app).await.map_err(IoError::other)
+}
+
+/// Generate (once) the Organ root key, publish its public half so it travels
+/// in this Organ's Introduction, and sign a roster naming this Cell.
+///
+/// Publishing the root PUBLIC key through the Introduction is what makes the
+/// whole chain rule workable: a contact adopts it at pairing — the one and
+/// only trust-on-first-use — and every roster and succession afterwards must
+/// chain from it. Without that, a roster arriving later would have nothing to
+/// be checked against.
+async fn publish_local_roster(
+    engine: &engine::Engine,
+    organ_uid: &str,
+    key_dir: &std::path::Path,
+    wire: Option<&engine::wire::Wire>,
+) -> Result<(), IoError> {
+    let root_path = key_dir.join("keys").join("root-ed25519-v1.key");
+    let held = engine.roster_of(organ_uid).await.map_err(IoError::other)?;
+
+    // The root key is CREATED at most once, ever. Creating one whenever the
+    // file is missing would mint a brand-new identity the first time the owner
+    // does the thing the split exists to encourage — moving the root to
+    // offline media — and every contact would see a key that chains from
+    // nothing. So: no file and no roster means first boot, create it; no file
+    // WITH a roster means the root is deliberately elsewhere, and this Cell
+    // simply cannot sign until it comes back.
+    engine.set_root_key_path(root_path.clone());
+    if !root_path.exists() {
+        if held.is_some() {
+            tracing::info!(
+                "root key is not on this Cell; the published roster stays valid \
+                 until it expires, and enrolling or revoking a device needs it back"
+            );
+            return Ok(());
+        }
+    }
+    let root =
+        engine::trust::Signer::load_or_create(&root_path, organ_uid, engine::roster::ROOT_KEY_ID)
+            .map_err(IoError::other)?;
+    engine
+        .publish_root_key(&root)
+        .await
+        .map_err(IoError::other)?;
+
+    // Without an endpoint there is no node id to name, and a roster listing a
+    // Cell nobody can dial is worse than none.
+    let Some(wire) = wire else {
+        return Ok(());
+    };
+
+    // Re-sign only when the roster would actually change. Bumping the version
+    // on every boot would burn through versions and, worse, train contacts to
+    // accept a stream of rosters they have no reason to inspect.
+    let node_id = wire.node_id().to_string();
+    if let Some(held) = &held {
+        let unchanged = held.roster.root_key == root.public_key_b64()
+            && held.roster.cells.iter().any(|cell| cell.node_id == node_id);
+        if unchanged {
+            return Ok(());
+        }
+    }
+    let operational_key = engine
+        .local_organ_public_key()
+        .await
+        .map_err(IoError::other)?
+        .unwrap_or_default();
+    // PRESERVE the other members. Republishing with only this Cell would
+    // silently evict every enrolled device — the roster is the membership
+    // list, so dropping a name from it IS revocation, and that must never be
+    // a side effect of a reboot.
+    let mut cells: Vec<engine::roster::CellEntry> = held
+        .map(|held| held.roster.cells)
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|cell| cell.cell_uid != organ_uid)
+        .collect();
+    cells.push(engine::roster::CellEntry {
+        cell_uid: organ_uid.to_string(),
+        node_id,
+        label: "this cell".to_string(),
+        operational_key,
+        // A Cell is a front door only if it publishes addresses publicly,
+        // which is exactly what `lince.discovery.internet` controls. Deriving
+        // it keeps the roster from claiming a public tier the endpoint is not
+        // actually serving.
+        front_door: discovery_reaches_internet(&engine.store, organ_uid).await,
+    });
+    engine
+        .publish_roster(&root, cells)
+        .await
+        .map_err(IoError::other)?;
+    Ok(())
+}
+
+/// Whether this Cell should be resolvable across the internet (DHT + DNS), from
+/// `lince.discovery` `{internet}` on the local Organ.
+///
+/// DEFAULT ON (Ontology §11): a Cell that is not resolvable across the internet
+/// cannot serve the case that motivates the whole design — the always-on Cell
+/// telling the phone about a change the laptop made. Turning it OFF is the
+/// deliberate choice, and what it costs is that peers see only a relay rather
+/// than a direct address, which hides approximate location and online hours.
+///
+/// Read once at bind because discovery is an Endpoint builder option fixed at
+/// construction; changing it must rebind the endpoint, not mutate it.
+pub(crate) async fn discovery_reaches_internet(store: &Store, organ_uid: &str) -> bool {
+    match store::records::get_extension(&store.pool, organ_uid, "lince.discovery").await {
+        Ok(Some(fields)) => fields
+            .get("internet")
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(true),
+        _ => true,
+    }
+}
+
+/// Whether this Cell advertises and listens for nearby Lince Cells over mDNS.
+///
+/// Default ON preserves the existing LAN behavior. Unlike internet address
+/// publication this is room-scoped, so it has its own switch.
+pub(crate) async fn discovery_is_local(store: &Store, organ_uid: &str) -> bool {
+    match store::records::get_extension(&store.pool, organ_uid, "lince.discovery").await {
+        Ok(Some(fields)) => fields
+            .get("local")
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(true),
+        _ => true,
+    }
 }
 
 fn local_base_url_from_socket_addr(address: SocketAddr) -> String {

@@ -14,7 +14,7 @@ pub(crate) fn manifest() -> PackageManifest {
         icon: "◈".into(),
         title: "Organ".into(),
         author: "Lince Labs".into(),
-        version: "0.3.0".into(),
+        version: "0.4.0".into(),
         description: "Registers and manages organs, contact trust/proximity, and \
             per-organ File Sync to disk."
             .into(),
@@ -28,7 +28,12 @@ pub(crate) fn manifest() -> PackageManifest {
             (enabled, disk path) via `set-extension`. File Sync mirrors every record \
             whose `organ_uid` is that organ to/from markdown files (head = filename, \
             body = file content) — selection is hardcoded to organ origin for now, a \
-            configurable Protein filter is future work."
+            configurable Protein filter is future work. The LOCAL organ additionally \
+            shows a Discovery panel (`lince.discovery`): LAN presence, internet \
+            reachability, and whether unknown Organs may open a thread. Saving either \
+            discovery reach setting rebinds the \
+            iroh endpoint in the background — the NodeId is unchanged, so saved \
+            contacts stay valid."
             .into(),
         initial_width: 4,
         initial_height: 5,
@@ -37,6 +42,9 @@ pub(crate) fn manifest() -> PackageManifest {
             "bridge_state".into(),
             "protein_subscribe".into(),
             "act".into(),
+            // Scanning a pairing code. The host owns the camera and hands back
+            // only the decoded text — this sand never receives an image.
+            "media_capture".into(),
         ],
     }
 }
@@ -63,11 +71,36 @@ mod tests {
         assert!(HTML.contains("action: \"delete-record\""));
         assert!(HTML.contains("class=\"sand-tools\""));
         assert!(HTML.contains("id=\"connection-corner\""));
+        assert!(HTML.contains("id=\"local-discovery-tool\""));
+        assert!(HTML.contains("id=\"dc-local\""));
         assert!(
             manifest()
                 .permissions
                 .iter()
                 .any(|permission| permission == "act")
+        );
+    }
+
+    /// Scanning is declared as a permission and stops at filling the field.
+    ///
+    /// The second half is the part worth pinning: pointing a camera at a
+    /// screen is a strong story about where a code came from, but it is still
+    /// a story and not a verification, so the human still presses Add. A scan
+    /// wired straight to `add-known-organ` would quietly erase that.
+    #[test]
+    fn scanning_a_code_needs_the_camera_permission_and_only_fills_the_field() {
+        assert!(
+            manifest()
+                .permissions
+                .iter()
+                .any(|permission| permission == "media_capture"),
+            "the host refuses `lince:scan-code` from a sand that does not declare it"
+        );
+        assert!(HTML.contains("H.scanCode()"));
+        assert!(HTML.contains("id=\"ad-scan\""));
+        assert!(
+            !HTML.contains("action: \"add-known-organ\", invite: text"),
+            "a scan must never add anyone by itself"
         );
     }
 }

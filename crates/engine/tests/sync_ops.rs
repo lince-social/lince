@@ -79,9 +79,14 @@ async fn record_create_and_edit_log_field_ops() {
     );
 
     // Delete is a tombstone op, never a missing row in the log.
-    e.act(Action::DeleteRecord { target: uid.clone() }, None)
-        .await
-        .expect("delete");
+    e.act(
+        Action::DeleteRecord {
+            target: uid.clone(),
+        },
+        None,
+    )
+    .await
+    .expect("delete");
     let tombstones: Vec<_> = ops_for(&e, "record", &uid, "")
         .await
         .into_iter()
@@ -186,8 +191,11 @@ async fn assertions_and_facts_join_the_log() {
     let facts = store::facts::for_record(&e.store.pool, &subject, 100)
         .await
         .expect("facts");
-    let money_fact = facts.iter().find(|f| !f.delta.is_zero()).expect("bump fact");
-    let fact_ops = ops_for(&e, "fact", &money_fact.uid, "").await;
+    let bump_fact = facts
+        .iter()
+        .find(|f| !f.delta.is_zero())
+        .expect("bump fact");
+    let fact_ops = ops_for(&e, "fact", &bump_fact.uid, "").await;
     assert_eq!(fact_ops.len(), 1);
     assert_eq!(fact_ops[0].kind, "fact");
     assert!(fact_ops[0].value.is_none());
@@ -226,6 +234,7 @@ async fn op_identity_is_actor_plus_hlc() {
         hlc,
         &organ,
         None,
+        None,
     )
     .await
     .expect("append");
@@ -240,6 +249,7 @@ async fn op_identity_is_actor_plus_hlc() {
         Some("\"b\""),
         hlc,
         &organ,
+        None,
         None,
     )
     .await

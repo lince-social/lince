@@ -18,6 +18,7 @@
   const proteinHandlers = new Map(); // subId -> handler({rows})
   const actionWaiters = new Map(); // reqId -> {resolve, reject}
   const terminalSessions = new Map(); // sessionId -> callbacks + open waiter
+  const scanWaiters = new Map(); // scanId -> {resolve, reject}
   const laneHandlers = new Set(); // {room, handler}
   const collabHandlers = new Map(); // recordUid -> Set<handler(snapshotBase64)>
   let live = false;
@@ -45,6 +46,7 @@
   let reqSeq = 0;
   const nextReqId = () => `${instanceId}:a${++reqSeq}`;
   let terminalSeq = 0;
+  let scanSeq = 0;
 
   function bytesToBase64(value) {
     const bytes = typeof value === "string"
@@ -151,6 +153,15 @@
         }
         break;
       }
+      case "lince:scan-result": {
+        const waiter = scanWaiters.get(data.scanId);
+        if (waiter) {
+          scanWaiters.delete(data.scanId);
+          if (data.ok) waiter.resolve(data.text == null ? null : String(data.text));
+          else waiter.reject(new Error(data.message || "scan failed"));
+        }
+        break;
+      }
       case "lince:collab-state": {
         const handlers = collabHandlers.get(data.recordUid);
         if (handlers) for (const h of [...handlers]) h(data.snapshotBase64 || "");
@@ -242,6 +253,22 @@
           onError: typeof options.onError === "function" ? options.onError : () => {},
         });
         post({ type: "lince:terminal-open", sessionId, geometry });
+      });
+    },
+
+    // Ephemeral host capability: ask the CHROME to scan a QR code with the
+    // camera. Resolves with the decoded text, or null if the user cancelled.
+    //
+    // The sand never receives pixels and never touches the camera. The chrome
+    // owns the stream, shows the preview, and sends frames to the backend
+    // decoder; only the decoded string crosses back. So a sand holding
+    // `media_capture` can read a code the user deliberately pointed at — it
+    // cannot watch the room.
+    scanCode() {
+      const scanId = `s${++scanSeq}`;
+      return new Promise((resolve, reject) => {
+        scanWaiters.set(scanId, { resolve, reject });
+        post({ type: "lince:scan-code", scanId });
       });
     },
 

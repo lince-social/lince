@@ -1,6 +1,8 @@
 mod archive;
 #[path = "communication/mod.rs"]
 mod communication;
+mod configuration;
+mod conversation;
 mod document_viewer;
 mod freedoom;
 #[path = "instinct/mod.rs"]
@@ -18,6 +20,7 @@ mod organ;
 mod organ_management;
 mod permissions;
 mod record;
+mod record_editor;
 #[path = "relations/mod.rs"]
 mod relations;
 #[allow(dead_code)]
@@ -102,7 +105,7 @@ impl OfficialWidgetBuilder {
 // Only current frame.js sands are wired for construction, plus `shell` (the
 // board's own chrome). Legacy sources may remain under `sand/`, but stay
 // unwired until rebuilt on the current bridge and explicitly added here.
-const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 20] = [
+const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 23] = [
     OfficialWidgetBuilder::Html {
         feature_flag: shell::FEATURE_FLAG,
         source_builder: shell::edit_source,
@@ -158,6 +161,14 @@ const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 20] = [
         package_builder: organ::package,
     },
     OfficialWidgetBuilder::Package {
+        feature_flag: conversation::FEATURE_FLAG,
+        package_builder: conversation::package,
+    },
+    OfficialWidgetBuilder::Package {
+        feature_flag: record_editor::FEATURE_FLAG,
+        package_builder: record_editor::package,
+    },
+    OfficialWidgetBuilder::Package {
         feature_flag: table::FEATURE_FLAG,
         package_builder: table::package,
     },
@@ -184,6 +195,10 @@ const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 20] = [
     OfficialWidgetBuilder::Package {
         feature_flag: communication::FEATURE_FLAG,
         package_builder: communication::package,
+    },
+    OfficialWidgetBuilder::Package {
+        feature_flag: configuration::FEATURE_FLAG,
+        package_builder: configuration::package,
     },
 ];
 

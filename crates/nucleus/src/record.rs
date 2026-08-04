@@ -16,8 +16,19 @@ pub enum RecordKind {
     Person,
     Protein,
     Sand,
+    /// One relationship, one grant (Ontology §11 "Threads"): the
+    /// individually-replicated root that Threads and Messages live inside.
+    /// Sharing one is granting exactly one contact sync access to it.
+    Conversation,
     Thread,
     Message,
+    /// A request to open a conversation, before anyone has agreed to one.
+    ///
+    /// Deliberately NOT a Conversation: an invite is what an Organ you may not
+    /// know can put in front of you, so it must be a thing you can decline
+    /// without ever having held a copy of anything. One pending per Organ, so
+    /// a declined conversation cannot become a spam channel.
+    ThreadInvite,
     Program,
     Frequency,
     Grant,
@@ -40,8 +51,10 @@ impl RecordKind {
             Self::Person => "person",
             Self::Protein => "protein",
             Self::Sand => "sand",
+            Self::Conversation => "conversation",
             Self::Thread => "thread",
             Self::Message => "message",
+            Self::ThreadInvite => "thread_invite",
             Self::Program => "program",
             Self::Frequency => "frequency",
             Self::Grant => "grant",
@@ -61,8 +74,10 @@ impl RecordKind {
             "person" => Self::Person,
             "protein" => Self::Protein,
             "sand" => Self::Sand,
+            "conversation" => Self::Conversation,
             "thread" => Self::Thread,
             "message" => Self::Message,
+            "thread_invite" => Self::ThreadInvite,
             "program" => Self::Program,
             "frequency" => Self::Frequency,
             "grant" => Self::Grant,

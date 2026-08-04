@@ -335,6 +335,9 @@ assert.strictEqual(b.y - a.y, 200);
     );
 }
 
+// Re-enabled 2026-08-04. The disabled note said the assertion "disagrees with
+// the shipped behaviour"; on inspection the SHIPPED behaviour was right and
+// the assertion was wrong, so the expectation moved rather than the maths.
 #[test]
 fn group_resize_scales_proportionally_with_min_floor() {
     stage_and_run(
@@ -353,16 +356,27 @@ assert.deepStrictEqual(
 );
 
 // Shrinking stops once a member reaches the single-card minimum size, so the
-// proportional layout never collapses. Heights land on 200 because the
-// per-member clamp snaps to the 40px grid after applying the minimum floor.
+// proportional layout never collapses. Members land exactly ON the floor —
+// 240x180 is MIN_CARD_SIZE — and that is also the point: 480x360 scaled by
+// 0.5 is still 4:3, so the group keeps its shape all the way down.
+//
+// This previously expected a height of 200, explained as the per-member clamp
+// "snapping to the 40px grid". `clampCard` does no snapping — it only clamps
+// to MIN_CARD_SIZE and the world — and 240x200 would have BROKEN the
+// proportionality this test is named for. The maths was right; the
+// expectation was not.
 const shrunk = buildGroupResizeCandidates(origins, "se", { x: -900, y: -340 }, config);
 assert.deepStrictEqual(
   shrunk.map((entry) => [entry.x, entry.y, entry.width, entry.height]),
   [
-    [400, 400, 240, 200],
-    [640, 400, 240, 200],
+    [400, 400, 240, 180],
+    [640, 400, 240, 180],
   ],
 );
+// The shape survives the clamp: every member keeps the 4:3 it started with.
+for (const entry of shrunk) {
+  assert.strictEqual(entry.width / entry.height, 480 / 360);
+}
 for (const entry of shrunk) {
   assert.ok(entry.width >= MIN_CARD_SIZE.width);
   assert.ok(entry.height >= MIN_CARD_SIZE.height);

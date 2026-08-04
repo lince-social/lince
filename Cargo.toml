@@ -59,6 +59,15 @@ include_dir = "0.7.4"
 # different iroh builds is a silent protocol change between peers. Bump
 # deliberately, never via a caret range.
 iroh = "=1.0.3"
+# mDNS left iroh core at 1.0; LAN discovery now needs this companion crate.
+iroh-mdns-address-lookup = "=0.4.0"
+# QR rendering for pairing codes. Server-side because the sand runs under a CSP
+# that blocks external scripts.
+qrcode = { version = "0.14.1", default-features = false, features = ["svg"] }
+rqrr = "=0.10.1"
+# Only the two formats a browser canvas actually produces. The default feature
+# set pulls a dozen codec crates that would never be called.
+image = { version = "0.25.10", default-features = false, features = ["png", "jpeg"] }
 jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }
 # Exact-pinned (Ontology §11 Collab): the record-doc CRDT engine. Upgrades are
 # deliberate — bump together with the vendored loro-wasm browser asset.
@@ -110,6 +119,15 @@ panic = "unwind"      # Keep panic recovery (or "abort" for ~1-3% more speed)
 
 [profile.dev]
 opt-level = 0        # Fastest compile
-debug = true         # Debug symbols
+# Line tables, not full debug info. This is where `target/` size actually
+# goes: full DWARF for this dependency tree runs to well over 100 GiB and has
+# filled the disk mid-build more than once. Line tables keep backtraces with
+# file:line — the thing anyone actually reads — and drop the type and variable
+# descriptions only a step-debugger uses.
+#
+# Compile time gets BETTER, not worse: less debug info to emit and far less
+# for the linker to copy. Set this back to `true` if you need to step through
+# locals in a debugger.
+debug = "line-tables-only"
 incremental = true   # Fast incremental builds
 codegen-units = 256  # Max parallelism

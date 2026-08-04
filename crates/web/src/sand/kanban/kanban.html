@@ -628,6 +628,7 @@
     let bodyEdit = null; // { uid, draft, caret, detach }
     function closeBodyEdit() {
       if (bodyEdit && typeof bodyEdit.detach === "function") bodyEdit.detach();
+      if (bodyEdit && bodyEdit.collab) bodyEdit.collab.detach();
       bodyEdit = null;
     }
     function openBodyEdit(row) {
@@ -680,6 +681,15 @@
         }, 150);
       });
       if (Editor) bodyEdit.detach = Editor.attach(area, { getNames: editorNames }).detach;
+      // Live collab on the card body: the same element the record editor uses,
+      // because a card body IS a Record body — only the box around it differs.
+      // Best-effort, and deliberately so: if the shared document cannot be
+      // reached this stays an ordinary textarea that commits on blur.
+      import("/board/collab-editor.js")
+        .then(({ attachCollab }) =>
+          attachCollab(area, { recordUid: row.uid, host: H, field: "body" }))
+        .then((live) => { if (live) bodyEdit.collab = live; })
+        .catch(() => {});
       holder.appendChild(area);
       setTimeout(() => {
         area.focus();

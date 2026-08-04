@@ -17,6 +17,9 @@ axum = ["dep:axum", "dep:base64", "dep:dirs", "dep:futures", "dep:portable-pty"]
 nucleus = { workspace = true }
 store = { workspace = true }
 engine = { workspace = true }
+async-trait = { workspace = true }
+iroh = { workspace = true }
+tracing = { workspace = true }
 protein = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -28,4 +31,4 @@ futures = { workspace = true, optional = true }
 portable-pty = { workspace = true, optional = true }
 
 [dev-dependencies]
-tokio = { workspace = true, features = ["macros", "rt"] }
+tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }

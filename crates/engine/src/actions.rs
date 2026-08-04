@@ -320,6 +320,95 @@ pub enum Action {
         namespace: String,
         fds: serde_json::Value,
     },
+    /// Adopt a pasted or scanned pairing code as a known Organ, under a name
+    /// the LOCAL user types (Ontology §11).
+    ///
+    /// This is trust-on-first-use on the root key, and the UI must say so
+    /// rather than implying the typing verified anything. It is safe exactly
+    /// when the code came from somewhere unrelayable — a QR held up in person,
+    /// or a chat app already authenticated to that human. No dial is needed,
+    /// so it works with the other side offline.
+    AddKnownOrgan {
+        invite: String,
+        name: String,
+    },
+    /// Post this Cell's pairing code into a thread, so the other party can add
+    /// you. The promotion step happens INSIDE the conversation: you talk
+    /// first, decide it is really them, and only then exchange keys.
+    ShareMyKey {
+        thread: String,
+    },
+    /// Open a conversation with a contact and offer it to them. Creates the
+    /// Conversation (its own replica root) and a first Thread together —
+    /// clicking "talk" needs somewhere to type immediately.
+    StartConversation {
+        contact: String,
+        title: String,
+    },
+    /// A new topic inside a conversation. Needs no new grant: it is born
+    /// inside the root that was already shared.
+    OpenThread {
+        conversation: String,
+        title: String,
+    },
+    /// Append a message to a thread.
+    SendMessage {
+        thread: String,
+        body: String,
+    },
+    /// Let a known contact Organ open live sessions on this Cell, acting as a
+    /// Person here (Ontology §11 "live mode").
+    ///
+    /// No password: the iroh handshake already proved which Organ is on the
+    /// connection, with a key rather than a secret someone could retype. What
+    /// this decides is WHO they are once inside — every read they make is
+    /// gated by that Person's visibility, so this grants a named identity
+    /// rather than a door.
+    GrantOrganLogin {
+        organ: String,
+        /// Name for the Person they act as. A new Person is created unless one
+        /// with this name already answers to it.
+        person_name: String,
+    },
+    /// Take a live login back. Local, immediate, and not a request the other
+    /// side may decline (§12).
+    RevokeOrganLogin {
+        organ: String,
+    },
+    /// Say yes to a thread invite: keep a copy of the offered conversation.
+    ///
+    /// This opens the conversation and nothing else — no trust, no sync, no
+    /// key. Agreeing to read what someone sends is not deciding who they are.
+    AcceptThreadInvite {
+        invite: String,
+    },
+    /// Say no: revoke the offered grant and clear the invite, which also frees
+    /// this Organ's one-pending slot so they may ask again later.
+    DeclineThreadInvite {
+        invite: String,
+    },
+    /// Issue a single-use, short-lived device-enrolment token (Ontology §11).
+    /// The plaintext comes back in `outcome.created` and is never stored — the
+    /// database keeps only a hash, because a token sitting in a row would be a
+    /// second, quieter way into the identity. Requires the root key.
+    RosterEnrolToken,
+    /// Remove a Cell from the roster. This IS revocation: the roster is the
+    /// membership list, and the version bump stops the old one being replayed
+    /// to re-add a stolen device. Requires the root key.
+    RosterRevokeCell {
+        cell_uid: String,
+    },
+    /// Copy the root key to removable media, at mode 0600. Refuses to
+    /// overwrite anything already there.
+    RootKeyExport {
+        destination: String,
+    },
+    /// Delete the LOCAL root key, having verified byte-for-byte that the copy
+    /// at `copy_at` matches. The verification is the whole point: detaching
+    /// without it destroys an identity that no authority can restore.
+    RootKeyDetach {
+        copy_at: String,
+    },
     /// Set a contact's trust level (blueprint XV): `unknown` | `known` |
     /// `blocked`. Blocking is just this with `trust: "blocked"` — no
     /// separate action.
@@ -2733,6 +2822,213 @@ impl Engine {
                         now,
                     )
                     .await?;
+            }
+            Action::AddKnownOrgan { invite, name } => {
+                let invite = crate::pairing::PairingInvite::decode(&invite)?;
+                let name = name.trim();
+                if name.is_empty() {
+                    return Err(EngineError::Consequence(
+                        "give this contact a name you will recognise".into(),
+                    ));
+                }
+                // The uid is theirs to declare, and a code cannot declare it —
+                // only an Introduction over a real connection can. So the row
+                // is held under a uid derived from the NodeId and FLAGGED: the
+                // next sync pass dials them, learns the real uid, and replaces
+                // this row with it. Until that happens they cannot sync, and
+                // the flag is what stops that from being a silent dead end.
+                let organ_uid = format!("o-{}", &invite.node_id);
+                store::organs::add_contact(&self.store.pool, &organ_uid, None, name, "", 1).await?;
+                store::organs::set_node_id(&self.store.pool, &organ_uid, Some(&invite.node_id))
+                    .await?;
+                if let Some(root_key) = &invite.root_key {
+                    // TOFU, and the ONLY moment it happens: every roster and
+                    // succession afterwards must chain from this key.
+                    crate::trust::adopt_key(
+                        &self.store,
+                        &organ_uid,
+                        crate::roster::ROOT_KEY_ID,
+                        root_key,
+                    )
+                    .await?;
+                } else {
+                    outcome.warnings.push(
+                        "this code carried no identity key, so future key changes cannot be \
+                         verified against it. Prefer a code that includes one."
+                            .into(),
+                    );
+                }
+                store::organs::set_trust(&self.store.pool, &organ_uid, "known").await?;
+                store::organs::set_pending_introduction(&self.store.pool, &organ_uid, true).await?;
+                outcome.warnings.push(
+                    "added — but they are not reachable for sync until this Cell has connected \
+                     to them once and learned their identity."
+                        .into(),
+                );
+                outcome.created = Some(organ_uid);
+            }
+            Action::StartConversation { contact, title } => {
+                let contact_uid = self.resolve(&contact).await?;
+                let (conversation, thread) =
+                    self.start_conversation(&contact_uid, title.trim()).await?;
+                // Both uids come back: the caller opens the thread, but the
+                // conversation is what was actually shared.
+                outcome.created = Some(
+                    serde_json::json!({
+                        "conversation": conversation,
+                        "thread": thread,
+                    })
+                    .to_string(),
+                );
+            }
+            Action::OpenThread {
+                conversation,
+                title,
+            } => {
+                let conversation_uid = self.resolve(&conversation).await?;
+                outcome.created = Some(self.open_thread(&conversation_uid, title.trim()).await?);
+            }
+            Action::SendMessage { thread, body } => {
+                let thread_uid = self.resolve(&thread).await?;
+                let body = body.trim();
+                if body.is_empty() {
+                    return Err(EngineError::Consequence("nothing to send".into()));
+                }
+                // The head is a label for lists; the body is the message. A
+                // long message gets an elided label rather than a wall of text
+                // where a title belongs.
+                let head: String = match body.char_indices().nth(60) {
+                    Some((cut, _)) => format!("{}…", &body[..cut]),
+                    None => body.to_string(),
+                };
+                outcome.created = Some(self.send_message(&thread_uid, &head, body).await?);
+            }
+            Action::GrantOrganLogin { organ, person_name } => {
+                let organ_uid = self.resolve(&organ).await?;
+                let contact = store::organs::contact(&self.store.pool, &organ_uid)
+                    .await?
+                    .ok_or_else(|| EngineError::Consequence("not a contact".into()))?;
+                // `known` and nothing less. An unvetted contact reaching the
+                // thread door is the design; an unvetted contact acting as a
+                // Person inside this Cell is not.
+                if contact.trust != "known" {
+                    return Err(EngineError::Consequence(
+                        "only a known contact may be given a login".into(),
+                    ));
+                }
+                let person_name = person_name.trim();
+                if person_name.is_empty() {
+                    return Err(EngineError::Consequence(
+                        "give the Person a name you will recognise".into(),
+                    ));
+                }
+                let person = store::records::create(
+                    &self.store.pool,
+                    store::records::NewRecord {
+                        slug: None,
+                        kind: nucleus::RecordKind::Person,
+                        head: person_name,
+                        body: "",
+                        quantity: store::exact::zero(),
+                    },
+                )
+                .await?;
+                store::logins::grant(&self.store.pool, &organ_uid, &person.uid).await?;
+                outcome.warnings.push(
+                    "they can now read and edit as this Person whatever that Person can see. \
+                     Nothing is shared until you grant visibility."
+                        .into(),
+                );
+                outcome.created = Some(person.uid);
+            }
+            Action::RevokeOrganLogin { organ } => {
+                let organ_uid = self.resolve(&organ).await?;
+                store::logins::revoke(&self.store.pool, &organ_uid).await?;
+            }
+            Action::AcceptThreadInvite { invite } => {
+                let root = self.accept_invite(&invite).await?;
+                outcome.created = Some(root);
+            }
+            Action::DeclineThreadInvite { invite } => {
+                self.decline_invite(&invite).await?;
+            }
+            Action::ShareMyKey { thread } => {
+                let thread_uid = self.resolve(&thread).await?;
+                let local = store::organs::local(&self.store.pool)
+                    .await?
+                    .ok_or_else(|| EngineError::Consequence("no local Organ".into()))?;
+                let invite =
+                    store::records::get_extension(&self.store.pool, &local.uid, "lince.pairing")
+                        .await?
+                        .and_then(|fields| {
+                            fields
+                                .get("invite")
+                                .and_then(serde_json::Value::as_str)
+                                .map(str::to_string)
+                        })
+                        .ok_or_else(|| {
+                            EngineError::Consequence(
+                                "this Cell has no pairing code yet — it needs a network endpoint"
+                                    .into(),
+                            )
+                        })?;
+                let uid = self.send_message(&thread_uid, &local.head, &invite).await?;
+                outcome.created = Some(uid);
+            }
+            Action::RosterEnrolToken => {
+                // Requiring the root here is the design, not an obstacle:
+                // enrolling a device grants membership in the identity, and
+                // that should feel deliberate.
+                if self.root_signer().await?.is_none() {
+                    return Err(EngineError::Consequence(
+                        "the root key is not on this Cell — bring it back to enrol a device".into(),
+                    ));
+                }
+                outcome.created = Some(self.issue_enrolment_token().await?);
+            }
+            Action::RosterRevokeCell { cell_uid } => {
+                let root = self.root_signer().await?.ok_or_else(|| {
+                    EngineError::Consequence(
+                        "the root key is not on this Cell — bring it back to revoke a device"
+                            .into(),
+                    )
+                })?;
+                let roster = self.revoke_cell(&root, &cell_uid).await?;
+                outcome.warnings.push(format!(
+                    "roster v{} published without {cell_uid}",
+                    roster.roster.version
+                ));
+            }
+            Action::RootKeyExport { destination } => {
+                let path = self
+                    .root_key_path
+                    .lock()
+                    .expect("root key path")
+                    .clone()
+                    .ok_or_else(|| {
+                        EngineError::Consequence("this Cell has no root key path".into())
+                    })?;
+                crate::roster::export_root_key(&path, std::path::Path::new(&destination))?;
+                outcome.warnings.push(format!(
+                    "root key copied to {destination}. Keep it offline; this Cell can now be \
+                     detached from it."
+                ));
+            }
+            Action::RootKeyDetach { copy_at } => {
+                let path = self
+                    .root_key_path
+                    .lock()
+                    .expect("root key path")
+                    .clone()
+                    .ok_or_else(|| {
+                        EngineError::Consequence("this Cell has no root key path".into())
+                    })?;
+                crate::roster::detach_root_key(&path, std::path::Path::new(&copy_at))?;
+                outcome.warnings.push(
+                    "root key removed from this Cell. Enrolling or revoking a device now needs \
+                     it back; everything else keeps working."
+                        .into(),
+                );
             }
             Action::SetContactTrust { target, trust } => {
                 let uid = self.resolve(&target).await?;

@@ -1,0 +1,174 @@
+<link rel="stylesheet" href="/board/lynx-ui.css" />
+<script src="/board/lynx-ui.js"></script>
+<style>
+  .re { display: flex; height: 100%; min-height: 0; font: 13px/1.4 var(--font-body, sans-serif); }
+  .re__side { width: 200px; flex: 0 0 200px; border-right: 1px solid var(--line, #ddd); overflow-y: auto; }
+  .re__main { flex: 1 1 auto; display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+  .re__row { padding: 6px 8px; cursor: pointer; border-bottom: 1px solid var(--line-soft, #eee); }
+  .re__row.is-selected { background: var(--surface-2, #f2f2f2); }
+  .re__head { flex: 0 0 auto; padding: 6px 8px; border-bottom: 1px solid var(--line, #ddd); }
+  .re__head input { width: 100%; }
+  .re__bodywrap { flex: 1 1 auto; position: relative; min-height: 0; }
+  .re__body { width: 100%; height: 100%; resize: none; border: 0; padding: 8px; font: inherit; }
+  .re__status { flex: 0 0 auto; padding: 4px 8px; font-size: 12px; opacity: 0.75; display: flex; gap: 10px; }
+  .re__peer { display: inline-flex; align-items: center; gap: 4px; }
+  .re__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent, #47f); display: inline-block; }
+  .re__empty { padding: 12px; opacity: 0.7; }
+</style>
+
+<div class="re">
+  <aside class="re__side">
+    <div class="re__head"><strong>Records</strong></div>
+    <div id="re-list"></div>
+  </aside>
+  <section class="re__main">
+    <div class="re__head">
+      <input id="re-title" class="lynx-input" placeholder="Title" disabled />
+    </div>
+    <div class="re__bodywrap">
+      <textarea id="re-body" class="re__body" placeholder="Pick a record to edit it." disabled></textarea>
+    </div>
+    <div class="re__status">
+      <span id="re-state">Not editing</span>
+      <span id="re-peers"></span>
+    </div>
+  </section>
+</div>
+
+<script type="module">
+  const H = window.LinceWidgetHost;
+  const $ = (id) => document.getElementById(id);
+
+  // The vendored loro-crdt, same origin. Nothing is fetched from anywhere
+  // else — the bundle and its wasm are served by this Cell (Ontology §11).
+  const loro = await import("/board/vendor/loro-index.js");
+  await loro.default();
+  const { LoroDoc } = loro;
+  // The same element every embed uses. Kanban card bodies, relation nodes and
+  // table cells are not different features — they are this, in a different
+  // box — so the delta bookkeeping and the caret handling live in one place.
+  const { createCollabEditor } = await import("/board/collab-editor.js");
+
+  let records = [];
+  let selected = null;
+  let editor = null;
+  let leaveRoom = null;
+  const peers = new Map(); // connection/subject -> { name, at }
+
+  H.subscribeProtein("re_records", {
+    source: "record",
+    where: [{ any: [{ kind_eq: "plain" }, { kind_eq: "message" }] }],
+    order: [{ asc: "head" }],
+  }, ({ rows }) => {
+    records = Array.isArray(rows) ? rows : [];
+    renderList();
+  });
+
+  function renderList() {
+    const list = $("re-list");
+    list.innerHTML = "";
+    if (!records.length) {
+      list.innerHTML = '<div class="re__empty">Nothing to edit yet.</div>';
+      return;
+    }
+    for (const row of records) {
+      const item = document.createElement("div");
+      item.className = "re__row" + (row.uid === selected ? " is-selected" : "");
+      item.textContent = row.head || "Untitled";
+      item.onclick = () => open(row.uid);
+      list.appendChild(item);
+    }
+  }
+
+  function open(uid) {
+    if (editor) editor.destroy();
+    if (leaveRoom) leaveRoom();
+    selected = uid;
+    peers.clear();
+    renderList();
+    renderPeers();
+    $("re-state").textContent = "Joining…";
+
+    // The shared element does the joining, the delta bookkeeping and the
+    // caret-preserving write. The server pushes the merged doc on every
+    // change — a sibling tab, another Person, or a peer Organ syncing in all
+    // arrive the same way, and imports dedupe by version vector.
+    editor = createCollabEditor({
+      recordUid: uid,
+      host: H,
+      LoroDoc,
+      surface: {
+        read: () => ({ head: $("re-title").value, body: $("re-body").value }),
+        write: paint,
+      },
+      onError: (message) => { $("re-state").textContent = message; },
+    });
+    editor.join();
+    $("re-state").textContent = "Editing";
+
+    // Cursors ride ephemeral lanes, never the Ledger — presence is not
+    // history, and a cursor position is nobody's permanent record.
+    const room = "record:" + uid;
+    H.joinRoom(room);
+    leaveRoom = H.onLane(room, (payload, from) => {
+      if (!payload || typeof payload.at !== "number") return;
+      // `from` is resolved by the HOST, and only for a viewer allowed to know
+      // who that is. An unnamed cursor is the correct rendering otherwise —
+      // the sand never gets to decide whose name it may show.
+      peers.set(payload.id || from || "someone", {
+        name: from || null,
+        at: payload.at,
+      });
+      renderPeers();
+    });
+
+    $("re-title").disabled = false;
+    $("re-body").disabled = false;
+  }
+
+  // Keep the caret where the user left it: replacing an input's value moves it
+  // to the end, which makes a remote edit feel like the editor fighting back.
+  function paint({ head, body }) {
+    for (const [el, value] of [[$("re-title"), head], [$("re-body"), body]]) {
+      if (el.value === value) continue;
+      const at = el.selectionStart;
+      el.value = value;
+      try { el.setSelectionRange(at, at); } catch (_) {}
+    }
+  }
+
+  const edited = () => { if (editor) editor.localEdit(); };
+  $("re-title").addEventListener("input", edited);
+  $("re-body").addEventListener("input", edited);
+
+  function announceCursor() {
+    if (!selected) return;
+    H.emit("record:" + selected, {
+      id: H.instanceId,
+      at: $("re-body").selectionStart || 0,
+    });
+  }
+  $("re-body").addEventListener("keyup", announceCursor);
+  $("re-body").addEventListener("click", announceCursor);
+
+  function renderPeers() {
+    const host = $("re-peers");
+    host.innerHTML = "";
+    for (const [key, peer] of peers) {
+      if (key === H.instanceId) continue;
+      const span = document.createElement("span");
+      span.className = "re__peer";
+      const dot = document.createElement("span");
+      dot.className = "re__dot";
+      const label = document.createElement("span");
+      // Unnamed is a real state, not a failure: it means this viewer may not
+      // know who that is. Showing "someone" is honest; inventing a name is
+      // not.
+      label.textContent = (peer.name || "someone") + " @" + peer.at;
+      span.append(dot, label);
+      host.appendChild(span);
+    }
+  }
+
+  renderList();
+</script>

@@ -48,6 +48,15 @@ pub async fn lynx_ui_css() -> Response {
     )))
 }
 
+/// The shared collaborative-text element (Ontology §11 "Collab"). One
+/// implementation for the record editor and every embed that shows a
+/// Record body — they are the same question, so they get the same answer.
+pub async fn collab_editor_js() -> Response {
+    asset_response(js(include_bytes!(
+        "../../../static/presentation/board/collab-editor.js"
+    )))
+}
+
 pub async fn lynx_ui_js() -> Response {
     asset_response(js(include_bytes!(
         "../../../static/presentation/board/lynx-ui.js"

@@ -51,11 +51,13 @@ async fn pair_both_ways(a: &Engine, a_organ: &str, b: &Engine, b_organ: &str) {
 }
 
 async fn wire_push(from: &Engine, to: &Engine) -> usize {
-    from.drain_outbox(|_contact, batch| async move {
-        to.import_op_batch(&batch)
-            .await
-            .map(|_| ())
-            .map_err(|e| e.to_string())
+    from.drain_outbox(|_contact, root, batch| async move {
+        match root {
+            Some(root) => to.import_grant_batch(&root, &batch).await,
+            None => to.import_op_batch(&batch).await,
+        }
+        .map(|_| ())
+        .map_err(|e| e.to_string())
     })
     .await
     .expect("drain")
@@ -134,7 +136,9 @@ async fn concurrent_text_edits_converge_on_both_cells() {
     );
     assert_eq!(a_body, b_body, "cells converge to identical text");
     assert_eq!(
-        store::organs::quarantine_count(&b.store.pool).await.unwrap(),
+        store::organs::quarantine_count(&b.store.pool)
+            .await
+            .unwrap(),
         0
     );
 }

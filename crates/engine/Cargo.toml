@@ -16,6 +16,12 @@ base64 = { workspace = true }
 chrono = { workspace = true }
 ed25519-dalek = { workspace = true }
 iroh = { workspace = true }
+iroh-mdns-address-lookup = { workspace = true }
+n0-future = "0.3"
+qrcode = { workspace = true }
+rqrr = { workspace = true }
+image = { workspace = true }
+tracing = { workspace = true }
 loro = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

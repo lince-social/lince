@@ -16,18 +16,16 @@ pub struct RecordDocRow {
 }
 
 pub async fn get(pool: &SqlitePool, record_uid: &str) -> Result<Option<RecordDocRow>, StoreError> {
-    Ok(
-        sqlx::query("SELECT * FROM record_doc WHERE record_uid = ?")
-            .bind(record_uid)
-            .fetch_optional(pool)
-            .await?
-            .map(|row| RecordDocRow {
-                record_uid: row.get("record_uid"),
-                snapshot: row.get("snapshot"),
-                through_seq: row.get("through_seq"),
-                updated_at: row.get("updated_at"),
-            }),
-    )
+    Ok(sqlx::query("SELECT * FROM record_doc WHERE record_uid = ?")
+        .bind(record_uid)
+        .fetch_optional(pool)
+        .await?
+        .map(|row| RecordDocRow {
+            record_uid: row.get("record_uid"),
+            snapshot: row.get("snapshot"),
+            through_seq: row.get("through_seq"),
+            updated_at: row.get("updated_at"),
+        }))
 }
 
 pub async fn put(

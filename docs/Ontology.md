@@ -289,6 +289,35 @@ decides what the Organ accepts, reveals, trusts, or acts upon.
 - [x] Aggregation (`sum`/`count` by concept/kind on records, by
   cause_kind/day/concept on facts) — visibility gate applies BEFORE
   aggregation, so hidden rows can't leak through sums.
+- [x] `nearby` — Organs currently visible on the local network (2026-08-04).
+  NOT a departure from "the read contract": Protein already serves derived,
+  non-table sources (`frequency`, `recurrence`) and already has a LOCAL-ONLY
+  source in `decision`, which returns empty to any remote subject. `nearby`
+  is that same category — a Cell's own runtime view, never exported.
+  It exists because a sand reads through Protein and nothing else, and the
+  alternative was worse in two ways: an Action polled every few seconds is a
+  round trip through the whole write-shaped path to answer a read, and
+  mirroring discovery into a synced extension would tell every contact who is
+  on your local network.
+  **Liveness is the part to get right.** Protein subscriptions recompute off
+  the FACT BUS, and discovery deliberately emits no Facts — it must never
+  touch the Ledger. A naive subscription would therefore never update, which
+  is worse than polling because it *looks* live. So the session re-runs
+  ephemeral subscriptions on a short tick and pushes a Snapshot only when the
+  result CHANGED. Quiet when nothing moves, and a sand cannot tell the
+  difference from a reactive source.
+  Deliberately NOT clustered with presence. Presence is per-keystroke and
+  room-scoped, and ephemeral lanes (blueprint VII.3) already carry it; routing
+  it through Protein would replace the right tool with a worse one. And
+  per-contact connection state needs no new source at all — contacts ARE
+  Records, so it rides the existing `contact` include. One new source, and
+  the other two cases reuse what exists.
+  As built: `Context` carries process state into `execute_for_with_context`,
+  the way `installed_signer_actor` already carried it; `is_ephemeral` is the
+  complement of `affects`, and the ws driver arms its tick only for sessions
+  that hold such a subscription. Rows sort by NodeId — the backing list is a
+  map, and an arbitrary order would both reorder the rendered list and defeat
+  the change comparison the whole design rests on.
 - [x] Saved Proteins are records (`kind='protein'`) referenced by slug — the
   old "view" concept, done right.
 - [x] Maneirisms: wire `where` is a JSON array = implicit `all`; fact-source
@@ -440,21 +469,65 @@ Earlier stages (do these first):
    today's inbox/ops JSON bodies on QUIC streams; `remote_node_id()`
    replaces per-request signature verification. Op-batch payload signing
    stays, now domain-prefixed.
-   Carried forward from stage 1 into stage 2, deliberately and not silently:
-   - **Per-connection resource bound.** `MAX_FRAME_BYTES` caps one frame; the
-     `accept_bi` loop caps neither the frame COUNT nor the connection
-     lifetime, so one authenticated peer can hold a connection and issue
-     unlimited requests. Same reasoning as the frame cap: authenticated is
-     not the same as trusted with unbounded resources.
-   - **Connection logging.** `wire::tracing_debug` is currently a no-op
-     because the engine crate carries no `tracing` dependency, which would
-     make stage 2's discovery failures invisible. Add the dependency or
-     surface the error to the caller before discovery lands.
-   - **A batch/peer mismatch is a SECURITY event**, not an import failure,
-     and today both come back as `WireResponse::Error` and are
-     indistinguishable to the client. Give it a distinguishable code.
-2. `lan_discovery.rs` retired for iroh mDNS; `GET /organ/nearby` re-backed.
-3. ALPN accept policy, default closed (`accept_unknown = false`).
+   All three items carried out of stage 1 LANDED with stage 2:
+   `MAX_FRAMES_PER_CONNECTION` bounds the frame count as well as the size,
+   `tracing` is a real dependency of the engine crate, and a batch/peer
+   mismatch answers `WireResponse::Refused { code }` — a security event,
+   distinguishable from an ordinary import failure.
+2. [x] DONE 2026-08-03. `lan_discovery.rs` DELETED — multicast announce,
+   `Announce`, `NearbyPeers`, expiry bookkeeping and all. Replaced by iroh
+   mDNS through `iroh-mdns-address-lookup` (pinned `=0.4.0`; mDNS left iroh
+   core at 1.0), subscribed on its event stream into `wire::Nearby`.
+   Two decisions worth keeping:
+   - **A Lince-specific mDNS service name** (`lince`, not iroh's default
+     `irohv1`), or the nearby list shows every unrelated iroh application on
+     the network as an Organ.
+   - **`organ_uid` is no longer broadcast.** The old announce shouted the
+     Organ uid across the LAN so a receiver could tell whether it was a
+     known contact; the NodeId now answers that through
+     `organ_contact.node_id`, and the uid arrives at pairing over an
+     authenticated connection. Strictly less is published and nothing is
+     lost. The display name still rides iroh `UserData` as the untrusted
+     label it always was.
+   `GET /organ/nearby` re-backed off `wire::Nearby`, returning a short NodeId
+   fingerprint per row. `POST /organ/pair` now takes a `node_id` and dials
+   over `lince/thread/1`; the reached NodeId is bound to the adopted contact.
+   The LAN-sighting candidate url is gone from `sync_runner` — iroh resolves
+   a NodeId to a transport path, not an HTTP base url.
+2b. [x] DONE 2026-08-04: **`nearby` is a Protein source** (see §10). The
+   Action-plus-client-poll shipped in stage 2 was working around the sand
+   boundary instead of extending it, and it made discovery update on a fixed
+   client timer whether or not anything had changed. A local-only Protein
+   source with a change-gated server tick is both the smaller mechanism and
+   the more efficient one — no traffic when the network is quiet.
+   What landed: `Source::Nearby`, gated exactly like `Decision` (a remote
+   subject gets an empty list, because who is physically near you is the last
+   thing that should travel). Process state reaches Protein through
+   `Context` — a struct passed to `execute_for_with_context`, following the
+   `installed_signer_actor` precedent of handing in what no query could find,
+   rather than hanging network state off `Store`. `NearbyPeer` moved to the
+   nucleus so both sides can name it without the engine/Protein dependency
+   inverting. `is_ephemeral` is the complement of `affects`: the driver arms
+   a 3s tick ONLY for sessions holding such a subscription, and the session
+   pushes an Update only when the rows differ from what it last sent.
+   `Action::NearbyOrgans` and the client poll are deleted.
+3. [x] DONE 2026-08-03, folded into stage 2 because pairing cannot work
+   without it: an unknown Organ must be able to fetch an Introduction or a
+   nearby list is decorative. ALPN accept policy, default closed
+   (`lince.discovery.accept_unknown = false`): `known` → `lince/sync/1`;
+   unknown → `lince/thread/1` and, today, `Introduction` and nothing else;
+   `blocked` → closed on BOTH ALPNs, checked before the ALPN split.
+   Note that `known` means `trust='known'`, not merely "a contact row
+   exists" — a row with `trust='unknown'` is someone added but not vetted,
+   and it gets the thread door like any stranger.
+   **`add_contact` now defaults to `unknown`** (fixed 2026-08-04; it wrote
+   `known`). The gate above was tightened precisely because having a row is
+   not consent, and a default of `known` quietly undid that from the other
+   side: every path that recorded an address opened the sync door. Callers
+   that HAVE made the decision — pairing, adopting a code, reconciling an
+   introduction — say so with `set_trust`. The change broke three test
+   helpers that leaned on the default, which is the fix working: a helper
+   called `know` now does the knowing out loud.
 1b. Roster-of-one, BEFORE any key is ever published or QR'd. The signed
    roster format lands with exactly one member Cell, so the string people
    save is final from the first exchange. Multi-device UX (enrolment,
@@ -507,9 +580,94 @@ Earlier stages (do these first):
    QR also solves the blocked-mDNS case (guest wifi, hotels, corporate):
    embed NodeId AND current addresses in the QR and no discovery mechanism
    is needed at all for an in-person exchange.
-5b. Local at-rest encryption of thread message bodies, and a send queue
-   that flushes on next connect. Both are what make threads honest rather
-   than demo-grade — see the Threads box.
+5e. [x] **Reopened 2026-08-04 from reviewing what stage 5 actually shipped;
+   CLOSED the same day.** All three items landed — the reconciliation bug,
+   the honesty wording, and the camera capability with backend QR decode.
+   - **Pasted-contact uid reconciliation — a BUG, not a refinement.**
+     `add-known-organ` never talks to anyone, so it cannot learn the other
+     side's real Organ uid and invents `o-<node_id>`. But the wire
+     authenticates an inbound peer as `contact.record_uid` — that invented
+     uid — while their op batches carry their ACTUAL uid. The two never
+     match, so `batch_peer_mismatch` refuses every push: a contact added by
+     paste can be reached and can never sync. Silent, and only two people
+     trying it would notice.
+     FIXED 2026-08-04. `organ_contact.pending_introduction` (migration 0045)
+     marks a row added from a code — an explicit column, because sniffing the
+     derived shape would silently replace a real uid that happened to look
+     like one. `Wire::reconcile_pending` runs at the top of every sync pass,
+     BEFORE `push_outbox`: it dials each pending contact on `lince/thread/1`
+     (not the sync ALPN — the pending peer holds no row for us, so their sync
+     door is shut to this Cell by design), takes their Introduction, retires
+     the placeholder, and adopts them under the uid they declare. Deleting
+     the placeholder is a purely local operation: `add_contact` writes its
+     Record with plain SQL rather than through the Record write path, so
+     nothing was ever logged to the op log or sent to any peer.
+     The security property is the root key. It was trust-on-first-use'd from
+     the code, and that is the only thing adding by code verifies — so if the
+     Organ answering at that address presents a DIFFERENT root key, this is
+     not the peer the code was for: reconciliation refuses, the row stays
+     pending, and a human looks at it. Silently adopting the new key would
+     discard the one thing that had been established.
+     Offline adding still works: the row waits, and the surface says
+     "not connected yet" rather than showing it as an ordinary contact.
+   - **Say what dialing actually proves.** Two paths end at `trust='known'`:
+     paste/scan a code (no network, trust-on-first-use on the root key), and
+     dial plus fetch an Introduction. The second does NOT prove more about
+     WHO someone is — if you were handed the wrong NodeId, the handshake
+     authenticates the wrong person flawlessly. What dialing adds is their
+     true identity fields and proof of reachability. Both rest on where the
+     code came from, and the UI must say so rather than implying that having
+     connected constitutes verification.
+   - **Sand `media_capture` capability**, and QR DECODE in the backend
+     (`rqrr`), matching the render side. Decoding belongs there for the same
+     reasons rendering does — no QR library under the sand CSP — plus one
+     more: a decoder emits a PAIRING CODE, so it is security-adjacent enough
+     to want in one audited place instead of in every sand that scans.
+     Two data paths under one permission, and they are not alike: QR needs a
+     SINGLE FRAME sent to the backend; audio/video calls in threads need a
+     LIVE STREAM peer-to-peer, which never routes through the backend at all.
+     Build the capability and the frame path now; the stream path belongs to
+     the Communication sand (F2), not here.
+     DONE 2026-08-04. `engine::pairing::decode_qr` (rqrr + `image`, restricted
+     to the PNG/JPEG a browser canvas actually emits) sits beside `qr_svg`;
+     `POST /organ/qr-decode` takes one frame and returns the decoded text,
+     with "no code in this frame" as a 200 carrying `null` — a scan loop must
+     not read failures to know it is still looking.
+     The capability's shape is the part that matters: the CHROME owns the
+     camera, not the sand. A sand calls `H.scanCode()` and receives a STRING;
+     the host opens the stream, shows the preview, posts frames to the
+     decoder, and stops the tracks on every exit path. So `media_capture`
+     grants "read a code the user pointed at", never "watch the room" — and
+     that is enforced in `widget-bridge.js`, gated on the card's declared
+     permission plus a check that the message came from that card's real
+     iframe, exactly as `terminal_session` is.
+     Scanning FILLS THE FIELD and stops. A scan is a strong story about where
+     a code came from, but it is still a story, so the human presses Add —
+     consistent with the honesty point above.
+     Known gap, not fixed here: `getUserMedia` needs a secure context, so
+     scanning does not work over plain HTTP to a LAN hostname — which is how
+     a second device reaches this Cell. The chrome says so specifically
+     instead of failing as "no camera". Stage 7's hostname/TLS item is what
+     actually closes it.
+5b. **At-rest encryption: DROPPED 2026-08-03.** It was not free, and the
+   honest accounting is that it bought little for a lot. Encrypting at the
+   field boundary above `log_set` covers both plaintext copies cheaply, but
+   every READER then has to decrypt — query/projection, Protein, search,
+   export, File Sync — and a missed one fails quietly as garbled text
+   rather than loudly as an error. What it defends is narrow: a database
+   copied out through a backup, a synced folder, or a disk pulled from a
+   machine. It does NOT defend against anyone executing as your user, who
+   reads the key file sitting beside the database. Full-disk encryption
+   covers the same threat better for no code at all.
+   State the loss plainly rather than pretending: thread bodies sit in
+   PLAINTEXT SQLite on both ends. The original ask — "can we e2e encrypt it
+   independent of lan?" — was about the wire, and that IS delivered: iroh's
+   QUIC/TLS 1.3, authenticated and forward-secret. At-rest was an addition
+   on top, not the request.
+   `replica_root IS NOT NULL` remains the exact scope if it is ever wanted,
+   and the reason it would be cheap to add later is that the column already
+   marks precisely the Records that would need it.
+   Still wanted from this item: a send queue that flushes on next connect.
 5c. Multi-Cell Organs — PULLED EARLIER because the key
    format everyone saves must be right the first time. One published
    identity key, several Cells, a signed roster. See the box below for the
@@ -618,6 +776,26 @@ The distinction earns its cost only if each side owns real things. It does:
   VPS-versus-laptop comparison stops being about the identity at all.
 
 #### Key compromise: the root/operational split, and honest recovery
+
+**BUILT 2026-08-03** (migrations 0043/0044, `store::roster`, `engine::roster`,
+Organ sand Profile + Devices panels). Beyond the boxes below, three things the
+implementation settled:
+- **The root key is created at most ONCE, ever.** Recreating it whenever the
+  file is missing would mint a brand-new identity the first time the owner
+  does the thing this whole split encourages — moving the root to offline
+  media — and every contact would then see a key chaining from nothing. No
+  file AND no roster means first boot; no file WITH a roster means the root is
+  deliberately elsewhere, and the Cell simply cannot enrol or revoke until it
+  returns. Everything else keeps working, which is the point.
+- **Detach verifies the copy byte-for-byte before deleting.** "Detach" without
+  that check is "irrecoverably destroy your identity because you thought you
+  had a backup", and there is no authority anywhere to appeal to. Export
+  likewise refuses to overwrite: a file already at the destination might be
+  another identity's root.
+- **Republishing preserves the other members.** Dropping a name from the
+  roster IS revocation, so it must never be a side effect of a reboot.
+Revocations are pulled BEFORE rosters on each sync pass, so a key cannot be
+accepted in the same pass that learns it is dead.
 
 The problem, stated without flinching: if an attacker obtains the Organ
 identity private key, they can sign a roster adding their own device, sign
@@ -779,17 +957,66 @@ actually reason about, which is worth more than a clever protocol.
    editing, nothing persisted locally. This item is where the collab code
    written blind in the previous phase finally gets RUN and made to work —
    it has only ever been type-checked. Includes:
-   - the read-permission gate on `collab_join` (today any authenticated
-     session can join any record's doc by uid);
+   - [x] the read-permission gate on `collab_join` — done: `may_read_record`
+     gates both `CollabJoin` and `CollabUpdate`, refusing with
+     `collab_not_visible`;
    - `read`+`write` permission is exactly what enables CRDT editing — collab
      is not a separate privilege, it is what having those permissions means;
-   - presence: cursor position plus who it is, where identity is shown only
-     to a viewer with `read user` permission. Without it the sand still
-     renders the cursors, unnamed. Presence is ephemeral — lanes, never
-     the op log.
-   Needs a hostname, certs and a reverse proxy; browsers speak HTTPS, not
-   QUIC-to-a-NodeId, so this item has no iroh dependency and must not be
-   blocked by the refactor.
+   - [x] presence: cursor position plus who it is, where identity is shown
+     only to a viewer allowed to know. Without it the sand still renders the
+     cursors, unnamed. Presence is ephemeral — lanes, never the op log.
+     Done: `LaneEvent.from_subject` carries the sender, `spawn_lane_forwarder`
+     resolves it to a name only when the viewer may read that Person, and the
+     `record_editor` sand renders "someone" otherwise. The sand never decides
+     whose name it may show.
+   - [x] **The client collab layer, RUN at last** (2026-08-04). The
+     `record_editor` sand joins a Record's shared Loro document, edits
+     `head`/`body` as ordinary text, and sends a DELTA since its last send —
+     not a snapshot per keystroke. Both converge; only one stays cheap as the
+     document grows, and the difference is invisible until it is expensive.
+     The vendored bundle is now EXECUTED in tests (`crates/web/tests/
+     collab_wasm.rs`, real node): it initializes, exposes the `head`/`body`
+     containers the engine materializes from, converges through deltas, and —
+     the one worth pinning — re-importing the server's echo of this client's
+     own work is a no-op rather than duplicated text.
+     NOT proven by those tests, and stated plainly rather than implied: that a
+     sand IFRAME may load the wasm. That depends on the frame's CSP and
+     sandbox flags at runtime and needs a browser. For the record, the live
+     board serves NO CSP header today (only the archive export sets one) and
+     sand frames are same-origin `srcdoc` with `allow-scripts
+     allow-same-origin`, so the same-origin ESM and wasm should load.
+   **REVISED 2026-08-04, and the revision removes a dependency rather than
+   adding one.** The line above said live mode "needs a hostname, certs and a
+   reverse proxy" because "browsers speak HTTPS, not QUIC-to-a-NodeId". The
+   first half does not follow from the second: the browser never has to be
+   the thing that crosses the network.
+   **Live sessions ride iroh, on `lince/live/1`.** A guest's browser opens an
+   ordinary websocket to its OWN Cell on localhost — no certificate, no
+   hostname, nothing to configure — and that Cell relays the frames to the
+   host Cell over iroh (`/live/{organ}/connect`, `transport::live`). The only
+   leg crossing a network is authenticated by KEY rather than address, so
+   there is no hostname to go stale and no certificate bound to one, and QUIC
+   migrates the path under a connection that stays open. Change network
+   mid-sentence and the session continues — which was the actual requirement,
+   and which TLS to a hostname would NOT have satisfied.
+   `Session` needed no changes: it was already transport-agnostic, so the
+   QUIC driver is a second driver of the same shape as `ws.rs`. Note that
+   `MAX_FRAMES_PER_CONNECTION` deliberately does NOT apply — a live
+   connection is handed off whole, because a 4096-frame cap would hang up on
+   someone a few thousand keystrokes into a sentence.
+   **A login is a BINDING, not a credential** (`organ_login`, migration
+   0048). No password: the handshake already proved which Organ is on the
+   connection, with a key rather than a secret someone could retype — adding
+   a password would be a second, weaker way in. What the login decides is
+   which PERSON that Organ acts as, and every read they make is then gated by
+   that Person's visibility. So granting one grants a named identity, not a
+   door: a test asserts a fresh login sees nothing until something is shared
+   with that Person. Requires `trust='known'` — reaching the thread door is
+   not the same as being allowed inside. Revoking is one row deleted: local,
+   immediate, not a request the other side may decline (§12).
+   Still true, and still not blocked by any of this: an ordinary HTTPS login
+   would need a hostname and certs. That path is simply no longer the only
+   one, and is not what the workflow depends on.
 
 Ordering note: item 6 is independent of items 1–5. If the iroh refactor
 turns out to break things, item 6 lands first or last — it must never be
@@ -874,6 +1101,23 @@ sends its Organ identity key and a signature binding that key to this
 NodeId, so both halves arrive over an already-authenticated connection and
 the binding is proven, not assumed. No `node_id` column on the wire and
 nothing for a human to copy twice.
+
+**Stages 1–3 CLOSED 2026-08-03.** The HTTP peer path is deleted, not merely
+superseded: `/organ/introduction`, `/organ/inbox`, `/organ/ops`, the whole
+`peer_auth` layer, and with them `request_signing_payload` /
+`response_signing_payload` / `timestamp_fresh` / `verify_peer_signature` /
+`sign_peer_request` / `sign_peer_response` / `verify_peer_response` and the
+120s replay window. All of it existed to establish what an iroh handshake
+establishes for free. `peers.rs` now holds only the pairing verification code.
+Op-batch and Fact signing in `trust.rs` is untouched — different question.
+Also closed: changing `lince.discovery` REBINDS the endpoint live
+(`wire_supervisor`, the File Sync live-supervisor pattern) rather than
+demanding a reboot, since discovery is an Endpoint builder option fixed at
+construction. The node key is reloaded from the same file, so the NodeId
+survives the rebind — a Cell whose NodeId changed when a setting was toggled
+would strand every contact who had saved it. The Organ sand grew a Discovery
+panel on the LOCAL Organ for both switches, and it states the cost of each
+rather than presenting them as neutral.
 
 Replaced by iroh:
 - [ ] `lan_discovery.rs` in full — the multicast announce, the `Announce`
@@ -960,8 +1204,10 @@ taught to click past is worse than no step.
   server — n0's by default); **pkarr/Mainline DHT** (signed address
   records on the BitTorrent DHT, no central party); and **static** (you
   supply the address). "Turning it on" is an Endpoint builder option, not
-  a user action — so it becomes one Organ-sand setting: reachable over the
-  internet on/off, and by which mechanism. **Default ON** (DHT + DNS): a
+  a user action — so it becomes Organ-sand settings: `local` controls mDNS
+  advertising/listening on the LAN, independently from `internet`, which
+  controls internet address publication. Both default ON. **Default ON**
+  (DHT + DNS) for internet reach means a
   Cell that is not resolvable across the internet cannot serve the case
   that motivates the whole design — the VPS telling the phone about a
   change the laptop made. Off is the deliberate choice, not the default.
@@ -1158,11 +1404,46 @@ over signed HTTP, and either box can land without the other.
   3. ONE root per Record. A Record cannot belong to two roots; a root may
      be granted to many contacts. That covers every case described and is
      the narrow form of the consequence recorded below.
+  **BUILT 2026-08-03** (migration 0042, `store::replica`, `engine::threads`).
+  Two constraints the implementation forced, both worth keeping:
+  - **Stamped at CREATION, not at grant time.** The draft above had a walk
+    that adopted an arbitrary existing Record into a root. That opens a
+    window: the Record already logged ops with `replica_root = NULL`, those
+    ops already rode the general feed, and any `sync_in` contact gets them
+    on their next catch-up. Adoption is therefore DEFERRED — it needs a
+    backfill decision and a UI that says plainly that already-sent ops
+    cannot be un-sent. Creation-time inheritance covers conversation →
+    thread → message, which is the shape that exists. It is also what makes
+    the immutability claim true, and the denormalized `sync_op.replica_root`
+    is only safe because of it.
+  - **Import enforces immutability, it does not merely apply the stamp.**
+    Three cases on arrival: the Record exists in THIS root → apply; exists
+    in a different root or on the general feed → quarantine, because that is
+    a grantee re-scoping one of your uids through a channel that does not
+    govern it; does not exist → create inside the channel root.
+  Two bugs the tests caught, recorded because both were silent: imported
+  Records were not being stamped at all (the receiver's copy would have
+  ridden the RECEIVER's general feed), and an Assertion's predicate Concept
+  lives on the general feed, so a grant-channel import hit a foreign-key
+  failure that rejected the whole conversation — the importer now inserts a
+  Concept stub, since depending on general-feed sync would break exactly the
+  case that matters, a contact granted one conversation and no feed at all.
 - [ ] **Messaging is NOT collab** — settled 2026-08-03, and it retires the
   `threads`-Loro-Map plan written a day earlier. Sending a message is
   appending a Record to a thread; it is not two people typing into one
   string. So messages are ordinary Records synced as ordinary `set` ops
   through individual replica, ordered by HLC, and no Loro doc is involved.
+  "Ordered by HLC" is `record.created_hlc` (migration 0047), added 2026-08-04
+  when the conversation view was found ordering by `created_at` — a local
+  wall clock, so a peer whose clock is slow sorts into the past forever and
+  it reads as a rendering bug rather than the clock problem it is.
+  Denormalized onto the row for the same reason `replica_root` is: written
+  once at creation, never changed, so a copy cannot drift. One stamp per
+  record rather than per op, because `log_local` mints an HLC per FIELD and
+  "the record's HLC" would otherwise be several values. The import path
+  carries the ORIGIN's stamp — a fresh local one would silently make it
+  arrival order, which is the same bug by another route. Pinned by a test
+  that skews the receiver's clock backwards and asserts the order holds.
   Concurrent sends do not conflict — they are two different Records, both
   arrive, both display. Editing a sent message is LWW on that Record.
   Collab (Loro, real-time merge, presence) stays what it always was: two
@@ -1254,11 +1535,35 @@ over signed HTTP, and either box can land without the other.
   another and are signed by the Person's key. Thread reach is an ORGAN-level
   question — who may open a stream — resolved before any Action exists.
   Different axis, different layer; do not fold them together.
-- [ ] An invite is not a thread: `kind='thread_invite'` with a `from`
-  Assertion to the sending Organ. One pending per Organ is a uniqueness
-  check on that Assertion, so a deleted thread cannot become a spam
-  channel. Accepting creates the thread Record; `trust='blocked'` (terminal
-  everywhere per §2) drops the invite before it is written.
+- [x] An invite is not a thread: `kind='thread_invite'`. One pending per
+  Organ, so a deleted thread cannot become a spam channel. Accepting opens
+  the conversation; `trust='blocked'` (terminal everywhere per §2) drops the
+  invite before it is written.
+  DONE 2026-08-04, with two changes from the sketch above.
+  **Not an Assertion.** The sender lives in a `thread_invite` table with
+  `from_organ` UNIQUE, and that constraint IS the one-pending rule — enforced
+  in SQL rather than by a check-then-insert, because an Organ is several
+  Cells and a contact's laptop and VPS can offer at the same moment. A
+  `lince.invite` extension mirrors it for display, the way `lince.pairing`
+  mirrors the invite code onto the Organ record.
+  **Written with plain SQL, never `records::create`.** The Record write path
+  logs an op and enqueues it to every known contact, so creating an invite
+  the ordinary way would push "Bea is asking to talk to me" to everyone you
+  know. `organs::add_contact` already had this shape and for the same reason.
+  A test asserts the op log and the outbox both stay untouched.
+  The grant row and the invite are kept SEPARATE: `replica_grant` is the
+  mechanism (it decides whether ops are accepted), the invite is the surface
+  (it is what a person answers). Collapsing them would mean an offer could
+  not be shown without already having decided something.
+  Two exits only, and no "dismiss": accepting grants, declining REVOKES.
+  Clearing an invite without answering would leave the sender waiting on a
+  reply that never comes while the one-per-Organ slot stayed occupied — so
+  they could not ask again either. Declining frees both.
+  A repeat offer gets the same answer as a first one. Telling a sender their
+  offer was dropped would tell them whether the last was declined or merely
+  unanswered, which is not theirs to know.
+  `blocked` needed no new code: `serve_connection` closes on it before the
+  ALPN split, so a blocked Organ never reaches the handler at all.
 - [ ] Encryption — revised 2026-08-02, and the revision is BOTH simpler and
   stronger. The earlier plan (static X25519 DH, seal each body) has no
   forward secrecy: one long-term key stolen in two years decrypts every
@@ -1282,10 +1587,22 @@ over signed HTTP, and either box can land without the other.
 - [ ] What remains after deletion is exactly one thing: they may send an
   INVITE to open a new thread, one pending at a time, which lands in
   notifications. `trust='blocked'` drops invites too.
-- [ ] Invites surface in the notification panel (now on the board base
-  rail, rightmost): who is asking, their key fingerprint, their claimed
-  display name marked as the untrusted label it is. Accepting opens the
-  thread; it does NOT set trust or enable sync.
+- [x] Invites surface as a queue: who is asking, and nothing they chose to
+  call themselves. Accepting opens the thread; it does NOT set trust or
+  enable sync.
+  **The surface moved, 2026-08-04.** This bullet said "the notification
+  panel on the board base rail". That panel is board CHROME fed by a host
+  route (`organ_login_required`, `app_update_installable`, dismissal over
+  `fetch`) — putting Ledger data in it would have meant a new host route
+  plus accept/decline endpoints, and a fetch-polled list where a live
+  subscription belongs. Invites live in the **Conversations sand** instead,
+  read with an ordinary Protein subscription on `kind='thread_invite'` and
+  answered with `accept-thread-invite` / `decline-thread-invite`. No new
+  route, no new Protein source, live for free, and consistent with the
+  Protein-first direction stage 2b set.
+  What is rendered is the Organ uid the CONNECTION proved. There is no
+  claimed display name on an invite at all — the sketch above would have
+  shown one "marked as untrusted", and not having it is simpler and safer.
 - [ ] Key exchange IS the promotion step, and it happens inside the thread:
   a "send my key" button posts the local Organ's identity key + NodeId as a
   message; receiving one offers "add as known Organ" with a name field the
@@ -1312,11 +1629,21 @@ over signed HTTP, and either box can land without the other.
   cannot then be trusted enough to hold plaintext conversations. Vetting
   answers are exactly the material an impersonator would want — "what did
   we do last Thursday" is replayable once read.
-- [ ] Offline delivery, early: a peer with a closed laptop is
+- [x] Offline delivery, early: a peer with a closed laptop is
   unreachable, so a local send queue that flushes on next successful
   connect must exist or the beach case (meet, exchange keys, they go home)
-  fails on the first message. Flush trigger: a Cell coming online
-  announces itself to the contacts it KNOWS, which wakes their queues.
+  fails on the first message.
+  VERIFIED 2026-08-04, and it already worked — no announce protocol was
+  needed. `sync_outbox` holds the queued rows, a failed pass leaves them
+  queued, and the next pass that connects delivers them. The sketch above
+  proposed "a Cell coming online announces itself to the contacts it KNOWS,
+  which wakes their queues"; that would only reduce latency from "their next
+  interval" to "immediately", because both sides dial anyway — the sender
+  retries in `push_outbox` and the receiver pulls in `pull_catch_up`.
+  Pinned by a test that sends while nobody is serving, asserts nothing
+  arrived, then starts serving and asserts it does. **The retry IS the
+  delivery**, and if that ever stops being true this breaks silently in the
+  one case it exists for.
   Opting out of being pinged is just moving that contact to `unknown` —
   no separate setting.
 #### At-rest encryption, scoped to individual replica
@@ -1783,6 +2110,75 @@ Implementation checklist for the Home Manager nutrition tab.
 - [x] Add a lowest-price optimizer using a frontend two-phase simplex linear optimizer with infeasibility reporting.
 - [x] Add visual workflow coverage for tab switching, custom alimentum creation, price editing, plan generation, optimizer run, and shopping-list display.
 
+## What is left after stages 1–7 (2026-08-04)
+
+Stages 1–7 are closed and the workflow they exist for runs end to end: discover
+an Organ, add them by QR/paste/nearby, invite and talk in threads, grant a
+login, and edit a Record together with live cursors — all over iroh, so
+changing network does not break any of it. What follows is everything
+deliberately NOT done, with enough of the reasoning to pick it up cold.
+
+**Replica bootstrap.** A new contact receives ops from the moment you connect;
+they do not receive what already existed. This is the initial catch-up, and it
+bites when someone adds a second device or accepts a conversation with months
+behind it. Left undone because it needs decisions rather than typing: snapshot
+versus replaying the op log, how to page it so a large replica does not hold a
+connection open, and how a half-transferred replica presents itself (a partial
+copy that looks complete is worse than an obvious gap). Nothing in the current
+workflow reaches it, because both Cells were present from the start.
+
+**A contradiction to resolve before anyone relies on either sentence.** Item 5b
+DROPPED at-rest encryption as "not free". The Threads section still says
+"local at-rest encryption of message bodies is an EARLY item, not a someday
+box", and reasons elsewhere as though it exists. Both cannot be true. Today
+thread bodies sit in plaintext SQLite on both ends, which is a real regression
+against the original "encrypt it" intent, and the honest sentence is
+"encrypted in transit, forward secret, plaintext at rest". Decide which
+statement survives and delete the other.
+
+**Live sessions do not resume.** QUIC migrates a path under a connection that
+stays open, which is what makes roaming work — but if the connection is
+actually lost (laptop asleep, peer restarts) there is no reconnect or resume.
+The browser socket simply ends. A resume needs a session id and a decision
+about what a client may replay.
+
+**`contact.mode` is unused.** The column distinguishes `replica` from `live`,
+and nothing reads it: live sessions are opened explicitly rather than chosen
+per contact. Either wire the setting or drop the column — a field that lies
+about being a setting is worse than no field.
+
+**Collab embeds are partial by design and by accident.**
+- Relations has NO embed, deliberately: it has no text surface, because its
+  record sidepanels were removed by an earlier decision recorded in that
+  sand's own header. Reversing that is a design call, not a task.
+- Kanban and table embeds are best-effort — they degrade to a plain input if
+  the shared document cannot be reached, which is correct, but means a silent
+  loss of liveness that nothing surfaces.
+- Only the record editor renders CURSORS. The embeds sync text but show no
+  presence.
+
+**The wasm is unproven in an iframe.** `crates/web/tests/collab_wasm.rs` runs
+the shipped bundle and the shipped editor module in real node, including
+concurrent edits through a relay that echoes like the engine. What no test
+here can prove is that a sand IFRAME may load it — that needs a browser. The
+live board serves no CSP header today and sands are same-origin `srcdoc`
+frames, so it should work; "should" is doing real work in that sentence.
+
+**Off-LAN camera scanning.** `getUserMedia` needs a secure context, so scanning
+a QR code does not work over plain HTTP to a LAN hostname — which is how a
+second device reaches this Cell. The chrome says so specifically rather than
+failing as "no camera". Fixed by the hostname/TLS item, not before.
+
+**The ordinary HTTPS login path** (hostname, certificate, reverse proxy) is
+still unbuilt. It is no longer on the critical path — live-over-iroh replaced
+it for the workflow that motivated it — but it remains the only way a browser
+reaches a Cell that is not its own.
+
+**Audit and retention/pruning** were never started. The op log grows without
+bound and nothing summarizes who did what.
+
+**Fiote** remains deferred, as it has been since the persistence cutover.
+
 ## Storage Architecture
 
 The built-in nutrition knowledge base is package data. It is compiled into the official Home Manager sand and is never written to Lince persistence. This keeps researched base values deterministic, reviewable, and portable with the widget.
@@ -1880,6 +2276,7 @@ For example, a configured Record could be written as:
 ---
 @task [[Project A]]
 [Image #1]
+quantity: 12 @hour
 ---
 
 Write the project brief.
@@ -1895,6 +2292,12 @@ as `@task`. Links use titles for people, while retaining a stable Record UID in
 machine-owned metadata or a collision-safe encoding so renamed Records and two
 Records with the same title cannot change their identity.
 
+Quantity is an important projected property: when enabled, it renders the
+Record's current exact cached level together with its unit Concept (for
+example, `quantity: 12 @hour`). It remains a projection of the authoritative
+Ledger Fact fold; editing it from disk must use the normal quantity action,
+which appends a Fact, rather than overwriting a cached column.
+
 A `lince.file_sync` configuration should opt in per Organ and define which
 fields and assertion predicates project, their order, link rendering, and
 whether a line is editable from disk. An initial useful configuration shape is
@@ -1906,6 +2309,7 @@ conceptual rather than a frozen wire format:
     "enabled": true,
     "assertions": ["task", "references"],
     "include_identity": true,
+    "include_quantity": true,
     "link_style": "wiki",
     "disk_editable": true
   }

@@ -19,6 +19,12 @@ use crate::protocol::{ClientMessage, ServerMessage};
 use crate::session::Session;
 use crate::terminal::{TerminalHost, pty_size};
 
+/// How often a subscription reading process state is re-run. Discovery on a
+/// LAN moves on a human timescale — a device is carried into a room, not
+/// teleported — so this trades a couple of seconds of staleness for a socket
+/// that stays silent almost always.
+const EPHEMERAL_TICK: std::time::Duration = std::time::Duration::from_secs(3);
+
 /// Drive one connection to completion. `subject = None` is the local Cell;
 /// `Some(id)` applies that subject's visibility to every read.
 pub async fn serve(
@@ -44,6 +50,9 @@ pub async fn serve(
         }
     });
 
+    // The viewer identity is needed twice: by the Session as its visibility
+    // subject, and by each lane forwarder to decide whether a cursor is named.
+    let viewer = subject.clone();
     let mut session = Session::new(engine.clone(), hub.clone(), connection_id.clone(), subject);
     // The challenge is always the first application frame. Remote clients
     // must bind their mapped Person key before any Action; local trusted mode
@@ -55,6 +64,12 @@ pub async fn serve(
     }
     let mut terminals = TerminalHost::new();
     let mut bus = engine.subscribe();
+    // Sources that read process state (who is on the LAN) commit no Facts, so
+    // the bus can never wake them. This tick is their only refresh path — and
+    // the session pushes only when the answer changed, so a quiet network
+    // costs one query per interval and no traffic.
+    let mut ephemeral = tokio::time::interval(EPHEMERAL_TICK);
+    ephemeral.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
 
     loop {
         tokio::select! {
@@ -74,7 +89,14 @@ pub async fn serve(
                 match serde_json::from_str::<ClientMessage>(&text) {
                     Ok(ClientMessage::LaneJoin { room }) => {
                         session.handle(ClientMessage::LaneJoin { room: room.clone() }).await;
-                        spawn_lane_forwarder(&hub, &room, &connection_id, out_tx.clone());
+                        spawn_lane_forwarder(
+                            &hub,
+                            &room,
+                            &connection_id,
+                            out_tx.clone(),
+                            engine.clone(),
+                            viewer.clone(),
+                        );
                     }
                     Ok(ClientMessage::TerminalOpen {
                         id,
@@ -132,6 +154,13 @@ pub async fn serve(
                     if out_tx.send(update).await.is_err() { break; }
                 }
             }
+            // Guarded rather than always-armed: a session with no ephemeral
+            // subscription must not run a timer at all.
+            _ = ephemeral.tick(), if session.has_ephemeral_subscriptions() => {
+                for update in session.tick_ephemeral().await {
+                    if out_tx.send(update).await.is_err() { break; }
+                }
+            }
             Some(id) = terminal_done_rx.recv() => {
                 terminals.forget(&id);
             }
@@ -162,18 +191,33 @@ fn spawn_lane_forwarder(
     room: &str,
     connection_id: &str,
     out_tx: mpsc::Sender<ServerMessage>,
+    engine: Arc<Engine>,
+    viewer: Option<String>,
 ) {
     let mut rx = hub.join(room);
     let me = connection_id.to_string();
     tokio::spawn(async move {
         while let Ok(event) = rx.recv().await {
             if event.from == me {
-                continue; // don't echo presence back to the sender
+                continue; // dont echo presence back to the sender
             }
+            // Presence has two halves. The cursor POSITION goes to everyone in
+            // the room; WHO it belongs to is disclosed only when this viewer
+            // may read that user. Without the permission the sand still
+            // renders the cursor, unnamed — which is the designed behaviour,
+            // not a degraded one.
+            let identity = match &event.from_subject {
+                Some(subject) => match engine.may_read_record(viewer.as_deref(), subject).await {
+                    Ok(true) => Some(subject.clone()),
+                    _ => None,
+                },
+                None => None,
+            };
             let msg = ServerMessage::LaneEvent {
                 room: event.room,
                 from: event.from,
                 payload: event.payload,
+                identity,
             };
             if out_tx.send(msg).await.is_err() {
                 break;

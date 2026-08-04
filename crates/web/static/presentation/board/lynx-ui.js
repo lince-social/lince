@@ -87,6 +87,7 @@
     [".lynx-textarea", "Textarea"],
     [".lynx-select", "Select"],
     [".lynx-check", "Checkbox"],
+    [".lynx-toggle", "Toggle"],
     [".lynx-radio", "Radio"],
     [".lynx-help", "Help text"],
     [".lynx-error", "Error text"],

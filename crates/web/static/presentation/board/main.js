@@ -93,6 +93,8 @@ const PERMISSION_DESCRIPTIONS = {
     "Permite ler um arquivo no bucket do servidor selecionado por meio do backend do host.",
   read_email:
     "Permite ler dados mock de email para resumos, alertas ou widgets de caixa de entrada.",
+  media_capture:
+    "Permite pedir ao host para ler um codigo QR com a camera. O sand nunca recebe imagem nem a camera em si: o host mostra a previa, envia os quadros ao Cell para decodificar e devolve apenas o texto lido.",
   read_location:
     "Permite usar localizacao como contexto para clima, proximidade ou widgets baseados em lugar.",
   read_metrics:
@@ -688,6 +690,9 @@ const widgetBridge = createWidgetBridge({
   },
   archiveWorkspace(instanceId, options) {
     return runWorkspaceArchive(instanceId, options);
+  },
+  scanCode() {
+    return runCameraScan();
   },
   async invalidateServerAuth(serverId) {
     const target = String(serverId || "").trim();
@@ -2093,6 +2098,123 @@ function downloadRawHtmlCard(card) {
     card.html,
     "text/html;charset=utf-8",
   );
+}
+
+// How often a frame is sent to the backend decoder while the camera is open.
+// A person holding a phone steady needs a few tries, not thirty a second, and
+// every frame is a round trip plus a decode.
+const SCAN_FRAME_INTERVAL_MS = 350;
+
+// Camera scan, owned by the CHROME rather than by the sand that asked for it.
+//
+// The sand posts `lince:scan-code` and receives a decoded string. It never
+// gets the stream, never gets a frame, and cannot keep the camera open — this
+// function holds all of that and stops it on every exit path. So the
+// `media_capture` permission grants "read a code the user pointed at", not
+// "watch the room", and the difference is enforced here rather than promised.
+//
+// Decoding happens on the Cell (`POST /organ/qr-decode`): a sand's CSP blocks
+// every external script, and what comes out of a decoder is a pairing code, so
+// it belongs in one audited place.
+//
+// Resolves with the decoded text, or `null` if the user closed it.
+async function runCameraScan() {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    // Overwhelmingly this is not a missing camera but an insecure context:
+    // getUserMedia is unavailable over plain HTTP to a LAN hostname, which is
+    // exactly how a second device reaches this Cell. Say so, because "camera
+    // unavailable" would send someone hunting for a hardware problem.
+    throw new Error(
+      "A camera precisa de HTTPS ou localhost. Neste endereco o navegador nao a disponibiliza — cole o codigo.",
+    );
+  }
+
+  let stream;
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      // The back camera on a phone is the one pointed at someone else's
+      // screen; a browser that has no choice ignores this.
+      video: { facingMode: "environment" },
+      audio: false,
+    });
+  } catch (error) {
+    throw new Error(
+      error?.name === "NotAllowedError"
+        ? "Permissao de camera negada."
+        : "Nao foi possivel abrir a camera.",
+    );
+  }
+
+  const overlay = document.createElement("div");
+  overlay.className = "camera-scan-overlay";
+  const video = document.createElement("video");
+  video.autoplay = true;
+  video.playsInline = true;
+  video.muted = true;
+  video.srcObject = stream;
+  const hint = document.createElement("p");
+  hint.className = "camera-scan-overlay__hint";
+  hint.textContent = "Aponte para o codigo QR.";
+  const cancel = document.createElement("button");
+  cancel.type = "button";
+  cancel.className = "camera-scan-overlay__cancel";
+  cancel.textContent = "Cancelar";
+  overlay.append(video, hint, cancel);
+  document.body.appendChild(overlay);
+
+  const canvas = document.createElement("canvas");
+  let timer = null;
+  const stop = () => {
+    if (timer) window.clearInterval(timer);
+    timer = null;
+    for (const track of stream.getTracks()) track.stop();
+    overlay.remove();
+  };
+
+  return new Promise((resolve, reject) => {
+    cancel.addEventListener("click", () => {
+      stop();
+      resolve(null);
+    });
+
+    let inFlight = false;
+    timer = window.setInterval(async () => {
+      // One frame at a time: a slow decode must not queue up a backlog of
+      // stale frames behind it.
+      if (inFlight || !video.videoWidth) return;
+      inFlight = true;
+      try {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        canvas.getContext("2d").drawImage(video, 0, 0);
+        const blob = await new Promise((done) =>
+          canvas.toBlob(done, "image/jpeg", 0.8),
+        );
+        if (!blob) return;
+        const response = await fetch("/organ/qr-decode", {
+          method: "POST",
+          headers: { "Content-Type": "image/jpeg" },
+          body: blob,
+        });
+        if (!response.ok) {
+          stop();
+          reject(new Error("O Cell nao conseguiu ler a imagem."));
+          return;
+        }
+        const payload = await response.json();
+        // `text: null` is the ordinary "nothing in this frame yet" — keep
+        // looking rather than treating it as a failure.
+        if (payload?.text) {
+          stop();
+          resolve(String(payload.text));
+        }
+      } catch (_error) {
+        // A single dropped frame is not worth ending the scan over.
+      } finally {
+        inFlight = false;
+      }
+    }, SCAN_FRAME_INTERVAL_MS);
+  });
 }
 
 // The Archive sand's trigger (see archive.js for the capture rules): export

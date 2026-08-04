@@ -141,6 +141,11 @@ pub struct Contact {
     /// never identity (Ontology §11 "Peers"). Only the verified handshake
     /// writes it; discovery announces alone never do.
     pub last_seen_addr: Option<String>,
+    /// Added from a code, with no connection yet to learn their real uid. The
+    /// row is held under a uid derived from the NodeId until an Introduction
+    /// replaces it; until then they cannot sync, because every batch they push
+    /// is attributed to a uid this Cell does not know them by.
+    pub pending_introduction: bool,
     /// The contact's iroh NodeId — the ONLY routing input (Ontology §11
     /// "Transport: iroh"). Under iroh the address is the key, so this both
     /// locates and authenticates. `None` for contacts made before the iroh
@@ -182,8 +187,14 @@ pub async fn add_contact(
         .execute(pool)
         .await?;
     }
+    // `unknown`, never `known`. Knowing someone's address is not deciding to
+    // trust them, and `known` is what opens the sync ALPN (Ontology §11): a
+    // default of `known` would mean every path that records a contact quietly
+    // opens that door. Callers that HAVE made the decision — pairing, adopting
+    // a code — say so with `set_trust`.
     sqlx::query(
-        "INSERT OR IGNORE INTO organ_contact (record_uid, trust, proximity) VALUES (?, 'known', ?)",
+        "INSERT OR IGNORE INTO organ_contact (record_uid, trust, proximity)
+         VALUES (?, 'unknown', ?)",
     )
     .bind(uid)
     .bind(proximity as i64)
@@ -244,7 +255,65 @@ fn map_contact(r: sqlx::sqlite::SqliteRow) -> Contact {
         catchup_interval_secs: r.get("catchup_interval_secs"),
         last_seen_addr: r.get("last_seen_addr"),
         node_id: r.get("node_id"),
+        pending_introduction: r.get::<i64, _>("pending_introduction") != 0,
     }
+}
+
+/// Mark a contact as still owing an Introduction, or clear it once one has
+/// happened. Set only by adding from a code, cleared only by a connection.
+pub async fn set_pending_introduction(
+    pool: &SqlitePool,
+    organ_uid: &str,
+    pending: bool,
+) -> Result<(), StoreError> {
+    sqlx::query("UPDATE organ_contact SET pending_introduction = ? WHERE record_uid = ?")
+        .bind(if pending { 1_i64 } else { 0 })
+        .bind(organ_uid)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+/// Contacts added by code that no connection has confirmed yet. Only rows with
+/// a NodeId are returned — without one there is nothing to dial, so there is
+/// nothing a sync pass could do about them.
+pub async fn pending_introductions(pool: &SqlitePool) -> Result<Vec<Contact>, StoreError> {
+    Ok(sqlx::query(
+        "SELECT c.*, r.slug, r.head, r.body FROM organ_contact c
+           JOIN record r ON r.uid = c.record_uid
+          WHERE c.pending_introduction = 1 AND c.node_id IS NOT NULL",
+    )
+    .fetch_all(pool)
+    .await?
+    .into_iter()
+    .map(map_contact)
+    .collect())
+}
+
+/// Drop a contact and the Record standing in for it.
+///
+/// Used to retire a placeholder once the real Organ has introduced itself.
+/// Safe precisely because `add_contact` writes both rows with plain SQL rather
+/// than through the Record write path: nothing was ever logged to the op log,
+/// so no peer was told about this uid and there is no history to orphan.
+pub async fn forget_contact(pool: &SqlitePool, organ_uid: &str) -> Result<(), StoreError> {
+    sqlx::query("DELETE FROM identity_key WHERE actor_uid = ?")
+        .bind(organ_uid)
+        .execute(pool)
+        .await?;
+    sqlx::query("DELETE FROM sync_outbox WHERE contact_organ = ?")
+        .bind(organ_uid)
+        .execute(pool)
+        .await?;
+    sqlx::query("DELETE FROM organ_contact WHERE record_uid = ?")
+        .bind(organ_uid)
+        .execute(pool)
+        .await?;
+    sqlx::query("DELETE FROM record WHERE uid = ?")
+        .bind(organ_uid)
+        .execute(pool)
+        .await?;
+    Ok(())
 }
 
 /// Bind a contact to the iroh NodeId that reaches them. Written by pairing

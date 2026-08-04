@@ -96,11 +96,14 @@ async fn organ_records_support_the_sands_register_edit_and_delete_actions() {
 }
 
 #[tokio::test]
-async fn contact_starts_known_with_its_seeded_proximity() {
+async fn contact_starts_unknown_with_its_seeded_proximity() {
     let (e, _local, contact) = cell_with_contact().await;
     let rows = protein::execute(&e.store, &organs_query()).await.unwrap();
     let row = rows.iter().find(|r| r["uid"] == contact).unwrap();
-    assert_eq!(row["contact"]["trust"], "known");
+    // Recording a contact is not trusting one. `known` opens the sync ALPN, so
+    // it has to be a decision somebody made rather than what happens by
+    // default when an address is written down.
+    assert_eq!(row["contact"]["trust"], "unknown");
     assert_eq!(row["contact"]["proximity"], 3);
 }
 

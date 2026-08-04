@@ -72,11 +72,13 @@ impl PipeBump for String {
 /// The reactive wire: drain `from`'s bounded outbox into `to` — what the HTTP
 /// boundary does in production. Returns batches delivered.
 async fn wire_push(from: &Engine, to: &Engine) -> usize {
-    from.drain_outbox(|_contact, batch| async move {
-        to.import_op_batch(&batch)
-            .await
-            .map(|_| ())
-            .map_err(|e| e.to_string())
+    from.drain_outbox(|_contact, root, batch| async move {
+        match root {
+            Some(root) => to.import_grant_batch(&root, &batch).await,
+            None => to.import_op_batch(&batch).await,
+        }
+        .map(|_| ())
+        .map_err(|e| e.to_string())
     })
     .await
     .expect("drain")
@@ -279,7 +281,10 @@ async fn tampered_facts_are_quarantined_on_import() {
     .await
     .unwrap();
     assert!(
-        store::organs::quarantine_count(&b.store.pool).await.unwrap() >= 1,
+        store::organs::quarantine_count(&b.store.pool)
+            .await
+            .unwrap()
+            >= 1,
         "the tampered fact is remembered in the quarantine list"
     );
     assert_eq!(
@@ -313,7 +318,9 @@ async fn declared_precision_survives_the_sync_wire() {
     assert_eq!(wire_push(&a, &b).await, 1);
 
     assert_eq!(
-        store::organs::quarantine_count(&b.store.pool).await.unwrap(),
+        store::organs::quarantine_count(&b.store.pool)
+            .await
+            .unwrap(),
         0,
         "an exact delta's scale survives the wire, so signatures still verify"
     );
@@ -421,12 +428,20 @@ async fn older_ops_lose_lww_and_tombstones_cannot_resurrect() {
     );
 
     // (c) delete, then a LATE older set arrives — the record stays deleted.
-    a.act(Action::DeleteRecord { target: note.clone() }, None)
-        .await
-        .unwrap();
+    a.act(
+        Action::DeleteRecord {
+            target: note.clone(),
+        },
+        None,
+    )
+    .await
+    .unwrap();
     wire_push(&a, &b).await;
     assert!(
-        store::records::get(&b.store.pool, &note).await.unwrap().is_none(),
+        store::records::get(&b.store.pool, &note)
+            .await
+            .unwrap()
+            .is_none(),
         "tombstone replicated"
     );
     let late = engine::sync::WireOp {
@@ -446,7 +461,10 @@ async fn older_ops_lose_lww_and_tombstones_cannot_resurrect() {
     .await
     .unwrap();
     assert!(
-        store::records::get(&b.store.pool, &note).await.unwrap().is_none(),
+        store::records::get(&b.store.pool, &note)
+            .await
+            .unwrap()
+            .is_none(),
         "a late older set cannot resurrect a deleted record"
     );
 
@@ -552,7 +570,10 @@ async fn relayed_ops_are_not_echoed_to_their_source() {
         .filter(|row| row.contact_organ == "organ-c" && row.uid == note)
         .collect();
     assert!(for_a.is_empty(), "no echo back to the source");
-    assert!(!for_c.is_empty(), "…but the op relays onward to other contacts");
+    assert!(
+        !for_c.is_empty(),
+        "…but the op relays onward to other contacts"
+    );
 }
 
 #[tokio::test]
@@ -615,13 +636,19 @@ async fn catch_up_finds_ops_written_before_the_pairing() {
     let old = plain(&a, "old.note", 0.0).await;
     pair_push(&a, &b, &b_organ).await;
     assert!(
-        store::records::get(&b.store.pool, &old).await.unwrap().is_none()
+        store::records::get(&b.store.pool, &old)
+            .await
+            .unwrap()
+            .is_none()
     );
 
     let applied = wire_catch_up(&a, &b, &a_organ).await;
     assert!(applied > 0, "checkpoint pull applies the missed ops");
     assert!(
-        store::records::get(&b.store.pool, &old).await.unwrap().is_some(),
+        store::records::get(&b.store.pool, &old)
+            .await
+            .unwrap()
+            .is_some(),
         "the pre-pairing record lands"
     );
 

@@ -22,10 +22,13 @@ pub mod karma_control;
 pub mod karma_grants;
 pub mod karma_runtime;
 pub mod karma_timezone;
+pub mod pairing;
 pub mod peers;
+pub mod roster;
 pub mod senses;
 pub mod signals;
 pub mod sync;
+pub mod threads;
 pub mod transfer;
 pub mod transfer_delivery;
 pub mod trust;
@@ -105,9 +108,40 @@ pub struct Engine {
     karma_runtime_config: RwLock<Option<karma_runtime::KarmaDeadlineDirectorConfig>>,
     /// Open Loro record-docs (LRU, lazy) — see `collab`.
     pub(crate) collab_docs: std::sync::Mutex<collab::DocRegistry>,
+    /// Where this Cell keeps its ROOT key, when it keeps one at all.
+    ///
+    /// `None`, or a path with no file, is the DESIRED state once the owner has
+    /// moved the root to offline media: the Cell keeps syncing and talking, it
+    /// simply cannot enrol or revoke a device until the root comes back.
+    pub(crate) root_key_path: std::sync::Mutex<Option<std::path::PathBuf>>,
+    /// The live LAN nearby list, when an endpoint is bound.
+    ///
+    /// Discovery results are transient and are neither Records nor Facts, so
+    /// they are held in memory here and handed to Protein as execution
+    /// context. Mirroring them into a synced extension would instead tell
+    /// every contact who is on your local network.
+    pub(crate) nearby: std::sync::Mutex<Option<wire::Nearby>>,
 }
 
 impl Engine {
+    /// Organs on the LAN right now, for Protein's execution context. Empty
+    /// when no endpoint is bound — which is also the honest answer for a Cell
+    /// with discovery switched off.
+    /// Point this Engine at a nearby list. `Wire::bind` does it on every real
+    /// Cell; a test uses it to stand in for a LAN without binding an endpoint.
+    pub fn attach_nearby(&self, nearby: wire::Nearby) {
+        *self.nearby.lock().expect("nearby handle") = Some(nearby);
+    }
+
+    pub fn nearby_peers(&self) -> Vec<wire::NearbyPeer> {
+        self.nearby
+            .lock()
+            .expect("nearby handle")
+            .as_ref()
+            .map(|nearby| nearby.current())
+            .unwrap_or_default()
+    }
+
     pub async fn new(store: Store) -> Result<Engine, EngineError> {
         // Seed the Cell's HLC past everything already stamped, so nothing
         // written after a restart can compare below an existing op.
@@ -124,6 +158,8 @@ impl Engine {
             karma_deadline_changed,
             karma_runtime_config: RwLock::new(None),
             collab_docs: std::sync::Mutex::new(collab::DocRegistry::default()),
+            root_key_path: std::sync::Mutex::new(None),
+            nearby: std::sync::Mutex::new(None),
         };
         Ok(engine)
     }

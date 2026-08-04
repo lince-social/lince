@@ -17,8 +17,15 @@ async fn log_set(
     field: &str,
     value: serde_json::Value,
 ) -> Result<(), StoreError> {
-    crate::sync_ops::log_local(pool, "record", uid, field, OpKind::Set, Some(value.to_string()))
-        .await
+    crate::sync_ops::log_local(
+        pool,
+        "record",
+        uid,
+        field,
+        OpKind::Set,
+        Some(value.to_string()),
+    )
+    .await
 }
 
 #[derive(Debug, Clone)]
@@ -42,6 +49,10 @@ pub struct RecordRow {
     pub organ_uid: Option<String>,
     pub created_at: String,
     pub updated_at: String,
+    /// Creation order that does not depend on any machine's clock. `None` for
+    /// rows written before this column existed — sort those LAST rather than
+    /// treating the absence as a time.
+    pub created_hlc: Option<i64>,
 }
 
 impl RecordRow {
@@ -71,6 +82,7 @@ fn map_row(r: sqlx::sqlite::SqliteRow) -> Result<RecordRow, StoreError> {
         organ_uid: r.get("organ_uid"),
         created_at: r.get("created_at"),
         updated_at: r.get("updated_at"),
+        created_hlc: r.try_get("created_hlc").ok().flatten(),
     })
 }
 
@@ -87,6 +99,27 @@ pub struct NewRecord<'a> {
 }
 
 pub async fn create(pool: &SqlitePool, new: NewRecord<'_>) -> Result<RecordRow, StoreError> {
+    create_in_root(pool, new, None).await
+}
+
+/// Create a Record inside an individual-replica root (Ontology §11 "Threads").
+///
+/// `root` is written in the SAME INSERT as the row, deliberately: every
+/// `log_set` below resolves the op's `replica_root` from this column, so a
+/// Record that got its root a moment later would have already logged ops onto
+/// the GENERAL feed — and those ops are served to any `sync_in` contact on
+/// their next catch-up. Stamping at creation is what closes that window, and
+/// it is why there is no "make this existing Record private" call here.
+///
+/// Deferred, and not solvable by adding one: adopting an ARBITRARY existing
+/// Record into a root. It needs a backfill decision for ops already logged and
+/// a UI that says plainly that already-sent ops cannot be un-sent. Until then
+/// the only way into a root is to be born in one.
+pub async fn create_in_root(
+    pool: &SqlitePool,
+    new: NewRecord<'_>,
+    root: Option<&str>,
+) -> Result<RecordRow, StoreError> {
     if let Some(slug) = new.slug {
         if !nucleus::valid_slug(slug) {
             return Err(sqlx::Error::Protocol(format!("invalid slug `{slug}`")));
@@ -94,11 +127,16 @@ pub async fn create(pool: &SqlitePool, new: NewRecord<'_>) -> Result<RecordRow, 
     }
     let uid = nucleus::new_uid("r");
     let now = Utc::now().to_rfc3339();
+    // One stamp for the record, taken here rather than derived from its ops:
+    // `log_local` mints an HLC per FIELD, so "the record's HLC" would otherwise
+    // be several different values. This is creation order, and like
+    // `replica_root` it is written once and never changes.
+    let created_hlc = nucleus::hlc::next();
     let (mantissa, scale) = decimal_columns(new.quantity);
     sqlx::query(
         "INSERT INTO record (uid, slug, kind, head, body, quantity_mantissa, quantity_scale,
-                             created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                             created_at, updated_at, replica_root, created_hlc)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
     .bind(&uid)
     .bind(new.slug)
@@ -109,6 +147,8 @@ pub async fn create(pool: &SqlitePool, new: NewRecord<'_>) -> Result<RecordRow, 
     .bind(scale)
     .bind(&now)
     .bind(&now)
+    .bind(root)
+    .bind(&created_hlc)
     .execute(pool)
     .await?;
     // Stamp the origin organ (this Cell) so Protein/Sync can filter by it

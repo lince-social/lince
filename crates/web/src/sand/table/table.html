@@ -68,7 +68,7 @@
       emptyEl.hidden = rows.length > 0;
       for (const r of rows) {
         const tr = document.createElement("tr");
-        tr.appendChild(cell(r.head || "—"));
+        tr.appendChild(headCell(r));
         tr.appendChild(cell(r.slug || ""));
         tr.appendChild(cell(r.kind || "plain"));
         const q = document.createElement("td");
@@ -87,6 +87,26 @@
     }
 
     function cell(text) { const td = document.createElement("td"); td.textContent = text; return td; }
+
+    // The head cell is a collaborative text embed: the same element the record
+    // editor and the kanban card body use, because a table cell showing a
+    // Record's head IS that Record's head — only the box differs. Two people
+    // renaming the same row see each other type.
+    //
+    // Best-effort: if the shared document cannot be reached the cell still
+    // shows the text, just not live.
+    function headCell(r) {
+      const td = document.createElement("td");
+      const input = document.createElement("input");
+      input.value = r.head || "";
+      input.style.width = "100%";
+      td.appendChild(input);
+      import("/board/collab-editor.js")
+        .then(({ attachCollab }) =>
+          attachCollab(input, { recordUid: r.uid, host: H, field: "head" }))
+        .catch(() => {});
+      return td;
+    }
 
     document.getElementById("add").onclick = () => {
       const head = document.getElementById("new-head");

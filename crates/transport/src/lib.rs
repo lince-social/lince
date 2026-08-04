@@ -14,6 +14,7 @@
 //! Ledger.
 
 pub mod lane;
+pub mod live;
 pub mod protocol;
 pub mod session;
 #[cfg(feature = "axum")]

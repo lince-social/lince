@@ -145,6 +145,21 @@ pub async fn assert(pool: &SqlitePool, new: NewAssertion<'_>) -> Result<String, 
             "an identity assertion must be unary and unquantified".into(),
         ));
     }
+    // Both endpoints must sit in the SAME individual-replica root (Ontology
+    // §11 "Threads"). An Assertion's op takes its root from the SUBJECT, so a
+    // link from a general-feed Record to a private one would put the private
+    // uid on the general feed; a link between two DIFFERENT roots would
+    // silently widen both conversations. Neither has a correct answer, so
+    // refuse rather than pick one.
+    if let Some(object_uid) = new.object_uid {
+        let subject_root = crate::replica::root_of(pool, new.subject_uid).await?;
+        let object_root = crate::replica::root_of(pool, object_uid).await?;
+        if subject_root != object_root {
+            return Err(sqlx::Error::Protocol(
+                "an assertion cannot cross an individual-replica boundary".into(),
+            ));
+        }
+    }
     let existing = sqlx::query(
         "SELECT uid FROM record_assertion
           WHERE subject_uid = ? AND predicate_uid = ? AND object_uid IS ?
@@ -729,6 +744,7 @@ fn map_record(row: sqlx::sqlite::SqliteRow) -> Result<crate::records::RecordRow,
         organ_uid: row.get("organ_uid"),
         created_at: row.get("created_at"),
         updated_at: row.get("updated_at"),
+        created_hlc: row.try_get("created_hlc").ok().flatten(),
     })
 }
 

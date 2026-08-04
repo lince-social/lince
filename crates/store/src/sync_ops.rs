@@ -52,6 +52,9 @@ pub struct OpRow {
     pub value: Option<String>,
     pub hlc: i64,
     pub actor_organ: String,
+    /// The individual-replica root this op belongs to, or `None` for the
+    /// general feed. Decides WHICH channel the op may leave on.
+    pub replica_root: Option<String>,
 }
 
 fn map(row: sqlx::sqlite::SqliteRow) -> OpRow {
@@ -64,12 +67,29 @@ fn map(row: sqlx::sqlite::SqliteRow) -> OpRow {
         value: row.get("value"),
         hlc: row.get("hlc"),
         actor_organ: row.get("actor_organ"),
+        replica_root: row.get("replica_root"),
     }
 }
 
 const INSERT: &str = "INSERT OR IGNORE INTO sync_op
-    (tbl, uid, field, kind, value, hlc, actor_organ)
-    VALUES (?, ?, ?, ?, ?, ?, ?)";
+    (tbl, uid, field, kind, value, hlc, actor_organ, replica_root)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+
+/// Queue one op for every contact holding an ACCEPTED grant on its root — the
+/// individual-replica counterpart of `ENQUEUE`. A Record inside a root never
+/// rides the general feed, so exactly one of the two statements runs per op.
+///
+/// `trust != 'blocked'` matters as much here as on the general feed: blocked
+/// is terminal everywhere (Ontology §2), and a grant does not survive it.
+const ENQUEUE_GRANT: &str =
+    "INSERT INTO sync_outbox (contact_organ, tbl, uid, field, seq, queued_at)
+    SELECT g.contact_organ, ?, ?, ?, ?, ?
+      FROM replica_grant g
+      JOIN organ_contact c ON c.record_uid = g.contact_organ
+     WHERE g.root_record = ? AND g.state = 'accepted'
+       AND c.trust != 'blocked' AND g.contact_organ != ?
+    ON CONFLICT(contact_organ, tbl, uid, field)
+    DO UPDATE SET seq = excluded.seq, queued_at = excluded.queued_at";
 
 /// Queue one op for every sync-out contact (except an optional relay source),
 /// replacing any older queued op on the same (contact, tbl, uid, field) —
@@ -95,6 +115,7 @@ pub async fn append(
     hlc: i64,
     actor_organ: &str,
     relay_exclude: Option<&str>,
+    replica_root: Option<&str>,
 ) -> Result<Option<i64>, StoreError> {
     let res = sqlx::query(INSERT)
         .bind(tbl)
@@ -104,21 +125,41 @@ pub async fn append(
         .bind(value)
         .bind(hlc)
         .bind(actor_organ)
+        .bind(replica_root)
         .execute(pool)
         .await?;
     if res.rows_affected() == 0 {
         return Ok(None);
     }
     let seq = res.last_insert_rowid();
-    sqlx::query(ENQUEUE)
-        .bind(tbl)
-        .bind(uid)
-        .bind(field)
-        .bind(seq)
-        .bind(chrono::Utc::now().to_rfc3339())
-        .bind(relay_exclude.unwrap_or(""))
-        .execute(pool)
-        .await?;
+    let now = chrono::Utc::now().to_rfc3339();
+    // Relaying onward follows the same split as a local write: an op inside a
+    // root goes to that root's grant holders and never to the general feed.
+    match replica_root {
+        Some(root) => {
+            sqlx::query(ENQUEUE_GRANT)
+                .bind(tbl)
+                .bind(uid)
+                .bind(field)
+                .bind(seq)
+                .bind(&now)
+                .bind(root)
+                .bind(relay_exclude.unwrap_or(""))
+                .execute(pool)
+                .await?;
+        }
+        None => {
+            sqlx::query(ENQUEUE)
+                .bind(tbl)
+                .bind(uid)
+                .bind(field)
+                .bind(seq)
+                .bind(&now)
+                .bind(relay_exclude.unwrap_or(""))
+                .execute(pool)
+                .await?;
+        }
+    }
     Ok(Some(seq))
 }
 
@@ -158,6 +199,11 @@ pub async fn log_local(
     let Some(actor) = local_organ_uid(pool).await? else {
         return Ok(());
     };
+    // Resolved BEFORE the op is written, from the row it targets. Because
+    // `record.replica_root` is stamped at creation and immutable, this is the
+    // same answer forever — which is what lets every later reader trust the
+    // copy on the op instead of re-deriving it.
+    let root = crate::replica::root_for_op(pool, tbl, uid).await?;
     let res = sqlx::query(INSERT)
         .bind(tbl)
         .bind(uid)
@@ -166,18 +212,40 @@ pub async fn log_local(
         .bind(&value)
         .bind(nucleus::hlc::next())
         .bind(actor)
+        .bind(&root)
         .execute(pool)
         .await?;
     if res.rows_affected() > 0 {
-        sqlx::query(ENQUEUE)
-            .bind(tbl)
-            .bind(uid)
-            .bind(field)
-            .bind(res.last_insert_rowid())
-            .bind(chrono::Utc::now().to_rfc3339())
-            .bind("")
-            .execute(pool)
-            .await?;
+        let seq = res.last_insert_rowid();
+        let now = chrono::Utc::now().to_rfc3339();
+        match &root {
+            // Individually replicated: grant holders only, and NOT the general
+            // feed. Riding both would be the leak the whole axis exists to
+            // prevent.
+            Some(root) => {
+                sqlx::query(ENQUEUE_GRANT)
+                    .bind(tbl)
+                    .bind(uid)
+                    .bind(field)
+                    .bind(seq)
+                    .bind(&now)
+                    .bind(root)
+                    .bind("")
+                    .execute(pool)
+                    .await?;
+            }
+            None => {
+                sqlx::query(ENQUEUE)
+                    .bind(tbl)
+                    .bind(uid)
+                    .bind(field)
+                    .bind(seq)
+                    .bind(&now)
+                    .bind("")
+                    .execute(pool)
+                    .await?;
+            }
+        }
     }
     Ok(())
 }
@@ -221,16 +289,47 @@ pub async fn log_local_tx(
 
 /// Ops past a checkpoint, oldest first — the catch-up feed. One indexed
 /// rowid-range query; an empty answer means converged.
+/// The GENERAL feed only: `replica_root IS NULL`.
+///
+/// This is enforcement point two of three. An individually-replicated Record
+/// must never appear here, or a contact with plain `sync_in` would receive a
+/// conversation they were never granted — which is the exact failure the axis
+/// exists to prevent, and it would be invisible because the catch-up feed is
+/// served automatically.
 pub async fn after(pool: &SqlitePool, seq: i64, limit: i64) -> Result<Vec<OpRow>, StoreError> {
+    Ok(sqlx::query(
+        "SELECT * FROM sync_op WHERE seq > ? AND replica_root IS NULL ORDER BY seq LIMIT ?",
+    )
+    .bind(seq)
+    .bind(limit)
+    .fetch_all(pool)
+    .await?
+    .into_iter()
+    .map(map)
+    .collect())
+}
+
+/// The catch-up feed for ONE grant root. The caller must have already checked
+/// that the requesting contact holds an accepted grant on `root` — this
+/// function selects, it does not authorize.
+pub async fn after_in_root(
+    pool: &SqlitePool,
+    root: &str,
+    seq: i64,
+    limit: i64,
+) -> Result<Vec<OpRow>, StoreError> {
     Ok(
-        sqlx::query("SELECT * FROM sync_op WHERE seq > ? ORDER BY seq LIMIT ?")
-            .bind(seq)
-            .bind(limit)
-            .fetch_all(pool)
-            .await?
-            .into_iter()
-            .map(map)
-            .collect(),
+        sqlx::query(
+            "SELECT * FROM sync_op WHERE seq > ? AND replica_root = ? ORDER BY seq LIMIT ?",
+        )
+        .bind(seq)
+        .bind(root)
+        .bind(limit)
+        .fetch_all(pool)
+        .await?
+        .into_iter()
+        .map(map)
+        .collect(),
     )
 }
 
@@ -283,10 +382,12 @@ pub async fn max_hlc(pool: &SqlitePool) -> Result<Option<i64>, StoreError> {
 
 /// Latest assigned seq (0 for an empty log) — the serve-side cursor head.
 pub async fn max_seq(pool: &SqlitePool) -> Result<i64, StoreError> {
-    Ok(sqlx::query("SELECT COALESCE(MAX(seq), 0) AS seq FROM sync_op")
-        .fetch_one(pool)
-        .await?
-        .get("seq"))
+    Ok(
+        sqlx::query("SELECT COALESCE(MAX(seq), 0) AS seq FROM sync_op")
+            .fetch_one(pool)
+            .await?
+            .get("seq"),
+    )
 }
 
 /// One op by its local seq — outbox hydration (a pruned seq returns None).

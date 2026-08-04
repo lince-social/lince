@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Configuration</title>
+  <link rel="stylesheet" href="/board/lynx-ui.css" />
+  <script src="/board/frame.js"></script>
+  <script src="/board/lynx-ui.js"></script>
+  <style>
+    /* Sand documents are isolated from the canvas stylesheet.  Define the
+       LynxUI semantic tokens here so inputs, buttons, and switches remain
+       visible rather than resolving to invalid nested CSS variables. */
+    :root {
+      color-scheme: dark;
+      --primary-background: #101318;
+      --raised-background: #171c22;
+      --secondary-background: #1b222b;
+      --primary-ink: #e6edf3;
+      --secondary-ink: #8b949e;
+      --border: #29313b;
+      --control-border: #596675;
+      --accent: #6366f1;
+      --accent-ink: #ffffff;
+      --focus: #8b8dff;
+      --danger: #f85149;
+      --surface: #101318;
+      --surface-hover: #1b222b;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; height: 100vh; overflow: hidden; color: var(--primary-ink, #e6edf3); background: var(--primary-background, #101318); }
+    main { height: 100%; display: grid; grid-template-columns: minmax(112px, .36fr) minmax(0, 1fr); }
+    aside { min-width: 0; padding: 10px 6px; border-right: var(--hairline, .5px) solid var(--border, #29313b); background: var(--raised-background, #171c22); }
+    h1 { margin: 2px 6px 10px; color: var(--secondary-ink, #8b949e); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+    nav { display: grid; gap: 2px; }
+    .page-button { width: 100%; justify-content: flex-start; border-color: transparent; box-shadow: none; }
+    .page-button[aria-selected="true"] { color: var(--accent); background: var(--secondary-background, #1b222b); }
+    .content { min-width: 0; overflow: auto; padding: 14px; }
+    .page { display: grid; gap: 14px; align-content: start; max-width: 580px; }
+    .page[hidden] { display: none; }
+    .page header { display: grid; gap: 3px; }
+    h2 { margin: 0; font-size: 16px; }
+    p { margin: 0; }
+    .property { display: grid; gap: 5px; padding-bottom: 12px; border-bottom: var(--hairline, .5px) solid var(--border, #29313b); }
+    /* A property is normally a vertical field. A toggle instead needs its
+       track and description beside one another; without this, `.property`
+       overrides the LynxUI toggle's inline-flex layout. */
+    .property.lynx-toggle { display: flex; align-items: flex-start; gap: 8px; }
+    .property.lynx-toggle .lynx-toggle__track { margin-top: 2px; }
+    .property:last-of-type { border-bottom: 0; }
+    .property-name { font-weight: 650; }
+    .property-help, .status { color: var(--secondary-ink, #8b949e); font-size: 12px; }
+    .status.error { color: var(--danger, #f85149); }
+    .actions { display: flex; align-items: center; gap: 8px; }
+    .contact-empty { color: var(--secondary-ink, #8b949e); }
+  </style>
+</head>
+<body class="lynx-ui">
+  <main>
+    <aside>
+      <h1>Configuration</h1>
+      <nav aria-label="Configuration pages">
+        <button class="lynx-button page-button" type="button" data-config-page="cell" aria-selected="true">Cell</button>
+        <button class="lynx-button page-button" type="button" data-config-page="discovery" aria-selected="false">Discovery</button>
+        <button class="lynx-button page-button" type="button" data-config-page="storage" aria-selected="false">Storage</button>
+        <button class="lynx-button page-button" type="button" data-config-page="contacts" aria-selected="false">Contacts</button>
+      </nav>
+    </aside>
+    <div class="content">
+      <section class="page" data-page="cell">
+        <header><h2>Cell</h2><p class="property-help">How this Cell identifies itself in your own interface.</p></header>
+        <label class="property"><span class="property-name">Name</span><input id="cell-name" class="lynx-input" type="text" maxlength="160" /><span class="property-help">A string shown locally and advertised as an untrusted LAN label.</span></label>
+        <label class="property"><span class="property-name">Address</span><input id="cell-address" class="lynx-input" type="text" maxlength="2048" /><span class="property-help">The descriptive URL stored on the local Organ record.</span></label>
+        <div class="actions"><button id="cell-save" class="lynx-button lynx-button--primary" type="button">Save</button><span id="cell-status" class="status"></span></div>
+      </section>
+
+      <section class="page" data-page="discovery" hidden>
+        <header><h2>Discovery</h2><p class="property-help">Choose where this Cell announces itself. These switches do not create trust.</p></header>
+        <label class="property lynx-toggle"><input id="discovery-local" class="lynx-toggle__input" type="checkbox" /><span class="lynx-toggle__track" aria-hidden="true"></span><span><span class="property-name">Locally online</span><br /><span class="property-help">Advertise and find Lince Cells over mDNS on this LAN.</span></span></label>
+        <label class="property lynx-toggle"><input id="discovery-internet" class="lynx-toggle__input" type="checkbox" /><span class="lynx-toggle__track" aria-hidden="true"></span><span><span class="property-name">Internet reachability</span><br /><span class="property-help">Publish current addresses so key holders can resolve this Cell.</span></span></label>
+        <label class="property lynx-toggle"><input id="discovery-unknown" class="lynx-toggle__input" type="checkbox" /><span class="lynx-toggle__track" aria-hidden="true"></span><span><span class="property-name">Unknown conversations</span><br /><span class="property-help">Allow an unknown Organ to offer a conversation.</span></span></label>
+        <div class="actions"><button id="discovery-save" class="lynx-button lynx-button--primary" type="button">Save</button><span id="discovery-status" class="status"></span></div>
+      </section>
+
+      <section class="page" data-page="storage" hidden>
+        <header><h2>Storage</h2><p class="property-help">Mirror records owned by this Organ to files.</p></header>
+        <label class="property lynx-toggle"><input id="storage-enabled" class="lynx-toggle__input" type="checkbox" /><span class="lynx-toggle__track" aria-hidden="true"></span><span class="property-name">File sync</span></label>
+        <label class="property"><span class="property-name">Directory</span><input id="storage-path" class="lynx-input" type="text" placeholder="/path/on/disk" /><span class="property-help">A string path on this machine.</span></label>
+        <div class="actions"><button id="storage-save" class="lynx-button lynx-button--primary" type="button">Save</button><span id="storage-status" class="status"></span></div>
+      </section>
+
+      <section class="page" data-page="contacts" hidden>
+        <header><h2>Contacts</h2><p class="property-help">Edit typed properties for a known Organ.</p></header>
+        <label class="property"><span class="property-name">Contact</span><select id="contact-select" class="lynx-select"></select></label>
+        <div id="contact-properties">
+          <label class="property"><span class="property-name">Trust</span><select id="contact-trust" class="lynx-select"><option value="unknown">Unknown</option><option value="known">Known</option><option value="blocked">Blocked</option></select><span class="property-help">A string constrained to the trust vocabulary.</span></label>
+          <label class="property"><span class="property-name">Proximity</span><input id="contact-proximity" class="lynx-input" type="number" min="0" step="1" /><span class="property-help">A non-negative quantity used by proximity-aware behavior.</span></label>
+          <div class="actions"><button id="contact-save" class="lynx-button lynx-button--primary" type="button">Save</button><span id="contact-status" class="status"></span></div>
+        </div>
+        <p id="contact-empty" class="contact-empty" hidden>No contacts yet.</p>
+      </section>
+    </div>
+  </main>
+  <script>
+    const H = window.LinceWidgetHost;
+    const $ = (id) => document.getElementById(id);
+    let organs = [];
+    let discovery = {};
+    let storage = {};
+
+    document.querySelectorAll("[data-config-page]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const page = button.dataset.configPage;
+        document.querySelectorAll("[data-config-page]").forEach((candidate) => candidate.setAttribute("aria-selected", String(candidate === button)));
+        document.querySelectorAll("[data-page]").forEach((panel) => { panel.hidden = panel.dataset.page !== page; });
+      });
+    });
+
+    function localOrgan() { return organs.find((row) => row.slug === "local-organ") || null; }
+    function contacts() { return organs.filter((row) => row.contact); }
+    function status(id, message, error = false) { const el = $(id); el.textContent = message; el.className = "status" + (error ? " error" : ""); }
+
+    function render() {
+      const local = localOrgan();
+      if (local) {
+        $("cell-name").value = local.head || "";
+        $("cell-address").value = local.body || "";
+        const dc = discovery[local.uid] || {};
+        $("discovery-local").checked = dc.local !== false;
+        $("discovery-internet").checked = dc.internet !== false;
+        $("discovery-unknown").checked = dc.accept_unknown === true;
+        const fs = storage[local.uid] || {};
+        $("storage-enabled").checked = fs.enabled === true;
+        $("storage-path").value = fs.path || "";
+      }
+      const rows = contacts();
+      const old = $("contact-select").value;
+      $("contact-select").innerHTML = "";
+      rows.forEach((row) => { const option = document.createElement("option"); option.value = row.uid; option.textContent = row.head || row.uid; $("contact-select").append(option); });
+      if (rows.some((row) => row.uid === old)) $("contact-select").value = old;
+      $("contact-properties").hidden = rows.length === 0;
+      $("contact-empty").hidden = rows.length !== 0;
+      renderContact();
+    }
+
+    function renderContact() {
+      const row = contacts().find((candidate) => candidate.uid === $("contact-select").value) || contacts()[0];
+      if (!row) return;
+      $("contact-select").value = row.uid;
+      $("contact-trust").value = row.contact.trust || "unknown";
+      $("contact-proximity").value = row.contact.proximity ?? 0;
+    }
+
+    H.subscribeProtein("configuration_organs", { source: "record", where: [{ kind_eq: "organ" }], include: { contact: true }, order: [{ asc: "head" }] }, ({ rows }) => { organs = Array.isArray(rows) ? rows : []; render(); });
+    H.subscribeProtein("configuration_discovery", { source: "record", where: [{ kind_eq: "organ" }], include: { extension: { namespace: "lince.discovery" } } }, ({ rows }) => { discovery = {}; for (const row of (rows || [])) discovery[row.uid] = row.extension || {}; render(); });
+    H.subscribeProtein("configuration_storage", { source: "record", where: [{ kind_eq: "organ" }], include: { extension: { namespace: "lince.file_sync" } } }, ({ rows }) => { storage = {}; for (const row of (rows || [])) storage[row.uid] = row.extension || {}; render(); });
+
+    $("contact-select").addEventListener("change", renderContact);
+    $("cell-save").addEventListener("click", () => { const row = localOrgan(); if (!row) return; status("cell-status", "Saving…"); H.act({ action: "edit-record-text", target: row.uid, head: $("cell-name").value.trim(), body: $("cell-address").value.trim() }).then(() => status("cell-status", "Saved.")).catch((e) => status("cell-status", e.message || String(e), true)); });
+    $("discovery-save").addEventListener("click", () => { const row = localOrgan(); if (!row) return; const fds = { local: $("discovery-local").checked, internet: $("discovery-internet").checked, accept_unknown: $("discovery-unknown").checked }; status("discovery-status", "Saving and rebinding…"); H.act({ action: "set-extension", target: row.uid, namespace: "lince.discovery", fds }).then(() => status("discovery-status", "Saved.")).catch((e) => status("discovery-status", e.message || String(e), true)); });
+    $("storage-save").addEventListener("click", () => { const row = localOrgan(); if (!row) return; const fds = { enabled: $("storage-enabled").checked, path: $("storage-path").value.trim() }; status("storage-status", "Saving…"); H.act({ action: "set-extension", target: row.uid, namespace: "lince.file_sync", fds }).then(() => status("storage-status", "Saved.")).catch((e) => status("storage-status", e.message || String(e), true)); });
+    $("contact-save").addEventListener("click", async () => { const target = $("contact-select").value; if (!target) return; const proximity = Number.parseInt($("contact-proximity").value, 10); if (!Number.isInteger(proximity) || proximity < 0) return status("contact-status", "Proximity must be a non-negative whole number.", true); status("contact-status", "Saving…"); try { await H.act({ action: "set-contact-trust", target, trust: $("contact-trust").value }); await H.act({ action: "set-contact-proximity", target, proximity }); status("contact-status", "Saved."); } catch (e) { status("contact-status", e.message || String(e), true); } });
+  </script>
+</body>
+</html>

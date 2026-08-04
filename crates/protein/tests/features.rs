@@ -197,14 +197,21 @@ async fn quantity_lte_and_gte_include_the_boundary() {
     make(&e, "edge", RecordKind::Plain, 0.0).await;
     make(&e, "high", RecordKind::Plain, 1.0).await;
 
+    // What this asserts is BOUNDARY INCLUSION — that `0.0` is on the `lte`
+    // side and on the `gte` side. It is not an ordering test, so it sorts
+    // rather than pinning the row order: every Record Protein has a
+    // deterministic base order by lowercased `head` then uid
+    // (`order_records`), which puts "edge" before "low". The original literal
+    // predated that rule and asserted an order this query never promised.
     let lte = base(Source::Record, vec![Predicate::QuantityLte(0.0)]);
-    let lte_slugs: Vec<String> = protein::execute(&e.store, &lte)
+    let mut lte_slugs: Vec<String> = protein::execute(&e.store, &lte)
         .await
         .unwrap()
         .into_iter()
         .map(|r| r["slug"].as_str().unwrap().to_string())
         .collect();
-    assert_eq!(lte_slugs, vec!["low", "edge"]);
+    lte_slugs.sort();
+    assert_eq!(lte_slugs, vec!["edge", "low"]);
 
     let gte_json = serde_json::json!({
         "source": "record",

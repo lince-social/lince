@@ -185,6 +185,11 @@ pub enum ServerMessage {
         room: String,
         from: String,
         payload: Value,
+        /// The sender's identity, present ONLY when the receiver has read
+        /// permission on that user (Ontology §11 presence). Absent means an
+        /// anonymous cursor: the position still renders, the name does not.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        identity: Option<String>,
     },
     TerminalOpened {
         id: String,

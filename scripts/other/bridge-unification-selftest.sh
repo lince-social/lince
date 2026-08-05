@@ -125,7 +125,11 @@ cat > "$WORK/harness.html" <<'HTML'
     results.one_socket = window.__wsCount === 1;
 
     // 2. Flat subscribe -> `subscribe`; snapshot rows come back FLAT.
-    post("kanban", { type: "lince:ready" });
+    // Every fake frame models a new-way Sand, so let the bridge learn the
+    // flat protocol for emitters and recipients alike.
+    for (const id of ["kanban", "recinfo", "other", "terminal"]) {
+      post(id, { type: "lince:ready" });
+    }
     post("kanban", { type: "lince:protein-subscribe", subId: "main", protein: { source: "record" } });
     await wait(10);
     results.flat_subscribe_sent = sentHas((m) => m.type === "subscribe" && m.id === "kanban:main");

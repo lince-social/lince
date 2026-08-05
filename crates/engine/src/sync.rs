@@ -45,12 +45,36 @@ impl Engine {
             } else {
                 None
             };
+            let mut value = row.value;
+            // An individual replica may be the only thing two Organs share,
+            // so its assertion predicates cannot depend on the general feed
+            // arriving later. Carry the predicate's canonical name as
+            // hydration metadata; the persisted op identity/value stays
+            // unchanged.
+            if row.tbl == "record_assertion" && row.kind == "set" {
+                if let Some(mut assertion) = value
+                    .as_deref()
+                    .and_then(|raw| serde_json::from_str::<serde_json::Value>(raw).ok())
+                {
+                    if let Some(predicate_uid) = assertion
+                        .get("predicate_uid")
+                        .and_then(|item| item.as_str())
+                    {
+                        if let Some(name) =
+                            store::concepts::canonical_name(&self.store.pool, predicate_uid).await?
+                        {
+                            assertion["predicate_name"] = serde_json::Value::String(name);
+                            value = Some(assertion.to_string());
+                        }
+                    }
+                }
+            }
             out.push(WireOp {
                 tbl: row.tbl,
                 uid: row.uid,
                 field: row.field,
                 kind: row.kind,
-                value: row.value,
+                value,
                 hlc: row.hlc,
                 actor_organ: row.actor_organ,
                 fact,

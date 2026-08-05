@@ -3445,15 +3445,21 @@ impl Engine {
                         "thread title cannot be empty".into(),
                     ));
                 }
-                let thread = store::records::create(
+                let replica_root = store::replica::root_of(&self.store.pool, &target_uid).await?;
+                let thread = store::records::create_in_root(
                     &self.store.pool,
                     store::records::NewRecord {
                         slug: None,
                         kind: RecordKind::Thread,
                         head: title,
                         body: "",
-                        quantity: store::exact::zero(),
+                        quantity: if replica_root.is_some() {
+                            store::exact::one()
+                        } else {
+                            store::exact::zero()
+                        },
                     },
+                    replica_root.as_deref(),
                 )
                 .await?;
                 let thread_of = store::concepts::ensure(&self.store.pool, "thread-of").await?;
@@ -3470,28 +3476,52 @@ impl Engine {
                     },
                 )
                 .await?;
-                outcome.facts = self
-                    .append(
-                        NewFact {
-                            actor_uid: actor.clone(),
-                            ..NewFact::quantity(
-                                thread.uid.clone(),
-                                store::exact::one(),
-                                Cause::user_edit(),
-                            )
-                        },
-                        now,
-                    )
-                    .await?;
-                outcome.facts.extend(
-                    self.annotate(
-                        target_uid,
-                        actor,
-                        serde_json::json!({ "thread": { "created": thread.uid } }),
-                        now,
-                    )
-                    .await?,
-                );
+                if replica_root.is_some() {
+                    // Individual replicas carry Record/assertion ops, not the
+                    // general Fact feed. The level therefore starts active in
+                    // its quantity set op; this zero-delta signal refreshes
+                    // local Protein views and wakes the durable outbox without
+                    // leaking conversation metadata to general-sync contacts.
+                    outcome.facts = self
+                        .append(
+                            NewFact {
+                                actor_uid: actor,
+                                ..NewFact::quantity(
+                                    target_uid,
+                                    store::exact::zero(),
+                                    Cause {
+                                        kind: CauseKind::Sync,
+                                        uid: Some(thread.uid.clone()),
+                                    },
+                                )
+                            },
+                            now,
+                        )
+                        .await?;
+                } else {
+                    outcome.facts = self
+                        .append(
+                            NewFact {
+                                actor_uid: actor.clone(),
+                                ..NewFact::quantity(
+                                    thread.uid.clone(),
+                                    store::exact::one(),
+                                    Cause::user_edit(),
+                                )
+                            },
+                            now,
+                        )
+                        .await?;
+                    outcome.facts.extend(
+                        self.annotate(
+                            target_uid,
+                            actor,
+                            serde_json::json!({ "thread": { "created": thread.uid } }),
+                            now,
+                        )
+                        .await?,
+                    );
+                }
                 outcome.created = Some(thread.uid);
             }
             Action::CreateMessage {
@@ -3530,15 +3560,21 @@ impl Engine {
                 } else {
                     message_head(body)
                 };
-                let message = store::records::create(
+                let replica_root = store::replica::root_of(&self.store.pool, &thread_uid).await?;
+                let message = store::records::create_in_root(
                     &self.store.pool,
                     store::records::NewRecord {
                         slug: None,
                         kind: RecordKind::Message,
                         head: &head,
                         body,
-                        quantity: store::exact::zero(),
+                        quantity: if replica_root.is_some() {
+                            store::exact::one()
+                        } else {
+                            store::exact::zero()
+                        },
                     },
+                    replica_root.as_deref(),
                 )
                 .await?;
                 let message_in = store::concepts::ensure(&self.store.pool, "message-in").await?;
@@ -3611,33 +3647,52 @@ impl Engine {
                     )
                     .await?;
                 }
-                outcome.facts = self
-                    .append(
-                        NewFact {
-                            actor_uid: actor.clone(),
-                            ..NewFact::quantity(
-                                message.uid.clone(),
-                                store::exact::one(),
-                                Cause::user_edit(),
-                            )
-                        },
-                        now,
-                    )
-                    .await?;
-                outcome.facts.extend(
-                    self.annotate(
-                        thread_uid,
-                        actor,
-                        serde_json::json!({
-                            "message": {
-                                "created": message.uid,
-                                "references": references,
-                            }
-                        }),
-                        now,
-                    )
-                    .await?,
-                );
+                if replica_root.is_some() {
+                    outcome.facts = self
+                        .append(
+                            NewFact {
+                                actor_uid: actor,
+                                ..NewFact::quantity(
+                                    thread_uid,
+                                    store::exact::zero(),
+                                    Cause {
+                                        kind: CauseKind::Sync,
+                                        uid: Some(message.uid.clone()),
+                                    },
+                                )
+                            },
+                            now,
+                        )
+                        .await?;
+                } else {
+                    outcome.facts = self
+                        .append(
+                            NewFact {
+                                actor_uid: actor.clone(),
+                                ..NewFact::quantity(
+                                    message.uid.clone(),
+                                    store::exact::one(),
+                                    Cause::user_edit(),
+                                )
+                            },
+                            now,
+                        )
+                        .await?;
+                    outcome.facts.extend(
+                        self.annotate(
+                            thread_uid,
+                            actor,
+                            serde_json::json!({
+                                "message": {
+                                    "created": message.uid,
+                                    "references": references,
+                                }
+                            }),
+                            now,
+                        )
+                        .await?,
+                    );
+                }
                 outcome.created = Some(message.uid);
             }
             Action::CreateTransferThread {

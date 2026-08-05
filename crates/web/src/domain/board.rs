@@ -281,6 +281,7 @@ pub fn record_pin_card() -> BoardCard {
     );
     card.pinned = true;
     card.z_index = 50;
+    card.abi_listen = vec!["recordClicked".into(), "recordCreate".into()];
     card
 }
 

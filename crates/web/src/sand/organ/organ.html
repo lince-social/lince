@@ -48,6 +48,9 @@
     .status.err { color: #f85149; }
     .hint { color: var(--muted); font-size: 11.5px; line-height: 1.5; }
     .placeholder { color: var(--muted); padding: 8px 2px; }
+    #nb-list li { flex-wrap: wrap; }
+    .nearby-action { display: flex; flex: 1 0 100%; align-items: center; gap: 6px; }
+    .nearby-action .lynx-input { flex: 1; }
     .sand-tools { position: absolute; right: 0; bottom: 0; width: 170px; height: 42px; pointer-events: none; }
     .page-corner { position: absolute; right: 0; bottom: 0; width: 12px; height: 12px; padding: 0; border: 0; border-radius: 0; background: #f85149; clip-path: polygon(100% 0, 100% 100%, 0 100%); pointer-events: auto; }
     .page-corner.live { background: var(--good); }
@@ -358,57 +361,113 @@
           chat.className = "lynx-button lynx-button--primary primary";
           chat.type = "button";
           chat.textContent = "Chat";
-          chat.onclick = async () => {
-            const title = window.prompt("What is this conversation about?", "Hello");
-            if (!title) return;
-            const status = $("nb-status");
-            status.className = "status";
-            status.textContent = "Sending conversation request…";
-            try {
-              const response = await fetch("/organ/conversation/offer", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ node_id: peer.node_id, title }),
-              });
-              const payload = await response.json().catch(() => ({}));
-              if (!response.ok) throw new Error(payload.error || payload.message || "Conversation request refused.");
-              status.textContent = "Request sent. They must accept before this conversation syncs.";
-              if (payload.conversation) H.emit("recordClicked", { record: { uid: payload.conversation } });
-            } catch (error) {
-              status.className = "status err";
-              status.textContent = error && error.message ? error.message : String(error);
-            }
-          };
+          chat.onclick = () => showNearbyInput(li, {
+            label: "Conversation title",
+            value: "Hello",
+            submit: "Send request",
+            run: async (title) => {
+              const status = $("nb-status");
+              status.className = "status";
+              status.textContent = "Sending conversation request…";
+              try {
+                const response = await fetch("/organ/conversation/offer", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ node_id: peer.node_id, title }),
+                });
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(payload.error || payload.message || "Conversation request refused.");
+                status.textContent = "Request sent. They must accept before this conversation syncs.";
+                if (payload.conversation) H.emit("recordClicked", { record: { uid: payload.conversation } });
+                return true;
+              } catch (error) {
+                status.className = "status err";
+                status.textContent = error && error.message ? error.message : String(error);
+                return false;
+              }
+            },
+          });
           li.appendChild(chat);
 
           const add = document.createElement("button");
           add.className = "lynx-button";
           add.type = "button";
           add.textContent = "Add known";
-          add.onclick = async () => {
-            const chosen = window.prompt("What do you want to call them?", peer.claimed_name || "");
-            if (!chosen) return;
-            const status = $("nb-status");
-            status.className = "status";
-            status.textContent = "Connecting and adding…";
-            try {
-              const response = await fetch("/organ/pair", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ node_id: peer.node_id, name: chosen }),
-              });
-              const payload = await response.json().catch(() => ({}));
-              if (!response.ok) throw new Error(payload.error || payload.message || "Could not add this Cell.");
-              status.textContent = "Added as known.";
-            } catch (error) {
-              status.className = "status err";
-              status.textContent = error && error.message ? error.message : String(error);
-            }
-          };
+          add.onclick = () => showNearbyInput(li, {
+            label: "Local name for this Organ",
+            value: peer.claimed_name || "",
+            submit: "Add",
+            run: async (chosen) => {
+              const status = $("nb-status");
+              status.className = "status";
+              status.textContent = "Connecting and adding…";
+              try {
+                const response = await fetch("/organ/pair", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ node_id: peer.node_id, name: chosen }),
+                });
+                const payload = await response.json().catch(() => ({}));
+                if (!response.ok) throw new Error(payload.error || payload.message || "Could not add this Cell.");
+                status.textContent = "Added as known.";
+                return true;
+              } catch (error) {
+                status.className = "status err";
+                status.textContent = error && error.message ? error.message : String(error);
+                return false;
+              }
+            },
+          });
           li.appendChild(add);
         }
         list.appendChild(li);
       }
+    }
+
+    function showNearbyInput(row, options) {
+      for (const open of document.querySelectorAll(".nearby-action")) open.remove();
+      const form = document.createElement("div");
+      form.className = "nearby-action";
+      const input = document.createElement("input");
+      input.className = "lynx-input";
+      input.setAttribute("aria-label", options.label);
+      input.placeholder = options.label;
+      input.value = options.value || "";
+      const submit = document.createElement("button");
+      submit.className = "lynx-button lynx-button--primary";
+      submit.type = "button";
+      submit.textContent = options.submit;
+      const cancel = document.createElement("button");
+      cancel.className = "lynx-button";
+      cancel.type = "button";
+      cancel.textContent = "Cancel";
+      cancel.addEventListener("click", () => form.remove());
+      const run = async () => {
+        const value = input.value.trim();
+        if (!value) {
+          input.focus();
+          return;
+        }
+        input.disabled = true;
+        submit.disabled = true;
+        const done = await options.run(value);
+        if (done) form.remove();
+        else {
+          input.disabled = false;
+          submit.disabled = false;
+          input.focus();
+        }
+      };
+      submit.addEventListener("click", run);
+      input.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter") return;
+        event.preventDefault();
+        run();
+      });
+      form.append(input, submit, cancel);
+      row.appendChild(form);
+      input.focus();
+      input.select();
     }
 
 

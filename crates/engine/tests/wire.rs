@@ -531,26 +531,70 @@ async fn unknown_nearby_peers_can_accept_and_sync_one_conversation() {
             .is_some(),
         "acceptance must pull the offered conversation"
     );
+    let received_thread = store::records::get(&b.store.pool, &thread)
+        .await
+        .expect("thread query")
+        .expect("the first thread rides the conversation root");
     assert!(
-        store::records::get(&b.store.pool, &thread)
+        received_thread.quantity.is_positive(),
+        "the first thread is active, got {:?}; quantity ops: {:?}",
+        received_thread.quantity,
+        store::sync_ops::for_field(&b.store.pool, "record", &thread, "quantity")
             .await
-            .expect("thread query")
-            .is_some(),
-        "the first thread rides the conversation root"
+            .expect("quantity ops")
+    );
+    let thread_of = store::concepts::resolve(&b.store.pool, "thread-of")
+        .await
+        .expect("thread-of query")
+        .expect("thread-of arrived");
+    assert_eq!(
+        store::assertions::objects_from_subject(&b.store.pool, &thread, &thread_of)
+            .await
+            .expect("thread relation")
+            .into_iter()
+            .map(|record| record.uid)
+            .collect::<Vec<_>>(),
+        vec![conversation.clone()],
+        "the synced thread must be visible to the Record/Protein projection"
     );
 
     let message = a
-        .send_message(&thread, "A", "hey, I'm here")
+        .act(
+            engine::actions::Action::CreateMessage {
+                thread: thread.clone(),
+                body: "hey, I'm here".into(),
+                parent: None,
+                references: vec![],
+            },
+            None,
+        )
         .await
-        .expect("message");
+        .expect("Record Sand message action")
+        .created
+        .expect("message uid");
     a_wire.sync_once().await.expect("A pushes grant ops");
+    let received_message = store::records::get(&b.store.pool, &message)
+        .await
+        .expect("message query")
+        .expect("message reached B");
+    assert_eq!(received_message.body, "hey, I'm here");
+    assert!(
+        received_message.quantity.is_positive(),
+        "a synced message is active and visible"
+    );
+    let message_in = store::concepts::resolve(&b.store.pool, "message-in")
+        .await
+        .expect("message-in query")
+        .expect("message-in arrived");
     assert_eq!(
-        store::records::get(&b.store.pool, &message)
+        store::assertions::objects_from_subject(&b.store.pool, &message, &message_in)
             .await
-            .expect("message query")
-            .expect("message reached B")
-            .body,
-        "hey, I'm here"
+            .expect("message relation")
+            .into_iter()
+            .map(|record| record.uid)
+            .collect::<Vec<_>>(),
+        vec![thread.clone()],
+        "the synced message must be visible inside its Record thread"
     );
 
     let (declined_root, _) = a_wire

@@ -27,10 +27,11 @@ use nucleus::RecordKind;
 use crate::Engine;
 use crate::error::EngineError;
 
-/// The predicate joining a Thread to its Conversation and a Message to its
-/// Thread. One predicate for both levels: the parent is whatever the Assertion
-/// points at, and the kinds already say which level this is.
-pub const IN_PREDICATE: &str = "in";
+/// These are the established Record/Protein thread relations. Keeping the two
+/// levels distinct lets a surface project threads and messages without
+/// guessing from record kinds.
+pub const THREAD_OF_PREDICATE: &str = "thread-of";
+pub const MESSAGE_IN_PREDICATE: &str = "message-in";
 
 impl Engine {
     /// Start a conversation with `contact_organ` and offer it to them.
@@ -58,7 +59,7 @@ impl Engine {
                 kind: RecordKind::Conversation,
                 head: title,
                 body: "",
-                quantity: store::exact::zero(),
+                quantity: store::exact::one(),
             },
         )
         .await?;
@@ -94,12 +95,13 @@ impl Engine {
                 kind: RecordKind::Thread,
                 head: title,
                 body: "",
-                quantity: store::exact::zero(),
+                quantity: store::exact::one(),
             },
             Some(&root),
         )
         .await?;
-        self.link_in(&thread.uid, conversation_uid).await?;
+        self.link_in(&thread.uid, conversation_uid, THREAD_OF_PREDICATE)
+            .await?;
         Ok(thread.uid)
     }
 
@@ -126,20 +128,26 @@ impl Engine {
                 kind: RecordKind::Message,
                 head,
                 body,
-                quantity: store::exact::zero(),
+                quantity: store::exact::one(),
             },
             Some(&root),
         )
         .await?;
-        self.link_in(&message.uid, thread_uid).await?;
+        self.link_in(&message.uid, thread_uid, MESSAGE_IN_PREDICATE)
+            .await?;
         Ok(message.uid)
     }
 
     /// `(child) --in--> (parent)`, both necessarily inside the same root —
     /// `assertions::assert` refuses the link otherwise.
-    async fn link_in(&self, child_uid: &str, parent_uid: &str) -> Result<(), EngineError> {
+    async fn link_in(
+        &self,
+        child_uid: &str,
+        parent_uid: &str,
+        predicate_name: &str,
+    ) -> Result<(), EngineError> {
         let pool = &self.store.pool;
-        let predicate = store::concepts::ensure(pool, IN_PREDICATE).await?;
+        let predicate = store::concepts::ensure(pool, predicate_name).await?;
         store::assertions::assert(
             pool,
             store::assertions::NewAssertion {

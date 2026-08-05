@@ -105,6 +105,31 @@ pub async fn set_record_field(
                 .rows_affected()
                 > 0
         }
+        "quantity" => {
+            let mantissa = value
+                .get("mantissa")
+                .and_then(|item| item.as_str())
+                .unwrap_or("0");
+            let scale = value
+                .get("scale")
+                .and_then(|item| item.as_i64())
+                .unwrap_or(0);
+            let quantity = crate::exact::parse_decimal(mantissa, scale)?;
+            let (mantissa, scale) = crate::exact::decimal_columns(quantity);
+            sqlx::query(
+                "UPDATE record
+                    SET quantity_mantissa = ?, quantity_scale = ?, updated_at = ?
+                  WHERE uid = ?",
+            )
+            .bind(mantissa)
+            .bind(scale)
+            .bind(&now)
+            .bind(uid)
+            .execute(pool)
+            .await?
+            .rows_affected()
+                > 0
+        }
         _ => false,
     };
     if applied && undelete {
@@ -266,15 +291,32 @@ pub async fn upsert_assertion(
     // the general feed to carry it would be wrong in the case that matters —
     // a contact granted ONE conversation and no feed sync at all.
     if let Some(predicate_uid) = s("predicate_uid") {
+        let placeholder = format!("concept:{predicate_uid}");
+        let predicate_name = s("predicate_name")
+            .filter(|name| !name.trim().is_empty())
+            .unwrap_or_else(|| placeholder.clone());
         sqlx::query(
             "INSERT OR IGNORE INTO concept (uid, canonical_name, created_at)
              VALUES (?, ?, ?)",
         )
         .bind(&predicate_uid)
-        .bind(format!("concept:{predicate_uid}"))
+        .bind(&predicate_name)
         .bind(Utc::now().to_rfc3339())
         .execute(pool)
         .await?;
+        // A previous op in the same batch may have made the nameless stub.
+        // Name only that placeholder; never rename an established Concept.
+        if predicate_name != placeholder {
+            sqlx::query(
+                "UPDATE concept SET canonical_name = ?
+                  WHERE uid = ? AND canonical_name = ?",
+            )
+            .bind(&predicate_name)
+            .bind(&predicate_uid)
+            .bind(&placeholder)
+            .execute(pool)
+            .await?;
+        }
     }
     let res = sqlx::query(
         "INSERT OR IGNORE INTO record_assertion

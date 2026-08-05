@@ -642,27 +642,47 @@ export function createWidgetBridge({
   // Deliver an ABI event to every local frame that listens to the topic and did
   // not source it. Shared by same-board emit and remote lane events.
   function deliverEventToFrames(topic, data, sourceInstanceId) {
-    const eventMessage = {
-      type: WIDGET_EVENT,
-      payload: {
-        topic,
-        data: cloneJsonValue(data, null),
-        sourceInstanceId: sourceInstanceId || "",
-      },
-    };
-
     for (const frame of getFrames()) {
       const frameInstanceId = frame?.dataset?.packageInstanceId || "";
-      if (frameInstanceId === eventMessage.payload.sourceInstanceId) {
+      if (frameInstanceId === (sourceInstanceId || "")) {
         continue;
       }
       if (!frameListensTo(frameInstanceId, topic)) {
         continue;
       }
-      if (!inEventScope(eventMessage.payload.sourceInstanceId, frameInstanceId)) {
+      if (!inEventScope(sourceInstanceId || "", frameInstanceId)) {
         continue;
       }
-      frame.contentWindow?.postMessage(eventMessage, "*");
+      postLaneEvent(frame, frameInstanceId, topic, data, sourceInstanceId);
+    }
+  }
+
+  function postLaneEvent(frame, frameInstanceId, topic, data, sourceInstanceId) {
+    const cloned = cloneJsonValue(data, null);
+    const message = flatFrames.has(frameInstanceId)
+      ? {
+          type: "lince:lane-event",
+          room: topic,
+          payload: cloned,
+          from: sourceInstanceId || "",
+        }
+      : {
+          type: WIDGET_EVENT,
+          payload: {
+            topic,
+            data: cloned,
+            sourceInstanceId: sourceInstanceId || "",
+          },
+        };
+    frame.contentWindow?.postMessage(message, "*");
+  }
+
+  function deliverEventToCard(cardId, topic, data) {
+    for (const frame of getFrames()) {
+      const frameInstanceId = frame?.dataset?.packageInstanceId || "";
+      if (frameInstanceId === cardId) {
+        postLaneEvent(frame, frameInstanceId, topic, data, "");
+      }
     }
   }
 
@@ -1294,6 +1314,12 @@ export function createWidgetBridge({
       // notification) should drive this board's Record sand without being
       // rebroadcast to every other open board session.
       deliverEventToFrames(String(topic || ""), data, "");
+    },
+    emitLocalToCard(cardId, topic, data) {
+      // Chrome owns shell-card navigation. Targeting the built-in Record pin
+      // here keeps notification acceptance independent from a user's ABI
+      // routing configuration while ordinary sand events remain filtered.
+      deliverEventToCard(String(cardId || ""), String(topic || ""), data);
     },
     destroy() {
       for (const id of terminalSessions.keys()) {

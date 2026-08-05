@@ -4397,7 +4397,9 @@ async function answerThreadNotification(notificationId, answer) {
   seenNotificationIds.delete(notificationId);
   renderNotifications();
   if (answer === "accept" && payload?.record_id) {
-    widgetBridge.emitLocal("recordClicked", { record: { uid: payload.record_id } });
+    widgetBridge.emitLocalToCard("shell-record", "recordClicked", {
+      record: { uid: payload.record_id },
+    });
     setNotificationsOpen(false);
   }
   return payload;

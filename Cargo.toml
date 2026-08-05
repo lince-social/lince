@@ -131,3 +131,9 @@ opt-level = 0        # Fastest compile
 debug = "line-tables-only"
 incremental = true   # Fast incremental builds
 codegen-units = 256  # Max parallelism
+
+[patch.crates-io]
+# `swarm-discovery` opens the mDNS port below iroh-mdns-address-lookup.  The
+# local patch avoids SO_REUSEPORT on Linux: that option can load-balance mDNS
+# datagrams with browser sockets rather than delivering them to every listener.
+swarm-discovery = { path = "vendor/swarm-discovery" }

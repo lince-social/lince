@@ -86,7 +86,16 @@ function ensureShellPins(workspaces, config, seedCards = []) {
       )
       .map((card) =>
         card.id === "shell-record"
-          ? { ...card, pinned: true, x: 99_999, y: 0 }
+          ? {
+              ...card,
+              pinned: true,
+              x: 99_999,
+              y: 0,
+              // The built-in Record is the board's navigation target. Older
+              // board snapshots predate ABI defaults and persisted an empty
+              // list, making notification acceptance unable to open a chat.
+              abiListen: ["recordClicked", "recordCreate"],
+            }
           : card,
       ),
   }));

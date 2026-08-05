@@ -9,3 +9,6 @@ mprocs.log
 trash/
 .claude
 .agents
+node_modules/
+test-results/
+playwright-report/

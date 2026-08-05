@@ -419,6 +419,45 @@ async fn relation_filters_by_tag_cluster_with_include_and_exclude() {
 }
 
 #[tokio::test]
+async fn threads_include_keeps_an_empty_thread_without_a_message_predicate() {
+    let e = engine().await;
+    let subject = make(&e, "empty-conversation", RecordKind::Plain, 1.0).await;
+    e.act(
+        Action::CreateThread {
+            target: subject.clone(),
+            head: "Introductions".into(),
+        },
+        None,
+    )
+    .await
+    .unwrap();
+
+    assert!(
+        store::concepts::resolve(&e.store.pool, "message-in")
+            .await
+            .unwrap()
+            .is_none(),
+        "the regression requires a Cell on which no message has existed"
+    );
+    let p = Protein {
+        source: Source::Record,
+        filter: vec![Predicate::UidEq(subject)],
+        include: Include {
+            threads: Some(ThreadsInclude { messages_limit: 20 }),
+            ..Default::default()
+        },
+        aggregate: None,
+        order: vec![],
+        limit: None,
+    };
+    let rows = protein::execute(&e.store, &p).await.unwrap();
+    let threads = rows[0]["threads"].as_array().unwrap();
+    assert_eq!(threads.len(), 1);
+    assert_eq!(threads[0]["head"], "Introductions");
+    assert_eq!(threads[0]["messages"], serde_json::json!([]));
+}
+
+#[tokio::test]
 async fn threads_include_returns_nested_record_messages() {
     let e = engine().await;
     let subject = make(&e, "abstract-idea", RecordKind::Plain, 0.0).await;

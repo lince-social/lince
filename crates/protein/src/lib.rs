@@ -2082,9 +2082,11 @@ async fn threads_for_record(
     let Some(thread_of) = store::concepts::resolve(&store.pool, "thread-of").await? else {
         return Ok(vec![]);
     };
-    let Some(message_in) = store::concepts::resolve(&store.pool, "message-in").await? else {
-        return Ok(vec![]);
-    };
+    // `message-in` does not exist on a fresh Cell until the first message is
+    // created or imported. That must not hide an otherwise valid empty
+    // thread: accepting a conversation creates the thread before either
+    // participant has said anything.
+    let message_in = store::concepts::resolve(&store.pool, "message-in").await?;
     let reply_to = store::concepts::resolve(&store.pool, "reply-to").await?;
     let references = store::concepts::resolve(&store.pool, "references").await?;
     let threads =
@@ -2095,9 +2097,14 @@ async fn threads_for_record(
             continue;
         }
         let mut messages = Vec::new();
-        for message in
-            store::assertions::subjects_pointing_to(&store.pool, &message_in, &thread.uid).await?
-        {
+        let linked_messages = match &message_in {
+            Some(message_in) => {
+                store::assertions::subjects_pointing_to(&store.pool, message_in, &thread.uid)
+                    .await?
+            }
+            None => Vec::new(),
+        };
+        for message in linked_messages {
             if message.kind != "message" || !message.quantity.is_positive() {
                 continue;
             }

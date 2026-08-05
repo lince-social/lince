@@ -143,7 +143,7 @@ pub async fn create_in_root(
     .bind(new.kind.as_str())
     .bind(new.head)
     .bind(new.body)
-    .bind(mantissa)
+    .bind(&mantissa)
     .bind(scale)
     .bind(&now)
     .bind(&now)
@@ -164,6 +164,13 @@ pub async fn create_in_root(
     log_set(pool, &uid, "kind", serde_json::json!(new.kind.as_str())).await?;
     log_set(pool, &uid, "head", serde_json::json!(new.head)).await?;
     log_set(pool, &uid, "body", serde_json::json!(new.body)).await?;
+    log_set(
+        pool,
+        &uid,
+        "quantity",
+        serde_json::json!({ "mantissa": mantissa, "scale": scale }),
+    )
+    .await?;
     if let Some(slug) = new.slug {
         log_set(pool, &uid, "slug", serde_json::json!(slug)).await?;
     }

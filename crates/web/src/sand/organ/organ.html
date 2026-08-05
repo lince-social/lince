@@ -166,6 +166,7 @@
           <div class="row"><strong>On this network</strong></div>
           <ul id="nb-list" class="list"></ul>
           <div class="row" id="nb-empty" class="placeholder">Nobody found yet.</div>
+          <div class="row"><span class="status" id="nb-status"></span></div>
           <p class="hint">The name beside each row is what that Cell calls itself —
             a claim, not a verified identity. The short code next to it comes from the
             key itself and cannot be faked by choosing a name, so use it to tell two
@@ -353,17 +354,56 @@
           badge.textContent = "known";
           li.appendChild(badge);
         } else {
+          const chat = document.createElement("button");
+          chat.className = "lynx-button lynx-button--primary primary";
+          chat.type = "button";
+          chat.textContent = "Chat";
+          chat.onclick = async () => {
+            const title = window.prompt("What is this conversation about?", "Hello");
+            if (!title) return;
+            const status = $("nb-status");
+            status.className = "status";
+            status.textContent = "Sending conversation request…";
+            try {
+              const response = await fetch("/organ/conversation/offer", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ node_id: peer.node_id, title }),
+              });
+              const payload = await response.json().catch(() => ({}));
+              if (!response.ok) throw new Error(payload.error || payload.message || "Conversation request refused.");
+              status.textContent = "Request sent. They must accept before this conversation syncs.";
+              if (payload.conversation) H.emit("recordClicked", { record: { uid: payload.conversation } });
+            } catch (error) {
+              status.className = "status err";
+              status.textContent = error && error.message ? error.message : String(error);
+            }
+          };
+          li.appendChild(chat);
+
           const add = document.createElement("button");
           add.className = "lynx-button";
           add.type = "button";
-          add.textContent = "Add";
-          add.onclick = () => {
+          add.textContent = "Add known";
+          add.onclick = async () => {
             const chosen = window.prompt("What do you want to call them?", peer.claimed_name || "");
             if (!chosen) return;
-            $("ad-invite").value = peer.node_id;
-            $("ad-name").value = chosen;
-            $("ad-status").className = "status";
-            $("ad-status").textContent = "Filled in below — check where this came from before adding.";
+            const status = $("nb-status");
+            status.className = "status";
+            status.textContent = "Connecting and adding…";
+            try {
+              const response = await fetch("/organ/pair", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ node_id: peer.node_id, name: chosen }),
+              });
+              const payload = await response.json().catch(() => ({}));
+              if (!response.ok) throw new Error(payload.error || payload.message || "Could not add this Cell.");
+              status.textContent = "Added as known.";
+            } catch (error) {
+              status.className = "status err";
+              status.textContent = error && error.message ? error.message : String(error);
+            }
           };
           li.appendChild(add);
         }

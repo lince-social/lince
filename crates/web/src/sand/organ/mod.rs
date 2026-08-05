@@ -4,9 +4,8 @@ pub(crate) const FEATURE_FLAG: &str = "sand.organ";
 
 // Protein-first list of `kind=organ` records (this Cell + its contacts) with
 // File Sync and a friends-list contact manager (trust/proximity/block) as
-// first-class per-organ features. Standalone: no ABI events, just its own
-// Protein subscription + `set-extension`/`set-contact-trust`/
-// `set-contact-proximity` Actions.
+// first-class per-organ features. Nearby Cells can either be deliberately
+// promoted to known or receive a one-conversation offer without promotion.
 const HTML: &str = include_str!("organ.html");
 
 pub(crate) fn manifest() -> PackageManifest {
@@ -33,7 +32,9 @@ pub(crate) fn manifest() -> PackageManifest {
             reachability, and whether unknown Organs may open a thread. Saving either \
             discovery reach setting rebinds the \
             iroh endpoint in the background — the NodeId is unchanged, so saved \
-            contacts stay valid."
+            contacts stay valid. Nearby `Chat` uses that authenticated NodeId to \
+            offer one individual-replica conversation while both sides remain \
+            unknown; `Add known` is the separate trust-promoting action."
             .into(),
         initial_width: 4,
         initial_height: 5,
@@ -73,6 +74,8 @@ mod tests {
         assert!(HTML.contains("id=\"connection-corner\""));
         assert!(HTML.contains("id=\"local-discovery-tool\""));
         assert!(HTML.contains("id=\"dc-local\""));
+        assert!(HTML.contains("/organ/conversation/offer"));
+        assert!(HTML.contains("Add known"));
         assert!(
             manifest()
                 .permissions

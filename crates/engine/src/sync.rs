@@ -781,7 +781,7 @@ impl Engine {
                 sync_ops::outbox_clear_contact(pool, &contact_uid).await?;
                 continue;
             };
-            if contact.trust == "blocked" || !contact.sync_out {
+            if contact.trust == "blocked" {
                 sync_ops::outbox_clear_contact(pool, &contact_uid).await?;
                 continue;
             }
@@ -789,6 +789,12 @@ impl Engine {
             let mut kept = Vec::new();
             for row in rows {
                 match sync_ops::get_by_seq(pool, row.seq).await? {
+                    // `sync_out` controls the broad contact feed. An accepted
+                    // individual grant is its own, narrower permission and
+                    // must keep flowing even while that broad switch is off.
+                    Some(op) if !contact.sync_out && op.replica_root.is_none() => {
+                        sync_ops::outbox_delete(pool, &row).await?;
+                    }
                     Some(op) => {
                         log_rows.push(op);
                         kept.push(row);

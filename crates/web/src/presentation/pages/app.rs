@@ -59,6 +59,7 @@ window.addEventListener("unhandledrejection", function (event) {
 "#,
                 ))
             }
+            script src=(format!("/board/lynx-ui.js?v={asset_version}")) {}
             script type="module" src=(format!("/static/vendored/datastar.js?v={asset_version}")) {}
             script type="module" src=(format!("/static/presentation/board/main.js?v={asset_version}")) {}
         }

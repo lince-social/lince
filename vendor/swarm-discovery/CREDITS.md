@@ -6,7 +6,6 @@
 - License: Apache-2.0; the complete license text is bundled as
   `LICENSE.Apache_2.0`.
 
-Lince carries one local change in `src/socket.rs`: it does not enable
-`SO_REUSEPORT` for mDNS sockets. This prevents Linux from load-balancing
-multicast datagrams among unrelated local applications, which can otherwise
-stop a Lince Cell from receiving LAN discovery announcements.
+This copy is currently source-compatible with upstream 0.6.3. It remains
+vendored so socket-level LAN discovery fixes can be audited and released with
+Lince rather than depending on an unreviewed transitive update.

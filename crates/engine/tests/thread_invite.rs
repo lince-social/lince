@@ -316,6 +316,7 @@ async fn an_offer_over_the_wire_becomes_an_invite_the_user_answers() {
             &WireRequest::OfferGrant {
                 root: conversation.clone(),
                 title: "Beach plans".into(),
+                intro: a.introduction().await.expect("A introduction"),
             },
         )
         .await
@@ -346,6 +347,7 @@ async fn an_offer_over_the_wire_becomes_an_invite_the_user_answers() {
             &WireRequest::OfferGrant {
                 root: conversation.clone(),
                 title: "Beach plans".into(),
+                intro: a.introduction().await.expect("A introduction"),
             },
         )
         .await

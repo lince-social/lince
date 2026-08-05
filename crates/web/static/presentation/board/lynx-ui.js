@@ -46,6 +46,33 @@
     return `<button class="${escapeAttribute(className)}" type="button" aria-label="${escapeAttribute(label)}" data-lynx-tooltip="${escapeAttribute(label)}"${pressed}>${icon(name)}</button>`;
   }
 
+  function toast(options = {}) {
+    let host = document.querySelector(".lynx-toast-host");
+    if (!host) {
+      host = document.createElement("div");
+      host.className = "lynx-toast-host lynx-ui";
+      host.setAttribute("aria-live", "polite");
+      document.body.appendChild(host);
+    }
+    const clickable = typeof options.onClick === "function";
+    const element = document.createElement(clickable ? "button" : "div");
+    element.className = "lynx-toast";
+    if (clickable) element.type = "button";
+    const title = document.createElement("strong");
+    title.textContent = options.title || "Notification";
+    const body = document.createElement("span");
+    body.textContent = options.body || "";
+    element.append(title, body);
+    if (clickable) element.addEventListener("click", options.onClick);
+    host.appendChild(element);
+    const dismiss = () => {
+      element.remove();
+      if (!host.childElementCount) host.remove();
+    };
+    window.setTimeout(dismiss, Math.max(0, Number(options.duration) || 5000));
+    return Object.freeze({ element, dismiss });
+  }
+
   function setTabs(tab) {
     const list = tab.closest("[data-lynx-tabs]");
     if (!list) return;
@@ -110,6 +137,7 @@
     [".lynx-tabs", "Tabs"],
     [".lynx-tab-panel", "Tab panel"],
     [".lynx-disclosure", "Disclosure"],
+    [".lynx-toast", "Toast"],
   ]);
 
   function inspect(root = document, enabled = true) {
@@ -214,5 +242,5 @@
     tabs[index].focus();
   });
 
-  global.LynxUI = Object.freeze({ icon, iconButton, icons: Object.keys(paths), inspect, setSelectValue });
+  global.LynxUI = Object.freeze({ icon, iconButton, toast, icons: Object.keys(paths), inspect, setSelectValue });
 })(window);

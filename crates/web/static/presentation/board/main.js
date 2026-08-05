@@ -644,6 +644,7 @@ const store = createBoardStore({
 let editMode = false;
 let selfEditCardId = null;
 let appNotifications = [];
+let seenNotificationIds = new Set();
 let notificationsOpen = false;
 let boardViewport = null;
 let workspacePopoverOpen = false;
@@ -4308,9 +4309,16 @@ async function refreshNotifications() {
   if (!response.ok) {
     throw new Error(payload?.error || "Falha ao carregar notificacoes.");
   }
-  appNotifications = Array.isArray(payload?.notifications)
+  const nextNotifications = Array.isArray(payload?.notifications)
     ? payload.notifications
     : [];
+  for (const notification of nextNotifications) {
+    if (!seenNotificationIds.has(notification.id)) {
+      showNotificationToast(notification);
+    }
+  }
+  seenNotificationIds = new Set(nextNotifications.map((item) => item.id));
+  appNotifications = nextNotifications;
   renderNotifications();
   return appNotifications;
 }
@@ -4340,6 +4348,7 @@ function renderNotifications() {
     const canLogin =
       notification.kind === "organ_login_required" && notification.organId;
     const canInstallUpdate = notification.kind === "app_update_installable";
+    const isThreadInvite = notification.kind === "thread_invite";
     item.innerHTML = `
       <div class="notification-item__title">${escapeHtml(notification.title || "Notification")}</div>
       <div class="notification-item__body">${escapeHtml(notification.body || "")}</div>
@@ -4354,11 +4363,44 @@ function renderNotifications() {
             ? `<button class="notification-item__button" type="button" data-notification-install-update="true">Install and restart</button>`
             : ""
         }
-        <button class="notification-item__button" type="button" data-notification-dismiss="${escapeHtml(notification.id)}">Dismiss</button>
+        ${
+          isThreadInvite
+            ? `<button class="notification-item__button" type="button" data-thread-answer="accept" data-notification-id="${escapeHtml(notification.id)}">Accept</button>
+               <button class="notification-item__button" type="button" data-thread-answer="decline" data-notification-id="${escapeHtml(notification.id)}">Decline</button>`
+            : `<button class="notification-item__button" type="button" data-notification-dismiss="${escapeHtml(notification.id)}">Dismiss</button>`
+        }
       </div>
     `;
     notificationsList.appendChild(item);
   }
+}
+
+function showNotificationToast(notification) {
+  window.LynxUI.toast({
+    title: notification.title || "Notification",
+    body: notification.body || "",
+    duration: 5000,
+    onClick: () => setNotificationsOpen(true),
+  });
+}
+
+async function answerThreadNotification(notificationId, answer) {
+  const response = await fetch(
+    apiPath(`/notifications/${encodeURIComponent(notificationId)}/${encodeURIComponent(answer)}`),
+    { method: "POST" },
+  );
+  const payload = await parseJsonResponse(response);
+  if (!response.ok) {
+    throw new Error(payload?.error || `Could not ${answer} the conversation.`);
+  }
+  appNotifications = appNotifications.filter((item) => item.id !== notificationId);
+  seenNotificationIds.delete(notificationId);
+  renderNotifications();
+  if (answer === "accept" && payload?.record_id) {
+    widgetBridge.emitLocal("recordClicked", { record: { uid: payload.record_id } });
+    setNotificationsOpen(false);
+  }
+  return payload;
 }
 
 function setNotificationsOpen(open) {
@@ -4396,7 +4438,7 @@ function startNotificationsPolling() {
   void refreshNotifications().catch(() => {});
   notificationsTimer = window.setInterval(() => {
     void refreshNotifications().catch(() => {});
-  }, 10000);
+  }, 2000);
 }
 
 function setServerLoginError(message) {
@@ -5724,6 +5766,21 @@ notificationsClose.addEventListener("click", () => {
 });
 
 notificationsList.addEventListener("click", (event) => {
+  const threadButton = event.target.closest("[data-thread-answer]");
+  if (threadButton) {
+    threadButton.disabled = true;
+    void answerThreadNotification(
+      threadButton.dataset.notificationId,
+      threadButton.dataset.threadAnswer,
+    ).catch((error) => {
+      threadButton.disabled = false;
+      flashDropOverlayMessage(
+        error instanceof Error ? error.message : "Could not answer the conversation.",
+      );
+    });
+    return;
+  }
+
   const loginButton = event.target.closest("[data-notification-login]");
   if (loginButton) {
     const serverId = loginButton.dataset.notificationLogin;

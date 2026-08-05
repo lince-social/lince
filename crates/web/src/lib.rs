@@ -343,12 +343,61 @@ pub async fn serve_cell_api_only(
             .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))
     }
 
-    async fn list_empty_authed(
+    async fn list_notifications(
         State(state): State<CellApiState>,
         headers: HeaderMap,
     ) -> Result<impl IntoResponse, (StatusCode, String)> {
         authenticate_headers(&state, &headers).await?;
-        Ok(Json(Vec::<serde_json::Value>::new()))
+        let invites = store::invites::pending(&state.store.pool)
+            .await
+            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+        let notifications = invites
+            .into_iter()
+            .map(|invite| {
+                serde_json::json!({
+                    "id": invite.record_uid,
+                    "kind": "thread_invite",
+                    "title": "Conversation request",
+                    "body": format!("{} wants to start an individual synced conversation.", invite.from_organ),
+                    "recordId": invite.root,
+                    "organId": invite.from_organ,
+                })
+            })
+            .collect::<Vec<_>>();
+        Ok(Json(serde_json::json!({ "notifications": notifications })))
+    }
+
+    async fn answer_thread_notification(
+        State(state): State<CellApiState>,
+        headers: HeaderMap,
+        Path((notification_id, answer)): Path<(String, String)>,
+    ) -> Result<impl IntoResponse, (StatusCode, String)> {
+        authenticate_headers(&state, &headers).await?;
+        let accept = match answer.as_str() {
+            "accept" => true,
+            "decline" => false,
+            _ => return Err((StatusCode::NOT_FOUND, "unknown notification action".into())),
+        };
+        let wire = state.wire.read().await.clone().ok_or_else(|| {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                "no iroh endpoint".to_string(),
+            )
+        })?;
+        let root = wire
+            .answer_conversation_invite(&notification_id, accept)
+            .await
+            .map_err(|error| (StatusCode::BAD_GATEWAY, error.to_string()))?;
+        if accept {
+            // Pull the accepted root immediately so the Record sand can open
+            // it from this response instead of waiting for the next cycle.
+            wire.sync_once()
+                .await
+                .map_err(|error| (StatusCode::BAD_GATEWAY, error.to_string()))?;
+        }
+        Ok(Json(
+            serde_json::json!({ "record_id": root, "accepted": accept }),
+        ))
     }
 
     /// Lists the sands installed under `<lince_data_dir>/web/sand/` for the
@@ -729,6 +778,43 @@ pub async fn serve_cell_api_only(
         })))
     }
 
+    #[derive(Deserialize)]
+    struct ConversationOfferRequest {
+        node_id: String,
+        title: String,
+    }
+
+    /// Knock on a nearby Cell's thread door without making either Organ a
+    /// known contact. Acceptance grants only the created conversation root.
+    async fn offer_nearby_conversation(
+        State(state): State<CellApiState>,
+        headers: HeaderMap,
+        Json(request): Json<ConversationOfferRequest>,
+    ) -> Result<impl IntoResponse, (StatusCode, String)> {
+        authenticate_headers(&state, &headers).await?;
+        let title = request.title.trim();
+        if title.is_empty() {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                "conversation title is required".into(),
+            ));
+        }
+        let wire = state.wire.read().await.clone().ok_or_else(|| {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                "no iroh endpoint".to_string(),
+            )
+        })?;
+        let (conversation, thread) = wire
+            .offer_conversation_to_node(request.node_id.trim(), title)
+            .await
+            .map_err(|error| (StatusCode::BAD_GATEWAY, error.to_string()))?;
+        Ok(Json(serde_json::json!({
+            "conversation": conversation,
+            "thread": thread,
+        })))
+    }
+
     async fn organ_open_promises(
         State(state): State<CellApiState>,
         headers: HeaderMap,
@@ -1019,7 +1105,11 @@ pub async fn serve_cell_api_only(
             "/host/board/workspaces/{workspace_id}/export",
             get(export_workspace),
         )
-        .route("/host/notifications", get(list_empty_authed))
+        .route("/host/notifications", get(list_notifications))
+        .route(
+            "/host/notifications/{notification_id}/{answer}",
+            post(answer_thread_notification),
+        )
         .route("/host/packages/local", get(list_local_packages))
         .route(
             "/host/packages/local/group/{filename}",
@@ -1035,6 +1125,7 @@ pub async fn serve_cell_api_only(
         .route("/host/media/{name}", get(get_media))
         .route("/organ/nearby", get(organ_nearby))
         .route("/organ/pair", post(organ_pair))
+        .route("/organ/conversation/offer", post(offer_nearby_conversation))
         .route("/organ/qr-decode", post(qr_decode))
         // The guest half of live mode: this Cell relays a local browser
         // socket to a contact Cell over iroh (Ontology §11).

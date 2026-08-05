@@ -1590,16 +1590,15 @@ over signed HTTP, and either box can land without the other.
 - [x] Invites surface as a queue: who is asking, and nothing they chose to
   call themselves. Accepting opens the thread; it does NOT set trust or
   enable sync.
-  **The surface moved, 2026-08-04.** This bullet said "the notification
-  panel on the board base rail". That panel is board CHROME fed by a host
-  route (`organ_login_required`, `app_update_installable`, dismissal over
-  `fetch`) — putting Ledger data in it would have meant a new host route
-  plus accept/decline endpoints, and a fetch-polled list where a live
-  subscription belongs. Invites live in the **Conversations sand** instead,
-  read with an ordinary Protein subscription on `kind='thread_invite'` and
-  answered with `accept-thread-invite` / `decline-thread-invite`. No new
-  route, no new Protein source, live for free, and consistent with the
-  Protein-first direction stage 2b set.
+  **The board surface was restored, 2026-08-04.** A first-contact request is
+  attention that must remain visible when the Conversations sand is closed,
+  so pending `thread_invite` Records are projected through
+  `/host/notifications`. A five-second LynxUI-style toast announces a new
+  one, and the active notification button keeps the board's base rail open
+  until it is answered. Accept/decline acknowledges the sender over the
+  thread ALPN; accept then pulls only the granted conversation root and opens
+  it in the Record sand. The Conversations sand mirrors the same queue, but
+  is not the only place an invite can be discovered.
   What is rendered is the Organ uid the CONNECTION proved. There is no
   claimed display name on an invite at all — the sketch above would have
   shown one "marked as untrusted", and not having it is simpler and safer.

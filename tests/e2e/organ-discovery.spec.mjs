@@ -1,122 +1,10 @@
 import { test, expect } from "@playwright/test";
-import { spawn, execFileSync } from "node:child_process";
-import { closeSync, openSync, readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { closeSync, readFileSync } from "node:fs";
 import { mkdtemp, rm } from "node:fs/promises";
-import net from "node:net";
 import os from "node:os";
 import path from "node:path";
-
-const ROOT = path.resolve(import.meta.dirname, "../..");
-const BIN = path.join(ROOT, "target/debug/lince");
-
-async function freePort() {
-  return new Promise((resolve, reject) => {
-    const server = net.createServer();
-    server.unref();
-    server.on("error", reject);
-    server.listen(0, "127.0.0.1", () => {
-      const address = server.address();
-      server.close(() => resolve(address.port));
-    });
-  });
-}
-
-async function waitForJson(url, timeout = 20_000) {
-  const started = Date.now();
-  let lastError = null;
-  while (Date.now() - started < timeout) {
-    try {
-      const response = await fetch(url);
-      if (response.ok) return response.json();
-      lastError = new Error(`${response.status} ${await response.text()}`);
-    } catch (error) {
-      lastError = error;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 200));
-  }
-  throw new Error(`Timed out waiting for ${url}: ${lastError}`);
-}
-
-async function fetchJson(url, options = {}) {
-  const response = await fetch(url, options);
-  const text = await response.text();
-  let payload = null;
-  try { payload = text ? JSON.parse(text) : null; } catch { payload = text; }
-  if (!response.ok) throw new Error(`${options.method || "GET"} ${url}: ${response.status} ${text}`);
-  return payload;
-}
-
-async function seedOrganSand(baseUrl) {
-  const packages = await fetchJson(`${baseUrl}/host/packages/local`);
-  const summary = packages.find((entry) => entry.title === "Organ");
-  if (!summary) throw new Error("The official Organ Sand is absent from the local catalog");
-  const preview = await fetchJson(`${baseUrl}/host/packages/local/${encodeURIComponent(summary.id)}`);
-  const board = await fetchJson(`${baseUrl}/host/board/state`);
-  const workspace = board.workspaces.find((entry) => entry.id === board.activeWorkspaceId);
-  workspace.cards = workspace.cards.filter((card) => card.id !== "e2e-organ");
-  workspace.cards.push({
-    id: "e2e-organ",
-    kind: "package",
-    title: preview.title,
-    description: preview.description,
-    text: "",
-    html: preview.html,
-    author: preview.author,
-    permissions: preview.permissions,
-    packageName: preview.filename,
-    requiresServer: preview.requires_server,
-    serverId: "",
-    streamsEnabled: true,
-    widgetState: {},
-    x: 4_100,
-    y: 4_520,
-    width: 760,
-    height: 760,
-    pinned: false,
-    system: false,
-    zIndex: 200,
-    groupId: null,
-    groupIds: [],
-    abiListen: [],
-  });
-  await fetchJson(`${baseUrl}/host/board/state`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(board),
-  });
-}
-
-async function stopProcess(child) {
-  if (!child || child.exitCode != null) return;
-  child.kill("SIGTERM");
-  await Promise.race([
-    new Promise((resolve) => child.once("exit", resolve)),
-    new Promise((resolve) => setTimeout(resolve, 2_000)),
-  ]);
-  if (child.exitCode == null) child.kill("SIGKILL");
-}
-
-async function startCell(root, label) {
-  const port = await freePort();
-  const dataDir = path.join(root, label);
-  const logPath = path.join(root, `${label}.log`);
-  const log = openSync(logPath, "a");
-  const child = spawn(BIN, ["--data-dir", dataDir, "--port", String(port)], {
-    cwd: ROOT,
-    env: { ...process.env, RUST_LOG: "info" },
-    stdio: ["ignore", log, log],
-  });
-  const baseUrl = `http://127.0.0.1:${port}`;
-  try {
-    await waitForJson(`${baseUrl}/host/board/state`);
-    await seedOrganSand(baseUrl);
-  } catch (error) {
-    await stopProcess(child);
-    closeSync(log);
-    throw error;
-  }
-  return { child, dataDir, log, logPath, baseUrl };
-}
+import { fetchJson, startCell, stopProcess } from "./cell.mjs";
 
 async function startPair(browser, testInfo) {
   const root = await mkdtemp(path.join(os.tmpdir(), "lince-organ-e2e-"));
@@ -247,6 +135,28 @@ test("nearby Add known persists a known contact", async ({ browser }, testInfo) 
     await expect(organFrame(pair.pageA).locator("#nb-status")).toHaveText("Added as known.");
     await expect(row).toContainText("known");
     expect(contactState(pair.a.dataDir)).toEqual(["known|0|0"]);
+
+    // A contact reads as a contact, not as a second copy of this Cell: no
+    // pairing code, no devices, an address that says how they are actually
+    // reached, and a feed with two directions that both start shut.
+    // Reloaded on purpose: pairing writes the contact with plain SQL and
+    // commits no Fact, and a `source: record` subscription re-runs only when
+    // a Fact crosses the bus — so the new row lands on the next load, not on
+    // the pairing itself. That gap is a live bug in the push path, not in
+    // what this test is about.
+    await pair.pageA.reload({ waitUntil: "domcontentloaded" });
+    await pair.pageA.locator('iframe[title="Organ"]').waitFor();
+    const frameA = organFrame(pair.pageA);
+    await frameA.locator("#organs li", { hasText: "Known B" }).click();
+    await expect(frameA.locator("#profile-panel")).toBeHidden();
+    await expect(frameA.locator("#contact-panel")).toBeVisible();
+    await expect(frameA.locator("#d-url")).toContainText("reached by NodeId");
+    await expect(frameA.locator("#o-delete")).toHaveText("Forget this contact");
+    await expect(frameA.locator("#sync-direction-row")).toBeVisible();
+    await expect(frameA.locator("#sy-out")).toHaveAttribute("aria-pressed", "false");
+    await frameA.locator("#sy-in").click();
+    await expect(frameA.locator("#sy-in")).toHaveAttribute("aria-pressed", "true");
+    expect(contactState(pair.a.dataDir)).toEqual(["known|0|1"]);
   } finally {
     await pair.close();
   }

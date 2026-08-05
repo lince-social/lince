@@ -208,3 +208,145 @@ async fn set_contact_trust_fires_an_annotation_fact() {
         .expect("bus not closed");
     assert_eq!(fact.record_uid, contact);
 }
+
+/// A contact's Organ record is filed under THEIR uid, so the ordinary record
+/// edit would log a CRDT op and push this Cell's private label for them back
+/// to them and to every other contact. Renaming is local, and logs nothing.
+#[tokio::test]
+async fn renaming_a_contact_is_local_and_logs_no_op() {
+    let (e, _local, contact) = cell_with_contact().await;
+    let before = store::sync_ops::max_seq(&e.store.pool).await.unwrap();
+
+    e.act(
+        Action::RenameOrganContact {
+            target: contact.clone(),
+            name: "  Marcia  ".into(),
+        },
+        None,
+    )
+    .await
+    .unwrap();
+
+    let row = store::records::get(&e.store.pool, &contact)
+        .await
+        .unwrap()
+        .expect("the contact record");
+    assert_eq!(row.head, "Marcia", "trimmed, and it is the local label");
+    let after = store::sync_ops::max_seq(&e.store.pool).await.unwrap();
+    assert_eq!(before, after, "renaming a contact must not enter the op log");
+}
+
+/// The same action must not become a back door for editing this Cell's own
+/// Organ record without logging — that one IS ours and replicates normally.
+#[tokio::test]
+async fn renaming_refuses_a_record_that_is_not_a_contact() {
+    let (e, local, _contact) = cell_with_contact().await;
+    let err = e
+        .act(
+            Action::RenameOrganContact {
+                target: local,
+                name: "My Cell".into(),
+            },
+            None,
+        )
+        .await
+        .unwrap_err();
+    assert!(format!("{err}").contains("not a contact"), "{err}");
+}
+
+/// Every Cell calls itself the same thing out of the box, so the surface has
+/// nothing to tell a contact from this Cell's own row by unless the NodeId
+/// travels with the contact sidecar.
+#[tokio::test]
+async fn the_contact_include_carries_the_node_id() {
+    let (e, _local, contact) = cell_with_contact().await;
+    store::organs::set_node_id(&e.store.pool, &contact, Some("beadbeef00"))
+        .await
+        .unwrap();
+    let rows = protein::execute(&e.store, &organs_query()).await.unwrap();
+    let row = rows.iter().find(|r| r["uid"] == contact).unwrap();
+    assert_eq!(row["contact"]["node_id"], "beadbeef00");
+}
+
+/// Blocking is not removal, so a contact still has to be droppable — but
+/// `delete-record` on their uid would log a tombstone against THEIR Organ
+/// record and push it to them and every other contact.
+#[tokio::test]
+async fn forgetting_a_contact_is_local_and_logs_no_op() {
+    let (e, _local, contact) = cell_with_contact().await;
+    let before = store::sync_ops::max_seq(&e.store.pool).await.unwrap();
+
+    e.act(
+        Action::ForgetOrganContact {
+            target: contact.clone(),
+        },
+        None,
+    )
+    .await
+    .unwrap();
+
+    assert!(
+        store::organs::contact(&e.store.pool, &contact)
+            .await
+            .unwrap()
+            .is_none(),
+        "the sidecar is gone"
+    );
+    assert!(
+        store::records::get(&e.store.pool, &contact)
+            .await
+            .unwrap()
+            .is_none(),
+        "and so is the record standing in for them"
+    );
+    let after = store::sync_ops::max_seq(&e.store.pool).await.unwrap();
+    assert_eq!(before, after, "forgetting must not enter the op log");
+}
+
+/// Direction is a switch on an enforced boundary: the outbox drops ops for a
+/// contact with `sync_out` off, and delivery refuses a feed from one with
+/// `sync_in` off. Both start closed, so the surface has to be able to open
+/// them one at a time.
+#[tokio::test]
+async fn sync_policy_sets_each_direction_independently() {
+    let (e, _local, contact) = cell_with_contact().await;
+    let rows = protein::execute(&e.store, &organs_query()).await.unwrap();
+    let row = rows.iter().find(|r| r["uid"] == contact).unwrap();
+    assert_eq!(row["contact"]["sync_out"], false);
+    assert_eq!(row["contact"]["sync_in"], false);
+
+    e.act(
+        Action::SetSyncPolicy {
+            target: contact.clone(),
+            sync_out: false,
+            sync_in: true,
+        },
+        None,
+    )
+    .await
+    .unwrap();
+
+    let rows = protein::execute(&e.store, &organs_query()).await.unwrap();
+    let row = rows.iter().find(|r| r["uid"] == contact).unwrap();
+    assert_eq!(row["contact"]["sync_out"], false, "outbound stays shut");
+    assert_eq!(row["contact"]["sync_in"], true, "inbound alone is openable");
+}
+
+/// This Cell's own Organ is not a peer, so there is no feed to point in a
+/// direction — and the sand never offers it.
+#[tokio::test]
+async fn sync_policy_refuses_the_local_organ() {
+    let (e, local, _contact) = cell_with_contact().await;
+    let err = e
+        .act(
+            Action::SetSyncPolicy {
+                target: local,
+                sync_out: true,
+                sync_in: true,
+            },
+            None,
+        )
+        .await
+        .unwrap_err();
+    assert!(format!("{err}").contains("not a contact"), "{err}");
+}

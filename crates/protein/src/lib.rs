@@ -1890,6 +1890,18 @@ async fn attach_includes(
                     // reachable" — otherwise a contact that cannot sync looks
                     // exactly like one that can.
                     "pending_introduction": c.pending_introduction,
+                    // Every Cell calls itself the same thing out of the box,
+                    // so a surface listing organs has nothing to tell two
+                    // contacts apart by — nor a contact from this Cell's own
+                    // Organ. The NodeId is the one field that differs, and
+                    // under iroh it is also the only routing input.
+                    "node_id": c.node_id,
+                    // The two directions of the general feed, which the engine
+                    // already enforces (`sync.rs` on the way out,
+                    // `transfer_delivery` on the way in). A surface that
+                    // cannot see them cannot offer them.
+                    "sync_out": c.sync_out,
+                    "sync_in": c.sync_in,
                 })
             })
             .unwrap_or(Value::Null);

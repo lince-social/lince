@@ -332,6 +332,36 @@ pub enum Action {
         invite: String,
         name: String,
     },
+    /// Rename a contact to what the LOCAL user calls them.
+    ///
+    /// Separate from `edit-record-text` because a contact's Organ record is
+    /// filed under THEIR uid: editing it the ordinary way logs a CRDT op that
+    /// is pushed back to them and to every other contact, publishing the
+    /// private label this Cell chose for someone. This writes it locally and
+    /// logs nothing (see `store::organs::rename_contact`).
+    RenameOrganContact {
+        target: String,
+        name: String,
+    },
+    /// Which directions of the general feed are open with one contact.
+    ///
+    /// `out` is what this Cell pushes them; `in` is what it accepts from them.
+    /// Both are already enforced — outbound in the outbox drain, inbound at
+    /// the delivery boundary — so this is the switch, not a preference.
+    /// Individually granted conversations are a narrower permission and keep
+    /// flowing either way.
+    SetSyncPolicy {
+        target: String,
+        sync_out: bool,
+        sync_in: bool,
+    },
+    /// Drop a contact and the Record standing in for it — locally, and only
+    /// locally. `delete-record` on the same uid would log a tombstone against
+    /// THEIR Organ record and push it to them and everyone else; this forgets
+    /// them here and tells nobody (see `store::organs::forget_contact`).
+    ForgetOrganContact {
+        target: String,
+    },
     /// Post this Cell's pairing code into a thread, so the other party can add
     /// you. The promotion step happens INSIDE the conversation: you talk
     /// first, decide it is really them, and only then exchange keys.
@@ -2823,6 +2853,53 @@ impl Engine {
                     )
                     .await?;
             }
+            Action::RenameOrganContact { target, name } => {
+                let uid = self.resolve(&target).await?;
+                let name = name.trim();
+                if name.is_empty() {
+                    return Err(EngineError::Consequence(
+                        "give this contact a name you will recognise".into(),
+                    ));
+                }
+                if store::organs::contact(&self.store.pool, &uid).await?.is_none() {
+                    return Err(EngineError::Consequence(
+                        "not a contact — this Cell's own Organ is renamed like any record"
+                            .into(),
+                    ));
+                }
+                store::organs::rename_contact(&self.store.pool, &uid, name).await?;
+            }
+            Action::SetSyncPolicy {
+                target,
+                sync_out,
+                sync_in,
+            } => {
+                let uid = self.resolve(&target).await?;
+                if store::organs::contact(&self.store.pool, &uid).await?.is_none() {
+                    return Err(EngineError::Consequence(
+                        "not a contact — there is no feed to open with this Cell's own Organ"
+                            .into(),
+                    ));
+                }
+                store::organs::set_sync_policy(&self.store.pool, &uid, sync_out, sync_in).await?;
+                outcome.facts = self
+                    .annotate(
+                        uid,
+                        actor,
+                        serde_json::json!({ "sync_out": sync_out, "sync_in": sync_in }),
+                        now,
+                    )
+                    .await?;
+            }
+            Action::ForgetOrganContact { target } => {
+                let uid = self.resolve(&target).await?;
+                if store::organs::contact(&self.store.pool, &uid).await?.is_none() {
+                    return Err(EngineError::Consequence(
+                        "not a contact — this Cell's own Organ cannot be forgotten".into(),
+                    ));
+                }
+                store::organs::forget_contact(&self.store.pool, &uid).await?;
+            }
             Action::AddKnownOrgan { invite, name } => {
                 let invite = crate::pairing::PairingInvite::decode(&invite)?;
                 let name = name.trim();
@@ -2831,16 +2908,60 @@ impl Engine {
                         "give this contact a name you will recognise".into(),
                     ));
                 }
+                // Do we already reach someone at this NodeId? Then the code is
+                // for a person we have already MET — found on the network, or
+                // paired earlier — and pasting it is a promotion, not a first
+                // contact. Minting a second row here is not merely untidy: the
+                // NodeId binding is UNIQUE, so it fails outright, which is
+                // exactly the "I pasted their code and got an error" report.
+                let existing =
+                    store::organs::contact_by_node_id(&self.store.pool, &invite.node_id).await?;
+                if let Some(contact) = &existing {
+                    // `blocked` is terminal everywhere else; a pasted code must
+                    // not be the one door that launders it back to `known`.
+                    if contact.trust == "blocked" {
+                        return Err(EngineError::Consequence(
+                            "this Organ is blocked. Unblock them first if that is what you \
+                             meant — adding by code must not undo a block."
+                                .into(),
+                        ));
+                    }
+                }
                 // The uid is theirs to declare, and a code cannot declare it —
-                // only an Introduction over a real connection can. So the row
-                // is held under a uid derived from the NodeId and FLAGGED: the
-                // next sync pass dials them, learns the real uid, and replaces
-                // this row with it. Until that happens they cannot sync, and
-                // the flag is what stops that from being a silent dead end.
-                let organ_uid = format!("o-{}", &invite.node_id);
-                store::organs::add_contact(&self.store.pool, &organ_uid, None, name, "", 1).await?;
-                store::organs::set_node_id(&self.store.pool, &organ_uid, Some(&invite.node_id))
-                    .await?;
+                // only an Introduction over a real connection can. So a row for
+                // someone NOT yet met is held under a uid derived from the
+                // NodeId and FLAGGED: the next sync pass dials them, learns the
+                // real uid, and replaces this row with it. Until that happens
+                // they cannot sync, and the flag is what stops that from being
+                // a silent dead end.
+                let organ_uid = match &existing {
+                    Some(contact) => contact.record_uid.clone(),
+                    None => {
+                        let organ_uid = format!("o-{}", &invite.node_id);
+                        store::organs::add_contact(
+                            &self.store.pool,
+                            &organ_uid,
+                            None,
+                            name,
+                            "",
+                            1,
+                        )
+                        .await?;
+                        store::organs::set_node_id(
+                            &self.store.pool,
+                            &organ_uid,
+                            Some(&invite.node_id),
+                        )
+                        .await?;
+                        organ_uid
+                    }
+                };
+                if existing.is_some() {
+                    // They already have a name here — from discovery, which
+                    // took it from their own claim. What the user just typed is
+                    // deliberate and local, so it wins.
+                    store::organs::rename_contact(&self.store.pool, &organ_uid, name).await?;
+                }
                 if let Some(root_key) = &invite.root_key {
                     // TOFU, and the ONLY moment it happens: every roster and
                     // succession afterwards must chain from this key.
@@ -2859,12 +2980,19 @@ impl Engine {
                     );
                 }
                 store::organs::set_trust(&self.store.pool, &organ_uid, "known").await?;
-                store::organs::set_pending_introduction(&self.store.pool, &organ_uid, true).await?;
-                outcome.warnings.push(
-                    "added — but they are not reachable for sync until this Cell has connected \
-                     to them once and learned their identity."
-                        .into(),
-                );
+                // Only a row we just invented owes an Introduction. Someone we
+                // have already met introduced themselves when we met them, and
+                // re-flagging them would send a settled contact back through
+                // reconciliation for nothing.
+                if existing.is_none() {
+                    store::organs::set_pending_introduction(&self.store.pool, &organ_uid, true)
+                        .await?;
+                    outcome.warnings.push(
+                        "added — but they are not reachable for sync until this Cell has \
+                         connected to them once and learned their identity."
+                            .into(),
+                    );
+                }
                 outcome.created = Some(organ_uid);
             }
             Action::StartConversation { contact, title } => {

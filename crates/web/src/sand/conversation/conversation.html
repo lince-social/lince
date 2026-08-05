@@ -157,19 +157,33 @@
         accept.className = "lynx-button lynx-button--primary primary";
         accept.type = "button";
         accept.textContent = "Accept";
-        accept.onclick = () => {
-          H.act({ action: "accept-thread-invite", invite: invite.uid })
-            .then(() => status("Accepted. This opens the conversation — it does not make them a known contact."))
-            .catch((e) => status(e && e.message ? e.message : "Could not accept.", true));
+        accept.onclick = async () => {
+          try {
+            const response = await fetch(`/host/notifications/${encodeURIComponent(invite.uid)}/accept`, { method: "POST" });
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(payload.error || "Could not accept.");
+            if (payload.record_id) {
+              selectedConversation = payload.record_id;
+              H.emit("recordClicked", { record: { uid: payload.record_id } });
+            }
+            status("Accepted. Only this conversation is shared; they are still not a known contact.");
+          } catch (e) {
+            status(e && e.message ? e.message : "Could not accept.", true);
+          }
         };
         const decline = document.createElement("button");
         decline.className = "lynx-button";
         decline.type = "button";
         decline.textContent = "Decline";
-        decline.onclick = () => {
-          H.act({ action: "decline-thread-invite", invite: invite.uid })
-            .then(() => status("Declined. They can ask once more later."))
-            .catch((e) => status(e && e.message ? e.message : "Could not decline.", true));
+        decline.onclick = async () => {
+          try {
+            const response = await fetch(`/host/notifications/${encodeURIComponent(invite.uid)}/decline`, { method: "POST" });
+            const payload = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(payload.error || "Could not decline.");
+            status("Declined. They can ask once more later.");
+          } catch (e) {
+            status(e && e.message ? e.message : "Could not decline.", true);
+          }
         };
         actions.append(accept, decline);
         box.append(who, from, title, actions);

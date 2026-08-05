@@ -129,6 +129,7 @@ mod tests {
             "lynx-dialog",
             "lynx-tabs",
             "lynx-disclosure",
+            "show-toast",
         ] {
             assert!(demo.contains(component), "gallery does not use {component}");
         }
@@ -136,6 +137,7 @@ mod tests {
         let library = std::str::from_utf8(LYNX_UI_JS).expect("LynxUI JavaScript should be UTF-8");
         assert!(library.contains("global.LynxUI"));
         assert!(library.contains("inspect"));
+        assert!(library.contains("function toast"));
         assert!(library.contains("trash:"));
     }
 }

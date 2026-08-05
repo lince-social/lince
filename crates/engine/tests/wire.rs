@@ -211,9 +211,9 @@ async fn unknown_node_id_cannot_reach_the_sync_protocol() {
     serving.abort();
 }
 
-/// Having a contact ROW is not having trust. `add_contact` writes `known`, but
-/// a row can be demoted (or arrive un-vetted), and `unknown` means the thread
-/// door only — never the sync protocol.
+/// Having a contact ROW is not having trust. `add_contact` deliberately writes
+/// `unknown`, which means the grant-checked thread door only — never the
+/// general sync protocol.
 #[tokio::test]
 async fn a_contact_who_is_not_known_cannot_reach_the_sync_protocol() {
     let (b, _b_organ) = cell("http://b.test").await;
@@ -325,7 +325,7 @@ async fn thread_door_is_closed_to_unknown_organs_by_default() {
 /// what makes pairing from a nearby list possible — and NOTHING else. It must
 /// not be able to push ops.
 #[tokio::test]
-async fn open_thread_door_serves_introduction_only() {
+async fn open_thread_door_serves_introduction_but_not_general_sync() {
     let (b, b_organ) = cell("http://b.test").await;
     let (stranger, stranger_organ) = cell("http://stranger.test").await;
 
@@ -461,6 +461,122 @@ async fn sync_once_converges_two_cells() {
     );
 
     serving.abort();
+}
+
+/// First contact is an individual replica, not friendship: a discovered
+/// NodeId can offer one conversation, the receiver accepts it, and that root
+/// syncs while both contact rows remain `unknown` and the general feed stays
+/// closed.
+#[tokio::test]
+async fn unknown_nearby_peers_can_accept_and_sync_one_conversation() {
+    let (a, a_organ) = cell("http://a.test").await;
+    let (b, b_organ) = cell("http://b.test").await;
+    store::records::set_extension(
+        &b.store.pool,
+        &b_organ,
+        "lince.discovery",
+        &serde_json::json!({ "accept_unknown": true }),
+    )
+    .await
+    .expect("B opens first contact");
+
+    let a_wire = Wire::bind(a.clone(), secret(61), Reach::Local)
+        .await
+        .expect("a binds");
+    let b_wire = Wire::bind(b.clone(), secret(62), Reach::Local)
+        .await
+        .expect("b binds");
+    a_wire.remember_addr(loopback(&b_wire));
+    b_wire.remember_addr(loopback(&a_wire));
+    let a_serving = {
+        let wire = a_wire.clone();
+        tokio::spawn(async move { wire.serve().await })
+    };
+    let b_serving = {
+        let wire = b_wire.clone();
+        tokio::spawn(async move { wire.serve().await })
+    };
+
+    let (conversation, thread) = a_wire
+        .offer_conversation_to_node(&b_wire.node_id().to_string(), "Hello")
+        .await
+        .expect("unknown offer reaches B");
+    let pending = store::invites::pending(&b.store.pool)
+        .await
+        .expect("pending invites");
+    assert_eq!(pending.len(), 1);
+    assert_eq!(pending[0].root, conversation);
+
+    for (cell, peer) in [(&*a, &b_organ), (&*b, &a_organ)] {
+        assert_eq!(
+            store::organs::contact(&cell.store.pool, peer)
+                .await
+                .expect("contact query")
+                .expect("unknown identity binding")
+                .trust,
+            "unknown",
+            "a conversation request must not add either side as known"
+        );
+    }
+
+    b_wire
+        .answer_conversation_invite(&pending[0].record_uid, true)
+        .await
+        .expect("B accepts and acknowledges A");
+    b_wire.sync_once().await.expect("B pulls accepted root");
+    assert!(
+        store::records::get(&b.store.pool, &conversation)
+            .await
+            .expect("conversation query")
+            .is_some(),
+        "acceptance must pull the offered conversation"
+    );
+    assert!(
+        store::records::get(&b.store.pool, &thread)
+            .await
+            .expect("thread query")
+            .is_some(),
+        "the first thread rides the conversation root"
+    );
+
+    let message = a
+        .send_message(&thread, "A", "hey, I'm here")
+        .await
+        .expect("message");
+    a_wire.sync_once().await.expect("A pushes grant ops");
+    assert_eq!(
+        store::records::get(&b.store.pool, &message)
+            .await
+            .expect("message query")
+            .expect("message reached B")
+            .body,
+        "hey, I'm here"
+    );
+
+    let (declined_root, _) = a_wire
+        .offer_conversation_to_node(&b_wire.node_id().to_string(), "Not now")
+        .await
+        .expect("a second offer reaches B after the first was answered");
+    let declined_invite = store::invites::pending(&b.store.pool)
+        .await
+        .expect("second pending invite")
+        .into_iter()
+        .find(|invite| invite.root == declined_root)
+        .expect("second invite is visible");
+    b_wire
+        .answer_conversation_invite(&declined_invite.record_uid, false)
+        .await
+        .expect("B declines and acknowledges A");
+    assert_eq!(
+        store::replica::state(&a.store.pool, &declined_root, &b_organ)
+            .await
+            .expect("sender grant state"),
+        None,
+        "declining must retire the sender's offered grant"
+    );
+
+    a_serving.abort();
+    b_serving.abort();
 }
 
 /// The offline send queue, which is not a separate mechanism: a peer that is

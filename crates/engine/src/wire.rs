@@ -208,9 +208,18 @@ pub enum WireRequest {
     OfferGrant {
         root: String,
         title: String,
+        /// The durable Organ identity offered by the Cell on this
+        /// authenticated Iroh connection. Receiving it creates an `unknown`
+        /// peer binding, never a known contact.
+        intro: Introduction,
     },
     /// Accept an offer. Only now do ops move.
     AcceptGrant {
+        root: String,
+    },
+    /// Decline an offer so the sender can retire its offered grant and may
+    /// offer another conversation later.
+    DeclineGrant {
         root: String,
     },
     /// Individual-replica ops. `root` is the CHANNEL, checked against the
@@ -510,6 +519,162 @@ impl Wire {
         Ok(intro.organ_uid)
     }
 
+    /// Bind an Organ introduction to the NodeId proven by the current Iroh
+    /// connection without promoting it to `known`.
+    ///
+    /// This is the identity tier used by first-contact conversations: enough
+    /// information to verify durable ops and route replies, but no access to
+    /// the general Organ feed. An existing binding may not be replaced by a
+    /// different NodeId or Organ uid.
+    async fn bind_unknown_peer(
+        &self,
+        node_id: &str,
+        intro: &Introduction,
+    ) -> Result<String, EngineError> {
+        let pool = &self.engine.store.pool;
+        if store::organs::local(pool)
+            .await?
+            .is_some_and(|local| local.uid == intro.organ_uid)
+        {
+            return Err(EngineError::Forbidden(
+                "a remote Cell claimed this Cell's Organ uid".into(),
+            ));
+        }
+        if let Some(by_node) = store::organs::contact_by_node_id(pool, node_id).await? {
+            if by_node.record_uid != intro.organ_uid {
+                return Err(EngineError::Forbidden(
+                    "this NodeId is already bound to another Organ".into(),
+                ));
+            }
+            return Ok(by_node.record_uid);
+        }
+        if let Some(by_uid) = store::organs::contact(pool, &intro.organ_uid).await? {
+            if by_uid
+                .node_id
+                .as_deref()
+                .is_some_and(|held| held != node_id)
+            {
+                return Err(EngineError::Forbidden(
+                    "this Organ is already bound to another NodeId".into(),
+                ));
+            }
+            if by_uid.trust == "blocked" {
+                return Err(EngineError::Forbidden("this Organ is blocked".into()));
+            }
+            store::organs::set_node_id(pool, &intro.organ_uid, Some(node_id)).await?;
+            return Ok(intro.organ_uid.clone());
+        }
+
+        let organ_uid = self.engine.adopt_introduction(intro, 1).await?;
+        store::organs::set_node_id(pool, &organ_uid, Some(node_id)).await?;
+        // `add_contact` defaults to unknown. Keep this explicit at the trust
+        // boundary: accepting a conversation is not adding a friend.
+        store::organs::set_trust(pool, &organ_uid, "unknown").await?;
+        Ok(organ_uid)
+    }
+
+    /// Offer a new individually replicated conversation to a discovered
+    /// NodeId. No known-contact relationship is required on either side.
+    pub async fn offer_conversation_to_node(
+        &self,
+        node_id: &str,
+        title: &str,
+    ) -> Result<(String, String), EngineError> {
+        let id = node_id
+            .parse::<EndpointId>()
+            .map_err(|_| EngineError::Consequence("malformed NodeId".into()))?;
+        let remote = self
+            .request(
+                EndpointAddr::new(id),
+                ALPN_THREAD,
+                &WireRequest::Introduction,
+            )
+            .await?;
+        let WireResponse::Introduction {
+            intro: remote_intro,
+        } = remote
+        else {
+            return Err(EngineError::Consequence(
+                "the nearby Cell refused to introduce itself".into(),
+            ));
+        };
+        let contact = self.bind_unknown_peer(node_id, &remote_intro).await?;
+        let (conversation, thread) = self.engine.start_conversation(&contact, title).await?;
+        let intro = self.engine.introduction().await?;
+        match self
+            .request(
+                EndpointAddr::new(id),
+                ALPN_THREAD,
+                &WireRequest::OfferGrant {
+                    root: conversation.clone(),
+                    title: title.to_string(),
+                    intro,
+                },
+            )
+            .await?
+        {
+            WireResponse::Applied { .. } => Ok((conversation, thread)),
+            WireResponse::Refused { message, .. } | WireResponse::Error { message } => {
+                Err(EngineError::Consequence(message))
+            }
+            other => Err(EngineError::Consequence(format!(
+                "unexpected conversation-offer response: {other:?}"
+            ))),
+        }
+    }
+
+    /// Answer a pending conversation invite and notify its sender before the
+    /// local notification is cleared. Both operations are idempotent.
+    pub async fn answer_conversation_invite(
+        &self,
+        invite_uid: &str,
+        accept: bool,
+    ) -> Result<String, EngineError> {
+        let invite = store::invites::get(&self.engine.store.pool, invite_uid)
+            .await?
+            .ok_or_else(|| EngineError::Consequence("no such invite".into()))?;
+        let contact = store::organs::contact(&self.engine.store.pool, &invite.from_organ)
+            .await?
+            .ok_or_else(|| {
+                EngineError::Consequence("invite sender has no identity binding".into())
+            })?;
+        let node_id = contact
+            .node_id
+            .as_deref()
+            .ok_or_else(|| EngineError::Consequence("invite sender has no NodeId".into()))?
+            .parse::<EndpointId>()
+            .map_err(|_| EngineError::Consequence("invite sender has a malformed NodeId".into()))?;
+        let request = if accept {
+            WireRequest::AcceptGrant {
+                root: invite.root.clone(),
+            }
+        } else {
+            WireRequest::DeclineGrant {
+                root: invite.root.clone(),
+            }
+        };
+        match self
+            .request(EndpointAddr::new(node_id), ALPN_THREAD, &request)
+            .await?
+        {
+            WireResponse::Applied { .. } => {}
+            WireResponse::Refused { message, .. } | WireResponse::Error { message } => {
+                return Err(EngineError::Consequence(message));
+            }
+            other => {
+                return Err(EngineError::Consequence(format!(
+                    "unexpected invite response: {other:?}"
+                )));
+            }
+        }
+        if accept {
+            self.engine.accept_invite(invite_uid).await?;
+        } else {
+            self.engine.decline_invite(invite_uid).await?;
+        }
+        Ok(invite.root)
+    }
+
     /// Close this endpoint. Used when rebinding for a discovery change.
     pub async fn shutdown(&self) {
         self.endpoint.close().await;
@@ -649,6 +814,7 @@ impl Wire {
         // with `trust='unknown'` is someone added but not yet vetted, and the
         // policy is explicit that they get the thread door and nothing else.
         let known = contact.as_ref().is_some_and(|c| c.trust == "known");
+        let identified = contact.is_some();
 
         match (alpn.as_slice(), known) {
             (ALPN_SYNC, true) => {}
@@ -690,16 +856,19 @@ impl Wire {
                 return Ok(());
             }
             (ALPN_THREAD, true) => {}
-            (ALPN_THREAD, false) => {
+            (ALPN_THREAD, false) if !identified => {
                 // The invite door. Threads themselves land with the Threads
-                // stage; what is served here today is `Introduction` only, so
-                // an unknown peer can be PAIRED with — which is the whole
-                // point of a nearby list — without gaining any sync reach.
+                // stage. A completely new NodeId needs the explicit discovery
+                // opt-in before it may introduce itself or offer a root.
                 if !self.accept_unknown().await {
                     connection.close(0u32.into(), b"not accepting unknown organs");
                     return Ok(());
                 }
             }
+            // Already identified but not known: only the request-level grant
+            // verbs below are admitted. This is the individual-replica tier,
+            // and remains usable if the user later closes first contact.
+            (ALPN_THREAD, false) => {}
             _ => {
                 connection.close(0u32.into(), b"unsupported alpn");
                 return Ok(());
@@ -731,7 +900,13 @@ impl Wire {
                     if !known
                         && !matches!(
                             request,
-                            WireRequest::Introduction | WireRequest::Enrol { .. }
+                            WireRequest::Introduction
+                                | WireRequest::Enrol { .. }
+                                | WireRequest::OfferGrant { .. }
+                                | WireRequest::AcceptGrant { .. }
+                                | WireRequest::DeclineGrant { .. }
+                                | WireRequest::PushGrantOps { .. }
+                                | WireRequest::FetchGrantOps { .. }
                         ) =>
                 {
                     WireResponse::Refused {
@@ -739,7 +914,38 @@ impl Wire {
                         message: "only introduction is served to an unknown Organ".into(),
                     }
                 }
-                Ok(request) => self.handle(&from_organ, request).await,
+                Ok(request) => {
+                    // A first conversation is deliberately possible before
+                    // either side is known. For the first offer only, bind
+                    // the Introduction to the NodeId authenticated by Iroh
+                    // and keep its trust tier `unknown`. Every later grant
+                    // request resolves through that binding.
+                    let authenticated = match &request {
+                        WireRequest::OfferGrant { intro, .. } if from_organ.is_empty() => {
+                            match self.bind_unknown_peer(&peer.to_string(), intro).await {
+                                Ok(organ_uid) => organ_uid,
+                                Err(error) => {
+                                    let response = WireResponse::Refused {
+                                        code: "identity_binding_refused".into(),
+                                        message: error.to_string(),
+                                    };
+                                    let bytes = serde_json::to_vec(&response).map_err(|error| {
+                                        EngineError::Consequence(error.to_string())
+                                    })?;
+                                    send.write_all(&bytes).await.map_err(|error| {
+                                        EngineError::Consequence(format!("peer write: {error}"))
+                                    })?;
+                                    send.finish().map_err(|error| {
+                                        EngineError::Consequence(format!("peer finish: {error}"))
+                                    })?;
+                                    continue;
+                                }
+                            }
+                        }
+                        _ => from_organ.clone(),
+                    };
+                    self.handle(&authenticated, request).await
+                }
                 // Fail closed on the unknown: a request shape this build does
                 // not recognise is refused, never guessed at.
                 Err(error) => WireResponse::Error {
@@ -886,7 +1092,11 @@ impl Wire {
                     },
                 }
             }
-            WireRequest::OfferGrant { root, title } => {
+            WireRequest::OfferGrant {
+                root,
+                title,
+                intro: _,
+            } => {
                 // Recorded as `offered`, never `accepted`: the local user
                 // decides whether to keep a copy, and until they do nothing
                 // syncs. An Organ cannot push Records into someone's store by
@@ -955,6 +1165,24 @@ impl Wire {
                         code: "no_such_offer".into(),
                         message: "no grant was offered to you on that root".into(),
                     },
+                    Err(error) => WireResponse::Error {
+                        message: error.to_string(),
+                    },
+                }
+            }
+            WireRequest::DeclineGrant { root } => {
+                match store::replica::state(&self.engine.store.pool, &root, authenticated).await {
+                    Ok(Some(_)) => {
+                        match store::replica::revoke(&self.engine.store.pool, &root, authenticated)
+                            .await
+                        {
+                            Ok(()) => WireResponse::Applied { applied: 0 },
+                            Err(error) => WireResponse::Error {
+                                message: error.to_string(),
+                            },
+                        }
+                    }
+                    Ok(None) => WireResponse::Applied { applied: 0 },
                     Err(error) => WireResponse::Error {
                         message: error.to_string(),
                     },
@@ -1194,9 +1422,17 @@ impl Wire {
             // without a cap iroh keeps trying relays and holepunches while the
             // whole sync pass — every other contact included — waits behind
             // one closed laptop.
+            // Unknown peers may use only the thread door, where every
+            // individual-replica request is checked against an explicit
+            // accepted grant. Known contacts use the general sync door.
+            let alpn = if contact.trust == "known" {
+                ALPN_SYNC
+            } else {
+                ALPN_THREAD
+            };
             match tokio::time::timeout(
                 DIAL_TIMEOUT,
-                self.endpoint.connect(EndpointAddr::new(id), ALPN_SYNC),
+                self.endpoint.connect(EndpointAddr::new(id), alpn),
             )
             .await
             {
@@ -1248,29 +1484,33 @@ impl Wire {
         let pool = &self.engine.store.pool;
         let mut pulled = 0usize;
         for contact in store::organs::contacts(pool).await? {
-            if contact.trust == "blocked" || !contact.sync_in {
+            if contact.trust == "blocked" {
                 continue;
             }
             let Some(connection) = self.dial(&contact).await else {
                 continue;
             };
-            // The general feed first.
-            let request = WireRequest::FetchOps {
-                after: contact.last_synced_seq,
-                limit: 500,
-            };
-            if let Ok(WireResponse::Ops { ops, head, .. }) =
-                self.exchange(&connection, &request).await
-            {
-                let batch = OpBatch {
-                    from_organ: contact.record_uid.clone(),
-                    ops,
+            // Only known contacts receive the general Organ feed. An unknown
+            // peer can still synchronize roots both parties explicitly
+            // accepted below.
+            if contact.trust == "known" && contact.sync_in {
+                let request = WireRequest::FetchOps {
+                    after: contact.last_synced_seq,
+                    limit: 500,
                 };
-                if !batch.ops.is_empty() && self.engine.import_op_batch(&batch).await.is_ok() {
-                    // Advance the checkpoint only after a successful import,
-                    // so a failed apply is retried rather than skipped.
-                    store::organs::set_last_synced_seq(pool, &contact.record_uid, head).await?;
-                    pulled += 1;
+                if let Ok(WireResponse::Ops { ops, head, .. }) =
+                    self.exchange(&connection, &request).await
+                {
+                    let batch = OpBatch {
+                        from_organ: contact.record_uid.clone(),
+                        ops,
+                    };
+                    if !batch.ops.is_empty() && self.engine.import_op_batch(&batch).await.is_ok() {
+                        // Advance the checkpoint only after a successful import,
+                        // so a failed apply is retried rather than skipped.
+                        store::organs::set_last_synced_seq(pool, &contact.record_uid, head).await?;
+                        pulled += 1;
+                    }
                 }
             }
             // Then every conversation they have granted US.
@@ -1293,6 +1533,9 @@ impl Wire {
                         pulled += 1;
                     }
                 }
+            }
+            if contact.trust != "known" {
+                continue;
             }
             // Revocations BEFORE the roster: a revoked key must stop chaining
             // before we evaluate anything it might have signed, or a roster

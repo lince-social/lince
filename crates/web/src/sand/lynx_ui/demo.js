@@ -1,6 +1,6 @@
 (function () {
   "use strict";
-  const { icon, iconButton } = window.LynxUI;
+  const { icon, iconButton, toast } = window.LynxUI;
 
   function actions(names) {
     return `<div class="record-actions">${names.map(([name, label]) => iconButton(name, label)).join("")}</div>`;
@@ -44,6 +44,7 @@
         <div class="lynx-row"><label class="lynx-check"><input type="checkbox" checked> Notify</label><label class="lynx-radio"><input type="radio" checked name="showcase-density"> Compact</label></div>
         <div class="lynx-row"><span class="lynx-status">Declared</span><span class="lynx-status">${icon("check")}Settled</span></div>
         <div class="lynx-callout">${icon("info")}<span>Every primitive is also shown in the full gallery.</span></div>
+        <button class="lynx-button show-toast" type="button">Show toast</button>
         <details class="lynx-disclosure"><summary>Disclosure</summary><div class="lynx-box">Box, panel, list, table, menu, tabs, tooltip, and dialog are in the full gallery.</div></details>
         <div class="lynx-empty">No unreviewed components.</div>
       </div>
@@ -172,6 +173,9 @@
   const toggle = document.querySelector(".theme-toggle");
   const inspectToggle = document.querySelector(".inspect-toggle");
   const styleSelect = document.querySelector("[data-style-select]");
+  document.querySelector(".show-toast").addEventListener("click", () => {
+    toast({ title: "LynxUI toast", body: "Dismisses after five seconds.", duration: 5000 });
+  });
   function syncTheme() {
     const macchiato = root.dataset.style === "catppuccin-macchiato";
     const dark = root.dataset.mode === "dark";

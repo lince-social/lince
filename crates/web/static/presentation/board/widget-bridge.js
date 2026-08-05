@@ -1289,6 +1289,12 @@ export function createWidgetBridge({
     syncFrames() {
       render(bridgeState);
     },
+    emitLocal(topic, data) {
+      // Chrome-originated navigation (for example accepting a conversation
+      // notification) should drive this board's Record sand without being
+      // rebroadcast to every other open board session.
+      deliverEventToFrames(String(topic || ""), data, "");
+    },
     destroy() {
       for (const id of terminalSessions.keys()) {
         sendTransport({ type: "terminal_close", id });

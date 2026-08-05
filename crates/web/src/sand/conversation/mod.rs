@@ -4,8 +4,8 @@ pub(crate) const FEATURE_FLAG: &str = "sand.conversation";
 
 // Reading and answering conversations (Ontology §11 "Threads"). Nothing here
 // is a messaging subsystem: a conversation, a topic, and a message are all
-// Records, and this sand is a view over them plus the two Actions that answer
-// an invite.
+// Records. Invites are mirrored here and in board notifications; both answer
+// through the host boundary so the remote grant is acknowledged too.
 const HTML: &str = include_str!("conversation.html");
 
 pub(crate) fn manifest() -> PackageManifest {
@@ -22,10 +22,11 @@ pub(crate) fn manifest() -> PackageManifest {
             since Protein has no 'linked to X' predicate. Sending uses \
             `send-message`; a new topic uses `open-thread` and needs no new grant, \
             because it is born inside the conversation that was already shared. \
-            Pending invites appear at the top: accepting keeps a copy of what was \
-            offered and nothing else — it sets no trust, enables no sync, and adopts \
-            no key, because agreeing to read what someone sends is not deciding who \
-            they are. Declining revokes the offered grant, which is what frees the \
+            Pending invites appear here and in board notifications: accepting keeps a \
+            copy of what was offered and nothing else — it does not promote the \
+            sender to known or enable the general feed. Verification keys retained \
+            for that authenticated unknown identity are not a friendship decision. \
+            Declining revokes the offered grant, which is what frees the \
             sender to ask once more; there is deliberately no 'dismiss' that would \
             leave them waiting forever."
             .into(),
@@ -50,15 +51,15 @@ mod tests {
     use super::{HTML, manifest};
 
     #[test]
-    fn conversations_read_records_and_answer_invites_through_actions() {
+    fn conversations_read_records_and_acknowledge_invites_through_the_host() {
         assert!(HTML.contains("kind_eq: \"conversation\""));
         assert!(HTML.contains("kind_eq: \"thread_invite\""));
         assert!(HTML.contains("action: \"send-message\""));
         assert!(HTML.contains("action: \"open-thread\""));
-        assert!(HTML.contains("action: \"accept-thread-invite\""));
-        assert!(HTML.contains("action: \"decline-thread-invite\""));
-        // No camera, no terminal, no host state beyond the board's own: a
-        // conversation view is Protein plus Actions and nothing more.
+        assert!(HTML.contains("/host/notifications/${encodeURIComponent(invite.uid)}/accept"));
+        assert!(HTML.contains("/host/notifications/${encodeURIComponent(invite.uid)}/decline"));
+        // No camera or terminal: the host calls are same-origin acknowledgement
+        // of the remote grant, while ordinary conversation data remains Protein.
         assert_eq!(
             manifest().permissions,
             vec!["bridge_state", "protein_subscribe", "act"]

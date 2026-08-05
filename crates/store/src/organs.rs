@@ -27,16 +27,19 @@ pub async fn ensure_local(pool: &SqlitePool, base_url: &str) -> Result<OrganReco
         .await?;
     let uid = match existing_uid {
         Some(uid) => {
+            // The head is NOT rewritten here. "Local Lince" is a first-boot
+            // default, and re-stamping it every start would silently undo any
+            // name the user gave this Cell — leaving every Cell in the world
+            // called the same thing, which is precisely what makes a contact
+            // row indistinguishable from this Cell's own in a list.
             sqlx::query(
                 "UPDATE record
                     SET kind = ?,
-                        head = ?,
                         body = ?,
                         updated_at = ?
                   WHERE uid = ?",
             )
             .bind(RecordKind::Organ.as_str())
-            .bind("Local Lince")
             .bind(&base_url)
             .bind(&now)
             .bind(&uid)
@@ -320,6 +323,25 @@ pub async fn forget_contact(pool: &SqlitePool, organ_uid: &str) -> Result<(), St
 /// (QR, paste, or an introduction over an already-authenticated connection),
 /// never inferred from an inbound connection: adopting the NodeId of whoever
 /// dialed us is exactly how an impostor would claim a contact's row.
+/// Rename a contact to what the LOCAL user calls them.
+///
+/// Plain SQL and no op, for the same reason `add_contact` writes its record
+/// that way: this is our private label for someone else's Organ, and logging
+/// it would push our name for them back to them and to every other contact.
+pub async fn rename_contact(
+    pool: &SqlitePool,
+    organ_uid: &str,
+    head: &str,
+) -> Result<(), StoreError> {
+    sqlx::query("UPDATE record SET head = ?, updated_at = ? WHERE uid = ?")
+        .bind(head)
+        .bind(Utc::now().to_rfc3339())
+        .bind(organ_uid)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
 pub async fn set_node_id(
     pool: &SqlitePool,
     organ_uid: &str,

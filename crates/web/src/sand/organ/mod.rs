@@ -234,6 +234,8 @@ mod tests {
             "pf-info",
             "pf-key-info",
             "dc-info",
+            // On the network list's summary, which is a heading of its own —
+            // it just lives in the side column rather than in a panel.
             "nb-info",
             "sync-info",
             "fs-info",
@@ -242,12 +244,35 @@ mod tests {
         }
         assert_eq!(
             HTML.matches("class=\"group-head\"").count(),
-            10,
+            9,
             "every group is titled, and the titles are where the explanations live"
         );
         assert!(
             HTML.contains("main [data-lynx-tooltip]::after"),
             "the shared 180px cap is widened HERE, never in the shared stylesheet"
+        );
+    }
+
+    /// Who is on the network is not a property of the Organ you happen to
+    /// have selected — it is the other half of the same column. It shares the
+    /// side panel through a split whose divider the user drags, and it closes
+    /// down to its summary rather than holding a third of the column open
+    /// around nothing.
+    #[test]
+    fn the_network_list_shares_the_side_column_through_a_split() {
+        assert!(HTML.contains("class=\"lynx-split\" id=\"side-split\""));
+        assert!(HTML.contains("class=\"lynx-split__divider\""));
+        assert!(
+            HTML.contains("id=\"nearby-disclosure\" open"),
+            "it starts open — a closed list of nobody teaches nothing"
+        );
+        assert!(
+            HTML.contains("id=\"nb-count\""),
+            "and the count rides the summary, so a closed section still says whether anyone is there"
+        );
+        assert!(
+            !HTML.contains("id=\"nearby-panel\""),
+            "the old copy inside the Organ detail is gone, not duplicated"
         );
     }
 

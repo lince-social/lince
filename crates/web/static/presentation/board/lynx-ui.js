@@ -126,6 +126,8 @@
     [".lynx-grid", "Grid"],
     [".lynx-toolbar", "Toolbar"],
     [".lynx-divider", "Divider"],
+    [".lynx-split__divider", "Split divider"],
+    [".lynx-split", "Split"],
     [".lynx-status", "Badge"],
     [".lynx-callout", "Callout"],
     [".lynx-empty", "Empty state"],
@@ -242,5 +244,82 @@
     tabs[index].focus();
   });
 
-  global.LynxUI = Object.freeze({ icon, iconButton, toast, icons: Object.keys(paths), inspect, setSelectValue });
+  // ── Split: two panes sharing a height, dragged apart by their divider.
+  //
+  // The bottom pane is the sized one and the top takes the rest, so a list
+  // above keeps growing with the panel while the section below stays where
+  // the user put it. Dragging writes a pixel height; the CSS default (a
+  // third) applies until then.
+  function splitOf(element) {
+    return element?.closest?.(".lynx-split") || null;
+  }
+
+  function bottomPane(split) {
+    const panes = split.querySelectorAll(":scope > .lynx-split__pane");
+    return panes[panes.length - 1] || null;
+  }
+
+  // A closed disclosure in the bottom pane means there is nothing to size:
+  // hold the divider open around an empty box and the list above loses a
+  // third of its height for no content.
+  function syncSplitCollapsed(split) {
+    const pane = bottomPane(split);
+    if (!pane) return;
+    const disclosures = [...pane.querySelectorAll("details")];
+    const collapsed = disclosures.length > 0 && disclosures.every((d) => !d.open);
+    split.toggleAttribute("data-lynx-split-collapsed", collapsed);
+  }
+
+  function resizeSplit(split, height) {
+    const box = split.getBoundingClientRect();
+    // Both panes stay usable: neither side can be dragged out of existence.
+    const clamped = Math.max(28, Math.min(height, box.height - 48));
+    split.style.setProperty("--lynx-split-basis", `${Math.round(clamped)}px`);
+  }
+
+  let dragging = null;
+  document.addEventListener("pointerdown", (event) => {
+    const divider = event.target.closest?.(".lynx-split__divider");
+    const split = splitOf(divider);
+    if (!split || split.hasAttribute("data-lynx-split-collapsed")) return;
+    dragging = split;
+    divider.setPointerCapture?.(event.pointerId);
+    event.preventDefault();
+  });
+  document.addEventListener("pointermove", (event) => {
+    if (!dragging) return;
+    resizeSplit(dragging, dragging.getBoundingClientRect().bottom - event.clientY);
+  });
+  for (const done of ["pointerup", "pointercancel"]) {
+    document.addEventListener(done, () => { dragging = null; });
+  }
+
+  document.addEventListener("keydown", (event) => {
+    const divider = event.target.closest?.(".lynx-split__divider");
+    const split = splitOf(divider);
+    if (!split || !["ArrowUp", "ArrowDown"].includes(event.key)) return;
+    const pane = bottomPane(split);
+    if (!pane) return;
+    event.preventDefault();
+    const step = event.key === "ArrowUp" ? 16 : -16;
+    resizeSplit(split, pane.getBoundingClientRect().height + step);
+  });
+
+  // `toggle` does not bubble, so it is captured rather than delegated.
+  document.addEventListener("toggle", (event) => {
+    const split = splitOf(event.target);
+    if (split) syncSplitCollapsed(split);
+  }, true);
+
+  function splits(root = document) {
+    for (const split of root.querySelectorAll(".lynx-split")) syncSplitCollapsed(split);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => splits());
+  } else {
+    splits();
+  }
+
+  global.LynxUI = Object.freeze({ icon, iconButton, toast, icons: Object.keys(paths), inspect, setSelectValue, splits });
 })(window);

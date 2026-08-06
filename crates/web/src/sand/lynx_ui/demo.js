@@ -107,11 +107,17 @@
         <div class="lynx-callout">${icon("info")}<span>Two materials need review before tomorrow's assembly run.</span></div>
         <div class="lynx-grid inventory-grid">
           <div class="lynx-panel inventory-table"><header class="lynx-title">Material balance</header><div class="lynx-panel__body"><table class="lynx-table"><thead><tr><th>Material</th><th>Available</th><th>Badge</th></tr></thead><tbody><tr><td>Cobalt sheet</td><td>18</td><td><span class="lynx-status">${icon("check")}Ready</span></td></tr><tr><td>Ice glass</td><td>−3</td><td><span class="lynx-status">Need</span></td></tr><tr><td>Gray fastener</td><td>42</td><td><span class="lynx-status">Declared</span></td></tr></tbody></table></div><footer class="lynx-row"><span class="lynx-status">3 materials</span><span>Updated 10:12</span></footer></div>
-          <div class="lynx-stack inventory-side">
-            <details class="lynx-disclosure" open><summary>Receiving notes</summary><p>Confirm quantities against the signed delivery.</p></details>
+          <div class="lynx-split inventory-side" style="height: 260px">
+            <div class="lynx-split__pane lynx-stack">
             <div class="lynx-dropdown"><button class="lynx-button" type="button" aria-expanded="false" data-lynx-dropdown-button>Batch actions ${icon("chevronDown")}</button><div class="lynx-menu" hidden><button class="lynx-button" type="button">Recount</button><button class="lynx-button" type="button">Move</button></div></div>
             <ul class="lynx-list"><li>Dock A · 8 crates</li><li>Dock B · waiting</li></ul>
             <div class="lynx-empty">No rejected deliveries.</div>
+            </div>
+            <button class="lynx-split__divider" type="button" aria-label="Resize receiving notes"></button>
+            <div class="lynx-split__pane">
+              <details class="lynx-disclosure" open><summary>Receiving notes</summary><p>Confirm quantities against the signed delivery. Drag the divider to give this
+                section more room; close it and the split shrinks to the summary.</p></details>
+            </div>
           </div>
         </div>
         ${tools()}

@@ -85,6 +85,47 @@ test("registering and devices are errands behind the corner, not panels on an Or
   }
 });
 
+test("the network list shares the side column and gives its space back when closed", async ({ browser }, testInfo) => {
+  const it = await startSingle(browser, testInfo);
+  try {
+    const frame = it.frame;
+    const heightOf = async (selector) => (await frame.locator(selector).boundingBox()).height;
+
+    // Open by default, and about a third of the column — enough rows to be
+    // worth reading without taking the saved list's space.
+    await expect(frame.locator("#nearby-disclosure")).toHaveAttribute("open", "");
+    const column = await heightOf("#side-split");
+    const open = await heightOf("#nearby-disclosure");
+    expect(open / column).toBeGreaterThan(0.25);
+    expect(open / column).toBeLessThan(0.42);
+
+    // Closed, it shrinks to its own summary rather than holding a third of
+    // the column open around nothing.
+    await frame.locator("#nearby-disclosure summary .name").click();
+    await expect(frame.locator("#nearby-disclosure")).not.toHaveAttribute("open", "");
+    const closed = await heightOf("#nearby-disclosure");
+    expect(closed).toBeLessThan(open / 2);
+    // And the saved list took the difference.
+    expect(await heightOf('section[aria-label="Organs"]')).toBeGreaterThan(column - closed - 40);
+
+    // Dragging the divider is what decides the share while it is open.
+    await frame.locator("#nearby-disclosure summary .name").click();
+    await expect(frame.locator("#nearby-disclosure")).toHaveAttribute("open", "");
+    const divider = await frame.locator("#side-divider").boundingBox();
+    await it.page.mouse.move(divider.x + 20, divider.y + 4);
+    await it.page.mouse.down();
+    await it.page.mouse.move(divider.x + 20, divider.y - 120, { steps: 8 });
+    await it.page.mouse.up();
+    expect(await heightOf("#nearby-disclosure")).toBeGreaterThan(open + 80);
+
+    await testInfo.attach("side-split.png", {
+      body: await it.page.screenshot(), contentType: "image/png",
+    });
+  } finally {
+    await it.close();
+  }
+});
+
 test("adding an Organ is by pairing code only", async ({ browser }, testInfo) => {
   const it = await startSingle(browser, testInfo);
   try {

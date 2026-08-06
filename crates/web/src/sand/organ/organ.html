@@ -80,8 +80,6 @@
     #nearby-disclosure:not([open]) { grid-template-rows: auto; height: auto; }
     #nearby-disclosure > summary { position: sticky; top: 0; z-index: 1; background: var(--panel);
                                    border-bottom: 1px solid var(--line); padding: 8px 10px; }
-    #nearby-disclosure > summary::before { content: "▸"; color: var(--muted); font-size: 10px; }
-    #nearby-disclosure[open] > summary::before { content: "▾"; }
     #nearby-disclosure > summary .name { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
     #nearby-body { min-height: 0; overflow: auto; padding: 0; }
     .nearby-action, .inline-ask { display: flex; flex: 1 0 100%; flex-wrap: wrap; align-items: center; gap: 6px; }

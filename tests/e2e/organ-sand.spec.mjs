@@ -48,7 +48,7 @@ test("registering and devices are errands behind the corner, not panels on an Or
 
     // Reading an Organ shows the Organ, and nothing about adding one.
     await expect(frame.locator("#organ-mode")).toBeVisible();
-    await expect(frame.locator("#organ-form")).toBeHidden();
+    await expect(frame.locator("#add-panel")).toBeHidden();
     await expect(frame.locator("#devices-panel")).toBeHidden();
     await expect(frame.locator("#profile-panel")).toBeVisible();
     await expect(frame.locator("#d-head")).toContainText("this Cell");
@@ -62,14 +62,13 @@ test("registering and devices are errands behind the corner, not panels on an Or
 
     await frame.locator(".sand-tools").hover();
     await frame.locator("#register-open").click();
-    await expect(frame.locator("#organ-form")).toBeVisible();
     await expect(frame.locator("#add-panel")).toBeVisible();
     await expect(frame.locator("#organ-mode")).toBeHidden();
     await testInfo.attach("register-mode.png", {
       body: await it.page.screenshot(), contentType: "image/png",
     });
     await frame.locator("#register-close").click();
-    await expect(frame.locator("#organ-form")).toBeHidden();
+    await expect(frame.locator("#add-panel")).toBeHidden();
 
     await frame.locator(".sand-tools").hover();
     await frame.locator("#devices-open").click();
@@ -86,26 +85,25 @@ test("registering and devices are errands behind the corner, not panels on an Or
   }
 });
 
-test("a registered organ can be deleted from the sand", async ({ browser }, testInfo) => {
+test("adding an Organ is by pairing code only", async ({ browser }, testInfo) => {
   const it = await startSingle(browser, testInfo);
   try {
     const frame = it.frame;
     await frame.locator(".sand-tools").hover();
     await frame.locator("#register-open").click();
-    await frame.locator("#organ-name").fill("Deletable Cell");
-    await frame.locator("#organ-url").fill("https://deletable.example");
-    await frame.locator("#organ-create").click();
-    await expect(frame.locator("#organs")).toContainText("Deletable Cell");
+    // Nothing here takes a hostname: under iroh the NodeId is the address, so
+    // a URL would make a row that looks reachable and is not.
+    await expect(frame.locator("#add-panel")).toBeVisible();
+    await expect(frame.locator("#ad-invite")).toBeVisible();
+    await expect(frame.locator("#organ-form")).toHaveCount(0);
+    await expect(frame.locator("#organ-url")).toHaveCount(0);
 
-    await frame.locator("#organs li", { hasText: "Deletable Cell" }).click();
-    await expect(frame.locator("#d-head")).toContainText("Deletable Cell");
-
-    // The confirmation is INLINE. A sandboxed frame has no allow-modals, so a
-    // window.confirm() here would be dropped by the browser and the delete
-    // would never run — which is what the button used to do.
-    await frame.locator("#o-delete").click();
-    await frame.getByRole("button", { name: "Delete", exact: true }).click();
-    await expect(frame.locator("#organs")).not.toContainText("Deletable Cell");
+    // The refusal names the field they most likely copied from instead of
+    // just saying no.
+    await frame.locator("#ad-invite").fill("not-a-pairing-code");
+    await frame.locator("#ad-name").fill("Nobody");
+    await frame.locator("#ad-save").click();
+    await expect(frame.locator("#ad-status")).toContainText("lince1|");
   } finally {
     await it.close();
   }

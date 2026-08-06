@@ -14,15 +14,21 @@ pub(crate) fn manifest() -> PackageManifest {
         title: "Organ".into(),
         author: "Lince Labs".into(),
         version: "0.4.0".into(),
-        description: "Registers and manages organs, contact trust/proximity, and \
-            per-organ File Sync to disk."
+        description: "Adds and manages organs, contact trust/proximity, feed \
+            direction, and per-organ File Sync to disk."
             .into(),
-        details: "Protein-first list of kind=organ records: register a new organ with \
-            its name and URL, edit or delete it, and manage the local Cell plus its \
-            contacts, `contact` include for trust/proximity). Selecting a contact edits \
-            its trust (unknown/known/blocked) and proximity via `set-contact-trust`/ \
-            `set-contact-proximity` — a friends-list view, scoped to trust/proximity \
-            only; sync policy and quarantine inspection are out of scope here. \
+        details: "Protein-first list of kind=organ records: this Cell plus its \
+            contacts. An Organ is added ONLY from a pairing code (`add-known-organ`, \
+            pasted or scanned) — registering one by hostname was removed because \
+            nothing in the transport dials a URL: pairing parses a NodeId, the outbox \
+            dials a NodeId, and inbound authorises by NodeId. Selecting a contact \
+            edits its trust (unknown/known/blocked) and proximity via \
+            `set-contact-trust`/`set-contact-proximity`, its feed direction via \
+            `set-sync-policy`, and renames or forgets it through the local-only \
+            `rename-organ-contact`/`forget-organ-contact` — a contact's record is \
+            filed under THEIR uid, so the ordinary record edit would replicate this \
+            Cell's private label back to them. Quarantine inspection is out of scope \
+            here. \
             Selecting any organ also shows and edits its `lince.file_sync` extension \
             (enabled, disk path) via `set-extension`. File Sync mirrors every record \
             whose `organ_uid` is that organ to/from markdown files (head = filename, \
@@ -63,9 +69,6 @@ mod tests {
     fn organ_sand_exposes_lynx_crud_with_a_separate_connection_indicator() {
         assert!(HTML.contains("/board/lynx-ui.css"));
         assert!(HTML.contains("/board/lynx-ui.js"));
-        assert!(HTML.contains("action: \"create-record\", kind: \"organ\""));
-        assert!(HTML.contains("id=\"organ-create\""));
-        assert!(HTML.contains("createOrgan()"));
         assert!(HTML.contains("<section id=\"detail\">"));
         assert!(HTML.contains("id=\"selected-detail\" hidden"));
         assert!(HTML.contains("action: \"edit-record-text\""));
@@ -186,6 +189,24 @@ mod tests {
     /// properties of whichever row is selected. Registering used to sit on top
     /// of every organ you opened, and the device list appeared under contacts
     /// where it means nothing.
+    /// A pairing code is the ONLY way to add an Organ. Registering one by
+    /// hostname was removed 2026-08-05: nothing in the transport can dial a
+    /// URL — pairing parses a NodeId, the outbox dials a NodeId, and inbound
+    /// authorises by `contact_by_node_id` — so the form could only ever make
+    /// a row that looked reachable and was not.
+    #[test]
+    fn an_organ_is_added_by_pairing_code_and_by_nothing_else() {
+        assert!(
+            !HTML.contains("id=\"organ-form\"") && !HTML.contains("id=\"organ-url\""),
+            "registering by hostname promised reachability the transport cannot deliver"
+        );
+        assert!(
+            !HTML.contains("action: \"create-record\", kind: \"organ\""),
+            "and with the form gone, nothing here mints a bare organ record"
+        );
+        assert!(HTML.contains("action: \"add-known-organ\""));
+    }
+
     #[test]
     fn registering_and_devices_are_modes_reached_from_the_corner_tools() {
         assert!(HTML.contains("id=\"register-open\""));
@@ -205,7 +226,6 @@ mod tests {
     #[test]
     fn every_group_explains_itself_through_a_heading_tooltip() {
         for id in [
-            "register-info",
             "add-info",
             "devices-info",
             "root-key-info",
@@ -222,7 +242,7 @@ mod tests {
         }
         assert_eq!(
             HTML.matches("class=\"group-head\"").count(),
-            11,
+            10,
             "every group is titled, and the titles are where the explanations live"
         );
         assert!(

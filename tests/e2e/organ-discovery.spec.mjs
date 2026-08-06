@@ -157,6 +157,15 @@ test("nearby Add known persists a known contact", async ({ browser }, testInfo) 
     await frameA.locator("#sy-in").click();
     await expect(frameA.locator("#sy-in")).toHaveAttribute("aria-pressed", "true");
     expect(contactState(pair.a.dataDir)).toEqual(["known|0|1"]);
+
+    // Forgetting asks INLINE. The frame is sandboxed without allow-modals, so
+    // a window.confirm() here is dropped by the browser and the button reads
+    // as dead — which is what it used to do.
+    await frameA.locator("#o-delete").click();
+    await frameA.getByRole("button", { name: "Forget", exact: true }).click();
+    await expect(frameA.locator("#o-status")).toHaveText("Forgetting…");
+    await expect(frameA.locator("#organs li")).toHaveCount(1);
+    expect(contactState(pair.a.dataDir)).toEqual([]);
   } finally {
     await pair.close();
   }

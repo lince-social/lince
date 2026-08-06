@@ -106,7 +106,9 @@ export async function startCell(root, label) {
   const log = openSync(logPath, "a");
   const child = spawn(BIN, ["--data-dir", dataDir, "--port", String(port)], {
     cwd: ROOT,
-    env: { ...process.env, RUST_LOG: "info" },
+    // Overridable, so a failing run can be re-run with `RUST_LOG=sqlx=debug`
+    // and the attached cell log answers which statement failed.
+    env: { ...process.env, RUST_LOG: process.env.RUST_LOG || "info" },
     stdio: ["ignore", log, log],
   });
   const baseUrl = `http://127.0.0.1:${port}`;

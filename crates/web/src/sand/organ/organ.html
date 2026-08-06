@@ -56,7 +56,10 @@
        tooltip on the heading is read before it. */
     .group-head { display: flex; align-items: center; gap: 6px; font-weight: 650; }
     .group-head .lynx-icon-button { flex: 0 0 auto; }
-    .row { display: flex; align-items: center; gap: 8px; }
+    /* Wrapping, not scrolling: an inline ask takes a whole line of its own,
+       and a row of buttons that runs out of width drops to the next line
+       instead of pushing its neighbours off the panel. */
+    .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
     .row label.check { display: inline-flex; align-items: center; gap: 6px; }
     input[type="text"], input:not([type]) { font: inherit; min-width: 0; flex: 1; border: 1px solid var(--line);
            border-radius: 7px; background: #0d1117; color: var(--text); padding: 6px 9px; }
@@ -69,7 +72,7 @@
     .hint { color: var(--muted); font-size: 11.5px; line-height: 1.5; }
     .placeholder { color: var(--muted); padding: 8px 2px; }
     #nb-list li { flex-wrap: wrap; }
-    .nearby-action, .inline-ask { display: flex; flex: 1 0 100%; align-items: center; gap: 6px; }
+    .nearby-action, .inline-ask { display: flex; flex: 1 0 100%; flex-wrap: wrap; align-items: center; gap: 6px; }
     .nearby-action .lynx-input, .inline-ask .lynx-input { flex: 1; }
     .inline-ask__text { flex: 1; color: var(--warn); font-size: 12px; }
     /* The shared tooltip caps at 180px, which turns an explanation into a
@@ -84,8 +87,6 @@
     .page-corner { position: absolute; right: 0; bottom: 0; width: 12px; height: 12px; padding: 0; border: 0; border-radius: 0; background: #f85149; clip-path: polygon(100% 0, 100% 100%, 0 100%); }
     .page-corner.live { background: var(--good); }
     .local-discovery-tool[aria-pressed="true"] { color: #d8f5e8; border-color: rgba(63,185,80,.5); }
-    .organ-form { display: grid; gap: 8px; }
-    .organ-form__actions { display: flex; align-items: center; gap: 8px; }
     .danger { color: #ffb4b0; border-color: rgba(248,81,73,.45); }
     .danger:hover { background: rgba(248,81,73,.12); }
     .mode-head { display: flex; align-items: center; gap: 8px; }
@@ -111,27 +112,13 @@
              the corner tools. -->
         <div id="register-mode" hidden>
           <div class="mode-head">
-            <h2>Add an Organ</h2>
+            <h2>Add someone</h2>
             <button class="lynx-button" id="register-close" type="button">Done</button>
-          </div>
-          <div class="panel">
-            <div class="group-head">
-              <span>Register an organ</span>
-              <button class="lynx-button lynx-icon-button info" id="register-info" type="button" aria-label="About registering an organ" data-lynx-tooltip-align="right" data-lynx-tooltip="Writes down an Organ you already know the address of, by hand. It is a note to yourself: no key is exchanged and nothing is dialled, so the row cannot sync until an introduction happens over a real connection. Use the pairing code below for anyone you actually want to reach."></button>
-            </div>
-            <form id="organ-form" class="organ-form" aria-label="Register organ">
-              <input id="organ-name" class="lynx-input" required maxlength="160" placeholder="Organ name" aria-label="Organ name" />
-              <input id="organ-url" class="lynx-input" required maxlength="2048" placeholder="https://organ.example" aria-label="Organ URL" />
-              <div class="organ-form__actions">
-                <button id="organ-create" class="lynx-button lynx-button--primary primary" type="submit">Register</button>
-                <span id="organ-create-status" class="status" role="status" aria-live="polite"></span>
-              </div>
-            </form>
           </div>
           <div class="panel" id="add-panel">
             <div class="group-head">
               <span>Add someone by code</span>
-              <button class="lynx-button lynx-icon-button info" id="add-info" type="button" aria-label="About adding by code" data-lynx-tooltip-align="right" data-lynx-tooltip="Paste the whole line starting lince1| that they sent you, or press Scan and point the camera at their QR. Adding by code trusts it on sight, so where you got it from is the whole of the security: from their hands or a chat already proven to be them is safe, forwarded or found in public is not. The name is yours to choose and is never taken from the code."></button>
+              <button class="lynx-button lynx-icon-button info" id="add-info" type="button" aria-label="About adding by code" data-lynx-tooltip-align="right" data-lynx-tooltip="A pairing code is the only way in, because it is the only thing that carries an address: under iroh a NodeId IS the address, and a hostname matches nothing the transport can dial. Paste the whole line starting lince1| that they sent you, or press Scan and point the camera at their QR. Adding by code trusts it on sight, so where you got it from is the whole of the security: from their hands or a chat already proven to be them is safe, forwarded or found in public is not. The name is yours to choose and is never taken from the code."></button>
             </div>
             <div class="row">
               <input id="ad-invite" class="lynx-input" placeholder="lince1|…" />
@@ -322,7 +309,7 @@
     <div class="sand-tools" aria-label="Organ tools" data-lynx-tooltip-boundary>
       <span id="connection-corner" class="page-corner" role="status" aria-label="Reconnecting" data-lynx-tooltip="Reconnecting"></span>
       <div class="sand-tools__row">
-        <button id="register-open" class="lynx-button lynx-icon-button" type="button" aria-label="Add an Organ" data-lynx-tooltip="Add an Organ: register one by address, or add someone from their pairing code."></button>
+        <button id="register-open" class="lynx-button lynx-icon-button" type="button" aria-label="Add someone" data-lynx-tooltip="Add someone from their pairing code — the only way in, because a NodeId is the only thing this Cell can dial."></button>
         <button id="devices-open" class="lynx-button lynx-icon-button" type="button" aria-label="This identity's devices" data-lynx-tooltip="Devices and the root key: the Cells that make up your own identity, and the key that signs that list."></button>
         <button id="local-discovery-tool" class="lynx-button local-discovery-tool" type="button" aria-pressed="false">Go locally online</button>
       </div>
@@ -845,55 +832,6 @@
       status.className = "status err";
       status.textContent = "Error: " + (err && err.message ? err.message : err);
     }
-
-    async function createOrgan() {
-      const head = $("organ-name").value.trim();
-      const body = $("organ-url").value.trim();
-      const status = $("organ-create-status");
-      if (!head || !body) {
-        status.className = "status err";
-        status.textContent = "Name and URL are required.";
-        return;
-      }
-      $("organ-url").setCustomValidity("");
-      const create = $("organ-create");
-      create.disabled = true;
-      status.className = "status";
-      status.textContent = "Registering…";
-      try {
-        const outcome = await H.act({ action: "create-record", kind: "organ", head, body, quantity: 1 });
-        $("organ-name").value = "";
-        $("organ-url").value = "";
-        selectedUid = outcome.created || selectedUid;
-        if (outcome.created && !organs.some((organ) => organ.uid === outcome.created)) {
-          organs = [...organs, {
-            uid: outcome.created,
-            kind: "organ",
-            head,
-            body,
-            extension: null,
-            contact: null,
-          }];
-          renderList();
-          renderDetail();
-        }
-        status.textContent = "Registered.";
-        setMode("organ");
-      } catch (err) {
-        const message = err && err.message ? err.message : String(err);
-        status.className = "status err";
-        status.textContent = "Error: " + message;
-        $("organ-url").setCustomValidity(message);
-      } finally {
-        create.disabled = false;
-      }
-    }
-
-    $("organ-form").addEventListener("submit", (event) => {
-      event.preventDefault();
-      void createOrgan();
-    });
-    $("organ-create").addEventListener("click", () => { void createOrgan(); });
 
     $("o-save").addEventListener("click", () => {
       const row = selected();

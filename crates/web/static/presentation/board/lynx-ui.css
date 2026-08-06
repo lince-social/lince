@@ -276,6 +276,34 @@ input.lynx-check__input:checked { border-color: var(--accent); background: var(-
 .lynx-grid { display: grid; gap: var(--space-2, 4px); }
 .lynx-divider { height: var(--hairline, .5px); margin: var(--space-2, 4px) 0; border: 0; background: var(--border); }
 
+/* Two panes that share a height, with a draggable divider between them. The
+   LAST pane is the sized one: `--lynx-split-basis` is its height and the first
+   pane takes the rest. A pane whose content collapses (a closed disclosure)
+   sets `data-lynx-split-collapsed` on the split, and then the bottom shrinks
+   to fit instead of holding a third of the panel open around nothing. */
+.lynx-split { display: grid; grid-template-rows: minmax(0, 1fr) auto var(--lynx-split-basis, 33%); min-height: 0; }
+.lynx-split[data-lynx-split-collapsed] { grid-template-rows: minmax(0, 1fr) auto auto; }
+.lynx-split__pane { min-height: 0; overflow: auto; }
+.lynx-split__divider {
+  height: 9px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: row-resize;
+  touch-action: none;
+}
+.lynx-split__divider::after {
+  content: "";
+  display: block;
+  width: 32px;
+  height: var(--hairline, .5px);
+  margin: 4px auto;
+  background: var(--border);
+}
+.lynx-split__divider:hover::after,
+.lynx-split__divider:focus-visible::after { width: 64px; background: var(--accent); }
+.lynx-split[data-lynx-split-collapsed] .lynx-split__divider { cursor: default; }
+
 .lynx-status {
   display: inline-flex;
   align-items: center;

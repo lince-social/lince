@@ -72,6 +72,18 @@
     .hint { color: var(--muted); font-size: 11.5px; line-height: 1.5; }
     .placeholder { color: var(--muted); padding: 8px 2px; }
     #nb-list li { flex-wrap: wrap; }
+    /* The network section is a pane of the split, so its own scroll lives on
+       the disclosure body — the summary stays put while the rows move. */
+    #side-split { min-height: 0; }
+    #side-split > .list { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+    #nearby-disclosure { display: grid; grid-template-rows: auto minmax(0, 1fr); height: 100%; }
+    #nearby-disclosure:not([open]) { grid-template-rows: auto; height: auto; }
+    #nearby-disclosure > summary { position: sticky; top: 0; z-index: 1; background: var(--panel);
+                                   border-bottom: 1px solid var(--line); padding: 8px 10px; }
+    #nearby-disclosure > summary::before { content: "▸"; color: var(--muted); font-size: 10px; }
+    #nearby-disclosure[open] > summary::before { content: "▾"; }
+    #nearby-disclosure > summary .name { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+    #nearby-body { min-height: 0; overflow: auto; padding: 0; }
     .nearby-action, .inline-ask { display: flex; flex: 1 0 100%; flex-wrap: wrap; align-items: center; gap: 6px; }
     .nearby-action .lynx-input, .inline-ask .lynx-input { flex: 1; }
     .inline-ask__text { flex: 1; color: var(--warn); font-size: 12px; }
@@ -100,10 +112,32 @@
       <h1>Organs</h1>
     </header>
     <div class="cols">
-      <section class="list" aria-label="Organs">
-        <ul id="organs"></ul>
-        <div id="empty" class="empty" hidden>No organs yet.</div>
-      </section>
+      <!-- Saved Organs above, whoever is on the network right now below.
+           Both are "Organs on this side of the screen", and the one below is
+           the transient half — so it shares the column and the divider
+           decides how much of it you want to see, rather than living inside
+           the Organ you happened to select. -->
+      <div class="lynx-split" id="side-split">
+        <section class="list lynx-split__pane" aria-label="Organs">
+          <ul id="organs"></ul>
+          <div id="empty" class="empty" hidden>No organs yet.</div>
+        </section>
+        <button class="lynx-split__divider" id="side-divider" type="button" aria-label="Resize the network list"></button>
+        <section class="lynx-split__pane list" aria-label="On this network">
+          <details class="lynx-disclosure" id="nearby-disclosure" open>
+            <summary>
+              <span class="name">On this network</span>
+              <span class="badge" id="nb-count">0</span>
+              <button class="lynx-button lynx-icon-button info" id="nb-info" type="button" aria-label="About the nearby list" data-lynx-tooltip-align="right" data-lynx-tooltip="Lince Cells announcing themselves on this LAN right now — not saved contacts, which is why they sit apart from the list above. The name on a row is what that Cell calls itself: a claim, not a verified identity. The short code beside it comes from the key and cannot be faked by choosing a name, so use it to tell two rows apart. It is a way to find the right row, not a security check. A row you already know opens its Organ above."></button>
+            </summary>
+            <div id="nearby-body">
+              <ul id="nb-list"></ul>
+              <div id="nb-empty" class="empty">Nobody found yet.</div>
+              <div class="row"><span class="status" id="nb-status"></span></div>
+            </div>
+          </details>
+        </section>
+      </div>
       <section id="detail">
 
         <!-- ── register mode ─────────────────────────────────────────────
@@ -265,16 +299,6 @@
               <button class="lynx-button lynx-button--primary primary" id="dc-save" type="button">Save</button>
               <span class="status" id="dc-status"></span>
             </div>
-          </div>
-
-          <div class="panel" id="nearby-panel" hidden>
-            <div class="group-head">
-              <span>On this network</span>
-              <button class="lynx-button lynx-icon-button info" id="nb-info" type="button" aria-label="About the nearby list" data-lynx-tooltip-align="right" data-lynx-tooltip="Lince Cells announcing themselves on this LAN right now. The name beside each row is what that Cell calls itself — a claim, not a verified identity. The short code next to it comes from the key and cannot be faked by choosing a name, so use it to tell two rows apart. It is a way to find the right row, not a security check."></button>
-            </div>
-            <ul id="nb-list" class="list"></ul>
-            <div class="row" id="nb-empty" class="placeholder">Nobody found yet.</div>
-            <div class="row"><span class="status" id="nb-status"></span></div>
           </div>
 
           <div class="panel" id="sync-panel">
@@ -450,6 +474,14 @@
     // the source reads the wire's live list, and the server re-runs it on a
     // tick, pushing only when it changed. Nothing here polls.
     let nearby = [];
+    // The info icon lives inside the summary, where any click would toggle
+    // the section — reading the explanation must not close the thing being
+    // explained.
+    $("nb-info").addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+    });
+
     H.subscribeProtein("organs_nearby", { source: "nearby" }, ({ rows }) => {
       nearby = Array.isArray(rows) ? rows : [];
       renderNearby();
@@ -457,12 +489,28 @@
 
     function renderNearby() {
       const list = $("nb-list");
-      // Visibility is decided by renderDetail (this Cell's row only) — a push
-      // arriving while another panel is open must not pop this one open.
       list.innerHTML = "";
       $("nb-empty").hidden = nearby.length > 0;
+      // The count is on the summary so a closed section still says whether
+      // anything is out there — the reason to open it.
+      $("nb-count").textContent = String(nearby.length);
       for (const peer of nearby) {
         const li = document.createElement("li");
+        // A row for someone already saved opens their Organ above: the two
+        // lists are the same people seen two ways, and clicking through is
+        // how that reads as one column instead of two.
+        if (peer.known) {
+          li.onclick = () => {
+            const match = organs.find((o) => o.contact && o.contact.node_id === peer.node_id);
+            if (!match) return;
+            selectedUid = match.uid;
+            setMode("organ");
+            renderList();
+            renderDetail();
+          };
+        } else {
+          li.style.cursor = "default";
+        }
         const name = document.createElement("span");
         name.className = "name";
         // A known contact's own name wins; otherwise show the claim AS a claim.
@@ -781,7 +829,6 @@
 
       const roster = (rosters[row.uid] || {});
       $("profile-panel").hidden = !local;
-      $("nearby-panel").hidden = !local;
       if (local) {
         const pairing = pairings[row.uid] || {};
         $("pf-invite").value = pairing.invite || "";

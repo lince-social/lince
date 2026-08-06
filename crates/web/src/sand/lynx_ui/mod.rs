@@ -119,6 +119,7 @@ mod tests {
             "lynx-grid",
             "lynx-toolbar",
             "lynx-divider",
+            "lynx-split",
             "lynx-status",
             "lynx-callout",
             "lynx-empty",

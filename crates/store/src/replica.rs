@@ -148,6 +148,51 @@ pub async fn roots_for_contact(
     .await?)
 }
 
+/// A conversation this Cell shares with one contact, in whatever state the
+/// grant is in.
+#[derive(Debug, Clone)]
+pub struct SharedConversation {
+    pub uid: String,
+    pub head: String,
+    /// `offered` or `accepted`. Both mean a conversation EXISTS — a surface
+    /// asking "do I already have one with them" must not treat an offer that
+    /// has not been answered yet as nothing.
+    pub state: String,
+}
+
+/// The conversations shared with `contact`, newest first.
+///
+/// Deliberately not `roots_for_contact`: that one answers "what may flow", so
+/// it filters to `accepted`. This one answers "what already exists", and an
+/// unanswered offer is the case that most needs an answer of yes — re-offering
+/// it would mint a second conversation next to the pending one.
+///
+/// The kind filter is not decoration: `replica_grant.root_record` is any root,
+/// and `make_own_root` is called for records that are not conversations.
+pub async fn conversations_with(
+    pool: &SqlitePool,
+    contact: &str,
+) -> Result<Vec<SharedConversation>, StoreError> {
+    let rows = sqlx::query(
+        "SELECT r.uid, r.head, g.state
+           FROM replica_grant g
+           JOIN record r ON r.uid = g.root_record
+          WHERE g.contact_organ = ? AND r.kind = 'conversation'
+          ORDER BY r.created_at DESC",
+    )
+    .bind(contact)
+    .fetch_all(pool)
+    .await?;
+    Ok(rows
+        .into_iter()
+        .map(|row| SharedConversation {
+            uid: row.get("uid"),
+            head: row.get("head"),
+            state: row.get("state"),
+        })
+        .collect())
+}
+
 /// The root governing a Record, or `None` when it rides the general feed.
 pub async fn root_of(pool: &SqlitePool, record_uid: &str) -> Result<Option<String>, StoreError> {
     Ok(

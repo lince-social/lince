@@ -617,3 +617,129 @@ async fn a_conversation_orders_by_hlc_not_by_a_machines_clock() {
 
     serving.abort();
 }
+
+/// The one question a contact panel has to answer before offering: is there
+/// already a conversation with this person? A grant is neither a link nor a
+/// Fact, so `include.conversations` is the only way to ask — and it must count
+/// an OFFER, not just an accepted one. Re-offering a conversation they have
+/// not answered yet is exactly the mistake, and it mints a second one beside
+/// the pending first.
+#[tokio::test]
+async fn a_contact_carries_the_conversations_shared_with_them() {
+    use protein::{Include, Predicate, Protein, Source};
+
+    let (a, _) = cell("http://a.test").await;
+    let friend = store::records::create(
+        &a.store.pool,
+        NewRecord {
+            slug: None,
+            kind: RecordKind::Organ,
+            head: "Friend",
+            body: "",
+            quantity: store::exact::one(),
+        },
+    )
+    .await
+    .expect("their organ record")
+    .uid;
+    let stranger = store::records::create(
+        &a.store.pool,
+        NewRecord {
+            slug: None,
+            kind: RecordKind::Organ,
+            head: "Stranger",
+            body: "",
+            quantity: store::exact::one(),
+        },
+    )
+    .await
+    .expect("another organ record")
+    .uid;
+
+    let organs = |engine: Arc<Engine>| async move {
+        protein::execute(
+            &engine.store,
+            &Protein {
+                source: Source::Record,
+                filter: vec![Predicate::KindEq("organ".to_string())],
+                include: Include {
+                    conversations: true,
+                    ..Include::default()
+                },
+                aggregate: None,
+                order: Vec::new(),
+                limit: None,
+            },
+        )
+        .await
+        .expect("organ rows")
+    };
+
+    let before = organs(a.clone()).await;
+    for row in &before {
+        assert_eq!(
+            row["conversations"].as_array().map(Vec::len),
+            Some(0),
+            "nobody is talking yet"
+        );
+    }
+
+    let (conversation, _) = a
+        .start_conversation(&friend, "Beach plans")
+        .await
+        .expect("conversation");
+
+    let after = organs(a.clone()).await;
+    let theirs = after
+        .iter()
+        .find(|row| row["uid"] == serde_json::json!(friend))
+        .expect("their row");
+    let shared = theirs["conversations"].as_array().expect("array");
+    assert_eq!(shared.len(), 1);
+    assert_eq!(shared[0]["uid"], serde_json::json!(conversation));
+    assert_eq!(shared[0]["head"], serde_json::json!("Beach plans"));
+    assert_eq!(
+        shared[0]["state"],
+        serde_json::json!("offered"),
+        "an unanswered offer still means a conversation exists"
+    );
+
+    // And it belongs to THEM. The grant is keyed by the contact's organ uid;
+    // reading it the other way round would give every contact the same list.
+    let others = after
+        .iter()
+        .find(|row| row["uid"] == serde_json::json!(stranger))
+        .expect("the other row");
+    assert_eq!(others["conversations"].as_array().map(Vec::len), Some(0));
+
+    // A root that is not a conversation must not read as one.
+    let note = store::records::create(
+        &a.store.pool,
+        NewRecord {
+            slug: None,
+            kind: RecordKind::Plain,
+            head: "Shared note",
+            body: "",
+            quantity: store::exact::one(),
+        },
+    )
+    .await
+    .expect("note")
+    .uid;
+    store::replica::make_own_root(&a.store.pool, &note)
+        .await
+        .expect("own root");
+    store::replica::offer(&a.store.pool, &note, &friend)
+        .await
+        .expect("offer the note");
+    let with_note = organs(a.clone()).await;
+    let theirs = with_note
+        .iter()
+        .find(|row| row["uid"] == serde_json::json!(friend))
+        .expect("their row");
+    assert_eq!(
+        theirs["conversations"].as_array().map(Vec::len),
+        Some(1),
+        "a granted note is not a conversation"
+    );
+}

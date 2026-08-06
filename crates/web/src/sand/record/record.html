@@ -20,9 +20,17 @@
        recordClicked drives it. */
     :root { color-scheme: dark; --bg: #121214; --surface-hover: #141416; --line: #141416; --text: #f8fafc; --muted: color-mix(in srgb, #f8fafc 62%, #121214); --faint: color-mix(in srgb, #f8fafc 38%, #121214); --accent: #6366f1; --control-border: #f8fafc; --hot-border: #fb7185; --font-body: Lato, system-ui, sans-serif; --font-title: Aleo, Georgia, serif; --font-mono: "SFMono-Regular", Consolas, monospace; --hairline: .5px; --lynx-shadow-x: 2px; --lynx-shadow-y: 2px; --lynx-shadow-blur: 6px; --lynx-shadow-color: rgb(0 0 0 / 16%); }
     * { box-sizing: border-box; }
+    /* The card is a fixed viewport with ONE scrolling region: the header (live
+       dot, close) stays put and everything else scrolls inside it. `min-height:
+       0` is the load-bearing half — a flex item defaults to `min-height: auto`,
+       refuses to shrink below its content, and `overflow-y` on it never fires.
+       That is why this sand had scroll CSS and no scrollbar. */
     body { margin: 0; height: 100vh; overflow: hidden;
+           display: flex; flex-direction: column;
            font: 14px/1.3 var(--font-body);
            background: var(--bg); color: var(--text); padding: 5px; }
+    #scroll { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+    body.collapsed #scroll { display: none; }
     /* Icon mode shares the compact 40px shell-control frame. */
     body.collapsed { padding: 0; }
     .head { display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
@@ -32,11 +40,23 @@
     .dot.live { background: var(--text); }
     .dot.busy { background: var(--muted); animation: pulse 1s ease-in-out infinite; }
     @keyframes pulse { 50% { opacity: .35; } }
-    .rec { margin-bottom: 4px; overflow: hidden; }
+    /* `overflow: hidden` here used to clip the panel instead of letting the
+       scroller above take it. */
+    .rec { margin-bottom: 4px; }
+    /* Flex, so the sections below can be reordered by `order` alone — moving
+       the nodes themselves on every protein push would jump the scroll
+       position and fight each `details`' open state. */
+    #focus { display: flex; flex-direction: column; }
+    /* `display` on the line above outranks the UA `[hidden]` rule, the same
+       author-origin tie `#thread-new[hidden]` already documents below. */
+    #focus[hidden] { display: none; }
     .rec > .t { display: flex; align-items: center; gap: .5rem;
                 padding: 5px; background: var(--bg); box-shadow: var(--lynx-shadow-x) var(--lynx-shadow-y) var(--lynx-shadow-blur) var(--lynx-shadow-color); }
-    .rec > .t .name { font-weight: 600; color: var(--text); flex: 1; word-break: break-word; }
-    .rec > .t .q { font-variant-numeric: tabular-nums; color: var(--muted); }
+    /* The head is the record — it reads as a title you can type in, not as a
+       field called "Head" in a boxed control. */
+    .titleinput { flex: 1; min-width: 0; border: 0; background: transparent;
+                  font: 600 1rem/1.25 var(--font-title); color: var(--text); padding: 2px 0; }
+    .titleinput:focus { outline: 0; box-shadow: 0 var(--hairline) 0 var(--accent); }
     .tbtn { width: auto; border: 1px solid var(--control-border); border-radius: 2px;
             background: var(--bg); font-size: .75rem; padding: 2px 5px; cursor: pointer; }
     #btn-zero, #btn-delete { color: var(--text); }
@@ -71,6 +91,13 @@
     .subrow { display: flex; gap: .4rem; align-items: center; font-size: .78rem; }
     .subrow .lbl { color: var(--muted); min-width: 4.2rem; font-size: .68rem; text-transform: uppercase; letter-spacing: .05em; }
     .subrow input { flex: 1; min-width: 0; }
+    /* Several labelled controls on one line. They wrap rather than overflow —
+       this sand is as narrow as two grid columns. */
+    .rowset { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; font-size: .78rem; }
+    .rowset .field { display: flex; gap: .3rem; align-items: center; flex: 1 1 4.5rem; min-width: 0; }
+    .rowset .field .lbl { color: var(--muted); font-size: .68rem; text-transform: uppercase; letter-spacing: .05em; white-space: nowrap; }
+    .rowset .field input { flex: 1; min-width: 0; }
+    .rowset button { flex: 0 0 auto; }
     .loglist { display: grid; gap: .25rem; }
     .logrow { display: flex; gap: 4px; align-items: baseline; font-size: .75rem; color: var(--muted); }
     .logrow .span { flex: 1; }
@@ -80,8 +107,6 @@
     .logrow.editing { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: end; }
     .logrow.editing input { min-width: 0; }
     .logrow.editing .log-actions { display: inline-flex; gap: 3px; }
-    .worklog-new { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 4px; align-items: end; }
-    .worklog-new input { min-width: 0; }
     .total { font-size: .72rem; color: var(--muted); }
     .msg { border-top: 0; padding: 4px 0; font-size: .78rem; }
     .msg-meta { font-size: .68rem; color: var(--muted); margin-bottom: 2px;
@@ -146,13 +171,15 @@
     <button id="btn-collapse" type="button" class="lynx-button tbtn" title="Hide (Esc)">✕</button>
   </div>
 
+  <div id="scroll">
   <div id="create" class="lynx-box">
-    <div class="t">New record</div>
+    <div class="t"><input id="c-head" class="titleinput" type="text" autocomplete="off" placeholder="New record" aria-label="Head" /></div>
     <div class="fields">
-      <div class="frow edit"><span class="k">Head</span><input id="c-head" class="lynx-input" type="text" autocomplete="off" /></div>
-      <div class="frow edit"><span class="k">Slug</span><input id="c-slug" class="lynx-input" type="text" autocomplete="off" placeholder="optional.dot.case" /></div>
-      <div class="frow edit"><span class="k">Quantity</span><input id="c-quantity" class="lynx-input" type="number" step="1" /></div>
-      <div class="frow edit"><span class="k">Body</span><textarea id="c-body" class="lynx-textarea"></textarea></div>
+      <div class="rowset">
+        <span class="field"><span class="lbl">Slug</span><input id="c-slug" class="lynx-input" type="text" autocomplete="off" placeholder="optional.dot.case" /></span>
+        <span class="field"><span class="lbl">Qty</span><input id="c-quantity" class="lynx-input" type="number" step="1" /></span>
+      </div>
+      <textarea id="c-body" class="lynx-textarea" placeholder="Body…" aria-label="Body"></textarea>
     </div>
     <div id="c-error" class="err" hidden></div>
     <div class="actions">
@@ -163,17 +190,17 @@
 
   <div id="focus" class="rec lynx-box" hidden>
     <div class="t">
-      <span class="name" id="f-name"></span>
-      <span class="q" id="f-qty"></span>
+      <input id="f-head" class="titleinput" type="text" autocomplete="off" placeholder="Untitled" aria-label="Head" />
       <button id="btn-zero" type="button" class="lynx-button tbtn" title="Zero the quantity (deactivate) — the record stays">Zero</button>
       <button id="btn-delete" type="button" class="lynx-button tbtn" title="HARD delete — the record disappears everywhere; its Ledger history stays">Delete</button>
     </div>
 
     <div class="fields">
-      <div class="frow edit"><span class="k">Head</span><input id="f-head" class="lynx-input" type="text" autocomplete="off" /></div>
-      <div class="frow edit"><span class="k">Slug</span><input id="f-slug" class="lynx-input" type="text" autocomplete="off" placeholder="dot.case" /></div>
-      <div class="frow edit"><span class="k">Quantity</span><input id="f-quantity" class="lynx-input" type="number" step="1" /></div>
-      <div class="frow edit"><span class="k">Body</span><textarea id="f-body" class="lynx-textarea"></textarea></div>
+      <div class="rowset">
+        <span class="field"><span class="lbl">Slug</span><input id="f-slug" class="lynx-input" type="text" autocomplete="off" placeholder="dot.case" /></span>
+        <span class="field"><span class="lbl">Qty</span><input id="f-quantity" class="lynx-input" type="number" step="1" /></span>
+      </div>
+      <textarea id="f-body" class="lynx-textarea" placeholder="Body…" aria-label="Body"></textarea>
       <div id="f-preview" class="preview" hidden></div>
       <div class="actions" style="padding:0">
         <span id="f-error" class="err" style="padding:0; margin-right:auto" hidden></span>
@@ -181,24 +208,33 @@
       </div>
     </div>
 
-    <details id="sec-work" class="lynx-disclosure" open>
-      <summary>Work</summary>
+    <!-- Work log and Estimate are two sections, not one: they are ordered
+         independently against Assignees/Links/Threads, so a record that is
+         only being timed does not drag an empty schedule to the top. -->
+    <details id="sec-worklog" class="lynx-disclosure" open>
+      <summary>Work log</summary>
       <div class="sec">
-        <div class="subrow"><span class="lbl">Start</span><input id="w-start" class="lynx-input" type="date" /></div>
-        <div class="subrow"><span class="lbl">Due</span><input id="w-due" class="lynx-input" type="date" /></div>
-        <div class="subrow"><span class="lbl">Estimate</span><input id="w-estimate" class="lynx-input" type="number" min="0" step="5" placeholder="minutes" /></div>
-        <div class="inline">
+        <div class="rowset">
           <button id="w-play" type="button" class="lynx-button lynx-button--primary accent">▶ Play</button>
           <button id="w-pause" type="button" class="lynx-button">⏸ Pause</button>
-          <span id="w-total" class="total"></span>
-        </div>
-        <div id="worklog-list" class="loglist"></div>
-        <div class="worklog-new">
-          <input id="w-log-start" class="lynx-input" type="datetime-local" aria-label="Work log start" />
-          <input id="w-log-end" class="lynx-input" type="datetime-local" aria-label="Work log end" />
+          <span class="field"><input id="w-log-start" class="lynx-input" type="datetime-local" aria-label="Work log start" /></span>
+          <span class="field"><input id="w-log-end" class="lynx-input" type="datetime-local" aria-label="Work log end" /></span>
           <button id="w-log-add" type="button" class="lynx-button">Add log</button>
         </div>
+        <span id="w-total" class="total"></span>
+        <div id="worklog-list" class="loglist"></div>
         <span id="w-log-error" class="err" hidden></span>
+      </div>
+    </details>
+
+    <details id="sec-estimate" class="lynx-disclosure" open>
+      <summary>Estimate</summary>
+      <div class="sec">
+        <div class="rowset">
+          <span class="field"><span class="lbl">Start</span><input id="w-start" class="lynx-input" type="date" /></span>
+          <span class="field"><span class="lbl">Due</span><input id="w-due" class="lynx-input" type="date" /></span>
+          <span class="field"><span class="lbl">Est</span><input id="w-estimate" class="lynx-input" type="number" min="0" step="5" placeholder="minutes" /></span>
+        </div>
       </div>
     </details>
 
@@ -255,6 +291,7 @@
       <summary>History</summary>
       <ul id="facts-list"></ul>
     </details>
+  </div>
   </div>
 
   <div id="icon" class="iconview" hidden>●</div>
@@ -364,6 +401,7 @@
       fieldsDirty = false;
       workDirty = false;
       workLogEdit = null;
+      sectionFilled = {}; // a different record: let its own content decide what is open
       activeThreadUid = null; // a different record's threads are unrelated
       threadSearch = "";
       $("thread-search").value = "";
@@ -472,6 +510,7 @@
       fieldsDirty = false;
       workDirty = false;
       workLogEdit = null;
+      sectionFilled = {}; // a different record: let its own content decide what is open
       activeThreadUid = null;
       threadSearch = "";
       $("thread-search").value = "";
@@ -516,8 +555,6 @@
         return;
       }
       $("focus").hidden = false;
-      $("f-name").textContent = row.head || row.slug || row.uid;
-      $("f-qty").textContent = `qty ${row.quantity}`;
       if (!fieldsDirty) {
         $("f-head").value = row.head || "";
         $("f-slug").value = row.slug || "";
@@ -535,6 +572,49 @@
       renderLinks();
       renderComments();
       renderFacts();
+      arrangeSections();
+    }
+
+    // ---- section order: what this record HAS, in a fixed reading order --------
+    // Work log, Estimate, Assignees, Links, Threads keep that relative order;
+    // the ones this record has nothing in sink below the filled ones, closed,
+    // so the panel opens on content rather than on five empty forms. History
+    // is not one of the five and stays last.
+    //
+    // Reordering is `order` on a flex parent, never appendChild: renderFocus()
+    // runs on every protein push, and moving the nodes would jump the scroll
+    // position out from under whoever is reading.
+    const SECTIONS = ["sec-worklog", "sec-estimate", "sec-people", "sec-links", "sec-comments"];
+    // var, not let: goIdle() runs during initial evaluation, above this line —
+    // `let` would be a TDZ throw, same as `collab` below.
+    var sectionFilled = {}; // id -> last known filled-ness, so `open` is only written on a change
+    function sectionHasContent(id) {
+      const work = workData();
+      switch (id) {
+        case "sec-worklog": return work.logs.length > 0;
+        case "sec-estimate": return Boolean(work.start || work.due) || work.estimate_min !== null;
+        case "sec-people": return linksOf("assigned-to", "out").length > 0;
+        // Assignees are links too, and they have their own section — counting
+        // them here would mark Links filled for every assigned record.
+        case "sec-links": return (Array.isArray(row?.links) ? row.links : [])
+          .some((l) => l.hop === 1 && l.kind !== "assigned-to");
+        case "sec-comments": return commentThreads().length > 0;
+        default: return false;
+      }
+    }
+    function arrangeSections() {
+      SECTIONS.forEach((id, at) => {
+        const section = $(id);
+        const filled = sectionHasContent(id);
+        section.style.order = String((filled ? 10 : 50) + at);
+        // Only on a CHANGE: writing `open` every push would slam shut the
+        // empty Links section a user just opened to add their first link.
+        if (sectionFilled[id] !== filled) {
+          section.open = filled;
+          sectionFilled[id] = filled;
+        }
+      });
+      $("sec-facts").style.order = "90";
     }
 
     // ---- editable fields: the get view IS the edit view ------------------------

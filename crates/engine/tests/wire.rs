@@ -879,3 +879,104 @@ async fn a_root_key_that_does_not_match_the_code_leaves_the_contact_pending() {
 
     serving.abort();
 }
+
+/// The paste path with the code the Profile panel ACTUALLY renders — a real
+/// `pairing_invite()`, root key and addresses and all — rather than one built
+/// by hand in a test. Every other test here hand-builds a bare invite, which
+/// is why this never showed up.
+///
+/// And the case that matters in practice: you already met them. You found each
+/// other on the LAN, you have a conversation open, and then one of you pastes
+/// the code to make it official. The NodeId is already bound to their real
+/// contact row, and `organ_contact.node_id` is UNIQUE.
+#[tokio::test]
+async fn pasting_the_code_of_someone_already_met_upgrades_that_contact() {
+    let (a, a_organ) = cell("http://a.test").await;
+    let (b, _b_organ) = cell("http://b.test").await;
+    let a_root = Signer::generate(&a_organ, engine::roster::ROOT_KEY_ID);
+    a.publish_root_key(&a_root).await.expect("a has a root key");
+
+    let a_wire = Wire::bind(a.clone(), secret(41), Reach::Local)
+        .await
+        .expect("a binds");
+    let a_node = a_wire.node_id().to_string();
+
+    // The exact string in A's "Your pairing code" field.
+    let code = a_wire.pairing_invite().await.expect("invite").encode();
+
+    // B already knows A the way discovery leaves them: real uid, bound NodeId.
+    know(&b, &a_organ, &a_node).await;
+
+    b.act(
+        engine::actions::Action::AddKnownOrgan {
+            invite: code,
+            name: "Eduardo".into(),
+        },
+        None,
+    )
+    .await
+    .expect("pasting the code of someone you already met must not fail");
+
+    // One row, theirs, still under their real uid — not a second placeholder.
+    let placeholder = format!("o-{a_node}");
+    assert!(
+        store::organs::contact(&b.store.pool, &placeholder)
+            .await
+            .unwrap()
+            .is_none(),
+        "no placeholder: the NodeId already resolves to a real contact"
+    );
+    let real = store::organs::contact(&b.store.pool, &a_organ)
+        .await
+        .unwrap()
+        .expect("A is still the contact");
+    assert_eq!(real.trust, "known");
+    assert!(
+        !real.pending_introduction,
+        "they have already introduced themselves; the paste must not undo that"
+    );
+    assert_eq!(
+        real.node_id.as_deref(),
+        Some(a_node.as_str()),
+        "the binding survives"
+    );
+}
+
+/// `blocked` is terminal, and the paste path must not be the one door that
+/// walks it back. Blocking someone and then adding their code — theirs by
+/// accident, or handed over by them a second time — has to refuse.
+#[tokio::test]
+async fn pasting_the_code_of_a_blocked_organ_is_refused() {
+    let (a, a_organ) = cell("http://a.test").await;
+    let (b, _b_organ) = cell("http://b.test").await;
+
+    let a_wire = Wire::bind(a.clone(), secret(43), Reach::Local)
+        .await
+        .expect("a binds");
+    let code = a_wire.pairing_invite().await.expect("invite").encode();
+
+    know(&b, &a_organ, &a_wire.node_id().to_string()).await;
+    store::organs::set_trust(&b.store.pool, &a_organ, "blocked")
+        .await
+        .expect("block");
+
+    let refused = b
+        .act(
+            engine::actions::Action::AddKnownOrgan {
+                invite: code,
+                name: "Eduardo".into(),
+            },
+            None,
+        )
+        .await;
+    assert!(refused.is_err(), "a blocked Organ must not be addable by code");
+    assert_eq!(
+        store::organs::contact(&b.store.pool, &a_organ)
+            .await
+            .unwrap()
+            .expect("still there")
+            .trust,
+        "blocked",
+        "and the block survives the attempt"
+    );
+}

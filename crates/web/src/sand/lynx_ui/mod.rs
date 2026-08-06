@@ -141,4 +141,25 @@ mod tests {
         assert!(library.contains("function toast"));
         assert!(library.contains("trash:"));
     }
+
+    /// A disclosure's chevron has to move, or open and closed look identical
+    /// and the next author reaches for their own glyph — which then renders
+    /// INSIDE the shared one, because the mark is a bordered box and setting
+    /// `content` only fills it.
+    #[test]
+    fn the_disclosure_chevron_turns_with_the_section() {
+        let css = std::str::from_utf8(LYNX_UI_CSS).expect("LynxUI CSS should be UTF-8");
+        assert!(
+            css.contains(".lynx-disclosure > summary::before { transform: rotate(-45deg)"),
+            "closed points at the summary"
+        );
+        assert!(
+            css.contains(".lynx-disclosure[open] > summary::before { transform: rotate(45deg)"),
+            "open points at the content"
+        );
+        assert!(
+            css.contains("[data-lynx-dropdown-button][aria-expanded=\"true\"]::after"),
+            "and an open dropdown turns the same way, for the same reason"
+        );
+    }
 }

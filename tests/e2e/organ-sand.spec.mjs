@@ -99,9 +99,21 @@ test("the network list shares the side column and gives its space back when clos
     expect(open / column).toBeGreaterThan(0.25);
     expect(open / column).toBeLessThan(0.42);
 
+    // One mark, and it is the shared chevron: a bordered box with no glyph
+    // in it. A sand that sets its own `content` gets a triangle rendered
+    // inside the chevron, which is what this caught.
+    const chevron = () => frame.locator("#nearby-disclosure summary").evaluate((element) => {
+      const style = getComputedStyle(element, "::before");
+      return { content: style.content, transform: style.transform };
+    });
+    const opened = await chevron();
+    expect(opened.content).toBe('""');
+    expect(opened.transform).toContain("0.707107, 0.707107");
+
     // Closed, it shrinks to its own summary rather than holding a third of
     // the column open around nothing.
     await frame.locator("#nearby-disclosure summary .name").click();
+    expect((await chevron()).transform).toContain("0.707107, -0.707107");
     await expect(frame.locator("#nearby-disclosure")).not.toHaveAttribute("open", "");
     const closed = await heightOf("#nearby-disclosure");
     expect(closed).toBeLessThan(open / 2);

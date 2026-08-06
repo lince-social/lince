@@ -441,6 +441,12 @@ button.lynx-toast { cursor: pointer; }
 
 .lynx-disclosure > summary { display: flex; align-items: center; gap: var(--space-2, 4px); padding: var(--space-2, 4px); list-style: none; cursor: pointer; }
 .lynx-disclosure > summary::-webkit-details-marker { display: none; }
+/* The chevron says which way the section is: pointing at the summary when
+   closed, at the content when open. Without this the mark never moved, so
+   open and closed looked identical and authors reached for their own glyph. */
+.lynx-disclosure > summary::before { transform: rotate(-45deg) translateX(-1px); }
+.lynx-disclosure[open] > summary::before { transform: rotate(45deg) translateY(-1px); }
+.lynx-dropdown > [data-lynx-dropdown-button][aria-expanded="true"]::after { transform: rotate(225deg) translateY(2px); }
 .lynx-disclosure > :not(summary) { margin: 0; padding: 0 var(--space-2, 4px) var(--space-2, 4px); }
 
 :root[data-lynx-inspect="true"] [data-lynx-component] {

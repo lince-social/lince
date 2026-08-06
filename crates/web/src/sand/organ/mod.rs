@@ -276,6 +276,33 @@ mod tests {
         );
     }
 
+    /// A row can carry four status labels at once, and side by side they leave
+    /// the name nowhere to go in a column this narrow.
+    #[test]
+    fn a_rows_status_labels_stack() {
+        assert!(HTML.contains(
+            ".badges { display: flex; flex-direction: column; align-items: flex-end;"
+        ));
+        assert!(
+            !HTML.contains("li.append(badge);"),
+            "every label goes in the stack, not straight onto the row"
+        );
+    }
+
+    /// Offering a conversation to someone you already have one with mints a
+    /// second one beside it. The panel asks Protein whether one exists —
+    /// a grant is neither a link nor a Fact, so nothing else can answer.
+    #[test]
+    fn an_existing_conversation_is_opened_rather_than_offered_again() {
+        assert!(HTML.contains("conversations: true"));
+        assert!(HTML.contains("function conversationWith(row)"));
+        assert!(HTML.contains("talking ? \"Open conversation\" : \"Start a conversation\""));
+        assert!(
+            HTML.contains("H.emit(\"recordClicked\", { record: { uid: existing.uid } });"),
+            "opening means handing the conversation to whoever reads records"
+        );
+    }
+
     /// Sync is one section with both axes: the per-contact feed direction,
     /// which the engine already enforces, and file mirroring to local disk.
     #[test]

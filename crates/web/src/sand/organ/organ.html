@@ -40,8 +40,12 @@
     li:hover { background: #1b222b; }
     li.active { background: rgba(63,185,80,.08); }
     .name { flex: 1; font-weight: 650; word-break: break-word; }
+    /* A contact can carry four of these at once (this cell / fingerprint /
+       trust / not connected yet / sync). In a row they crush the name into a
+       sliver of the side column, so they stack. */
+    .badges { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex: 0 0 auto; }
     .badge { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted);
-             border: 1px solid var(--line); border-radius: 999px; padding: 2px 7px; }
+             border: 1px solid var(--line); border-radius: 999px; padding: 2px 7px; white-space: nowrap; }
     .badge.on { color: #d8f5e8; border-color: rgba(63,185,80,.5); }
     .empty { padding: 24px 12px; color: var(--muted); text-align: center; }
     #detail { min-height: 0; overflow: auto; border: 1px solid var(--line); border-radius: 8px;
@@ -431,7 +435,10 @@
     H.subscribeProtein("organs", {
       source: "record",
       where: [{ kind_eq: "organ" }],
-      include: { extension: { namespace: "lince.file_sync" }, contact: true },
+      // `conversations` is how this panel knows whether it should be offering
+      // one or opening the one that already exists. A grant is neither a link
+      // nor a Fact, so there is no other way to ask.
+      include: { extension: { namespace: "lince.file_sync" }, contact: true, conversations: true },
       order: [{ asc: "head" }],
     }, ({ rows }) => {
       organs = Array.isArray(rows) ? rows : [];
@@ -728,19 +735,24 @@
         name.className = "name";
         name.textContent = o.head || o.slug || o.uid;
         li.append(name);
+        // Stacked, not strung along the row: four of them side by side leave
+        // the name nowhere to go in a column this narrow.
+        const badges = document.createElement("span");
+        badges.className = "badges";
+        li.append(badges);
         // Every Cell ships calling itself "Local Lince", so without this the
         // row for this Cell and the row for a contact read identically.
         if (isLocalOrgan(o)) {
           const self = document.createElement("span");
           self.className = "badge on";
           self.textContent = "this cell";
-          li.append(self);
+          badges.append(self);
         }
         const badge = document.createElement("span");
         const enabled = !!(o.extension && o.extension.enabled);
         badge.className = "badge" + (enabled ? " on" : "");
         badge.textContent = enabled ? "sync on" : "sync off";
-        li.append(badge);
+        badges.append(badge);
         if (o.contact) {
           // The short code comes from their key, so it is what tells two
           // same-named contacts apart. Disambiguation, not a security check.
@@ -748,19 +760,19 @@
             const fp = document.createElement("span");
             fp.className = "badge";
             fp.textContent = fingerprintOf(o.contact.node_id);
-            li.append(fp);
+            badges.append(fp);
           }
           const trust = document.createElement("span");
           trust.className = "badge" + (o.contact.trust === "known" ? " on" : "");
           trust.textContent = o.contact.trust;
-          li.append(trust);
+          badges.append(trust);
           if (o.contact.pending_introduction) {
             // Added from a code, never connected. Saying so matters: without
             // it this row looks identical to one that can actually sync.
             const pending = document.createElement("span");
             pending.className = "badge";
             pending.textContent = "not connected yet";
-            li.append(pending);
+            badges.append(pending);
           }
         }
         li.onclick = () => {
@@ -861,6 +873,17 @@
         $("c-trust").value = row.contact.trust || "unknown";
         $("c-proximity").value = row.contact.proximity ?? 0;
         $("c-block").textContent = row.contact.trust === "blocked" ? "Unblock" : "Block";
+        // One conversation with someone is the normal case, so once it exists
+        // the button opens it. Offering again would mint a second one beside
+        // the first — and an offer they have not answered yet counts, since
+        // re-offering it is exactly the mistake.
+        const talking = conversationWith(row);
+        $("c-talk").textContent = talking ? "Open conversation" : "Start a conversation";
+        $("c-talk").dataset.lynxTooltip = talking
+          ? (talking.state === "accepted"
+            ? "Opens the conversation you already have with them."
+            : "Opens the conversation you offered them. They have not accepted yet, so nothing has synced.")
+          : "Offers a conversation. They still have to accept, and nothing syncs until they do — this cannot put anything into someone's store.";
       }
       $("c-status").textContent = "";
       $("c-status").className = "status";
@@ -1153,9 +1176,25 @@
     // Opening a conversation OFFERS it — the other side still has to accept,
     // and until they do nothing syncs. It is not a way to put anything into
     // someone's store.
+    // The newest conversation shared with this contact, in either grant state,
+    // or null. `conversations` arrives on the organ row from Protein.
+    function conversationWith(row) {
+      const list = Array.isArray(row && row.conversations) ? row.conversations : [];
+      return list[0] || null;
+    }
+
     $("c-talk").addEventListener("click", () => {
       const row = selected();
       if (!row) return;
+      const existing = conversationWith(row);
+      if (existing) {
+        H.emit("recordClicked", { record: { uid: existing.uid } });
+        $("c-status").className = "status";
+        $("c-status").textContent = existing.state === "accepted"
+          ? "Opened."
+          : "Opened. They have not accepted yet, so nothing has synced.";
+        return;
+      }
       ask($("c-talk").parentElement, {
         question: "What is this conversation about?",
         input: "Hello",

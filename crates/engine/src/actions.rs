@@ -2999,6 +2999,28 @@ impl Engine {
                 let contact_uid = self.resolve(&contact).await?;
                 let (conversation, thread) =
                     self.start_conversation(&contact_uid, title.trim()).await?;
+                // Same zero-delta wake-up `create-message` commits, and for
+                // the same reason: the three levels of a conversation are
+                // written straight through `store::records`, which drops no
+                // Fact, and a live subscription re-runs on nothing else. The
+                // Fact rides the CONTACT, because "do I already have a
+                // conversation with them" is a question asked of their row.
+                outcome.facts = self
+                    .append(
+                        NewFact {
+                            actor_uid: actor,
+                            ..NewFact::quantity(
+                                contact_uid,
+                                store::exact::zero(),
+                                Cause {
+                                    kind: CauseKind::Sync,
+                                    uid: Some(conversation.clone()),
+                                },
+                            )
+                        },
+                        now,
+                    )
+                    .await?;
                 // Both uids come back: the caller opens the thread, but the
                 // conversation is what was actually shared.
                 outcome.created = Some(

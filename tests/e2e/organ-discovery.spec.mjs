@@ -158,6 +158,36 @@ test("nearby Add known persists a known contact", async ({ browser }, testInfo) 
     await expect(frameA.locator("#sy-in")).toHaveAttribute("aria-pressed", "true");
     expect(contactState(pair.a.dataDir)).toEqual(["known|0|1"]);
 
+    // The status labels stack instead of stringing along the row: a contact
+    // carries fingerprint, trust and sync at once, and side by side they
+    // squeeze the name out of a column this narrow.
+    const badges = await frameA.locator("#organs li", { hasText: "Known B" }).evaluate((li) => {
+      const stack = li.querySelector(".badges");
+      const tops = [...stack.children].map((badge) => Math.round(badge.getBoundingClientRect().top));
+      return {
+        direction: getComputedStyle(stack).flexDirection,
+        count: tops.length,
+        distinct: new Set(tops).size,
+      };
+    });
+    expect(badges.direction).toBe("column");
+    expect(badges.count).toBeGreaterThan(1);
+    expect(badges.distinct).toBe(badges.count);
+
+    // Offering a conversation to someone you already have one with mints a
+    // second one beside it, so the button changes job once one exists — and
+    // it must change WITHOUT a reload, which is why `start-conversation`
+    // commits a wake-up Fact on the contact.
+    await expect(frameA.locator("#c-talk")).toHaveText("Start a conversation");
+    await frameA.locator("#c-talk").click();
+    await frameA.getByRole("textbox", { name: "What is this conversation about?" }).fill("Beach plans");
+    await frameA.getByRole("button", { name: "Offer", exact: true }).click();
+    await expect(frameA.locator("#c-talk")).toHaveText("Open conversation");
+    // And opening hands the conversation to whoever reads records.
+    await frameA.locator("#c-talk").click();
+    await expect(frameA.locator("#c-status")).toContainText("They have not accepted yet");
+    await expect(recordFrame(pair.pageA).locator("#f-head")).toHaveValue("Beach plans");
+
     // Forgetting asks INLINE. The frame is sandboxed without allow-modals, so
     // a window.confirm() here is dropped by the browser and the button reads
     // as dead — which is what it used to do.
@@ -209,8 +239,9 @@ test("an unknown nearby Cell can invite, notify, open Record chat, and exchange 
       { timeout: 15_000 },
     ).toEqual(["E2E hello|1e-0"]);
 
-    await expect(recordFrame(pair.pageA).locator("#f-name")).toHaveText("E2E hello");
-    await expect(recordFrame(pair.pageB).locator("#f-name")).toHaveText("E2E hello");
+    // The head is the panel's title input now — read the value, not text.
+    await expect(recordFrame(pair.pageA).locator("#f-head")).toHaveValue("E2E hello");
+    await expect(recordFrame(pair.pageB).locator("#f-head")).toHaveValue("E2E hello");
     await expect(recordFrame(pair.pageB).locator("#thread-tabs")).toContainText("E2E hello");
     expect(contactState(pair.a.dataDir)).toEqual(["unknown|0|0"]);
     expect(contactState(pair.b.dataDir)).toEqual(["unknown|0|0"]);

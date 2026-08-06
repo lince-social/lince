@@ -356,6 +356,14 @@ pub struct Include {
     /// local organ itself.
     #[serde(default)]
     pub contact: bool,
+    /// The conversations shared with this organ (Ontology §11), as
+    /// `conversations`. Empty for a record nobody talks to through — including
+    /// this Cell's own Organ, which has no grants pointing at it.
+    ///
+    /// A grant is not a link and not a Fact, so a surface has no other way to
+    /// ask whether a conversation with someone already exists.
+    #[serde(default)]
+    pub conversations: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -880,6 +888,7 @@ async fn execute_karma(store: &Store, protein: &Protein) -> Result<Vec<Value>, P
         || protein.include.extension.is_some()
         || protein.include.projection.is_some()
         || protein.include.contact
+        || protein.include.conversations
     {
         return Err(karma_query_error(
             "protein_karma_include_unsupported",
@@ -1905,6 +1914,18 @@ async fn attach_includes(
                 })
             })
             .unwrap_or(Value::Null);
+    }
+    if include.conversations {
+        // Keyed by the CONTACT's organ uid, which is what the grant stores —
+        // `offer(conversation, contact_organ)`. Indexing this the other way
+        // round returns empty for everyone and looks like "no conversations".
+        row["conversations"] = Value::Array(
+            store::replica::conversations_with(&store.pool, record_uid)
+                .await?
+                .into_iter()
+                .map(|c| json!({ "uid": c.uid, "head": c.head, "state": c.state }))
+                .collect(),
+        );
     }
     if let Some(projection) = &include.projection {
         // the promise fold (V.3/XII): quantity + Σ deltas of agreed/active

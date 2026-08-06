@@ -295,11 +295,30 @@ pub async fn pending_introductions(pool: &SqlitePool) -> Result<Vec<Contact>, St
 
 /// Drop a contact and the Record standing in for it.
 ///
-/// Used to retire a placeholder once the real Organ has introduced itself.
-/// Safe precisely because `add_contact` writes both rows with plain SQL rather
-/// than through the Record write path: nothing was ever logged to the op log,
-/// so no peer was told about this uid and there is no history to orphan.
+/// Used to retire a placeholder once the real Organ has introduced itself, and
+/// to forget someone deliberately. Safe precisely because `add_contact` writes
+/// both rows with plain SQL rather than through the Record write path: nothing
+/// was ever logged to the op log, so no peer was told about this uid and there
+/// is no history to orphan.
+///
+/// The annotations go with it. Setting trust, proximity or feed direction
+/// commits a Fact against this record, and `fact.record_uid` is a foreign key —
+/// so leaving them behind does not preserve history, it just makes forgetting
+/// fail with a constraint error. What is being deleted is this Cell's own notes
+/// about a row that stands in for someone else's Organ; the Organ itself is
+/// untouched, and nothing here was ever anyone else's to keep.
 pub async fn forget_contact(pool: &SqlitePool, organ_uid: &str) -> Result<(), StoreError> {
+    for child in [
+        "DELETE FROM fact_concept WHERE fact_uid IN (SELECT uid FROM fact WHERE record_uid = ?)",
+        "DELETE FROM fact_concept_event WHERE fact_uid IN (SELECT uid FROM fact WHERE record_uid = ?)",
+        "DELETE FROM fact_action_intent WHERE fact_uid IN (SELECT uid FROM fact WHERE record_uid = ?)",
+        "DELETE FROM fact_remote_command WHERE fact_uid IN (SELECT uid FROM fact WHERE record_uid = ?)",
+        "DELETE FROM fact WHERE record_uid = ?",
+        "DELETE FROM record_extension WHERE record_uid = ?",
+        "DELETE FROM record_doc WHERE record_uid = ?",
+    ] {
+        sqlx::query(child).bind(organ_uid).execute(pool).await?;
+    }
     sqlx::query("DELETE FROM identity_key WHERE actor_uid = ?")
         .bind(organ_uid)
         .execute(pool)

@@ -350,3 +350,61 @@ async fn sync_policy_refuses_the_local_organ() {
         .unwrap_err();
     assert!(format!("{err}").contains("not a contact"), "{err}");
 }
+
+/// A contact that has actually been paired carries adopted keys, a NodeId and
+/// a record the local user renamed — forgetting has to survive all of it.
+#[tokio::test]
+async fn forgetting_a_paired_contact_with_keys_succeeds() {
+    let (e, _local, contact) = cell_with_contact().await;
+    engine::trust::adopt_key(&e.store, &contact, "ed25519:root:v1", "AAAA").await.unwrap();
+    engine::trust::adopt_key(&e.store, &contact, "ed25519:organ:v1", "BBBB").await.unwrap();
+    store::organs::set_node_id(&e.store.pool, &contact, Some("beadbeef")).await.unwrap();
+    store::organs::set_trust(&e.store.pool, &contact, "known").await.unwrap();
+    store::records::set_text(&e.store.pool, &contact, Some("Known B"), None).await.unwrap();
+
+    e.act(Action::ForgetOrganContact { target: contact.clone() }, None)
+        .await
+        .expect("a paired contact must be forgettable");
+    assert!(store::records::get(&e.store.pool, &contact).await.unwrap().is_none());
+}
+
+/// Touching a contact's trust, proximity or feed direction commits a Fact
+/// against its record, and `fact.record_uid` is a foreign key — so a contact
+/// anyone has actually configured could not be forgotten at all: the delete
+/// came back as `FOREIGN KEY constraint failed` and the button looked broken.
+#[tokio::test]
+async fn a_configured_contact_can_still_be_forgotten() {
+    let (e, _local, contact) = cell_with_contact().await;
+    for action in [
+        Action::SetContactTrust {
+            target: contact.clone(),
+            trust: "known".into(),
+        },
+        Action::SetContactProximity {
+            target: contact.clone(),
+            proximity: 2,
+        },
+        Action::SetSyncPolicy {
+            target: contact.clone(),
+            sync_out: true,
+            sync_in: true,
+        },
+    ] {
+        e.act(action, None).await.unwrap();
+    }
+
+    e.act(
+        Action::ForgetOrganContact {
+            target: contact.clone(),
+        },
+        None,
+    )
+    .await
+    .expect("a contact with annotations must still be forgettable");
+    assert!(
+        store::records::get(&e.store.pool, &contact)
+            .await
+            .unwrap()
+            .is_none()
+    );
+}

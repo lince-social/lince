@@ -1317,6 +1317,24 @@ taught to click past is worse than no step.
   routes stay in the tree until the iroh path has actually run end to end,
   then they are deleted outright — that is a working-tree precaution, not a
   schema one.
+- [ ] **Retire `base_url` as a way to reach anyone.** Settled 2026-08-05
+  while simplifying the Organ sand: registering an Organ by hostname is
+  gone from the surface, because a URL matches nothing the transport does —
+  pairing parses a NodeId, the outbox dials a NodeId, and inbound authorises
+  by `contact_by_node_id`. What is left of `base_url` is a display string on
+  the Organ record plus these callers, each of which must move to a NodeId
+  dial before the column can go:
+  - `web::presentation::http::transfer_delivery` — every envelope, receipt
+    and pull request is an HTTP POST to `contact.base_url`. The largest of
+    them; Transfer is the only subsystem still speaking HTTP peer-to-peer.
+  - `engine::sync::Introduction.base_url` — carried in the introduction and
+    written onto the contact by `adopt_introduction`. Harmless as a label,
+    misleading as an address: it is the peer's view of itself, routinely a
+    loopback URL.
+  - `store::organs::Contact.base_url` (the `record.body` column) and
+    `last_seen_addr`, which the retired HTTP runner ranked candidates from.
+  Until then the rule the sand already follows: a URL is something to show,
+  never something to dial.
 
 ### Threads: reaching someone before you trust them
 

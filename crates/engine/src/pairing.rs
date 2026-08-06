@@ -72,7 +72,15 @@ impl PairingInvite {
         let text = text.trim();
         let parts: Vec<&str> = text.split(SEP).collect();
         if parts.len() != 5 || parts[0] != INVITE_PREFIX {
-            return Err(EngineError::Consequence("not a Lince pairing code".into()));
+            // Name the field they most likely copied from instead. The Profile
+            // panel shows two strings and only this one is pasteable, so "not a
+            // pairing code" alone leaves them re-pasting the same wrong one.
+            return Err(EngineError::Consequence(
+                "not a Lince pairing code. It must be the whole line starting `lince1|` \
+                 from under their QR code — an identity key on its own carries no \
+                 address and cannot be added."
+                    .into(),
+            ));
         }
         if parts[1].is_empty() {
             return Err(EngineError::Consequence(

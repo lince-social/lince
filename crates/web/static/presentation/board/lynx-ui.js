@@ -356,6 +356,50 @@
     return row;
   }
 
+  // ── Destructive confirmation: a composition of the existing `.lynx-
+  // dialog`, not a new component — Kanban bulk deletion and Record hard
+  // deletion both want "are you sure, here is what breaks," never a bare
+  // confirm(). Returns a Promise<boolean>; Escape and the cancel button both
+  // resolve false, never leave the caller hanging.
+  function confirmDialog(options = {}) {
+    return new Promise((resolve) => {
+      const dialog = document.createElement("dialog");
+      dialog.className = "lynx-dialog";
+      const head = document.createElement("div");
+      head.className = "lynx-dialog__head lynx-box";
+      const heading = document.createElement("h2");
+      heading.className = "lynx-title";
+      heading.textContent = options.title || "Are you sure?";
+      head.appendChild(heading);
+      const body = document.createElement("div");
+      body.className = "lynx-box";
+      body.textContent = options.body || "This cannot be undone.";
+      const actions = document.createElement("div");
+      actions.className = "lynx-toolbar";
+      const cancel = document.createElement("button");
+      cancel.type = "button";
+      cancel.className = "lynx-button";
+      cancel.textContent = options.cancelLabel || "Cancel";
+      const confirm = document.createElement("button");
+      confirm.type = "button";
+      confirm.className = `lynx-button ${options.danger === false ? "lynx-button--primary" : "lynx-button--danger"}`;
+      confirm.textContent = options.confirmLabel || "Delete";
+      actions.append(cancel, confirm);
+      dialog.append(head, body, actions);
+      document.body.appendChild(dialog);
+      function done(result) {
+        dialog.close();
+        dialog.remove();
+        resolve(result);
+      }
+      cancel.addEventListener("click", () => done(false));
+      confirm.addEventListener("click", () => done(true));
+      dialog.addEventListener("cancel", () => done(false)); // native Escape handling
+      dialog.showModal();
+      confirm.focus();
+    });
+  }
+
   const componentSelectors = Object.freeze([
     [".lynx-icon", "Icon"],
     [".lynx-icon-button", "Icon button"],
@@ -505,6 +549,72 @@
     if (target.dataset.lynxNumberStep) stepNumber(target);
   });
 
+  // ── Anchored action/context menu: the same `.lynx-menu` a `.lynx-select`/
+  // `.lynx-dropdown` already shows, but positioned at a point (a right-click,
+  // a "…" button not glued to a sibling menu) instead of a fixed sibling.
+  // Record's links/attachments and Kanban's cards are both "a menu anchored
+  // to THIS row," not a toolbar dropdown — same behavior, different anchor.
+  let openAnchoredMenu = null;
+  function closeAnchoredMenu() {
+    if (!openAnchoredMenu) return;
+    openAnchoredMenu.hidden = true;
+    openAnchoredMenu.removeAttribute("data-lynx-menu-open");
+    openAnchoredMenu = null;
+  }
+  // `items`: [{ label, onSelect, danger }]. Builds and shows a `.lynx-menu`
+  // at (x, y), clamped to the viewport the same way tooltips are.
+  function openMenu(x, y, items) {
+    closeAnchoredMenu();
+    const menu = document.createElement("div");
+    menu.className = "lynx-menu";
+    menu.setAttribute("role", "menu");
+    menu.setAttribute("data-lynx-menu-open", "");
+    for (const item of items) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "lynx-button" + (item.danger ? " lynx-button--danger" : "");
+      button.setAttribute("role", "menuitem");
+      button.textContent = item.label;
+      button.addEventListener("click", () => {
+        closeAnchoredMenu();
+        item.onSelect?.();
+      });
+      menu.appendChild(button);
+    }
+    menu.style.position = "fixed";
+    menu.style.left = "0px";
+    menu.style.top = "0px";
+    document.body.appendChild(menu);
+    const box = menu.getBoundingClientRect();
+    const left = Math.max(2, Math.min(document.documentElement.clientWidth - box.width - 2, x));
+    const top = Math.max(2, Math.min(document.documentElement.clientHeight - box.height - 2, y));
+    menu.style.left = `${left}px`;
+    menu.style.top = `${top}px`;
+    openAnchoredMenu = menu;
+    return menu;
+  }
+  // Wires a right-click (and a Shift+F10/ContextMenu keypress, for parity
+  // without a pointer) on `target` to open `buildItems()`'s menu at the
+  // pointer/element position.
+  function contextMenu(target, buildItems) {
+    target.addEventListener("contextmenu", (event) => {
+      event.preventDefault();
+      openMenu(event.clientX, event.clientY, buildItems());
+    });
+    target.addEventListener("keydown", (event) => {
+      if (event.key !== "ContextMenu" && !(event.shiftKey && event.key === "F10")) return;
+      event.preventDefault();
+      const box = target.getBoundingClientRect();
+      openMenu(box.left, box.bottom, buildItems());
+    });
+  }
+  document.addEventListener("pointerdown", (event) => {
+    if (openAnchoredMenu && !openAnchoredMenu.contains(event.target)) closeAnchoredMenu();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && openAnchoredMenu) closeAnchoredMenu();
+  });
+
   // ── Number: the up/down affordance for a `.lynx-number`'s input.
   //
   // `stepUp`/`stepDown` throw on a non-numeric current value or a step that
@@ -641,5 +751,6 @@
   global.LynxUI = Object.freeze({
     icon, iconButton, toast, icons: Object.keys(paths), inspect, setSelectValue, splits, numbers,
     combobox, tokens, formatDuration, parseDuration, formatDateTime, attachmentRow,
+    confirmDialog, openMenu, contextMenu, closeAnchoredMenu,
   });
 })(window);

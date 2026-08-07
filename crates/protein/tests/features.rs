@@ -548,6 +548,12 @@ async fn threads_include_resolves_sender_name_from_the_actor() {
     let role_id = store::auth::ensure_role(&e.store.pool, "lince")
         .await
         .unwrap();
+    let create_permission_id = store::auth::ensure_permission(&e.store.pool, "record", "create")
+        .await
+        .unwrap();
+    store::auth::grant(&e.store.pool, role_id, create_permission_id)
+        .await
+        .unwrap();
     let user_id = store::auth::create_user(
         &e.store.pool,
         "Ana Diaz",

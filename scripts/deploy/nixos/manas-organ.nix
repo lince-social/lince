@@ -39,7 +39,7 @@
   # working replacement.
   services.lince = {
     enable = true;
-    package = self.packages.${pkgs.system}.lince;
+    serverPackage = self.packages.${pkgs.system}.lince;
     mode = "server";
     listenAddr = "127.0.0.1:6174";
     # Read on first boot only. Place it out of band (agenix/sops, or root-owned

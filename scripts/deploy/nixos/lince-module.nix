@@ -49,6 +49,10 @@ let
           "--initial-admin-password-file"
           (toString cfg.initialAdminPasswordFile)
         ]
+        ++ lib.optionals (cfg.initialAdminPassword != null) [
+          "--initial-admin-password"
+          cfg.initialAdminPassword
+        ]
       );
 
   unit = {
@@ -198,13 +202,30 @@ in
       default = null;
       description = ''
         Path to a file holding the first admin's password, read on FIRST BOOT
-        only (once an admin exists it is ignored). Use a secret manager
-        (agenix/sops) or a root-owned mode-0600 file — never a Nix string
-        literal, which would land world-readable in the store.
+        only (once an admin exists it is ignored). The file is read by the
+        service, so it must be reachable BY THE UNIT: a system-scope unit runs
+        as `user` with ProtectHome = true, so anything under /home is invisible
+        to it regardless of permissions. Somewhere under `dataDir` works.
 
-        Required in server mode: with no admin and no terminal to prompt on,
-        `lince --server` refuses to start rather than come up as a login wall
-        with no accounts.
+        Required in server mode unless `initialAdminPassword` is set: with no
+        admin and no terminal to prompt on, `lince --server` refuses to start
+        rather than come up as a login wall with no accounts.
+      '';
+    };
+
+    initialAdminPassword = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = ''
+        The first admin's password inline. Simpler than a file and fine for a
+        box you alone administer, with the tradeoff stated plainly: a Nix
+        string is world-readable in /nix/store, and it reaches the process as
+        argv, so it is visible in `ps` and `systemctl cat lince` to any local
+        user. Read on FIRST BOOT only, and ignored once an admin exists —
+        so changing it later does nothing, and neither does removing it.
+
+        Use `initialAdminPasswordFile` instead when anyone else can log into
+        the machine.
       '';
     };
 
@@ -218,12 +239,27 @@ in
   config = lib.mkIf cfg.enable {
     assertions = [
       {
-        assertion = cfg.mode != "server" || cfg.initialAdminPasswordFile != null;
+        assertion =
+          cfg.mode != "server"
+          || cfg.initialAdminPasswordFile != null
+          || cfg.initialAdminPassword != null;
         message = ''
           services.lince.mode = "server" forces login on, so the first boot needs
-          services.lince.initialAdminPasswordFile. Without it the unit starts,
-          finds no admin and no TTY, and exits — by design, so you get a failed
-          unit instead of a running login wall nobody can get into.
+          either services.lince.initialAdminPassword (inline; world-readable in
+          /nix/store and visible in `ps`) or services.lince.initialAdminPasswordFile
+          (out of band). Without one the unit starts, finds no admin and no TTY,
+          and exits — by design, so you get a failed unit instead of a running
+          login wall nobody can get into.
+        '';
+      }
+      {
+        assertion = cfg.initialAdminPasswordFile == null || cfg.initialAdminPassword == null;
+        message = ''
+          Set services.lince.initialAdminPassword OR
+          services.lince.initialAdminPasswordFile, not both. The binary prefers
+          the file and silently ignores the other, which is exactly the kind of
+          thing you would rather learn now than while wondering why a password
+          does not work.
         '';
       }
       {

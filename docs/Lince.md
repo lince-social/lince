@@ -1,27 +1,6 @@
 # Lince, the philosophy
 It is possible to find many different philosophies to divide life. The Lince tool separates it into Needs and Contributions to Needs. The Lince philosophy is to meet your Needs and Contribute to the Needs of those you care about; using the Lince tool or not. The maximum point of the Lince philosophy is all Needs deemed fair being met, and in the void caused by no Needs... We don't know yet.
 
-# Lince, the institute
-The Lince Institute is the thing, greater than one person, that will push the philosophy of Lince through the building of the Lince tool and it's usage for helping to meet Needs through resource creation, management and sharing. The Institute may act as a legal body, to bear responsibility, to support those involved, to accept donations and more. The Institute being OSC, 'Organização da Sociedade Civil' allows for donations to become tax reductions by the donating parties. Also opens the possibility of earning technology-based government programs' funding. The following documents explain all the papers needed for the entire lifecycle of the Instituto Lince, the legal entity in Brazil to operate and represent the bureaucracy of the project.
-
-- [ ] Use the 'Ata de Fundação' and 'Estatuto Social' to create the OSC Institute called called 'Instituto Lince'
-- [ ] Hire Lawyer: AFOSC organization that deals with this for the process and creation of the legal documents.
-- [ ] Ata de Fundação: Document used to officially create the organization, needs at minimum two people.
-- [ ] Estatuto Social: The rules and permissions the project has. The rights and duties it proposes to follow.
-- [ ] Procuração: Document to be updated and adapted whenever a new legal/financial task needs to be complete, and it's not done by someone of the Institute with permission.
-- [ ] CNPJ (Cora (more famous) or Conta Simples)
-- [ ] Bank Account (which bank? Banco do Brasil?)
-
-# Merch
-- [/] Stickers -> Rei do Sticker: 500 (250 b&w, 250 w&b) laminated. It will be 5x5cm. | Duds
-- [/] Create the digital Tshirt design. Decide if its only logo and text close together, or if its logo in the heart part of the chest and 'Lince' in the other, or maybe in the back. Maybe have the name of the person in the other part of the chest and Lince in the back. | Nica & Duds (Website)
-- [/] Embroider them with the logo: iguat | Duds
-- [ ] Blender 3D logo | Nica
-- [ ] 3D Keychain Items \@tecnopuc_crialab | Duds
-
-# Website
-Make a _Lynx canadensis_ 3D model inside the website. While the website is boring, the Lynx is very alive. By default it doesnt mess with anything. But if you pet it a lot it becomes hiperstimulated and with that energy it becomes hyperactive. It plays with the components of the screen, scrambles them, munches them, removing a part of the top bar. It follows you around the screen. If you try to click some links it moves them away, like a Turk icecream man that never lets you get the icecream. The model of the Lynx probably needs to be done in Blender, then put in Three.js or Bevy WebAssembly WebGPU. If you refresh the screen it goes back to normal.
-
 # Lince, the tool
 
 > **Everything is a Record. Every change is a Fact. Every intended change is a Promise.**
@@ -90,4 +69,269 @@ We want to minimize the time spent managing the meeting of Needs and Contributio
 
 A team is being assembled, to fight the battle of killing Lince. Will you join the party?
 
-# "Death is only the beginning" - The Mummy.
+| "Death is only the beginning" - The Mummy.
+
+# Lince, the institute
+The Lince Institute is the thing, greater than one person, that will push the philosophy of Lince through the building of the Lince tool and it's usage for helping to meet Needs through resource creation, management and sharing. The Institute may act as a legal body, to bear responsibility, to support those involved, to accept donations and more. The Institute being OSC, 'Organização da Sociedade Civil' allows for donations to become tax reductions by the donating parties. Also opens the possibility of earning technology-based government programs' funding. The following documents explain all the papers needed for the entire lifecycle of the Instituto Lince, the legal entity in Brazil to operate and represent the bureaucracy of the project.
+
+- [ ] Use the 'Ata de Fundação' and 'Estatuto Social' to create the OSC Institute called called 'Instituto Lince'
+- [ ] Hire Lawyer: AFOSC organization that deals with this for the process and creation of the legal documents.
+- [ ] Ata de Fundação: Document used to officially create the organization, needs at minimum two people.
+- [ ] Estatuto Social: The rules and permissions the project has. The rights and duties it proposes to follow.
+- [ ] Procuração: Document to be updated and adapted whenever a new legal/financial task needs to be complete, and it's not done by someone of the Institute with permission.
+- [ ] CNPJ (Cora (more famous) or Conta Simples)
+- [ ] Bank Account (which bank? Banco do Brasil?)
+
+# Merch
+- [/] Stickers -> Rei do Sticker: 500 (250 b&w, 250 w&b) laminated. It will be 5x5cm. | Duds
+- [/] Create the digital Tshirt design. Decide if its only logo and text close together, or if its logo in the heart part of the chest and 'Lince' in the other, or maybe in the back. Maybe have the name of the person in the other part of the chest and Lince in the back. | Nica & Duds (Website)
+- [/] Embroider them with the logo: iguat | Duds
+- [ ] Blender 3D logo | Nica
+- [ ] 3D Keychain Items \@tecnopuc_crialab | Duds
+
+# Website
+Make a _Lynx canadensis_ 3D model inside the website. While the website is boring, the Lynx is very alive. By default it doesnt mess with anything. But if you pet it a lot it becomes hiperstimulated and with that energy it becomes hyperactive. It plays with the components of the screen, scrambles them, munches them, removing a part of the top bar. It follows you around the screen. If you try to click some links it moves them away, like a Turk icecream man that never lets you get the icecream. The model of the Lynx probably needs to be done in Blender, then put in Three.js or Bevy WebAssembly WebGPU. If you refresh the screen it goes back to normal.
+
+
+# ESTATUTO SOCIAL
+
+## INSTITUTO LINCE
+
+---
+
+## CAPÍTULO I — DA DENOMINAÇÃO, NATUREZA, SEDE E DURAÇÃO
+
+**Art. 1º**
+O **Instituto Lince**, doravante denominado apenas **Instituto**, é uma associação civil de direito privado, sem fins lucrativos, com personalidade jurídica própria, regida por este Estatuto e pela legislação brasileira aplicável.
+
+**Art. 2º**
+O Instituto tem sede e foro no município de **Porto Alegre**, Estado do Rio Grande do Sul, podendo atuar em todo o território nacional e no exterior.
+
+**Art. 3º**
+O Instituto tem duração por prazo indeterminado.
+
+---
+
+## CAPÍTULO II — DAS FINALIDADES E ATIVIDADES
+
+**Art. 4º**
+O Instituto tem por finalidade apoiar, promover, desenvolver, manter, distribuir e operar o **Projeto Lince**, bem como outras iniciativas tecnológicas compatíveis, sempre de forma **livre, aberta e sem finalidade lucrativa**.
+
+**Art. 5º**
+Para o cumprimento de suas finalidades, o Instituto poderá, entre outras atividades:
+
+I. Desenvolver, manter e difundir software livre e de código aberto (FLOSS);
+II. Publicar e hospedar código-fonte de forma pública e acessível;
+III. Receber doações, contribuições, auxílios e subvenções;
+IV. Contratar pessoas físicas ou jurídicas para execução de serviços técnicos, administrativos, operacionais ou especializados;
+V. Prestar serviços acessórios compatíveis com seus objetivos institucionais, tais como hospedagem, suporte, consultoria, treinamento ou serviços correlatos, **desde que o software e seu código-fonte permaneçam sempre livres e abertos**.
+
+---
+
+## CAPÍTULO III — DO PATRIMÔNIO E DAS RECEITAS
+
+**Art. 6º**
+O patrimônio do Instituto será constituído por bens, direitos e recursos adquiridos ou recebidos a qualquer título lícito.
+
+**Art. 7º**
+Constituem receitas do Instituto:
+
+I. Doações de pessoas físicas ou jurídicas;
+II. Contribuições espontâneas;
+III. Receitas provenientes de serviços compatíveis com suas finalidades;
+IV. Rendimentos de aplicações financeiras;
+V. Outras receitas lícitas.
+
+---
+
+## CAPÍTULO IV — DA APLICAÇÃO DOS RECURSOS E DA NÃO DISTRIBUIÇÃO
+
+**Art. 8º**
+Os recursos do Instituto serão integralmente aplicados na manutenção e no desenvolvimento de seus objetivos institucionais.
+
+**Art. 9º**
+É expressamente vedada a distribuição de resultados, sobras, excedentes ou quaisquer vantagens financeiras a associados, dirigentes ou terceiros, a qualquer título.
+
+---
+
+## CAPÍTULO V — DOS ASSOCIADOS
+
+**Art. 10**
+O Instituto poderá possuir associados, pessoas físicas ou jurídicas, admitidos a critério da Diretoria Executiva.
+
+**Art. 11**
+A condição de associado **não confere direitos automáticos de participação em decisões técnicas, operacionais ou estratégicas do Projeto Lince**.
+
+**Art. 12**
+A condição de associado **não gera vínculo empregatício, contratual ou financeiro** com o Instituto.
+
+---
+
+## CAPÍTULO VI — DA ADMINISTRAÇÃO, REPRESENTAÇÃO E DELEGAÇÃO
+
+**Art. 13**
+A administração do Instituto será exercida por uma **Diretoria Executiva**, composta por **um único Diretor Executivo**, pessoa física.
+
+**Art. 14**
+Compete exclusivamente ao Diretor Executivo:
+
+I. Representar o Instituto ativa e passivamente, judicial e extrajudicialmente;
+II. Administrar recursos financeiros e patrimoniais;
+III. Abrir, movimentar e encerrar contas bancárias;
+IV. Assinar contratos, convênios e instrumentos jurídicos;
+V. Contratar e remunerar prestadores de serviços;
+VI. Definir a organização interna do Instituto;
+VII. Tomar todas as decisões administrativas, financeiras e operacionais.
+
+---
+
+### 🔹 Delegação de Execução (sem diluição de poder)
+
+**Art. 15**
+O Diretor Executivo poderá nomear **procuradores, representantes ou coordenadores**, associados ou não, para exercer funções específicas de natureza administrativa, contábil, jurídica, institucional, internacional ou operacional.
+
+**Art. 16**
+As delegações previstas neste Estatuto:
+
+I. Serão sempre específicas quanto ao objeto;
+II. Poderão ser limitadas no tempo, valor ou finalidade;
+III. Serão formalizadas por instrumento próprio.
+
+§1º A delegação **não implica transferência de poder decisório**, autonomia administrativa ou financeira.
+§2º Todos os atos praticados por delegados serão realizados **sob responsabilidade e supervisão do Diretor Executivo**.
+
+**Art. 17**
+A movimentação de recursos financeiros e a representação bancária poderão ser exercidas por procuradores devidamente nomeados, conforme os limites estabelecidos no respectivo instrumento de delegação.
+
+---
+
+## CAPÍTULO VII — DA ASSEMBLEIA GERAL
+
+**Art. 18**
+A Assembleia Geral será convocada exclusivamente para:
+
+I. Alteração do Estatuto Social;
+II. Deliberação sobre a dissolução do Instituto.
+
+**Art. 19**
+A Assembleia Geral não interfere na gestão cotidiana do Instituto nem nas decisões relativas ao desenvolvimento técnico ou operacional do Projeto Lince.
+
+---
+
+## CAPÍTULO VIII — DO EXERCÍCIO SOCIAL E DA CONTABILIDADE
+
+**Art. 20**
+O exercício social coincidirá com o ano civil.
+
+**Art. 21**
+A contabilidade do Instituto será mantida de forma regular, em conformidade com a legislação vigente.
+
+---
+
+## CAPÍTULO IX — DA DISSOLUÇÃO
+
+**Art. 22**
+Em caso de dissolução, o patrimônio remanescente será destinado a outra entidade sem fins lucrativos com objetivos compatíveis, escolhida pela Assembleia Geral.
+
+---
+
+## CAPÍTULO X — DAS DISPOSIÇÕES GERAIS
+
+**Art. 23**
+Os casos omissos serão resolvidos pelo Diretor Executivo, observada a legislação aplicável.
+
+
+ATA DE FUNDAÇÃO
+INSTITUTO LINCE
+
+Aos ___ dias do mês de __________ de ________, na cidade de Porto Alegre, Estado do Rio Grande do Sul, reuniram-se as pessoas abaixo qualificadas, com o objetivo de fundar uma associação civil sem fins lucrativos, denominada Instituto Lince.
+
+Aberta a reunião, os presentes deliberaram:
+
+1. Fundação da entidade
+
+Fica fundada, nesta data, uma associação civil sem fins lucrativos, denominada Instituto Lince, que se regerá pelo Estatuto Social aprovado nesta assembleia e pela legislação aplicável.
+
+2. Aprovação do Estatuto Social
+
+Foi lido, discutido e aprovado, por unanimidade, o Estatuto Social do Instituto Lince, que passa a integrar a presente ata para todos os fins legais.
+
+3. Eleição da Diretoria Executiva
+
+Nos termos do Estatuto Social aprovado, foi eleito para o cargo de Diretor Executivo o Sr. ________________________________, brasileiro, portador do RG nº _____________ e CPF nº __________________, residente e domiciliado em ______________________________________________, que aceita o cargo e declara estar ciente de suas atribuições legais.
+
+4. Início das atividades
+
+Fica autorizado o início imediato das atividades do Instituto, bem como a prática de todos os atos necessários à sua regular constituição, inclusive registro em cartório, obtenção de CNPJ e abertura de conta bancária.
+
+Nada mais havendo a tratar, foi encerrada a reunião, lavrando-se a presente ata, que após lida e aprovada, vai assinada pelos fundadores.
+
+FUNDADORES
+
+Nome: ________________________________________
+RG: __________________________________________
+CPF: _________________________________________
+Assinatura: ___________________________________
+
+<br>
+
+Nome: ________________________________________
+RG: __________________________________________
+CPF: _________________________________________
+Assinatura: ___________________________________
+
+
+PROCURAÇÃO ESPECÍFICA
+
+OUTORGANTE
+Instituto Lince, associação civil sem fins lucrativos, inscrita no CNPJ sob nº , com sede em ____________________________________________, neste ato representada por seu Diretor Executivo, **__________________**, brasileiro, portador do CPF nº ______________________ e RG nº ______________________, conforme Estatuto Social.
+
+OUTORGADO(A)
+________________________________________, brasileiro(a), portador(a) do CPF nº ______________________ e RG nº ______________________, residente e domiciliado(a) em ____________________________________________.
+
+PODERES OUTORGADOS
+
+O OUTORGANTE nomeia e constitui o(a) OUTORGADO(a) como seu(ua) procurador(a), conferindo-lhe exclusivamente os poderes abaixo descritos:
+
+[DESCREVER O ATO ESPECÍFICO COM PRECISÃO]
+
+Exemplos (use apenas um, ou escreva o seu):
+
+representar o Instituto perante a Receita Federal do Brasil para entrega de declarações específicas;
+
+atuar junto a instituição bancária exclusivamente para movimentação administrativa da conta, vedada a contratação de crédito;
+
+assinar contrato específico de prestação de serviços com a empresa ______________________;
+
+representar o Instituto em tratativas institucionais internacionais sem poderes para assumir obrigações financeiras.
+
+LIMITAÇÕES
+
+Esta procuração não confere poderes de gestão, decisão estratégica ou representação geral.
+
+É vedado ao(à) OUTORGADO(a):
+
+subdelegar poderes;
+
+assumir obrigações financeiras fora do escopo descrito;
+
+representar o Instituto para fins diversos dos aqui previstos.
+
+PRAZO
+
+Esta procuração é válida até //_______, podendo ser revogada a qualquer tempo, a exclusivo critério do OUTORGANTE.
+
+RESPONSABILIDADE
+
+Todos os atos praticados pelo(a) OUTORGADO(a) nos limites desta procuração serão realizados sob a supervisão e responsabilidade do Diretor Executivo, conforme Estatuto Social do Instituto.
+
+REVOGAÇÃO
+
+O OUTORGANTE poderá revogar esta procuração a qualquer tempo, independentemente de justificativa, mediante comunicação por escrito.
+
+Porto Alegre, ___ de __________________ de ________.
+
+<br>
+
+Diretor Executivo — Instituto Lince
+CPF: ______________________

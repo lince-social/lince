@@ -61,8 +61,9 @@
   --warning: var(--muted);
   --success: var(--ink);
   --info: var(--muted);
-  --tooltip: var(--chumbo-profundo);
-  --tooltip-ink: var(--branco-gelo);
+  --tooltip: var(--surface);
+  --tooltip-ink: var(--ink);
+  --tooltip-border: #fff;
   --modal-border: var(--cinza);
   --control-border: var(--chumbo-profundo);
   --hot-border: #b91c1c;
@@ -119,8 +120,9 @@
   --warning: var(--muted);
   --success: var(--ink);
   --info: var(--muted);
-  --tooltip: var(--chumbo-profundo);
-  --tooltip-ink: var(--branco-gelo);
+  --tooltip: var(--surface);
+  --tooltip-ink: var(--ink);
+  --tooltip-border: #fff;
   --control-border: var(--branco-gelo);
   --hot-border: #fb7185;
   --scrim: color-mix(in srgb, var(--chumbo-profundo) 72%, transparent);
@@ -220,14 +222,12 @@ body { margin: 0; color: var(--ink); background: var(--canvas); }
 .sand-tools { position: absolute; right: 0; bottom: 0; z-index: 30; width: 14px; height: 14px; }
 .sand-tools__row { position: absolute; right: 0; bottom: 0; display: none; border-top: var(--hairline) solid var(--border); border-left: var(--hairline) solid var(--border); background: var(--surface); }
 .sand-tools:hover .sand-tools__row, .sand-tools:focus-within .sand-tools__row { display: flex; }
-.sand-tools__row [data-lynx-tooltip]:last-child::after { right: 0; left: auto; transform: none; }
 .page-corner { position: absolute; right: 0; bottom: 0; display: none; width: 10px; height: 10px; background: var(--border); clip-path: polygon(100% 0, 100% 100%, 0 100%); }
 .sand.is-focused > .sand-tools > .page-corner, .base-tools > .page-corner { display: block; }
 .sand-tools:hover > .page-corner, .sand-tools:focus-within > .page-corner { display: none; }
 .base-tools { position: fixed; top: 0; bottom: auto; z-index: 100; }
 .base-tools > .page-corner { top: 0; bottom: auto; clip-path: polygon(0 0, 100% 0, 100% 100%); }
 .base-tools > .sand-tools__row { top: 0; bottom: auto; border-top: 0; border-bottom: var(--hairline) solid var(--border); }
-.base-tools > .sand-tools__row [data-lynx-tooltip]::after { top: calc(100% + var(--space-2)); bottom: auto; }
 
 .workflow-sand { min-height: 0; overflow: auto; }
 .workflow-head { min-height: 27px; padding: 0 var(--space-2); background: var(--surface); }

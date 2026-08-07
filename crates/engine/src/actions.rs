@@ -1916,6 +1916,10 @@ impl Engine {
             self.require_transfer_origin_authority(&transfer_uid)
                 .await?;
         }
+        if let Some(permission) = Self::generic_write_permission(&action) {
+            self.require_permission_lenient(actor.as_deref(), permission)
+                .await?;
+        }
         let mut outcome = ActionOutcome::default();
         match action {
             Action::CreateRecord {
@@ -7968,6 +7972,44 @@ impl Engine {
         )))
     }
 
+    /// The blanket table's gate (2026-08-07) — deliberately more forgiving
+    /// than `require_permission`. `actor: Option<String>` is overloaded
+    /// across this file: for a web-originated action it is always a numeric
+    /// `app_user` id (`authenticate_headers` in `web::lib` mints exactly
+    /// that), but plenty of legitimate internal call sites — Karma acting on
+    /// behalf of a Person, replay/test fixtures — pass a non-numeric actor
+    /// (a Person uid, an organ id) purely for Ledger attribution, with no
+    /// permission-bearing session behind it at all. `require_permission`
+    /// treats any such actor as `Forbidden("unrecognized actor")`, which is
+    /// exactly right for the actions it already gated (only ever invoked
+    /// from an authenticated web session in practice) but wrong here: the
+    /// blanket table now covers ~100 more variants, several of which ARE
+    /// legitimately called with a Person-uid actor. Only a `Some` actor that
+    /// resolves to a REAL `app_user` row is checked against `permission`;
+    /// anything else (including `None`) is unrestricted, matching this
+    /// action's behavior before blanket enforcement existed.
+    async fn require_permission_lenient(
+        &self,
+        actor: Option<&str>,
+        permission: &str,
+    ) -> Result<(), EngineError> {
+        let Some(actor) = actor else {
+            return Ok(());
+        };
+        let Ok(user_id) = actor.parse::<i64>() else {
+            return Ok(());
+        };
+        let Some(user) = store::auth::user_by_id(&self.store.pool, user_id).await? else {
+            return Ok(());
+        };
+        if user.permissions.iter().any(|p| p == permission) {
+            return Ok(());
+        }
+        Err(EngineError::Forbidden(format!(
+            "missing {permission} permission"
+        )))
+    }
+
     /// Resolve the authenticated app user to the Person they are allowed to
     /// represent. Local no-auth mode stays trusted and returns `None`; an
     /// authenticated session without an explicit binding is blocked instead
@@ -9243,6 +9285,167 @@ impl Engine {
         Err(EngineError::Forbidden(
             "missing record:delete or record:delete_own permission".into(),
         ))
+    }
+
+    /// Blanket write enforcement (2026-08-07): every `Action` variant not
+    /// already covered by a bespoke gate (`DeleteRecord`'s ownership-aware
+    /// `check_delete_permission`, `CreateTransfer`'s `transfer:create`, the
+    /// 17 transfer-lifecycle arms already gated on `transfer:update` inline,
+    /// and the five role/user/permission-admin actions) is checked here
+    /// against `utils::auth::ALL_PERMISSIONS` — a catalog that already
+    /// declared `record:update`, `transfer:read`, `karma:create`, etc. and
+    /// already lets every role toggle them in the permissions sand; nothing
+    /// here invents a new permission string. `actor == None` (a local,
+    /// no-auth Cell) is unrestricted, same as every other gate in this file.
+    fn generic_write_permission(action: &Action) -> Option<&'static str> {
+        Some(match action {
+            // Record core
+            Action::CreateRecord { .. } => "record:create",
+            Action::SetQuantity { .. }
+            | Action::TransitionRecord { .. }
+            | Action::AddQuantity { .. }
+            | Action::CaptureEntry { .. }
+            | Action::ReviseEntry { .. }
+            | Action::VoidEntry { .. }
+            | Action::ClassifyFact { .. }
+            | Action::Activate { .. }
+            | Action::Deactivate { .. }
+            | Action::EditRecordText { .. }
+            | Action::SetSlug { .. }
+            | Action::SetUnit { .. }
+            | Action::SetExtension { .. }
+            | Action::AssertRecord { .. }
+            | Action::RetractAssertion { .. }
+            | Action::RefineAssertion { .. }
+            | Action::RetractRecord { .. }
+            | Action::SetIdentity { .. }
+            | Action::SetAssertionOrder { .. }
+            | Action::SetPlace { .. }
+            | Action::GrantVisibility { .. }
+            | Action::SaveProtein { .. }
+            | Action::AdoptConcepts { .. }
+            | Action::DeclareEquivalence { .. }
+            | Action::RenameConcept { .. }
+            | Action::AdoptConcept { .. }
+            | Action::RemoveConceptFromLingua { .. }
+            | Action::AddConceptParent { .. }
+            | Action::RemoveConceptParent { .. }
+            | Action::RenameLingua { .. } => "record:update",
+            Action::CreateThread { .. }
+            | Action::CreateMessage { .. }
+            | Action::CreateTransferThread { .. }
+            | Action::CreateTransferMessage { .. }
+            | Action::CreateConcept { .. }
+            | Action::CreateLingua { .. }
+            | Action::CreateSignal { .. }
+            | Action::CreateMatchRule { .. } => "record:create",
+            Action::DeleteConcept { .. } | Action::DeleteLingua { .. } => "record:delete",
+
+            // Frequency/Recurrence (Frequency's own catalog subject)
+            Action::CreateFrequency { .. } | Action::CreateRecurrence { .. } => {
+                "frequency:create"
+            }
+            Action::ReviseRecurrence { .. }
+            | Action::SetRecurrencePaused { .. }
+            | Action::ApplyRecurrenceOccurrence { .. }
+            | Action::SkipRecurrenceOccurrence { .. }
+            | Action::UnskipRecurrenceOccurrence { .. } => "frequency:update",
+            Action::DeleteFrequency { .. } | Action::DeleteRecurrence { .. } => {
+                "frequency:delete"
+            }
+
+            // Organ (pairing/contact management, not the sync wire itself)
+            Action::AddKnownOrgan { .. } => "organ:create",
+            Action::RenameOrganContact { .. }
+            | Action::SetSyncPolicy { .. }
+            | Action::ShareMyKey { .. }
+            | Action::StartConversation { .. }
+            | Action::OpenThread { .. }
+            | Action::SendMessage { .. }
+            | Action::GrantOrganLogin { .. }
+            | Action::RevokeOrganLogin { .. }
+            | Action::AcceptThreadInvite { .. }
+            | Action::DeclineThreadInvite { .. }
+            | Action::RootKeyExport { .. }
+            | Action::RootKeyDetach { .. }
+            | Action::SetContactTrust { .. }
+            | Action::SetContactProximity { .. }
+            | Action::RosterEnrolToken => "organ:update",
+            Action::ForgetOrganContact { .. } | Action::RosterRevokeCell { .. } => {
+                "organ:delete"
+            }
+
+            // Transfer (the remainder not already gated inline above)
+            Action::CreatePromise { .. }
+            | Action::CreateTransferDraft { .. }
+            | Action::CreateTransferRemainderDraft { .. } => "transfer:update",
+            Action::PromiseTransition { .. }
+            | Action::EditPromiseDelta { .. }
+            | Action::Decide { .. }
+            | Action::ReviseTransferPromise { .. }
+            | Action::ReviseTransferDraft { .. }
+            | Action::AdoptTransferDraft { .. }
+            | Action::ConfigureTransferDelivery { .. }
+            | Action::SetTransferDeliveryMode { .. }
+            | Action::EnqueueTransferDelivery { .. }
+            | Action::RetryTransferDelivery { .. }
+            | Action::RevokeTransferDelivery { .. }
+            | Action::RefreshTransferDelivery { .. }
+            | Action::BeginRemoteTransferSettlement { .. }
+            | Action::ApplyRemoteTransferApplication { .. }
+            | Action::ConfirmTransfer { .. }
+            | Action::AddParty { .. }
+            | Action::AddPromiseToTransfer { .. }
+            | Action::AgreeTransfer { .. }
+            | Action::ActivateTransfer { .. }
+            | Action::SettleTransfer { .. }
+            | Action::Compensate { .. } => "transfer:update",
+
+            // Karma
+            Action::CreateKarmaProgram { .. } | Action::CreateKarmaGrant { .. } => "karma:create",
+            Action::ReviseKarmaProgram { .. }
+            | Action::ActivateKarmaProgram { .. }
+            | Action::PauseKarmaProgram { .. }
+            | Action::RespondKarmaCandidate { .. }
+            | Action::NarrowKarmaGrant { .. }
+            | Action::ActivateKarmaGrant { .. }
+            | Action::CreateKarmaFrequency { .. }
+            | Action::ReviseKarmaFrequency { .. }
+            | Action::ActivateKarmaFrequency { .. }
+            | Action::SetKarmaFrequencyParameters { .. }
+            | Action::ResetKarmaFrequencyParameters { .. }
+            | Action::PauseKarmaFrequency { .. } => "karma:update",
+            Action::RevokeKarmaGrant { .. } => "karma:delete",
+
+            // Already bespoke-gated inline (transfer:create/update, or
+            // ownership-aware) or admin-only (auth actions): no generic
+            // check here, would only duplicate the existing one.
+            Action::DeleteRecord { .. }
+            | Action::CreateTransfer { .. }
+            | Action::AddressTransferInvitation { .. }
+            | Action::AcceptTransferInvitation { .. }
+            | Action::RejectTransferInvitation { .. }
+            | Action::WithdrawTransferInvitation { .. }
+            | Action::ReopenTransferInvitation { .. }
+            | Action::CounterofferTransfer { .. }
+            | Action::ClaimOpenTransferPromise { .. }
+            | Action::SetTransferAgreementLevel { .. }
+            | Action::ActivateTransferOccurrence { .. }
+            | Action::SetTransferOccurrenceClaim { .. }
+            | Action::CompleteTransferOccurrenceClaimsBulk { .. }
+            | Action::SetTransferOccurrenceDispute { .. }
+            | Action::SetTransferOccurrenceApplicationFormula { .. }
+            | Action::SettleTransferOccurrence { .. }
+            | Action::CreateReversingTransferDraft { .. }
+            | Action::ReopenTransferPromise { .. }
+            | Action::CompensateTransferOccurrenceSettlement { .. }
+            | Action::CreateRole { .. }
+            | Action::CreateUser { .. }
+            | Action::AssignRole { .. }
+            | Action::AssignUserPerson { .. }
+            | Action::GrantPermission { .. }
+            | Action::RevokePermission { .. } => return None,
+        })
     }
 
     /// Resolve a rule's consequences and prove the list is legal.

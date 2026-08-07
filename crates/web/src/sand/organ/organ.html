@@ -8,52 +8,67 @@
   <script src="/board/frame.js"></script>
   <script src="/board/lynx-ui.js"></script>
   <style>
-    :root { color-scheme: dark; --bg: #101318; --panel: #171c22; --line: #29313b;
-            --text: #e6edf3; --muted: #8b949e; --good: #3fb950; --warn: #d29922;
-            /* The tokens lynx-ui.css is written against. Without them its
-               borders, tooltips and menus resolve to nothing and every lynx
-               control renders as bare text on a transparent box. */
-            --ink: var(--text); --primary-ink: var(--text); --secondary-ink: var(--muted);
-            --border: var(--line); --border-strong: #3d4856; --hairline: 1px;
-            --surface: var(--panel); --surface-hover: #1b222b;
-            --primary-background: var(--bg); --secondary-background: #1b222b;
-            --raised-background: #1f2630; --modal-border: var(--line);
-            --tooltip: #0b0e13; --tooltip-ink: var(--text);
-            --scrim: rgba(0,0,0,.6); --accent: var(--good); --focus: var(--good);
-            --danger: #f85149; --hot-border: #f85149;
-            --radius-control: 7px; --control-padding-x: 9px;
-            --space-1: 3px; --space-2: 6px; --space-3: 9px; }
+    /* Same token set as the Configuration sand: a sidepanel is a divider line
+       and a slightly raised background, never a bordered, padded box around
+       every list and every panel. */
+    :root {
+      color-scheme: dark;
+      --primary-background: #101318;
+      --raised-background: #171c22;
+      --secondary-background: #1b222b;
+      --primary-ink: #e6edf3;
+      --secondary-ink: #8b949e;
+      --border: #29313b;
+      --control-border: #596675;
+      --accent: #3fb950;
+      --accent-ink: #06210d;
+      --focus: #3fb950;
+      --danger: #f85149;
+      --warn: #d29922;
+      --surface: #101318;
+      --surface-hover: #1b222b;
+      --hairline: 1px;
+      --radius-control: 7px;
+      --control-padding-x: 9px;
+      --space-1: 3px; --space-2: 6px; --space-3: 9px;
+    }
     * { box-sizing: border-box; }
     /* `.lynx-button` and friends set `display`, which outranks the UA rule for
        [hidden] — without this a "hidden" control stays on screen. */
     [hidden] { display: none !important; }
-    body { margin: 0; height: 100vh; overflow: hidden; background: var(--bg); color: var(--text);
+    body { margin: 0; height: 100vh; overflow: hidden; background: var(--primary-background); color: var(--primary-ink);
            font: 13px/1.45 system-ui, -apple-system, sans-serif; }
-    main { position: relative; height: 100%; display: grid; grid-template-rows: auto 1fr; gap: 10px; padding: 12px; min-height: 0; }
-    header { display: flex; align-items: center; gap: 8px; }
-    h1 { margin: 0; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); flex: 1; }
-    .cols { display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; min-height: 0; }
-    .list { min-height: 0; overflow: auto; border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
+    main { position: relative; height: 100%; padding: 12px; min-height: 0; }
+    .cols { height: 100%; display: grid; grid-template-columns: minmax(160px, 1fr) minmax(0, 1.6fr); gap: 0; min-height: 0; }
+    /* The sidepanel: one dividing line, a slightly raised background across
+       its whole height, and the title integrated at its top — the same shape
+       as Configuration's aside — rather than a header spanning both columns. */
+    .side-col { display: flex; flex-direction: column; min-height: 0; padding: 10px 10px 0 0;
+                border-right: var(--hairline) solid var(--border); background: var(--raised-background); }
+    .side-col h1 { flex: 0 0 auto; margin: 2px 6px 10px; font-size: 11px; text-transform: uppercase;
+                   letter-spacing: .08em; color: var(--secondary-ink); }
+    #side-split { flex: 1 1 auto; min-height: 0; }
+    .list { min-height: 0; overflow: auto; border: 0; border-radius: 0; background: transparent; }
     ul { list-style: none; margin: 0; padding: 0; }
-    li { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--line); cursor: pointer; }
+    li { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: var(--hairline) solid var(--border); cursor: pointer; }
     li:last-child { border-bottom: 0; }
-    li:hover { background: #1b222b; }
-    li.active { background: rgba(63,185,80,.08); }
+    li:hover { background: var(--secondary-background); }
+    li.active { background: color-mix(in srgb, var(--accent) 10%, transparent); }
     .name { flex: 1; font-weight: 650; word-break: break-word; }
     /* A contact can carry four of these at once (this cell / fingerprint /
        trust / not connected yet / sync). In a row they crush the name into a
        sliver of the side column, so they stack. */
     .badges { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; flex: 0 0 auto; }
-    .badge { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted);
-             border: 1px solid var(--line); border-radius: 999px; padding: 2px 7px; white-space: nowrap; }
-    .badge.on { color: #d8f5e8; border-color: rgba(63,185,80,.5); }
-    .empty { padding: 24px 12px; color: var(--muted); text-align: center; }
-    #detail { min-height: 0; overflow: auto; border: 1px solid var(--line); border-radius: 8px;
-              background: var(--panel); padding: 12px; display: grid; gap: 10px; align-content: start; }
+    .badge { font-size: 10px; text-transform: uppercase; letter-spacing: .04em; color: var(--secondary-ink);
+             border: var(--hairline) solid var(--border); border-radius: 999px; padding: 2px 7px; white-space: nowrap; }
+    .badge.on { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
+    .empty { padding: 24px 12px; color: var(--secondary-ink); text-align: center; }
+    #detail { min-height: 0; overflow: auto; border: 0; border-radius: 0;
+              background: transparent; padding: 0 0 0 14px; display: grid; gap: 10px; align-content: start; }
     #selected-detail[hidden], #organ-mode[hidden], #register-mode[hidden], #devices-mode[hidden] { display: none; }
     .d-head { font-weight: 650; font-size: 14px; }
-    .d-url { color: var(--muted); font-size: 12px; word-break: break-all; }
-    .panel { border-top: 1px solid var(--line); padding-top: 10px; display: grid; gap: 8px; }
+    .d-url { color: var(--secondary-ink); font-size: 12px; word-break: break-all; }
+    .panel { border-top: var(--hairline) solid var(--border); padding-top: 10px; display: grid; gap: 8px; }
     .panel:first-child { border-top: 0; padding-top: 0; }
     /* Every group of related properties is titled, and the title carries the
        explanation. Prose between the controls is read after the mistake; a
@@ -65,26 +80,17 @@
        instead of pushing its neighbours off the panel. */
     .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
     .row label.check { display: inline-flex; align-items: center; gap: 6px; }
-    input[type="text"], input:not([type]) { font: inherit; min-width: 0; flex: 1; border: 1px solid var(--line);
-           border-radius: 7px; background: #0d1117; color: var(--text); padding: 6px 9px; }
-    button { font: inherit; border: 1px solid var(--line); border-radius: 7px; background: #1f2630;
-             color: var(--text); padding: 6px 11px; cursor: pointer; }
-    button:hover { border-color: #3d4856; background: #252d38; }
-    button.primary { border-color: rgba(63,185,80,.35); color: #d8f5e8; }
-    .status { color: var(--muted); font-size: 12px; }
-    .status.err { color: #f85149; }
-    .hint { color: var(--muted); font-size: 11.5px; line-height: 1.5; }
-    .placeholder { color: var(--muted); padding: 8px 2px; }
+    .status { color: var(--secondary-ink); font-size: 12px; }
+    .status.err { color: var(--danger); }
+    .hint { color: var(--secondary-ink); font-size: 11.5px; line-height: 1.5; }
     #nb-list li { flex-wrap: wrap; }
     /* The network section is a pane of the split, so its own scroll lives on
        the disclosure body — the summary stays put while the rows move. */
-    #side-split { min-height: 0; }
-    #side-split > .list { border: 1px solid var(--line); border-radius: 8px; background: var(--panel); }
     #nearby-disclosure { display: grid; grid-template-rows: auto minmax(0, 1fr); height: 100%; }
     #nearby-disclosure:not([open]) { grid-template-rows: auto; height: auto; }
-    #nearby-disclosure > summary { position: sticky; top: 0; z-index: 1; background: var(--panel);
-                                   border-bottom: 1px solid var(--line); padding: 8px 10px; }
-    #nearby-disclosure > summary .name { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+    #nearby-disclosure > summary { position: sticky; top: 0; z-index: 1; background: var(--raised-background);
+                                   border-bottom: var(--hairline) solid var(--border); padding: 8px 10px; }
+    #nearby-disclosure > summary .name { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--secondary-ink); }
     #nearby-body { min-height: 0; overflow: auto; padding: 0; }
     .nearby-action, .inline-ask { display: flex; flex: 1 0 100%; flex-wrap: wrap; align-items: center; gap: 6px; }
     .nearby-action .lynx-input, .inline-ask .lynx-input { flex: 1; }
@@ -94,51 +100,59 @@
     main [data-lynx-tooltip]::after { max-width: min(340px, 90vw); line-height: 1.45; text-align: left; }
     .sand-tools { position: absolute; right: 0; bottom: 0; z-index: 5; width: 14px; height: 14px; }
     .sand-tools__row { position: absolute; right: 0; bottom: 0; display: none; align-items: center; gap: 4px;
-                       padding: 4px; border: 1px solid var(--line); border-radius: 7px 0 0 0;
-                       background: rgba(13,17,23,.96); white-space: nowrap; }
+                       padding: 4px; border: var(--hairline) solid var(--border); border-radius: 7px 0 0 0;
+                       background: var(--raised-background); white-space: nowrap; }
     .sand-tools:hover .sand-tools__row, .sand-tools:focus-within .sand-tools__row { display: flex; }
     .sand-tools:hover > .page-corner, .sand-tools:focus-within > .page-corner { display: none; }
-    .page-corner { position: absolute; right: 0; bottom: 0; width: 12px; height: 12px; padding: 0; border: 0; border-radius: 0; background: #f85149; clip-path: polygon(100% 0, 100% 100%, 0 100%); }
-    .page-corner.live { background: var(--good); }
-    .local-discovery-tool[aria-pressed="true"] { color: #d8f5e8; border-color: rgba(63,185,80,.5); }
-    .danger { color: #ffb4b0; border-color: rgba(248,81,73,.45); }
-    .danger:hover { background: rgba(248,81,73,.12); }
+    .page-corner { position: absolute; right: 0; bottom: 0; width: 12px; height: 12px; padding: 0; border: 0; border-radius: 0; background: var(--danger); clip-path: polygon(100% 0, 100% 100%, 0 100%); }
+    .page-corner.live { background: var(--accent); }
+    .local-discovery-tool[aria-pressed="true"] { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
+    .danger { color: var(--danger); border-color: color-mix(in srgb, var(--danger) 45%, transparent); }
+    .danger:hover { background: color-mix(in srgb, var(--danger) 12%, transparent); }
     .mode-head { display: flex; align-items: center; gap: 8px; }
     .mode-head h2 { margin: 0; font-size: 13px; flex: 1; }
-    .lynx-button-group .lynx-button[aria-pressed="true"] { color: #d8f5e8; border-color: rgba(63,185,80,.5); }
+    .lynx-button-group .lynx-button[aria-pressed="true"] { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
+    /* Trust, its dropdown, and Proximity read as one decision, so they sit on
+       one line rather than trust above and proximity in a row of its own
+       below it. */
+    .trust-row .lynx-select { flex: 1 1 6rem; min-width: 5rem; }
+    .trust-row label { flex: 0 0 auto; color: var(--secondary-ink); }
+    .trust-row .lynx-number { flex: 0 0 5.5rem; }
   </style>
 </head>
 <body class="lynx-ui">
   <main>
-    <header>
-      <h1>Organs</h1>
-    </header>
     <div class="cols">
-      <!-- Saved Organs above, whoever is on the network right now below.
-           Both are "Organs on this side of the screen", and the one below is
-           the transient half — so it shares the column and the divider
-           decides how much of it you want to see, rather than living inside
-           the Organ you happened to select. -->
-      <div class="lynx-split" id="side-split">
-        <section class="list lynx-split__pane" aria-label="Organs">
-          <ul id="organs"></ul>
-          <div id="empty" class="empty" hidden>No organs yet.</div>
-        </section>
-        <button class="lynx-split__divider" id="side-divider" type="button" aria-label="Resize the network list"></button>
-        <section class="lynx-split__pane list" aria-label="On this network">
-          <details class="lynx-disclosure" id="nearby-disclosure" open>
-            <summary>
-              <span class="name">On this network</span>
-              <span class="badge" id="nb-count">0</span>
-              <button class="lynx-button lynx-icon-button info" id="nb-info" type="button" aria-label="About the nearby list" data-lynx-tooltip-align="right" data-lynx-tooltip="Lince Cells announcing themselves on this LAN right now — not saved contacts, which is why they sit apart from the list above. The name on a row is what that Cell calls itself: a claim, not a verified identity. The short code beside it comes from the key and cannot be faked by choosing a name, so use it to tell two rows apart. It is a way to find the right row, not a security check. A row you already know opens its Organ above."></button>
-            </summary>
-            <div id="nearby-body">
-              <ul id="nb-list"></ul>
-              <div id="nb-empty" class="empty">Nobody found yet.</div>
-              <div class="row"><span class="status" id="nb-status"></span></div>
-            </div>
-          </details>
-        </section>
+      <!-- The title lives at the top of the sidepanel, the way Configuration's
+           does — not in a header spanning the whole sand above both columns. -->
+      <div class="side-col">
+        <h1>Organs</h1>
+        <!-- Saved Organs above, whoever is on the network right now below.
+             Both are "Organs on this side of the screen", and the one below is
+             the transient half — so it shares the column and the divider
+             decides how much of it you want to see, rather than living inside
+             the Organ you happened to select. -->
+        <div class="lynx-split" id="side-split">
+          <section class="list lynx-split__pane" aria-label="Organs">
+            <ul id="organs"></ul>
+            <div id="empty" class="empty" hidden>No organs yet.</div>
+          </section>
+          <button class="lynx-split__divider" id="side-divider" type="button" aria-label="Resize the network list"></button>
+          <section class="lynx-split__pane list" aria-label="On this network">
+            <details class="lynx-disclosure" id="nearby-disclosure" open>
+              <summary>
+                <span class="name">On this network</span>
+                <span class="badge" id="nb-count">0</span>
+                <button class="lynx-button lynx-icon-button info" id="nb-info" type="button" aria-label="About the nearby list" data-lynx-tooltip-align="right" data-lynx-tooltip-side="bottom" data-lynx-tooltip="Lince Cells announcing themselves on this LAN right now — not saved contacts, which is why they sit apart from the list above. The name on a row is what that Cell calls itself: a claim, not a verified identity. The short code beside it comes from the key and cannot be faked by choosing a name, so use it to tell two rows apart. It is a way to find the right row, not a security check. A row you already know opens its Organ above."></button>
+              </summary>
+              <div id="nearby-body">
+                <ul id="nb-list"></ul>
+                <div id="nb-empty" class="empty">Nobody found yet.</div>
+                <div class="row"><span class="status" id="nb-status"></span></div>
+              </div>
+            </details>
+          </section>
+        </div>
       </div>
       <section id="detail">
 
@@ -217,7 +231,6 @@
 
         <!-- ── organ mode (the default) ─────────────────────────────────── -->
         <div id="organ-mode">
-          <div id="placeholder" class="placeholder">Select an organ.</div>
           <div id="selected-detail" hidden>
           <div class="d-head" id="d-head"></div>
           <div class="d-url" id="d-url"></div>
@@ -245,17 +258,15 @@
               <span>Trust</span>
               <button class="lynx-button lynx-icon-button info" id="c-info" type="button" aria-label="About trust and proximity" data-lynx-tooltip-align="right" data-lynx-tooltip="Trust and proximity only — sync policy and quarantine live elsewhere. Known is what opens the sync connection, so it has to be a decision somebody made rather than what happens by default when an address is written down. Blocked is terminal: import, discovery, export and delivery all reject it. Proximity is how many hops away you consider them, and it orders offers without ever being told to them."></button>
             </div>
-            <div class="row">
+            <div class="row trust-row">
               <label for="c-trust">Trust</label>
               <select id="c-trust" class="lynx-select">
                 <option value="unknown">Unknown</option>
                 <option value="known">Known</option>
                 <option value="blocked">Blocked</option>
               </select>
-            </div>
-            <div class="row">
               <label for="c-proximity">Proximity</label>
-              <input id="c-proximity" class="lynx-input" type="number" min="0" step="1" />
+              <span class="lynx-number"><input id="c-proximity" class="lynx-input" type="number" min="0" step="1" /></span>
             </div>
             <div class="row">
               <button class="lynx-button" id="c-talk" type="button" data-lynx-tooltip="Offers a conversation. They still have to accept, and nothing syncs until they do — this cannot put anything into someone's store.">Start a conversation</button>
@@ -316,7 +327,7 @@
               <span class="status" id="sy-status"></span>
             </div>
             <div class="row">
-              <label class="check"><input type="checkbox" id="fs-enabled" /> File sync to disk</label>
+              <label class="check lynx-check"><input type="checkbox" id="fs-enabled" /> File sync to disk</label>
               <button class="lynx-button lynx-icon-button info" id="fs-info" type="button" aria-label="About file sync" data-lynx-tooltip-align="right" data-lynx-tooltip="Every plain record whose origin is this organ mirrors to a markdown file in this folder — head is the filename, body is the file's content. Editing a file updates the record; deleting a file deletes the record, after two consecutive misses so an editor's atomic save does not count; a new file becomes a new record. Picking exactly which records sync, beyond &quot;belongs to this organ&quot;, is a Protein filter and is not wired up yet."></button>
             </div>
             <div class="row">
@@ -523,15 +534,21 @@
           ? (peer.name || peer.node_id)
           : (peer.claimed_name ? `“${peer.claimed_name}”` : "unnamed");
         li.appendChild(name);
+        // Stacked, not strung along the row — the same reason the saved list's
+        // badges do, and here it is a fingerprint beside a Chat and an Add
+        // known button, which is even less likely to fit on one line.
+        const badges = document.createElement("span");
+        badges.className = "badges";
+        li.appendChild(badges);
         const fp = document.createElement("span");
         fp.className = "badge";
         fp.textContent = peer.fingerprint || "";
-        li.appendChild(fp);
+        badges.appendChild(fp);
         if (peer.known) {
           const badge = document.createElement("span");
           badge.className = "badge on";
           badge.textContent = "known";
-          li.appendChild(badge);
+          badges.appendChild(badge);
         } else {
           const chat = document.createElement("button");
           chat.className = "lynx-button lynx-button--primary primary";
@@ -563,7 +580,7 @@
               }
             },
           });
-          li.appendChild(chat);
+          badges.appendChild(chat);
 
           const add = document.createElement("button");
           add.className = "lynx-button";
@@ -594,7 +611,7 @@
               }
             },
           });
-          li.appendChild(add);
+          badges.appendChild(add);
         }
         list.appendChild(li);
       }
@@ -792,7 +809,6 @@
     function renderDetail() {
       const row = selected();
       $("selected-detail").hidden = !row;
-      $("placeholder").hidden = !!row;
       if (!row) return;
       const local = isLocalOrgan(row);
       $("d-head").textContent = (row.head || row.slug || row.uid) + (local ? " — this Cell" : "");

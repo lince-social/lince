@@ -860,6 +860,15 @@ impl Engine {
             }
             match if all_ok { Ok(()) } else { Err(String::new()) } {
                 Ok(()) => {
+                    // The peer accepted every batch, so everything we intended
+                    // to send them at or below this seq is now on their side.
+                    // That is the retention floor: pruning removes ops nobody
+                    // is still owed, and an op this contact was never going to
+                    // be sent (not visible to them, or superseded in the
+                    // bounded outbox) is not owed either.
+                    if let Some(high) = kept.iter().map(|row| row.seq).max() {
+                        store::organs::advance_peer_acked_seq(pool, &contact_uid, high).await?;
+                    }
                     for row in &kept {
                         sync_ops::outbox_delete(pool, row).await?;
                     }
@@ -871,6 +880,21 @@ impl Engine {
             }
         }
         Ok(sent)
+    }
+
+    /// Drop op-log entries every synced contact has already received.
+    ///
+    /// An explicit operation, never a background loop. A contact that falls
+    /// behind the pruned floor recovers by re-bootstrapping from a serve-time
+    /// snapshot, and that path is not built yet — so until it is, this trades
+    /// recoverability for disk and a human should be the one making the trade.
+    /// Call with `dry_run` first: the report is computed from the same
+    /// predicate the delete uses, so it cannot disagree with the real thing.
+    pub async fn prune_op_log(
+        &self,
+        dry_run: bool,
+    ) -> Result<sync_ops::PruneReport, EngineError> {
+        Ok(sync_ops::prune(&self.store.pool, dry_run).await?)
     }
 
     /// The open promises `subject` may see — what peers pull into their

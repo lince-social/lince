@@ -150,6 +150,7 @@ const notificationsToggle = document.getElementById("notifications-toggle");
 const notificationsCount = document.getElementById("notifications-count");
 const notificationsPanel = document.getElementById("notifications-panel");
 const notificationsClose = document.getElementById("notifications-close");
+if (notificationsClose) notificationsClose.innerHTML = window.LynxUI.icon("close");
 const notificationsSummary = document.getElementById("notifications-summary");
 const notificationsList = document.getElementById("notifications-list");
 const densitySlider = document.getElementById("density-slider");
@@ -4355,19 +4356,19 @@ function renderNotifications() {
       <div class="notification-item__actions">
         ${
           canLogin
-            ? `<button class="notification-item__button" type="button" data-notification-login="${escapeHtml(notification.organId)}">Login</button>`
+            ? `<button class="lynx-button lynx-button--primary" type="button" data-notification-login="${escapeHtml(notification.organId)}">Login</button>`
             : ""
         }
         ${
           canInstallUpdate
-            ? `<button class="notification-item__button" type="button" data-notification-install-update="true">Install and restart</button>`
+            ? `<button class="lynx-button lynx-button--primary" type="button" data-notification-install-update="true">Install and restart</button>`
             : ""
         }
         ${
           isThreadInvite
-            ? `<button class="notification-item__button" type="button" data-thread-answer="accept" data-notification-id="${escapeHtml(notification.id)}">Accept</button>
-               <button class="notification-item__button" type="button" data-thread-answer="decline" data-notification-id="${escapeHtml(notification.id)}">Decline</button>`
-            : `<button class="notification-item__button" type="button" data-notification-dismiss="${escapeHtml(notification.id)}">Dismiss</button>`
+            ? `<button class="lynx-button lynx-button--primary" type="button" data-thread-answer="accept" data-notification-id="${escapeHtml(notification.id)}">Accept</button>
+               <button class="lynx-button" type="button" data-thread-answer="decline" data-notification-id="${escapeHtml(notification.id)}">Decline</button>`
+            : `<button class="lynx-button" type="button" data-notification-dismiss="${escapeHtml(notification.id)}">Dismiss</button>`
         }
       </div>
     `;

@@ -5,88 +5,207 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Table</title>
   <!-- The frame bootstrap gives this sand window.LinceWidgetHost and nothing
-       else: its only door is Protein (reads) + Actions (writes). -->
+       else: its only door is Protein (reads) + Actions (writes). This is
+       also the sand port template other sands rebuild from, so its
+       structure stays canonical rather than table-specific. -->
+  <link rel="stylesheet" href="/board/lynx-ui.css" />
+  <script src="/board/lynx-ui.js"></script>
   <script src="/board/frame.js"></script>
   <style>
-    :root { color-scheme: dark; }
+    :root { color-scheme: dark; --bg: #121214; --text: #f8fafc; --muted: color-mix(in srgb, #f8fafc 62%, #121214); --border: #141416; --surface: #121214; --surface-hover: #141416; --control-border: #f8fafc; --accent: #6366f1; --danger: #fb7185; --font-body: Lato, system-ui, sans-serif; --font-mono: "SFMono-Regular", Consolas, monospace; --hairline: .5px; --radius-control: 2px; --control-height: 25px; --control-padding-x: 5px; --control-padding-y: 3px; --space-1: 2px; --space-2: 4px; --space-3: 6px; --lynx-shadow-x: 2px; --lynx-shadow-y: 2px; --lynx-shadow-blur: 6px; --lynx-shadow-color: rgb(0 0 0 / 16%); }
     * { box-sizing: border-box; }
-    body { margin: 0; font: 13px/1.45 system-ui, -apple-system, sans-serif;
-           background: #0d1117; color: #c9d1d9; padding: .75rem; }
-    .head { display: flex; align-items: center; gap: .5rem; margin-bottom: .6rem; }
-    .head h1 { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em;
-               color: #6e7681; margin: 0; flex: 1; }
-    .dot { width: 7px; height: 7px; border-radius: 50%; background: #f85149; }
-    .dot.live { background: #3fb950; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { text-align: left; padding: .35rem .4rem; border-bottom: 1px solid #21262d; }
-    th { font-size: .65rem; text-transform: uppercase; letter-spacing: .06em; color: #6e7681; }
-    td.q { font-variant-numeric: tabular-nums; }
-    td.q input { width: 5rem; background: #161b22; border: 1px solid #30363d;
-                 color: #c9d1d9; border-radius: 5px; padding: .2rem .35rem; }
-    .new { display: flex; gap: .4rem; margin-top: .7rem; }
-    .new input { flex: 1; background: #161b22; border: 1px solid #30363d;
-                 color: #c9d1d9; border-radius: 6px; padding: .35rem .5rem; }
-    .new input.q { flex: none; width: 5rem; }
-    button { background: #238636; border: 0; color: #fff; border-radius: 6px;
-             padding: .35rem .7rem; cursor: pointer; font: inherit; }
-    button:hover { background: #2ea043; }
-    .empty { color: #6e7681; padding: .8rem .2rem; }
+    body { margin: 0; height: 100vh; overflow: auto; background: var(--bg); color: var(--text); font: 13px/1.4 var(--font-body); }
+    main { position: relative; min-height: 100%; padding: var(--space-2); }
+    [data-lynx-tooltip]:not(.page-corner) { position: relative; }
+
+    table.lynx-table { border-collapse: collapse; }
+    table.lynx-table th { color: var(--muted); font-size: .65rem; text-transform: uppercase; letter-spacing: .06em; }
+    table.lynx-table td.q, table.lynx-table th.q { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--font-mono); }
+
+    /* The gutter is a persistent reserved strip whether or not line numbers
+       are shown, so hovering it always has a "wall" to reveal delete on. */
+    td.gutter, th.gutter { width: 34px; min-width: 34px; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; user-select: none; }
+    td.gutter { position: relative; }
+    td.gutter .line-no { display: inline-block; }
+    td.gutter .row-delete { display: none; }
+    tr:hover td.gutter .line-no { display: none; }
+    tr:hover td.gutter .row-delete { display: inline-flex; }
+
+    /* Editing state: an outline on the CELL, never a border/padding change
+       on the input — outline does not participate in layout, so nothing
+       grows or shifts when a cell gains focus. */
+    td.editable { padding: 0; }
+    td.editable input {
+      display: block; width: 100%; height: 100%; margin: 0;
+      border: 0; border-radius: 0; background: transparent; color: inherit;
+      font: inherit; padding: var(--space-1) var(--space-2);
+    }
+    td.editable input.q { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--font-mono); }
+    td.editable:focus-within { outline: 1.5px solid var(--accent); outline-offset: -1.5px; }
+
+    .new-row-hint { color: var(--muted); }
+
+    /* Sand controls stay tucked into the lower-right corner until hovered —
+       same idiom as kanban/organ. The corner glyph itself is the Add
+       trigger (2026-08-07): "+", clicking it creates a blank row. */
+    .sand-tools { position: absolute; right: 0; bottom: 0; z-index: 35; width: 16px; height: 16px; }
+    .sand-tools__row { position: absolute; right: 0; bottom: 0; display: none; align-items: center; gap: var(--space-1); padding: var(--space-1); border: var(--hairline) solid var(--border); background: var(--bg); white-space: nowrap; }
+    .sand-tools:hover .sand-tools__row, .sand-tools:focus-within .sand-tools__row { display: flex; }
+    .sand-tools:hover > .page-corner, .sand-tools:focus-within > .page-corner { display: none; }
+    .page-corner {
+      position: absolute; right: 0; bottom: 0; width: 16px; height: 16px;
+      display: grid; place-items: center; padding: 0; border: 0;
+      background: var(--accent); color: var(--bg); font: 700 12px/1 var(--font-body);
+      clip-path: polygon(100% 0, 100% 100%, 0 100%); cursor: pointer;
+    }
+    .page-corner:hover { filter: brightness(1.12); }
   </style>
 </head>
 <body>
-  <div class="head">
-    <h1>Records</h1>
-    <span id="dot" class="dot"></span>
-  </div>
-  <table>
-    <thead><tr><th>head</th><th>slug</th><th>kind</th><th style="text-align:right">quantity</th></tr></thead>
-    <tbody id="rows"></tbody>
-  </table>
-  <div id="empty" class="empty" hidden>No records yet.</div>
-  <div class="new">
-    <input id="new-head" placeholder="New record head…" />
-    <input id="new-qty" class="q" type="number" step="1" value="0" title="quantity" />
-    <button id="add">Add</button>
-  </div>
+  <main class="lynx-ui">
+    <table class="lynx-table">
+      <thead>
+        <tr>
+          <th class="gutter"></th>
+          <th>head</th>
+          <th>slug</th>
+          <th>kind</th>
+          <th class="q">quantity</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div id="empty" class="lynx-empty" hidden>No records yet — use the + in the corner.</div>
+
+    <div class="sand-tools" data-lynx-tooltip-boundary>
+      <button id="add-row" type="button" class="page-corner" data-lynx-tooltip="Add a record" aria-label="Add a record">+</button>
+      <div class="sand-tools__row">
+        <label class="lynx-check" data-lynx-tooltip="Show a row-number gutter on the left">
+          <input id="toggle-line-numbers" type="checkbox" /> Line numbers
+        </label>
+        <span id="dot" class="lynx-help" role="status" aria-label="Reconnecting">●</span>
+      </div>
+    </div>
+  </main>
 
   <script>
     const H = window.LinceWidgetHost;
     const rowsEl = document.getElementById("rows");
     const emptyEl = document.getElementById("empty");
     const dot = document.getElementById("dot");
+    const toggleLineNumbers = document.getElementById("toggle-line-numbers");
 
     // The read: every record, newest first. No SQL, no table names — just the
     // shape the engine returns for `source: record`.
     const protein = { source: "record", order: [{ desc: "created_at" }] };
 
-    H.onLive((live) => dot.classList.toggle("live", live));
+    H.onLive((live) => { dot.textContent = live ? "●" : "○"; dot.setAttribute("aria-label", live ? "Connected" : "Reconnecting"); });
+
+    // ---- line-number visibility: board chrome preference -> host state ----
+    let showLineNumbers = true;
+    function applyLineNumberVisibility() {
+      toggleLineNumbers.checked = showLineNumbers;
+      rowsEl.classList.toggle("numbers-off", !showLineNumbers);
+      document.querySelectorAll("td.gutter .line-no").forEach((el) => {
+        el.textContent = showLineNumbers ? el.dataset.n : "";
+      });
+    }
+    toggleLineNumbers.addEventListener("change", () => {
+      showLineNumbers = toggleLineNumbers.checked;
+      applyLineNumberVisibility();
+      H.patchCardState?.({ table: { showLineNumbers } });
+    });
+    if (typeof H.onCardState === "function") {
+      H.onCardState((cs) => {
+        if (cs && cs.table && typeof cs.table.showLineNumbers === "boolean") {
+          showLineNumbers = cs.table.showLineNumbers;
+          applyLineNumberVisibility();
+        }
+      });
+    }
+
+    // ---- rows: persistent per-uid <tr> nodes, reused across renders so a
+    // focused/edited cell is never clobbered by a live Protein push (a dirty
+    // form is never clobbered by live updates — same rule as everywhere
+    // else in this codebase). ----
+    const rowElements = new Map(); // uid -> tr
 
     H.subscribeProtein("table", protein, ({ rows }) => render(rows));
 
     function render(rows) {
-      rowsEl.innerHTML = "";
       emptyEl.hidden = rows.length > 0;
-      for (const r of rows) {
-        const tr = document.createElement("tr");
-        tr.appendChild(headCell(r));
-        tr.appendChild(cell(r.slug || ""));
-        tr.appendChild(cell(r.kind || "plain"));
-        const q = document.createElement("td");
-        q.className = "q"; q.style.textAlign = "right";
-        const input = document.createElement("input");
-        input.type = "number"; input.step = "1"; input.value = r.quantity;
-        // The write: set-quantity is a typed Action -> one fact. The server
-        // recomputes the subscription and pushes the new rows back.
-        input.onchange = () =>
-          H.act({ action: "set-quantity", target: r.uid, value: Number(input.value) })
-            .catch((e) => console.warn(e));
-        q.appendChild(input);
-        tr.appendChild(q);
-        rowsEl.appendChild(tr);
+      const seen = new Set();
+      rows.forEach((r, i) => {
+        seen.add(r.uid);
+        let tr = rowElements.get(r.uid);
+        if (!tr) {
+          tr = buildRow(r);
+          rowElements.set(r.uid, tr);
+        }
+        updateRow(tr, r, i);
+        rowsEl.appendChild(tr); // moves an existing node rather than recreating it
+        if (r.uid === pendingFocusUid) {
+          pendingFocusUid = null;
+          const input = tr.querySelector("td.head input");
+          input?.focus();
+        }
+      });
+      for (const [uid, tr] of rowElements) {
+        if (!seen.has(uid)) {
+          tr.remove();
+          rowElements.delete(uid);
+        }
       }
     }
 
-    function cell(text) { const td = document.createElement("td"); td.textContent = text; return td; }
+    function buildRow(r) {
+      const tr = document.createElement("tr");
+      tr.dataset.uid = r.uid;
+
+      const gutter = document.createElement("td");
+      gutter.className = "gutter";
+      const lineNo = document.createElement("span");
+      lineNo.className = "line-no";
+      gutter.appendChild(lineNo);
+      const delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.className = "row-delete lynx-icon-button lynx-button--danger";
+      delBtn.setAttribute("aria-label", "Delete this record");
+      delBtn.dataset.lynxTooltip = "Delete this record";
+      delBtn.textContent = "✕";
+      delBtn.onclick = () => {
+        if (!canDelete()) return;
+        H.act({ action: "delete-record", target: r.uid }).catch((e) => console.warn(e));
+      };
+      gutter.appendChild(delBtn);
+      tr.appendChild(gutter);
+
+      tr.appendChild(headCell(r));
+      tr.appendChild(cell("slug"));
+      tr.appendChild(cell("kind"));
+      tr.appendChild(quantityCell(r));
+      return tr;
+    }
+
+    function updateRow(tr, r, index) {
+      const lineNo = tr.querySelector(".line-no");
+      lineNo.dataset.n = String(index + 1);
+      lineNo.textContent = showLineNumbers ? String(index + 1) : "";
+      const slugCell = tr.querySelector('td[data-field="slug"]');
+      if (slugCell) slugCell.textContent = r.slug || "";
+      const kindCell = tr.querySelector('td[data-field="kind"]');
+      if (kindCell) kindCell.textContent = r.kind || "plain";
+      const qInput = tr.querySelector("td.q input");
+      if (qInput && document.activeElement !== qInput) qInput.value = r.quantity;
+      const delBtn = tr.querySelector(".row-delete");
+      delBtn.hidden = !canDelete();
+    }
+
+    function cell(field) {
+      const td = document.createElement("td");
+      td.dataset.field = field;
+      return td;
+    }
 
     // The head cell is a collaborative text embed: the same element the record
     // editor and the kanban card body use, because a table cell showing a
@@ -97,9 +216,9 @@
     // shows the text, just not live.
     function headCell(r) {
       const td = document.createElement("td");
+      td.className = "editable head";
       const input = document.createElement("input");
       input.value = r.head || "";
-      input.style.width = "100%";
       td.appendChild(input);
       import("/board/collab-editor.js")
         .then(({ attachCollab }) =>
@@ -108,15 +227,38 @@
       return td;
     }
 
-    document.getElementById("add").onclick = () => {
-      const head = document.getElementById("new-head");
-      const qty = document.getElementById("new-qty");
-      const value = head.value.trim();
-      if (!value) return;
-      H.act({ action: "create-record", kind: "plain", head: value, body: "", quantity: Number(qty.value) || 0 })
-        .then(() => { head.value = ""; qty.value = "0"; })
+    function quantityCell(r) {
+      const td = document.createElement("td");
+      td.className = "editable q";
+      const input = document.createElement("input");
+      input.className = "q";
+      input.type = "number"; input.step = "1"; input.value = r.quantity;
+      // The write: set-quantity is a typed Action -> one fact. The server
+      // recomputes the subscription and pushes the new rows back.
+      input.onchange = () =>
+        H.act({ action: "set-quantity", target: r.uid, value: Number(input.value) })
+          .catch((e) => console.warn(e));
+      td.appendChild(input);
+      return td;
+    }
+
+    // ---- permission-gated delete (reuses the one delete-record Action —
+    // no new Action for the gutter's hover-delete button) ----
+    function canDelete() {
+      const viewer = H.getViewer?.();
+      if (!viewer) return true; // local-no-auth mode
+      const perms = viewer.permissions || [];
+      return perms.includes("record:delete") || perms.includes("record:delete_own");
+    }
+
+    // ---- add: the corner "+" creates a blank record and focuses its head
+    // cell for immediate typing, instead of a bottom form bar. ----
+    let pendingFocusUid = null;
+    document.getElementById("add-row").addEventListener("click", () => {
+      H.act({ action: "create-record", kind: "plain", head: "", body: "", quantity: 0 })
+        .then((out) => { pendingFocusUid = out && out.created; })
         .catch((e) => console.warn(e));
-    };
+    });
   </script>
 </body>
 </html>

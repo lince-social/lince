@@ -148,6 +148,9 @@
        card so clicking the body feels like it just grew a cursor, not like a
        different UI opened. Height tracks content (see the JS `resize()`). */
     .card-body.editing { padding: 0; }
+    .card-peers { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 3px; font-size: 11px; opacity: 0.8; }
+    .card-peer::before { content: "•"; color: var(--accent); margin-right: 3px; }
+    .card-peer.is-idle { opacity: 0.45; }
     .card-body.editing textarea {
       display: block; width: 100%; border: none; background: transparent; padding: 0; margin: 0;
       color: var(--muted); font: inherit; line-height: 1.4; resize: none; outline: none;
@@ -654,6 +657,33 @@
       const pal = document.querySelector(".lince-editor-palette");
       return !!pal && pal.style.display === "block";
     };
+    // Who else is in this card's body, on one line under the textarea. Idle
+    // peers dim rather than disappear: someone who stepped away is still here,
+    // and removing them would read as having left.
+    function renderCardPeers(holder, peers) {
+      let bar = holder.querySelector(".card-peers");
+      if (!peers || !peers.length) {
+        if (bar) bar.remove();
+        return;
+      }
+      if (!bar) {
+        bar = document.createElement("div");
+        bar.className = "card-peers";
+        holder.appendChild(bar);
+      }
+      bar.innerHTML = "";
+      for (const peer of peers) {
+        const span = document.createElement("span");
+        span.className = "card-peer" + (peer.idle ? " is-idle" : "");
+        const where =
+          peer.focus !== peer.anchor ? `${peer.anchor}–${peer.focus}` : String(peer.anchor);
+        // "someone" when the host resolved no name — this card never decides
+        // whose name it may show.
+        span.textContent = (peer.name || "someone") + " @" + where + (peer.idle ? " (idle)" : "");
+        bar.appendChild(span);
+      }
+    }
+
     function bodyEditNode(row) {
       const holder = document.createElement("div");
       holder.className = "card-body editing";
@@ -687,7 +717,22 @@
       // reached this stays an ordinary textarea that commits on blur.
       import("/board/collab-editor.js")
         .then(({ attachCollab }) =>
-          attachCollab(area, { recordUid: row.uid, host: H, field: "body" }))
+          attachCollab(area, {
+            recordUid: row.uid,
+            host: H,
+            field: "body",
+            // Presence arrives fully resolved — names only where the host
+            // allowed one, selection ranges, idle, and expiry already applied.
+            // The card renders it; it owns none of it. The `field` filter
+            // matters because the record sand editing this same Record shares
+            // one lane room: without it a title caret would draw into a card
+            // body at an offset that means nothing.
+            onPresence: (list) => {
+              if (!bodyEdit || bodyEdit.uid !== row.uid) return;
+              bodyEdit.peers = list.filter((p) => p.field === "body");
+              renderCardPeers(holder, bodyEdit.peers);
+            },
+          }))
         .then((live) => { if (live) bodyEdit.collab = live; })
         .catch(() => {});
       holder.appendChild(area);

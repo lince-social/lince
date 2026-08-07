@@ -513,6 +513,340 @@ pub async fn serve_cell_api_only(
         }))
     }
 
+    // ---- DNA publish/catalog (2026-08-07) ----------------------------------
+    //
+    // No bucket/object-store backend runs anywhere in this codebase (see
+    // media_assets.rs's own doc comment) and `crates/transport` carries no
+    // package-fetch frames, so "publish into an organ's bucket" is scoped to
+    // THIS Cell's own local organ: `/organ` already only ever returns the
+    // local organ (`local_server_bootstrap` wraps `store::organs::local`),
+    // never a remote one. Publish writes a Record + `record_extension`
+    // (namespace `lince.dna`) plus the package bytes under
+    // `paths::dna_dir()`, mirroring `media_assets.rs`'s disk pattern; a
+    // paired organ picks the Record up through the ordinary op-log sync
+    // (`record_extension` already replicates, see `engine::sync`), so no
+    // bespoke cross-organ publish protocol is needed. Cross-organ *search*
+    // (browsing another organ's catalog before it has synced in) is out of
+    // scope until that protocol exists.
+    const DNA_EXTENSION_NAMESPACE: &str = "lince.dna";
+
+    #[derive(Serialize)]
+    struct DnaPreviewResponse {
+        filename: String,
+        title: String,
+        version: String,
+        author: String,
+        description: String,
+    }
+
+    async fn multipart_file_field(
+        multipart: &mut Multipart,
+        field_name: &str,
+    ) -> Result<(String, axum::body::Bytes), (StatusCode, String)> {
+        while let Some(field) = multipart
+            .next_field()
+            .await
+            .map_err(|error| (StatusCode::BAD_REQUEST, error.to_string()))?
+        {
+            if field.name() == Some(field_name) {
+                let filename = field.file_name().unwrap_or("sand.html").to_string();
+                let bytes = field
+                    .bytes()
+                    .await
+                    .map_err(|error| (StatusCode::BAD_REQUEST, error.to_string()))?;
+                return Ok((filename, bytes));
+            }
+        }
+        Err((
+            StatusCode::BAD_REQUEST,
+            format!("missing `{field_name}` field"),
+        ))
+    }
+
+    async fn preview_dna_package(
+        State(state): State<CellApiState>,
+        headers: HeaderMap,
+        mut multipart: Multipart,
+    ) -> Result<impl IntoResponse, (StatusCode, String)> {
+        authenticate_headers(&state, &headers).await?;
+        let (filename, bytes) = multipart_file_field(&mut multipart, "file").await?;
+        let package = crate::domain::lince_package::parse_lince_package(filename.clone(), &bytes)
+            .map_err(|message| (StatusCode::UNPROCESSABLE_ENTITY, message))?;
+        Ok(Json(DnaPreviewResponse {
+            filename,
+            title: package.manifest.title,
+            version: package.manifest.version,
+            author: package.manifest.author,
+            description: package.manifest.description,
+        }))
+    }
+
+    #[derive(Serialize)]
+    struct DnaCatalogEntry {
+        #[serde(rename = "organId")]
+        organ_id: String,
+        #[serde(rename = "originName")]
+        origin_name: String,
+        #[serde(rename = "recordId")]
+        record_id: String,
+        head: String,
+        body: String,
+        slug: Option<String>,
+        version: String,
+        #[serde(rename = "packageFormat")]
+        package_format: String,
+        categories: Vec<String>,
+        #[serde(rename = "bucketKey")]
+        bucket_key: String,
+    }
+
+    #[derive(Serialize)]
+    struct DnaCatalogResponse {
+        packages: Vec<DnaCatalogEntry>,
+    }
+
+    async fn dna_catalog(
+        State(state): State<CellApiState>,
+        headers: HeaderMap,
+    ) -> Result<impl IntoResponse, (StatusCode, String)> {
+        authenticate_headers(&state, &headers).await?;
+        let organ = store::organs::local(&state.store.pool)
+            .await
+            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+        let (organ_id, origin_name) = organ
+            .map(|o| (o.uid, o.head))
+            .unwrap_or_else(|| ("local".to_string(), "This organ".to_string()));
+        let extensions = store::records::all_extensions(&state.store.pool, DNA_EXTENSION_NAMESPACE)
+            .await
+            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+        let mut packages = Vec::with_capacity(extensions.len());
+        for (record_uid, fds) in extensions {
+            let Some(record) = store::records::get(&state.store.pool, &record_uid)
+                .await
+                .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?
+            else {
+                continue;
+            };
+            packages.push(DnaCatalogEntry {
+                organ_id: organ_id.clone(),
+                origin_name: origin_name.clone(),
+                record_id: record.uid,
+                head: record.head,
+                body: record.body,
+                slug: record.slug,
+                version: fds
+                    .get("version")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("0.1.0")
+                    .to_string(),
+                package_format: fds
+                    .get("package_format")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("html")
+                    .to_string(),
+                categories: fds
+                    .get("categories")
+                    .and_then(|v| v.as_array())
+                    .map(|values| {
+                        values
+                            .iter()
+                            .filter_map(|v| v.as_str().map(str::to_string))
+                            .collect()
+                    })
+                    .unwrap_or_default(),
+                bucket_key: fds
+                    .get("bucket_key")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or("")
+                    .to_string(),
+            });
+        }
+        packages.sort_by(|a, b| a.head.cmp(&b.head));
+        Ok(Json(DnaCatalogResponse { packages }))
+    }
+
+    #[derive(Serialize)]
+    struct DnaPublishResponse {
+        #[serde(rename = "organId")]
+        organ_id: String,
+        version: String,
+        #[serde(rename = "recordId")]
+        record_id: String,
+        slug: String,
+        categories: Vec<String>,
+        #[serde(rename = "bucketKey")]
+        bucket_key: String,
+        #[serde(rename = "sandTomlKey")]
+        sand_toml_key: String,
+    }
+
+    async fn publish_dna_package(
+        State(state): State<CellApiState>,
+        headers: HeaderMap,
+        mut multipart: Multipart,
+    ) -> Result<impl IntoResponse, (StatusCode, String)> {
+        authenticate_headers(&state, &headers).await?;
+        let mut head = String::new();
+        let mut body = String::new();
+        let mut categories_raw = String::new();
+        let mut upload: Option<(String, axum::body::Bytes)> = None;
+        while let Some(field) = multipart
+            .next_field()
+            .await
+            .map_err(|error| (StatusCode::BAD_REQUEST, error.to_string()))?
+        {
+            match field.name() {
+                Some("head") => {
+                    head = field
+                        .text()
+                        .await
+                        .map_err(|error| (StatusCode::BAD_REQUEST, error.to_string()))?;
+                }
+                Some("body") => {
+                    body = field
+                        .text()
+                        .await
+                        .map_err(|error| (StatusCode::BAD_REQUEST, error.to_string()))?;
+                }
+                Some("categories") => {
+                    categories_raw = field
+                        .text()
+                        .await
+                        .map_err(|error| (StatusCode::BAD_REQUEST, error.to_string()))?;
+                }
+                Some("file") => {
+                    let filename = field.file_name().unwrap_or("sand.html").to_string();
+                    let bytes = field
+                        .bytes()
+                        .await
+                        .map_err(|error| (StatusCode::BAD_REQUEST, error.to_string()))?;
+                    upload = Some((filename, bytes));
+                }
+                _ => {}
+            }
+        }
+        let head = head.trim().to_string();
+        if head.is_empty() {
+            return Err((StatusCode::BAD_REQUEST, "record.head is required".into()));
+        }
+        let (filename, bytes) =
+            upload.ok_or_else(|| (StatusCode::BAD_REQUEST, "missing `file` field".to_string()))?;
+        let package = crate::domain::lince_package::parse_lince_package(filename, &bytes)
+            .map_err(|message| (StatusCode::UNPROCESSABLE_ENTITY, message))?;
+
+        let mut categories: Vec<String> = categories_raw
+            .split(',')
+            .map(|part| part.trim().to_string())
+            .filter(|part| !part.is_empty())
+            .collect();
+        if !categories.iter().any(|c| c == "sand") {
+            categories.push("sand".to_string());
+        }
+
+        let slug = crate::slugify(&head);
+        let version = package.manifest.version.clone();
+        let prefix: String = {
+            let compact: String = slug.chars().filter(|c| c.is_ascii_alphanumeric()).collect();
+            let mut chars = compact.chars();
+            let first = chars.next().unwrap_or('x');
+            let second = chars.next().unwrap_or(first);
+            [first, second].into_iter().collect()
+        };
+        let package_format = if matches!(
+            package.transport(),
+            crate::domain::lince_package::PackageTransport::Archive
+        ) {
+            "lince"
+        } else {
+            "html"
+        };
+        let transport_filename = if package_format == "lince" {
+            format!("{slug}.lince")
+        } else {
+            format!("{slug}_metadata.html")
+        };
+        let dir = crate::infrastructure::paths::dna_dir()
+            .join(&prefix)
+            .join(&slug)
+            .join(&version);
+        tokio::fs::create_dir_all(&dir)
+            .await
+            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+        let package_bytes = crate::domain::lince_package::build_lince_archive(&package)
+            .map_err(|message| (StatusCode::UNPROCESSABLE_ENTITY, message))?;
+        tokio::fs::write(dir.join(&transport_filename), &package_bytes)
+            .await
+            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+        let sand_toml_filename = "sand.toml".to_string();
+        let manifest_toml = package
+            .manifest_toml()
+            .map_err(|message| (StatusCode::INTERNAL_SERVER_ERROR, message))?;
+        tokio::fs::write(dir.join(&sand_toml_filename), manifest_toml.as_bytes())
+            .await
+            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+        let bucket_key = format!("lince/dna/sand/{prefix}/{slug}/{version}/{transport_filename}");
+        let sand_toml_key = format!("lince/dna/sand/{prefix}/{slug}/{version}/{sand_toml_filename}");
+
+        let record = store::records::create(
+            &state.store.pool,
+            store::records::NewRecord {
+                slug: None,
+                kind: nucleus::RecordKind::Sand,
+                head: &head,
+                body: &body,
+                quantity: store::exact::zero(),
+            },
+        )
+        .await
+        .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+        store::records::set_extension(
+            &state.store.pool,
+            &record.uid,
+            DNA_EXTENSION_NAMESPACE,
+            &serde_json::json!({
+                "version": version,
+                "categories": categories,
+                "package_format": package_format,
+                "bucket_key": bucket_key,
+                "sand_toml_key": sand_toml_key,
+                "slug": slug,
+            }),
+        )
+        .await
+        .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+
+        let organ = store::organs::local(&state.store.pool)
+            .await
+            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+        let organ_id = organ.map(|o| o.uid).unwrap_or_else(|| "local".to_string());
+
+        Ok(Json(DnaPublishResponse {
+            organ_id,
+            version,
+            record_id: record.uid,
+            slug,
+            categories,
+            bucket_key,
+            sand_toml_key,
+        }))
+    }
+
+    /// Unpublishes a DNA package: drops the `lince.dna` extension so it
+    /// leaves the catalog. The underlying Record itself is left alone —
+    /// unpublish is "no longer offered as a sand", not record deletion,
+    /// which stays the permission-gated `delete-record` Action's job.
+    async fn delete_dna_publication(
+        State(state): State<CellApiState>,
+        headers: HeaderMap,
+        Path((_organ_id, record_id)): Path<(String, String)>,
+    ) -> Result<impl IntoResponse, (StatusCode, String)> {
+        authenticate_headers(&state, &headers).await?;
+        store::records::delete_extension(&state.store.pool, &record_id, DNA_EXTENSION_NAMESPACE)
+            .await
+            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+        Ok(Json(serde_json::json!({ "deleted": true })))
+    }
+
     async fn get_official_package_content(
         State(state): State<CellApiState>,
         headers: HeaderMap,
@@ -1119,6 +1453,13 @@ pub async fn serve_cell_api_only(
         .route(
             "/host/packages/local/by-filename/{filename}/content/{*asset_path}",
             get(get_official_package_content),
+        )
+        .route("/host/packages/preview", post(preview_dna_package))
+        .route("/host/packages/dna/catalog", get(dna_catalog))
+        .route("/host/packages/dna/publish", post(publish_dna_package))
+        .route(
+            "/host/packages/dna/publications/{organ_id}/{record_id}",
+            axum::routing::delete(delete_dna_publication),
         )
         .route("/sand/{*path}", get(sand_asset))
         .route("/host/media", post(upload_media))

@@ -1257,6 +1257,18 @@ impl Wire {
             }
             WireRequest::FetchOps { after, limit } => {
                 let limit = limit.clamp(1, 2000);
+                // `after` is what the peer has COMMITTED — they advance their
+                // own checkpoint only once an import succeeds — so it is the
+                // one number here that is evidence of durable receipt, and it
+                // is the retention floor for this contact. Deliberately not
+                // the head of the batch about to be served: a peer that dies
+                // mid-import still needs exactly those ops on its next try.
+                if let Err(error) =
+                    store::organs::advance_peer_acked_seq(&self.engine.store.pool, authenticated, after)
+                        .await
+                {
+                    tracing::warn!(%error, "could not record peer retention floor");
+                }
                 let local = match store::organs::local(&self.engine.store.pool).await {
                     Ok(organ) => organ.map(|organ| organ.uid).unwrap_or_default(),
                     Err(error) => {

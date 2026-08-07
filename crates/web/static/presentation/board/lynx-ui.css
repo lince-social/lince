@@ -151,6 +151,42 @@ select.lynx-select {
 }
 
 .lynx-textarea { min-height: 48px; resize: vertical; }
+
+/* A number input with its own up/down affordance instead of the browser's
+   native spinner, which several engines paint with a solid gray plate behind
+   the arrows — exactly the block of color this component removes. */
+.lynx-number { position: relative; display: block; }
+.lynx-number > .lynx-input {
+  padding-right: calc(var(--control-padding-x, 5px) + 15px);
+  -moz-appearance: textfield;
+}
+.lynx-number > .lynx-input::-webkit-inner-spin-button,
+.lynx-number > .lynx-input::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
+}
+.lynx-number__steps {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  bottom: 1px;
+  display: flex;
+  flex-direction: column;
+}
+.lynx-number__step {
+  display: grid;
+  flex: 1 1 0;
+  place-items: center;
+  width: 16px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--secondary-ink, var(--muted));
+  cursor: pointer;
+}
+.lynx-number__step:hover { color: var(--primary-ink, var(--ink)); }
+.lynx-number__step .lynx-icon { width: 8px; height: 8px; }
+.lynx-number__step[data-lynx-number-step="-1"] .lynx-icon { transform: rotate(180deg); }
 .lynx-dropdown > [data-lynx-dropdown-button] {
   border-color: var(--control-border, var(--border));
   background: var(--input-background, var(--primary-background, var(--surface)));
@@ -361,6 +397,67 @@ input.lynx-check__input:checked { border-color: var(--accent); background: var(-
 button.lynx-toast { cursor: pointer; }
 .lynx-toast > span { color: var(--secondary-ink, var(--muted)); }
 
+/* Combobox: an input whose menu is a live-filtered option list, not the
+   fixed DOM list `.lynx-select` reads — Record's predicate/object inputs and
+   Kanban's column/concept pickers both drive it from a Protein-backed name
+   list, so the menu has to be built at query time (`LynxUI.combobox`, JS). */
+.lynx-combobox { position: relative; display: block; }
+.lynx-combobox > .lynx-menu { top: 100%; right: 0; left: 0; max-height: 220px; overflow: auto; }
+.lynx-combobox__option { width: 100%; justify-content: flex-start; text-align: left; }
+.lynx-combobox__option[data-lynx-combobox-active="true"] { color: var(--accent); background: var(--secondary-background, var(--surface-hover)); }
+.lynx-combobox__empty { padding: var(--space-2, 4px); color: var(--secondary-ink, var(--muted)); font-size: .92em; }
+
+/* Token picker: a combobox that ADDS to a list of removable badges instead
+   of replacing the input's value — assignees, selected assertions, thread
+   predicates. Composes `.lynx-combobox` + `.lynx-status`, no separate model. */
+.lynx-tokens { display: flex; flex-wrap: wrap; gap: var(--space-1, 2px); align-items: center; }
+.lynx-tokens .lynx-status { gap: var(--space-1, 2px); }
+.lynx-tokens .lynx-status > button {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 12px; height: 12px; padding: 0; border: 0; background: transparent;
+  color: inherit; cursor: pointer;
+}
+.lynx-tokens .lynx-status > button .lynx-icon { width: 9px; height: 9px; }
+.lynx-tokens > .lynx-combobox { flex: 1 1 140px; min-width: 140px; }
+
+/* Compact key-value metadata (Record head/slug/quantity/work facts, Kanban
+   card metadata) — a flat display list, not a panel of its own. */
+.lynx-meta { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--space-1, 2px) var(--space-2, 4px); margin: 0; }
+.lynx-meta dt { color: var(--secondary-ink, var(--muted)); font-weight: 600; white-space: nowrap; }
+.lynx-meta dd { margin: 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+/* Duration field: a number of hours/minutes with a single compact display —
+   Record's work estimate and worklog values are minutes underneath, but a
+   raw minute count is not how a person thinks about "an hour and a half." */
+.lynx-duration { display: inline-flex; align-items: center; gap: var(--space-1, 2px); }
+.lynx-duration input { width: 3.4em; text-align: right; }
+.lynx-duration span { color: var(--secondary-ink, var(--muted)); font-size: .92em; }
+
+/* File attachment: picker trigger + upload/busy state + attachment row +
+   remove — Record owns message attachment semantics, this owns the shape. */
+.lynx-attach { display: grid; gap: var(--space-1, 2px); }
+.lynx-attach__row {
+  display: flex; align-items: center; gap: var(--space-2, 4px);
+  padding: var(--space-1, 2px) var(--space-2, 4px);
+  border: var(--hairline, .5px) solid var(--border);
+}
+.lynx-attach__name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lynx-attach__row[data-lynx-attach-busy="true"] .lynx-attach__name { color: var(--secondary-ink, var(--muted)); }
+
+/* Inline loading/progress: a Record save, an upload, a Kanban move — small
+   enough to sit beside the control it reports on, never a blocking overlay
+   ("no dashboard", motion is spent never decorated with — so this signals
+   busy by shape/opacity, not by animating). */
+.lynx-spinner {
+  display: inline-block; width: 12px; height: 12px; flex: 0 0 auto;
+  border: 1.5px solid var(--border); border-top-color: var(--accent);
+  border-radius: 50%;
+}
+.lynx-progress { display: block; width: 100%; height: 3px; border: 0; overflow: hidden; background: var(--secondary-background, var(--surface-hover)); }
+.lynx-progress::-webkit-progress-bar { background: var(--secondary-background, var(--surface-hover)); }
+.lynx-progress::-webkit-progress-value { background: var(--accent); }
+.lynx-progress::-moz-progress-bar { background: var(--accent); }
+
 .lynx-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
 .lynx-table :where(th, td) { padding: var(--space-1, 2px) var(--space-2, 4px); border-bottom: 0; text-align: left; }
 .lynx-table thead th, .lynx-table tbody tr:not(:last-child) td { border-bottom: 0; }
@@ -398,27 +495,36 @@ button.lynx-toast { cursor: pointer; }
 
 [data-lynx-tooltip]::after {
   content: attr(data-lynx-tooltip);
-  position: absolute;
-  left: 50%;
-  bottom: calc(100% + var(--space-2, 4px));
-  z-index: 100;
+  /* Fixed, not absolute: positioned in viewport pixels by alignTooltip()
+     (lynx-ui.js) so it can never be clipped by a scrolling/overflow-hidden
+     ancestor, and the JS clamps left/top to the viewport so it can never
+     push the document wide enough to open a horizontal scrollbar either. */
+  position: fixed;
+  left: var(--lynx-tooltip-left, 50%);
+  top: var(--lynx-tooltip-top, auto);
+  bottom: auto;
+  /* Above every sand element, pinned or not: this is the top of the stack
+     inside the sand's own iframe document. */
+  z-index: 2147483647;
   display: none;
   width: max-content;
   max-width: var(--lynx-tooltip-max-width, 180px);
   padding: var(--space-1, 2px) var(--space-2, 4px);
-  border: var(--hairline, .5px) solid var(--tooltip-ink);
-  color: var(--tooltip-ink);
-  background: var(--tooltip);
+  border: var(--hairline, .5px) solid var(--tooltip-border, #fff);
+  /* Each sand owns an isolated :root — most never define --tooltip/-ink at
+     all, which leaves the custom property invalid: background falls back to
+     transparent (its initial value) and color falls back to whatever it
+     inherits, i.e. exactly "not opaque, not base-bg colored". Chain through
+     every base-bg/ink token name actually used across the sands before the
+     hardcoded floor, so this is always a solid, base-bg-matching box. */
+  color: var(--tooltip-ink, var(--primary-ink, var(--ink, var(--text, #f8fafc))));
+  background: var(--tooltip, var(--raised-background, var(--surface, var(--bg, var(--panel, #202126)))));
   font-size: 12px;
   pointer-events: none;
   overflow-wrap: anywhere;
-  transform: translateX(-50%);
 }
 [data-lynx-tooltip]:hover::after, [data-lynx-tooltip]:focus-visible::after { display: block; }
 [data-lynx-tooltip][data-lynx-tooltip-dismissed]::after { display: none; }
-[data-lynx-tooltip-align="left"]::after { right: auto; left: 0; transform: none; }
-[data-lynx-tooltip-align="right"]::after { right: 0; left: auto; transform: none; }
-[data-lynx-tooltip-side="bottom"]::after { top: calc(100% + var(--space-2, 4px)); bottom: auto; }
 
 .lynx-dialog {
   width: min(680px, calc(100vw - 16px));

@@ -17,7 +17,8 @@
   --warning: #eed49f;
   --success: #a6da95;
   --info: #8aadf4;
-  --tooltip: #cad3f5;
-  --tooltip-ink: #181926;
+  --tooltip: var(--surface);
+  --tooltip-ink: var(--ink);
+  --tooltip-border: #fff;
   --scrim: color-mix(in srgb, #181926 72%, transparent);
 }

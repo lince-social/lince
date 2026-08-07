@@ -510,6 +510,16 @@ pub async fn execute_for_with_context(
     };
     // The gate applies BEFORE aggregation: hidden rows must not leak into sums.
     let visible = visible.as_ref();
+    // Blanket read enforcement (2026-08-07): checked once here, before
+    // dispatch, rather than inside each `execute_*` fn — one choke point for
+    // every source. `None` (source has no catalog permission yet — Decision,
+    // Concept, Lingua, Nearby keep their own bespoke/no gating below) skips
+    // this check entirely.
+    if let Some(keys) = read_permission_keys(protein.source) {
+        if !actor_can_read_source(store, subject, keys).await? {
+            return Ok(vec![]); // same "hidden, not an error" shape as Decision/Karma/Nearby
+        }
+    }
     Ok(match protein.source {
         Source::Record => execute_records(store, protein, visible).await?,
         Source::Promise => execute_promises(store, protein, visible).await?,
@@ -573,6 +583,29 @@ pub async fn execute_for_with_context(
             execute_nearby(store, protein, context.nearby.unwrap_or(&[])).await?
         }
     })
+}
+
+/// Which catalog permission(s) (`utils::auth::ALL_PERMISSIONS`) unlock a
+/// source for a local logged-in user — any one of the listed keys is
+/// enough. `None` = no blanket gate for this source: `Decision`/`Nearby`
+/// already fully hide from any non-local subject above, `Karma` gets its
+/// own catalog key, and `Concept`/`Lingua` stay ungated on purpose (shared
+/// vocabulary "travels freely", per the standing comment on `Source::Concept`).
+fn read_permission_keys(source: Source) -> Option<&'static [&'static str]> {
+    match source {
+        Source::Record | Source::Fact | Source::Timeline | Source::Entry | Source::Assertion => {
+            Some(&["record:read"])
+        }
+        Source::Promise
+        | Source::Transfer
+        | Source::TransferSettlementPreview
+        | Source::TransferBulkCompletionPreview => Some(&["transfer:read"]),
+        Source::Frequency | Source::Recurrence => Some(&["frequency:read"]),
+        Source::Karma => Some(&["karma:read"]),
+        Source::Decision | Source::Concept | Source::Lingua | Source::Nearby | Source::Auth => {
+            None
+        }
+    }
 }
 
 const MAX_FILTER_INDENT: usize = 10;
@@ -768,6 +801,36 @@ fn strip_delivery_mutation_and_proof(value: &mut Value) {
 /// Best-effort: any failure to resolve the actor (not a numeric app_user id,
 /// no such user) reads as "can't read", not an error — a Protein snapshot
 /// should never fail just because of who's asking.
+/// Blanket read enforcement (2026-08-07): a Protein source is gated by a
+/// catalog permission (`utils::auth::ALL_PERMISSIONS`) — the same catalog
+/// the permissions sand already lets every role toggle, and the same
+/// pattern `actor_can_read_auth` already used for the `auth` source alone.
+///
+/// This is a DIFFERENT concern from `visible_targets` in
+/// `execute_for_with_context`: that governs which ROWS a remote-organ
+/// `subject` may see (row-level cross-organ grants, blueprint XV.1) — this
+/// governs whether a LOCAL logged-in user's role may use a source AT ALL.
+/// Only a numeric `subject` (a local app_user id — the same convention
+/// `actor_can_read_auth` relies on) is checked here; a non-numeric subject
+/// (a remote organ) is left to `visible_targets` alone, or organ-to-organ
+/// sync would silently go blind the moment this landed.
+async fn actor_can_read_source(
+    store: &Store,
+    subject: Option<&str>,
+    keys: &[&str],
+) -> Result<bool, ProteinError> {
+    let Some(subject) = subject else {
+        return Ok(true); // the local Cell itself: unrestricted
+    };
+    let Ok(user_id) = subject.parse::<i64>() else {
+        return Ok(true); // a remote organ: visible_targets is the gate, not this
+    };
+    let Some(user) = store::auth::user_by_id(&store.pool, user_id).await? else {
+        return Ok(false);
+    };
+    Ok(user.permissions.iter().any(|p| keys.contains(&p.as_str())))
+}
+
 async fn actor_can_read_auth(store: &Store, actor: &str) -> Result<bool, ProteinError> {
     let Ok(user_id) = actor.parse::<i64>() else {
         return Ok(false);
@@ -2125,6 +2188,11 @@ async fn threads_for_record(
     let threads =
         store::assertions::subjects_pointing_to(&store.pool, &thread_of, record_uid).await?;
     let mut out = Vec::new();
+    // organ_uid -> display name, memoized per call: a thread's messages
+    // typically share very few origin organs, and this avoids one query per
+    // message. `None` key = this record's own organ_uid was itself `None`
+    // (created on this Cell, never stamped with an origin).
+    let mut organ_names: HashMap<Option<String>, Option<String>> = HashMap::new();
     for thread in threads {
         if thread.kind != "thread" || !thread.quantity.is_positive() {
             continue;
@@ -2171,6 +2239,8 @@ async fn threads_for_record(
             };
             let created_at = store::records::created_at(&store.pool, &message.uid).await?;
             let (created_by, sender) = creator_info(store, &message.uid).await?;
+            let organ_name =
+                organ_name_for(store, &mut organ_names, message.organ_uid.as_deref()).await?;
             messages.push(json!({
                 "uid": message.uid,
                 "head": message.head,
@@ -2180,6 +2250,7 @@ async fn threads_for_record(
                 "created_at": created_at,
                 "created_by": created_by,
                 "sender": sender,
+                "organ_name": organ_name,
                 "references": record_references,
             }));
             if messages.len() >= messages_limit {
@@ -2188,6 +2259,8 @@ async fn threads_for_record(
         }
         let thread_created_at = store::records::created_at(&store.pool, &thread.uid).await?;
         let (thread_created_by, thread_sender) = creator_info(store, &thread.uid).await?;
+        let thread_organ_name =
+            organ_name_for(store, &mut organ_names, thread.organ_uid.as_deref()).await?;
         out.push(json!({
             "uid": thread.uid,
             "head": thread.head,
@@ -2196,6 +2269,7 @@ async fn threads_for_record(
             "created_at": thread_created_at,
             "created_by": thread_created_by,
             "sender": thread_sender,
+            "organ_name": thread_organ_name,
             "messages": messages,
         }));
     }
@@ -2229,6 +2303,35 @@ async fn creator_info(
         user.name
     };
     Ok((Some(actor_uid), Some(name)))
+}
+
+/// A message/thread Record's origin organ display name, from the same
+/// `record.organ_uid` column Sync/File Sync already use to select what
+/// travels where (records.rs) — NOT from the creator's actor_uid, which is
+/// an app_user id local to whichever Cell logged the action and can't be
+/// resolved for a Record synced in from a paired organ. `organ_uid = None`
+/// means "born on this Cell": resolve to this Cell's own local organ name so
+/// a local sender still gets a stable organ label to compare their username
+/// against.
+async fn organ_name_for(
+    store: &Store,
+    cache: &mut HashMap<Option<String>, Option<String>>,
+    organ_uid: Option<&str>,
+) -> Result<Option<String>, ProteinError> {
+    let key = organ_uid.map(str::to_string);
+    if let Some(cached) = cache.get(&key) {
+        return Ok(cached.clone());
+    }
+    let name = match organ_uid {
+        Some(uid) => store::records::get(&store.pool, uid)
+            .await?
+            .map(|record| record.head),
+        None => store::organs::local(&store.pool)
+            .await?
+            .map(|organ| organ.head),
+    };
+    cache.insert(key, name.clone());
+    Ok(name)
 }
 
 // ---------------------------------------------------------------- predicates

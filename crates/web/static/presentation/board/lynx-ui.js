@@ -101,6 +101,261 @@
     for (const candidate of options) candidate.setAttribute("aria-selected", String(candidate === option));
   }
 
+  // ── Combobox: a live-filtered autocomplete, instantiated per element
+  // (unlike the delegated-click components above, its option list is
+  // usually Protein-backed and changes at query time, so each instance
+  // keeps its own small bit of state). Record's predicate/object inputs and
+  // Kanban's column/concept pickers are both this with a different
+  // `getOptions`.
+  function combobox(container, config = {}) {
+    container.classList.add("lynx-combobox");
+    const input = container.querySelector("input") || container.querySelector("[data-lynx-combobox-input]");
+    let menu = container.querySelector("[data-lynx-combobox-menu]");
+    if (!menu) {
+      menu = document.createElement("div");
+      menu.className = "lynx-menu";
+      menu.setAttribute("data-lynx-combobox-menu", "");
+      menu.setAttribute("role", "listbox");
+      menu.hidden = true;
+      container.appendChild(menu);
+    }
+    input.setAttribute("role", "combobox");
+    input.setAttribute("aria-expanded", "false");
+    input.setAttribute("aria-autocomplete", "list");
+    if (!input.hasAttribute("autocomplete")) input.setAttribute("autocomplete", "off");
+
+    const getLabel = config.getLabel || ((option) => String(option));
+    const getValue = config.getValue || getLabel;
+    const limit = config.limit || 20;
+    let current = [];
+    let active = -1;
+
+    function close() {
+      menu.hidden = true;
+      input.setAttribute("aria-expanded", "false");
+      active = -1;
+    }
+
+    function highlight(index) {
+      for (const button of menu.querySelectorAll("[data-lynx-combobox-index]")) {
+        delete button.dataset.lynxComboboxActive;
+      }
+      active = index;
+      const button = menu.querySelector(`[data-lynx-combobox-index="${active}"]`);
+      if (button) {
+        button.dataset.lynxComboboxActive = "true";
+        button.scrollIntoView({ block: "nearest" });
+      }
+    }
+
+    function select(option) {
+      input.value = getLabel(option);
+      close();
+      config.onSelect?.(option, getValue(option));
+    }
+
+    function open(query) {
+      const source = typeof config.getOptions === "function" ? config.getOptions(query) : (config.options || []);
+      const needle = (query || "").toLowerCase();
+      current = (needle
+        ? source.filter((option) => getLabel(option).toLowerCase().includes(needle))
+        : source
+      ).slice(0, limit);
+      menu.innerHTML = "";
+      if (!current.length) {
+        const empty = document.createElement("div");
+        empty.className = "lynx-combobox__empty";
+        empty.textContent = config.emptyLabel || "No matches";
+        menu.appendChild(empty);
+        active = -1;
+      } else {
+        current.forEach((option, index) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "lynx-button lynx-combobox__option";
+          button.setAttribute("role", "option");
+          button.textContent = getLabel(option);
+          button.dataset.lynxComboboxIndex = String(index);
+          // Selecting with the pointer must not steal focus from the input
+          // before the click fires, or the click never lands.
+          button.addEventListener("mousedown", (event) => event.preventDefault());
+          button.addEventListener("click", () => select(option));
+          menu.appendChild(button);
+        });
+        active = 0;
+        highlight(0);
+      }
+      menu.hidden = false;
+      input.setAttribute("aria-expanded", "true");
+    }
+
+    input.addEventListener("input", () => open(input.value));
+    input.addEventListener("focus", () => open(input.value));
+    input.addEventListener("keydown", (event) => {
+      if (menu.hidden) {
+        if (event.key === "ArrowDown" || event.key === "ArrowUp") { event.preventDefault(); open(input.value); }
+        return;
+      }
+      if (event.key === "ArrowDown") { event.preventDefault(); highlight(Math.min(active + 1, current.length - 1)); }
+      else if (event.key === "ArrowUp") { event.preventDefault(); highlight(Math.max(active - 1, 0)); }
+      else if (event.key === "Enter") { if (active >= 0 && current[active]) { event.preventDefault(); select(current[active]); } }
+      else if (event.key === "Escape") { close(); }
+    });
+    // A pointerdown on an option fires before this blur, so the click above
+    // still lands; the delay just outlives that pointerdown/click pair.
+    input.addEventListener("blur", () => window.setTimeout(close, 120));
+
+    return Object.freeze({ close, refresh: () => open(input.value) });
+  }
+
+  // ── Token picker: a combobox that ADDS to a list of removable `.lynx-
+  // status` badges instead of replacing the input's value — assignees,
+  // selected assertions, thread predicates. `config.getSelected()` is
+  // re-read on every `refresh()`, so the caller stays the source of truth;
+  // this only renders it and wires add/remove.
+  function tokens(container, config = {}) {
+    container.classList.add("lynx-tokens");
+    let comboWrap = container.querySelector("[data-lynx-tokens-input]");
+    let input;
+    if (!comboWrap) {
+      comboWrap = document.createElement("span");
+      comboWrap.setAttribute("data-lynx-tokens-input", "");
+      input = document.createElement("input");
+      input.type = "text";
+      input.className = "lynx-input";
+      if (config.placeholder) input.placeholder = config.placeholder;
+      comboWrap.appendChild(input);
+      container.appendChild(comboWrap);
+    } else {
+      input = comboWrap.querySelector("input");
+    }
+
+    function renderBadges() {
+      for (const node of [...container.children]) {
+        if (node !== comboWrap) node.remove();
+      }
+      const selected = config.getSelected ? config.getSelected() : [];
+      for (const item of selected) {
+        const badge = document.createElement("span");
+        badge.className = "lynx-status";
+        const label = config.getLabel ? config.getLabel(item) : String(item);
+        const text = document.createElement("span");
+        text.textContent = label;
+        badge.appendChild(text);
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.setAttribute("aria-label", `Remove ${label}`);
+        remove.innerHTML = icon("close");
+        remove.addEventListener("click", () => config.onRemove?.(item));
+        badge.appendChild(remove);
+        container.insertBefore(badge, comboWrap);
+      }
+    }
+
+    const control = combobox(comboWrap, {
+      getOptions: config.getOptions,
+      options: config.options,
+      getLabel: config.getLabel,
+      getValue: config.getValue,
+      limit: config.limit,
+      emptyLabel: config.emptyLabel,
+      onSelect: (option, value) => {
+        input.value = "";
+        config.onAdd?.(option, value);
+        renderBadges();
+      },
+    });
+    renderBadges();
+    return Object.freeze({ refresh: renderBadges, comboboxControl: control });
+  }
+
+  // ── Duration: minutes underneath, "1h 30m" is how a person thinks about
+  // it. Record's work estimate/worklog values own the minute number; this
+  // only formats it and reads a compact `Xh Ym` editor back into minutes.
+  function formatDuration(totalMinutes) {
+    const minutes = Math.max(0, Math.round(Number(totalMinutes) || 0));
+    const hours = Math.floor(minutes / 60);
+    const rest = minutes % 60;
+    if (!hours) return `${rest}m`;
+    if (!rest) return `${hours}h`;
+    return `${hours}h ${rest}m`;
+  }
+
+  function parseDuration(text) {
+    const source = String(text || "").trim().toLowerCase();
+    if (!source) return 0;
+    if (/^\d+$/.test(source)) return parseInt(source, 10); // a bare number is minutes
+    let minutes = 0;
+    let matched = false;
+    for (const match of source.matchAll(/(\d+(?:\.\d+)?)\s*(h|hr|hour|hours|m|min|minute|minutes)/g)) {
+      matched = true;
+      const value = parseFloat(match[1]);
+      if (match[2].startsWith("h")) minutes += value * 60;
+      else minutes += value;
+    }
+    return matched ? Math.round(minutes) : 0;
+  }
+
+  // ── Compact absolute/relative date-time display. Not a locale/timezone
+  // library — Record work metadata and Kanban card metadata only need "how
+  // do I show one instant compactly," which `Intl` already answers.
+  function formatDateTime(iso, options = {}) {
+    if (!iso) return "";
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return "";
+    if (options.relative) {
+      const diffMs = date.getTime() - Date.now();
+      const diffMinutes = Math.round(diffMs / 60000);
+      const divisions = [
+        [60, "minute"], [24, "hour"], [7, "day"], [4.345, "week"], [12, "month"], [Infinity, "year"],
+      ];
+      let value = diffMinutes;
+      let unit = "minute";
+      for (const [amount, nextUnit] of divisions) {
+        if (Math.abs(value) < amount) { unit = nextUnit; break; }
+        value = Math.round(value / amount);
+        unit = nextUnit;
+      }
+      try {
+        return new Intl.RelativeTimeFormat(undefined, { numeric: "auto" }).format(value, unit);
+      } catch (_) {
+        return date.toLocaleString();
+      }
+    }
+    const sameDay = date.toDateString() === new Date().toDateString();
+    return sameDay
+      ? date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+      : `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`;
+  }
+
+  // ── File attachment: picker trigger + upload/busy state + attachment row
+  // + remove. Record owns message-attachment semantics (what an attachment
+  // MEANS); this only owns the row's shape and busy/remove wiring.
+  function attachmentRow(name, options = {}) {
+    const row = document.createElement("div");
+    row.className = "lynx-attach__row";
+    if (options.busy) row.dataset.lynxAttachBusy = "true";
+    const nameEl = document.createElement("span");
+    nameEl.className = "lynx-attach__name";
+    nameEl.textContent = name;
+    row.appendChild(nameEl);
+    if (options.busy) {
+      const spinner = document.createElement("span");
+      spinner.className = "lynx-spinner";
+      spinner.setAttribute("role", "status");
+      spinner.setAttribute("aria-label", "Uploading");
+      row.appendChild(spinner);
+    } else if (typeof options.onRemove === "function") {
+      const remove = iconButton("close", options.removeLabel || "Remove attachment");
+      const wrap = document.createElement("div");
+      wrap.innerHTML = remove;
+      const button = wrap.firstElementChild;
+      button.addEventListener("click", options.onRemove);
+      row.appendChild(button);
+    }
+    return row;
+  }
+
   const componentSelectors = Object.freeze([
     [".lynx-icon", "Icon"],
     [".lynx-icon-button", "Icon button"],
@@ -113,6 +368,7 @@
     [".lynx-input", "Input"],
     [".lynx-textarea", "Textarea"],
     [".lynx-select", "Select"],
+    [".lynx-number", "Number"],
     [".lynx-check", "Checkbox"],
     [".lynx-toggle", "Toggle"],
     [".lynx-radio", "Radio"],
@@ -140,6 +396,14 @@
     [".lynx-tab-panel", "Tab panel"],
     [".lynx-disclosure", "Disclosure"],
     [".lynx-toast", "Toast"],
+    [".lynx-combobox", "Combobox"],
+    [".lynx-tokens", "Token picker"],
+    [".lynx-meta", "Metadata list"],
+    [".lynx-duration", "Duration field"],
+    [".lynx-attach", "Attachment"],
+    [".lynx-attach__row", "Attachment row"],
+    [".lynx-spinner", "Spinner"],
+    [".lynx-progress", "Progress"],
   ]);
 
   function inspect(root = document, enabled = true) {
@@ -169,24 +433,34 @@
     if (!event.relatedTarget?.closest?.("[data-lynx-component]")) inspectorTooltip.hidden = true;
   });
 
+  // Fixed-positioned in viewport pixels (see lynx-ui.css), so this only has
+  // to keep the box inside document.documentElement's box — no ancestor
+  // overflow/clip walk needed, and clamping left/top to the viewport here
+  // is also what stops the tooltip from ever widening the document enough
+  // to open a horizontal scrollbar.
   function alignTooltip(event) {
     const target = event.target.closest?.("[data-lynx-tooltip]");
     if (!target) return;
-    const boundary = target.closest("[data-lynx-tooltip-boundary], .lynx-field, .sand") || document.documentElement;
     const targetBox = target.getBoundingClientRect();
-    const boundaryBox = boundary.getBoundingClientRect();
     const viewportWidth = document.documentElement.clientWidth;
     const viewportHeight = document.documentElement.clientHeight;
-    const width = Math.min(180, Math.max(1, boundaryBox.width - 4), Math.max(1, viewportWidth - 4), target.dataset.lynxTooltip.length * 6 + 10);
-    const height = Math.ceil(target.dataset.lynxTooltip.length * 7 / width) * 15 + 10;
+    // A sand can widen the shared 180px cap for its own long explanations
+    // (organ.html does) — read what will ACTUALLY render before guessing a
+    // height from the wrong, narrower width, or a long tooltip's box comes
+    // out shorter and wider than estimated and the fit decision below is
+    // made against a box that was never going to exist.
+    const cssMaxWidth = parseFloat(getComputedStyle(target, "::after").maxWidth) || 180;
+    const text = target.dataset.lynxTooltip;
+    const width = Math.min(cssMaxWidth, Math.max(1, viewportWidth - 4), text.length * 6 + 10);
+    const height = Math.ceil(text.length * 7 / width) * 15 + 10;
+    const idealLeft = targetBox.left + targetBox.width / 2 - width / 2;
+    const left = Math.max(2, Math.min(viewportWidth - width - 2, idealLeft));
+    const fitsAbove = targetBox.top - height - 4 >= 0;
+    const idealTop = fitsAbove ? targetBox.top - height - 4 : targetBox.bottom + 4;
+    const top = Math.max(2, Math.min(viewportHeight - height - 2, idealTop));
     target.style.setProperty("--lynx-tooltip-max-width", `${width}px`);
-    delete target.dataset.lynxTooltipAlign;
-    delete target.dataset.lynxTooltipSide;
-    if (targetBox.left + targetBox.width / 2 - width / 2 < boundaryBox.left) target.dataset.lynxTooltipAlign = "left";
-    if (targetBox.left + targetBox.width / 2 + width / 2 > boundaryBox.right) target.dataset.lynxTooltipAlign = "right";
-    const cannotFitAbove = targetBox.top - height - 4 < Math.max(0, boundaryBox.top);
-    const fitsBelow = targetBox.bottom + height + 4 <= Math.min(viewportHeight, boundaryBox.bottom);
-    if (cannotFitAbove && fitsBelow) target.dataset.lynxTooltipSide = "bottom";
+    target.style.setProperty("--lynx-tooltip-left", `${left}px`);
+    target.style.setProperty("--lynx-tooltip-top", `${top}px`);
   }
 
   document.addEventListener("pointerover", (event) => {
@@ -206,7 +480,7 @@
 
   document.addEventListener("click", (event) => {
     event.target.closest?.("[data-lynx-tooltip]")?.setAttribute("data-lynx-tooltip-dismissed", "");
-    const target = event.target.closest("[data-lynx-dialog-open], [data-lynx-dialog-close], [data-lynx-dropdown-button], [data-lynx-select-option], [data-lynx-tab]");
+    const target = event.target.closest("[data-lynx-dialog-open], [data-lynx-dialog-close], [data-lynx-dropdown-button], [data-lynx-select-option], [data-lynx-tab], [data-lynx-number-step]");
     if (!target) return;
     if (target.hasAttribute("data-lynx-select-option")) {
       const select = target.closest("[data-lynx-select]");
@@ -228,7 +502,49 @@
       target.setAttribute("aria-expanded", String(open));
     }
     if (target.dataset.lynxTab) setTabs(target);
+    if (target.dataset.lynxNumberStep) stepNumber(target);
   });
+
+  // ── Number: the up/down affordance for a `.lynx-number`'s input.
+  //
+  // `stepUp`/`stepDown` throw on a non-numeric current value or a step that
+  // would carry it past `min`/`max`, so the input is left exactly as it was
+  // rather than silently doing nothing useful.
+  function stepNumber(button) {
+    const input = button.closest(".lynx-number")?.querySelector(".lynx-input");
+    if (!input || input.disabled || input.readOnly) return;
+    const direction = button.dataset.lynxNumberStep === "-1" ? -1 : 1;
+    try {
+      if (direction > 0) input.stepUp();
+      else input.stepDown();
+    } catch (_) {
+      return;
+    }
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+    input.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  function numbers(root = document) {
+    for (const input of root.querySelectorAll(".lynx-number > .lynx-input:not([type='number'])")) {
+      input.type = "number";
+    }
+    for (const wrap of root.querySelectorAll(".lynx-number")) {
+      if (wrap.querySelector(".lynx-number__steps")) continue;
+      const steps = document.createElement("span");
+      steps.className = "lynx-number__steps";
+      for (const step of [1, -1]) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "lynx-number__step";
+        button.tabIndex = -1;
+        button.dataset.lynxNumberStep = String(step);
+        button.setAttribute("aria-hidden", "true");
+        button.innerHTML = icon("chevronDown");
+        steps.append(button);
+      }
+      wrap.append(steps);
+    }
+  }
 
   document.addEventListener("keydown", (event) => {
     const tab = event.target.closest("[data-lynx-tab]");
@@ -316,10 +632,14 @@
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => splits());
+    document.addEventListener("DOMContentLoaded", () => { splits(); numbers(); });
   } else {
     splits();
+    numbers();
   }
 
-  global.LynxUI = Object.freeze({ icon, iconButton, toast, icons: Object.keys(paths), inspect, setSelectValue, splits });
+  global.LynxUI = Object.freeze({
+    icon, iconButton, toast, icons: Object.keys(paths), inspect, setSelectValue, splits, numbers,
+    combobox, tokens, formatDuration, parseDuration, formatDateTime, attachmentRow,
+  });
 })(window);

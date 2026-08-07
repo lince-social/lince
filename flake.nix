@@ -296,7 +296,11 @@
         { pkgs, ... }:
         {
           imports = [ ./scripts/deploy/nixos/lince-module.nix ];
-          services.lince.package = nixpkgs.lib.mkDefault self.packages.${pkgs.system}.lince;
+          # Both, lazily: `lince-desktop` needs GTK/webkit and is only
+          # evaluated if desktop mode actually asks for it.
+          services.lince.serverPackage = nixpkgs.lib.mkDefault self.packages.${pkgs.system}.lince;
+          services.lince.desktopPackage =
+            nixpkgs.lib.mkDefault self.packages.${pkgs.system}.lince-desktop;
         };
       nixosModules.lince = self.nixosModules.default;
 

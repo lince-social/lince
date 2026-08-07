@@ -875,7 +875,7 @@ async fn delete_record_without_permission_is_forbidden() {
 #[tokio::test]
 async fn delete_own_permission_allows_only_the_creator() {
     let e = engine().await;
-    let owner = user_with(&e, "Owner", "owner", &["record:delete_own"]).await;
+    let owner = user_with(&e, "Owner", "owner", &["record:delete_own", "record:update"]).await;
     let stranger = user_with(&e, "Stranger", "stranger", &["record:delete_own"]).await;
 
     let mine = plain(&e, "mine").await;
@@ -921,7 +921,7 @@ async fn delete_own_permission_allows_only_the_creator() {
 #[tokio::test]
 async fn delete_permission_allows_deleting_any_record() {
     let e = engine().await;
-    let owner = user_with(&e, "Owner", "owner2", &[]).await;
+    let owner = user_with(&e, "Owner", "owner2", &["record:update"]).await;
     let admin = user_with(&e, "Admin", "admin2", &["record:delete"]).await;
 
     let theirs = plain(&e, "theirs").await;

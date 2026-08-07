@@ -289,6 +289,17 @@
     in
     eachSystem
     // {
+      # One module for both postures. `services.lince.mode` picks between
+      # `--server` (API only, login forced) and the full board; the desktop app
+      # is a separate package (`lince-desktop`) rather than a mode of this one.
+      nixosModules.default =
+        { pkgs, ... }:
+        {
+          imports = [ ./scripts/deploy/nixos/lince-module.nix ];
+          services.lince.package = nixpkgs.lib.mkDefault self.packages.${pkgs.system}.lince;
+        };
+      nixosModules.lince = self.nixosModules.default;
+
       nixosConfigurations.manas-organ = nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         specialArgs = { inherit self; };

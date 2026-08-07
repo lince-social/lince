@@ -24,11 +24,18 @@ use utils::logging::status;
 /// `staged` carries the installer's one-shot setup (initial admin password,
 /// language) when the caller found a staged setup file; it wins over the
 /// interactive prompt so headless installer flows work.
+///
+/// `admin_is_mandatory` turns "could not create an admin" from a warning into
+/// a hard failure. A desktop Cell that comes up account-less is recoverable —
+/// the user is sitting at it. A `lince --server` box is not: it would boot a
+/// login wall with zero accounts and no terminal to fix it from, and look
+/// healthy while doing it.
 pub async fn bootstrap_cell(
     store: &Store,
     auth_required: bool,
     local_base_url: &str,
     staged: Option<&DesktopInstallSetup>,
+    admin_is_mandatory: bool,
 ) -> Result<(), io::Error> {
     // The permission catalog is owned by `utils::auth`; store stays
     // decoupled and just persists whatever pairs it is handed.
@@ -72,6 +79,14 @@ pub async fn bootstrap_cell(
     {
         ("user".to_string(), password.to_string())
     } else if !io::stdin().is_terminal() || !io::stdout().is_terminal() {
+        if admin_is_mandatory {
+            return Err(io::Error::other(
+                "Refusing to start: server mode requires login, but this store \
+                 has no admin user and there is no terminal to create one on. \
+                 Pass --initial-admin-password-file <path> (or --initial-admin-password), \
+                 or run once interactively.",
+            ));
+        }
         status(
             "Auth is required but the new store has no admin yet. \
              Start Lince once in an interactive terminal (or complete the \
@@ -87,7 +102,9 @@ pub async fn bootstrap_cell(
     let admin_role = store::auth::ensure_role(&store.pool, store::auth::ADMIN_ROLE)
         .await
         .map_err(io::Error::other)?;
-    store::auth::create_user(
+    // The admin is a Person like everyone else; the credential is only how
+    // they prove it over HTTP.
+    store::auth::create_person_login(
         &store.pool,
         &username,
         &username,

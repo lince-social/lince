@@ -25,6 +25,10 @@
   const collabResetHandlers = new Map(); // recordUid -> Set<handler()>
   let live = false;
   const liveHandlers = new Set();
+  // Which Organ this board is driving, or null for our own Cell. A sand that
+  // does not check this will present someone else.s data as the user.s own.
+  let liveOrgan = null;
+  const liveOrganHandlers = new Set();
   let signingState = Object.freeze({
     status: "connecting",
     available: false,
@@ -192,6 +196,10 @@
       case "lince:live":
         live = Boolean(data.live);
         for (const h of liveHandlers) h(live);
+        break;
+      case "lince:live-organ":
+        liveOrgan = data.organ == null ? null : String(data.organ);
+        for (const h of liveOrganHandlers) h(liveOrgan);
         break;
       case "lince:signing-state":
         signingState = Object.freeze({
@@ -371,6 +379,18 @@
       liveHandlers.add(handler);
       handler(live);
       return () => liveHandlers.delete(handler);
+    },
+
+    // Live mode: drive another Organ.s Cell. Every subscription and Action
+    // from every sand follows — you are working in their Cell, not merging
+    // their data into yours. `null` comes home.
+    enterLive(organUid) { post({ type: "lince:enter-live", organ: organUid || null }); },
+    leaveLive() { post({ type: "lince:enter-live", organ: null }); },
+    getLiveOrgan() { return liveOrgan; },
+    onLiveOrgan(handler) {
+      liveOrganHandlers.add(handler);
+      handler(liveOrgan);
+      return () => liveOrganHandlers.delete(handler);
     },
 
     // Authenticated writes are signed by the board host, outside the sand.

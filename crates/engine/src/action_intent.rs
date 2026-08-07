@@ -27,7 +27,6 @@ const MAX_ACTION_BASE64_BYTES: usize = 1_398_104;
 /// Fields that establish authority are private so callers cannot construct a
 /// session for an arbitrary Person. Use `Engine::begin_action_intent_session`.
 pub struct ActionIntentSession {
-    authenticated_actor: String,
     person_uid: String,
     session_id: String,
     challenge: String,
@@ -37,10 +36,6 @@ pub struct ActionIntentSession {
 }
 
 impl ActionIntentSession {
-    pub fn authenticated_actor(&self) -> &str {
-        &self.authenticated_actor
-    }
-
     pub fn person_uid(&self) -> &str {
         &self.person_uid
     }
@@ -64,7 +59,6 @@ pub struct VerifiedActionIntent {
     intent_uid: String,
     pub message_id: String,
     action: Action,
-    authenticated_actor: String,
     person_uid: String,
     key_id: String,
     session_id: String,
@@ -78,10 +72,6 @@ impl VerifiedActionIntent {
     pub fn intent_uid(&self) -> &str {
         &self.intent_uid
     }
-    pub fn authenticated_actor(&self) -> &str {
-        &self.authenticated_actor
-    }
-
     pub fn person_uid(&self) -> &str {
         &self.person_uid
     }
@@ -102,23 +92,23 @@ impl Engine {
     /// Reconnecting creates a new challenge and invalidates old envelopes.
     pub async fn begin_action_intent_session(
         &self,
-        authenticated_actor: &str,
+        person_uid: &str,
     ) -> Result<ActionIntentSession, EngineError> {
-        let user_id: i64 = authenticated_actor
-            .parse()
-            .map_err(|_| EngineError::Forbidden("unrecognized actor".into()))?;
-        let user = store::auth::user_by_id(&self.store.pool, user_id)
+        // What must be true is that this Person EXISTS — not that they hold a
+        // password here. A live guest acts as the Person a `GrantOrganLogin`
+        // named, and that Person has no credential by design: the iroh
+        // handshake already proved which Organ is on the connection. Requiring
+        // a credential row was what left remote Actions dead, while reads
+        // worked, for as long as live mode has existed.
+        let person = store::records::get(&self.store.pool, person_uid)
             .await?
             .ok_or_else(|| EngineError::Forbidden("unrecognized actor".into()))?;
-        let person_uid = store::auth::person_for_user(&self.store.pool, user.id)
-            .await?
-            .ok_or_else(|| {
-                EngineError::Forbidden("authenticated user has no assigned person identity".into())
-            })?;
+        if person.kind != nucleus::RecordKind::Person.as_str() {
+            return Err(EngineError::Forbidden("actor is not a Person".into()));
+        }
 
         Ok(ActionIntentSession {
-            authenticated_actor: authenticated_actor.to_owned(),
-            person_uid,
+            person_uid: person.uid,
             session_id: uuid::Uuid::new_v4().to_string(),
             challenge: format!("v1:{}", uuid::Uuid::new_v4()),
             bound_key_id: None,
@@ -324,7 +314,6 @@ impl Engine {
             intent_uid: stored.uid,
             message_id: intent.message_id,
             action,
-            authenticated_actor: session.authenticated_actor.clone(),
             person_uid: session.person_uid.clone(),
             key_id: bound_key_id,
             session_id: intent.session_id,
@@ -345,7 +334,6 @@ impl Engine {
         let VerifiedActionIntent {
             intent_uid,
             action,
-            authenticated_actor,
             person_uid,
             key_id,
             session_id,
@@ -376,7 +364,7 @@ impl Engine {
         let result = self
             .act_at_with_authorship(
                 action,
-                Some(authenticated_actor),
+                Some(person_uid.clone()),
                 now,
                 Some(VerifiedActionAuthorship {
                     person_uid: person_uid.clone(),

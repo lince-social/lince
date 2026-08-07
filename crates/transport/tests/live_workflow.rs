@@ -306,3 +306,185 @@ async fn granting_a_login_leaves_the_conversation_untouched() {
 
     serving.abort();
 }
+
+/// A live guest does not just READ — they act, and the write lands on the
+/// host as the Person their login named.
+///
+/// This is the half of live mode that was missing. `Session` refuses a plain
+/// `Act` from any authenticated session (a remote peer must sign its intent),
+/// so the guest has to walk the real path a browser walks: take the server's
+/// challenge, prove possession of an Ed25519 key for its Person, then send a
+/// signed envelope. Nothing here is a shortcut for tests — it is the protocol.
+#[tokio::test]
+async fn a_live_guest_acts_on_the_host_and_the_write_lands_there() {
+    use base64::Engine as _;
+    use base64::engine::general_purpose::STANDARD as B64;
+    use ed25519_dalek::{Signer as _, SigningKey};
+
+    let (host, host_organ) = cell("http://host.test").await;
+    let (guest, guest_organ) = cell("http://guest.test").await;
+
+    let host_wire = Arc::new(
+        Wire::bind(host.clone(), SecretKey::from_bytes(&[81; 32]), Reach::Local)
+            .await
+            .expect("host binds"),
+    );
+    let guest_wire = Wire::bind(guest.clone(), SecretKey::from_bytes(&[82; 32]), Reach::Local)
+        .await
+        .expect("guest binds");
+    know(&host, &guest_organ, &guest_wire.node_id().to_string()).await;
+    know(&guest, &host_organ, &host_wire.node_id().to_string()).await;
+
+    let hub = Arc::new(transport::LaneHub::new());
+    host_wire.set_live_handler(LiveHost::new(host.clone(), hub.clone()));
+    let serving = {
+        let host_wire = host_wire.clone();
+        tokio::spawn(async move { host_wire.serve().await })
+    };
+    let host_addr = loopback(&host_wire);
+
+    let person = host
+        .act(
+            Action::GrantOrganLogin {
+                organ: guest_organ.clone(),
+                person_name: "Marcia".into(),
+            },
+            None,
+        )
+        .await
+        .expect("grant")
+        .created
+        .expect("the Person uid comes back");
+
+    let connection = guest_wire
+        .endpoint()
+        .connect(host_addr, ALPN_LIVE)
+        .await
+        .expect("live dial");
+    let (mut send, mut recv) = connection.open_bi().await.expect("session stream");
+
+    // Poke the stream so the driver writes its first frame, then take the
+    // challenge. The Person here is the host's decision, never our claim.
+    say(
+        &mut send,
+        &ClientMessage::Unsubscribe {
+            id: "wake".into(),
+        },
+    )
+    .await;
+    let (session_id, challenge, announced_person) = match hear(&mut recv).await {
+        ServerMessage::SessionChallenge {
+            session_id,
+            challenge,
+            person,
+            signing_required,
+            ..
+        } => {
+            assert!(signing_required, "a live guest must sign its Actions");
+            (session_id, challenge, person)
+        }
+        other => panic!("expected the session challenge first, got {other:?}"),
+    };
+    assert_eq!(
+        announced_person.as_deref(),
+        Some(person.as_str()),
+        "the host must announce the Person the login bound, so the guest signs for the right identity",
+    );
+
+    // Prove possession of a key for that Person — the browser's WebCrypto step.
+    let key = SigningKey::from_bytes(&[9u8; 32]);
+    let public_key_base64 = B64.encode(key.verifying_key().as_bytes());
+    let key_id = "guest-key-1".to_string();
+    let proof_signature = B64.encode(
+        key.sign(&nucleus::action_intent::session_authentication_bytes(
+            &session_id,
+            &challenge,
+            &person,
+            &key_id,
+            &public_key_base64,
+        ))
+        .to_bytes(),
+    );
+    say(
+        &mut send,
+        &ClientMessage::SessionAuthenticate {
+            id: "auth".into(),
+            session_id: session_id.clone(),
+            session_challenge: challenge.clone(),
+            person_uid: person.clone(),
+            key_id: key_id.clone(),
+            public_key_base64,
+            signature: proof_signature,
+        },
+    )
+    .await;
+    match hear(&mut recv).await {
+        ServerMessage::Error { message, code, .. } => {
+            panic!("key registration refused: {message} ({code:?})")
+        }
+        _ => {}
+    }
+
+    // Now the actual point: a signed Action.
+    let action_base64 = B64.encode(
+        serde_json::to_vec(&serde_json::json!({
+            "action": "create-record",
+            "kind": "plain",
+            "head": "Written by the guest",
+        }))
+        .expect("action json"),
+    );
+    let message_id = "act-1".to_string();
+    let signature = B64.encode(
+        key.sign(&nucleus::action_intent::signing_bytes(
+            &session_id,
+            &challenge,
+            1,
+            &message_id,
+            &action_base64,
+        ))
+        .to_bytes(),
+    );
+    say(
+        &mut send,
+        &ClientMessage::SignedAct {
+            id: message_id.clone(),
+            session_id,
+            session_challenge: challenge,
+            sequence: 1,
+            action_base64,
+            signature,
+        },
+    )
+    .await;
+    match hear(&mut recv).await {
+        ServerMessage::ActionOk { .. } => {}
+        ServerMessage::Error { message, code, .. } => {
+            panic!("the guest's signed Action was refused: {message} ({code:?})")
+        }
+        other => panic!("expected ActionOk, got {other:?}"),
+    }
+
+    // The write is on the HOST, and it is attributed to the Person the login
+    // named — not to the host Cell itself and not to the guest's Organ.
+    let written = store::records::list_all(&host.store.pool)
+        .await
+        .expect("host records")
+        .into_iter()
+        .find(|record| record.head == "Written by the guest")
+        .expect("the guest's record must exist on the host");
+
+    let actor: Option<String> =
+        store::sqlx::query_scalar("SELECT actor_uid FROM fact WHERE record_uid = ? LIMIT 1")
+            .bind(&written.uid)
+            .fetch_one(&host.store.pool)
+            .await
+            .expect("fact actor");
+    assert_eq!(
+        actor.as_deref(),
+        Some(person.as_str()),
+        "the guest's write must be attributed to their bound Person",
+    );
+
+    serving.abort();
+}

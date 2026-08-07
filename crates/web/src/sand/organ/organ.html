@@ -81,6 +81,19 @@
     .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-width: 0; }
     .row label.check { display: inline-flex; align-items: center; gap: 6px; }
     .status { color: var(--secondary-ink); font-size: 12px; }
+    /* Deliberately loud. Being inside someone else's Cell is the one state
+       where mistaking whose data you are editing does real damage. */
+    .live-banner {
+      grid-column: 1 / -1;
+      margin-top: 8px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: 1px solid #d29922;
+      background: rgba(210, 153, 34, 0.12);
+      color: #d29922;
+      font-size: 12px;
+      line-height: 1.4;
+    }
     .status.err { color: var(--danger); }
     .hint { color: var(--secondary-ink); font-size: 11.5px; line-height: 1.5; }
     #nb-list li { flex-wrap: wrap; }
@@ -271,8 +284,10 @@
             <div class="row">
               <button class="lynx-button" id="c-talk" type="button" data-lynx-tooltip="Offers a conversation. They still have to accept, and nothing syncs until they do — this cannot put anything into someone's store.">Start a conversation</button>
               <button class="lynx-button" id="c-login" type="button" data-lynx-tooltip="Lets them open a live session on THIS Cell, acting as a Person here. No password: the connection already proved which Organ it is, with a key rather than a secret anyone could retype.">Give them a login</button>
+              <button class="lynx-button" id="c-enter" type="button" data-lynx-tooltip="Work inside THEIR Cell, if they have given you a login there. The whole board switches: everything you read and every Action you take happens on their Organ, not yours. Your Cell reaches them over iroh — nothing needs a hostname or a certificate.">Enter their Lince</button>
               <button class="lynx-button lynx-button--primary primary" id="c-block" type="button">Block</button>
               <span class="status" id="c-status"></span>
+              <div class="live-banner" id="c-live-banner" hidden></div>
             </div>
           </div>
 
@@ -1247,6 +1262,46 @@
             .catch(reportContactError);
         },
       });
+    });
+
+    // Entering live mode repoints the WHOLE board at their Cell: from here on
+    // every subscription and every Action in every sand happens on their
+    // Organ. That includes THIS sand — the contact list you are looking at
+    // becomes theirs — so the control below reads `H.getLiveOrgan()`, which is
+    // board-host state, rather than anything that arrived over the wire. It
+    // has to keep working when the remote answers nothing at all.
+    function renderLiveMode(organUid) {
+      const enter = $("c-enter");
+      const banner = $("c-live-banner");
+      if (organUid) {
+        enter.textContent = "Come back to my Lince";
+        enter.classList.add("lynx-button--primary");
+        banner.hidden = false;
+        banner.textContent =
+          `You are working inside ${organUid}. Everything you read and every change you make is theirs, not yours.`;
+      } else {
+        enter.textContent = "Enter their Lince";
+        enter.classList.remove("lynx-button--primary");
+        banner.hidden = true;
+      }
+    }
+
+    if (H.onLiveOrgan) {
+      H.onLiveOrgan(renderLiveMode);
+    }
+
+    $("c-enter").addEventListener("click", () => {
+      if (!H.enterLive) return;
+      if (H.getLiveOrgan && H.getLiveOrgan()) {
+        H.leaveLive();
+        return;
+      }
+      const row = selected();
+      if (!row) return;
+      $("c-status").className = "status";
+      $("c-status").textContent =
+        "Opening a session on their Cell. If nothing loads, they have not given you a login there yet.";
+      H.enterLive(row.uid);
     });
 
     $("c-block").addEventListener("click", () => {

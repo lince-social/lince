@@ -463,12 +463,64 @@ function enqueueAction(id, action) {
   });
 }
 
+// Live mode: which Organ this board is currently driving, or null for our own
+// Cell. ONE value for the whole board, because that is what live mode means —
+// you are working in someone else's Cell, and a board where some panels were
+// theirs and some were yours would be a trap rather than a feature.
+let liveOrgan = null;
+let switching = false; // a deliberate switch, not a dropped link
+const liveOrganListeners = new Set(); // fn(organUid | null)
+
+function publishLiveOrgan() {
+  for (const fn of liveOrganListeners) {
+    try {
+      fn(liveOrgan);
+    } catch (error) {
+      console.warn("[transport] live organ listener failed", error);
+    }
+  }
+}
+
+// The remote Cell speaks EXACTLY the protocol our own does — `Session` is
+// transport-agnostic and `live_proxy::relay` only pipes frames — so pointing
+// this one socket somewhere else is the entire mechanism. Subscriptions,
+// Actions, lanes and collab all follow without a second code path. Our own
+// Cell does the reaching over iroh; the browser never leaves localhost.
 function transportWsUrl() {
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  return `${protocol}//${window.location.host}/host/transport/ws`;
+  const path = liveOrgan
+    ? `/live/${encodeURIComponent(liveOrgan)}/connect`
+    : "/host/transport/ws";
+  return `${protocol}//${window.location.host}${path}`;
+}
+
+/// Switch which Cell this board drives. Closing is what reconnects us: the
+/// close handler recomputes the URL, and every consumer replays its
+/// subscriptions through `onOpen` exactly as it does after a dropped link.
+function switchLiveOrgan(organUid) {
+  const next = organUid || null;
+  if (next === liveOrgan) return;
+  liveOrgan = next;
+  publishLiveOrgan();
+  // Queued frames were addressed to the Cell we are leaving. Sending them to
+  // the next one would apply an Action to the wrong Organ's store.
+  outbox.length = 0;
+  rejectQueuedActions(
+    signingError(
+      "Switched Cell before this Action was sent.",
+      "live_organ_switched",
+    ),
+  );
+  switching = true;
+  if (socket) {
+    socket.close();
+  } else {
+    connect();
+  }
 }
 
 function connect() {
+  switching = false;
   socket = new WebSocket(transportWsUrl());
 
   socket.addEventListener("open", () => {
@@ -542,7 +594,13 @@ function connect() {
     }
     // The Cell session is fresh on every (re)connect; consumers re-establish
     // their subscriptions and lane rooms via their open listeners.
-    window.setTimeout(connect, 1000);
+    // A deliberate switch reconnects at once — the one-second backoff is for a
+    // link that dropped, not for a button the user just pressed.
+    if (switching) {
+      connect();
+    } else {
+      window.setTimeout(connect, 1000);
+    }
   });
 }
 
@@ -606,6 +664,19 @@ export function getSharedTransport() {
     onLive(handler) {
       liveListeners.add(handler);
       return () => liveListeners.delete(handler);
+    },
+    // Live mode: drive another Organ's Cell instead of our own. `null` returns
+    // home. Every subscription and Action follows.
+    setLiveOrgan(organUid) {
+      switchLiveOrgan(organUid);
+    },
+    getLiveOrgan() {
+      return liveOrgan;
+    },
+    onLiveOrgan(handler) {
+      liveOrganListeners.add(handler);
+      handler(liveOrgan);
+      return () => liveOrganListeners.delete(handler);
     },
   };
 

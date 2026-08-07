@@ -408,27 +408,13 @@ impl Engine {
         ))
     }
 
-    /// Resolve an `app_user.id` actor string to its Person Record uid, or
-    /// `None` for the local no-auth Cell. A local twin of the private
-    /// `Engine::actor_person`, built on the public `store::auth` resolvers.
+    /// The Person an actor acts as, or `None` for the local no-auth Cell.
+    ///
+    /// An identity function now that there is one human reference — kept as a
+    /// named function because the `None` case still carries meaning ("trusted
+    /// local") that a bare `Option` at each call site would not.
     async fn comm_actor_person(&self, actor: Option<&str>) -> Result<Option<String>, EngineError> {
-        let Some(actor) = actor else {
-            return Ok(None);
-        };
-        let user_id: i64 = actor
-            .parse()
-            .map_err(|_| EngineError::Consequence("unrecognized actor".into()))?;
-        let user = store::auth::user_by_id(&self.store.pool, user_id)
-            .await?
-            .ok_or_else(|| EngineError::Consequence("unrecognized actor".into()))?;
-        store::auth::person_for_user(&self.store.pool, user.id)
-            .await?
-            .map(Some)
-            .ok_or_else(|| {
-                EngineError::Consequence(
-                    "authenticated user has no assigned person identity".into(),
-                )
-            })
+        Ok(actor.map(str::to_string))
     }
 }
 

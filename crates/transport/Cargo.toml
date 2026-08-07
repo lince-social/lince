@@ -32,3 +32,7 @@ portable-pty = { workspace = true, optional = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
+# A live guest signs its Actions exactly as a browser would, so the workflow
+# test has to hold a real Ed25519 key rather than a stub.
+base64 = { workspace = true }
+ed25519-dalek = { workspace = true }

@@ -39,6 +39,30 @@ use {
 
 const DEFAULT_WEB_LISTEN_ADDR: &str = "127.0.0.1:6174";
 
+/// Whether this process serves the board UI, or only the API a logged-in
+/// client talks to.
+///
+/// `ApiOnly` is the headless-server posture (`lince --server`): a box that
+/// holds data and answers authenticated clients, but hands nobody a board.
+/// Without it, anyone who can reach the port opens `/`, gets a full working
+/// board backed by the server's own store, and drops sands onto it.
+///
+/// This is an HTTP-surface switch only. The iroh ALPNs (`lince/sync/1`,
+/// `lince/thread/1`, `lince/live/1`) authenticate contacts by Organ identity,
+/// which is a different system from local users — gating those would break
+/// peer sync, the very reason to run a server.
+///
+/// `ApiOnly` is meaningless unless local auth is on: `authenticate_headers`
+/// is a no-op when `local_auth_required` is false, so removing the board
+/// while leaving `/host/transport/ws` open would still hand any network peer
+/// an unauthenticated `act()` surface — hardening in looks only. The `lince`
+/// CLI therefore forces auth on whenever `--server` is passed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum HttpServeMode {
+    FullUi,
+    ApiOnly,
+}
+
 /// How often the organism takes a beat.
 ///
 /// This is the delivery resolution for every declared schedule: a cadence can
@@ -70,6 +94,7 @@ pub async fn serve_cell_api_only(
     local_auth_required: bool,
     staged_setup: Option<DesktopInstallSetup>,
     bound_addr_sender: Option<oneshot::Sender<SocketAddr>>,
+    mode: HttpServeMode,
 ) -> Result<(), IoError> {
     use axum::{
         Json,
@@ -132,7 +157,7 @@ pub async fn serve_cell_api_only(
             .ok_or_else(|| (StatusCode::UNAUTHORIZED, "Missing JWT".into()))?;
         let claims = utils::auth::decode_jwt(state.jwt_secret.as_str(), &token)
             .map_err(|error| (StatusCode::UNAUTHORIZED, error.to_string()))?;
-        let user = store::auth::user_by_id(&state.store.pool, claims.sub as i64)
+        let user = store::auth::user_by_uid(&state.store.pool, &claims.sub)
             .await
             .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?
             .ok_or_else(|| {
@@ -152,7 +177,7 @@ pub async fn serve_cell_api_only(
         {
             return Err((StatusCode::UNAUTHORIZED, "Token auth data is stale".into()));
         }
-        Ok(Some(claims.sub.to_string()))
+        Ok(Some(claims.sub))
     }
 
     /// Best-effort viewer resolution for the SSR bootstrap: unlike
@@ -169,12 +194,12 @@ pub async fn serve_cell_api_only(
         }
         let token = bearer_token(headers).ok().flatten()?;
         let claims = utils::auth::decode_jwt(state.jwt_secret.as_str(), &token).ok()?;
-        let user = store::auth::user_by_id(&state.store.pool, claims.sub as i64)
+        let user = store::auth::user_by_uid(&state.store.pool, &claims.sub)
             .await
             .ok()
             .flatten()?;
         Some(ViewerBootstrap {
-            id: user.id.to_string(),
+            id: user.uid.clone(),
             username: user.username,
             name: user.name,
             role: user.role,
@@ -249,7 +274,7 @@ pub async fn serve_cell_api_only(
         }
         let token = utils::auth::issue_jwt(
             state.jwt_secret.as_str(),
-            user.id as u64,
+            &user.uid,
             &user.username,
             user.role_id as u64,
             &user.role,
@@ -1249,6 +1274,7 @@ pub async fn serve_cell_api_only(
         local_auth_required,
         &local_base_url,
         staged_setup.as_ref(),
+        mode == HttpServeMode::ApiOnly,
     )
     .await?;
     let engine = Arc::new(
@@ -1387,47 +1413,7 @@ pub async fn serve_cell_api_only(
     };
 
     let static_dir = crate::infrastructure::paths::static_dir();
-    let router = axum::Router::new()
-        .route("/", get(index))
-        .route("/favicon.ico", get(static_assets::favicon))
-        .route("/board/frame.js", get(static_assets::frame_js))
-        .route("/board/editor.js", get(static_assets::editor_js))
-        .route("/board/lynx-ui.css", get(static_assets::lynx_ui_css))
-        .route("/board/lynx-ui.js", get(static_assets::lynx_ui_js))
-        .route(
-            "/board/collab-editor.js",
-            get(static_assets::collab_editor_js),
-        )
-        .route("/board/vendor/d3.v7.min.js", get(static_assets::d3_js))
-        .route(
-            "/board/vendor/d3.LICENSE.txt",
-            get(static_assets::d3_license),
-        )
-        .route(
-            "/board/vendor/mermaid.min.js",
-            get(static_assets::mermaid_js),
-        )
-        .route(
-            "/board/vendor/mermaid.LICENSE.txt",
-            get(static_assets::mermaid_license),
-        )
-        .route(
-            "/board/vendor/loro-index.js",
-            get(static_assets::loro_index_js),
-        )
-        .route(
-            "/board/vendor/loro_wasm.js",
-            get(static_assets::loro_wasm_js),
-        )
-        .route(
-            "/board/vendor/loro_wasm_bg.wasm",
-            get(static_assets::loro_wasm_bg),
-        )
-        .route(
-            "/board/vendor/loro.LICENSE.txt",
-            get(static_assets::loro_license),
-        )
-        .route("/api/auth/login", post(login))
+    let router = axum::Router::new().route("/api/auth/login", post(login))
         .route("/auth/login", post(login))
         .route("/host/auth/login", post(login))
         .route("/organ", get(list_organs))
@@ -1461,16 +1447,12 @@ pub async fn serve_cell_api_only(
             "/host/packages/dna/publications/{organ_id}/{record_id}",
             axum::routing::delete(delete_dna_publication),
         )
-        .route("/sand/{*path}", get(sand_asset))
         .route("/host/media", post(upload_media))
         .route("/host/media/{name}", get(get_media))
         .route("/organ/nearby", get(organ_nearby))
         .route("/organ/pair", post(organ_pair))
         .route("/organ/conversation/offer", post(offer_nearby_conversation))
         .route("/organ/qr-decode", post(qr_decode))
-        // The guest half of live mode: this Cell relays a local browser
-        // socket to a contact Cell over iroh (Ontology §11).
-        .route("/live/{organ}/connect", get(live_connect))
         .route("/organ/open-promises", get(organ_open_promises))
         .route(
             "/organ/transfers/envelopes",
@@ -1501,8 +1483,70 @@ pub async fn serve_cell_api_only(
     // comment) — the plain `lince` CLI never registers this route.
     #[cfg(feature = "native-picker")]
     let router = router.route("/host/media/pick", post(pick_media));
+
+    // Everything that hands a visitor a working board. Registered as one
+    // block so the hardened surface is auditable at a glance — a board route
+    // added to the chain above would silently appear on a `--server` box,
+    // whereas one added here cannot.
+    let serve_ui = mode == HttpServeMode::FullUi;
+    let router = if serve_ui {
+        router
+            .route("/", get(index))
+            .route("/favicon.ico", get(static_assets::favicon))
+            .route("/board/frame.js", get(static_assets::frame_js))
+            .route("/board/editor.js", get(static_assets::editor_js))
+            .route("/board/lynx-ui.css", get(static_assets::lynx_ui_css))
+            .route("/board/lynx-ui.js", get(static_assets::lynx_ui_js))
+            .route(
+                "/board/collab-editor.js",
+                get(static_assets::collab_editor_js),
+            )
+            .route("/board/vendor/d3.v7.min.js", get(static_assets::d3_js))
+            .route(
+                "/board/vendor/d3.LICENSE.txt",
+                get(static_assets::d3_license),
+            )
+            .route(
+                "/board/vendor/mermaid.min.js",
+                get(static_assets::mermaid_js),
+            )
+            .route(
+                "/board/vendor/mermaid.LICENSE.txt",
+                get(static_assets::mermaid_license),
+            )
+            .route(
+                "/board/vendor/loro-index.js",
+                get(static_assets::loro_index_js),
+            )
+            .route(
+                "/board/vendor/loro_wasm.js",
+                get(static_assets::loro_wasm_js),
+            )
+            .route(
+                "/board/vendor/loro_wasm_bg.wasm",
+                get(static_assets::loro_wasm_bg),
+            )
+            .route(
+                "/board/vendor/loro.LICENSE.txt",
+                get(static_assets::loro_license),
+            )
+            .route("/sand/{*path}", get(sand_asset))
+            // The guest half of live mode: this Cell relays a LOCAL BROWSER
+            // socket out to a contact Cell over iroh (Ontology §11). A
+            // headless server has no such browser, so the route is dead
+            // weight there — the inbound half a client uses to reach THIS
+            // Cell is `/host/transport/ws`, which stays in both modes.
+            .route("/live/{organ}/connect", get(live_connect))
+    } else {
+        router
+    };
+
     let router = router.with_state(state.clone());
-    let app = if static_dir.exists() {
+    // Both arms serve the same tree — skipping only the `nest_service` branch
+    // would leave the `route(...)` fallback serving every static asset.
+    let app = if !serve_ui {
+        router
+    } else if static_dir.exists() {
         router
             .nest_service("/static", ServeDir::new(&static_dir))
             .nest_service("/host/static", ServeDir::new(&static_dir))
@@ -1539,7 +1583,12 @@ pub async fn serve_cell_api_only(
     // the endpoint instead of mutating it — the File Sync supervisor pattern,
     // applied to the one setting that cannot be changed in place.
     crate::presentation::http::wire_supervisor::spawn(state.clone(), key_dir.clone());
-    status(format!("Cell API listening at http://{local_addr}"));
+    status(match mode {
+        HttpServeMode::FullUi => format!("Cell API listening at http://{local_addr}"),
+        HttpServeMode::ApiOnly => format!(
+            "Cell API listening at http://{local_addr} (server mode: no board UI, login required)"
+        ),
+    });
     axum::serve(listener, app).await.map_err(IoError::other)
 }
 

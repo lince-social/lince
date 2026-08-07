@@ -1116,16 +1116,9 @@ pub enum Action {
         role: String,
     },
     AssignRole {
-        /// The target `app_user.id`, as a string (same convention as `actor`).
+        /// The target Person's uid (same convention as `actor`).
         user: String,
         role: String,
-    },
-    /// Establish which Ledger Person an authenticated app user may represent.
-    /// This is an administrative identity decision, not a client-supplied
-    /// Transfer field.
-    AssignUserPerson {
-        user: String,
-        person: String,
     },
     GrantPermission {
         role: String,
@@ -7855,7 +7848,10 @@ impl Engine {
                     .ok_or_else(|| EngineError::Consequence(format!("unknown role `{role}`")))?;
                 let password_hash =
                     utils::auth::hash_password(&password).map_err(EngineError::Io)?;
-                let user_id = store::auth::create_user(
+                // A user IS a Person. Creating one creates their record through
+                // the ordinary path — so it has op-log history and syncs like
+                // any other — and then gives it a way to log in here.
+                let person_uid = store::auth::create_person_login(
                     &self.store.pool,
                     &name,
                     &username,
@@ -7863,41 +7859,34 @@ impl Engine {
                     role_id,
                 )
                 .await?;
-                outcome.created = Some(user_id.to_string());
+                // Same creation fact `CreateRecord` drops, for the same
+                // reason: without one this Person commits no fact and stays
+                // invisible to every subscribed sand until something else
+                // touches it.
+                outcome.facts = self
+                    .append(
+                        NewFact {
+                            actor_uid: actor,
+                            ..NewFact::quantity_f64(person_uid.clone(), 0.0, Cause::user_edit())
+                        },
+                        now,
+                    )
+                    .await?;
+                outcome.created = Some(person_uid);
             }
             Action::AssignRole { user, role } => {
                 self.require_permission(actor.as_deref(), "user:assign_role")
                     .await?;
-                let user_id: i64 = user
-                    .parse()
-                    .map_err(|_| EngineError::Consequence(format!("bad user id `{user}`")))?;
+                let person = self.resolve(&user).await?;
                 let role_id = store::auth::role_by_name(&self.store.pool, &role)
                     .await?
                     .ok_or_else(|| EngineError::Consequence(format!("unknown role `{role}`")))?;
-                store::auth::set_user_role(&self.store.pool, user_id, role_id).await?;
-            }
-            Action::AssignUserPerson { user, person } => {
-                self.require_permission(actor.as_deref(), "user:assign_person")
-                    .await?;
-                let user_id: i64 = user
-                    .parse()
-                    .map_err(|_| EngineError::Consequence(format!("bad user id `{user}`")))?;
-                if store::auth::user_by_id(&self.store.pool, user_id)
-                    .await?
-                    .is_none()
-                {
-                    return Err(EngineError::Consequence(format!("unknown user `{user}`")));
+                if !store::auth::has_credential(&self.store.pool, &person).await? {
+                    return Err(EngineError::Consequence(format!(
+                        "`{user}` has no login here, so there is no role to set"
+                    )));
                 }
-                let person = self.resolve(&person).await?;
-                let record = store::records::get(&self.store.pool, &person)
-                    .await?
-                    .ok_or_else(|| EngineError::UnknownRecord(person.clone()))?;
-                if record.kind != RecordKind::Person.as_str() {
-                    return Err(EngineError::Consequence(
-                        "an app user can only be assigned to a person record".into(),
-                    ));
-                }
-                store::auth::set_user_person(&self.store.pool, user_id, &person).await?;
+                store::auth::set_user_role(&self.store.pool, &person, role_id).await?;
             }
             Action::GrantPermission { role, permission } => {
                 self.require_permission(actor.as_deref(), "permission:assign")
@@ -7943,10 +7932,7 @@ impl Engine {
     /// local, and it's the one place that parses the actor-id-as-string
     /// convention shared with `created_by`/provenance.
     async fn actor_user(&self, actor: &str) -> Result<store::auth::AuthUser, EngineError> {
-        let user_id: i64 = actor
-            .parse()
-            .map_err(|_| EngineError::Forbidden("unrecognized actor".into()))?;
-        store::auth::user_by_id(&self.store.pool, user_id)
+        store::auth::user_by_uid(&self.store.pool, actor)
             .await?
             .ok_or_else(|| EngineError::Forbidden("unrecognized actor".into()))
     }
@@ -7996,10 +7982,10 @@ impl Engine {
         let Some(actor) = actor else {
             return Ok(());
         };
-        let Ok(user_id) = actor.parse::<i64>() else {
-            return Ok(());
-        };
-        let Some(user) = store::auth::user_by_id(&self.store.pool, user_id).await? else {
+        // A Person with no credential holds no local role — a contact, or a
+        // remote Organ's granted login. Lenient means lenient: they pass here
+        // and are gated by visibility instead.
+        let Some(user) = store::auth::user_by_uid(&self.store.pool, actor).await? else {
             return Ok(());
         };
         if user.permissions.iter().any(|p| p == permission) {
@@ -8010,24 +7996,18 @@ impl Engine {
         )))
     }
 
-    /// Resolve the authenticated app user to the Person they are allowed to
-    /// represent. Local no-auth mode stays trusted and returns `None`; an
-    /// authenticated session without an explicit binding is blocked instead
-    /// of accepting a Person uid supplied by the client.
+    /// The Person an actor acts as.
+    ///
+    /// Now an identity function by construction: there is one human reference,
+    /// so an authenticated actor IS a Person uid. This used to resolve an app
+    /// user through `app_user_person` and could fail with "no assigned person
+    /// identity" — a state that can no longer be represented. Local no-auth
+    /// mode still returns `None`, which every caller reads as "trusted local".
     pub(crate) async fn actor_person(
         &self,
         actor: Option<&str>,
     ) -> Result<Option<String>, EngineError> {
-        let Some(actor) = actor else {
-            return Ok(None);
-        };
-        let user = self.actor_user(actor).await?;
-        store::auth::person_for_user(&self.store.pool, user.id)
-            .await?
-            .map(Some)
-            .ok_or_else(|| {
-                EngineError::Forbidden("authenticated user has no assigned person identity".into())
-            })
+        Ok(actor.map(str::to_string))
     }
 
     pub(crate) async fn canonical_transfer_action_targets(
@@ -9442,7 +9422,6 @@ impl Engine {
             | Action::CreateRole { .. }
             | Action::CreateUser { .. }
             | Action::AssignRole { .. }
-            | Action::AssignUserPerson { .. }
             | Action::GrantPermission { .. }
             | Action::RevokePermission { .. } => return None,
         })

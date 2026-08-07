@@ -194,18 +194,16 @@ async fn grant_actions_require_the_karma_permission() {
     let bystander = store::auth::ensure_role(&engine.store.pool, "grant-bystander")
         .await
         .unwrap();
-    let user_id = store::auth::create_user(
+    // The Person already exists; a credential is what lets them log in.
+    let user_id = store::auth::create_credential(
         &engine.store.pool,
-        "Bystander",
+        PERSON_UID,
         "grant-bystander",
         "hash",
         bystander,
     )
     .await
     .unwrap();
-    store::auth::set_user_person(&engine.store.pool, user_id, PERSON_UID)
-        .await
-        .unwrap();
 
     let denied = engine
         .act_at(
@@ -376,7 +374,7 @@ async fn person_record(engine: &Engine, person_uid: &str, slug: &str) {
 }
 
 /// An app user with `karma:create` and `karma:update`, bound to one Person.
-async fn privileged_user(engine: &Engine, person_uid: &str, username: &str) -> i64 {
+async fn privileged_user(engine: &Engine, person_uid: &str, username: &str) -> String {
     person_record(engine, person_uid, username).await;
     let role_id = store::auth::ensure_role(&engine.store.pool, &format!("{username}-role"))
         .await
@@ -389,12 +387,10 @@ async fn privileged_user(engine: &Engine, person_uid: &str, username: &str) -> i
             .await
             .unwrap();
     }
-    let user_id = store::auth::create_user(&engine.store.pool, username, username, "hash", role_id)
-        .await
-        .unwrap();
-    store::auth::set_user_person(&engine.store.pool, user_id, person_uid)
-        .await
-        .unwrap();
+    let user_id =
+        store::auth::create_credential(&engine.store.pool, person_uid, username, "hash", role_id)
+            .await
+            .unwrap();
     user_id
 }
 

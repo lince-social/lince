@@ -45,8 +45,6 @@
              color: #c9d1d9; padding: .25rem .6rem; font-size: .75rem; cursor: pointer; }
     button:hover { border-color: #1f4b8e; }
     button:disabled { opacity: .5; cursor: default; }
-    .person-select { width: min(100%, 18rem); }
-    .person-select.unassigned { color: #d29922; }
     @media (max-width: 620px) {
       #users-table, #users-table tbody, #users-table tr, #users-table td { display: block; }
       #users-table thead { display: none; }
@@ -54,7 +52,6 @@
       #users-table td { border: 0; padding: .18rem .3rem; }
       #users-table td::before { content: attr(data-label); display: inline-block; width: 5rem;
                                 color: #6e7681; font-size: .68rem; text-transform: uppercase; }
-      .person-select { width: calc(100% - 5.4rem); }
     }
   </style>
 </head>
@@ -80,7 +77,7 @@
     <h2>Users</h2>
     <div class="body">
       <table id="users-table">
-        <thead><tr><th>Username</th><th>Name</th><th>Role</th><th>Person</th></tr></thead>
+        <thead><tr><th>Username</th><th>Name</th><th>Role</th></tr></thead>
         <tbody id="users-body"></tbody>
       </table>
       <div class="row">
@@ -108,7 +105,6 @@
 
     let roles = [];   // { kind:"role", id, name, permissions: [] }
     let users = [];   // { kind:"user", id, username, name, role, person }
-    let people = [];  // Ledger Person records available to this viewer
     let catalog = []; // permission keys ("subject:action")
     let unsubscribeAuth = null;
 
@@ -122,15 +118,6 @@
         render();
       });
     }
-
-    H.subscribeProtein("auth-people", {
-      source: "record",
-      where: [{ kind_eq: "person" }],
-      limit: 2000,
-    }, ({ rows }) => {
-      people = (rows || []).filter((row) => row && row.uid);
-      renderUsers();
-    });
 
     async function act(action) {
       $("error").textContent = "";
@@ -248,60 +235,9 @@
         });
         roleCell.appendChild(select);
 
-        const personCell = document.createElement("td");
-        personCell.dataset.label = "Person";
-        const personSelect = document.createElement("select");
-        personSelect.className = "person-select";
-        personSelect.setAttribute("aria-label", `Person represented by ${user.username}`);
-
-        const unassigned = document.createElement("option");
-        unassigned.value = "";
-        unassigned.textContent = "Not assigned";
-        unassigned.disabled = Boolean(user.person);
-        personSelect.appendChild(unassigned);
-
-        const assignedElsewhere = new Map(
-          users.filter((candidate) => candidate.person && candidate.id !== user.id)
-            .map((candidate) => [candidate.person, candidate.username]),
-        );
-        const visiblePeople = new Map(people.map((person) => [person.uid, person]));
-        if (user.person && !visiblePeople.has(user.person)) {
-          visiblePeople.set(user.person, {
-            uid: user.person,
-            head: user.person_head,
-            slug: user.person_slug,
-          });
-        }
-        for (const person of [...visiblePeople.values()].sort((a, b) => {
-          const aLabel = a.head || a.slug || a.uid;
-          const bLabel = b.head || b.slug || b.uid;
-          return aLabel.localeCompare(bLabel);
-        })) {
-          const owner = assignedElsewhere.get(person.uid);
-          const option = document.createElement("option");
-          option.value = person.uid;
-          option.textContent = `${person.head || person.slug || person.uid}${owner ? ` · ${owner}` : ""}`;
-          option.disabled = Boolean(owner);
-          personSelect.appendChild(option);
-        }
-        personSelect.value = user.person || "";
-        personSelect.classList.toggle("unassigned", !user.person);
-        personSelect.addEventListener("change", () => {
-          const person = personSelect.value;
-          if (!person) return;
-          personSelect.disabled = true;
-          act({ action: "assign-user-person", user: String(user.id), person })
-            .catch(() => {
-              personSelect.disabled = false;
-              personSelect.value = user.person || "";
-            });
-        });
-        personCell.appendChild(personSelect);
-
         tr.appendChild(uname);
         tr.appendChild(name);
         tr.appendChild(roleCell);
-        tr.appendChild(personCell);
         body.appendChild(tr);
       }
       renderRoleOptions($("u-role"), null);

@@ -554,7 +554,7 @@ async fn threads_include_resolves_sender_name_from_the_actor() {
     store::auth::grant(&e.store.pool, role_id, create_permission_id)
         .await
         .unwrap();
-    let user_id = store::auth::create_user(
+    let user_id = store::auth::create_person_login(
         &e.store.pool,
         "Ana Diaz",
         "ana",
@@ -806,7 +806,7 @@ async fn auth_source_is_gated_by_read_permission_for_a_remote_subject() {
         .await
         .unwrap();
     let bystander =
-        store::auth::create_user(&e.store.pool, "B", "bystander", "hash", bystander_role)
+        store::auth::create_person_login(&e.store.pool, "B", "bystander", "hash", bystander_role)
             .await
             .unwrap();
     let reader_role = store::auth::ensure_role(&e.store.pool, "reader")
@@ -818,7 +818,7 @@ async fn auth_source_is_gated_by_read_permission_for_a_remote_subject() {
     store::auth::grant(&e.store.pool, reader_role, perm_id)
         .await
         .unwrap();
-    let reader = store::auth::create_user(&e.store.pool, "R", "reader", "hash", reader_role)
+    let reader = store::auth::create_person_login(&e.store.pool, "R", "reader", "hash", reader_role)
         .await
         .unwrap();
 

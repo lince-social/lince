@@ -60,7 +60,6 @@ pub const ALL_PERMISSIONS: &[PermissionKey] = &[
     PermissionKey::new("user", "update_self"),
     PermissionKey::new("user", "delete"),
     PermissionKey::new("user", "assign_role"),
-    PermissionKey::new("user", "assign_person"),
     PermissionKey::new("role", "create"),
     PermissionKey::new("role", "read"),
     PermissionKey::new("role", "update"),
@@ -118,7 +117,9 @@ where
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuthClaims {
-    pub sub: u64,
+    /// The Person uid. One human reference: the same value that lands on
+    /// facts as the actor and gates reads in `visible_targets`.
+    pub sub: String,
     pub username: String,
     pub role_id: u64,
     pub role: String,
@@ -150,7 +151,7 @@ pub fn verify_password(password: &str, password_hash: &str) -> Result<bool, Erro
 
 pub fn issue_jwt(
     secret: &str,
-    user_id: u64,
+    person_uid: &str,
     username: &str,
     role_id: u64,
     role: &str,
@@ -165,7 +166,7 @@ pub fn issue_jwt(
         .as_secs() as usize;
 
     let claims = AuthClaims {
-        sub: user_id,
+        sub: person_uid.to_string(),
         username: username.to_string(),
         role_id,
         role: role.to_string(),

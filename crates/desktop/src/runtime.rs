@@ -40,6 +40,7 @@ pub async fn start_desktop_server() -> Result<DesktopRuntime, Error> {
             bootstrap.auth_enabled,
             staged_setup,
             Some(addr_tx),
+            web::HttpServeMode::FullUi,
         )
         .await
         {

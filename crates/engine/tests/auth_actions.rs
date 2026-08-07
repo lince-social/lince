@@ -12,7 +12,7 @@ async fn engine() -> Engine {
     Engine::open_memory().await.expect("engine opens")
 }
 
-async fn privileged_actor(e: &Engine, permission: &str) -> i64 {
+async fn privileged_actor(e: &Engine, permission: &str) -> String {
     let role_id = store::auth::ensure_role(&e.store.pool, "wields-it")
         .await
         .unwrap();
@@ -23,7 +23,7 @@ async fn privileged_actor(e: &Engine, permission: &str) -> i64 {
     store::auth::grant(&e.store.pool, role_id, perm_id)
         .await
         .unwrap();
-    store::auth::create_user(&e.store.pool, "Wields It", "wields-it", "hash", role_id)
+    store::auth::create_person_login(&e.store.pool, "Wields It", "wields-it", "hash", role_id)
         .await
         .unwrap()
 }
@@ -59,7 +59,7 @@ async fn each_auth_action_denies_an_actor_without_its_permission() {
         .await
         .unwrap();
     let bystander =
-        store::auth::create_user(&e.store.pool, "Bystander", "bystander", "hash", bystander)
+        store::auth::create_person_login(&e.store.pool, "Bystander", "bystander", "hash", bystander)
             .await
             .unwrap();
     store::auth::ensure_role(&e.store.pool, "existing")
@@ -142,7 +142,7 @@ async fn create_role_then_create_user_wires_a_working_login() {
     store::auth::grant(&e.store.pool, role_id, perm_id)
         .await
         .unwrap();
-    let creator = store::auth::create_user(&e.store.pool, "Creator", "creator", "hash", role_id)
+    let creator = store::auth::create_person_login(&e.store.pool, "Creator", "creator", "hash", role_id)
         .await
         .unwrap();
 
@@ -169,9 +169,9 @@ async fn create_role_then_create_user_wires_a_working_login() {
         )
         .await
         .expect("user:create is granted");
-    let user_id: i64 = outcome.created.expect("created a user").parse().unwrap();
+    let user_id = outcome.created.expect("created a user");
 
-    let user = store::auth::user_by_id(&e.store.pool, user_id)
+    let user = store::auth::user_by_uid(&e.store.pool, &user_id)
         .await
         .unwrap()
         .expect("the new user exists");
@@ -220,7 +220,7 @@ async fn assign_role_moves_a_user_between_roles() {
     store::auth::grant(&e.store.pool, to_role, perm_id)
         .await
         .unwrap();
-    let user_id = store::auth::create_user(&e.store.pool, "Amy", "amy", "hash", from_role)
+    let user_id = store::auth::create_person_login(&e.store.pool, "Amy", "amy", "hash", from_role)
         .await
         .unwrap();
 
@@ -234,7 +234,7 @@ async fn assign_role_moves_a_user_between_roles() {
     .await
     .expect("local mode assigns roles freely");
 
-    let user = store::auth::user_by_id(&e.store.pool, user_id)
+    let user = store::auth::user_by_uid(&e.store.pool, &user_id)
         .await
         .unwrap()
         .unwrap();

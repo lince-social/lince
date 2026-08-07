@@ -5,10 +5,9 @@
   ...
 }:
 
-let
-  lincePackage = self.packages.${pkgs.system}.lince;
-in
 {
+  imports = [ ./lince-module.nix ];
+
   system.stateVersion = "26.05";
 
   nix.settings.experimental-features = [
@@ -27,40 +26,27 @@ in
 
   services.openssh.enable = true;
 
-  users.users.lince = {
-    isSystemUser = true;
-    group = "lince";
-    home = "/var/lib/lince";
-    createHome = true;
-  };
-
-  users.groups.lince = { };
-
   environment.systemPackages = with pkgs; [
     git
     curl
     sqlite
   ];
 
-  systemd.services.lince = {
-    description = "Lince Social HTTP API";
-    after = [ "network.target" ];
-    wantedBy = [ "multi-user.target" ];
-
-    serviceConfig = {
-      Type = "simple";
-      User = "lince";
-      Group = "lince";
-      WorkingDirectory = "/var/lib/lince";
-      StateDirectory = "lince";
-      ExecStart = "${lincePackage}/bin/lince --listen-addr 127.0.0.1:6174 --http-api-only";
-      Restart = "always";
-      RestartSec = 3;
-    };
-
-    environment = {
-      XDG_CONFIG_HOME = "/var/lib/lince/.config";
-    };
+  # Was `--http-api-only`, a flag that stopped existing in the May 2026
+  # refactor. Nix does not validate unknown argv and the binary ignored it, so
+  # this box had been serving the FULL BOARD to anyone reaching Caddy — the
+  # opposite of what this line was here to do. `--server` (via mode) is the
+  # working replacement.
+  services.lince = {
+    enable = true;
+    package = self.packages.${pkgs.system}.lince;
+    mode = "server";
+    listenAddr = "127.0.0.1:6174";
+    # Read on first boot only. Place it out of band (agenix/sops, or root-owned
+    # mode 0600) — never a Nix string, which would be world-readable in the
+    # store. Until it exists the unit fails fast rather than coming up as a
+    # login wall with no accounts.
+    initialAdminPasswordFile = "/var/lib/lince/initial-admin-password";
   };
 
   services.caddy = {

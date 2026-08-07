@@ -9,7 +9,7 @@ pub(crate) const FEATURE_FLAG: &str = "sand.permissions";
 // doc comment),
 // but reads/writes it the same way every other sand does. The engine
 // enforces every one of those actions against the matching permission key
-// (role:create, user:create, user:assign_role, user:assign_person,
+// (role:create, user:create, user:assign_role,
 // permission:assign); this sand is a UI on top, not a second enforcement
 // point.
 const HTML: &str = include_str!("permissions.html");

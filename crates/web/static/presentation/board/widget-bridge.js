@@ -33,6 +33,8 @@ const FLAT_COLLAB_STATE = "lince:collab-state";
 const FLAT_COLLAB_ACK = "lince:collab-ack";
 const FLAT_COLLAB_RESET = "lince:collab-reset";
 const FLAT_LIVE = "lince:live";
+const FLAT_ENTER_LIVE = "lince:enter-live";
+const FLAT_LIVE_ORGAN = "lince:live-organ";
 const FLAT_PATCH_CARD_STATE = "lince:patch-card-state";
 const FLAT_ARCHIVE_WORKSPACE = "lince:archive-workspace";
 const FLAT_TERMINAL_OPEN = "lince:terminal-open";
@@ -556,6 +558,14 @@ export function createWidgetBridge({
       postFrame(instanceId, { type: FLAT_LIVE, live: true });
     }
   });
+  // Which Cell the board is driving. Every sand is told, because a sand that
+  // does not know it is looking at someone else's Organ will present their
+  // data as yours.
+  transport.onLiveOrgan((organUid) => {
+    for (const instanceId of flatFrames) {
+      postFrame(instanceId, { type: FLAT_LIVE_ORGAN, organ: organUid });
+    }
+  });
   transport.onLive((live) => {
     if (live) {
       return;
@@ -964,6 +974,9 @@ export function createWidgetBridge({
     flatFrames.add(instanceId);
     postFrame(instanceId, { type: FLAT_LIVE, live: transport.isReady() });
     postFrame(instanceId, { type: FLAT_SIGNING_STATE, ...signingState });
+    // A sand loading DURING live mode must learn whose Cell it is showing,
+    // not just sands that were already open when we switched.
+    postFrame(instanceId, { type: FLAT_LIVE_ORGAN, organ: transport.getLiveOrgan() });
     // Also re-push THIS frame's current bridge-state/cardState now (2026-07-18).
     // A cold page load creates the iframe and calls the bridge's initial
     // render() essentially back-to-back — postMessage to a still-loading
@@ -1227,6 +1240,14 @@ export function createWidgetBridge({
     // FLAT_ACTION. Both route through the one Action handler.
     if (data.type === PROTEIN_ACTION || data.type === FLAT_ACTION) {
       handleProteinAction(data);
+      return;
+    }
+
+    // Enter live mode on another Organ, or `organ: null` to come home. This
+    // repoints the board's ONE socket; nothing else about a sand changes,
+    // because the remote Cell answers the same frames.
+    if (data.type === FLAT_ENTER_LIVE) {
+      transport.setLiveOrgan(data.organ || null);
       return;
     }
 

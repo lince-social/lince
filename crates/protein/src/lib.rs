@@ -822,20 +822,18 @@ async fn actor_can_read_source(
     let Some(subject) = subject else {
         return Ok(true); // the local Cell itself: unrestricted
     };
-    let Ok(user_id) = subject.parse::<i64>() else {
-        return Ok(true); // a remote organ: visible_targets is the gate, not this
-    };
-    let Some(user) = store::auth::user_by_id(&store.pool, user_id).await? else {
-        return Ok(false);
+    // The subject is always a Person uid now. A Person with no credential —
+    // a contact, or the Person a remote Organ's login named — holds no role
+    // here, so `visible_targets` is their only gate, exactly as it was when
+    // this branch keyed off "the subject did not parse as an integer".
+    let Some(user) = store::auth::user_by_uid(&store.pool, subject).await? else {
+        return Ok(true);
     };
     Ok(user.permissions.iter().any(|p| keys.contains(&p.as_str())))
 }
 
 async fn actor_can_read_auth(store: &Store, actor: &str) -> Result<bool, ProteinError> {
-    let Ok(user_id) = actor.parse::<i64>() else {
-        return Ok(false);
-    };
-    let Some(user) = store::auth::user_by_id(&store.pool, user_id).await? else {
+    let Some(user) = store::auth::user_by_uid(&store.pool, actor).await? else {
         return Ok(false);
     };
     Ok(user
@@ -854,19 +852,17 @@ async fn execute_auth(store: &Store) -> Result<Vec<Value>, ProteinError> {
             "permissions": permissions,
         }));
     }
-    for (id, username, name, role) in store::auth::list_users(&store.pool).await? {
-        let person = store::auth::person_for_user(&store.pool, id).await?;
-        let person_record = match person.as_deref() {
-            Some(uid) => store::records::get(&store.pool, uid).await?,
-            None => None,
-        };
+    for (uid, username, name, role) in store::auth::list_users(&store.pool).await? {
+        // `id` and `person` are the same value now and both are kept: sands
+        // read one or the other, and they were never allowed to disagree.
+        let person_record = store::records::get(&store.pool, &uid).await?;
         out.push(json!({
             "kind": "user",
-            "id": id.to_string(),
+            "id": uid,
             "username": username,
             "name": name,
             "role": role,
-            "person": person,
+            "person": uid,
             "person_head": person_record.as_ref().map(|record| record.head.as_str()),
             "person_slug": person_record.as_ref().and_then(|record| record.slug.as_deref()),
         }));
@@ -2291,10 +2287,8 @@ async fn creator_info(
     let Some(actor_uid) = store::facts::creator_uid(&store.pool, record_uid).await? else {
         return Ok((None, None));
     };
-    let Ok(user_id) = actor_uid.parse::<i64>() else {
-        return Ok((None, None));
-    };
-    let Some(user) = store::auth::user_by_id(&store.pool, user_id).await? else {
+    // The creator is a Person uid; a credential is how we get their username.
+    let Some(user) = store::auth::user_by_uid(&store.pool, &actor_uid).await? else {
         return Ok((None, None));
     };
     let name = if user.name.trim().is_empty() {
@@ -9193,19 +9187,16 @@ impl TransferViewer {
                 ..Self::default()
             });
         };
-        let Ok(user_id) = subject.parse::<i64>() else {
+        // A Person with no credential (a contact, or a remote Organ's granted
+        // login) is recognized but role-less: they are still a real identity,
+        // they just hold no local permissions.
+        let Some(user) = store::auth::user_by_uid(&store.pool, subject).await? else {
             return Ok(Self {
                 subject: Some(subject.to_string()),
                 ..Self::default()
             });
         };
-        let Some(user) = store::auth::user_by_id(&store.pool, user_id).await? else {
-            return Ok(Self {
-                subject: Some(subject.to_string()),
-                ..Self::default()
-            });
-        };
-        let person = store::auth::person_for_user(&store.pool, user.id).await?;
+        let person = Some(user.uid.clone());
         Ok(Self {
             local: false,
             recognized: true,

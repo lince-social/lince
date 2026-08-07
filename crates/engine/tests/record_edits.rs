@@ -823,7 +823,7 @@ async fn delete_record_is_distinct_from_deactivate() {
     assert_ne!(new_uid, uid);
 }
 
-async fn user_with(e: &Engine, name: &str, username: &str, perms: &[&str]) -> i64 {
+async fn user_with(e: &Engine, name: &str, username: &str, perms: &[&str]) -> String {
     let role_id = store::auth::ensure_role(&e.store.pool, username)
         .await
         .unwrap();
@@ -836,7 +836,7 @@ async fn user_with(e: &Engine, name: &str, username: &str, perms: &[&str]) -> i6
             .await
             .unwrap();
     }
-    store::auth::create_user(
+    store::auth::create_person_login(
         &e.store.pool,
         name,
         username,

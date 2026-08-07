@@ -8003,6 +8003,7 @@ dependencies = [
  "axum",
  "base64 0.22.1",
  "dirs 6.0.0",
+ "ed25519-dalek 2.2.0",
  "engine",
  "futures",
  "iroh",

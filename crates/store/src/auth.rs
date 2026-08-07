@@ -1,8 +1,21 @@
-//! The permission/role/user workflow tables. Native structured state (not Ledger
-//! records): a `role` groups `permission`s via `role_permission`, and an
-//! `app_user` logs in with a hashed password and holds one role. The `admin`
-//! role is the all-permissions role; the first-run bootstrap creates the initial
-//! admin (see `web` cell bootstrap).
+//! The permission/role workflow tables, and the local credential that lets a
+//! Person log in here.
+//!
+//! There is ONE human reference in Lince: the Person record. A
+//! `person_credential` row is not a second identity — it is a way to prove you
+//! are one of them over HTTP, holding a username, a password hash and a role.
+//! Persons without one are perfectly ordinary: your contacts, and the Person a
+//! `GrantOrganLogin` names for a remote Organ, all exist with no credential and
+//! act through the iroh handshake instead (see `store::logins`).
+//!
+//! Credentials are LOCAL AND NEVER SYNCED. Person records travel to contacts;
+//! password hashes must not, which is the whole reason this is a side table
+//! rather than columns on the record.
+//!
+//! Roles are native structured state, not Ledger records: a `role` groups
+//! `permission`s via `role_permission`. The `admin` role is the
+//! all-permissions role; the first-run bootstrap creates the initial admin
+//! (see `web` cell bootstrap).
 
 use sqlx::SqlitePool;
 
@@ -69,63 +82,33 @@ pub async fn role_by_name(pool: &SqlitePool, name: &str) -> Result<Option<i64>, 
         .await
 }
 
-/// Move a user to a different role (idempotent).
+/// Move a Person to a different role (idempotent).
 pub async fn set_user_role(
     pool: &SqlitePool,
-    user_id: i64,
+    person_uid: &str,
     role_id: i64,
 ) -> Result<(), StoreError> {
-    sqlx::query("UPDATE app_user SET role_id = ? WHERE id = ?")
+    sqlx::query("UPDATE person_credential SET role_id = ?, updated_at = CURRENT_TIMESTAMP WHERE person_uid = ?")
         .bind(role_id)
-        .bind(user_id)
+        .bind(person_uid)
         .execute(pool)
         .await?;
     Ok(())
 }
 
-/// Bind an authenticated app user to the Person that represents them in the
-/// Ledger. The schema keeps both sides one-to-one; reassignment is explicit,
-/// while attempting to claim another user's Person remains a constraint error.
-pub async fn set_user_person(
-    pool: &SqlitePool,
-    user_id: i64,
-    person_uid: &str,
-) -> Result<(), StoreError> {
-    sqlx::query(
-        "INSERT INTO app_user_person (user_id, person_uid) VALUES (?, ?)
-         ON CONFLICT(user_id) DO UPDATE SET
-             person_uid = excluded.person_uid,
-             assigned_at = CURRENT_TIMESTAMP",
+/// Does this Person have a way to log in here?
+///
+/// Replaces the old `user_for_person`: there is no separate user to find, only
+/// the question of whether a credential exists — which is what every caller
+/// actually wanted to know.
+pub async fn has_credential(pool: &SqlitePool, person_uid: &str) -> Result<bool, StoreError> {
+    Ok(
+        sqlx::query_scalar::<_, i64>("SELECT 1 FROM person_credential WHERE person_uid = ?")
+            .bind(person_uid)
+            .fetch_optional(pool)
+            .await?
+            .is_some(),
     )
-    .bind(user_id)
-    .bind(person_uid)
-    .execute(pool)
-    .await?;
-    Ok(())
-}
-
-/// The Ledger Person controlled by an app user, when an administrator has
-/// established that identity binding.
-pub async fn person_for_user(
-    pool: &SqlitePool,
-    user_id: i64,
-) -> Result<Option<String>, StoreError> {
-    sqlx::query_scalar("SELECT person_uid FROM app_user_person WHERE user_id = ?")
-        .bind(user_id)
-        .fetch_optional(pool)
-        .await
-}
-
-/// The app user controlling a Person. Useful for capability explanations and
-/// for rejecting attempts to assign a Person that is already represented.
-pub async fn user_for_person(
-    pool: &SqlitePool,
-    person_uid: &str,
-) -> Result<Option<i64>, StoreError> {
-    sqlx::query_scalar("SELECT user_id FROM app_user_person WHERE person_uid = ?")
-        .bind(person_uid)
-        .fetch_optional(pool)
-        .await
 }
 
 /// Every role with its granted permission keys — the role-management sand's
@@ -143,30 +126,33 @@ pub async fn list_roles(pool: &SqlitePool) -> Result<Vec<(i64, String, Vec<Strin
     Ok(out)
 }
 
-/// Every user with their role name (no password hash — this is a read
-/// surface for the role-management sand, never an auth check).
+/// Every Person who can log in here, with their role name (no password hash —
+/// this is a read surface for the role-management sand, never an auth check).
+/// The display name is the Person's own `head`, because there is no second
+/// place for a human's name to live.
 pub async fn list_users(
     pool: &SqlitePool,
-) -> Result<Vec<(i64, String, String, String)>, StoreError> {
-    sqlx::query_as::<_, (i64, String, String, Option<String>)>(
-        "SELECT u.id, u.username, u.name, r.name
-         FROM app_user u
-         LEFT JOIN role r ON r.id = u.role_id
-         ORDER BY u.username",
+) -> Result<Vec<(String, String, String, String)>, StoreError> {
+    sqlx::query_as::<_, (String, String, String, Option<String>)>(
+        "SELECT c.person_uid, c.username, p.head, r.name
+         FROM person_credential c
+         JOIN record p ON p.uid = c.person_uid
+         LEFT JOIN role r ON r.id = c.role_id
+         ORDER BY c.username",
     )
     .fetch_all(pool)
     .await
     .map(|rows| {
         rows.into_iter()
-            .map(|(id, username, name, role)| (id, username, name, role.unwrap_or_default()))
+            .map(|(uid, username, name, role)| (uid, username, name, role.unwrap_or_default()))
             .collect()
     })
 }
 
-/// Does any user currently hold the admin role?
+/// Does any Person currently hold the admin role?
 pub async fn admin_exists(pool: &SqlitePool) -> Result<bool, StoreError> {
     let count = sqlx::query_scalar::<_, i64>(
-        "SELECT COUNT(1) FROM app_user
+        "SELECT COUNT(1) FROM person_credential
          WHERE role_id = (SELECT id FROM role WHERE name = ?)",
     )
     .bind(ADMIN_ROLE)
@@ -175,25 +161,63 @@ pub async fn admin_exists(pool: &SqlitePool) -> Result<bool, StoreError> {
     Ok(count > 0)
 }
 
-/// Create a user holding `role_id`, returning its id. `password_hash` must be a
-/// hash from `utils::auth::hash_password` — this layer never sees plaintext.
-pub async fn create_user(
+/// Create a Person AND their way to log in, returning the Person's uid.
+///
+/// The common case, and the only one that used to be expressible as
+/// "create a user": a human who exists here and can sign in. Kept in one place
+/// because the two halves must not drift apart — a credential whose
+/// `person_uid` names no record is unrepresentable, and this is what makes
+/// that true at every call site.
+pub async fn create_person_login(
     pool: &SqlitePool,
     name: &str,
     username: &str,
     password_hash: &str,
     role_id: i64,
-) -> Result<i64, StoreError> {
-    Ok(sqlx::query(
-        "INSERT INTO app_user (name, username, password_hash, role_id) VALUES (?, ?, ?, ?)",
+) -> Result<String, StoreError> {
+    let person = crate::records::create(
+        pool,
+        crate::records::NewRecord {
+            slug: None,
+            kind: nucleus::RecordKind::Person,
+            head: name,
+            body: "",
+            quantity: crate::exact::zero(),
+        },
     )
-    .bind(name)
+    .await?;
+    create_credential(pool, &person.uid, username, password_hash, role_id).await
+}
+
+/// Give an existing Person a way to log in, returning their uid.
+///
+/// `password_hash` must be a hash from `utils::auth::hash_password` — this
+/// layer never sees plaintext. The Person must already exist: creating one is
+/// the engine's job (records carry op-log history and sync), which is exactly
+/// why this function takes a uid rather than a name.
+pub async fn create_credential(
+    pool: &SqlitePool,
+    person_uid: &str,
+    username: &str,
+    password_hash: &str,
+    role_id: i64,
+) -> Result<String, StoreError> {
+    sqlx::query(
+        "INSERT INTO person_credential (person_uid, username, password_hash, role_id)
+         VALUES (?, ?, ?, ?)
+         ON CONFLICT(person_uid) DO UPDATE SET
+             username = excluded.username,
+             password_hash = excluded.password_hash,
+             role_id = excluded.role_id,
+             updated_at = CURRENT_TIMESTAMP",
+    )
+    .bind(person_uid)
     .bind(username)
     .bind(password_hash)
     .bind(role_id)
     .execute(pool)
-    .await?
-    .last_insert_rowid())
+    .await?;
+    Ok(person_uid.to_string())
 }
 
 /// The permission keys granted to a role, as `"subject:action"` strings.
@@ -214,9 +238,12 @@ pub async fn role_permission_keys(
     .await
 }
 
+/// A Person who can log in here. `uid` IS the Person's record uid — the same
+/// value that lands on facts as the actor, gates reads in `visible_targets`,
+/// and travels as the transport session's subject. One human, one id.
 #[derive(Debug, Clone, PartialEq)]
 pub struct AuthUser {
-    pub id: i64,
+    pub uid: String,
     pub username: String,
     pub name: String,
     pub password_hash: String,
@@ -225,28 +252,28 @@ pub struct AuthUser {
     pub permissions: Vec<String>,
 }
 
-pub async fn user_by_username(
+const CREDENTIAL_SELECT: &str = "
+    SELECT c.person_uid, c.username, p.head, c.password_hash, c.role_id, r.name
+    FROM person_credential c
+    JOIN record p ON p.uid = c.person_uid
+    LEFT JOIN role r ON r.id = c.role_id
+";
+
+async fn credential_row(
     pool: &SqlitePool,
-    username: &str,
+    column: &str,
+    value: &str,
 ) -> Result<Option<AuthUser>, StoreError> {
-    let Some(row) =
-        sqlx::query_as::<_, (i64, String, String, String, Option<i64>, Option<String>)>(
-            "
-        SELECT u.id, u.username, u.name, u.password_hash, u.role_id, r.name
-        FROM app_user u
-        LEFT JOIN role r ON r.id = u.role_id
-        WHERE u.username = ?
-        ",
-        )
-        .bind(username)
-        .fetch_optional(pool)
-        .await?
+    let sql = format!("{CREDENTIAL_SELECT} WHERE {column} = ?");
+    let Some((uid, username, name, password_hash, role_id, role)) =
+        sqlx::query_as::<_, (String, String, String, String, Option<i64>, Option<String>)>(&sql)
+            .bind(value)
+            .fetch_optional(pool)
+            .await?
     else {
         return Ok(None);
     };
 
-    let (id, username, name, password_hash, role_id, role) = row;
-    let role_id = role_id.unwrap_or_default();
     let role = role.unwrap_or_default();
     let permissions = if role.is_empty() {
         Vec::new()
@@ -255,49 +282,27 @@ pub async fn user_by_username(
     };
 
     Ok(Some(AuthUser {
-        id,
+        uid,
         username,
         name,
         password_hash,
-        role_id,
+        role_id: role_id.unwrap_or_default(),
         role,
         permissions,
     }))
 }
 
-pub async fn user_by_id(pool: &SqlitePool, user_id: i64) -> Result<Option<AuthUser>, StoreError> {
-    let Some(row) =
-        sqlx::query_as::<_, (i64, String, String, String, Option<i64>, Option<String>)>(
-            "
-        SELECT u.id, u.username, u.name, u.password_hash, u.role_id, r.name
-        FROM app_user u
-        LEFT JOIN role r ON r.id = u.role_id
-        WHERE u.id = ?
-        ",
-        )
-        .bind(user_id)
-        .fetch_optional(pool)
-        .await?
-    else {
-        return Ok(None);
-    };
+pub async fn user_by_username(
+    pool: &SqlitePool,
+    username: &str,
+) -> Result<Option<AuthUser>, StoreError> {
+    // `column` is a fixed literal at both call sites, never caller input.
+    credential_row(pool, "c.username", username).await
+}
 
-    let (id, username, name, password_hash, role_id, role) = row;
-    let role_id = role_id.unwrap_or_default();
-    let role = role.unwrap_or_default();
-    let permissions = if role.is_empty() {
-        Vec::new()
-    } else {
-        role_permission_keys(pool, &role).await?
-    };
-
-    Ok(Some(AuthUser {
-        id,
-        username,
-        name,
-        password_hash,
-        role_id,
-        role,
-        permissions,
-    }))
+/// Look a Person up by uid. Returns `None` for a Person with no credential —
+/// a contact, or the Person a `GrantOrganLogin` named — which is a normal
+/// state, not an error: they simply cannot log in with a password here.
+pub async fn user_by_uid(pool: &SqlitePool, person_uid: &str) -> Result<Option<AuthUser>, StoreError> {
+    credential_row(pool, "c.person_uid", person_uid).await
 }

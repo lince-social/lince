@@ -1010,6 +1010,71 @@ deliberately does NOT apply — a live connection is handed off whole, because a
 4096-frame cap would hang up on someone a few thousand keystrokes into a
 sentence.
 
+**There is ONE human reference: the Person** (migration 0050, 2026-08-07).
+`app_user` and `Person` used to be two identities for one human, joined by
+`app_user_person` — whose `user_id` was PRIMARY KEY and whose `person_uid` was
+UNIQUE. Unique on both sides is a bijection, so the split was never modelling
+two things. It also cost real behaviour: a transport session's `subject` came
+to mean "numeric app user id" on the websocket driver and "Person uid" on the
+iroh live driver, and neither value was correct for both consumers — a Person
+uid works for `visible_targets` and fails `begin_action_intent_session`, a
+numeric id the reverse. **That is why a live guest could read but never write.**
+Migration 0011's stated reason (the split "prevents clients from claiming an
+arbitrary Person uid") does not hold: what prevents that is the server
+resolving identity from the authenticated session and never reading it from the
+client frame, which is what the code did before and still does.
+
+So a Person IS the human, and `person_credential` is merely a way to prove you
+are one of them over HTTP — username, password hash, role. It is LOCAL AND
+NEVER SYNCED: Person records travel to contacts, password hashes must not,
+which is the whole reason it is a side table rather than columns on the record.
+`organ_login` was already built this way, keyed straight to a Person; this
+finishes the move it started. Consequences worth naming: `subject`, `actor`,
+the JWT `sub` and `visible_targets`' argument are now all the same kind of
+value; `AssignUserPerson` and the `user:assign_person` permission are deleted
+because the state they configured is unrepresentable; and
+`begin_action_intent_session` now requires only that the Person EXISTS, not
+that they hold a password — a live guest has no credential by design, which is
+exactly the case that was broken.
+
+**You can see what you made** (`visible_targets`, 2026-08-07). Every read is
+gated by that set, and it held only explicit grants plus public ones — so
+turning auth on made a Cell look EMPTY to the very person using it: a record
+created a second ago and shared with nobody was invisible to its own author.
+Nobody chose that; it was the absence of a choice, and `--server` making login
+mandatory turned it from a corner into the first thing you would hit. Creators
+are now included intrinsically, the same way a Transfer's own parties always
+were. Records committed with NO actor (made while the Cell ran with auth off)
+deliberately stay invisible: on a personal Cell that later enables auth, showing
+them is obviously right; on a shared one it would disclose everything predating
+the first account — a real policy question, not one to answer silently.
+
+**The board can now BE the guest** (2026-08-07). `/live/{organ}/connect` had
+existed for a while as a route with no caller anywhere, while `transport.js`
+hardcoded `window.location.host` — so the host half worked and nobody could
+reach it. The mechanism is one line of routing rather than a second client:
+the remote Cell speaks EXACTLY the frames our own does, so repointing the
+board's single socket at the relay carries every subscription, Action, lane and
+collab doc with it. `setLiveOrgan(uid)` closes and reconnects; consumers replay
+through the same `onOpen` path a dropped link already used.
+
+It is ONE value for the whole board, deliberately. Live mode means working
+inside someone else's Cell, and a board where some panels were theirs and some
+were yours would be a trap rather than a feature — including the Organ sand
+itself, whose contact list becomes theirs, which is why the leave control reads
+board-host state rather than anything that arrived over the wire. Two failures
+were worth guarding by name: frames queued for our Cell are dropped on a switch
+(flushing them into the next socket would apply a half-sent Action to a
+different Organ's store, silently), and the uid is escaped into the path.
+
+**A live guest acts, and the write lands on the host** as the Person their
+login named. The guest walks the same path a browser walks — take the server's
+challenge, prove possession of an Ed25519 key for its Person, send a signed
+envelope — because `Session` refuses a plain `Act` from any authenticated
+session. A test asserts the record exists on the HOST afterwards and that its
+fact is attributed to the bound Person, not to the host Cell and not to the
+guest's Organ.
+
 **A login is a BINDING, not a credential** (`organ_login`, migration 0048). No
 password: the handshake already proved which Organ is on the connection, with
 a key rather than a secret someone could retype — adding a password would be a
@@ -1036,6 +1101,41 @@ name it may show. Presence is ephemeral — lanes, never the op log.
 Transport is orthogonal to the mode. A browser reaching a Cell uses HTTPS/WS;
 a Cell reaching another Cell uses iroh. Both can serve a live session; neither
 changes what `live` means.
+
+**`lince --server` is a Cell that hands nobody a board** (2026-08-07,
+`HttpServeMode::ApiOnly`). A Cell run as a service holds data and answers
+authenticated clients, but the moment it also serves `/` any stranger who can
+reach the port gets a working board backed by the server's own store and can
+drop sands onto it. Server mode drops that whole surface — `/`, `/favicon.ico`,
+every `/board/*` asset, `/sand/{*path}`, and `/static` + `/host/static` — while
+keeping `/api/auth/login`, `/host/transport/ws`, and the `/organ/*` peer
+endpoints. The UI routes live in ONE contiguous block behind the mode check, so
+a board route added later cannot silently appear on a hardened box, and the
+static tree is skipped before the `if static_dir.exists()` fork rather than
+inside one arm of it — registered in both arms, it would otherwise survive.
+
+Server mode FORCES local auth on — overriding a configured `enabled = false`,
+per invocation and never written back to `lince.toml` — and this is the
+load-bearing half rather than a convenience. Persisting it would strand the
+operator who merely TRIES the flag: the run can still abort afterwards, and the
+toggle would outlive it as a login wall with no account on an ordinary desktop
+board. `authenticate_headers` is a no-op when `local_auth_required` is false,
+so hiding the board while leaving `/host/transport/ws` reachable would
+still leave any network peer an unauthenticated way to act on the store —
+strictly worse than doing nothing, because it looks hardened. For the same
+reason a server-mode Cell REFUSES TO START when the store has no admin and
+there is no terminal to make one on, instead of booting a login wall with zero
+accounts and reporting itself healthy; `--initial-admin-password-file` (or
+`--initial-admin-password`, visible in `ps`) provisions it non-interactively
+through the installer's existing staged-setup channel.
+
+The two auth systems stay separate, and server mode touches only one. Local
+users gate the HTTP surface. The iroh ALPNs authenticate CONTACTS by Organ key,
+so an inbound live session from a contact arrives on `lince/live/1` and never
+passes through HTTP at all — gating those behind local users would break peer
+sync, the one reason to run a server. What server mode does drop is
+`/live/{organ}/connect`, the GUEST half: it relays a LOCAL BROWSER out to a
+contact, and a headless box has no such browser.
 
 ### Op log
 

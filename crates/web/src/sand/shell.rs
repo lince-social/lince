@@ -20,8 +20,9 @@ const STYLE: &str = r#"
   --raised-background:var(--primary-background);
   --primary-ink:#f8fafc;
   --secondary-ink:#a7b4c2;
-  --tooltip:#202126;
-  --tooltip-ink:#f8fafc;
+  --tooltip:var(--primary-background);
+  --tooltip-ink:var(--primary-ink);
+  --tooltip-border:#fff;
   --gray:#a7b4c2;
   --accent:#6366f1;
   --focus:#6366f1;

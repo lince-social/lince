@@ -750,8 +750,8 @@ body.auth-pending .startup-auth-card {
     display: grid;
     grid-template-rows: auto 1fr;
     width: min(380px, calc(100vw - 24px));
-    border-left: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(9, 10, 12, 0.97);
+    border-left: var(--hairline, 1px) solid var(--border);
+    background: var(--raised-background, var(--primary-background));
     box-shadow: -24px 0 54px rgba(0, 0, 0, 0.38);
     backdrop-filter: blur(22px);
 }
@@ -762,7 +762,7 @@ body.auth-pending .startup-auth-card {
     justify-content: space-between;
     gap: 14px;
     padding: 18px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: var(--hairline, 1px) solid var(--border);
 }
 
 .notifications-panel__actions {
@@ -795,9 +795,9 @@ body.auth-pending .startup-auth-card {
     display: grid;
     gap: 10px;
     padding: 12px;
-    border: 1px solid rgba(242, 182, 93, 0.2);
-    border-radius: 8px;
-    background: rgba(32, 24, 12, 0.72);
+    border: var(--hairline, 1px) solid color-mix(in srgb, var(--warn, #d29922) 30%, var(--border));
+    border-radius: var(--radius-control, 8px);
+    background: var(--secondary-background, var(--surface-hover));
 }
 
 .notification-item__title {
@@ -815,21 +815,6 @@ body.auth-pending .startup-auth-card {
     display: flex;
     gap: 8px;
     justify-content: flex-end;
-}
-
-.notification-item__button {
-    min-height: 32px;
-    padding: 0 10px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--text-soft);
-    background: rgba(18, 20, 24, 0.75);
-    cursor: pointer;
-}
-
-.notification-item__button:hover {
-    border-color: var(--border-strong);
-    color: var(--text-strong);
 }
 
 .workspace {

@@ -81,8 +81,8 @@ pub enum ClientMessage {
     /// A client-side Loro update (base64 update bytes since the client's last
     /// send). The engine merges it into the record-doc, logs ONE cumulative
     /// crdt op for peer sync, and materializes head/body back to SQLite.
-    /// Success is signaled by the resulting `CollabChange` echo; only failures
-    /// answer directly (an `Error` frame carrying `id`).
+    /// Answered by `CollabAck` carrying this `id` on success, or an `Error`
+    /// frame carrying it on failure.
     CollabUpdate {
         id: String,
         record_uid: String,
@@ -179,6 +179,21 @@ pub enum ServerMessage {
     CollabChange {
         record_uid: String,
         snapshot_base64: String,
+    },
+    /// A `CollabUpdate` was merged and durably logged. Carries that update's
+    /// `id`.
+    ///
+    /// This is what lets a client know its work LANDED. A delta is exported
+    /// once, relative to the last version the client believes the Cell holds;
+    /// if the client advances that version on send rather than on confirmation,
+    /// a frame lost to a dropped socket is excluded from every future export
+    /// and the edit is gone from the Cell forever while still looking present
+    /// on screen. The `CollabChange` echo cannot serve this purpose: it also
+    /// fires for a sibling's write, so receiving one proves nothing about
+    /// whether YOUR update was applied.
+    CollabAck {
+        id: String,
+        record_uid: String,
     },
     /// A message from another session in a joined room.
     LaneEvent {

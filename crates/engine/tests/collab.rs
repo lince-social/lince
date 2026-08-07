@@ -275,3 +275,61 @@ async fn first_collab_write_preserves_preexisting_text() {
     assert_eq!(head, "New Title");
     assert_eq!(body, "old body text", "seeding preserved the body");
 }
+
+/// NO `crdt` op is ever pruned, even one a snapshot has already absorbed and
+/// even when the whole log sits below the retention floor.
+///
+/// Each crdt op is the cumulative tail since the last stored SNAPSHOT, and
+/// that snapshot lives in `record_doc` — local state, not in the log. A peer
+/// replaying from zero holds no snapshot, so dropping any crdt op would lose
+/// the text written before it with no way to recover: the materialized columns
+/// would survive on the sender, and the new replica would simply never see
+/// them. Pruning them safely requires serving `record_doc.snapshot` as part of
+/// a bootstrap, which needs a synthesized op identity — and `(actor_organ,
+/// hlc)` is the unique index import dedupes on, so that is not free.
+#[tokio::test]
+async fn no_crdt_op_is_ever_pruned() {
+    let (e, _) = cell("http://cell-prune-crdt").await;
+    let uid = plain(&e, "doc", "doc", "start").await;
+    edit(&e, &uid, None, Some("some live text")).await;
+
+    store::organs::add_contact(&e.store.pool, "organ-p", None, "P", "http://p", 1)
+        .await
+        .expect("contact");
+    store::organs::set_sync_policy(&e.store.pool, "organ-p", true, true)
+        .await
+        .expect("policy");
+
+    let head = store::sync_ops::max_seq(&e.store.pool).await.expect("max");
+    // Clear the outbox so the OUTBOX guard cannot be what saves these ops —
+    // this test is about the compaction guard specifically.
+    store::sync_ops::outbox_clear_contact(&e.store.pool, "organ-p")
+        .await
+        .expect("clear");
+    store::organs::advance_peer_acked_seq(&e.store.pool, "organ-p", head)
+        .await
+        .expect("advance");
+
+    let before: Vec<i64> = store::sync_ops::after(&e.store.pool, 0, 10_000)
+        .await
+        .expect("ops")
+        .into_iter()
+        .filter(|o| o.kind == "crdt")
+        .map(|o| o.seq)
+        .collect();
+    assert!(!before.is_empty(), "the text edit produced crdt ops");
+
+    e.prune_op_log(false).await.expect("prune");
+
+    let after: Vec<i64> = store::sync_ops::after(&e.store.pool, 0, 10_000)
+        .await
+        .expect("ops")
+        .into_iter()
+        .filter(|o| o.kind == "crdt")
+        .map(|o| o.seq)
+        .collect();
+    assert_eq!(before, after, "every crdt op survived pruning");
+
+    // And the text is still readable, which is the point of all of it.
+    assert_eq!(text_of(&e, &uid).await.1, "some live text");
+}

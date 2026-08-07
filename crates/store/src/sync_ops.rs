@@ -390,6 +390,147 @@ pub async fn max_seq(pool: &SqlitePool) -> Result<i64, StoreError> {
     )
 }
 
+/// What `prune` did, or would do. Returned rather than logged so a caller can
+/// show it before committing to anything.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct PruneReport {
+    /// The highest seq every synced contact has confirmed receiving.
+    pub floor: i64,
+    /// Ops deleted (or deletable, for a dry run).
+    pub removed: i64,
+    /// Ops at or below the floor that were KEPT because something still needs
+    /// them — a queued outbox row, or a `crdt` op not yet folded into a
+    /// snapshot.
+    pub retained: i64,
+}
+
+/// The retention floor: the lowest `peer_acked_seq` across contacts we still
+/// owe ops to. `None` means there is no floor and nothing may be pruned.
+///
+/// Blocked contacts are excluded — we will never send to them again, so a
+/// blocked peer stuck at seq 0 must not freeze retention forever. Contacts
+/// that receive nothing from us (`sync_out = 0` and no accepted grant) are
+/// excluded for the same reason.
+pub async fn retention_floor(pool: &SqlitePool) -> Result<Option<i64>, StoreError> {
+    let row = sqlx::query(
+        "SELECT MIN(c.peer_acked_seq) AS floor, COUNT(*) AS n
+           FROM organ_contact c
+          WHERE c.trust != 'blocked'
+            AND (c.sync_out = 1
+                 OR EXISTS (SELECT 1 FROM replica_grant g
+                             WHERE g.contact_organ = c.record_uid))",
+    )
+    .fetch_one(pool)
+    .await?;
+    let contacts: i64 = row.get("n");
+    if contacts == 0 {
+        // No one to relay to. Pruning would be safe for THEM and unsafe for
+        // anyone added later: there is no bootstrap-from-snapshot path yet, so
+        // a new contact can only be brought up to date by replaying the log.
+        // Keep everything and let the caller decide.
+        return Ok(None);
+    }
+    Ok(Some(row.get::<i64, _>("floor")))
+}
+
+/// Drop ops every synced contact has already received.
+///
+/// Deliberately NOT automatic, and this is the reason: a contact that falls
+/// behind the pruned floor recovers by re-bootstrapping from a serve-time
+/// snapshot, and that path **is not built** (Ontology §11c, "Replica bootstrap
+/// and initial snapshot"). Until it exists, pruning is a one-way trade of
+/// recoverability for disk, so it is an explicit operation a human asks for
+/// rather than a loop that quietly runs at boot.
+///
+/// **Only SUPERSEDED ops are prunable**, and that one rule is what makes a
+/// replica bootstrap possible with no bootstrap protocol at all. An op is
+/// superseded when a NEWER op exists for the same `(tbl, uid, field)` on the
+/// same channel — so the log always retains, for every live field, the op that
+/// established its current value. The surviving log is therefore current state
+/// plus recent history, and a contact added long after a prune builds a
+/// complete replica by replaying from zero like any other.
+///
+/// It also keeps the LWW memory intact. Import decides "is this op older than
+/// what I hold?" by reading the highest HLC for that field OUT OF THIS LOG
+/// (`latest_hlc_for_field`). Pruning a field's newest op would erase that
+/// memory, and a later-arriving stale value would then look new and overwrite
+/// current data. Keeping the tip keeps the comparison honest.
+///
+/// Growth is still bounded, because history is what accumulates: a field
+/// rewritten ten thousand times keeps one op. The log becomes O(live state)
+/// rather than O(edit history), which was the actual goal.
+///
+/// Two further exceptions, both load-bearing:
+///
+/// 1. **An op still referenced by `sync_outbox`.** The outbox holds at most one
+///    row per (contact, tbl, uid, field) and points into the log by `seq`, so a
+///    queued row for an offline contact can easily sit below another contact's
+///    checkpoint. Deleting it turns a pending delivery into a silent no-op.
+/// 2. **`crdt` ops are never pruned.** Each one is the cumulative tail since
+///    the last stored SNAPSHOT, and that snapshot lives in `record_doc` — which
+///    is local, not in the log. A peer replaying from zero has no snapshot, so
+///    dropping any crdt op would lose the text written before it with no way to
+///    recover it. Compaction-gated crdt pruning needs the serve path to ship
+///    `record_doc.snapshot` as part of a bootstrap, and that needs a synthesized
+///    op identity — `(actor_organ, hlc)` is the unique index import dedupes on,
+///    so inventing one is not free. Deferred rather than guessed at.
+pub async fn prune(pool: &SqlitePool, dry_run: bool) -> Result<PruneReport, StoreError> {
+    let Some(floor) = retention_floor(pool).await? else {
+        return Ok(PruneReport {
+            floor: 0,
+            removed: 0,
+            retained: 0,
+        });
+    };
+
+    // One predicate, used for both the count and the delete, so a dry run can
+    // never disagree with what the delete would do.
+    //
+    // `n.field = sync_op.field` matches exactly, empty string included: record
+    // tombstones, assertions and crdt ops all use `field = ''`, so treating it
+    // as a wildcard would let a tombstone and a crdt op on one uid look like
+    // the same target and silently supersede each other.
+    //
+    // `IS` rather than `=` on `replica_root` because it is NULL for the general
+    // feed and `=` never matches NULL. Comparing within one channel matters:
+    // the general feed and a grant channel are served separately, so an op must
+    // only be considered superseded by something a peer would receive ALONGSIDE
+    // it.
+    const PRUNABLE: &str = "seq <= ?
+           AND kind != 'crdt'
+           AND seq NOT IN (SELECT seq FROM sync_outbox)
+           AND EXISTS (SELECT 1 FROM sync_op n
+                        WHERE n.tbl = sync_op.tbl
+                          AND n.uid = sync_op.uid
+                          AND n.field = sync_op.field
+                          AND n.replica_root IS sync_op.replica_root
+                          AND n.seq > sync_op.seq)";
+
+    let removable: i64 =
+        sqlx::query(&format!("SELECT COUNT(*) AS n FROM sync_op WHERE {PRUNABLE}"))
+            .bind(floor)
+            .fetch_one(pool)
+            .await?
+            .get("n");
+    let at_or_below: i64 = sqlx::query("SELECT COUNT(*) AS n FROM sync_op WHERE seq <= ?")
+        .bind(floor)
+        .fetch_one(pool)
+        .await?
+        .get("n");
+
+    if !dry_run && removable > 0 {
+        sqlx::query(&format!("DELETE FROM sync_op WHERE {PRUNABLE}"))
+            .bind(floor)
+            .execute(pool)
+            .await?;
+    }
+    Ok(PruneReport {
+        floor,
+        removed: removable,
+        retained: at_or_below - removable,
+    })
+}
+
 /// One op by its local seq — outbox hydration (a pruned seq returns None).
 pub async fn get_by_seq(pool: &SqlitePool, seq: i64) -> Result<Option<OpRow>, StoreError> {
     Ok(sqlx::query("SELECT * FROM sync_op WHERE seq = ?")

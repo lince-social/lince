@@ -483,9 +483,14 @@ fn render_notifications_panel(bootstrap: &AppBootstrap) -> Markup {
                             span { (format!("Lince {}", bootstrap.runtime.version)) }
                         }
                     }
-                    button id="notifications-close" class="icon-button" type="button" aria-label="Fechar notificacoes" {
-                        "x"
-                    }
+                    button
+                        id="notifications-close"
+                        class="lynx-button lynx-icon-button"
+                        type="button"
+                        aria-label="Fechar notificacoes"
+                        data-lynx-tooltip="Fechar notificacoes"
+                        data-lynx-tooltip-align="right"
+                    {}
                 }
             }
             div id="notifications-list" class="notifications-list" {}

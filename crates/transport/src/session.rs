@@ -253,16 +253,21 @@ impl Session {
                         code: Some("collab_not_visible".into()),
                     }];
                 }
-                // Success answers nothing here: the merge commits a refresh
-                // fact, and `on_fact` echoes the merged doc back as a
+                // Success answers with an ack, and the merge also commits a
+                // refresh fact so `on_fact` echoes the merged doc back as a
                 // `CollabChange` to every joined session (including this one —
                 // Loro dedupes by version vector, so the echo is harmless).
+                // The two are not interchangeable: the echo says "the document
+                // changed", the ack says "YOUR update is in it".
                 match self
                     .engine
                     .apply_client_crdt_update(&record_uid, &update_base64)
                     .await
                 {
-                    Ok(()) => vec![],
+                    Ok(()) => vec![ServerMessage::CollabAck {
+                        id: id.clone(),
+                        record_uid: record_uid.clone(),
+                    }],
                     Err(e) => {
                         let code = e.code().map(str::to_string);
                         vec![ServerMessage::Error {

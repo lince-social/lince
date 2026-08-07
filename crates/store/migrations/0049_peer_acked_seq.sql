@@ -1,0 +1,18 @@
+-- Op-log retention (Ontology §11 "Op log"): what each contact has RECEIVED of
+-- OUR log, which is the floor pruning may never cross.
+--
+-- `last_synced_seq` cannot serve this. It is our cursor into THEIR log — how
+-- far we have pulled from them — so pruning against it would delete ops the
+-- peer has never seen, in exact proportion to how much they had sent us.
+-- Opposite direction, opposite meaning.
+--
+-- Advanced from two places, both of which are evidence of durable receipt
+-- rather than of transmission:
+--   * a peer's catch-up request carrying `after = X`. They advance their own
+--     checkpoint only after an import succeeds, so X is committed on their
+--     side. The batch served in ANSWER to that request is not acknowledged
+--     until the next request arrives with a higher `after` — recording the
+--     served head here instead would lose exactly the ops a peer that died
+--     mid-import still needs.
+--   * a push batch the peer accepted, whose ops are therefore applied there.
+ALTER TABLE organ_contact ADD COLUMN peer_acked_seq INTEGER NOT NULL DEFAULT 0;

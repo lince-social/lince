@@ -134,6 +134,10 @@ pub struct Contact {
     pub sync_in: bool,
     /// Their op-log seq as we last acknowledged it (catch-up checkpoint).
     pub last_synced_seq: i64,
+    /// How far this contact has RECEIVED our own log — the retention floor.
+    /// The mirror image of `last_synced_seq`, and not interchangeable with it:
+    /// pruning against the wrong one deletes ops the peer never saw.
+    pub peer_acked_seq: i64,
     /// `replica` (local rows, deltas + reconciliation) or `live` (Protein WS
     /// against the remote, zero local rows).
     pub mode: String,
@@ -254,6 +258,7 @@ fn map_contact(r: sqlx::sqlite::SqliteRow) -> Contact {
         sync_out: r.get::<i64, _>("sync_out") != 0,
         sync_in: r.get::<i64, _>("sync_in") != 0,
         last_synced_seq: r.get("last_synced_seq"),
+        peer_acked_seq: r.get("peer_acked_seq"),
         mode: r.get("mode"),
         catchup_interval_secs: r.get("catchup_interval_secs"),
         last_seen_addr: r.get("last_seen_addr"),
@@ -419,6 +424,29 @@ pub async fn set_last_synced_seq(
         .bind(organ_uid)
         .execute(pool)
         .await?;
+    Ok(())
+}
+
+/// Advance the retention floor: how far this contact has received OUR log.
+///
+/// Monotonic by `MAX`, never assignment. A peer may legitimately ask for an
+/// older `after` (a rebuild, a restored backup, two Cells of one Organ at
+/// different points), and letting that move the floor BACKWARDS would be
+/// harmless for correctness but would silently un-prune nothing while making
+/// the floor meaningless. Moving it backwards is never useful; moving it
+/// forwards on evidence is the whole point.
+pub async fn advance_peer_acked_seq(
+    pool: &SqlitePool,
+    organ_uid: &str,
+    seq: i64,
+) -> Result<(), StoreError> {
+    sqlx::query(
+        "UPDATE organ_contact SET peer_acked_seq = MAX(peer_acked_seq, ?) WHERE record_uid = ?",
+    )
+    .bind(seq)
+    .bind(organ_uid)
+    .execute(pool)
+    .await?;
     Ok(())
 }
 

@@ -18,7 +18,8 @@
       "Bash(sed -n '325,449p' instinct.html)",
       "Bash(sed -n '451,517p' instinct.html)",
       "Bash(sed -n '519,593p' instinct.html)",
-      "Bash(cargo test *)"
+      "Bash(cargo test *)",
+      "Bash(git -C /home/user/git/lince-social/lince status --short)"
     ]
   },
   "outputStyle": "default"

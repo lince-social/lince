@@ -108,13 +108,20 @@
     .logrow.editing input { min-width: 0; }
     .logrow.editing .log-actions { display: inline-flex; gap: 3px; }
     .total { font-size: .72rem; color: var(--muted); }
-    .msg { border-top: 0; padding: 4px 0; font-size: .78rem; }
-    .msg-meta { font-size: .68rem; color: var(--muted); margin-bottom: 2px;
-      display: flex; justify-content: space-between; align-items: center; gap: .5rem; }
+    .msg { border-top: 0; padding: 2px 0; font-size: .78rem; }
+    /* Consecutive messages from the same sender collapse to one name header
+       (chat-style): only a run's FIRST message carries `.msg-sender`, every
+       message carries its own bottom-right timestamp + actions. */
+    .msg + .msg { margin-top: 2px; }
+    .msg.run-start { margin-top: 8px; }
+    .msg-sender { font-size: .68rem; font-weight: 600; color: var(--muted); margin-bottom: 1px; }
+    .msg-footer { font-size: .65rem; color: var(--muted); margin-top: 2px;
+      display: flex; justify-content: flex-end; align-items: center; gap: .5rem; }
+    .msg-when { font-variant-numeric: tabular-nums; }
     .msg-delete { border: 0; background: none; color: var(--muted); padding: 0;
       cursor: pointer; font-size: .68rem; }
     .msg-delete:hover { color: var(--text); }
-    .msg-actions { display: inline-flex; gap: 4px; margin-left: auto; }
+    .msg-actions { display: inline-flex; gap: 4px; }
     .msg-edit { border: 0; background: none; color: var(--muted); padding: 0;
       cursor: pointer; font-size: .68rem; }
     .msg-edit:hover { color: var(--text); }
@@ -160,6 +167,11 @@
     .err { color: var(--hot-border); font-size: .75rem; padding: 0 5px 4px; }
     .hint { color: var(--muted); font-size: .72rem; }
     /* rendered body preview (K6): same blocks the board card renderer shows */
+    .peers { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 11px; opacity: 0.8; margin-top: 3px; }
+    .peerlist { display: inline-flex; flex-wrap: wrap; gap: 8px; }
+    .savestate.is-pending { opacity: 0.6; font-style: italic; }
+    .f-peer::before { content: "•"; color: var(--accent); margin-right: 3px; }
+    .f-peer.is-idle { opacity: 0.45; }
     .preview { white-space: pre-wrap; word-break: break-word; border: var(--hairline) dashed var(--muted);
                border-radius: 2px; padding: 4px 5px; font-size: .78rem; color: var(--text); }
   </style>
@@ -201,6 +213,7 @@
         <span class="field"><span class="lbl">Qty</span><input id="f-quantity" class="lynx-input" type="number" step="1" /></span>
       </div>
       <textarea id="f-body" class="lynx-textarea" placeholder="Body…" aria-label="Body"></textarea>
+      <div class="peers"><span id="f-savestate" class="savestate"></span><span id="f-peers" class="peerlist" hidden></span></div>
       <div id="f-preview" class="preview" hidden></div>
       <div class="actions" style="padding:0">
         <span id="f-error" class="err" style="padding:0; margin-right:auto" hidden></span>
@@ -561,7 +574,7 @@
         $("f-quantity").value = String(row.quantity ?? 0);
         // With a live collab doc bound, the doc owns the body — a protein row
         // (possibly staler than the doc) must not clobber in-flight merges.
-        if (!(collab && collab.doc && collab.uid === row.uid)) {
+        if (!(collab && collab.editor && collab.uid === row.uid)) {
           $("f-body").value = row.body || "";
         }
         $("f-save").disabled = true;
@@ -666,117 +679,91 @@
       }
       return loroLoad;
     }
-    function b64encode(bytes) {
-      let binary = "";
-      for (let i = 0; i < bytes.length; i += 0x8000) {
-        binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
-      }
-      return btoa(binary);
-    }
-    function b64decode(value) {
-      const binary = atob(String(value || ""));
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
-      return bytes;
-    }
-
     // var, not let: goIdle() runs during initial evaluation, before this
     // section — var hoists to undefined instead of a TDZ throw.
-    var collab = null; // { uid, doc, shadow, leave, sentVersion, sendTimer }
+    var collab = null; // { uid, editor, presence, peers }
 
+    // The shared collaborative element (Ontology §11 "Collab", layer 3) rather
+    // than a second copy of the protocol. This sand used to carry its own doc,
+    // shadow text, single-region fold and send cursor; all four now live in one
+    // place, which is why a kanban card and this textarea behave identically
+    // and why the ack handling below did not have to be written twice.
     async function startCollab(uid) {
       stopCollab();
-      const state = { uid, doc: null, shadow: null, leave: null, sentVersion: null, sendTimer: 0 };
+      const state = { uid, editor: null, presence: null, peers: [] };
       collab = state;
       const mod = await loadLoro();
       if (!mod || collab !== state) return;
-      state.doc = new mod.LoroDoc();
-      state.leave = H.collabJoin(uid, (snapshotB64) => {
-        if (collab !== state || !state.doc || !snapshotB64) return;
-        try { state.doc.import(b64decode(snapshotB64)); }
-        catch (err) { console.warn("[record] collab import", err); return; }
-        reflectCollab(state);
+      const { createCollabEditor, bindPresence } = await import("/board/collab-editor.js");
+      if (collab !== state) return;
+      const area = $("f-body");
+      state.editor = createCollabEditor({
+        recordUid: uid,
+        host: H,
+        LoroDoc: mod.LoroDoc,
+        field: "body",
+        surface: {
+          // Only the body is bound here: the head is an ordinary saved field in
+          // this sand, so handing the doc an empty title would blank it.
+          read: () => ({ head: state.editor.text().head, body: area.value }),
+          write: ({ body }) => {
+            if (area.value !== body) setAreaPreservingCaret(area, body);
+            if (row && collab === state) row.body = body;
+            renderBodyPreview();
+          },
+        },
+        onPresence: (list) => {
+          if (collab !== state) return;
+          state.peers = list.filter((p) => p.field === "body");
+          renderCollabPeers(state.peers);
+        },
+        // "Saved" here means the Cell CONFIRMED the write, not that it was
+        // sent — the difference is the whole reason the ack exists.
+        onSaveState: ({ saved }) => {
+          if (collab !== state) return;
+          const el = $("f-savestate");
+          if (!el) return;
+          el.textContent = saved ? "saved" : "saving…";
+          el.classList.toggle("is-pending", !saved);
+        },
+        onError: (message) => console.warn("[record] collab", message),
       });
+      state.editor.join();
+      state.presence = bindPresence(state.editor, area, "body");
     }
     function stopCollab() {
       const state = collab;
       if (!state) return; // also covers the pre-evaluation goIdle() call
       collab = null;
-      if (state.sendTimer) { clearTimeout(state.sendTimer); state.sendTimer = 0; flushCollabSend(state); }
-      if (typeof state.leave === "function") state.leave();
-    }
-
-    // Fold the textarea's unsynced local typing (shadow -> value, single-region
-    // diff) into the doc as real insert/delete ops. Between two keystrokes the
-    // doc equals the shadow, so offsets are exact; when a remote merge just
-    // landed they are clamped — approximate for one frame, converged after.
-    function collabFold(state) {
-      const area = $("f-body");
-      const next = area.value;
-      const prev = state.shadow == null ? "" : state.shadow;
-      if (next === prev || !state.doc) return;
-      const text = state.doc.getText("body");
-      let start = 0;
-      const maxStart = Math.min(prev.length, next.length);
-      while (start < maxStart && prev[start] === next[start]) start++;
-      let endPrev = prev.length;
-      let endNext = next.length;
-      while (endPrev > start && endNext > start && prev[endPrev - 1] === next[endNext - 1]) { endPrev--; endNext--; }
-      const docLen = text.length;
-      const at = Math.min(start, docLen);
-      const del = Math.min(endPrev - start, docLen - at);
-      try {
-        if (del > 0) text.delete(at, del);
-        if (endNext > start) text.insert(at, next.slice(start, endNext));
-        state.doc.commit();
-      } catch (err) { console.warn("[record] collab fold", err); }
-      state.shadow = next;
-    }
-
-    // A snapshot arrived (join reply or a change by someone else): fold any
-    // in-flight local typing first so it is never clobbered, then reflect the
-    // merged doc into the textarea, caret preserved.
-    function reflectCollab(state) {
-      const area = $("f-body");
-      const docBody = state.doc.getText("body").toString();
-      if (state.shadow == null) {
-        // Join snapshot: the server doc is the truth (it was seeded from the
-        // record's materialized text). Baseline the send cursor here so we
-        // never echo the whole history back.
-        state.shadow = docBody;
-        state.sentVersion = state.doc.version();
-        if (area.value !== docBody) setAreaPreservingCaret(area, docBody);
-        if (row) row.body = docBody;
-        renderBodyPreview();
-        return;
+      if (state.presence) state.presence.detach();
+      // `destroy` flushes whatever the send debounce is still holding, so
+      // closing a record cannot drop the last keystrokes before it.
+      if (state.editor) state.editor.destroy();
+      renderCollabPeers([]);
+      const saved = $("f-savestate");
+      if (saved) {
+        saved.textContent = "";
+        saved.classList.remove("is-pending");
       }
-      if (area.value !== state.shadow) collabFold(state);
-      const merged = state.doc.getText("body").toString();
-      state.shadow = merged;
-      if (area.value !== merged) setAreaPreservingCaret(area, merged);
-      if (row) row.body = merged;
-      renderBodyPreview();
-      scheduleCollabSend(state); // the fold may have produced new local ops
     }
 
-    function scheduleCollabSend(state) {
-      if (state.sendTimer) return;
-      state.sendTimer = setTimeout(() => {
-        state.sendTimer = 0;
-        if (collab === state) flushCollabSend(state);
-      }, 200);
-    }
-    function flushCollabSend(state) {
-      if (!state.doc) return;
-      try {
-        const update = state.doc.export(
-          state.sentVersion
-            ? { mode: "update", from: state.sentVersion }
-            : { mode: "update" },
-        );
-        state.sentVersion = state.doc.version();
-        if (update && update.length) H.collabUpdate(state.uid, b64encode(update));
-      } catch (err) { console.warn("[record] collab send", err); }
+    // Who else is in this body. Idle dims rather than disappears — someone who
+    // stepped away is still here, and removing them would read as "they left".
+    function renderCollabPeers(peers) {
+      const host = $("f-peers");
+      if (!host) return;
+      host.innerHTML = "";
+      host.hidden = !peers.length;
+      for (const peer of peers) {
+        const span = document.createElement("span");
+        span.className = "f-peer" + (peer.idle ? " is-idle" : "");
+        const where =
+          peer.focus !== peer.anchor ? `${peer.anchor}–${peer.focus}` : String(peer.anchor);
+        // "someone" when the host resolved no name: this sand never decides
+        // whose name it may show.
+        span.textContent = (peer.name || "someone") + " @" + where + (peer.idle ? " (idle)" : "");
+        host.appendChild(span);
+      }
     }
 
     function setAreaPreservingCaret(area, next) {
@@ -796,10 +783,7 @@
     }
 
     $("f-body").addEventListener("input", () => {
-      if (collab && collab.doc) {
-        collabFold(collab);
-        scheduleCollabSend(collab);
-      }
+      if (collab && collab.editor) collab.editor.localEdit();
     });
 
     // ---- K6: the slash-block editor + rendered body preview --------------------
@@ -838,10 +822,7 @@
       area.value = nextBody;
       // Programmatic value writes fire no `input` event — fold into the
       // shared doc here so the checkbox flip also streams to collaborators.
-      if (collab && collab.doc) {
-        collabFold(collab);
-        scheduleCollabSend(collab);
-      }
+      if (collab && collab.editor) collab.editor.localEdit();
       if (!fieldsDirty && row) {
         row.body = nextBody;
         renderBodyPreview();
@@ -1247,46 +1228,38 @@
       const messages = current && Array.isArray(current.messages) ? current.messages : [];
       if (!threads.length) list.appendChild(hintNode("no threads yet — start one below"));
       else if (!messages.length) list.appendChild(hintNode("no messages in this thread yet"));
+      // Chat-style runs (2026-08-07): a name header only on the first
+      // message of an unbroken run from the same sender; grouped by
+      // `created_by` (the raw actor uid), never by the display-name string
+      // — two different senders that happen to resolve to `null` (or share
+      // a name) must not merge into one run.
+      let prevCreatedBy = undefined;
       for (const m of messages) {
         const el = document.createElement("div");
         el.className = "msg";
         el.dataset.messageUid = m.uid;
-        // Sender + timestamp (2026-07-18): makes the thread read as a real
-        // chat conversation, not just a stack of bodies. `sender` resolves
-        // server-side (protein's threads_for_record) from the message's
-        // creation actor — an app_user id, a DIFFERENT identity namespace
-        // than this panel's `names` (record) subscription, so it can't be
-        // resolved client-side; it's `null` in local-no-auth mode (no login,
-        // every action's actor is None) since there's no one to name.
-        const when = m.created_at ? shortDateTime(m.created_at) : "";
-        const canDeleteMsg = canDelete(m);
-        if (m.sender || when || canDeleteMsg) {
-          const meta = document.createElement("div");
-          meta.className = "msg-meta";
-          const label = document.createElement("span");
-          label.textContent = [m.sender, when].filter(Boolean).join(" · ");
-          meta.appendChild(label);
-          const actions = document.createElement("span");
-          actions.className = "msg-actions";
-          const edit = document.createElement("button");
-          edit.type = "button";
-          edit.className = "msg-edit";
-          edit.textContent = "edit";
-          edit.addEventListener("click", () => {
-            messageEdit = { uid: m.uid, draft: String(m.body || "") };
-            renderComments();
-          });
-          actions.appendChild(edit);
-          if (canDeleteMsg) {
-            const del = document.createElement("button");
-            del.type = "button";
-            del.className = "msg-delete";
-            del.textContent = "delete";
-            del.addEventListener("click", () => deleteRecordItem(m.uid));
-            actions.appendChild(del);
-          }
-          meta.appendChild(actions);
-          el.appendChild(meta);
+        const isRunStart = m.created_by !== prevCreatedBy;
+        prevCreatedBy = m.created_by;
+        if (isRunStart) el.classList.add("run-start");
+        // Sender + organ (2026-08-07): `sender` and `organ_name` both resolve
+        // server-side (protein's threads_for_record) — `sender` from the
+        // message's creation actor (an app_user id, a DIFFERENT identity
+        // namespace than this panel's `names` (record) subscription, so it
+        // can't be resolved client-side), `organ_name` from the message
+        // Record's own `organ_uid` (the same column Sync uses to route what
+        // travels where), which is what a Record synced in from a paired
+        // organ actually carries — not the creating actor. Both are `null`
+        // in local-no-auth mode (no login, every action's actor is None)
+        // since there's no one to name. When the organ's name equals the
+        // sender's name (a single-user organ, the common case), showing it
+        // twice is noise, so it's shown only when it differs.
+        if (isRunStart && m.sender) {
+          const senderEl = document.createElement("div");
+          senderEl.className = "msg-sender";
+          senderEl.textContent = m.organ_name && m.organ_name !== m.sender
+            ? `${m.sender}@${m.organ_name}`
+            : m.sender;
+          el.appendChild(senderEl);
         }
         if (messageEdit?.uid === m.uid) {
           const form = document.createElement("div");
@@ -1296,6 +1269,9 @@
           area.value = messageEdit.draft;
           area.setAttribute("aria-label", "Message body");
           area.addEventListener("input", () => { messageEdit.draft = area.value; });
+          // Same block-editing surface as composing a new message (`cm-body`)
+          // — editing an existing message is no longer a bare textarea.
+          if (Editor) Editor.attach(area, { getNames: editorNames });
           const actions = document.createElement("div");
           actions.className = "message-edit__actions";
           const cancel = document.createElement("button");
@@ -1322,6 +1298,40 @@
         } else {
           el.appendChild(renderMessageBody(String(m.body || "")));
         }
+        // Footer: timestamp bottom-right, every message (not just run
+        // starts) — an unbroken run still needs its own edit/delete control
+        // and its own time per message.
+        const when = m.created_at ? shortDateTime(m.created_at) : "";
+        const canDeleteMsg = canDelete(m);
+        const footer = document.createElement("div");
+        footer.className = "msg-footer";
+        const actions = document.createElement("span");
+        actions.className = "msg-actions";
+        const edit = document.createElement("button");
+        edit.type = "button";
+        edit.className = "msg-edit";
+        edit.textContent = "edit";
+        edit.addEventListener("click", () => {
+          messageEdit = { uid: m.uid, draft: String(m.body || "") };
+          renderComments();
+        });
+        actions.appendChild(edit);
+        if (canDeleteMsg) {
+          const del = document.createElement("button");
+          del.type = "button";
+          del.className = "msg-delete";
+          del.textContent = "delete";
+          del.addEventListener("click", () => deleteRecordItem(m.uid));
+          actions.appendChild(del);
+        }
+        footer.appendChild(actions);
+        if (when) {
+          const whenEl = document.createElement("span");
+          whenEl.className = "msg-when";
+          whenEl.textContent = when;
+          footer.appendChild(whenEl);
+        }
+        el.appendChild(footer);
         list.appendChild(el);
       }
     }

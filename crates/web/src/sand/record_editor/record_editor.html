@@ -13,6 +13,9 @@
   .re__status { flex: 0 0 auto; padding: 4px 8px; font-size: 12px; opacity: 0.75; display: flex; gap: 10px; }
   .re__peer { display: inline-flex; align-items: center; gap: 4px; }
   .re__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent, #47f); display: inline-block; }
+  /* Idle is dimmed rather than hidden: someone who stepped away is still in
+     the document, and removing them would read as "they left". */
+  .re__peer.is-idle { opacity: 0.45; }
   .re__empty { padding: 12px; opacity: 0.7; }
 </style>
 
@@ -47,13 +50,17 @@
   // The same element every embed uses. Kanban card bodies, relation nodes and
   // table cells are not different features — they are this, in a different
   // box — so the delta bookkeeping and the caret handling live in one place.
-  const { createCollabEditor } = await import("/board/collab-editor.js");
+  const { createCollabEditor, bindInputs } = await import("/board/collab-editor.js");
 
   let records = [];
   let selected = null;
   let editor = null;
-  let leaveRoom = null;
-  const peers = new Map(); // connection/subject -> { name, at }
+  let bound = null;
+  // Presence is the shared element's job now, not this sand's: cursors,
+  // selection ranges, idle and peer expiry are the same in every box that
+  // edits a Record, so they live beside the document. This sand only renders
+  // what it is handed.
+  let peers = [];
 
   H.subscribeProtein("re_records", {
     source: "record",
@@ -81,10 +88,11 @@
   }
 
   function open(uid) {
+    if (bound) bound.detach();
     if (editor) editor.destroy();
-    if (leaveRoom) leaveRoom();
+    bound = null;
     selected = uid;
-    peers.clear();
+    peers = [];
     renderList();
     renderPeers();
     $("re-state").textContent = "Joining…";
@@ -97,74 +105,50 @@
       recordUid: uid,
       host: H,
       LoroDoc,
+      field: "body",
       surface: {
         read: () => ({ head: $("re-title").value, body: $("re-body").value }),
-        write: paint,
+        write: (text) => bound.surfaceWrite(text),
       },
       onError: (message) => { $("re-state").textContent = message; },
+      // Cursors, selection ranges, idle and peer expiry all arrive resolved.
+      // This sand renders the list; it decides nothing about who is in it.
+      onPresence: (list) => { peers = list; renderPeers(); },
     });
+    // One call wires input -> localEdit, the caret-preserving write, and the
+    // selection reporting for BOTH fields, so presence follows the caret from
+    // the title into the body without this sand tracking which one has focus.
+    bound = bindInputs(editor, { headEl: $("re-title"), bodyEl: $("re-body") });
     editor.join();
     $("re-state").textContent = "Editing";
-
-    // Cursors ride ephemeral lanes, never the Ledger — presence is not
-    // history, and a cursor position is nobody's permanent record.
-    const room = "record:" + uid;
-    H.joinRoom(room);
-    leaveRoom = H.onLane(room, (payload, from) => {
-      if (!payload || typeof payload.at !== "number") return;
-      // `from` is resolved by the HOST, and only for a viewer allowed to know
-      // who that is. An unnamed cursor is the correct rendering otherwise —
-      // the sand never gets to decide whose name it may show.
-      peers.set(payload.id || from || "someone", {
-        name: from || null,
-        at: payload.at,
-      });
-      renderPeers();
-    });
 
     $("re-title").disabled = false;
     $("re-body").disabled = false;
   }
 
-  // Keep the caret where the user left it: replacing an input's value moves it
-  // to the end, which makes a remote edit feel like the editor fighting back.
-  function paint({ head, body }) {
-    for (const [el, value] of [[$("re-title"), head], [$("re-body"), body]]) {
-      if (el.value === value) continue;
-      const at = el.selectionStart;
-      el.value = value;
-      try { el.setSelectionRange(at, at); } catch (_) {}
-    }
-  }
-
-  const edited = () => { if (editor) editor.localEdit(); };
-  $("re-title").addEventListener("input", edited);
-  $("re-body").addEventListener("input", edited);
-
-  function announceCursor() {
-    if (!selected) return;
-    H.emit("record:" + selected, {
-      id: H.instanceId,
-      at: $("re-body").selectionStart || 0,
-    });
-  }
-  $("re-body").addEventListener("keyup", announceCursor);
-  $("re-body").addEventListener("click", announceCursor);
-
   function renderPeers() {
     const host = $("re-peers");
     host.innerHTML = "";
-    for (const [key, peer] of peers) {
-      if (key === H.instanceId) continue;
+    for (const peer of peers) {
       const span = document.createElement("span");
-      span.className = "re__peer";
+      span.className = "re__peer" + (peer.idle ? " is-idle" : "");
       const dot = document.createElement("span");
       dot.className = "re__dot";
       const label = document.createElement("span");
       // Unnamed is a real state, not a failure: it means this viewer may not
       // know who that is. Showing "someone" is honest; inventing a name is
-      // not.
-      label.textContent = (peer.name || "someone") + " @" + peer.at;
+      // not — and the connection id this used to print was not a name at all.
+      const where =
+        peer.focus !== peer.anchor
+          ? `${peer.anchor}–${peer.focus}`
+          : String(peer.anchor);
+      label.textContent =
+        (peer.name || "someone") +
+        " " +
+        peer.field +
+        " @" +
+        where +
+        (peer.idle ? " (idle)" : "");
       span.append(dot, label);
       host.appendChild(span);
     }

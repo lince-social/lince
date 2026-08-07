@@ -30,6 +30,8 @@ const FLAT_COLLAB_JOIN = "lince:collab-join";
 const FLAT_COLLAB_LEAVE = "lince:collab-leave";
 const FLAT_COLLAB_UPDATE = "lince:collab-update";
 const FLAT_COLLAB_STATE = "lince:collab-state";
+const FLAT_COLLAB_ACK = "lince:collab-ack";
+const FLAT_COLLAB_RESET = "lince:collab-reset";
 const FLAT_LIVE = "lince:live";
 const FLAT_PATCH_CARD_STATE = "lince:patch-card-state";
 const FLAT_ARCHIVE_WORKSPACE = "lince:archive-workspace";
@@ -256,6 +258,11 @@ export function createWidgetBridge({
   // the whole board is a single connection and the transport suppresses
   // self-echo — a server round-trip would never come back to this board.
   const joinedRooms = new Set();
+  // In-flight collab updates awaiting a `collab_ack`: id -> {instanceId,
+  // recordUid, token}. Cleared on ack; a dropped socket simply leaves entries
+  // unacked, which is exactly the signal the sand needs to re-export.
+  const collabPending = new Map();
+  let collabSendCounter = 0;
   // Live collab docs (Ontology §11 "Collab"): recordUid -> Set<instanceId>
   // that joined it. One server-side join per record regardless of how many
   // sands on this board edit it; snapshots fan out to every member frame.
@@ -367,7 +374,29 @@ export function createWidgetBridge({
       }
       // New-way room-based ABI from another session/device. Deliver flat to the
       // sibling sands that joined this room here.
-      deliverLaneEventToRoom(room, message.payload, message.from || "");
+      deliverLaneEventToRoom(
+        room,
+        message.payload,
+        message.from || "",
+        message.identity || "",
+      );
+      return;
+    }
+
+    if (type === "collab_ack") {
+      const id = String(message.id || "");
+      const pending = collabPending.get(id);
+      if (!pending) {
+        return;
+      }
+      collabPending.delete(id);
+      if (frameForInstance(pending.instanceId)) {
+        postFrame(pending.instanceId, {
+          type: FLAT_COLLAB_ACK,
+          recordUid: pending.recordUid,
+          token: pending.token,
+        });
+      }
       return;
     }
 
@@ -460,7 +489,13 @@ export function createWidgetBridge({
 
   // Deliver a new-way ABI lane event to the sibling sands that joined `room` on
   // this board. Prunes members whose frame has gone away.
-  function deliverLaneEventToRoom(room, payload, from) {
+  //
+  // `identity` is carried separately from `from` and must survive this hop:
+  // `from` is a CONNECTION id, while `identity` is the sender's subject and is
+  // present only when the host resolved that this viewer may know it
+  // (Ontology §11 presence). Dropping it here is what made named cursors
+  // impossible — a sand that never receives it can only ever render "someone".
+  function deliverLaneEventToRoom(room, payload, from, identity) {
     const members = roomMembers.get(room);
     if (!members) {
       return;
@@ -474,6 +509,7 @@ export function createWidgetBridge({
         type: FLAT_LANE_EVENT,
         room,
         from: from || "",
+        identity: identity || "",
         payload: cloneJsonValue(payload, null),
       });
     }
@@ -497,12 +533,24 @@ export function createWidgetBridge({
     }
     // Re-join collab docs too: the fresh join replays a full snapshot, which
     // heals whatever the sand's doc missed while the socket was down.
-    for (const recordUid of collabMembers.keys()) {
+    //
+    // That heals ONE direction. The snapshot flows Cell -> sand, so anything
+    // this sand sent and never got acked is still missing at the Cell and no
+    // amount of rejoining will carry it there. Any update still pending when
+    // the socket dropped is therefore declared lost, and each member frame is
+    // told to re-export from its last ACKED version.
+    collabPending.clear();
+    for (const [recordUid, members] of collabMembers) {
       sendTransport({
         type: "collab_join",
         id: `collab:${recordUid}`,
         record_uid: recordUid,
       });
+      for (const instanceId of members) {
+        if (frameForInstance(instanceId)) {
+          postFrame(instanceId, { type: FLAT_COLLAB_RESET, recordUid });
+        }
+      }
     }
     for (const instanceId of flatFrames) {
       postFrame(instanceId, { type: FLAT_LIVE, live: true });
@@ -1229,14 +1277,26 @@ export function createWidgetBridge({
 
     if (data.type === FLAT_COLLAB_UPDATE) {
       const recordUid = String(data.recordUid || "");
+      const instanceId = String(data.instanceId || "");
       const members = collabMembers.get(recordUid);
       // Only frames that joined the doc may write to it.
-      if (!recordUid || !members || !members.has(String(data.instanceId || ""))) {
+      if (!recordUid || !members || !members.has(instanceId)) {
         return;
       }
+      // A UNIQUE id per update, not one per record: the id is what routes the
+      // ack back to the frame that sent this particular delta, and a shared id
+      // would make two in-flight updates indistinguishable — the first ack
+      // would confirm work the Cell had not yet seen.
+      collabSendCounter += 1;
+      const id = `collab-up:${collabSendCounter}`;
+      collabPending.set(id, {
+        instanceId,
+        recordUid,
+        token: String(data.token || ""),
+      });
       sendTransport({
         type: "collab_update",
-        id: `collab-up:${recordUid}`,
+        id,
         record_uid: recordUid,
         update_base64: String(data.updateBase64 || ""),
       });

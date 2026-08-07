@@ -256,3 +256,248 @@ async fn op_identity_is_actor_plus_hlc() {
     .expect("dup append");
     assert!(dup.is_none());
 }
+
+// ---- retention (Ontology §11 "Op log") --------------------------------------
+//
+// Pruning is the one op-log operation that DESTROYS data, so what is pinned
+// here is mostly what it must refuse to do.
+
+/// Rewrite one extension key `n` times, leaving `n - 1` SUPERSEDED set ops.
+///
+/// Retention only drops ops a newer op has replaced, so a record written once
+/// and never touched again has nothing prunable — it is all current state.
+/// Anything asserting that pruning removed something has to create history
+/// first, which is the honest shape of the feature.
+async fn churn(e: &Engine, uid: &str, n: i64) {
+    for i in 1..=n {
+        store::records::set_extension(
+            &e.store.pool,
+            uid,
+            "work.tracking",
+            &serde_json::json!({ "estimate": i }),
+        )
+        .await
+        .expect("extension");
+    }
+}
+
+async fn contact(e: &Engine, uid: &str, sync_out: bool) {
+    store::organs::add_contact(&e.store.pool, uid, None, uid, "http://peer", 1)
+        .await
+        .expect("contact");
+    store::organs::set_sync_policy(&e.store.pool, uid, sync_out, true)
+        .await
+        .expect("policy");
+}
+
+/// With nobody to relay to there is no floor, and pruning must do nothing.
+///
+/// The tempting reading of "no contacts" is "nobody needs these ops, delete
+/// them all". That is wrong while replica bootstrap does not exist: a contact
+/// added tomorrow can only be brought up to date by replaying the log.
+#[tokio::test]
+async fn no_contacts_means_no_floor_and_nothing_is_pruned() {
+    let (e, _organ) = cell().await;
+    plain(&e, "one").await;
+    let before = sync_ops::max_seq(&e.store.pool).await.expect("max");
+    assert!(before > 0, "the record wrote ops");
+
+    assert_eq!(
+        sync_ops::retention_floor(&e.store.pool).await.expect("floor"),
+        None,
+    );
+    let report = e.prune_op_log(false).await.expect("prune");
+    assert_eq!(report.removed, 0);
+    assert_eq!(
+        sync_ops::max_seq(&e.store.pool).await.expect("max"),
+        before,
+        "the log is untouched",
+    );
+}
+
+/// The floor is the SLOWEST contact. A peer that has seen nothing pins it at
+/// zero even when another is fully caught up — otherwise catching one peer up
+/// would delete what the other still needs.
+#[tokio::test]
+async fn the_floor_is_the_least_advanced_contact() {
+    let (e, _organ) = cell().await;
+    let uid = plain(&e, "one").await;
+    churn(&e, &uid, 5).await;
+    let head = sync_ops::max_seq(&e.store.pool).await.expect("max");
+    contact(&e, "organ-fast", true).await;
+    contact(&e, "organ-slow", true).await;
+
+    store::organs::advance_peer_acked_seq(&e.store.pool, "organ-fast", head)
+        .await
+        .expect("advance");
+    assert_eq!(
+        sync_ops::retention_floor(&e.store.pool).await.expect("floor"),
+        Some(0),
+        "the slow contact holds the floor down",
+    );
+    assert_eq!(e.prune_op_log(false).await.expect("prune").removed, 0);
+
+    store::organs::advance_peer_acked_seq(&e.store.pool, "organ-slow", head)
+        .await
+        .expect("advance");
+    assert_eq!(
+        sync_ops::retention_floor(&e.store.pool).await.expect("floor"),
+        Some(head),
+    );
+    let report = e.prune_op_log(false).await.expect("prune");
+    assert!(report.removed > 0, "now there is something to drop");
+
+    // The seqs are gone, and the next op does NOT reuse them — that is what
+    // AUTOINCREMENT buys, and checkpoints depend on it: a recycled seq would
+    // make a peer's checkpoint silently skip real ops.
+    plain(&e, "two").await;
+    let next = sync_ops::max_seq(&e.store.pool).await.expect("max");
+    assert!(
+        next > head,
+        "a pruned seq must never be handed out again (got {next}, pruned through {head})",
+    );
+}
+
+/// A blocked contact must not freeze retention forever: we will never send to
+/// them again, so what they have not received is not owed to anyone.
+#[tokio::test]
+async fn a_blocked_contact_does_not_hold_the_floor() {
+    let (e, _organ) = cell().await;
+    plain(&e, "one").await;
+    let head = sync_ops::max_seq(&e.store.pool).await.expect("max");
+    contact(&e, "organ-live", true).await;
+    contact(&e, "organ-gone", true).await;
+    store::organs::advance_peer_acked_seq(&e.store.pool, "organ-live", head)
+        .await
+        .expect("advance");
+    store::organs::set_trust(&e.store.pool, "organ-gone", "blocked")
+        .await
+        .expect("block");
+
+    assert_eq!(
+        sync_ops::retention_floor(&e.store.pool).await.expect("floor"),
+        Some(head),
+    );
+}
+
+/// The floor moves FORWARD only. A peer may legitimately ask from an older
+/// point (a rebuild, a restored backup); that must never rewind the floor.
+#[tokio::test]
+async fn the_floor_never_goes_backwards() {
+    let (e, _organ) = cell().await;
+    plain(&e, "one").await;
+    let head = sync_ops::max_seq(&e.store.pool).await.expect("max");
+    contact(&e, "organ-a", true).await;
+
+    store::organs::advance_peer_acked_seq(&e.store.pool, "organ-a", head)
+        .await
+        .expect("advance");
+    store::organs::advance_peer_acked_seq(&e.store.pool, "organ-a", 0)
+        .await
+        .expect("advance");
+    assert_eq!(
+        sync_ops::retention_floor(&e.store.pool).await.expect("floor"),
+        Some(head),
+    );
+}
+
+/// An op still queued for delivery survives pruning even when it sits below
+/// the floor. The outbox points into the log by `seq`, so deleting it would
+/// turn a pending delivery into a silent no-op — `drain_outbox` would find
+/// nothing and drop the row.
+#[tokio::test]
+async fn a_queued_op_is_never_pruned_out_from_under_the_outbox() {
+    let (e, _organ) = cell().await;
+    contact(&e, "organ-a", true).await;
+    // Written AFTER the contact exists, so the write enqueues to them.
+    plain(&e, "one").await;
+    let head = sync_ops::max_seq(&e.store.pool).await.expect("max");
+    let queued = sync_ops::outbox_due(&e.store.pool).await.expect("outbox");
+    assert!(!queued.is_empty(), "the write queued something to send");
+
+    // Claim the peer is fully caught up even though delivery never happened —
+    // the contradiction pruning has to survive.
+    store::organs::advance_peer_acked_seq(&e.store.pool, "organ-a", head)
+        .await
+        .expect("advance");
+    let report = e.prune_op_log(false).await.expect("prune");
+    assert!(report.retained > 0, "queued ops were kept back");
+
+    for row in &queued {
+        assert!(
+            sync_ops::get_by_seq(&e.store.pool, row.seq)
+                .await
+                .expect("get")
+                .is_some(),
+            "seq {} is still queued and must still exist",
+            row.seq,
+        );
+    }
+}
+
+/// A dry run reports exactly what the real one would delete, and changes
+/// nothing. Same predicate, so the two cannot drift apart.
+#[tokio::test]
+async fn a_dry_run_reports_without_deleting() {
+    let (e, _organ) = cell().await;
+    let uid = plain(&e, "one").await;
+    churn(&e, &uid, 5).await;
+    let head = sync_ops::max_seq(&e.store.pool).await.expect("max");
+    contact(&e, "organ-a", true).await;
+    store::organs::advance_peer_acked_seq(&e.store.pool, "organ-a", head)
+        .await
+        .expect("advance");
+
+    let dry = e.prune_op_log(true).await.expect("dry");
+    assert!(dry.removed > 0);
+    assert_eq!(
+        sync_ops::max_seq(&e.store.pool).await.expect("max"),
+        head,
+        "a dry run deletes nothing",
+    );
+    let wet = e.prune_op_log(false).await.expect("prune");
+    assert_eq!(dry.removed, wet.removed, "the report matched the deletion");
+}
+
+/// A grant-holding contact with the broad feed OFF must not raise the floor
+/// past ops an ordinary contact still needs.
+///
+/// The two are counted together in `retention_floor` on purpose — a grant is
+/// its own permission and keeps flowing while `sync_out` is off — so this pins
+/// that including it cannot let one contact's progress speak for another's.
+#[tokio::test]
+async fn a_grant_only_contact_cannot_raise_the_floor_alone() {
+    let (e, _organ) = cell().await;
+    let root = plain(&e, "conversation").await;
+    store::replica::make_own_root(&e.store.pool, &root)
+        .await
+        .expect("root");
+
+    // One ordinary feed contact, one grant-only contact.
+    contact(&e, "organ-feed", true).await;
+    contact(&e, "organ-grant", false).await;
+    store::replica::offer(&e.store.pool, &root, "organ-grant")
+        .await
+        .expect("offer");
+    store::replica::accept(&e.store.pool, &root, "organ-grant")
+        .await
+        .expect("accept");
+
+    let head = sync_ops::max_seq(&e.store.pool).await.expect("max");
+
+    // The grant contact races ahead; the feed contact has received nothing.
+    store::organs::advance_peer_acked_seq(&e.store.pool, "organ-grant", head)
+        .await
+        .expect("advance");
+
+    assert_eq!(
+        sync_ops::retention_floor(&e.store.pool).await.expect("floor"),
+        Some(0),
+        "the feed contact still pins the floor at zero",
+    );
+    assert_eq!(
+        e.prune_op_log(false).await.expect("prune").removed,
+        0,
+        "nothing may be dropped while a contact is still owed it",
+    );
+}

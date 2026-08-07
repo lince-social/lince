@@ -23,6 +23,15 @@ pub fn media_dir() -> PathBuf {
     web_config_dir().join("media")
 }
 
+/// Where published DNA sand packages live (`lince/dna/sand/<prefix>/<slug>/<version>/...`),
+/// mirroring `media_dir()`'s local-disk pattern — no bucket/object-store backend
+/// actually runs anywhere in this codebase, so publish/install stays disk-backed
+/// and rides the existing peer sync of `record`/`record_extension` rows instead
+/// of inventing a bespoke cross-organ transfer protocol.
+pub fn dna_dir() -> PathBuf {
+    web_config_dir().join("dna").join("sand")
+}
+
 pub fn web_config_dir() -> PathBuf {
     config_root_dir().join("web")
 }

@@ -222,6 +222,10 @@ function makeClient(name) {
     recordUid: "r-1",
     host,
     LoroDoc,
+    // Send synchronously here: this test models network latency explicitly
+    // with `holdTheNetwork`, and a debounce on top would only make WHEN things
+    // are delivered ambiguous. The debounce has its own test.
+    sendDebounceMs: 0,
     surface: {
       read: () => ({ head: state.head, body: state.body }),
       write: ({ head, body }) => { state.head = head; state.body = body; },
@@ -275,6 +279,314 @@ assert.equal(bob.state.head, "Shared title");
 const before = bob.state.body;
 alice.editor.localEdit();
 assert.equal(bob.state.body, before, "an edit that changed nothing changes nothing");
+"#,
+    );
+}
+
+/// An edit made while the socket is down must still reach the Cell.
+///
+/// This is the failure the ack exists for, and it is silent without one: the
+/// delta is exported relative to the version the client believes the Cell
+/// holds, so if that version advances on SEND rather than on confirmation, an
+/// update lost in flight is excluded from every future export. The text stays
+/// on the author's screen and never exists anywhere else — which looks exactly
+/// like success until someone else opens the record.
+#[test]
+fn work_sent_while_the_socket_was_down_survives_the_reconnect() {
+    run(
+        "ack",
+        r#"
+import init, { LoroDoc } from "./loro-index.js";
+import { createCollabEditor } from "./collab-editor.js";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+await init({ module_or_path: readFileSync("./loro_wasm_bg.wasm") });
+
+globalThis.btoa ??= (s) => Buffer.from(s, "binary").toString("base64");
+globalThis.atob ??= (s) => Buffer.from(s, "base64").toString("binary");
+
+// The Cell, plus a switch for whether the wire is actually carrying anything.
+const server = new LoroDoc();
+let connected = true;
+let editor = null;
+const acks = [];
+
+const state = { head: "", body: "" };
+const host = {
+  collabJoin: () => () => {},
+  // A dropped socket does NOT report failure to the caller — that is precisely
+  // why the bug was silent. The update simply never arrives and no ack ever
+  // comes back for it.
+  collabUpdate: (uid, b64, token) => {
+    if (!connected) return;
+    server.import(Buffer.from(b64, "base64"));
+    acks.push(token);
+  },
+  onCollabAck: (uid, handler) => { acks.handler = handler; return () => {}; },
+  onCollabReset: (uid, handler) => { acks.reset = handler; return () => {}; },
+};
+editor = createCollabEditor({
+  recordUid: "r-1",
+  host,
+  LoroDoc,
+  sendDebounceMs: 0,
+  surface: {
+    read: () => ({ head: state.head, body: state.body }),
+    write: ({ head, body }) => { state.head = head; state.body = body; },
+  },
+});
+editor.join();
+
+// Deliver every ack the fake Cell produced.
+function flushAcks() {
+  while (acks.length) acks.handler(acks.shift());
+}
+
+// A normal edit, acked.
+state.body = "hello";
+editor.localEdit();
+flushAcks();
+assert.equal(server.getText("body").toString(), "hello", "the Cell has the first edit");
+assert.equal(editor.unacked(), 0, "and nothing is left waiting");
+
+// The socket dies. The user keeps typing; nothing reaches the Cell and no ack
+// comes back, so this work is still outstanding.
+connected = false;
+state.body = "hello, offline work";
+editor.localEdit();
+assert.equal(server.getText("body").toString(), "hello", "the Cell heard nothing");
+assert.ok(editor.unacked() > 0, "the client knows it is still waiting");
+
+// Reconnect. The bridge replays the Cell's snapshot (Cell -> sand) and tells
+// the sand to re-export anything unacked (sand -> Cell). Only the second one
+// can carry the offline work.
+connected = true;
+acks.reset();
+flushAcks();
+
+assert.equal(
+  server.getText("body").toString(),
+  "hello, offline work",
+  "the work typed while the socket was down reached the Cell after reconnect",
+);
+assert.equal(editor.unacked(), 0, "and is confirmed, not merely re-sent");
+
+// Re-sending something that DID land is a no-op rather than duplicated text —
+// the safe direction to be wrong in.
+acks.reset();
+flushAcks();
+assert.equal(server.getText("body").toString(), "hello, offline work");
+"#,
+    );
+}
+
+/// One update failing on its own must not let a LATER ack confirm it.
+///
+/// A permission refusal answers with an Error rather than an ack while the
+/// socket stays up, so there is no reconnect to clear the hole. If a later
+/// ack were treated as cumulative, the confirmed frontier would move past work
+/// the Cell never accepted and that work could never be re-exported — the same
+/// silent loss the ack exists to prevent, arriving through the recovery path.
+#[test]
+fn a_later_ack_does_not_confirm_an_update_that_was_refused() {
+    run(
+        "ackgap",
+        r#"
+import init, { LoroDoc } from "./loro-index.js";
+import { createCollabEditor } from "./collab-editor.js";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+await init({ module_or_path: readFileSync("./loro_wasm_bg.wasm") });
+
+globalThis.btoa ??= (s) => Buffer.from(s, "binary").toString("base64");
+globalThis.atob ??= (s) => Buffer.from(s, "base64").toString("binary");
+
+const server = new LoroDoc();
+// Updates listed here are REFUSED: accepted nowhere, acked never, socket fine.
+let refuse = new Set();
+const sent = [];
+let ackHandler = null;
+let resetHandler = null;
+
+const state = { head: "", body: "" };
+const host = {
+  collabJoin: () => () => {},
+  collabUpdate: (uid, b64, token) => {
+    sent.push({ token, b64 });
+    if (refuse.has(token)) return; // an Error frame comes back, not an ack
+    server.import(Buffer.from(b64, "base64"));
+    // Acks are delivered by the test, so ordering is explicit.
+  },
+  onCollabAck: (uid, h) => { ackHandler = h; return () => {}; },
+  onCollabReset: (uid, h) => { resetHandler = h; return () => {}; },
+};
+const editor = createCollabEditor({
+  recordUid: "r-1",
+  host,
+  LoroDoc,
+  sendDebounceMs: 0,
+  surface: {
+    read: () => ({ head: state.head, body: state.body }),
+    write: ({ head, body }) => { state.head = head; state.body = body; },
+  },
+});
+editor.join();
+
+// Update 1 lands and is acked.
+state.body = "one";
+editor.localEdit();
+ackHandler(sent[sent.length - 1].token);
+assert.equal(server.getText("body").toString(), "one");
+
+// Update 2 is REFUSED — no ack for it, ever.
+refuse.add(String(Number(sent[sent.length - 1].token) + 1));
+state.body = "one two";
+editor.localEdit();
+const refused = sent[sent.length - 1].token;
+assert.equal(server.getText("body").toString(), "one", "the Cell rejected it");
+
+// Update 3 succeeds and IS acked. It must not confirm update 2.
+refuse.clear();
+state.body = "one two three";
+editor.localEdit();
+ackHandler(sent[sent.length - 1].token);
+
+assert.ok(
+  editor.unacked() > 0,
+  "the refused update is still outstanding, not confirmed by a later ack",
+);
+
+// A reset re-exports from the last CONTIGUOUSLY confirmed version, which is
+// update 1's — so update 2's text is carried again and the Cell converges.
+resetHandler();
+for (const item of sent.slice(-1)) ackHandler(item.token);
+assert.equal(
+  server.getText("body").toString(),
+  "one two three",
+  "the gapped work was re-sent rather than lost",
+);
+"#,
+    );
+}
+
+/// Save state reports CONFIRMED, not merely sent.
+///
+/// A surface rendering "saved" the moment it hands bytes to the socket tells
+/// the user something it cannot know. The pending count empties only on an
+/// ack, so this is the one signal a UI may honestly render as "saved".
+#[test]
+fn save_state_flips_to_saved_only_when_the_cell_confirms() {
+    run(
+        "savestate",
+        r#"
+import init, { LoroDoc } from "./loro-index.js";
+import { createCollabEditor } from "./collab-editor.js";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+await init({ module_or_path: readFileSync("./loro_wasm_bg.wasm") });
+
+globalThis.btoa ??= (s) => Buffer.from(s, "binary").toString("base64");
+globalThis.atob ??= (s) => Buffer.from(s, "base64").toString("binary");
+
+const states = [];
+let ackHandler = null;
+let lastToken = null;
+const state = { head: "", body: "" };
+const editor = createCollabEditor({
+  recordUid: "r-1",
+  host: {
+    collabJoin: () => () => {},
+    collabUpdate: (uid, b64, token) => { lastToken = token; },
+    onCollabAck: (uid, h) => { ackHandler = h; return () => {}; },
+    onCollabReset: () => () => {},
+  },
+  LoroDoc,
+  sendDebounceMs: 0,
+  onSaveState: (s) => states.push(s),
+  surface: {
+    read: () => ({ head: state.head, body: state.body }),
+    write: ({ head, body }) => { state.head = head; state.body = body; },
+  },
+});
+editor.join();
+
+state.body = "typing";
+editor.localEdit();
+assert.deepEqual(
+  editor.saveState(),
+  { pending: 1, saved: false },
+  "in flight is not saved",
+);
+assert.ok(states.some((s) => !s.saved), "the surface was told it is saving");
+
+ackHandler(lastToken);
+assert.deepEqual(
+  editor.saveState(),
+  { pending: 0, saved: true },
+  "the ack is what makes it saved",
+);
+assert.ok(states[states.length - 1].saved, "the surface was told it landed");
+"#,
+    );
+}
+
+/// A map-key field binds through the ordinary extension write, not the doc.
+///
+/// Two authorities over one value can only disagree, and extension keys are
+/// already per-key LWW ops carrying their own HLC — so the binding drives that
+/// path rather than adding a Loro map beside it. Only the edited KEY travels;
+/// sending the whole namespace would clobber sibling keys another Cell changed.
+#[test]
+fn a_map_key_field_writes_one_key_through_the_normal_action() {
+    run(
+        "mapkey",
+        r#"
+import init from "./loro-index.js";
+import { attachField } from "./collab-editor.js";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+await init({ module_or_path: readFileSync("./loro_wasm_bg.wasm") });
+
+// A minimal stand-in for an input element.
+const el = {
+  value: "",
+  handlers: {},
+  addEventListener(name, fn) { this.handlers[name] = fn; },
+  removeEventListener(name) { delete this.handlers[name]; },
+};
+const acts = [];
+const host = { act: (a) => { acts.push(a); return Promise.resolve({}); } };
+
+const bound = await attachField(el, {
+  recordUid: "r-1",
+  host,
+  path: "work.tracking.estimate",
+  debounceMs: 0,
+});
+assert.equal(bound.kind, "lww", "a scalar is not a CRDT and does not pretend to be");
+
+el.value = "5";
+el.handlers.input();
+await new Promise((r) => setTimeout(r, 5));
+
+assert.equal(acts.length, 1);
+assert.deepEqual(acts[0], {
+  action: "set-extension",
+  target: "r-1",
+  namespace: "work.tracking",
+  fds: { estimate: "5" },
+}, "the namespace splits at the LAST dot and only that key travels");
+
+// A dotted path that names no key binds nothing rather than guessing.
+let complained = null;
+const bad = await attachField(el, {
+  recordUid: "r-1",
+  host,
+  path: "nokey",
+  onError: (m) => { complained = m; },
+});
+assert.equal(bad, null);
+assert.ok(complained, "and it says why");
 "#,
     );
 }

@@ -396,6 +396,31 @@ pub async fn set_extension(
     Ok(())
 }
 
+/// Drops one namespaced extension row without touching the Record itself —
+/// e.g. unpublishing a DNA sand package ("no longer offered") is not the
+/// same act as deleting its Record.
+pub async fn delete_extension(
+    pool: &SqlitePool,
+    record_uid: &str,
+    namespace: &str,
+) -> Result<(), StoreError> {
+    sqlx::query("DELETE FROM record_extension WHERE record_uid = ? AND namespace = ?")
+        .bind(record_uid)
+        .bind(namespace)
+        .execute(pool)
+        .await?;
+    crate::sync_ops::log_local(
+        pool,
+        "record_extension",
+        record_uid,
+        namespace,
+        OpKind::Tombstone,
+        None,
+    )
+    .await?;
+    Ok(())
+}
+
 pub async fn get_extension(
     pool: &SqlitePool,
     record_uid: &str,

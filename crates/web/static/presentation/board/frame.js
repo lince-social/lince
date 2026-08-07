@@ -21,6 +21,8 @@
   const scanWaiters = new Map(); // scanId -> {resolve, reject}
   const laneHandlers = new Set(); // {room, handler}
   const collabHandlers = new Map(); // recordUid -> Set<handler(snapshotBase64)>
+  const collabAckHandlers = new Map(); // recordUid -> Set<handler(token)>
+  const collabResetHandlers = new Map(); // recordUid -> Set<handler()>
   let live = false;
   const liveHandlers = new Set();
   let signingState = Object.freeze({
@@ -167,8 +169,25 @@
         if (handlers) for (const h of [...handlers]) h(data.snapshotBase64 || "");
         break;
       }
+      case "lince:collab-ack": {
+        const handlers = collabAckHandlers.get(data.recordUid);
+        if (handlers) for (const h of [...handlers]) h(String(data.token || ""));
+        break;
+      }
+      case "lince:collab-reset": {
+        const handlers = collabResetHandlers.get(data.recordUid);
+        if (handlers) for (const h of [...handlers]) h();
+        break;
+      }
       case "lince:lane-event":
-        for (const entry of laneHandlers) if (entry.room === data.room) entry.handler(data.payload, data.from);
+        // Three arguments, and the third is the only one safe to show a human:
+        // `from` is a connection id (an internal routing handle), `identity` is
+        // the sender's subject and arrives ONLY when the host decided this
+        // viewer may know it. A sand that renders `from` as a name is printing
+        // an internal id at a person.
+        for (const entry of laneHandlers)
+          if (entry.room === data.room)
+            entry.handler(data.payload, data.from, data.identity || null);
         break;
       case "lince:live":
         live = Boolean(data.live);
@@ -304,8 +323,48 @@
         }
       };
     },
-    collabUpdate(recordUid, updateBase64) {
-      post({ type: "lince:collab-update", recordUid, updateBase64: String(updateBase64 || "") });
+    // Send a local delta. `token` is echoed back through `onCollabAck` once the
+    // Cell has merged and logged it — a sand that advances its "already sent"
+    // version on send rather than on ack silently drops work when a socket
+    // dies mid-flight.
+    collabUpdate(recordUid, updateBase64, token) {
+      post({
+        type: "lince:collab-update",
+        recordUid,
+        updateBase64: String(updateBase64 || ""),
+        token: String(token || ""),
+      });
+    },
+    /** `handler(token)` when the Cell confirms that update landed. */
+    onCollabAck(recordUid, handler) {
+      if (typeof handler !== "function") return () => {};
+      let handlers = collabAckHandlers.get(recordUid);
+      if (!handlers) {
+        handlers = new Set();
+        collabAckHandlers.set(recordUid, handlers);
+      }
+      handlers.add(handler);
+      return () => {
+        handlers.delete(handler);
+        if (handlers.size === 0) collabAckHandlers.delete(recordUid);
+      };
+    },
+    /**
+     * `handler()` when the connection was re-established and anything still
+     * unacked must be re-exported. The rejoin snapshot only heals Cell -> sand.
+     */
+    onCollabReset(recordUid, handler) {
+      if (typeof handler !== "function") return () => {};
+      let handlers = collabResetHandlers.get(recordUid);
+      if (!handlers) {
+        handlers = new Set();
+        collabResetHandlers.set(recordUid, handlers);
+      }
+      handlers.add(handler);
+      return () => {
+        handlers.delete(handler);
+        if (handlers.size === 0) collabResetHandlers.delete(recordUid);
+      };
     },
 
     onLive(handler) {

@@ -105,7 +105,7 @@ impl OfficialWidgetBuilder {
 // Only current frame.js sands are wired for construction, plus `shell` (the
 // board's own chrome). Legacy sources may remain under `sand/`, but stay
 // unwired until rebuilt on the current bridge and explicitly added here.
-const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 23] = [
+const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 24] = [
     OfficialWidgetBuilder::Html {
         feature_flag: shell::FEATURE_FLAG,
         source_builder: shell::edit_source,
@@ -199,6 +199,10 @@ const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 23] = [
     OfficialWidgetBuilder::Package {
         feature_flag: configuration::FEATURE_FLAG,
         package_builder: configuration::package,
+    },
+    OfficialWidgetBuilder::Html {
+        feature_flag: sand_publisher::FEATURE_FLAG,
+        source_builder: sand_publisher::source,
     },
 ];
 

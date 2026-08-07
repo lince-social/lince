@@ -21,113 +21,6 @@ Chumbo Profundo — CMYK: 10, 10, 0, 92; HEX: `#121214`; RGB: 18, 18, 20.
 Cinza — CMYK: 10, 5, 0, 12; HEX: `#A7B4C2`; RGB: 203, 213, 225.
 Branco Gelo — CMYK: 2, 1, 0, 1; HEX: `#F8FAFC`; RGB: 248, 250, 252.
 
-## Customization and architecture
-
-- [ ] In Web Interface, user can control all the basic aspects of the ui, the padding, margin gap of elements, border radius, thickness and colorscheme. In web version there should not be even one color hardcoded, only use tags like primary-background, or light-accent. The default style should come from the main style .css file, that has comments on every variable to explain where it is used, so when people make their .css files and add to dir of styles and choose in configuration table which style they want (name of file) they get the variables values from file and the app changes (either on boot if makes app faster or during setting). When we speak of specific details of style here like default colorscheme and scale units we are talking about default file, if people want they can customize it.
-- [ ] Architecture (from Sand: Colorschemes): The system is defined as named semantic tokens, not hex values — surface-raised, ink-primary, need, contribution, accent, focus — resolved per active colorscheme at runtime (the old a2 Operation to switch schemes is the spiritual ancestor). Scaling tokens (padding-s, radius-m) ride the same mechanism. A Sand author never picks a color; they name a slot, and the user's scheme decides what it looks like. That's how "the base app is minimalist so users can express themselves" survives contact with real widgets.
-- [ ] The default style is always loaded first and defines every variable. User style files are optional overrides: when a variable is absent, the value from the default style remains. Every variable in the default file has a comment explaining its use.
-- [ ] Style files live in the Web styles directory and are selected by safe `.css` filename only. Invalid, missing, or unreadable files fall back to the default without preventing the app or a Sand from loading.
-- [ ] Styles load in this order: default style, configured global style, per-Sand style. The global style is stored in the configuration table. A per-Sand style is stored in that card's host state and overrides only that Sand; choosing "inherit global style" removes the override.
-- [ ] The configuration table selects the global style and applies it immediately. The Sand gear configuration, together with login, Protein, and behavior, shows the inherited global style and selects an optional style for that Sand. Both choices persist.
-- [ ] Every Sand iframe loads the style layers itself because CSS variables from the board do not cross the iframe boundary. Changing the global style updates Sands that inherit it without replacing a Sand's own override.
-- [ ] The colorscheme has 16 semantic color slots, each with light, default, and dark values, for 48 color variables: primary-background, secondary-background, raised-background, primary-ink, secondary-ink, border, accent, focus, need, contribution, peace, info, success, warning, danger, and selection. The default Lince style may repeat colors between slots and tones; custom styles may define all 48 for finer control. LynxUI does not map backend data or a badge type to those slots; a Sand may opt into a local mapping at its own boundary.
-- [ ] The default colorscheme is Lynx with Dark Lynx as its initial mode and Light Lynx as its inverse. Dark Lynx uses Chumbo Profundo for the background and Branco Gelo for primary characters; Light Lynx reverses them. A single icon button switches mode immediately; both modes use the same scale, geometry, and component rules.
-- [ ] Lynx derives close neutral steps from Chumbo Profundo and Branco Gelo. Default component backgrounds remain Chumbo or Branco; the 10% lighter and darker variants are used only for subtle inputs and diffuse shadows. Default content is void-background with white or gray foreground; it does not assign red, green, amber, or any semantic color to data. Roxo Cobalt is the primary accent in Light Lynx and Roxo Noturno is the primary accent in Dark Lynx for stronger contrast; the other purple is the supporting accent.
-
-## Space, thickness, roundness, rigidity
-
-- [ ] Grid: 4px base unit; spacing scale 4, 8, 12, 16, 24, 32, 48. Compact component internals may use the 2px half-unit.
-- [ ] Density: slim by default. Main content regions touch with no decorative gaps or outer padding. Component padding is half the previous demo spacing. Records use 5px internal padding; form controls use 3px vertically and 5px horizontally so empty space does not exceed the text height.
-- [ ] Keep a compact 4px gap between text and adjacent metadata in the same compartment, such as a column name and its card count.
-- [ ] Borders: use 0.5px hairlines only when needed to show where one region ends and another starts. `.lynx-shadow` is a small tokenized CSS shadow on an individual component’s own root; it follows that element’s shape and radius exactly, has no JavaScript or wrapper cost, and may be locally directed with `--lynx-shadow-x`, `--lynx-shadow-y`, and `--lynx-shadow-blur`. Its default is dark and falls to the right and bottom. `.lynx-shadow--light` adds an optional lighter top-left companion. Buttons, Kanban cards, Kanban column headers, and the message channel-list boundary opt into the dark shadow. Inputs, textareas, and dropdown controls are flat with a foreground border. Outer Sands and large workflow regions do not use shadows. Adjacent regions share one boundary; no double borders and no boxes inside boxes. Sand outer edges have no border by default on the free canvas. Stronger focus and active state remain distinct from ordinary borders.
-- [ ] Roundness: Lynx is square by default. Badges and buttons use a restrained 2px radius. Custom styles may change the radius tokens.
-- [ ] Badge is the component name and keeps the `.lynx-status` class/API. It has a transparent background and primary foreground hairline border by default; its optional icon uses the same color. The component does not interpret data as good, bad, warning, or any other semantic hue. A Sand may locally set `--status-color` when its own domain calls for it.
-- [ ] Invalid inputs keep the error-color border and show an in-field error icon. Hovering or focusing that icon reveals the validation message in a transparent, error-color outlined tooltip; the message also remains associated with the input for assistive technology.
-- [ ] Buttons use a subtle 2px radius. Use familiar, distinct action icons such as plus, check, close, save, download, and trash; keep text when the icon alone is ambiguous.
-- [ ] Radio controls are minimal circles filled completely with the accent when selected. Dropdowns, selects, and disclosures use one small chevron treatment. LynxUI selects use the library menu instead of a browser-styled popup.
-- [ ] Rigidity: "firm paper." Cards hold their shape with crisp hairline borders; nothing bounces, nothing elastic.
-
-## Content and Sand chrome
-
-- [ ] Prefer content directly on the Sand surface. A card is a card, not a floating card inside another box; a column is a column, not a box containing another padded box.
-- [ ] Remove redundant headings and labels. Do not show both "Sand / Communication" and "Messages", or text beside a self-explanatory icon.
-- [ ] Omit a Sand header when the content already explains itself. Keep visible controls focused on creating, editing, moving, completing, or replying to Records.
-- [ ] Only the focused Sand shows its gray bottom-right corner. Hovering or focusing the corner reveals configuration, Protein, layout, and other Sand controls like the corner of a page turning.
-- [ ] The base web uses an always-visible gray folded top-right corner for system controls. It holds the mode switch and development tools without adding a persistent header; Sand controls remain in their bottom-right corners.
-- [ ] Do not add dividers when content already makes the boundary clear. Message identity and avatar separate consecutive messages without a line.
-- [ ] Use the darker generated black-and-white step, never gray or the lighter step, for background separation. Kanban, Messages, and workflow regions share the canvas background without outer shadows; only individual components may opt into the shared shadow.
-- [ ] Do not divide Kanban columns, column headers from their first card, cards, table rows, list rows, or ordinary adjacent items with lines. Use grouping, spacing, and close surfaces only when a boundary needs to be understood.
-- [ ] Inputs, textareas, and closed dropdown controls use the base surface with a foreground border and no shadow. Invalid controls use the `hot-border` token, red in default Lynx. Unchecked checkboxes use the base surface; checked checkboxes use the accent.
-- [ ] Hovering an element on the base surface uses the subtle 10%-lighter surface. Hover never darkens the current base surface.
-- [ ] Forms, tables, lists, and adjacent workflow regions align to shared edges. Do not use spacing that makes neighboring compartment boundaries stop at different positions, and omit row or field lines when grouping is already clear. A separator belongs between items, never after the final item.
-- [ ] Prefer clear icons for actions and give every icon button an accessible name and a tooltip on hover. Keep text when an icon would be ambiguous.
-- [ ] Keep tooltips within the boundary of the Sand or component that owns them, and give SVG strokes enough internal view-box space that icons are never clipped.
-- [ ] When the Sand is idle, the visible UI prioritizes Records, their state, and direct interaction with them rather than configuration of the Sand.
-
-## Transparency and elevation
-
-- [ ] Data surfaces are always opaque. Honesty rule: you must always know exactly which surface a number sits on. No glassmorphism, no frosted panels over content.
-- [ ] Translucency is allowed only for ephemeral chrome: edit-mode handles, drag previews, presence cursors, auto-hiding call UI — things that are explicitly not Ledger truth.
-- [ ] Overlays/scrims at 50–60% ink. Menus are opaque. Tooltips use Chumbo Profundo with Branco Gelo text and a hairline border in that same foreground color; dialogs use a Cinza border.
-- [ ] Elevation is flat by default. `.lynx-shadow` is the sole shared elevation utility and is opt-in except for ordinary buttons and form controls, which use its default dark lower-right shadow. Paper doesn't hover.
-
-## Line, shape, and texture grammar
-
-- [ ] A deliberate second channel so color is never the only carrier: Solid = settled (Ledger facts, committed quantities). Dashed = declared (promises, projections, staged rules). This is as load-bearing as any hue.
-
-## Typography
-
-- [ ] Numbers first: tabular figures everywhere quantities appear, negative quantities use a true minus (−3), and zero and positive quantities have no sign (0, 5). The zero state is styled quietly — peace is the one value that should never demand attention.
-- [ ] Lato is the default body and interface typeface. Aleo is used mostly for titles and semantic headings. Quantities and technical metadata keep the monospace token. EN/PT is supported from day one, with generous line lengths and no cramped all-caps labels.
-- [ ] Ordinary interface text is 14px by default. Compact secondary metadata stays readable at 11–12px; do not shrink routine labels or content to create density.
-- [ ] Inline icons, counts, and quantity-state marks are optically centered with the adjacent text. Correct a glyph inside its SVG when its drawing is off-center; do not move the entire control.
-
-## Motion
-
-- [ ] No animations, things change instantly, and they dont pulse, if something is green it is synced and ok.
-- [ ] Remove interface transitions, keyframe animations, hover movement, startup drawing, workspace sliding, animated modal entrances, and JavaScript that waits for transition completion. Content owned by a Sand, such as a game or terminal, is not interface motion.
-
-## The test
-
-- [ ] Every design decision gets one question: does this get Ana to her four minutes of human choice faster, or is it the tool asking to be looked at? The Death of Lince applies to its UI first. If the user wants, they can use lince as an app that lets them create and interact with beautiful and cool things and produce awesome graphs and automation visualizations, but that is a choice, the default of lince is meeting your need to use apps like it with minimal effort.
-
-## Design system work
-
-- [ ] Migrate the board, shared components, and every official Sand from hardcoded visual values to the semantic color, spacing, border, radius, typography, elevation, and motion variables. User-owned expression colors remain data, not system chrome.
-- [ ] Add a design-system check that rejects hardcoded colors in the Web interface and official Sands, excluding the default style definitions, vendored assets, and explicit user-owned expression values.
-- [ ] Test default fallback, optional partial styles, safe filename handling, global persistence, per-Sand persistence and isolation, live style changes, and style loading inside iframes.
-- [ ] Test quantity formatting, tabular figures, solid and dashed truth lines, and that status meaning is available through an icon, label, shape, or line style instead of color alone.
-
-## LynxUI
-
-- [x] Select Lynx and keep one evolving light/dark demo at [`lynx-ui-concepts/lynx.html`](lynx-ui-concepts/lynx.html). Update this design-system description whenever the demo guidelines change.
-- [x] Build the LynxUI base as a framework-free component library for official Sands. Use native semantic HTML, explicit `lynx-*` classes, and a small JavaScript layer only for behavior that HTML does not provide consistently.
-- [x] Serve shared `lynx-ui.css` and `lynx-ui.js` assets. LynxUI uses the design-system tokens and defines no separate colorscheme, spacing scale, motion, or elevation. Component selectors have low specificity so global and per-Sand styles can override them.
-- [x] Provide Catppuccin Macchiato as the second style. Its CSS changes only colorscheme variables, uses the official Base, Mantle, Crust, Text, Subtext, Overlay, Mauve, Lavender, Red, Yellow, Green, and Blue values, and carries the Catppuccin MIT notice.
-- [ ] Load styles in this order: default tokens, LynxUI, Sand structural CSS, configured global style, per-Sand style.
-- [x] The first component set has buttons and button groups; inputs, textareas, selects, checks, radios, labels, help and errors; boxes, panels, stacks, rows, grids, toolbars and dividers; badges, callouts and empty states; tables, lists, dropdowns, tooltips, dialogs, tabs and disclosures; and a small first-party SVG icon set.
-- [ ] Add consistent native date, time, and datetime-local fields, plus compact absolute and relative date display, for Record work metadata and Kanban card metadata.
-- [ ] Add an accessible combobox/autocomplete with a suggestion list, keyboard navigation, and single-select support. Record uses it for assertion predicates and objects; Kanban can use it for column and Concept choices.
-- [ ] Add a removable token picker for Record assignees, selected assertions, and thread predicates. It composes the combobox and badge instead of creating a separate data model.
-- [ ] Add a file attachment primitive: picker trigger, upload/busy state, attachment row, and remove action. Record owns message attachment semantics and previews.
-- [ ] Add a compact semantic metadata list (`dl`) for Record head/slug/quantity/work facts and Kanban card metadata; it is a flat key–value display, not a panel.
-- [ ] Add a compact duration field for Record estimates and worklog values. Record owns its timer and worklog behavior.
-- [ ] Document a destructive confirmation-dialog composition using the existing dialog, for Kanban bulk deletion and Record hard deletion.
-- [ ] Add an anchored action/context menu based on the existing menu behavior, for Record links and attachments and Kanban cards.
-- [ ] Add small inline loading and progress states for Record saves, uploads, and Kanban moves; transient notifications, avatars, and range sliders remain out of scope until a Sand needs them.
-- [x] Static components use native markup and classes. Interactive components use `data-lynx-*` attributes and one delegated event and keyboard handler per iframe. `window.LynxUI` provides icon and icon-button helpers for dynamic elements.
-- [ ] Migrate every official Sand to LynxUI for ordinary interface elements and remove duplicated component CSS. Specialized graphs, terminals, games, document rendering, canvases and artwork keep their own implementation; their ordinary surrounding controls use LynxUI when practical.
-- [ ] LynxUI is official-first and initially unversioned. User-authored Sands may load the same assets, but compatibility is not promised until the API is deliberately stabilized.
-- [ ] Keep `LynxDS-components.js` compatible with persisted older shell HTML while new code uses `window.LynxUI`.
-- [ ] Components have keyboard navigation, focus management, ARIA state, associated help and errors, non-color status meaning, and no transitions or animations.
-- [ ] Treat specialized exceptions as a code-review convention, without manifest declarations or exemption attributes.
-- [x] Add a development-only LynxUI Gallery with one scrollable page: a compact showcase of all LynxUI components sits beside a stacked set of seeded Kanban, message, inventory, and request-review Sand previews at their normal board sizes. It uses canonical assets and fixture data without Protein or Action requests. `mise run lynxui` serves it at `http://127.0.0.1:6175` and recompiles the gallery package for Lince on source changes.
-- [x] Add a folded base control that highlights LynxUI components and shows their component names on hover. Sand-specific structure stays unmarked so the boundary is clear.
-- [ ] Add concise Sand-author documentation, component behavior tests, iframe tests, theme override tests, and checks that LynxUI has no hardcoded design colors, unauthorized shadows, transitions, or animations.
-
-<!-- - [ ] Chart Library -->
-<!-- - [ ] Be able to draw (arrows, boxes, text and erasing at first is ok). If we fill the space with too much stuff in lets say, svg it will at some point if the person is making a complext diagram or making a painting frame around their component it will get heavy and make the app slow. We must solve that problem, excalidraw does that really well, putting a lot of drawings on the screen, lots of elements, doesnt make it slow. How do they do it? what do they implement? -->
-
 # Web Platform
 
 ## Board and sand infrastructure — the shipped web surface
@@ -144,11 +37,11 @@ Branco Gelo — CMYK: 2, 1, 0, 1; HEX: `#F8FAFC`; RGB: 248, 250, 252.
 - [x] Action `warnings` reach sands end-to-end (bridge → `frame.js` → amber sand status), never surfaced as errors.
 - [x] Record deletion is permission-gated (`record:delete` vs `record:delete_own` + creator match) at the one `DeleteRecord` action — since threads/messages are themselves records, this single gate covers all three; viewer identity (`H.getViewer()`/`H.onViewer`) flows to every sand so delete controls can show/hide correctly, though the engine gate (not the UI hint) is what actually enforces it.
 - [x] The permission/role/user system is Protein(`source:"auth"`) + five gated Actions (`create-role`, `create-user`, `assign-role`, `grant-permission`, `revoke-permission`) — a plain CRUD sand on top, no different in kind from any other sand; auth-table mutations emit no facts, so the sand re-subscribes after every mutation instead of relying on live invalidation.
+- [x] (2026-08-07) Package publish/catalog is disk-backed, not bucket-backed — no object-store backend runs anywhere in this codebase (see `media_assets.rs`) and `crates/transport` carries no package-fetch frames, so it is scoped to this Cell's own local organ (`/organ` already only ever returns the local organ). `sand_publisher` (now registered in `OFFICIAL_WIDGETS`) previews an uploaded `.html`/`.sand`/`.lince` package, writes it under `paths::dna_dir()` (`lince/dna/sand/<prefix>/<slug>/<version>/...`), and creates a `record` + `record_extension(namespace="lince.dna")` — the same op-log sync that already replicates `record_extension` (`engine::sync`) carries a published package to a paired organ with no bespoke cross-organ publish protocol. Cross-organ *search* (browsing another organ's catalog before it has synced in) stays out of scope until such a protocol exists. Unpublish drops the extension row only — the Record itself stays, since removing it from the catalog is not the same act as deleting it (that stays the permission-gated `delete-record` Action's job).
 <!-- - [ ] Per-sand capability/permission model before imported sands can write arbitrary Actions (today any sand can call any Action — fine for official sands, needed before running imported ones freely); sand provenance `cause=sand:<uid>`. -->
 <!-- - [ ] Blanket read/write permission enforcement across every OTHER Protein source and Action (today only `delete-record` and the five auth actions are gated) — sequenced after more of the role-management UI exists. -->
 <!-- - [ ] `.lince` GROUP drag/drop import: client routing still checks the `.group.sand` extension — route by content instead, like the catalog does. -->
 <!-- - [ ] Host-state sync for board presentation state across devices. -->
-<!-- - [ ] Package import/publish subsystem on the new record/package model. -->
 
 ## Wire protocol — how a sand talks to the Cell
 
@@ -201,7 +94,7 @@ The list, with the characters and their blocks goes as following:
 
 - [ ] Being able to reference other Tasks inside comments.
 
-- [x] **Record** (formerly "record_info" — the sole markdown editor, viewer, and creator for a record, and the home for every other per-record concern) — the get view IS the edit view (head/slug/quantity/ body writable, Save writes only what changed, a dirty form is never clobbered by live updates); Zero (`deactivate`) and Delete (`delete-record`, permission-gated) are separate buttons; creation mode shows the same fields empty, Create + focuses the new record; carries the shared slash-block editor (headings/images/checkboxes/`@slug`, the same palette everywhere in a body); collapsible sections for **Work** (start/due dates, estimate, worklogs with play/pause, on the `work` record extension, offline-queued writes), **Assignees** (`assigned-to` assertions), **Relations** (every hop-1 binary assertion in either direction, predicate+object inputs, both autocompleted — a document/URL is an asserted relationship or inline media in the body, with no separate resource/attachment model), and **Threads** (a real multi-thread system — a tab per thread, search filters which tabs list without hiding messages, each message shows timestamp + sender, `@slug` in a post becomes a Record reference, delete controls per permission). Reusable — any sand drives it via a scoped `recordClicked`/`recordCreate`; no sand keeps a private record sidepanel. Full real-time collaborative editing is blocked on the CRDT text relay in [Synchronization](<Synchronization.md>).
+- [x] **Record** (formerly "record_info" — the sole markdown editor, viewer, and creator for a record, and the home for every other per-record concern) — the get view IS the edit view (head/slug/quantity/ body writable, Save writes only what changed, a dirty form is never clobbered by live updates); Zero (`deactivate`) and Delete (`delete-record`, permission-gated) are separate buttons; creation mode shows the same fields empty, Create + focuses the new record; carries the shared slash-block editor (headings/images/checkboxes/`@slug`, the same palette everywhere in a body); collapsible sections for **Work** (start/due dates, estimate, worklogs with play/pause, on the `work` record extension, offline-queued writes), **Assignees** (`assigned-to` assertions), **Relations** (every hop-1 binary assertion in either direction, predicate+object inputs, both autocompleted — a document/URL is an asserted relationship or inline media in the body, with no separate resource/attachment model), and **Threads** (a real multi-thread system — a tab per thread, search filters which tabs list without hiding messages; chat-style runs (2026-08-07) show the sender name — `user@organ` when the message's origin-organ name differs from the sender's, just `user` when they match (the common single-user-organ case) — only on the first message of an unbroken run from the same `created_by`, every message keeps its own bottom-right timestamp and edit/delete controls, and editing an existing message now uses the same shared slash-block editor as composing one; `@slug` in a post becomes a Record reference, delete controls per permission). Reusable — any sand drives it via a scoped `recordClicked`/`recordCreate`; no sand keeps a private record sidepanel. Full real-time collaborative editing is blocked on the CRDT text relay in [Synchronization](<Synchronization.md>).
 
 # Kanban
 The Kanban sand when ready will be able to provide teams the organization necessary to tackle projects together in a classic way. The data they CRUD in Kanban is accessible in other sands to fit greater workflows though.
@@ -249,11 +142,17 @@ hierarchy widening, and Protein behavior live in [Ontology](../Ontology.md).
 
 Table sand is responsible for being the base of the components. Since original data in database is in a table the Table sand is the simplest to translate the incoming data to a visual structure.
 
+Rebuilt on LynxUI (2026-08-07): a persistent gutter (configurable line numbers,
+per-card host state) reveals a per-row delete button on hover, permission-gated
+the same way as everywhere else (`record:delete`/`record:delete_own`); the
+corner triangle is the Add trigger, creating a blank row and focusing its head
+cell for immediate typing instead of a bottom form bar; head/quantity cells
+edit in place with an outline-only focus state so nothing shifts size; rows
+are persistent per-uid DOM nodes reused across Protein pushes so a focused
+edit is never clobbered by a live update.
+
 Functionalities we Need:
 
- - [ ] Delete rows: That happens when he have the id column available. We need that column to understand what exactly needs to be deleted.
-- [ ] Update: I can already click a cell or press F2 (its a standard, i dunno why) and edit the contents of the cell. The saving is automatic, it waits for 300ms of non editing to save the data.
-- [ ] Create rows: We have an endpoint that gives us the writeable columns from every table. So currently, when we ask the Table sand to create data the component understands the View it is using and analyzing the SQL it knows the current table. Then we simply request the columns from the endpoint passing the table and currently the component opens a side panel with the fields one needs to write to create a new line in the current table. There's a dropdown to choose to create in other tables too. 
 - [ ] Filters?
 
 # Communication
@@ -681,7 +580,6 @@ The coordination of production for our Needs requires specific interfaces? We wi
 - [ ] Logistic distribution and instant correction from a flicker of operational change of the brute mineral extractor to the chip manufacturer.
 - [ ] Order management, how much requests affect production.
 
-
 # Playground Facade
 
 - [x] Be able to setup a Web workspace and export it in a file.html as an archive of the state of a component at a time. It doesnt make any requests, has no access tokens.
@@ -695,267 +593,134 @@ The coordination of production for our Needs requires specific interfaces? We wi
 
 # Configuration
 
-Show configuration divided into sections/tabs, with toggle buttons for respective fields and input fields so the user doesnt have to just edit a table. For colorschemes show the possible ones. With examples for colors.
+The sand exists, to configure normal lince data. We need to make it expand to configure more things. The sand will be the door to configure database stuff and board settings, like:
+- [ ] Colorscheme (with examples).
+
+## Lince palette reference
+
+Roxo Cobalt — CMYK: 66, 71, 0, 36; HEX: `#3730A3`; RGB: 55, 48, 163.
+Roxo Noturno — CMYK: 59, 58, 0, 5; HEX: `#6366F1`; RGB: 99, 102, 241.
+Chumbo Profundo — CMYK: 10, 10, 0, 92; HEX: `#121214`; RGB: 18, 18, 20.
+Cinza — CMYK: 10, 5, 0, 12; HEX: `#A7B4C2`; RGB: 203, 213, 225.
+Branco Gelo — CMYK: 2, 1, 0, 1; HEX: `#F8FAFC`; RGB: 248, 250, 252.
+
+## Customization and architecture
+
+- [ ] In Web Interface, user can control all the basic aspects of the ui, the padding, margin gap of elements, border radius, thickness and colorscheme. In web version there should not be even one color hardcoded, only use tags like primary-background, or light-accent. The default style should come from the main style .css file, that has comments on every variable to explain where it is used, so when people make their .css files and add to dir of styles and choose in configuration table which style they want (name of file) they get the variables values from file and the app changes (either on boot if makes app faster or during setting). When we speak of specific details of style here like default colorscheme and scale units we are talking about default file, if people want they can customize it.
+- [ ] Architecture (from Sand: Colorschemes): The system is defined as named semantic tokens, not hex values — surface-raised, ink-primary, need, contribution, accent, focus — resolved per active colorscheme at runtime (the old a2 Operation to switch schemes is the spiritual ancestor). Scaling tokens (padding-s, radius-m) ride the same mechanism. A Sand author never picks a color; they name a slot, and the user's scheme decides what it looks like. That's how "the base app is minimalist so users can express themselves" survives contact with real widgets.
+- [ ] The default style is always loaded first and defines every variable. User style files are optional overrides: when a variable is absent, the value from the default style remains. Every variable in the default file has a comment explaining its use.
+- [ ] Style files live in the Web styles directory and are selected by safe `.css` filename only. Invalid, missing, or unreadable files fall back to the default without preventing the app or a Sand from loading.
+- [ ] Styles load in this order: default style, configured global style, per-Sand style. The global style is stored in the configuration table. A per-Sand style is stored in that card's host state and overrides only that Sand; choosing "inherit global style" removes the override.
+- [ ] The configuration table selects the global style and applies it immediately. The Sand gear configuration, together with login, Protein, and behavior, shows the inherited global style and selects an optional style for that Sand. Both choices persist.
+- [ ] Every Sand iframe loads the style layers itself because CSS variables from the board do not cross the iframe boundary. Changing the global style updates Sands that inherit it without replacing a Sand's own override.
+- [ ] The colorscheme has 16 semantic color slots, each with light, default, and dark values, for 48 color variables: primary-background, secondary-background, raised-background, primary-ink, secondary-ink, border, accent, focus, need, contribution, peace, info, success, warning, danger, and selection. The default Lince style may repeat colors between slots and tones; custom styles may define all 48 for finer control. LynxUI does not map backend data or a badge type to those slots; a Sand may opt into a local mapping at its own boundary.
+- [ ] The default colorscheme is Lynx with Dark Lynx as its initial mode and Light Lynx as its inverse. Dark Lynx uses Chumbo Profundo for the background and Branco Gelo for primary characters; Light Lynx reverses them. A single icon button switches mode immediately; both modes use the same scale, geometry, and component rules.
+- [ ] Lynx derives close neutral steps from Chumbo Profundo and Branco Gelo. Default component backgrounds remain Chumbo or Branco; the 10% lighter and darker variants are used only for subtle inputs and diffuse shadows. Default content is void-background with white or gray foreground; it does not assign red, green, amber, or any semantic color to data. Roxo Cobalt is the primary accent in Light Lynx and Roxo Noturno is the primary accent in Dark Lynx for stronger contrast; the other purple is the supporting accent.
+
+## Space, thickness, roundness, rigidity
+
+- [ ] Grid: 4px base unit; spacing scale 4, 8, 12, 16, 24, 32, 48. Compact component internals may use the 2px half-unit.
+- [ ] Density: slim by default. Main content regions touch with no decorative gaps or outer padding. Component padding is half the previous demo spacing. Records use 5px internal padding; form controls use 3px vertically and 5px horizontally so empty space does not exceed the text height.
+- [ ] Keep a compact 4px gap between text and adjacent metadata in the same compartment, such as a column name and its card count.
+- [ ] Borders: use 0.5px hairlines only when needed to show where one region ends and another starts. `.lynx-shadow` is a small tokenized CSS shadow on an individual component’s own root; it follows that element’s shape and radius exactly, has no JavaScript or wrapper cost, and may be locally directed with `--lynx-shadow-x`, `--lynx-shadow-y`, and `--lynx-shadow-blur`. Its default is dark and falls to the right and bottom. `.lynx-shadow--light` adds an optional lighter top-left companion. Buttons, Kanban cards, Kanban column headers, and the message channel-list boundary opt into the dark shadow. Inputs, textareas, and dropdown controls are flat with a foreground border. Outer Sands and large workflow regions do not use shadows. Adjacent regions share one boundary; no double borders and no boxes inside boxes. Sand outer edges have no border by default on the free canvas. Stronger focus and active state remain distinct from ordinary borders.
+- [ ] Roundness: Lynx is square by default. Badges and buttons use a restrained 2px radius. Custom styles may change the radius tokens.
+- [ ] Badge is the component name and keeps the `.lynx-status` class/API. It has a transparent background and primary foreground hairline border by default; its optional icon uses the same color. The component does not interpret data as good, bad, warning, or any other semantic hue. A Sand may locally set `--status-color` when its own domain calls for it.
+- [ ] Invalid inputs keep the error-color border and show an in-field error icon. Hovering or focusing that icon reveals the validation message in a transparent, error-color outlined tooltip; the message also remains associated with the input for assistive technology.
+- [ ] Buttons use a subtle 2px radius. Use familiar, distinct action icons such as plus, check, close, save, download, and trash; keep text when the icon alone is ambiguous.
+- [ ] Radio controls are minimal circles filled completely with the accent when selected. Dropdowns, selects, and disclosures use one small chevron treatment. LynxUI selects use the library menu instead of a browser-styled popup.
+- [ ] Rigidity: "firm paper." Cards hold their shape with crisp hairline borders; nothing bounces, nothing elastic.
+
+## Content and Sand chrome
+
+- [ ] Prefer content directly on the Sand surface. A card is a card, not a floating card inside another box; a column is a column, not a box containing another padded box.
+- [ ] Remove redundant headings and labels. Do not show both "Sand / Communication" and "Messages", or text beside a self-explanatory icon.
+- [ ] Omit a Sand header when the content already explains itself. Keep visible controls focused on creating, editing, moving, completing, or replying to Records.
+- [ ] Only the focused Sand shows its gray bottom-right corner. Hovering or focusing the corner reveals configuration, Protein, layout, and other Sand controls like the corner of a page turning.
+- [ ] The base web uses an always-visible gray folded top-right corner for system controls. It holds the mode switch and development tools without adding a persistent header; Sand controls remain in their bottom-right corners.
+- [ ] Do not add dividers when content already makes the boundary clear. Message identity and avatar separate consecutive messages without a line.
+- [ ] Use the darker generated black-and-white step, never gray or the lighter step, for background separation. Kanban, Messages, and workflow regions share the canvas background without outer shadows; only individual components may opt into the shared shadow.
+- [ ] Do not divide Kanban columns, column headers from their first card, cards, table rows, list rows, or ordinary adjacent items with lines. Use grouping, spacing, and close surfaces only when a boundary needs to be understood.
+- [ ] Inputs, textareas, and closed dropdown controls use the base surface with a foreground border and no shadow. Invalid controls use the `hot-border` token, red in default Lynx. Unchecked checkboxes use the base surface; checked checkboxes use the accent.
+- [ ] Hovering an element on the base surface uses the subtle 10%-lighter surface. Hover never darkens the current base surface.
+- [ ] Forms, tables, lists, and adjacent workflow regions align to shared edges. Do not use spacing that makes neighboring compartment boundaries stop at different positions, and omit row or field lines when grouping is already clear. A separator belongs between items, never after the final item.
+- [ ] Prefer clear icons for actions and give every icon button an accessible name and a tooltip on hover. Keep text when an icon would be ambiguous.
+- [ ] Keep tooltips within the boundary of the Sand or component that owns them, and give SVG strokes enough internal view-box space that icons are never clipped.
+- [ ] When the Sand is idle, the visible UI prioritizes Records, their state, and direct interaction with them rather than configuration of the Sand.
+
+## Transparency and elevation
+
+- [ ] Data surfaces are always opaque. Honesty rule: you must always know exactly which surface a number sits on. No glassmorphism, no frosted panels over content.
+- [ ] Translucency is allowed only for ephemeral chrome: edit-mode handles, drag previews, presence cursors, auto-hiding call UI — things that are explicitly not Ledger truth.
+- [ ] Overlays/scrims at 50–60% ink. Menus are opaque. Tooltips use Chumbo Profundo with Branco Gelo text and a hairline border in that same foreground color; dialogs use a Cinza border.
+- [ ] Elevation is flat by default. `.lynx-shadow` is the sole shared elevation utility and is opt-in except for ordinary buttons and form controls, which use its default dark lower-right shadow. Paper doesn't hover.
+
+## Line, shape, and texture grammar
+
+- [ ] A deliberate second channel so color is never the only carrier: Solid = settled (Ledger facts, committed quantities). Dashed = declared (promises, projections, staged rules). This is as load-bearing as any hue.
+
+## Typography
+
+- [ ] Numbers first: tabular figures everywhere quantities appear, negative quantities use a true minus (−3), and zero and positive quantities have no sign (0, 5). The zero state is styled quietly — peace is the one value that should never demand attention.
+- [ ] Lato is the default body and interface typeface. Aleo is used mostly for titles and semantic headings. Quantities and technical metadata keep the monospace token. EN/PT is supported from day one, with generous line lengths and no cramped all-caps labels.
+- [ ] Ordinary interface text is 14px by default. Compact secondary metadata stays readable at 11–12px; do not shrink routine labels or content to create density.
+- [ ] Inline icons, counts, and quantity-state marks are optically centered with the adjacent text. Correct a glyph inside its SVG when its drawing is off-center; do not move the entire control.
+
+## Motion
+
+- [ ] No animations, things change instantly, and they dont pulse, if something is green it is synced and ok.
+- [ ] Remove interface transitions, keyframe animations, hover movement, startup drawing, workspace sliding, animated modal entrances, and JavaScript that waits for transition completion. Content owned by a Sand, such as a game or terminal, is not interface motion.
+
+## The test
+
+- [ ] Every design decision gets one question: does this get Ana to her four minutes of human choice faster, or is it the tool asking to be looked at? The Death of Lince applies to its UI first. If the user wants, they can use lince as an app that lets them create and interact with beautiful and cool things and produce awesome graphs and automation visualizations, but that is a choice, the default of lince is meeting your need to use apps like it with minimal effort.
+
+## Design system work
+
+- [ ] Migrate the board, shared components, and every official Sand from hardcoded visual values to the semantic color, spacing, border, radius, typography, elevation, and motion variables. User-owned expression colors remain data, not system chrome.
+- [ ] Add a design-system check that rejects hardcoded colors in the Web interface and official Sands, excluding the default style definitions, vendored assets, and explicit user-owned expression values.
+- [ ] Test default fallback, optional partial styles, safe filename handling, global persistence, per-Sand persistence and isolation, live style changes, and style loading inside iframes.
+- [ ] Test quantity formatting, tabular figures, solid and dashed truth lines, and that status meaning is available through an icon, label, shape, or line style instead of color alone.
+
+## LynxUI
+
+- [x] Select Lynx and keep one evolving light/dark demo at [`lynx-ui-concepts/lynx.html`](lynx-ui-concepts/lynx.html). Update this design-system description whenever the demo guidelines change.
+- [x] Build the LynxUI base as a framework-free component library for official Sands. Use native semantic HTML, explicit `lynx-*` classes, and a small JavaScript layer only for behavior that HTML does not provide consistently.
+- [x] Serve shared `lynx-ui.css` and `lynx-ui.js` assets. LynxUI uses the design-system tokens and defines no separate colorscheme, spacing scale, motion, or elevation. Component selectors have low specificity so global and per-Sand styles can override them.
+- [x] Provide Catppuccin Macchiato as the second style. Its CSS changes only colorscheme variables, uses the official Base, Mantle, Crust, Text, Subtext, Overlay, Mauve, Lavender, Red, Yellow, Green, and Blue values, and carries the Catppuccin MIT notice.
+- [ ] Load styles in this order: default tokens, LynxUI, Sand structural CSS, configured global style, per-Sand style.
+- [x] The first component set has buttons and button groups; inputs, textareas, selects, checks, radios, labels, help and errors; boxes, panels, stacks, rows, grids, toolbars and dividers; badges, callouts and empty states; tables, lists, dropdowns, tooltips, dialogs, tabs and disclosures; and a small first-party SVG icon set.
+- [ ] Add consistent native date, time, and datetime-local fields, plus compact absolute and relative date display, for Record work metadata and Kanban card metadata.
+- [ ] Add an accessible combobox/autocomplete with a suggestion list, keyboard navigation, and single-select support. Record uses it for assertion predicates and objects; Kanban can use it for column and Concept choices.
+- [ ] Add a removable token picker for Record assignees, selected assertions, and thread predicates. It composes the combobox and badge instead of creating a separate data model.
+- [ ] Add a file attachment primitive: picker trigger, upload/busy state, attachment row, and remove action. Record owns message attachment semantics and previews.
+- [ ] Add a compact semantic metadata list (`dl`) for Record head/slug/quantity/work facts and Kanban card metadata; it is a flat key–value display, not a panel.
+- [ ] Add a compact duration field for Record estimates and worklog values. Record owns its timer and worklog behavior.
+- [ ] Document a destructive confirmation-dialog composition using the existing dialog, for Kanban bulk deletion and Record hard deletion.
+- [ ] Add an anchored action/context menu based on the existing menu behavior, for Record links and attachments and Kanban cards.
+- [ ] Add small inline loading and progress states for Record saves, uploads, and Kanban moves; transient notifications, avatars, and range sliders remain out of scope until a Sand needs them.
+- [x] Static components use native markup and classes. Interactive components use `data-lynx-*` attributes and one delegated event and keyboard handler per iframe. `window.LynxUI` provides icon and icon-button helpers for dynamic elements.
+- [ ] Migrate every official Sand to LynxUI for ordinary interface elements and remove duplicated component CSS. Specialized graphs, terminals, games, document rendering, canvases and artwork keep their own implementation; their ordinary surrounding controls use LynxUI when practical.
+- [ ] LynxUI is official-first and initially unversioned. User-authored Sands may load the same assets, but compatibility is not promised until the API is deliberately stabilized.
+- [ ] Keep `LynxDS-components.js` compatible with persisted older shell HTML while new code uses `window.LynxUI`.
+- [ ] Components have keyboard navigation, focus management, ARIA state, associated help and errors, non-color status meaning, and no transitions or animations.
+- [ ] Treat specialized exceptions as a code-review convention, without manifest declarations or exemption attributes.
+- [x] Add a development-only LynxUI Gallery with one scrollable page: a compact showcase of all LynxUI components sits beside a stacked set of seeded Kanban, message, inventory, and request-review Sand previews at their normal board sizes. It uses canonical assets and fixture data without Protein or Action requests. `mise run lynxui` serves it at `http://127.0.0.1:6175` and recompiles the gallery package for Lince on source changes.
+- [x] Add a folded base control that highlights LynxUI components and shows their component names on hover. Sand-specific structure stays unmarked so the boundary is clear.
+- [ ] Add concise Sand-author documentation, component behavior tests, iframe tests, theme override tests, and checks that LynxUI has no hardcoded design colors, unauthorized shadows, transitions, or animations.
+
+<!-- - [ ] Chart Library -->
+<!-- - [ ] Be able to draw (arrows, boxes, text and erasing at first is ok). If we fill the space with too much stuff in lets say, svg it will at some point if the person is making a complext diagram or making a painting frame around their component it will get heavy and make the app slow. We must solve that problem, excalidraw does that really well, putting a lot of drawings on the screen, lots of elements, doesnt make it slow. How do they do it? what do they implement? -->
+
+
+
+
+--- End of Supercomponent area ---
+
+Down here is stuff not related to board sands and supercomponent hocus pocus, that is simple software development, here things start to get a higher quality, unlocking different devices and technologies to do normal things in a different way, or going plus ultra.
 
 # Mobile
 
-Tauri mobile is not “desktop Tauri, but smaller.” It is a Rust-backed WebView app wrapped in native
-Android/iOS projects. You must treat Android and iOS as real native targets: SDKs, signing,
-permissions, store rules, generated platform projects, and platform-specific Rust cfg gates all
-matter.
-
-Sources: Tauri prerequisites, Google Play, App Store, plugin support docs: Prerequisites
-(https://v2.tauri.app/start/prerequisites/), Google Play
-(https://v2.tauri.app/distribute/google-play/), App Store
-(https://v2.tauri.app/distribute/app-store/), Features & Plugins (https://v2.tauri.app/plugin/).
-
-What You Need
-For both:
-
-- Rust installed.
-- Tauri CLI installed:
-
-  cargo install tauri-cli --locked --version '^2'
-
-- Your Tauri app must expose a mobile entry point:
-
-  #[cfg_attr(any(target_os = "android", target_os = "ios"), tauri::mobile_entry_point)]
-  pub fn run() {
-  tauri::Builder::default()
-  .run(tauri::generate_context!())
-  .expect("error while running app");
-  }
-
-- Desktop-only APIs must be behind cfg gates: tray, single-instance, autostart, global shortcuts,
-  window-close-to-tray, desktop menus, etc.
-
-- Your tauri.conf.json > identifier must be a stable reverse-DNS bundle id, for example:
-
-  "identifier": "social.lince.app"
-
-For Android:
-
-- Android Studio.
-- Java/JDK, normally Android Studio’s bundled JBR.
-- Android SDK Platform, Platform Tools, NDK side-by-side, Build Tools, Command-line Tools.
-- Env vars:
-
-  export JAVA_HOME="/path/to/android-studio/jbr"
-  export ANDROID_HOME="$HOME/Android/Sdk"
-    export NDK_HOME="$ANDROID_HOME/ndk/$(ls -1 "$ANDROID_HOME/ndk" | tail -n1)"
-
-- Rust targets:
-
-  rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-
-  android
-  Tauri docs list these Android targets directly.
-
-For iOS:
-
-- macOS only.
-- Full Xcode, not just Command Line Tools.
-- CocoaPods:
-
-  brew install cocoapods
-
-- Rust targets:
-
-  rustup target add aarch64-apple-ios x86_64-apple-ios aarch64-apple-ios-sim
-  Tauri docs state iOS development requires Xcode and macOS.
-
-Initialize Mobile Projects
-From the Tauri crate directory, in this repo:
-
-cd crates/desktop
-cargo tauri android init
-cargo tauri ios init
-
-This creates generated native projects under roughly:
-
-- crates/desktop/gen/android
-- crates/desktop/gen/apple
-
-These are not disposable if you customize permissions, signing, Gradle, Xcode settings, manifests,
-entitlements, icons, etc. Decide whether to commit them once stable.
-
-Run On Android
-With an emulator running or a device attached:
-
-cd crates/desktop
-cargo tauri android dev
-
-Useful device commands:
-
-adb devices
-adb logcat
-
-Build an APK for direct testing:
-
-cargo tauri android build --apk
-
-Tauri docs say APKs are useful for testing or non-store distribution. Install it:
-
-adb install -r path/to/app.apk
-
-If Android blocks install:
-
-- Enable Developer Options.
-- Enable USB debugging.
-- Allow install from unknown sources if sideloading manually.
-- Confirm device trust prompt.
-
-Build an AAB for Google Play:
-
-cargo tauri android build --aab
-
-Tauri docs say AAB is the recommended Google Play upload format. The generated AAB path is documented
-as:
-
-gen/android/app/build/outputs/bundle/universalRelease/app-universal-release.aab
-
-Upload that in Google Play Console. First upload must be manual so Google can verify signature and
-bundle id. Tauri explicitly notes it does not currently automate creating Android releases in Google
-Play.
-
-Run On iOS Simulator
-From macOS:
-
-cd crates/desktop
-cargo tauri ios dev
-
-Or open/build through Xcode:
-
-cargo tauri ios build --open
-
-For simulator builds, use a simulator target if needed:
-
-cargo tauri ios build --target aarch64-apple-ios-sim
-
-Run On iPhone
-You need:
-
-- Apple Developer account for distribution.
-- Xcode signing configured.
-- Bundle ID in App Store Connect / Apple Developer portal matching tauri.conf.json > identifier.
-- Provisioning profile.
-- Signing certificate/team selected in Xcode.
-
-Typical path:
-
-cd crates/desktop
-cargo tauri ios build --open
-
-Then in Xcode:
-
-- Select your Team.
-- Select a physical device.
-- Fix signing/provisioning.
-- Press Run.
-
-For App Store / TestFlight:
-
-cargo tauri ios build --export-method app-store-connect
-
-Tauri docs say the generated IPA is under:
-
-src-tauri/gen/apple/build/arm64/$APPNAME.ipa
-
-For this repo the path will be under crates/desktop/gen/apple/..., because the Tauri crate is crates/
-desktop.
-
-Upload with Xcode Organizer, Transporter, or Apple CLI tooling. Tauri docs show xcrun altool, though
-Apple’s tooling evolves.
-
-Quirks
-The biggest quirks:
-
-- Android and iOS builds are native builds. You are not just compiling Rust; you are driving Gradle/
-  Xcode.
-
-- iOS requires macOS. You cannot build or sign real iOS apps on Linux.
-- Signing is not optional for real distribution.
-- Android APK is easy to sideload; AAB is for Play Store and not normally installed directly.
-- iOS IPA installation is controlled by Apple signing/provisioning. You usually install through
-  Xcode, TestFlight, MDM, or App Store.
-
-- Mobile WebViews are not identical to desktop WebViews. Test layout, scrolling, keyboard, viewport
-  units, file input, camera permissions, and storage behavior on real devices.
-
-- Tauri permissions/capabilities matter. A plugin existing does not mean the OS permission is
-  granted.
-
-- Desktop plugins often do not apply on mobile. In our repo I already had to gate single-instance,
-  autostart, tray behavior, and close-to-tray behavior.
-
-- Background behavior is heavily restricted, especially on iOS. Do not assume a local server, sync
-  loop, or long-running task can keep running after the app backgrounds.
-
-- Store rules override framework capabilities. Apple/Google may reject behavior that technically
-  works.
-
-- Rust crates may not compile for mobile if they assume Linux/macOS/Windows APIs, native system libs,
-  process spawning, shell access, or filesystem paths.
-
-- Native permissions require native config changes: Android manifest, iOS
-  Info.plist/entitlements/capabilities.
-
-- Generated mobile projects can drift. If you rerun init or upgrade Tauri, review Gradle/Xcode diffs
-  carefully.
-
-- App icons/splash screens are platform-specific. Tauri can generate icons after android init / ios
-  init, but you still need to inspect the native result.
-
-- Versioning differs. Android has versionCode; Tauri derives it from semver unless configured. Google
-  Play requires monotonically increasing version codes.
-
-- CI for iOS needs certificates/profiles/secrets. A simulator build is much easier than a device/App
-  Store build.
-
-What Tauri Can’t Do
-Tauri cannot:
-
-- Bypass Apple or Google signing/store rules.
-- Build iOS on Linux or Windows.
-- Make every desktop API available on mobile.
-- Provide native-quality mobile UX automatically; your web UI still needs mobile design work.
-- Run arbitrary background services freely on iOS/Android.
-- Guarantee every Rust crate works on mobile targets.
-- Use desktop concepts like tray icons, global shortcuts, multi-window workflows, CLI args, or shell
-  access the same way on mobile.
-
-- Avoid native code entirely when you need platform-specific APIs. You may need Swift/Kotlin plugin
-  work.
-
-- Magically make a local desktop-server architecture behave correctly in mobile app lifecycle
-  conditions.
-
-Specific To Lince
-Lince currently behaves like a desktop shell that starts a local HTTP server and opens a WebView to
-it. That is workable on desktop, but mobile needs extra scrutiny:
-
-- The server lifecycle must match mobile lifecycle.
-- iOS may suspend it when backgrounded.
-- Android may kill it under memory/battery pressure.
-- You likely want the Tauri localhost plugin or a more mobile-native serving model.
-- Tray/start-on-login/single-instance concepts should remain desktop-only.
-- The UI needs phone/tablet viewport testing, not just compilation.
-
-For first practical testing, I would do this order:
-
-1. Android APK first:
-
-   cd crates/desktop
-   cargo tauri android init
-   cargo tauri android dev
-   cargo tauri android build --apk
-   adb install -r path/to/app.apk
-
-2. iOS simulator second:
-
-   cargo tauri ios init
-   cargo tauri ios dev
-
-3. Only after those run, deal with signing, TestFlight, Play Console, and production release builds.
+Its hard making one repo for all platforms, but worth since mobile is so useful.
 
 # Embeded
 
@@ -968,16 +733,8 @@ We need a version of lince to be wearable in a simple way, we can devise an esp 
 
 It can be done harcoding all of that. So i will be able to hardcode with .env that there will be an organ at such endpoint and such login and such protein to choose from, the device wakes up, and uses the Sync feature of Lince to edit the records they can see only the quantity according to the protein they can see.
 
-# The Game of Life
 
-GPU can be used for highly efficient rendering. That can be used from finantial spreadhseets, to immersive visualization of Records across real world maps and more, this interface is for bulky rendering.
-
-But if we are going to those lenghts, why not code it like a game already? Games are fun.
-
-What if we could make our Records be part of the game? From influencing the seed to a real live preview of them as parts of the landscape with bigger mountains for bigger quantities of a certain record, to becoming enemies we Need to defeat. What if Karma could be used for the rules of the game? evaluating as frequently as possible
-
-
-# Digital Real World Maps
+# The Game of Life - Digital Real World Maps
 
 Being able to see the world or a digital space with it's actors and needs/contributions.
 - [ ] One can see the world as a plane with lines for the streets.
@@ -987,3 +744,10 @@ Being able to see the world or a digital space with it's actors and needs/contri
 https://github.com/orgs/Far-Beyond-Pulsar/discussions/40
 
 Maybe the way to go is using a game engine in gpui like Pulsar if it allows for the rendering of a Component in a canvas or something similar to display like a game level.
+
+GPU can be used for highly efficient rendering. That can be used from finantial spreadhseets, to immersive visualization of Records across real world maps and more, this interface is for bulky rendering.
+
+But if we are going to those lenghts, why not code it like a game already? Games are fun.
+
+What if we could make our Records be part of the game? From influencing the seed to a real live preview of them as parts of the landscape with bigger mountains for bigger quantities of a certain record, to becoming enemies we Need to defeat. What if Karma could be used for the rules of the game? evaluating as frequently as possible
+

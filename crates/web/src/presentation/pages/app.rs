@@ -916,6 +916,56 @@ fn render_widget_config_form() -> Markup {
                         div class="import-modal__details-label" { "Host" }
                         p class="import-modal__details-copy" { "Escolha o servidor, conecte se preciso e selecione uma view." }
                     }
+                    // Reaching a Lince that is NOT already a contact. This is
+                    // the device-independent way in: paste the public value
+                    // that Cell shows, give a username and password, and you
+                    // are in — from a machine that has never held a key of
+                    // theirs, on any network. Pairing cannot serve this: it
+                    // needs the far side to open a door and then trust this
+                    // device.
+                    details id="widget-config-add-host" class="widget-config-add-host" {
+                        summary { "Entrar em outra Lince pelo codigo" }
+                        label class="startup-field" for="widget-config-add-code" {
+                            input
+                                id="widget-config-add-code"
+                                class="startup-field__input"
+                                type="text"
+                                autocomplete="off"
+                                placeholder="Codigo da Lince (ou NodeId)";
+                        }
+                        label class="startup-field" for="widget-config-add-name" {
+                            input
+                                id="widget-config-add-name"
+                                class="startup-field__input"
+                                type="text"
+                                autocomplete="off"
+                                placeholder="Nome que voce da a ela (opcional)";
+                        }
+                        label class="startup-field" for="widget-config-add-user" {
+                            input
+                                id="widget-config-add-user"
+                                class="startup-field__input"
+                                type="text"
+                                autocomplete="username"
+                                placeholder="Seu usuario nessa Lince";
+                        }
+                        label class="startup-field" for="widget-config-add-password" {
+                            input
+                                id="widget-config-add-password"
+                                class="startup-field__input startup-field__input--password"
+                                type="password"
+                                autocomplete="current-password"
+                                placeholder="Sua senha nessa Lince";
+                        }
+                        button
+                            id="widget-config-add-submit"
+                            class="modal-button modal-button--primary"
+                            type="button"
+                        {
+                            "Entrar e adicionar"
+                        }
+                        p id="widget-config-add-help" class="import-modal__details-copy" hidden="" {}
+                    }
                     label id="widget-config-server-id-field" class="startup-field" for="widget-config-server-id" {
                         select id="widget-config-server-id" class="startup-field__input" name="server_id" {
                             option value="" { "Escolha um servidor" }

@@ -105,6 +105,13 @@ pub struct Engine {
     pub(crate) signer: Mutex<Option<trust::Signer>>,
     pub(crate) organ_signer: Mutex<Option<trust::Signer>>,
     karma_deadline_changed: watch::Sender<u64>,
+    /// Bumped whenever this Cell's pending notifications change.
+    ///
+    /// Notifications are conversation invites, which live in their own side
+    /// table and commit no Fact — so the `fact_bus` can never wake a session
+    /// for one. Before this existed the board covered the gap by polling
+    /// `/host/notifications` every two seconds, forever, on every open board.
+    notifications_changed: watch::Sender<u64>,
     karma_runtime_config: RwLock<Option<karma_runtime::KarmaDeadlineDirectorConfig>>,
     /// Open Loro record-docs (LRU, lazy) — see `collab`.
     pub(crate) collab_docs: std::sync::Mutex<collab::DocRegistry>,
@@ -150,12 +157,14 @@ impl Engine {
         }
         let (bus, _) = broadcast::channel(1024);
         let (karma_deadline_changed, _) = watch::channel(0);
+        let (notifications_changed, _) = watch::channel(0);
         let engine = Engine {
             store,
             bus,
             signer: Mutex::new(None),
             organ_signer: Mutex::new(None),
             karma_deadline_changed,
+            notifications_changed,
             karma_runtime_config: RwLock::new(None),
             collab_docs: std::sync::Mutex::new(collab::DocRegistry::default()),
             root_key_path: std::sync::Mutex::new(None),
@@ -171,6 +180,42 @@ impl Engine {
     /// Subscribe to committed facts (blueprint 0.2 `fact_bus`).
     pub fn subscribe(&self) -> broadcast::Receiver<Fact> {
         self.bus.subscribe()
+    }
+
+    /// Watch for changes to the pending-notification set.
+    pub fn watch_notifications(&self) -> watch::Receiver<u64> {
+        self.notifications_changed.subscribe()
+    }
+
+    /// Announce that a notification arrived or was answered.
+    pub fn notify_notifications_changed(&self) {
+        self.notifications_changed
+            .send_modify(|revision| *revision = revision.wrapping_add(1));
+    }
+
+    /// This Cell's pending notifications, in the shape the board renders.
+    ///
+    /// Lives here rather than in the HTTP handler that used to own it so the
+    /// websocket push and the REST route cannot drift into describing the same
+    /// invite two different ways.
+    pub async fn notifications(&self) -> Result<Vec<serde_json::Value>, EngineError> {
+        Ok(store::invites::pending(&self.store.pool)
+            .await?
+            .into_iter()
+            .map(|invite| {
+                serde_json::json!({
+                    "id": invite.record_uid,
+                    "kind": "thread_invite",
+                    "title": "Conversation request",
+                    "body": format!(
+                        "{} wants to start an individual synced conversation.",
+                        invite.from_organ
+                    ),
+                    "recordId": invite.root,
+                    "organId": invite.from_organ,
+                })
+            })
+            .collect())
     }
 
     /// Wake the tickless Karma deadline runner after a committed activation,

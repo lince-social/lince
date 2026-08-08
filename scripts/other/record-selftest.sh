@@ -28,8 +28,8 @@ SAND="$ROOT/crates/web/src/sand"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
-sed 's/^export function/function/; /^import /d' "$BOARD/transport.js"      > "$WORK/bundle.js"
-sed 's/^export function/function/; /^import /d' "$BOARD/widget-bridge.js" >> "$WORK/bundle.js"
+sed 's/^export function/function/; /^import /{:a;/;$/!{N;ba};d}' "$BOARD/transport.js"      > "$WORK/bundle.js"
+sed 's/^export function/function/; /^import /{:a;/;$/!{N;ba};d}' "$BOARD/widget-bridge.js" >> "$WORK/bundle.js"
 
 awk -v framefile="$BOARD/frame.js" -v editorfile="$BOARD/editor.js" '
   index($0, "<script src=\"/board/frame.js\"></script>") {
@@ -163,6 +163,46 @@ cat > "$WORK/harness.html" <<'HTML'
     const msg = doc().querySelector('[data-message-uid="m1"]');
     results.comment_render = !!msg && !!msg.querySelector('[data-ref="r_two"]')
       && !!msg.querySelector('img[src="https://x.test/pic.png"]');
+    mark();
+
+    // 1b. A record named by another Lince takes its DIRECTORY with it. Names,
+    //     slugs and kinds are per-Cell — resolving a remote record's chips and
+    //     @references against our own names is a wrong answer, not a smaller
+    //     one — so the names/concepts subscriptions have to follow the organ
+    //     the event carried, not stay pinned to ours.
+    const localWs = window.__ws;
+    window.__sent.length = 0;
+    frame.contentWindow.postMessage({ type: "lince:lane-event", room: "recordClicked",
+      payload: { record: { uid: "r_far" } }, organ: "o_marcia" }, "*");
+    await wait(200);
+    // A contact's Cell is reached through a relay, and the board holds every
+    // subscription back until the relay says it is actually through — the
+    // socket only proves OUR Cell answered.
+    window.__inbound({ type: "live_ready", organ: "o_marcia" });
+    await wait(200);
+    const subs = window.__sent.filter((m) => m.type === "subscribe").map((m) => String(m.id || ""));
+    results.directory_follows_organ = subs.includes("card-recinfo:names")
+      && subs.includes("card-recinfo:concepts")
+      && subs.includes("card-recinfo:provenance");
+    results.directory_left_ours = window.__sent.some((m) => m.type === "unsubscribe"
+      && String(m.id || "") === "card-recinfo:names");
+    // ...and coming home re-binds to ours rather than keeping theirs.
+    window.__sent.length = 0;
+    frame.contentWindow.postMessage({ type: "lince:lane-event", room: "recordClicked",
+      payload: { record: { uid: "r_t" } }, organ: "" }, "*");
+    await wait(250);
+    results.directory_comes_home = window.__sent.some((m) => m.type === "subscribe"
+      && String(m.id || "") === "card-recinfo:names");
+    window.__ws = localWs; // feed our own Cell again, not the relay socket
+    window.__inbound({ type: "snapshot", id: "card-recinfo:names", rows: [
+      { uid: "r_t", head: "Task", slug: "task", kind: "plain" },
+      { uid: "p_ana", head: "Ana", slug: "ana", kind: "person" },
+      { uid: "r_parent", head: "Big project", slug: "big", kind: "plain" },
+      { uid: "r_child", head: "Subtask", slug: "sub", kind: "plain" },
+      { uid: "r_two", head: "Task two", slug: "task.two", kind: "plain" },
+    ]});
+    window.__inbound({ type: "snapshot", id: "card-recinfo:provenance", rows: [focusRow] });
+    await wait(200);
     mark();
 
     // 2. Zero vs Delete are two different actions; the dot goes busy in flight.
@@ -419,6 +459,9 @@ check fields_prefilled  "the get view did not prefill the editable fields"
 check work_prefilled    "the work extension did not prefill dates/estimate/total"
 check links_render      "assignee chips or the A→B links list did not render"
 check comment_render    "comment did not render the @ref hop and inline image"
+check directory_follows_organ "names/concepts did not follow the record's Lince (chips would resolve against ours)"
+check directory_left_ours     "the old directory subscription was left running alongside the new one"
+check directory_comes_home    "coming back to a local record did not rebind the directory to ours"
 check dot_busy          "the dot did not show the update-in-flight state"
 check zero_action       "Zero did not send deactivate"
 check dot_settled       "the dot did not settle after the ack"

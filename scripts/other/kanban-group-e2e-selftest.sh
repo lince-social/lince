@@ -28,8 +28,8 @@ WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
 # Bundle transport + unified bridge as one classic script (strip import/export).
-sed 's/^export function/function/; /^import /d' "$BOARD/transport.js"       > "$WORK/bundle.js"
-sed 's/^export function/function/; /^import /d' "$BOARD/widget-bridge.js"    >> "$WORK/bundle.js"
+sed 's/^export function/function/; /^import /{:a;/;$/!{N;ba};d}' "$BOARD/transport.js"       > "$WORK/bundle.js"
+sed 's/^export function/function/; /^import /{:a;/;$/!{N;ba};d}' "$BOARD/widget-bridge.js"    >> "$WORK/bundle.js"
 
 # Build the sand iframe documents from the REAL served sands, inlining the real
 # frame.js in place of the `/board/frame.js` script tag (which cannot resolve on

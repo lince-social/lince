@@ -162,10 +162,14 @@ async fn ephemeral_lanes_fan_out_and_never_persist() {
         .handle(ClientMessage::LaneSend {
             room: "doc-42".into(),
             payload: serde_json::json!({ "cursor": 12 }),
+            organ: Some("o_marcia".into()),
         })
         .await;
     let event = bob_rx.try_recv().expect("bob sees alice's cursor");
     assert_eq!(event.from, "alice");
+    // Which Lince the event is ABOUT rides alongside the payload, untouched:
+    // a uid alone names nothing until you know whose Cell to ask.
+    assert_eq!(event.organ.as_deref(), Some("o_marcia"));
     assert_eq!(event.payload["cursor"], 12);
 
     // nothing about presence touched the Ledger
@@ -313,6 +317,7 @@ async fn presence_lane_events_carry_the_sender_subject_for_gating() {
     s.handle(ClientMessage::LaneSend {
         room: "room-1".into(),
         payload: serde_json::json!({ "cursor": 42 }),
+        organ: None,
     })
     .await;
 
@@ -401,4 +406,35 @@ async fn a_session_without_an_ephemeral_source_arms_no_tick() {
     s.handle(subscribe_focus("q")).await;
     assert!(!s.has_ephemeral_subscriptions());
     assert!(s.tick_ephemeral().await.is_empty());
+}
+
+/// The organ rides as a SIBLING of the payload, never inside it. That is the
+/// whole reason this is safe to ship mid-session: a board built before the
+/// field existed sends a frame without it and reads one straight past it, and
+/// the payload every sand already parses keeps its exact shape.
+#[test]
+fn a_lane_frame_without_an_organ_still_parses() {
+    let old: ClientMessage = serde_json::from_str(
+        r#"{"type":"lane_send","room":"recordClicked","payload":{"uid":"r1"}}"#,
+    )
+    .expect("a board that predates the field is still understood");
+    let ClientMessage::LaneSend { organ, payload, .. } = old else {
+        panic!("expected a lane send")
+    };
+    assert_eq!(
+        organ, None,
+        "no organ named means the Cell hosting the lane"
+    );
+    assert_eq!(payload, serde_json::json!({ "uid": "r1" }));
+
+    let sent = serde_json::to_value(ServerMessage::LaneEvent {
+        room: "recordClicked".into(),
+        from: "conn-1".into(),
+        payload: serde_json::json!({ "uid": "r1" }),
+        identity: None,
+        organ: Some("o_marcia".into()),
+    })
+    .unwrap();
+    assert_eq!(sent["payload"], serde_json::json!({ "uid": "r1" }));
+    assert_eq!(sent["organ"], "o_marcia");
 }

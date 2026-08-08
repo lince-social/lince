@@ -62,6 +62,25 @@ pub async fn serve(
         writer.abort();
         return;
     }
+    // Subscribed BEFORE the snapshot is read, not after. `subscribe()` marks
+    // the current value seen, so ordering it first is free — and the other
+    // order drops an invite that lands between the read and the subscribe,
+    // leaving the board wrong until something unrelated happens to change the
+    // list again.
+    let mut notifications = engine.watch_notifications();
+    // The snapshot. A client that only ever received pushes would learn about
+    // invites that arrived while it was connected and nothing else — so an
+    // invite waiting since before the board opened would stay invisible.
+    if let Ok(items) = engine.notifications().await {
+        if out_tx
+            .send(ServerMessage::Notifications { items })
+            .await
+            .is_err()
+        {
+            writer.abort();
+            return;
+        }
+    }
     let mut terminals = TerminalHost::new();
     let mut bus = engine.subscribe();
     // Sources that read process state (who is on the LAN) commit no Facts, so
@@ -161,6 +180,13 @@ pub async fn serve(
                     if out_tx.send(update).await.is_err() { break; }
                 }
             }
+            // An invite arrived or was answered. Nothing here is per-session:
+            // notifications are a property of the Cell, so every open board
+            // gets the same list.
+            Ok(()) = notifications.changed() => {
+                let Ok(items) = engine.notifications().await else { continue };
+                if out_tx.send(ServerMessage::Notifications { items }).await.is_err() { break; }
+            }
             Some(id) = terminal_done_rx.recv() => {
                 terminals.forget(&id);
             }
@@ -218,6 +244,7 @@ fn spawn_lane_forwarder(
                 from: event.from,
                 payload: event.payload,
                 identity,
+                organ: event.organ,
             };
             if out_tx.send(msg).await.is_err() {
                 break;

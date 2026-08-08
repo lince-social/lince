@@ -182,13 +182,18 @@ impl Session {
                 self.hub.prune(&room);
                 vec![]
             }
-            ClientMessage::LaneSend { room, payload } => {
+            ClientMessage::LaneSend {
+                room,
+                payload,
+                organ,
+            } => {
                 if self.joined_rooms.contains(&room) {
                     self.hub.send(LaneEvent {
                         room,
                         from: self.connection_id.clone(),
                         payload,
                         from_subject: self.subject.clone(),
+                        organ,
                     });
                 }
                 vec![] // presence is fire-and-forget; senders don't echo to self
@@ -285,6 +290,16 @@ impl Session {
                 id,
                 message: "terminal capability requires a host transport driver".into(),
                 code: None,
+            }],
+            // A login is the FIRST frame of a live session or it is nothing.
+            // Once a session is running, its Person is settled and every read
+            // already made was gated by it — accepting a credential here would
+            // let a session change who it is halfway through, which is the one
+            // thing the whole subject-resolution design exists to prevent.
+            ClientMessage::LiveLogin { .. } => vec![ServerMessage::Error {
+                id: "-".into(),
+                message: "this session is already authenticated".into(),
+                code: Some("already_authenticated".into()),
             }],
         }
     }

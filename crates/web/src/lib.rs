@@ -22,9 +22,10 @@ use {
         infrastructure::{
             board_state_store::BoardStateStore, package_catalog_store::PackageCatalogStore,
         },
-        presentation::http::{media_assets, static_assets},
+        presentation::http::{live_proxy, media_assets, static_assets},
     },
     std::{
+        collections::HashMap,
         io::{Error as IoError, ErrorKind},
         net::SocketAddr,
         path::PathBuf,
@@ -86,6 +87,14 @@ struct CellApiState {
     wire: crate::presentation::http::wire_supervisor::WireSlot,
     packages: PackageCatalogStore,
     store: Store,
+    /// Organ uid -> the credential this Cell holds for it, in memory only.
+    ///
+    /// This is what makes a remote host stay logged in across a reconnect
+    /// instead of asking again every time the link blips. It never reaches
+    /// disk, never enters the store, and never syncs: restarting the process
+    /// logs every remote host out, which is the honest tradeoff for not
+    /// persisting someone's password to another machine.
+    remote_logins: Arc<tokio::sync::RwLock<HashMap<String, live_proxy::RemoteLogin>>>,
 }
 
 pub async fn serve_cell_api_only(
@@ -221,23 +230,92 @@ pub async fn serve_cell_api_only(
             username_hint: String::new(),
             connected_at_unix: None,
             last_error: String::new(),
+            local: true,
         }
     }
 
-    async fn local_server_bootstrap(state: &CellApiState) -> Vec<ServerBootstrap> {
-        store::organs::local(&state.store.pool)
-            .await
-            .ok()
-            .flatten()
-            .map(|organ| server_bootstrap_from_organ(organ, state.local_auth_required))
-            .into_iter()
-            .collect()
+    /// Every Cell a sand on this board may be pointed at: our own, first, then
+    /// every contact Organ we know.
+    ///
+    /// This used to return the local Cell alone, which is why the host picker
+    /// looked empty — it was listing exactly one thing and hiding itself
+    /// whenever a sand did not declare a write permission. A host binding is
+    /// per sand, so this list is what makes "this card reads MY Lince, that one
+    /// reads theirs" expressible at all.
+    ///
+    /// `authenticated` is answered honestly per row and means different things
+    /// by design: for our own Cell it is whether this browser has a session
+    /// (always true when the Cell has no auth at all — there is nothing to log
+    /// into); for a contact it is whether this Cell currently holds a way in,
+    /// either a login we typed or a device binding they granted us.
+    async fn local_server_bootstrap(
+        state: &CellApiState,
+        viewer_present: bool,
+    ) -> Vec<ServerBootstrap> {
+        organ_list(state, viewer_present).await
+    }
+
+    async fn organ_list(state: &CellApiState, viewer_present: bool) -> Vec<ServerBootstrap> {
+        let mut servers = Vec::new();
+        if let Ok(Some(local)) = store::organs::local(&state.store.pool).await {
+            let mut row = server_bootstrap_from_organ(local, state.local_auth_required);
+            row.name = format!("{} (esta Lince)", row.name);
+            // Nothing to log into when auth is off — say so rather than
+            // showing a login box that would reject every password.
+            row.authenticated = !state.local_auth_required || viewer_present;
+            servers.push(row);
+        }
+        let held = state.remote_logins.read().await;
+        if let Ok(contacts) = store::organs::contacts(&state.store.pool).await {
+            for contact in contacts {
+                if contact.trust == "blocked" {
+                    continue;
+                }
+                let login = held.get(&contact.record_uid);
+                servers.push(ServerBootstrap {
+                    id: contact.record_uid.clone(),
+                    name: contact.head.clone(),
+                    base_url: contact.base_url.clone(),
+                    // A contact's Cell always wants to know who you are. Either
+                    // they granted this device a binding, or you type a
+                    // password — but you never simply arrive.
+                    requires_auth: true,
+                    // Whether WE hold a way into THEIR Cell — nothing else.
+                    //
+                    // This used to also count `organ_login`, which is the other
+                    // direction entirely: a login we granted THEM into OURS.
+                    // Reading it here answered "they can get into me" to the
+                    // question "can I get into them", so a sand bound to a Lince
+                    // we had never logged into rendered unlocked, dialled, was
+                    // asked for a password we did not hold, and was dropped —
+                    // once a second, for as long as the board stayed open.
+                    authenticated: login.is_some(),
+                    session_state: Some(
+                        if login.is_some() {
+                            "logged_in"
+                        } else {
+                            "logged_out"
+                        }
+                        .to_string(),
+                    ),
+                    username_hint: login.map(|l| l.username.clone()).unwrap_or_default(),
+                    connected_at_unix: None,
+                    last_error: String::new(),
+                    local: false,
+                });
+            }
+        }
+        servers
     }
 
     async fn index(State(state): State<CellApiState>, headers: HeaderMap) -> impl IntoResponse {
         let board_state = state.board_state.snapshot().await;
-        let servers = local_server_bootstrap(&state).await;
+        // The REAL viewer, not an assumption. This bootstrap is what the board
+        // renders from before any fetch returns, so claiming a session nobody
+        // has would draw every sand unlocked for as long as that takes — rows
+        // on screen that the lock exists to prevent.
         let viewer = viewer_from_headers(&state, &headers).await;
+        let servers = local_server_bootstrap(&state, viewer.is_some()).await;
         let bootstrap = AppBootstrap::new(
             WidgetBridgeSnapshot::default(),
             board_state,
@@ -373,22 +451,14 @@ pub async fn serve_cell_api_only(
         headers: HeaderMap,
     ) -> Result<impl IntoResponse, (StatusCode, String)> {
         authenticate_headers(&state, &headers).await?;
-        let invites = store::invites::pending(&state.store.pool)
+        // The board no longer calls this — it takes the same list over the
+        // websocket, pushed. Kept for API clients, and delegating so the two
+        // cannot describe the same invite differently.
+        let notifications = state
+            .engine
+            .notifications()
             .await
             .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
-        let notifications = invites
-            .into_iter()
-            .map(|invite| {
-                serde_json::json!({
-                    "id": invite.record_uid,
-                    "kind": "thread_invite",
-                    "title": "Conversation request",
-                    "body": format!("{} wants to start an individual synced conversation.", invite.from_organ),
-                    "recordId": invite.root,
-                    "organId": invite.from_organ,
-                })
-            })
-            .collect::<Vec<_>>();
         Ok(Json(serde_json::json!({ "notifications": notifications })))
     }
 
@@ -446,7 +516,8 @@ pub async fn serve_cell_api_only(
         headers: HeaderMap,
     ) -> Result<impl IntoResponse, (StatusCode, String)> {
         authenticate_headers(&state, &headers).await?;
-        Ok(Json(local_server_bootstrap(&state).await))
+        let viewer = viewer_from_headers(&state, &headers).await.is_some();
+        Ok(Json(organ_list(&state, viewer).await))
     }
 
     #[derive(Serialize)]
@@ -1190,6 +1261,152 @@ pub async fn serve_cell_api_only(
             .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))
     }
 
+    #[derive(serde::Deserialize)]
+    struct RemoteSessionRequest {
+        username: String,
+        password: String,
+    }
+
+    #[derive(serde::Deserialize)]
+    struct InviteSessionRequest {
+        /// The public value: a pairing code, or a bare NodeId.
+        invite: String,
+        username: String,
+        password: String,
+        #[serde(default)]
+        name: String,
+    }
+
+    /// Log into an Organ from a pasted public value, with no prior contact.
+    ///
+    /// This is the one that answers "a fresh Lince, from anywhere". The Organ
+    /// lands in the contact list as `unknown` — enough to name it, bind sands
+    /// to it and reconnect to it, and nothing more. Being able to log into
+    /// someone's Cell is not a decision to trust their Organ with our data, and
+    /// `unknown` is exactly the tier that keeps sync shut while live mode
+    /// works.
+    async fn open_invite_session(
+        State(state): State<CellApiState>,
+        headers: HeaderMap,
+        Json(request): Json<InviteSessionRequest>,
+    ) -> Result<impl IntoResponse, (StatusCode, String)> {
+        authenticate_headers(&state, &headers).await?;
+        let wire = state.wire.read().await.clone().ok_or_else(|| {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                "no iroh endpoint".to_string(),
+            )
+        })?;
+        let raw = request.invite.trim();
+        if raw.is_empty() {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                "Paste the code that Lince gave you.".to_string(),
+            ));
+        }
+        // Accept either shape, exactly as pairing does: a full code carries
+        // addresses (what makes this work where discovery is blocked), a bare
+        // NodeId does not.
+        let invite = engine::pairing::PairingInvite::decode(raw).unwrap_or(
+            engine::pairing::PairingInvite {
+                node_id: raw.to_string(),
+                root_key: None,
+                label: None,
+                addrs: Vec::new(),
+            },
+        );
+        let login = live_proxy::RemoteLogin {
+            username: request.username.trim().to_string(),
+            password: request.password.clone(),
+        };
+        let organ = live_proxy::login_with_invite(wire, &invite, &login)
+            .await
+            .map_err(|message| (StatusCode::UNAUTHORIZED, message))?;
+
+        // The name the LOCAL user typed wins over anything the code claimed —
+        // a self-declared label is how "Eduardo's laptop" ends up on a
+        // stranger's row.
+        let name = if !request.name.trim().is_empty() {
+            request.name.trim().to_string()
+        } else {
+            invite
+                .label
+                .clone()
+                .unwrap_or_else(|| "Lince remota".to_string())
+        };
+        store::organs::add_contact(&state.store.pool, &organ, None, &name, "", 0)
+            .await
+            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+        store::organs::set_node_id(&state.store.pool, &organ, Some(&invite.node_id))
+            .await
+            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+        state
+            .remote_logins
+            .write()
+            .await
+            .insert(organ.clone(), login.clone());
+        Ok(Json(serde_json::json!({
+            "organ": organ,
+            "name": name,
+            "username": login.username,
+            "authenticated": true,
+        })))
+    }
+
+    /// Log THIS Cell into a contact's Cell with a username and password.
+    ///
+    /// The credential is verified by actually using it — one live connection is
+    /// opened and the handshake either succeeds or does not — rather than
+    /// stored on the strength of the user having typed something. A password
+    /// that is wrong must fail here, at the moment it is entered, and not later
+    /// as an unexplained blank sand.
+    ///
+    /// This is the device-independent way in: nothing about our keys is
+    /// consulted by the far side, so a Lince installed a minute ago works
+    /// exactly as well as one they have known for a year.
+    async fn open_remote_session(
+        State(state): State<CellApiState>,
+        headers: HeaderMap,
+        Path(organ): Path<String>,
+        Json(request): Json<RemoteSessionRequest>,
+    ) -> Result<impl IntoResponse, (StatusCode, String)> {
+        authenticate_headers(&state, &headers).await?;
+        let wire = state.wire.read().await.clone().ok_or_else(|| {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                "no iroh endpoint".to_string(),
+            )
+        })?;
+        let login = live_proxy::RemoteLogin {
+            username: request.username.trim().to_string(),
+            password: request.password.clone(),
+        };
+        live_proxy::verify_login(wire, &organ, &login)
+            .await
+            .map_err(|message| (StatusCode::UNAUTHORIZED, message))?;
+        state
+            .remote_logins
+            .write()
+            .await
+            .insert(organ.clone(), login.clone());
+        Ok(Json(serde_json::json!({
+            "organ": organ,
+            "username": login.username,
+            "authenticated": true,
+        })))
+    }
+
+    /// Forget the credential held for a contact's Cell.
+    async fn close_remote_session(
+        State(state): State<CellApiState>,
+        headers: HeaderMap,
+        Path(organ): Path<String>,
+    ) -> Result<impl IntoResponse, (StatusCode, String)> {
+        authenticate_headers(&state, &headers).await?;
+        state.remote_logins.write().await.remove(&organ);
+        Ok(Json(serde_json::json!({ "organ": organ, "authenticated": false })))
+    }
+
     /// Open a live session against a contact Organ and relay this browser
     /// socket to it over iroh (Ontology §11 "live mode").
     ///
@@ -1208,11 +1425,15 @@ pub async fn serve_cell_api_only(
         let Some(wire) = state.wire.read().await.clone() else {
             return (StatusCode::SERVICE_UNAVAILABLE, "no iroh endpoint").into_response();
         };
+        let login = state.remote_logins.read().await.get(&organ).cloned();
         ws.on_upgrade(move |socket| async move {
-            if let Err(error) =
-                crate::presentation::http::live_proxy::relay(wire, organ, socket).await
+            if let Err(failure) =
+                crate::presentation::http::live_proxy::relay(wire, organ, login, socket).await
             {
-                tracing::debug!(%error, "live relay ended");
+                // WARN, not debug: this is the one line that says why a sand
+                // bound to another Lince shows nothing, and at debug level
+                // nobody running a normal build ever sees it.
+                tracing::warn!(%failure, "live relay ended");
             }
         })
     }
@@ -1333,7 +1554,23 @@ pub async fn serve_cell_api_only(
             None
         }
     };
+    // Hoisted above the endpoint: the live handler needs it, and a SECOND hub
+    // would put live guests in different lane rooms from the local board — the
+    // cursors would simply never meet.
+    let lanes = Arc::new(LaneHub::new());
+    // Live sessions, installed at the INITIAL bind and not only on a rebind.
+    //
+    // `wire_supervisor` sets this every time it rebinds for a discovery change,
+    // which meant a Cell that simply booted and was never reconfigured had no
+    // handler at all: every `lince/live/1` connection was closed with "no live
+    // session for this organ", whoever was asking and however they had
+    // authenticated. The handler belongs to the endpoint, so every path that
+    // makes an endpoint has to install one.
     if let Some(wire) = wire.clone() {
+        wire.set_live_handler(transport::live::LiveHost::new(
+            engine.clone(),
+            lanes.clone(),
+        ));
         tokio::spawn(async move { wire.serve().await });
     }
     // Held behind a lock because discovery is a builder option: changing it
@@ -1404,12 +1641,13 @@ pub async fn serve_cell_api_only(
         board_state: BoardStateStore::new().map_err(IoError::other)?,
         engine,
         jwt_secret: Arc::new(jwt_secret),
-        lanes: Arc::new(LaneHub::new()),
+        lanes: lanes.clone(),
         listening_port: local_addr.port(),
         local_auth_required,
         wire: wire_slot,
         packages,
         store: cell_store,
+        remote_logins: Arc::new(tokio::sync::RwLock::new(HashMap::new())),
     };
 
     let static_dir = crate::infrastructure::paths::static_dir();
@@ -1417,6 +1655,11 @@ pub async fn serve_cell_api_only(
         .route("/auth/login", post(login))
         .route("/host/auth/login", post(login))
         .route("/organ", get(list_organs))
+        .route("/organ/session", post(open_invite_session))
+        .route(
+            "/organ/{organ}/session",
+            post(open_remote_session).delete(close_remote_session),
+        )
         .route(
             "/host/board/state",
             get(get_board_state).put(put_board_state),
@@ -1728,7 +1971,10 @@ fn local_base_url_from_socket_addr(address: SocketAddr) -> String {
     format!("http://{host}:{}", address.port())
 }
 
-fn default_lince_db_url() -> String {
+/// Public so the `lince` binary's admin subcommands open the SAME file the
+/// server would. A headless box has no board to configure itself from, and the
+/// one thing worse than no admin surface is a second one pointed elsewhere.
+pub fn default_lince_db_url() -> String {
     // The new store owns `lince.db`. Resolve the directory the same way the
     // legacy layer does (`utils::config::lince_data_dir`) so both honor
     // `LINCE_DATA_DIR_OVERRIDE` and always land side by side — `lince.db` (new

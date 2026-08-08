@@ -525,6 +525,9 @@ button.lynx-toast { cursor: pointer; }
 }
 [data-lynx-tooltip]:hover::after, [data-lynx-tooltip]:focus-visible::after { display: block; }
 [data-lynx-tooltip][data-lynx-tooltip-dismissed]::after { display: none; }
+/* Set by lynx-ui.js on every tooltip that is not the one active tooltip —
+   across sands, not just this document. See "One tooltip at a time" there. */
+[data-lynx-tooltip][data-lynx-tooltip-suppressed]::after { display: none; }
 
 .lynx-dialog {
   width: min(680px, calc(100vw - 16px));

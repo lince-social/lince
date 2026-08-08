@@ -189,9 +189,20 @@
         // the sender's subject and arrives ONLY when the host decided this
         // viewer may know it. A sand that renders `from` as a name is printing
         // an internal id at a person.
+        //
+        // The fourth is `organ`: which Cell the thing this event refers to
+        // lives on. A sand that acts on an event — opening the record that was
+        // clicked — must fetch it from THERE, not from whatever Lince the sand
+        // itself is bound to, or it asks the wrong Cell for a uid it has never
+        // heard of and shows an empty panel.
         for (const entry of laneHandlers)
           if (entry.room === data.room)
-            entry.handler(data.payload, data.from, data.identity || null);
+            entry.handler(
+              data.payload,
+              data.from,
+              data.identity || null,
+              String(data.organ || ""),
+            );
         break;
       case "lince:live":
         live = Boolean(data.live);
@@ -233,10 +244,18 @@
 
     // READ: open a live Protein subscription. `handler({rows})` fires on the
     // first snapshot and on every recomputed update. Returns an unsubscribe fn.
-    subscribeProtein(subId, protein, handler) {
+    // `options.organ` reads a DIFFERENT Cell than this sand is bound to, which
+    // is what an event-driven sand needs: it is handed a record that lives
+    // wherever the event came from and has no standing binding of its own. Omit
+    // it and the sand's own host is used, as always. "" is our own Cell.
+    subscribeProtein(subId, protein, handler, options) {
       if (typeof handler !== "function") return () => {};
       proteinHandlers.set(subId, handler);
-      post({ type: "lince:protein-subscribe", subId, protein });
+      const message = { type: "lince:protein-subscribe", subId, protein };
+      if (options && options.organ !== undefined && options.organ !== null) {
+        message.organ = String(options.organ);
+      }
+      post(message);
       return () => {
         proteinHandlers.delete(subId);
         post({ type: "lince:protein-unsubscribe", subId });
@@ -257,11 +276,19 @@
     // WRITE: forward a typed Action; resolves { created, facts, warnings } or
     // rejects. Warnings are non-fatal advisories (cycles, Proof loops) — show
     // them, never treat them as errors.
-    act(action) {
+    // `options.organ` writes to a DIFFERENT Cell than this sand is bound to.
+    // A sand reading a record from elsewhere MUST pass the same organ here:
+    // reading from one Lince and writing to another would put the change in
+    // the wrong Organ's Ledger under a uid that means something else there.
+    act(action, options) {
       const reqId = nextReqId();
       return new Promise((resolve, reject) => {
         actionWaiters.set(reqId, { resolve, reject });
-        post({ type: "lince:action", reqId, action });
+        const message = { type: "lince:action", reqId, action };
+        if (options && options.organ !== undefined && options.organ !== null) {
+          message.organ = String(options.organ);
+        }
+        post(message);
       });
     },
 
@@ -314,7 +341,10 @@
     // syncing in) — import the bytes into the sand's LoroDoc; imports dedupe
     // by version vector. Returns a leave fn. Send local edits with
     // `collabUpdate` (base64 Loro update bytes since the last send).
-    collabJoin(recordUid, handler) {
+    // `options.organ` names the Cell the record lives on, for the same reason
+    // `subscribeProtein` takes one: a doc is the record's, and the record is
+    // some particular Lince's.
+    collabJoin(recordUid, handler, options) {
       if (typeof handler !== "function") return () => {};
       let handlers = collabHandlers.get(recordUid);
       if (!handlers) {
@@ -322,7 +352,11 @@
         collabHandlers.set(recordUid, handlers);
       }
       handlers.add(handler);
-      post({ type: "lince:collab-join", recordUid });
+      const message = { type: "lince:collab-join", recordUid };
+      if (options && options.organ !== undefined && options.organ !== null) {
+        message.organ = String(options.organ);
+      }
+      post(message);
       return () => {
         handlers.delete(handler);
         if (handlers.size === 0) {

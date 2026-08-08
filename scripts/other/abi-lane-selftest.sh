@@ -32,9 +32,9 @@ trap 'rm -rf "$WORK"' EXIT
 # and `createWidgetBridge` become globals for the harness to drive. The stubbed
 # `window.WebSocket` (set before `createWidgetBridge` runs) is what the lazy
 # transport connects with.
-sed 's/^export function/function/; /^import /d' \
+sed 's/^export function/function/; /^import /{:a;/;$/!{N;ba};d}' \
   "$ROOT/crates/web/static/presentation/board/transport.js" > "$WORK/bridge.js"
-sed 's/^export function/function/; /^import /d' \
+sed 's/^export function/function/; /^import /{:a;/;$/!{N;ba};d}' \
   "$ROOT/crates/web/static/presentation/board/widget-bridge.js" >> "$WORK/bridge.js"
 grep -q "function createWidgetBridge" "$WORK/bridge.js" || { echo "could not prepare bridge.js"; exit 1; }
 grep -q "function getSharedTransport" "$WORK/bridge.js" || { echo "could not prepare transport.js"; exit 1; }

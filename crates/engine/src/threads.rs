@@ -189,6 +189,7 @@ impl Engine {
         self.accept_conversation(&invite.root, &invite.from_organ)
             .await?;
         store::invites::clear(&self.store.pool, invite_uid).await?;
+        self.notify_notifications_changed();
         Ok(invite.root)
     }
 
@@ -204,6 +205,7 @@ impl Engine {
             .ok_or_else(|| EngineError::Consequence("no such invite".into()))?;
         store::replica::revoke(&self.store.pool, &invite.root, &invite.from_organ).await?;
         store::invites::clear(&self.store.pool, invite_uid).await?;
+        self.notify_notifications_changed();
         Ok(())
     }
 

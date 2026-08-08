@@ -65,6 +65,17 @@ pub enum ClientMessage {
     LaneSend {
         room: String,
         payload: Value,
+        /// Which Organ the thing this event refers to lives on — a sibling of
+        /// `payload`, never inside it, so a sand that has never heard of this
+        /// field keeps reading the payload it was built for.
+        ///
+        /// Absent means "the Cell hosting this lane". Lanes never leave one
+        /// Cell (a board's room traffic always rides its own transport, even
+        /// when every card on it is bound elsewhere), so that reading is the
+        /// same for the sender and for every receiver — there is no uid to
+        /// translate at the boundary.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        organ: Option<String>,
     },
     /// Join a record's live collab doc (Ontology §11 "Collab"): the reply is a
     /// `CollabState` snapshot of the record-doc; afterwards every change to the
@@ -114,6 +125,17 @@ pub enum ClientMessage {
     },
     TerminalClose {
         id: String,
+    },
+    /// Log into an iroh live session with a username and password.
+    ///
+    /// The device-INDEPENDENT way in: nothing about the sender's keys is
+    /// consulted, so a Lince installed a minute ago works exactly as well as
+    /// one the host has known for a year. Valid only as the FIRST frame of a
+    /// session that asked for a login; the session driver never accepts it
+    /// afterwards, so it can never re-authenticate a session mid-flight.
+    LiveLogin {
+        username: String,
+        password: String,
     },
 }
 
@@ -205,6 +227,45 @@ pub enum ServerMessage {
         /// anonymous cursor: the position still renders, the name does not.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         identity: Option<String>,
+        /// Carried through from the `LaneSend` that raised it. See there for
+        /// what absent means.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        organ: Option<String>,
+    },
+    /// First frame of an iroh live session, before anything is served.
+    ///
+    /// `login_required` is false for a peer whose Organ was granted a device
+    /// binding — the handshake already proved who they are. It is true for
+    /// everyone else, and then NOTHING is served until `LiveLogin` succeeds.
+    /// Announced rather than inferred so the guest never has to guess whether
+    /// to send a credential.
+    LiveHello {
+        login_required: bool,
+    },
+    /// The credential named a Person and this session now acts as them.
+    ///
+    /// `organ` is the host's own Organ uid, returned because a guest logging in
+    /// from a fresh install has no contact row and therefore no name for the
+    /// Cell it just got into. Without it there is nothing stable to bind a sand
+    /// to, and the login could not survive a reload.
+    LiveLoginOk {
+        person: String,
+        #[serde(default)]
+        organ: String,
+    },
+    /// The credential did not. The message is identical for every cause, so a
+    /// refusal never confirms which half was right.
+    LiveLoginError {
+        message: String,
+    },
+    /// This Cell's pending notifications, in full.
+    ///
+    /// Sent once on connect and again whenever the set changes. The full list
+    /// rather than a delta: it is a handful of conversation invites, and a
+    /// client that reconnects has to end up with the same list either way —
+    /// which a delta stream cannot promise across a dropped socket.
+    Notifications {
+        items: Vec<Value>,
     },
     TerminalOpened {
         id: String,

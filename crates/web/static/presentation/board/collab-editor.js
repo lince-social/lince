@@ -61,6 +61,10 @@ export function createCollabEditor({
   onSaveState,
   presence = true,
   sendDebounceMs = 200,
+  // The Cell this record lives on, when it is not the one the sand is bound
+  // to — an event-driven sand is handed records from wherever the event came
+  // from. Undefined keeps the sand's own binding.
+  organ,
 }) {
   const doc = new LoroDoc();
   // The version already SENT. Everything after it is what the next send
@@ -345,7 +349,7 @@ export function createCollabEditor({
   }
 
   function join() {
-    joined = host.collabJoin(recordUid, applyRemote);
+    joined = host.collabJoin(recordUid, applyRemote, { organ });
     if (typeof host.onCollabAck === "function") {
       unAck = host.onCollabAck(recordUid, onAck);
     }

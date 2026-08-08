@@ -11,6 +11,11 @@ import { createBoardViewport } from "./viewport.js";
 import { createWidgetBridge, enhancePackageHtml } from "./widget-bridge.js";
 import { createProteinConfigPanel } from "./protein-config.js";
 import { buildWorkspaceArchive } from "./archive.js";
+import {
+  getSharedTransport,
+  listTransports,
+  releaseTransport,
+} from "./transport.js";
 
 const PACKAGE_EXTENSION = ".html";
 const LEGACY_PACKAGE_EXTENSION = ".sand";
@@ -704,8 +709,17 @@ const widgetBridge = createWidgetBridge({
 
     await refreshServerProfiles();
     flashDropOverlayMessage(
-      `A sessao do servidor ${target} expirou. Conecte novamente para desbloquear os widgets.`,
+      `A sessao da Lince ${target} expirou. Entre novamente para desbloquear os sands.`,
     );
+  },
+  // "Enter their Lince" from the Organ sand: point EVERY sand on the board at
+  // one host at once. `""` brings them all home.
+  //
+  // A bulk edit of the same per-sand binding the config modal writes one card
+  // at a time — so it persists, survives a reload, and any single sand can be
+  // pointed back on its own afterwards.
+  bindAllHosts(organUid) {
+    bindEveryCardToHost(String(organUid || ""));
   },
   onError(message) {
     flashDropOverlayMessage(message);
@@ -746,7 +760,6 @@ let sandStoreView = "grid";
 const SAND_STORE_LIST_DESCRIPTION_LIMIT = 2000;
 let serverProfiles = Array.isArray(bootstrap?.servers) ? bootstrap.servers : [];
 let pendingServerLogin = null;
-let notificationsTimer = null;
 let pendingWidgetConfigCardId = null;
 let pendingWidgetConfigServerId = "";
 const PACKAGE_PREVIEW_WATCH_INTERVAL_MS = 2500;
@@ -1511,8 +1524,44 @@ function getServerProfile(serverId) {
 // Views (the legacy table-CRUD catalog) is DELETED (2026-07-17): sands read
 // Protein through the Data panel; no table/view REST remains.
 
+// EVERY sand picks a host. This used to be gated on the card declaring a write
+// permission, which meant a read-only sand had no way to be pointed at another
+// Lince at all — and rendered the Host panel as a blank column, which read as
+// "you have no Organs" rather than "this control is not for you". Reading
+// someone else data is exactly as much a host decision as writing it.
+//
+// System cards are the exception, and not a grudging one: the Edit toolbar and
+// its siblings are the board's own chrome, not sands reading an Organ. Asking
+// which Lince the edit toolbar belongs to has no answer, so gating it produced
+// one — "Nao foi possivel identificar essa Lince" across a control that needs
+// no Lince at all, on a board that was otherwise working.
+//
+// The Record sand is exempt for a different reason: it has no host to pick.
+// It sits idle until another sand hands it a record, and that record lives on
+// whichever Lince the emitting sand was reading — carried on the event as
+// `organ`. Asking it to choose a Lince up front, and locking it until someone
+// logged into that one, blocked the very sand whose job is to open whatever it
+// is given. Permission is still decided where it belongs: the fetch goes to
+// that Cell and either it lets us read the record or it does not.
 function cardSupportsHostConfiguration(card) {
-  return card?.kind === "package" && cardRequiresServer(card);
+  if (card?.kind !== "package" || card?.system === true) {
+    return false;
+  }
+  return card?.packageName !== "record.html";
+}
+
+// Our own Cell. Marked by the server rather than guessed at by position: a
+// contact is free to name their Organ anything, including whatever ours is
+// called.
+function localServerProfile() {
+  return serverProfiles.find((server) => server.local) || null;
+}
+
+// The host a card is bound to. An empty binding is our own Cell — the default a
+// card is created with, and what "no host chosen" has always meant.
+function serverForCard(card) {
+  const serverId = String(card?.serverId || "").trim();
+  return serverId ? getServerProfile(serverId) : localServerProfile();
 }
 
 function cardSupportsPackagePreview(card) {
@@ -1742,38 +1791,43 @@ function serverLockMessage(server) {
     return "";
   }
 
+  if (server.local) {
+    return "Essa Lince pede login. Entre para liberar esse sand.";
+  }
+
   if (server.sessionState === "expired") {
-    return server.lastError || `A sessao de ${server.name} expirou. Conecte novamente.`;
+    return server.lastError || `A sessao de ${server.name} expirou. Entre novamente.`;
   }
 
-  if (server.sessionState === "logged_out") {
-    return `Conecte o servidor ${server.name} para liberar esse widget.`;
-  }
-
-  return `Conecte o servidor ${server.name} para liberar esse widget.`;
+  return `Entre na Lince de ${server.name} para liberar esse sand.`;
 }
 
+// Whether a sand may read Protein and run Actions at all.
+//
+// Every package sand goes through this now, including the ones bound to our own
+// Cell. That is the case the user has to be able to rely on: with local auth
+// switched on and nobody logged in, a sand must NOT quietly show rows or accept
+// an Action — it locks, and says why.
 function resolveCardServerState(card) {
-  if (!cardRequiresServer(card)) {
+  if (!cardSupportsHostConfiguration(card)) {
     return { state: "ready", server: null };
   }
 
-  const serverId = String(card?.serverId || "").trim();
-  if (!serverId) {
-    return {
-      state: "misconfigured",
-      server: null,
-      message: "Escolha um servidor para esse widget.",
-    };
-  }
-
-  const server = getServerProfile(serverId);
+  const server = serverForCard(card);
   if (!server) {
     return {
       state: "misconfigured",
       server: null,
-      message: "O servidor escolhido nao existe mais.",
+      message: String(card?.serverId || "").trim()
+        ? "A Lince escolhida nao esta mais na sua lista."
+        : "Nao foi possivel identificar essa Lince.",
     };
+  }
+
+  // No auth configured here: there is nothing to log into, so nothing to
+  // block. Saying so beats showing a login box that would reject everything.
+  if (!server.requiresAuth) {
+    return { state: "ready", server };
   }
 
   if (!server.authenticated) {
@@ -4280,16 +4334,24 @@ async function requestServerProfiles() {
   return Array.isArray(payload) ? payload : [];
 }
 
+// The picker always has at least one row: our own Cell, whose option value is
+// the empty string because that is what an unbound card stores. A board with no
+// contacts yet must still SEE its own Lince here and be told that is all there
+// is — an empty dropdown reads as a broken feature.
 function syncServerOptions(selectedId = "") {
-  const placeholder = '<option value="">Escolha um servidor</option>';
-  const options = serverProfiles.map(
-    (server) =>
-      `<option value="${escapeHtml(server.id)}">${escapeHtml(server.name)}</option>`,
-  );
-  widgetConfigServerId.innerHTML = [placeholder, ...options].join("");
-  widgetConfigServerId.value = serverProfiles.some(
-    (server) => server.id === selectedId,
-  )
+  const local = localServerProfile();
+  const remotes = serverProfiles.filter((server) => !server.local);
+  const options = [
+    `<option value="">${escapeHtml(
+      local ? local.name : "Esta Lince",
+    )}</option>`,
+    ...remotes.map(
+      (server) =>
+        `<option value="${escapeHtml(server.id)}">${escapeHtml(server.name)}</option>`,
+    ),
+  ];
+  widgetConfigServerId.innerHTML = options.join("");
+  widgetConfigServerId.value = remotes.some((server) => server.id === selectedId)
     ? selectedId
     : "";
 }
@@ -4304,15 +4366,67 @@ async function refreshServerProfiles() {
   return serverProfiles;
 }
 
-async function refreshNotifications() {
-  const response = await fetch(apiPath("/notifications"));
-  const payload = await parseJsonResponse(response);
-  if (!response.ok) {
-    throw new Error(payload?.error || "Falha ao carregar notificacoes.");
+// Point every package sand on the board at one host.
+function bindEveryCardToHost(organUid) {
+  const snapshot = store.getSnapshot();
+  for (const workspace of snapshot.workspaces) {
+    for (const card of workspace.cards) {
+      if (!cardSupportsHostConfiguration(card)) {
+        continue;
+      }
+      if (String(card.serverId || "") !== organUid) {
+        widgetBridge.rebindHost(card.id);
+      }
+      store.updateCard(
+        card.id,
+        (current) => ({ ...current, serverId: organUid }),
+        { persist: true },
+      );
+    }
   }
-  const nextNotifications = Array.isArray(payload?.notifications)
-    ? payload.notifications
-    : [];
+  releaseUnboundHosts();
+}
+
+// Close the socket to any Cell no sand is looking at any more.
+//
+// Left open it would keep reconnecting forever against a host nobody asked
+// about — and, on a Cell that requires a login, keep a proved session alive
+// with nothing on screen to show for it.
+function releaseUnboundHosts() {
+  const bound = new Set();
+  for (const workspace of store.getSnapshot().workspaces) {
+    for (const card of workspace.cards) {
+      const host = String(card?.serverId || "").trim();
+      if (host) {
+        bound.add(host);
+      }
+    }
+  }
+  // Card bindings are not the whole picture: an event-driven sand reads the
+  // Lince it was handed, which is recorded in its live subscriptions and in no
+  // card at all. Closing that connection would blank the sand silently.
+  if (typeof widgetBridge?.hostsInUse === "function") {
+    for (const host of widgetBridge.hostsInUse()) {
+      bound.add(host);
+    }
+  }
+  for (const connection of listTransports()) {
+    if (connection.organ && !bound.has(connection.organ)) {
+      releaseTransport(connection.organ);
+    }
+  }
+}
+
+// The Cell pushes the full list — on connect and on every change — so this is
+// the only place notifications enter the board. It replaced a `fetch` on a
+// two-second interval that ran for as long as a board was open, whether or not
+// anything had happened.
+//
+// `seenNotificationIds` is module state and not per-delivery, which is what
+// makes a reconnect quiet: the snapshot that arrives on every (re)open carries
+// ids already seen, and toasts fire only for the ones that are not.
+function applyNotifications(items) {
+  const nextNotifications = Array.isArray(items) ? items : [];
   for (const notification of nextNotifications) {
     if (!seenNotificationIds.has(notification.id)) {
       showNotificationToast(notification);
@@ -4436,12 +4550,12 @@ async function installAutomaticUpdate() {
   flashDropOverlayMessage("Installing update. Lince will restart.");
 }
 
-function startNotificationsPolling() {
-  window.clearInterval(notificationsTimer);
-  void refreshNotifications().catch(() => {});
-  notificationsTimer = window.setInterval(() => {
-    void refreshNotifications().catch(() => {});
-  }, 2000);
+function startNotifications() {
+  getSharedTransport().onMessage((message) => {
+    if (message?.type === "notifications") {
+      applyNotifications(message.items);
+    }
+  });
 }
 
 function setServerLoginError(message) {
@@ -4529,6 +4643,15 @@ async function submitServerLogin(serverId, username, password) {
     );
   }
 
+  // A connection that gave up for want of this credential is waiting to be
+  // told to try again. Without this the login succeeds and the sands bound to
+  // that Lince stay blank until the page is reloaded.
+  //
+  // Only one that already exists: logging in from the modal without a sand
+  // bound to that Lince must not open a session nobody is looking at.
+  listTransports()
+    .find((connection) => connection.organ === serverId)
+    ?.retry();
   return payload;
 }
 
@@ -4545,6 +4668,10 @@ async function logoutServerSession(serverId) {
     throw new Error(payload?.error || "Falha ao desconectar servidor.");
   }
 
+  // Logging out has to end the session, not just forget the password: a
+  // relay left running is a proved session on someone else's Cell that the
+  // user believes they closed.
+  releaseTransport(serverId);
   return payload;
 }
 
@@ -4568,7 +4695,6 @@ async function handleServerLoginFormSubmit(event) {
   try {
     await submitServerLogin(pendingServerLogin, username, password);
     await refreshServerProfiles();
-    await refreshNotifications().catch(() => {});
     closeServerLoginModal();
   } catch (error) {
     setServerLoginError(
@@ -4607,11 +4733,10 @@ function syncWidgetConfigDebug(card) {
 
   const parts = [];
 
-  if (cardRequiresServer(card)) {
-    parts.push("Escolha um servidor para esse widget.");
-  } else if (cardSupportsHostConfiguration(card)) {
+  if (cardSupportsHostConfiguration(card)) {
     parts.push(
-      "Escolha um servidor e conecte a conta se ele exigir auth.",
+      "Escolha a Lince que esse sand le e onde suas Actions acontecem. " +
+        "Cada sand escolhe a sua.",
     );
   } else {
     parts.push("Esse widget nao precisa de configuracao de host.");
@@ -4741,13 +4866,17 @@ async function refreshWidgetConfigModalState() {
     return;
   }
 
-  const server = getServerProfile(pendingWidgetConfigServerId);
+  // An empty binding is our own Cell, not "nothing chosen" — so resolve it the
+  // same way the card does rather than treating blank as unset.
+  const server = pendingWidgetConfigServerId
+    ? getServerProfile(pendingWidgetConfigServerId)
+    : localServerProfile();
   const requiresAuth = Boolean(server?.requiresAuth);
   const authenticated = Boolean(server?.authenticated);
-  const needsHostSelection =
-    cardSupportsHostConfiguration(card) &&
-      (!pendingWidgetConfigServerId ||
-        (requiresAuth && !authenticated));
+  // Saving is never blocked by not being logged in: binding a sand to a Lince
+  // and getting into that Lince are two acts, and forcing them into one means a
+  // sand cannot be pointed at a host you intend to log into later.
+  const needsHostSelection = false;
 
   widgetConfigAuthField.hidden = !requiresAuth;
   widgetConfigAuthEnabled.checked = requiresAuth && !authenticated;
@@ -4756,25 +4885,30 @@ async function refreshWidgetConfigModalState() {
   widgetConfigAuthUsername.value = server?.usernameHint || "";
   widgetConfigAuthPassword.value = "";
   widgetConfigAuthLogin.hidden = !requiresAuth || authenticated;
-  widgetConfigAuthLogin.disabled =
-    !pendingWidgetConfigServerId || !requiresAuth || authenticated;
+  widgetConfigAuthLogin.disabled = !requiresAuth || authenticated;
   widgetConfigAuthLogout.hidden = !requiresAuth || !authenticated;
-  widgetConfigAuthLogout.disabled =
-    !pendingWidgetConfigServerId || !requiresAuth || !authenticated;
+  widgetConfigAuthLogout.disabled = !requiresAuth || !authenticated;
   widgetConfigSaveButton.disabled = needsHostSelection;
   setWidgetConfigAuthHelp(
-    !pendingWidgetConfigServerId
-      ? "Escolha um servidor primeiro."
-      : requiresAuth && !authenticated
-        ? "Digite as credenciais do servidor aqui."
-        : requiresAuth && authenticated
-          ? `Conectado como ${server?.usernameHint || "usuario remoto"}.`
-        : "",
+    !server
+      ? "Essa Lince nao esta mais na sua lista."
+      : !requiresAuth
+        ? "Essa Lince nao pede login — nada a fazer aqui."
+        : !authenticated
+          ? server.local
+            ? "Essa Lince pede login. Entre pelo topo da tela."
+            : "Entre com seu usuario e senha dessa Lince."
+          : `Conectado como ${server.usernameHint || "usuario remoto"}.`,
   );
-
 }
 
 function saveWidgetConfig(cardId, nextServerId) {
+  // Tear down against the OLD host first: once serverId flips, nothing knows
+  // where this sand's live subscriptions were sent.
+  const previousHost = String(getCardById(cardId)?.serverId || "");
+  if (previousHost !== String(nextServerId || "")) {
+    widgetBridge.rebindHost(cardId);
+  }
   const nextStreamsEnabled = widgetConfigStreamsEnabled
     ? widgetConfigStreamsEnabled.checked
     : null;
@@ -4815,6 +4949,7 @@ function saveWidgetConfig(cardId, nextServerId) {
     }),
     { persist: true },
   );
+  releaseUnboundHosts();
 }
 
 function handleWidgetConfigFormSubmit(event) {
@@ -4830,14 +4965,9 @@ function handleWidgetConfigFormSubmit(event) {
     return;
   }
 
-  if (cardSupportsHostConfiguration(card)) {
-    const nextServerId = pendingWidgetConfigServerId.trim();
-    if (cardRequiresServer(card) && !nextServerId) {
-      setWidgetConfigHelp("Escolha um servidor para esse widget.");
-      widgetConfigServerId.focus();
-      return;
-    }
-  }
+  // Nothing to validate: an empty binding is our own Cell, which is always a
+  // valid answer. Refusing to save without a pick used to be the only way to
+  // leave this modal, and it made "just read this Lince" impossible to express.
 
   saveWidgetConfig(pendingWidgetConfigCardId, pendingWidgetConfigServerId.trim());
   closeWidgetConfigModal();
@@ -4926,7 +5056,6 @@ async function handleWidgetConfigAuthLogout() {
     syncServerProfiles(profiles);
     syncServerOptions(pendingWidgetConfigServerId);
     await refreshWidgetConfigModalState();
-    await refreshNotifications().catch(() => {});
     setWidgetConfigAuthHelp("Sessao do servidor desconectada.");
   } catch (error) {
     setWidgetConfigAuthHelp(
@@ -5759,9 +5888,6 @@ if (streamsToggle) {
 
 notificationsToggle.addEventListener("click", () => {
   setNotificationsOpen(!notificationsOpen);
-  if (notificationsOpen) {
-    void refreshNotifications().catch(() => {});
-  }
 });
 
 notificationsClose.addEventListener("click", () => {
@@ -6733,7 +6859,7 @@ syncServerOptions("");
 syncPasswordVisibility(false);
 setNotificationsOpen(false);
 positionCanvasControls();
-startNotificationsPolling();
+startNotifications();
 void bootWorkspace();
 
 window.LinceBoard = {
@@ -6772,3 +6898,76 @@ window.LinceBoard = {
     setWorkspacePopoverOpen(!workspacePopoverOpen);
   },
 };
+
+// Reaching a Lince this Cell has never met, from a pasted public value.
+//
+// The login is verified by USING it — our Cell dials, logs in, and only then
+// records the host. A code that does not answer, or a password that is wrong,
+// fails here while the user is still looking at the field they typed it into,
+// instead of becoming a host that is silently in the list and never works.
+const widgetConfigAddCode = document.getElementById("widget-config-add-code");
+const widgetConfigAddName = document.getElementById("widget-config-add-name");
+const widgetConfigAddUser = document.getElementById("widget-config-add-user");
+const widgetConfigAddPassword = document.getElementById(
+  "widget-config-add-password",
+);
+const widgetConfigAddSubmit = document.getElementById(
+  "widget-config-add-submit",
+);
+const widgetConfigAddHelp = document.getElementById("widget-config-add-help");
+
+function setAddHostHelp(message) {
+  if (!widgetConfigAddHelp) return;
+  const text = String(message || "").trim();
+  widgetConfigAddHelp.textContent = text;
+  widgetConfigAddHelp.hidden = !text;
+}
+
+async function submitAddHost() {
+  const invite = widgetConfigAddCode?.value.trim() || "";
+  const username = widgetConfigAddUser?.value.trim() || "";
+  const password = widgetConfigAddPassword?.value || "";
+  if (!invite || !username || !password) {
+    setAddHostHelp("Preencha o codigo, o usuario e a senha.");
+    return;
+  }
+
+  setAddHostHelp("Entrando...");
+  widgetConfigAddSubmit.disabled = true;
+  try {
+    const response = await fetch("/organ/session", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        invite,
+        username,
+        password,
+        name: widgetConfigAddName?.value.trim() || "",
+      }),
+    });
+    const payload = await parseJsonResponse(response);
+    if (!response.ok) {
+      throw new Error(payload?.error || "Nao consegui entrar nessa Lince.");
+    }
+    await refreshServerProfiles();
+    // Select it right away — adding a host from inside a sand's settings means
+    // that sand is what you wanted to point at it.
+    pendingWidgetConfigServerId = String(payload?.organ || "");
+    syncServerOptions(pendingWidgetConfigServerId);
+    await refreshWidgetConfigModalState();
+    if (widgetConfigAddPassword) widgetConfigAddPassword.value = "";
+    setAddHostHelp(`Conectado a ${payload?.name || "essa Lince"}.`);
+  } catch (error) {
+    setAddHostHelp(
+      error instanceof Error ? error.message : "Nao consegui entrar nessa Lince.",
+    );
+  } finally {
+    widgetConfigAddSubmit.disabled = false;
+  }
+}
+
+if (widgetConfigAddSubmit) {
+  widgetConfigAddSubmit.addEventListener("click", () => {
+    void submitAddHost();
+  });
+}

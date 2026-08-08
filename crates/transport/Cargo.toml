@@ -16,6 +16,7 @@ axum = ["dep:axum", "dep:base64", "dep:dirs", "dep:futures", "dep:portable-pty"]
 [dependencies]
 nucleus = { workspace = true }
 store = { workspace = true }
+utils = { workspace = true }
 engine = { workspace = true }
 async-trait = { workspace = true }
 iroh = { workspace = true }

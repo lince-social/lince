@@ -1,5 +1,6 @@
 #![forbid(unsafe_code)]
 
+mod admin;
 mod bootstrap_config;
 
 use std::{env, io::Error, net::SocketAddr, path::PathBuf};
@@ -35,6 +36,22 @@ async fn async_main() -> Result<(), Error> {
 
     if let Some(data_dir) = arg_value(&args, "--data-dir") {
         utils::config::set_lince_data_dir_override(PathBuf::from(data_dir))?;
+    }
+
+    // Administration of a Cell that has no board to administer it from. Placed
+    // after `--data-dir` so it acts on the same store the unit serves, and
+    // before everything else because it must not start a server.
+    if let Some(result) = admin::dispatch(&args).await {
+        // Printed rather than returned: `main`'s Err is Debug-formatted, and
+        // `Custom { kind: Other, error: "..." }` around a sentence written for
+        // a person reads like a crash.
+        return match result {
+            Ok(()) => Ok(()),
+            Err(error) => {
+                eprintln!("{error}");
+                std::process::exit(1);
+            }
+        };
     }
 
     // Server mode: hold the data, answer authenticated clients, hand nobody a
@@ -137,6 +154,15 @@ fn print_help() {
     );
     println!("      --initial-admin-password-file <path>  Create the first admin from a file");
     println!("      --initial-admin-password <password>   Same, but visible in `ps`");
+    println!();
+    println!("Administering a Cell with no board (run as the Cell's own user):");
+    println!("  lince organ list                       Contacts, their trust, their login");
+    println!("  lince organ users                      Who can log into this Cell");
+    println!("  lince organ trust <who> known          Let them sync");
+    println!("  lince organ login <who> <username>     Let them ENTER as that user (live mode)");
+    println!("  lince organ logout <who>               Take it back");
+    println!("  lince discovery                        Show the discovery doors");
+    println!("  lince discovery accept-unknown on      Allow pairing; turn off once paired");
     println!();
     println!("To learn more visit https://lince.social")
 }

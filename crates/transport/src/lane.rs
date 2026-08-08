@@ -20,6 +20,9 @@ pub struct LaneEvent {
     /// permission on that user may see. The receiving side resolves this to a
     /// name or drops it — see `ws::spawn_lane_forwarder`.
     pub from_subject: Option<String>,
+    /// Which Organ the event's subject lives on; `None` is this Cell. Opaque
+    /// here — the hub carries it, the sands read it.
+    pub organ: Option<String>,
 }
 
 /// Shared across all sessions on a host. Cheap to clone the handle via `Arc`.

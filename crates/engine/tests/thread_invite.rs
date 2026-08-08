@@ -379,3 +379,53 @@ async fn an_offer_over_the_wire_becomes_an_invite_the_user_answers() {
 
     serving.abort();
 }
+
+/// An invite must WAKE the board, not wait to be asked for.
+///
+/// Notifications are the one thing the board learns about that commits no
+/// Fact — an invite is a local note in its own side table, so the `fact_bus`
+/// cannot carry it. That gap used to be covered by a `fetch` on a two-second
+/// interval running for as long as any board was open. This watch is what
+/// replaced it, so the properties it has to hold are: it fires when an invite
+/// lands, `notifications()` then describes it, and answering fires it again.
+#[tokio::test]
+async fn a_pending_invite_wakes_watchers_and_answering_wakes_them_again() {
+    let (us, _organ) = cell("http://us.test").await;
+    let (them, their_organ) = cell("http://them.test").await;
+    know(&us, &their_organ).await;
+    // The far side has to hold the conversation Record for `accept_invite` to
+    // have something to accept.
+    let (root, _thread) = them
+        .start_conversation(&their_organ, "Coffee")
+        .await
+        .expect("their conversation");
+
+    let mut watch = us.watch_notifications();
+    assert!(
+        us.notifications().await.expect("read").is_empty(),
+        "nothing is pending before anyone asks"
+    );
+
+    store::invites::put(&us.store.pool, &their_organ, &root, "Coffee")
+        .await
+        .expect("invite lands");
+    us.notify_notifications_changed();
+
+    assert!(watch.has_changed().expect("watch alive"), "the board must be woken");
+    watch.mark_unchanged();
+    let pending = us.notifications().await.expect("read");
+    assert_eq!(pending.len(), 1, "and told exactly what is waiting");
+    assert_eq!(pending[0]["recordId"], root.as_str(), "pointing at the conversation");
+    assert_eq!(pending[0]["organId"], their_organ.as_str(), "and at who is asking");
+    let invite_uid = pending[0]["id"].as_str().expect("invite uid").to_string();
+
+    us.decline_invite(&invite_uid).await.expect("decline");
+    assert!(
+        watch.has_changed().expect("watch alive"),
+        "answering must wake them too, or the badge never clears"
+    );
+    assert!(
+        us.notifications().await.expect("read").is_empty(),
+        "and the list is empty again"
+    );
+}

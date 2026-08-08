@@ -1,6 +1,4 @@
 
-## [ ] Transfers — manual-first product, then Intelligence
-
 **Scope and architecture:** this is the one tracker for Transfer engine gaps,
 network delivery, the Transfer sand, integrations, and acceptance. A Transfer
 is a bundle of promises whose status is derived; the sand does not maintain a

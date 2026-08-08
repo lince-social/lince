@@ -329,9 +329,13 @@
       dot.classList.toggle("busy", pendingActs > 0);
       dot.classList.toggle("live", liveNow && pendingActs === 0);
     }
+    // Every write this sand makes goes through here, and every one of them goes
+    // to the Cell the record came from. Reading a record from another Lince and
+    // writing the edit to our own would clobber whatever local record happens
+    // to carry that uid, and record the change against the wrong Organ.
     function act(action) {
       pendingActs++; syncDot();
-      return H.act(action).finally(() => { pendingActs--; syncDot(); });
+      return H.act(action, { organ: focusOrgan }).finally(() => { pendingActs--; syncDot(); });
     }
     H.onLive((live) => {
       liveNow = live;
@@ -351,26 +355,59 @@
     let threadSearch = ""; // filters the thread TAB LIST only, not which is active
     let threadEditUid = null;
     let messageEdit = null; // { uid, draft }
+    // Which Lince the focused record lives on, taken from the event that named
+    // it. This sand has no host of its own worth speaking of: it sits idle
+    // until something hands it a record, and that record belongs to whichever
+    // Cell the emitting sand was reading. "" is our own.
+    let focusOrgan = "";
     // uid -> {head, slug, kind}; slug -> uid. For pickers, chips, @references.
     let names = {};
     let slugToUid = {};
-    H.subscribeProtein("names", { source: "record", limit: 500 }, ({ rows }) => {
-      names = {}; slugToUid = {};
-      for (const r of rows || []) {
-        names[r.uid] = { head: r.head, slug: r.slug, kind: r.kind };
-        if (r.slug) slugToUid[r.slug] = r.uid;
-      }
-      if (row && !creating) renderLinks();
-      renderPersonPicker();
-      renderTargetSuggestions();
-    });
-
     // Link-kind autocomplete: kinds ARE concepts (2026-07-18).
     let conceptNames = [];
-    H.subscribeProtein("concepts", { source: "concept" }, ({ rows }) => {
-      conceptNames = [...new Set((rows || []).map((c) => c && c.name).filter(Boolean))].sort();
+    // The directory follows the focused record's Lince, not ours. Names, slugs
+    // and kinds are per-Cell: a uid that names a person here names nothing —
+    // or someone else — there. Resolving a remote record's chips, @references
+    // and kind labels against our own directory is not a smaller answer, it is
+    // a wrong one, so a blank while the remote rows land is the correct state.
+    let directoryOrgan = null; // null = never bound; "" = our own Cell
+    let unbindNames = null;
+    let unbindConcepts = null;
+    function bindDirectory(organ) {
+      const next = String(organ || "");
+      if (directoryOrgan === next) return;
+      directoryOrgan = next;
+      if (typeof unbindNames === "function") unbindNames();
+      if (typeof unbindConcepts === "function") unbindConcepts();
+      names = {}; slugToUid = {}; conceptNames = [];
       renderKindSuggestions();
-    });
+      renderTargetSuggestions();
+      unbindNames = H.subscribeProtein(
+        "names",
+        { source: "record", limit: 500 },
+        ({ rows }) => {
+          names = {}; slugToUid = {};
+          for (const r of rows || []) {
+            names[r.uid] = { head: r.head, slug: r.slug, kind: r.kind };
+            if (r.slug) slugToUid[r.slug] = r.uid;
+          }
+          if (row && !creating) renderLinks();
+          renderPersonPicker();
+          renderTargetSuggestions();
+        },
+        { organ: next },
+      );
+      unbindConcepts = H.subscribeProtein(
+        "concepts",
+        { source: "concept" },
+        ({ rows }) => {
+          conceptNames = [...new Set((rows || []).map((c) => c && c.name).filter(Boolean))].sort();
+          renderKindSuggestions();
+        },
+        { organ: next },
+      );
+    }
+    bindDirectory("");
     function renderKindSuggestions() {
       const list = $("l-kind-suggestions");
       list.innerHTML = "";
@@ -393,23 +430,30 @@
     goIdle();
 
     H.joinRoom("recordClicked");
-    H.onLane("recordClicked", (payload) => {
+    H.onLane("recordClicked", (payload, from, identity, organ) => {
       const record = payload && payload.record ? payload.record : payload;
       const uid = record && (record.uid || record.slug);
       if (!uid) return;
       closeCreate();
-      focusRecord(String(uid));
+      focusRecord(String(uid), organ);
     });
 
     H.joinRoom("recordCreate");
-    H.onLane("recordCreate", (payload) => {
+    H.onLane("recordCreate", (payload, from, identity, organ) => {
       const seed = payload && payload.record ? payload.record : {};
+      // Create it on the Lince that asked for it. Otherwise a "new record"
+      // button in a kanban reading someone else's Cell would quietly file the
+      // record on ours, where nothing that asked for it can see it.
+      focusOrgan = String(organ || "");
+      bindDirectory(focusOrgan);
       openCreate(seed);
     });
 
-    function focusRecord(uid) {
+    function focusRecord(uid, organ) {
       expand();
       if (typeof unsubscribe === "function") unsubscribe();
+      focusOrgan = String(organ || "");
+      bindDirectory(focusOrgan);
       void startCollab(String(uid)); // live body: bind the shared Loro doc
       fieldsDirty = false;
       workDirty = false;
@@ -438,6 +482,7 @@
           row = (rows && rows[0]) || null;
           renderFocus();
         },
+        { organ: focusOrgan },
       );
     }
 
@@ -702,6 +747,7 @@
         host: H,
         LoroDoc: mod.LoroDoc,
         field: "body",
+        organ: focusOrgan,
         surface: {
           // Only the body is bound here: the head is an ordinary saved field in
           // this sand, so handing the doc an empty title would blank it.

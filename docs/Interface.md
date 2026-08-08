@@ -142,22 +142,7 @@ hierarchy widening, and Protein behavior live in [Ontology](../Ontology.md).
 
 Table sand is responsible for being the base of the components. Since original data in database is in a table the Table sand is the simplest to translate the incoming data to a visual structure.
 
-Rebuilt on LynxUI (2026-08-07): a persistent gutter (configurable line numbers,
-per-card host state) reveals a per-row delete button on hover, permission-gated
-the same way as everywhere else (`record:delete`/`record:delete_own`); the
-corner triangle is the Add trigger, creating a blank row and focusing its head
-cell for immediate typing instead of a bottom form bar; head/quantity cells
-edit in place with an outline-only focus state so nothing shifts size; rows
-are persistent per-uid DOM nodes reused across Protein pushes so a focused
-edit is never clobbered by a live update.
-
-Functionalities we Need:
-
-- [ ] Filters?
-
 # Communication
-
-# Communication Sand — Implementation Plan
 
 The Communication sand is a messaging-app surface for Lince. Every
 conversation — with one user of your organ, users of other organs, or a mixed
@@ -594,7 +579,6 @@ The coordination of production for our Needs requires specific interfaces? We wi
 # Configuration
 
 The sand exists, to configure normal lince data. We need to make it expand to configure more things. The sand will be the door to configure database stuff and board settings, like:
-- [ ] Colorscheme (with examples).
 
 ## Lince palette reference
 

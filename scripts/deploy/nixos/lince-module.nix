@@ -4,6 +4,20 @@
 #   mode = "board"    `lince`: the full board over HTTP, for a browser.
 #   mode = "desktop"  `lince-desktop`: the Tauri window, in your session.
 #
+# A server has no board, so the things the board configures are set from the
+# shell instead, as the unit's own user:
+#
+#   sudo -u lince lince --data-dir /var/lib/lince discovery accept-unknown on
+#   sudo -u lince lince --data-dir /var/lib/lince organ list
+#   sudo -u lince lince --data-dir /var/lib/lince organ trust <uid> known
+#   sudo -u lince lince --data-dir /var/lib/lince organ login <uid> <username>
+#
+# Those three decisions — open the pairing door, trust a contact, say which
+# Person they act as — are what a peer needs before "Enter their Lince" works
+# against this box. None of them is a NixOS option on purpose: the door should
+# be shut again after pairing, and a declarative `acceptUnknown = true` would
+# hold it open for the life of the machine.
+#
 # Server and board are the SAME binary and differ by one runtime flag. Desktop
 # is a genuinely different package (Tauri + GTK/webkit) and belongs to a user
 # session, not to the system — so it requires `scope = "user"`, which is what

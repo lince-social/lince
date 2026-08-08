@@ -34,11 +34,11 @@ WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
 # Bundle transport + unified bridge + archive module as one classic script.
-sed 's/^export function/function/; s/^export async function/async function/; /^import /d' \
+sed 's/^export function/function/; s/^export async function/async function/; /^import /{:a;/;$/!{N;ba};d}' \
   "$BOARD/transport.js" > "$WORK/bundle.js"
-sed 's/^export function/function/; s/^export async function/async function/; /^import /d' \
+sed 's/^export function/function/; s/^export async function/async function/; /^import /{:a;/;$/!{N;ba};d}' \
   "$BOARD/widget-bridge.js" >> "$WORK/bundle.js"
-sed 's/^export function/function/; s/^export async function/async function/; /^import /d' \
+sed 's/^export function/function/; s/^export async function/async function/; /^import /{:a;/;$/!{N;ba};d}' \
   "$BOARD/archive.js" >> "$WORK/bundle.js"
 grep -q "function buildWorkspaceArchive" "$WORK/bundle.js" || { echo "archive.js bundle failed"; exit 1; }
 

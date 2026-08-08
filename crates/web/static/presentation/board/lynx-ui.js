@@ -507,16 +507,56 @@
     target.style.setProperty("--lynx-tooltip-top", `${top}px`);
   }
 
+  // ── One tooltip at a time ──────────────────────────────────────────────
+  // The CSS shows a tooltip on :hover and on :focus-visible, and more than one
+  // element can satisfy that at once: :hover matches every ancestor under the
+  // pointer, and a keyboard-focused button keeps its tooltip while the pointer
+  // walks away to something else. Each sand is also its own document, so a
+  // hovered kanban tool cannot see the tooltip the edit popover is still
+  // showing — that pair goes through the board, which is the only thing that
+  // can see every frame.
+  //
+  // This marks the LOSERS rather than showing the winner, so a sand that pulls
+  // lynx-ui.css without lynx-ui.js (instinct.html) keeps plain CSS tooltips
+  // instead of losing them entirely.
+  const TOOLTIP_SHOWN = "lince:tooltip-shown";
+  const tooltipDocumentId = `${Date.now()}-${Math.random()}`;
+  function suppressEveryTooltipExcept(target) {
+    for (const other of document.querySelectorAll("[data-lynx-tooltip]")) {
+      if (other === target) other.removeAttribute("data-lynx-tooltip-suppressed");
+      else other.setAttribute("data-lynx-tooltip-suppressed", "");
+    }
+  }
+  function showOnlyTooltip(event) {
+    const target = event.target.closest?.("[data-lynx-tooltip]");
+    if (!target) return;
+    suppressEveryTooltipExcept(target);
+    // A sandboxed frame may not be able to reach the board at all; per-document
+    // exclusivity still holds, we just lose the cross-sand half.
+    try {
+      window.parent?.postMessage({ type: TOOLTIP_SHOWN, id: tooltipDocumentId }, "*");
+    } catch {}
+  }
+  window.addEventListener("message", (event) => {
+    const data = event.data;
+    if (!data || data.type !== TOOLTIP_SHOWN || data.id === tooltipDocumentId) return;
+    suppressEveryTooltipExcept(null);
+  });
+
   document.addEventListener("pointerover", (event) => {
     const target = event.target.closest?.("[data-lynx-tooltip]");
     if (target) delete target.dataset.lynxTooltipDismissed;
+    showOnlyTooltip(event);
     alignTooltip(event);
   });
   document.addEventListener("pointerout", (event) => {
     const target = event.target.closest?.("[data-lynx-tooltip]");
     if (target && !target.contains(event.relatedTarget)) delete target.dataset.lynxTooltipDismissed;
   });
-  document.addEventListener("focusin", alignTooltip);
+  document.addEventListener("focusin", (event) => {
+    showOnlyTooltip(event);
+    alignTooltip(event);
+  });
   document.addEventListener("focusout", (event) => {
     const target = event.target.closest?.("[data-lynx-tooltip]");
     if (target && !target.contains(event.relatedTarget)) delete target.dataset.lynxTooltipDismissed;

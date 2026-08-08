@@ -108,17 +108,37 @@ async fn a_contact_with_a_login_drives_a_live_session_over_iroh() {
     };
     let host_addr = loopback(&host_wire);
 
-    let refused = guest_wire
-        .endpoint()
-        .connect(host_addr.clone(), ALPN_LIVE)
-        .await;
-    if let Ok(connection) = refused {
-        // The handshake may complete before the gate closes it; what must not
-        // happen is a usable session.
+    // Being a known contact is not being logged in. Without a granted binding
+    // they are asked for a password like anyone else, and get NOTHING — no
+    // challenge, no session — until they produce one.
+    {
+        let connection = guest_wire
+            .endpoint()
+            .connect(host_addr.clone(), ALPN_LIVE)
+            .await
+            .expect("dial");
+        let (_send, mut recv) = connection.accept_bi().await.expect("stream");
         assert!(
-            connection.open_bi().await.is_err() || connection.closed().await.to_string().len() > 0,
-            "a known contact with NO login must not get a live session"
+            matches!(
+                hear(&mut recv).await,
+                ServerMessage::LiveHello {
+                    login_required: true
+                }
+            ),
+            "a known contact with NO login granted must be asked to log in",
         );
+        // And nothing follows it. The session is not started, so no challenge
+        // is ever written — a read here must time out rather than return.
+        let leaked = tokio::time::timeout(
+            std::time::Duration::from_millis(300),
+            hear(&mut recv),
+        )
+        .await;
+        assert!(
+            leaked.is_err(),
+            "nothing may be served before the login: got {leaked:?}",
+        );
+        connection.close(0u32.into(), b"done");
     }
 
     // The Cell owner grants the login, naming the Person they act as.
@@ -148,7 +168,7 @@ async fn a_contact_with_a_login_drives_a_live_session_over_iroh() {
         .connect(host_addr, ALPN_LIVE)
         .await
         .expect("live dial");
-    let (mut send, mut recv) = connection.open_bi().await.expect("session stream");
+    let (mut send, mut recv) = connection.accept_bi().await.expect("session stream");
     // The driver writes its first frame only once the stream exists, so poke
     // it before reading.
     say(
@@ -361,7 +381,7 @@ async fn a_live_guest_acts_on_the_host_and_the_write_lands_there() {
         .connect(host_addr, ALPN_LIVE)
         .await
         .expect("live dial");
-    let (mut send, mut recv) = connection.open_bi().await.expect("session stream");
+    let (mut send, mut recv) = connection.accept_bi().await.expect("session stream");
 
     // Poke the stream so the driver writes its first frame, then take the
     // challenge. The Person here is the host's decision, never our claim.
@@ -372,6 +392,16 @@ async fn a_live_guest_acts_on_the_host_and_the_write_lands_there() {
         },
     )
     .await;
+    // A granted contact is told it needs no login, then gets the challenge.
+    assert!(
+        matches!(
+            hear(&mut recv).await,
+            ServerMessage::LiveHello {
+                login_required: false
+            }
+        ),
+        "a granted device must be told it is already in, not asked for a password",
+    );
     let (session_id, challenge, announced_person) = match hear(&mut recv).await {
         ServerMessage::SessionChallenge {
             session_id,
@@ -484,6 +514,152 @@ async fn a_live_guest_acts_on_the_host_and_the_write_lands_there() {
         actor.as_deref(),
         Some(person.as_str()),
         "the guest's write must be attributed to their bound Person",
+    );
+
+    serving.abort();
+}
+
+/// Logging in from a Lince that has never been seen before — the case the
+/// whole feature exists for.
+///
+/// The guest here is NOT a contact. No pairing, no `organ_login`, no key of
+/// theirs on the host, nothing on either side that says these two have ever
+/// met. That is deliberate: a login bound to a device is not a login, it is an
+/// enrolment, and it cannot answer "I am on someone else's computer in another
+/// country and I want into my Lince". A username and password can, and this is
+/// the same credential the HTTP login checks.
+#[tokio::test]
+async fn a_stranger_with_a_password_gets_in_and_a_wrong_one_never_does() {
+    let (host, _host_organ) = cell("http://host.test").await;
+    let (guest, _guest_organ) = cell("http://guest.test").await;
+
+    // A person on the host, with a credential. Nothing else about them.
+    let admin_role = store::auth::ensure_role(&host.store.pool, store::auth::ADMIN_ROLE)
+        .await
+        .expect("role");
+    let hash = utils::auth::hash_password("correct horse battery").expect("hash");
+    store::auth::create_person_login(&host.store.pool, "Eduardo", "eduardo", &hash, admin_role)
+        .await
+        .expect("credential");
+    let person = store::auth::user_by_username(&host.store.pool, "eduardo")
+        .await
+        .expect("lookup")
+        .expect("there")
+        .uid;
+
+    let host_wire = Arc::new(
+        Wire::bind(host.clone(), SecretKey::from_bytes(&[81; 32]), Reach::Local)
+            .await
+            .expect("host binds"),
+    );
+    let guest_wire = Wire::bind(guest.clone(), SecretKey::from_bytes(&[82; 32]), Reach::Local)
+        .await
+        .expect("guest binds");
+    let hub = Arc::new(transport::LaneHub::new());
+    host_wire.set_live_handler(LiveHost::new(host.clone(), hub.clone()));
+    let host_addr = loopback(&host_wire);
+    let serving = {
+        let host_wire = host_wire.clone();
+        tokio::spawn(async move { host_wire.serve().await })
+    };
+
+    // A wrong password gets one refusal and the session ends. It must not say
+    // whether the USER exists — a message that distinguishes the two hands a
+    // guesser half the answer.
+    {
+        let connection = guest_wire
+            .endpoint()
+            .connect(host_addr.clone(), ALPN_LIVE)
+            .await
+            .expect("dial");
+        let (mut send, mut recv) = connection.accept_bi().await.expect("stream");
+        assert!(
+            matches!(
+                hear(&mut recv).await,
+                ServerMessage::LiveHello { login_required: true }
+            ),
+            "a peer with no granted binding must be asked to log in"
+        );
+        say(
+            &mut send,
+            &ClientMessage::LiveLogin {
+                username: "eduardo".into(),
+                password: "hunter2".into(),
+            },
+        )
+        .await;
+        let ServerMessage::LiveLoginError { message } = hear(&mut recv).await else {
+            panic!("a wrong password must be refused");
+        };
+        assert_eq!(message, "Invalid username or password");
+        connection.close(0u32.into(), b"refused");
+
+        // And a nonexistent user is refused in exactly the same words.
+        let connection2 = guest_wire
+            .endpoint()
+            .connect(host_addr.clone(), ALPN_LIVE)
+            .await
+            .expect("dial");
+        let (mut send, mut recv) = connection2.accept_bi().await.expect("stream");
+        let _ = hear(&mut recv).await;
+        say(
+            &mut send,
+            &ClientMessage::LiveLogin {
+                username: "nobody-at-all".into(),
+                password: "hunter2".into(),
+            },
+        )
+        .await;
+        let ServerMessage::LiveLoginError { message: other } = hear(&mut recv).await else {
+            panic!("an unknown user must be refused");
+        };
+        assert_eq!(
+            other, message,
+            "the refusal must not reveal whether the username exists"
+        );
+        connection2.close(0u32.into(), b"refused");
+    }
+
+    // The right password gets a real session, as that Person.
+    let connection = guest_wire
+        .endpoint()
+        .connect(host_addr, ALPN_LIVE)
+        .await
+        .expect("dial");
+    let (mut send, mut recv) = connection.accept_bi().await.expect("stream");
+    let _ = hear(&mut recv).await; // hello
+    say(
+        &mut send,
+        &ClientMessage::LiveLogin {
+            username: "eduardo".into(),
+            password: "correct horse battery".into(),
+        },
+    )
+    .await;
+    let ServerMessage::LiveLoginOk { person: got, .. } = hear(&mut recv).await else {
+        panic!("the right password must get in");
+    };
+    assert_eq!(got, person, "and act as the Person that credential names");
+
+    // The session that follows is a real one: the challenge names the same
+    // Person, which is what every visibility decision downstream rests on.
+    let mut bound = None;
+    for _ in 0..3 {
+        if let ServerMessage::SessionChallenge {
+            person: challenged,
+            signing_required,
+            ..
+        } = hear(&mut recv).await
+        {
+            assert!(signing_required, "a remote session must sign its Actions");
+            bound = challenged;
+            break;
+        }
+    }
+    assert_eq!(
+        bound,
+        Some(person),
+        "the session is bound to the Person the password proved, not to any key"
     );
 
     serving.abort();

@@ -136,6 +136,10 @@ pub struct ServerBootstrap {
     pub username_hint: String,
     pub connected_at_unix: Option<u64>,
     pub last_error: String,
+    /// Our own Cell. Exactly one row carries this, and it is what lets the
+    /// board say "this is your Lince" instead of showing a bare name a
+    /// contact could have chosen to look identical.
+    pub local: bool,
 }
 
 impl AppBootstrap {

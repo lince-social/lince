@@ -28,9 +28,9 @@ trap 'rm -rf "$WORK"' EXIT
 
 # Bundle transport + bridge into one classic script (strip import/export). The
 # stubbed WebSocket is installed before the bridge lazily connects.
-sed 's/^export function/function/; /^import /d' \
+sed 's/^export function/function/; /^import /{:a;/;$/!{N;ba};d}' \
   "$ROOT/crates/web/static/presentation/board/transport.js" > "$WORK/bundle.js"
-sed 's/^export function/function/; /^import /d' \
+sed 's/^export function/function/; /^import /{:a;/;$/!{N;ba};d}' \
   "$ROOT/crates/web/static/presentation/board/widget-bridge.js" >> "$WORK/bundle.js"
 grep -q "function getSharedTransport" "$WORK/bundle.js" || { echo "could not prepare transport.js"; exit 1; }
 grep -q "function createWidgetBridge" "$WORK/bundle.js" || { echo "could not prepare widget-bridge.js"; exit 1; }

@@ -134,10 +134,19 @@ pub use nucleus::nearby::NearbyPeer;
 /// connections.
 #[async_trait::async_trait]
 pub trait LiveSessions: Send + Sync {
-    /// Drive one live connection to completion. `organ_uid` is the contact the
-    /// HANDSHAKE proved and `person_uid` is who their login says they act as;
-    /// neither is ever read out of anything the peer sent.
-    async fn serve(&self, organ_uid: String, person_uid: String, connection: Connection);
+    /// Drive one live connection to completion.
+    ///
+    /// `organ_uid` is the contact the HANDSHAKE proved (or `node:<id>` when
+    /// there is no contact row). `granted_person` is who their `organ_login`
+    /// says they act as, and `None` means they have no such binding — so the
+    /// session must make them prove a username and password before it serves
+    /// anything. Neither value is ever read out of something the peer sent.
+    async fn serve(
+        &self,
+        organ_uid: String,
+        granted_person: Option<String>,
+        connection: Connection,
+    );
 }
 
 /// The in-memory nearby list, fed by the mDNS subscription.
@@ -196,6 +205,23 @@ pub enum WireRequest {
     /// Key and name exchange. Under iroh this establishes nothing the
     /// connection did not already establish — it is no longer a challenge.
     Introduction,
+    /// Pairing, in the direction that was missing: the dialer hands over its
+    /// OWN Introduction and gets ours back.
+    ///
+    /// `Introduction` alone is one-directional — the dialer learns who we are
+    /// and adopts us, while we learn nothing durable and keep no row. That was
+    /// enough while pairing only had to populate the dialer's contact list,
+    /// and silently not enough for everything that reads the ACCEPTING side's
+    /// contacts: `lince/sync/1` and `lince/live/1` both gate on
+    /// `contact_by_node_id`, so a Cell paired this way stayed a stranger to
+    /// the Cell it had just paired with, and live mode closed on it.
+    ///
+    /// Binding here creates an `unknown`-trust row and nothing more. Being
+    /// dialable is not a relationship: promoting to `known` (and granting a
+    /// login) stays a deliberate, separate act by the accepting side.
+    Introduce {
+        intro: Introduction,
+    },
     PushOps {
         batch: OpBatch,
     },
@@ -433,6 +459,37 @@ impl Wire {
         .map_err(|error| EngineError::Consequence(format!("live dial failed: {error}")))
     }
 
+    /// Open a live connection to a bare NodeId, with no contact row anywhere.
+    ///
+    /// This is what makes a FRESH Lince able to reach an Organ. `open_live`
+    /// resolves its address out of `organ_contact`, which a Cell installed a
+    /// minute ago does not have and cannot get — pairing needs the far side to
+    /// open its discovery door, and a login must not require that. The public
+    /// value the user pastes carries the NodeId and the addresses, which is
+    /// everything needed to dial; who they are is then settled by the login.
+    pub async fn open_live_at(
+        &self,
+        invite: &crate::pairing::PairingInvite,
+    ) -> Result<Connection, EngineError> {
+        let node_id: EndpointId = invite
+            .node_id
+            .parse()
+            .map_err(|_| EngineError::Consequence("malformed node id".into()))?;
+        let mut addr = EndpointAddr::new(node_id);
+        for text in &invite.addrs {
+            if let Ok(socket) = text.parse::<std::net::SocketAddr>() {
+                addr = addr.with_ip_addr(socket);
+            }
+        }
+        if !invite.addrs.is_empty() {
+            self.remember_addr(addr.clone());
+        }
+        tokio::time::timeout(DIAL_TIMEOUT, self.endpoint.connect(addr, ALPN_LIVE))
+            .await
+            .map_err(|_| EngineError::Consequence("they did not answer".into()))?
+            .map_err(|error| EngineError::Consequence(format!("live dial failed: {error}")))
+    }
+
     /// Record where a peer can be reached, bypassing discovery.
     pub fn remember_addr(&self, addr: PeerAddr) {
         self.known_addrs.add_endpoint_info(addr);
@@ -496,8 +553,13 @@ impl Wire {
             self.remember_addr(addr.clone());
         }
 
+        // Introduce ourselves rather than only asking. Pairing is mutual or it
+        // is not pairing: without this the far side keeps no row for us, and
+        // every door it guards by contact — sync and live mode both — stays
+        // shut on a pair that looked like it succeeded.
+        let ours = self.engine.introduction().await?;
         let response = self
-            .request(addr, ALPN_THREAD, &WireRequest::Introduction)
+            .request(addr, ALPN_THREAD, &WireRequest::Introduce { intro: ours })
             .await?;
         let intro = match response {
             WireResponse::Introduction { intro } => intro,
@@ -761,6 +823,33 @@ impl Wire {
         }
     }
 
+    /// Whether this Cell lets someone log in over `lince/live/1` with a
+    /// username and password rather than a granted device binding.
+    ///
+    /// DEFAULT ON, and that is not the same shape of decision as
+    /// `accept_unknown`. Opening the pairing door hands a stranger an
+    /// Introduction for merely knocking; this hands them nothing at all unless
+    /// they already know a username and password on this Cell — the same bar
+    /// the HTTP login sets, checked against the same `person_credential` rows.
+    /// A Cell with auth switched off has no credentials, so every attempt
+    /// fails: the honest answer there is not a policy but an empty table.
+    ///
+    /// Read per connection, so switching it off takes effect immediately.
+    pub async fn accept_logins(&self) -> bool {
+        let Ok(Some(organ)) = store::organs::local(&self.engine.store.pool).await else {
+            return false;
+        };
+        match store::records::get_extension(&self.engine.store.pool, &organ.uid, "lince.discovery")
+            .await
+        {
+            Ok(Some(fields)) => fields
+                .get("accept_logins")
+                .and_then(serde_json::Value::as_bool)
+                .unwrap_or(true),
+            _ => true,
+        }
+    }
+
     /// This Cell's NodeId — the one string a contact saves, and the thing a QR
     /// encodes.
     pub fn node_id(&self) -> EndpointId {
@@ -827,32 +916,55 @@ impl Wire {
                 connection.close(0u32.into(), b"unknown organ");
                 return Ok(());
             }
-            // A live session is someone acting INSIDE this Cell, so being
-            // known is necessary and not sufficient: a login must have been
-            // granted, and it decides which Person they act as. No login = the
-            // same closed door a stranger gets.
-            (ALPN_LIVE, true) => {
+            // A live session is someone acting INSIDE this Cell. There are two
+            // ways in, and they answer different questions.
+            //
+            // A granted contact needs no password: the handshake already proved
+            // which Organ is on the connection, and `organ_login` says which
+            // Person that Organ acts as. That binding is per-device — it is
+            // tied to their Cell's key.
+            //
+            // Everyone else may present a USERNAME AND PASSWORD. That is the
+            // path that is not bound to a device: a Lince installed fresh this
+            // minute, holding no keys anyone has ever seen, can point at this
+            // Organ and log in — which is the only way "from anywhere" can
+            // actually mean anywhere. The bar is exactly the bar the HTTP login
+            // sets, because it is the same credential.
+            //
+            // The connection is accepted here and stays ANONYMOUS. Nothing is
+            // served until the login succeeds; the session layer holds that
+            // gate, because it is the layer that owns the frames.
+            (ALPN_LIVE, known) => {
                 let organ = contact
                     .as_ref()
                     .map(|c| c.record_uid.clone())
                     .unwrap_or_default();
-                let person =
-                    store::logins::person_for_organ(&self.engine.store.pool, &organ).await?;
-                let (Some(person), Some(handler)) =
-                    (person, self.live.lock().expect("live handler").clone())
-                else {
+                let granted = if known {
+                    store::logins::person_for_organ(&self.engine.store.pool, &organ).await?
+                } else {
+                    None
+                };
+                if granted.is_none() && !self.accept_logins().await {
+                    connection.close(0u32.into(), b"this Cell does not accept live logins");
+                    return Ok(());
+                }
+                let Some(handler) = self.live.lock().expect("live handler").clone() else {
                     connection.close(0u32.into(), b"no live session for this organ");
                     return Ok(());
+                };
+                // Identify the session by the NodeId when there is no contact
+                // row: a credential login does not require one, and the
+                // connection id still has to be unique per peer.
+                let session_organ = if organ.is_empty() {
+                    format!("node:{peer}")
+                } else {
+                    organ
                 };
                 // Handed off whole: a live session is long-lived and streams
                 // its own frames, so none of the request/response loop below —
                 // including `MAX_FRAMES_PER_CONNECTION`, which would hang up
                 // mid-sentence on someone typing — applies to it.
-                handler.serve(organ, person, connection).await;
-                return Ok(());
-            }
-            (ALPN_LIVE, false) => {
-                connection.close(0u32.into(), b"unknown organ");
+                handler.serve(session_organ, granted, connection).await;
                 return Ok(());
             }
             (ALPN_THREAD, true) => {}
@@ -901,6 +1013,7 @@ impl Wire {
                         && !matches!(
                             request,
                             WireRequest::Introduction
+                                | WireRequest::Introduce { .. }
                                 | WireRequest::Enrol { .. }
                                 | WireRequest::OfferGrant { .. }
                                 | WireRequest::AcceptGrant { .. }
@@ -921,7 +1034,9 @@ impl Wire {
                     // and keep its trust tier `unknown`. Every later grant
                     // request resolves through that binding.
                     let authenticated = match &request {
-                        WireRequest::OfferGrant { intro, .. } if from_organ.is_empty() => {
+                        WireRequest::OfferGrant { intro, .. } | WireRequest::Introduce { intro }
+                            if from_organ.is_empty() =>
+                        {
                             match self.bind_unknown_peer(&peer.to_string(), intro).await {
                                 Ok(organ_uid) => organ_uid,
                                 Err(error) => {
@@ -970,12 +1085,19 @@ impl Wire {
     /// this connection — never a value read out of the request body.
     async fn handle(&self, authenticated: &str, request: WireRequest) -> WireResponse {
         match request {
-            WireRequest::Introduction => match self.engine.introduction().await {
-                Ok(intro) => WireResponse::Introduction { intro },
-                Err(error) => WireResponse::Error {
-                    message: error.to_string(),
-                },
-            },
+            // Both answer with ours. `Introduce` additionally bound THEIRS
+            // above, in `serve_connection`, where the NodeId iroh proved is
+            // still in hand — the intro in the body is a claim, and it is that
+            // pairing of claim with proven NodeId that makes the row worth
+            // keeping.
+            WireRequest::Introduction | WireRequest::Introduce { .. } => {
+                match self.engine.introduction().await {
+                    Ok(intro) => WireResponse::Introduction { intro },
+                    Err(error) => WireResponse::Error {
+                        message: error.to_string(),
+                    },
+                }
+            }
             WireRequest::PushOps { batch } => {
                 // The batch must belong to the Organ the HANDSHAKE proved, not
                 // to whoever the body claims. This is the same check the HTTP
@@ -1122,6 +1244,10 @@ impl Wire {
                         {
                             Ok(Some(_)) => {
                                 tracing::info!(%root, from = %authenticated, %title, "conversation offered");
+                                // Wake every open board. Only on `Some`: a
+                                // suppressed duplicate changed nothing, and
+                                // waking on it would push an identical list.
+                                self.engine.notify_notifications_changed();
                             }
                             Ok(None) => {
                                 tracing::info!(

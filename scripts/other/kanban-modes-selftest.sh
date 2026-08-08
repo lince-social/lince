@@ -22,8 +22,8 @@ SAND="$ROOT/crates/web/src/sand"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
-sed 's/^export function/function/; /^import /d' "$BOARD/transport.js"      > "$WORK/bundle.js"
-sed 's/^export function/function/; /^import /d' "$BOARD/widget-bridge.js" >> "$WORK/bundle.js"
+sed 's/^export function/function/; /^import /{:a;/;$/!{N;ba};d}' "$BOARD/transport.js"      > "$WORK/bundle.js"
+sed 's/^export function/function/; /^import /{:a;/;$/!{N;ba};d}' "$BOARD/widget-bridge.js" >> "$WORK/bundle.js"
 
 awk -v framefile="$BOARD/frame.js" -v editorfile="$BOARD/editor.js" '
   index($0, "<script src=\"/board/frame.js\"></script>") {

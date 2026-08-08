@@ -980,3 +980,72 @@ async fn pasting_the_code_of_a_blocked_organ_is_refused() {
         "and the block survives the attempt"
     );
 }
+
+/// Pairing is MUTUAL, or the doors it is supposed to open stay shut.
+///
+/// `pair_with` used to send only `Introduction`: the dialer learned who the
+/// far side was and adopted it, and the far side kept nothing. That looked
+/// like success on the only screen anyone was watching — the dialer's contact
+/// list — while `lince/sync/1` and `lince/live/1` both gate on
+/// `contact_by_node_id` on the ACCEPTING side, so the freshly paired Cell was
+/// still a stranger there. This is the case that made a `--server` box
+/// impossible to reach: pair from the laptop, then get closed on.
+///
+/// What the accepting side must NOT do is trust them. The row lands `unknown`;
+/// promoting it is a separate, deliberate act.
+#[tokio::test]
+async fn pairing_leaves_a_contact_row_on_both_sides() {
+    let (host, host_organ) = cell("http://host.test").await;
+    let (guest, guest_organ) = cell("http://guest.test").await;
+
+    store::records::set_extension(
+        &host.store.pool,
+        &host_organ,
+        "lince.discovery",
+        &serde_json::json!({ "accept_unknown": true }),
+    )
+    .await
+    .expect("open the door");
+
+    let host_wire = Wire::bind(host.clone(), secret(41), Reach::Local)
+        .await
+        .expect("host binds");
+    let guest_wire = Wire::bind(guest.clone(), secret(42), Reach::Local)
+        .await
+        .expect("guest binds");
+
+    let host_addr = loopback(&host_wire);
+    let guest_node = guest_wire.node_id().to_string();
+    let serving = tokio::spawn(async move { host_wire.serve().await });
+
+    let invite = engine::pairing::PairingInvite {
+        node_id: host_addr.id.to_string(),
+        root_key: None,
+        label: None,
+        addrs: host_addr
+            .ip_addrs()
+            .map(|addr| addr.to_string())
+            .collect(),
+    };
+    let paired = guest_wire
+        .pair_with(&invite, "The Server")
+        .await
+        .expect("pairing succeeds");
+    assert_eq!(paired, host_organ, "the guest adopted the host's Organ");
+
+    // The half that used to be missing.
+    let on_host = store::organs::contact_by_node_id(&host.store.pool, &guest_node)
+        .await
+        .expect("query")
+        .expect("the host must remember whoever paired with it");
+    assert_eq!(
+        on_host.record_uid, guest_organ,
+        "and remember them as the Organ they proved, not a NodeId alone"
+    );
+    assert_eq!(
+        on_host.trust, "unknown",
+        "being dialable is not a relationship: trust stays a separate decision"
+    );
+
+    serving.abort();
+}

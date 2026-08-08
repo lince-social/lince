@@ -12,6 +12,7 @@ keywords = ["registry", "automation", "self-hosted"]
 [dependencies]
 web = { workspace = true }
 utils = { workspace = true }
+store = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread", "process", "time", "macros"] }
 serde = { workspace = true }
 serde_json = { workspace = true }

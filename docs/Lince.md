@@ -19,20 +19,6 @@ You can create automations and recurrent tasks in lince with Karma rules, there 
 
 With this philosophy we can automate the remembering part of habits, creating a need for them everyday, we can assign work tasks, buy, borrow and donate items, create roadmaps for others to follow, in the areas of production and education, and do much more.
 
-
-### Registry
-We all have different Needs. To satiate them we do personal/professional tasks, acquire personal items, perform economic trades, socialize with others, study... Lince helps you organize the meeting of those Needs. You put your Needs in Lince, the frequent or the one-time ones. You create Records of them, give titles (head) and descriptions (body) and assign a quantity, with that you created data on your Need, now you can play with it, put your finger on it, connect with others, see the bigger picture, automate them, and help others do the same.
-
-### Interconnection
-With your Needs modeled you can connect with others, they might Contribute to yours or the other way around. You can promise to give something to someone, and expect something in return, or not. After that it is your responsability to complete the Contributions on your side. This process is called a Transfer Proposal.
-
-### Automation
-Now that we know what our Needs are, and how we can receive Contributions to them, and do the same for others, we might want to satiate the need of managing our interactions with Lince and other systems. For automation and more, Lince has Karma, a simple system of Conditions that bring Consequences that can build complex workflows.
-
-Many great ideas are lost with time. After doing the registry, interconnection and automation we might create a pattern for efficient Contributions. If that pattern is for basic needs, we might feel more inclined to make it public, turning our system into a blueprint for others to evolve their own workflows.
-
-With this philosophy we can automate the remembering part of habits, creating a need for them everyday, we can assign work tasks, buy, borrow and donate items, create roadmaps for others to follow, in the areas of production and education, and do much more.
-
 ## Interfaceless - The Death of Lince
 
 Most software is repetitive Create, Read, Update, Delete (CRUD) operations. We can create a good general base for basic CRUD software, and continue to expand beyond that. The diversity in what can be created with it is the real power.

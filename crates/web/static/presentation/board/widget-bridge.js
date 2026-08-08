@@ -1,4 +1,8 @@
-import { getSharedTransport } from "./transport.js";
+import {
+  getSharedTransport,
+  getTransportFor,
+  releaseTransport,
+} from "./transport.js";
 
 const BRIDGE_STATE_EVENT = "widget-bridge-state";
 const HOST_TO_WIDGET_STATE = "lince:bridge-state";
@@ -36,6 +40,10 @@ const FLAT_LIVE = "lince:live";
 const FLAT_ENTER_LIVE = "lince:enter-live";
 const FLAT_LIVE_ORGAN = "lince:live-organ";
 const FLAT_PATCH_CARD_STATE = "lince:patch-card-state";
+// Only one tooltip may be up at a time, and each sand is its own document that
+// cannot see the others. lynx-ui.js announces the one it just showed; the board
+// passes the announcement on so every other sand hides its own.
+const TOOLTIP_SHOWN = "lince:tooltip-shown";
 const FLAT_ARCHIVE_WORKSPACE = "lince:archive-workspace";
 const FLAT_TERMINAL_OPEN = "lince:terminal-open";
 const FLAT_SCAN_CODE = "lince:scan-code";
@@ -228,13 +236,25 @@ export function createWidgetBridge({
   setCardStreamsEnabled,
   handleShellAction,
   invalidateServerAuth,
+  bindAllHosts,
   archiveWorkspace,
   scanCode,
   onError,
 }) {
   let bridgeState = normalizeBridgeState(initialState);
+  // Our own Cell. Board-scoped traffic rides this one no matter what any sand
+  // is bound to: lane rooms are how the sands ON THIS BOARD talk to each other
+  // and to our own other sessions, and a PTY is a process on THIS machine.
+  // Routing either to a contact's Cell would be a different feature wearing the
+  // same frame name.
   const transport = getSharedTransport();
-  let signingState = transport.getSigningState();
+  // host -> signing state. One per Cell: each binds its own Person to its own
+  // challenge, and a sand must be told about ITS host, never another one's.
+  const signingStates = new Map();
+  signingStates.set("", transport.getSigningState());
+  // Connections we have already wired handlers onto, so attaching is idempotent
+  // when a second sand binds a host that is already open.
+  const wiredHosts = new Map(); // host -> the connection its handlers are on
   let nextActionRequestId = 1;
   // subscription id -> { instanceId, subId, message, protocol } where protocol
   // is "flat" (new-way frame.js sand) or "nested" (legacy chrome). The protocol
@@ -269,6 +289,12 @@ export function createWidgetBridge({
   // that joined it. One server-side join per record regardless of how many
   // sands on this board edit it; snapshots fan out to every member frame.
   const collabMembers = new Map();
+  // record uid -> the host its doc lives on. A collab doc belongs to ONE Cell:
+  // the record it mirrors is stored there, and sending an update anywhere else
+  // would write into a different Organ's document of the same name. Captured on
+  // join and used for the leave, which happens after the last member is gone
+  // and there is no instance left to ask.
+  const collabHosts = new Map();
 
   function frameForInstance(instanceId) {
     return getFrames().find(
@@ -284,6 +310,46 @@ export function createWidgetBridge({
     frameForInstance(instanceId)?.contentWindow?.postMessage(message, "*");
   }
 
+  // Which Cell a sand's data and Actions belong to. "" is our own.
+  function hostOf(instanceId) {
+    return String(getCardMeta(instanceId)?.serverId || "");
+  }
+
+  // The connection for a sand, wiring the inbound handlers the first time we
+  // reach a given host. Frames from every open Cell land in the same
+  // `handleTransportMessage`, which routes by subscription id — and every
+  // subscription id is namespaced by instance, so a reply can only ever reach
+  // the sand that asked for it.
+  function hostTransport(instanceId) {
+    return connectionForHost(hostOf(instanceId));
+  }
+
+  // The connection to a named Cell, wiring its inbound handlers on first reach.
+  //
+  // Taken by HOST rather than by sand because an event-driven sand does not
+  // read its own binding: the Record pin is handed a record that lives on
+  // whichever Lince emitted the event, and has to fetch it from there.
+  function connectionForHost(host) {
+    const connection = getTransportFor(host);
+    // Keyed by the CONNECTION, not just the host: a released host that is bound
+    // again gets a brand new connection object with empty listener sets, and
+    // remembering only the host name would leave that one unwired — the sand
+    // would sit there receiving nothing, with no error to show for it.
+    if (host && wiredHosts.get(host) !== connection) {
+      wiredHosts.set(host, connection);
+      attachHostHandlers(connection, host);
+    }
+    return connection;
+  }
+
+  // Sand-scoped traffic: Protein subscriptions, Actions, collab docs. Goes to
+  // the Cell that sand is bound to.
+  function sendFor(instanceId, payload) {
+    hostTransport(instanceId).send(payload);
+    return true;
+  }
+
+  // Board-scoped traffic: lane rooms and terminals. Always our own Cell.
   function sendTransport(payload) {
     transport.send(payload);
     return true;
@@ -370,6 +436,9 @@ export function createWidgetBridge({
             topic,
             payload.data,
             payload.sourceInstanceId || "",
+            // Taken from the wire, never recomputed: the source card lives on
+            // the board that sent this, so there is nothing here to ask.
+            payload.organ,
           );
         }
         return;
@@ -381,6 +450,7 @@ export function createWidgetBridge({
         message.payload,
         message.from || "",
         message.identity || "",
+        message.organ || "",
       );
       return;
     }
@@ -421,7 +491,11 @@ export function createWidgetBridge({
       }
       if (members.size === 0) {
         collabMembers.delete(recordUid);
-        sendTransport({ type: "collab_leave", record_uid: recordUid });
+        getTransportFor(collabHosts.get(recordUid) || "").send({
+          type: "collab_leave",
+          record_uid: recordUid,
+        });
+        collabHosts.delete(recordUid);
       }
       return;
     }
@@ -497,7 +571,7 @@ export function createWidgetBridge({
   // present only when the host resolved that this viewer may know it
   // (Ontology §11 presence). Dropping it here is what made named cursors
   // impossible — a sand that never receives it can only ever render "someone".
-  function deliverLaneEventToRoom(room, payload, from, identity) {
+  function deliverLaneEventToRoom(room, payload, from, identity, organ) {
     const members = roomMembers.get(room);
     if (!members) {
       return;
@@ -512,6 +586,10 @@ export function createWidgetBridge({
         room,
         from: from || "",
         identity: identity || "",
+        // Taken from the wire, never recomputed: the source card lives on the
+        // board that sent this, so there is nothing here to ask. Absent means
+        // this Cell, which is what "" already means to a sand.
+        organ: organ || "",
         payload: cloneJsonValue(payload, null),
       });
     }
@@ -520,12 +598,92 @@ export function createWidgetBridge({
     }
   }
 
-  // Wire the single shared transport: one message handler for every inbound
-  // frame, one replay on (re)open, and a connection up/down signal that reaches
-  // both protocols.
+  // Sands currently bound to a host, so a reconnect replays only what belongs
+  // to the Cell that reconnected.
+  function instancesOn(host) {
+    return [...flatFrames].filter((instanceId) => hostOf(instanceId) === host);
+  }
+
+  // Filtered on the host the subscription was SENT to, not on where its card
+  // points now. Those differ exactly when a binding has just changed, and
+  // resolving live would replay the old connection's subscription onto the new
+  // Cell while leaving the old one still feeding rows nobody asked for.
+  function subscriptionsOn(host) {
+    return [...subscriptions.values()].filter((entry) => entry.host === host);
+  }
+
+  // A reconnect replays the joins for the docs that live on THAT Cell, and
+  // tells their frames to re-export from their last acked version. The snapshot
+  // that comes back heals Cell -> sand; nothing heals sand -> Cell, which is
+  // why the pending set is declared lost rather than retried.
+  function rejoinCollabDocsOn(host, send) {
+    for (const [recordUid, members] of collabMembers) {
+      if ((collabHosts.get(recordUid) || "") !== host) {
+        continue;
+      }
+      send({
+        type: "collab_join",
+        id: `collab:${recordUid}`,
+        record_uid: recordUid,
+      });
+      for (const instanceId of members) {
+        if (frameForInstance(instanceId)) {
+          postFrame(instanceId, { type: FLAT_COLLAB_RESET, recordUid });
+        }
+      }
+    }
+  }
+
+  // Everything a remote host needs. Deliberately narrower than the local block
+  // below: no lane rooms, no terminals, no collab rejoin — those are board- and
+  // machine-scoped and stay on our own Cell.
+  function attachHostHandlers(connection, host) {
+    connection.onMessage(handleTransportMessage);
+    connection.onOpen(() => {
+      for (const entry of subscriptionsOn(host)) {
+        connection.send(entry.message);
+      }
+      collabPending.clear();
+      rejoinCollabDocsOn(host, (payload) => connection.send(payload));
+      for (const instanceId of instancesOn(host)) {
+        postFrame(instanceId, { type: FLAT_LIVE, live: true });
+        postFrame(instanceId, { type: FLAT_LIVE_ORGAN, organ: host });
+      }
+    });
+    connection.onLive((live) => {
+      if (live) return;
+      for (const instanceId of instancesOn(host)) {
+        postFrame(instanceId, { type: FLAT_LIVE, live: false });
+      }
+      for (const entry of subscriptionsOn(host)) {
+        if (entry.protocol !== "flat") {
+          postRows(entry, [], false);
+        }
+      }
+    });
+    connection.onSigningState((state) => {
+      const previous = signingStates.get(host);
+      const becameAvailable = !previous?.available && Boolean(state?.available);
+      signingStates.set(host, cloneJsonValue(state, {}));
+      for (const instanceId of instancesOn(host)) {
+        postFrame(instanceId, {
+          type: FLAT_SIGNING_STATE,
+          ...signingStates.get(host),
+        });
+      }
+      if (becameAvailable) {
+        for (const entry of subscriptionsOn(host)) {
+          connection.send(entry.message);
+        }
+      }
+    });
+  }
+
+  // Wire our own Cell: one message handler for every inbound frame, one replay
+  // on (re)open, and a connection up/down signal that reaches both protocols.
   transport.onMessage(handleTransportMessage);
   transport.onOpen(() => {
-    for (const entry of subscriptions.values()) {
+    for (const entry of subscriptionsOn("")) {
       sendTransport(entry.message);
     }
     // The Cell session is fresh on every (re)connect — re-join our lane rooms so
@@ -542,28 +700,9 @@ export function createWidgetBridge({
     // the socket dropped is therefore declared lost, and each member frame is
     // told to re-export from its last ACKED version.
     collabPending.clear();
-    for (const [recordUid, members] of collabMembers) {
-      sendTransport({
-        type: "collab_join",
-        id: `collab:${recordUid}`,
-        record_uid: recordUid,
-      });
-      for (const instanceId of members) {
-        if (frameForInstance(instanceId)) {
-          postFrame(instanceId, { type: FLAT_COLLAB_RESET, recordUid });
-        }
-      }
-    }
-    for (const instanceId of flatFrames) {
+    rejoinCollabDocsOn("", (payload) => sendTransport(payload));
+    for (const instanceId of instancesOn("")) {
       postFrame(instanceId, { type: FLAT_LIVE, live: true });
-    }
-  });
-  // Which Cell the board is driving. Every sand is told, because a sand that
-  // does not know it is looking at someone else's Organ will present their
-  // data as yours.
-  transport.onLiveOrgan((organUid) => {
-    for (const instanceId of flatFrames) {
-      postFrame(instanceId, { type: FLAT_LIVE_ORGAN, organ: organUid });
     }
   });
   transport.onLive((live) => {
@@ -571,7 +710,7 @@ export function createWidgetBridge({
       return;
     }
     // Socket down: tell new-way sands, and blank legacy subscriptions' rows.
-    for (const instanceId of flatFrames) {
+    for (const instanceId of instancesOn("")) {
       postFrame(instanceId, { type: FLAT_LIVE, live: false });
     }
     for (const entry of terminalSessions.values()) {
@@ -596,23 +735,24 @@ export function createWidgetBridge({
       }
       pendingActions.clear();
     }
-    for (const entry of subscriptions.values()) {
+    for (const entry of subscriptionsOn("")) {
       if (entry.protocol !== "flat") {
         postRows(entry, [], false);
       }
     }
   });
   transport.onSigningState((state) => {
-    const becameAvailable = !signingState?.available && Boolean(state?.available);
-    signingState = cloneJsonValue(state, {});
-    for (const instanceId of flatFrames) {
-      postFrame(instanceId, { type: FLAT_SIGNING_STATE, ...signingState });
+    const previous = signingStates.get("");
+    const becameAvailable = !previous?.available && Boolean(state?.available);
+    signingStates.set("", cloneJsonValue(state, {}));
+    for (const instanceId of instancesOn("")) {
+      postFrame(instanceId, { type: FLAT_SIGNING_STATE, ...signingStates.get("") });
     }
     // Capability-bearing Protein rows may have been projected while the
     // session was still proving its key. Refresh them once that signer becomes
     // usable so controls do not remain falsely disabled until another Fact.
     if (becameAvailable) {
-      for (const entry of subscriptions.values()) {
+      for (const entry of subscriptionsOn("")) {
         sendTransport(entry.message);
       }
     }
@@ -699,7 +839,7 @@ export function createWidgetBridge({
 
   // Deliver an ABI event to every local frame that listens to the topic and did
   // not source it. Shared by same-board emit and remote lane events.
-  function deliverEventToFrames(topic, data, sourceInstanceId) {
+  function deliverEventToFrames(topic, data, sourceInstanceId, organ) {
     for (const frame of getFrames()) {
       const frameInstanceId = frame?.dataset?.packageInstanceId || "";
       if (frameInstanceId === (sourceInstanceId || "")) {
@@ -711,18 +851,34 @@ export function createWidgetBridge({
       if (!inEventScope(sourceInstanceId || "", frameInstanceId)) {
         continue;
       }
-      postLaneEvent(frame, frameInstanceId, topic, data, sourceInstanceId);
+      postLaneEvent(frame, frameInstanceId, topic, data, sourceInstanceId, organ);
     }
   }
 
-  function postLaneEvent(frame, frameInstanceId, topic, data, sourceInstanceId) {
+  // `organ` is which Cell the thing this event refers to actually lives on.
+  //
+  // A record uid alone is not enough to fetch a record: the same uid names
+  // nothing, or something else entirely, on a different Lince. Without it an
+  // event-driven sand can only look in its own binding, so a click in a kanban
+  // reading someone else's Lince opened a blank Record panel — the record was
+  // never missing, we were asking the wrong Cell for it.
+  function postLaneEvent(
+    frame,
+    frameInstanceId,
+    topic,
+    data,
+    sourceInstanceId,
+    organ,
+  ) {
     const cloned = cloneJsonValue(data, null);
+    const host = String(organ || "");
     const message = flatFrames.has(frameInstanceId)
       ? {
           type: "lince:lane-event",
           room: topic,
           payload: cloned,
           from: sourceInstanceId || "",
+          organ: host,
         }
       : {
           type: WIDGET_EVENT,
@@ -730,24 +886,29 @@ export function createWidgetBridge({
             topic,
             data: cloned,
             sourceInstanceId: sourceInstanceId || "",
+            organ: host,
           },
         };
     frame.contentWindow?.postMessage(message, "*");
   }
 
-  function deliverEventToCard(cardId, topic, data) {
+  function deliverEventToCard(cardId, topic, data, organ) {
     for (const frame of getFrames()) {
       const frameInstanceId = frame?.dataset?.packageInstanceId || "";
       if (frameInstanceId === cardId) {
-        postLaneEvent(frame, frameInstanceId, topic, data, "");
+        postLaneEvent(frame, frameInstanceId, topic, data, "", organ);
       }
     }
   }
 
   function emitWidgetEvent(sourceInstanceId, topic, data) {
+    // The Cell the emitting sand is reading. Resolved HERE, where the source
+    // card is known, and carried on the wire — a receiver cannot recompute it,
+    // least of all one on another device where the source card does not exist.
+    const organ = hostOf(sourceInstanceId);
     // Same-board siblings: in-page fan-out (the board is one connection, so the
     // transport would never echo this back to us).
-    deliverEventToFrames(topic, data, sourceInstanceId);
+    deliverEventToFrames(topic, data, sourceInstanceId, organ);
     // Other sessions/devices: publish on the topic's ephemeral lane.
     const room = abiRoom(topic);
     ensureRoomJoined(room);
@@ -760,6 +921,7 @@ export function createWidgetBridge({
             topic,
             data: cloneJsonValue(data, null),
             sourceInstanceId: sourceInstanceId || "",
+            organ,
           },
         }),
       )
@@ -904,7 +1066,18 @@ export function createWidgetBridge({
       name: source?.name,
       reqId: String(source?.reqId || ""),
       action: source?.action,
+      // An explicit Cell for THIS request, overriding the card's binding.
+      // `undefined` means "wherever this sand is bound"; "" is a real value
+      // meaning our own Cell, so the two must stay distinguishable.
+      organ: source?.organ,
     };
+  }
+
+  // Where one request goes: the Cell the sand named, or the card's binding.
+  function requestHost(fields) {
+    return fields.organ === undefined || fields.organ === null
+      ? hostOf(fields.instanceId)
+      : String(fields.organ || "");
   }
 
   function handleProteinSubscribe(data, saved = false) {
@@ -921,20 +1094,27 @@ export function createWidgetBridge({
       ? { type: "subscribe_saved", id, name: String(fields.name || "") }
       : { type: "subscribe", id, protein: cloneJsonValue(fields.protein, {}) };
 
+    const host = requestHost(fields);
     subscriptions.set(id, {
       instanceId: fields.instanceId,
       subId: fields.subId,
       message: transportMessage,
       protocol: fields.protocol,
+      host,
     });
-    sendTransport(transportMessage);
+    connectionForHost(host).send(transportMessage);
   }
 
   function handleProteinUnsubscribe(data) {
     const fields = frameFields(data);
     const id = namespacedId(fields.instanceId, fields.subId);
+    const entry = subscriptions.get(id);
     subscriptions.delete(id);
-    sendTransport({ type: "unsubscribe", id });
+    // Unsubscribe where it was subscribed.
+    getTransportFor(entry ? entry.host : hostOf(fields.instanceId)).send({
+      type: "unsubscribe",
+      id,
+    });
   }
 
   function handleProteinAction(data) {
@@ -945,7 +1125,12 @@ export function createWidgetBridge({
       reqId: fields.reqId,
       protocol: fields.protocol,
     });
-    void transport
+    // An Action goes to the Cell the sand named, exactly as its reads do. They
+    // have to agree: an event-driven sand READING a record from another Lince
+    // and WRITING back to its own binding would create or clobber a local
+    // record carrying that uid — a silent cross-Cell write, wrong Organ in the
+    // Ledger, and no error anywhere.
+    void connectionForHost(requestHost(fields))
       .sendAction(id, cloneJsonValue(fields.action, {}))
       .catch((error) => {
         const request = pendingActions.get(id);
@@ -972,11 +1157,18 @@ export function createWidgetBridge({
       return;
     }
     flatFrames.add(instanceId);
-    postFrame(instanceId, { type: FLAT_LIVE, live: transport.isReady() });
-    postFrame(instanceId, { type: FLAT_SIGNING_STATE, ...signingState });
-    // A sand loading DURING live mode must learn whose Cell it is showing,
-    // not just sands that were already open when we switched.
-    postFrame(instanceId, { type: FLAT_LIVE_ORGAN, organ: transport.getLiveOrgan() });
+    // Everything this sand is told is about ITS host, which may be a contact's
+    // Cell while the sand beside it is showing our own.
+    const host = hostOf(instanceId);
+    const connection = hostTransport(instanceId);
+    postFrame(instanceId, { type: FLAT_LIVE, live: connection.isReady() });
+    postFrame(instanceId, {
+      type: FLAT_SIGNING_STATE,
+      ...(signingStates.get(host) || connection.getSigningState()),
+    });
+    // A sand must know whose Cell it is showing. Presenting someone else's
+    // Organ as yours is the one mistake here that cannot be walked back.
+    postFrame(instanceId, { type: FLAT_LIVE_ORGAN, organ: host });
     // Also re-push THIS frame's current bridge-state/cardState now (2026-07-18).
     // A cold page load creates the iframe and calls the bridge's initial
     // render() essentially back-to-back — postMessage to a still-loading
@@ -1017,6 +1209,10 @@ export function createWidgetBridge({
       return;
     }
     const payload = data.payload;
+    // The Cell the emitting sand is reading, resolved here where the source
+    // card is known. A receiver cannot work this out — least of all one on
+    // another device, where the source card does not exist — so it travels.
+    const organ = hostOf(sourceInstanceId);
 
     // In-page, group-scoped fan-out to sibling sands that joined this room on
     // this board (the server suppresses self-echo, so same-session siblings
@@ -1038,17 +1234,28 @@ export function createWidgetBridge({
           type: FLAT_LANE_EVENT,
           room,
           from: sourceInstanceId,
+          organ,
           payload: cloneJsonValue(payload, null),
         });
       }
     }
 
-    // Mirror to the server lane for OTHER sessions/devices.
+    // Mirror to the server lane for OTHER sessions/devices, with the same host
+    // the in-page siblings got — as a SIBLING of `payload`, never inside it, so
+    // the payload every existing sand parses keeps its exact shape and a board
+    // that predates the field reads straight past it.
+    //
+    // Omitted when it is our own Cell, which is also what a lane means by
+    // saying nothing. Lane traffic always rides our own transport even when
+    // every card on the board is bound elsewhere, so a room has exactly one
+    // Cell and "ours" is the same Cell for everyone in it — there is no uid to
+    // translate on the way out or back.
     ensureRoomJoined(room);
     sendTransport({
       type: "lane_send",
       room,
       payload: cloneJsonValue(payload, null),
+      ...(organ ? { organ } : {}),
     });
   }
 
@@ -1191,6 +1398,15 @@ export function createWidgetBridge({
       return;
     }
 
+    // Pure chrome: no card, no host, no permission to consider — it carries
+    // nothing but "somebody is showing a tooltip now."
+    if (data.type === TOOLTIP_SHOWN) {
+      for (const frame of getFrames()) {
+        frame.contentWindow?.postMessage(data, "*");
+      }
+      return;
+    }
+
     if (data.type === WIDGET_READY) {
       const frame = getFrames().find(
         (currentFrame) =>
@@ -1243,11 +1459,18 @@ export function createWidgetBridge({
       return;
     }
 
-    // Enter live mode on another Organ, or `organ: null` to come home. This
-    // repoints the board's ONE socket; nothing else about a sand changes,
-    // because the remote Cell answers the same frames.
+    // "Enter their Lince" from the Organ sand: bind EVERY sand on this board to
+    // that Organ at once, or `organ: null` to bring them all home.
+    //
+    // It used to repoint one board-wide socket, which is no longer what a host
+    // binding is — each sand carries its own. So this is now a bulk edit of the
+    // same per-sand setting the config modal writes one card at a time, which
+    // means it persists, survives reload, and can be undone per sand instead of
+    // being a hidden mode the board is secretly in.
     if (data.type === FLAT_ENTER_LIVE) {
-      transport.setLiveOrgan(data.organ || null);
+      if (typeof bindAllHosts === "function") {
+        bindAllHosts(data.organ || "");
+      }
       return;
     }
 
@@ -1273,9 +1496,17 @@ export function createWidgetBridge({
         collabMembers.set(recordUid, members);
       }
       members.add(instanceId);
+      // A collab doc belongs to the Cell the RECORD lives on, which for an
+      // event-driven sand is the Cell that emitted the event — not the one the
+      // sand happens to be bound to.
+      const collabHost = requestHost({
+        instanceId,
+        organ: data.organ,
+      });
+      collabHosts.set(recordUid, collabHost);
       // Always (re)send the join — the reply's snapshot is what a NEW member
       // frame needs even when this board already joined server-side.
-      sendTransport({
+      connectionForHost(collabHost).send({
         type: "collab_join",
         id: `collab:${recordUid}`,
         record_uid: recordUid,
@@ -1290,7 +1521,11 @@ export function createWidgetBridge({
         members.delete(String(data.instanceId || ""));
         if (members.size === 0) {
           collabMembers.delete(recordUid);
-          sendTransport({ type: "collab_leave", record_uid: recordUid });
+          getTransportFor(collabHosts.get(recordUid) || "").send({
+            type: "collab_leave",
+            record_uid: recordUid,
+          });
+          collabHosts.delete(recordUid);
         }
       }
       return;
@@ -1315,7 +1550,7 @@ export function createWidgetBridge({
         recordUid,
         token: String(data.token || ""),
       });
-      sendTransport({
+      sendFor(instanceId, {
         type: "collab_update",
         id,
         record_uid: recordUid,
@@ -1389,6 +1624,51 @@ export function createWidgetBridge({
     },
     syncFrames() {
       render(bridgeState);
+    },
+    // A sand's host binding changed. Tear its work down on the Cell it was
+    // pointed at BEFORE the new binding takes effect.
+    //
+    // Without this the old connection keeps computing and pushing rows for a
+    // subscription nobody will unsubscribe — and, worse, keeps feeding a sand
+    // that is now supposed to be showing a different Lince entirely. The frame
+    // re-subscribes against its new host when it reloads.
+    rebindHost(instanceId) {
+      const id = String(instanceId || "");
+      if (!id) return;
+      for (const [key, entry] of [...subscriptions]) {
+        if (entry.instanceId !== id) continue;
+        subscriptions.delete(key);
+        getTransportFor(entry.host).send({ type: "unsubscribe", id: key });
+      }
+      for (const [recordUid, members] of [...collabMembers]) {
+        if (!members.has(id)) continue;
+        members.delete(id);
+        if (members.size === 0) {
+          collabMembers.delete(recordUid);
+          getTransportFor(collabHosts.get(recordUid) || "").send({
+            type: "collab_leave",
+            record_uid: recordUid,
+          });
+          collabHosts.delete(recordUid);
+        }
+      }
+    },
+    // Every Cell this board is actually reading right now.
+    //
+    // Card bindings alone no longer answer this. An event-driven sand holds its
+    // host in the event it was given, not in any card, so a board can have a
+    // live subscription on a Lince that appears in nobody's `serverId` — and
+    // closing that connection for looking unused would blank the sand with no
+    // message and nothing to re-dial it.
+    hostsInUse() {
+      const hosts = new Set();
+      for (const entry of subscriptions.values()) {
+        if (entry.host) hosts.add(entry.host);
+      }
+      for (const host of collabHosts.values()) {
+        if (host) hosts.add(host);
+      }
+      return hosts;
     },
     emitLocal(topic, data) {
       // Chrome-originated navigation (for example accepting a conversation

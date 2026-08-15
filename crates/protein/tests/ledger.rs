@@ -80,6 +80,7 @@ fn march(by: GroupBy) -> Protein {
             Predicate::AtSince("2026-03-01T00:00:00Z".into()),
             Predicate::AtBefore("2026-04-01T00:00:00Z".into()),
         ],
+        fields: None,
         include: Include::default(),
         aggregate: Some(Aggregate {
             op: AggregateOp::Sum,

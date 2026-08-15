@@ -1,6 +1,5 @@
-use crate::i18n::{
-    LATEST_LINUX_DOWNLOAD_URL, LATEST_MACOS_DOWNLOAD_URL, LATEST_WINDOWS_DOWNLOAD_URL,
-    Translations,
+use super::i18n::{
+    LATEST_LINUX_DOWNLOAD_URL, LATEST_MACOS_DOWNLOAD_URL, LATEST_WINDOWS_DOWNLOAD_URL, Translations,
 };
 use maud::{PreEscaped, html};
 

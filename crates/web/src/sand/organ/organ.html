@@ -95,6 +95,11 @@
       line-height: 1.4;
     }
     .status.err { color: var(--danger); }
+    /* The hide list reads as a list of names with a way out of each, not as a
+       table: it is usually empty and rarely more than a few rows. */
+    .hidden-records { display: flex; flex-direction: column; gap: 4px; width: 100%; color: var(--secondary-ink); font-size: 12px; }
+    .hidden-record { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .hidden-record span { color: var(--primary-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .hint { color: var(--secondary-ink); font-size: 11.5px; line-height: 1.5; }
     #nb-list li { flex-wrap: wrap; }
     /* The network section is a pane of the split, so its own scroll lives on
@@ -161,6 +166,7 @@
               <div id="nearby-body">
                 <ul id="nb-list"></ul>
                 <div id="nb-empty" class="empty">Nobody found yet.</div>
+                <div id="nb-door" class="empty" hidden></div>
                 <div class="row"><span class="status" id="nb-status"></span></div>
               </div>
             </details>
@@ -213,6 +219,15 @@
               <button class="lynx-button lynx-icon-button info" id="devices-info" type="button" aria-label="About devices" data-lynx-tooltip-align="right" data-lynx-tooltip="The signed list of Cells that are part of your identity. Adding a device is pairing with yourself, so it gets a one-time code rather than a contact invite — that code grants membership in your identity, which is strictly more. It works once and expires in ten minutes. Removing a device from this list IS the revocation: contacts accept only a newer list than the one they hold, so an old list cannot be replayed to put a stolen device back."></button>
             </div>
             <ul id="dv-list" class="list"></ul>
+            <!-- A relay Cell is not broken and not misconfigured: the root
+                 said it carries traffic and authors nothing. Without this the
+                 first a person learns of it is a write failing. -->
+            <div class="row" id="dv-relay" hidden>
+              <span class="status err">This device carries traffic and authors nothing —
+                your device list gives it no permission to write. That is what a front
+                door is: it holds no signing material, so a break-in here cannot write
+                as you. Give it permissions from a device that holds your root key.</span>
+            </div>
             <div class="row" id="dv-stale" hidden>
               <span class="status err">This device list has expired. Contacts keep using the
                 last one they saw, and no new device can join until it is signed again.</span>
@@ -224,6 +239,50 @@
             <div class="row" id="dv-token-row" hidden>
               <input id="dv-token" class="lynx-input" readonly />
             </div>
+            <!-- The code alone is unreadable by a human and unusable by a
+                 phone that cannot type it. The QR is the code. -->
+            <div class="row" id="dv-qr-row" hidden>
+              <div id="dv-qr"></div>
+            </div>
+            <div class="row" id="dv-join-row">
+              <button class="lynx-button" id="dv-join" type="button">Join another Organ</button>
+            </div>
+            <div class="row" id="dv-join-form" hidden>
+              <input id="dv-join-code" class="lynx-input" placeholder="lincecell1|… paste the code from your other device" />
+              <button class="lynx-button lynx-button--primary primary" id="dv-join-go" type="button">Join</button>
+              <button class="lynx-button" id="dv-join-scan" type="button">Scan</button>
+            </div>
+            <div class="row" id="dv-join-warn" hidden>
+              <span class="status err">Joining REPLACES this device's own identity with
+                the other one. It only works on a device you have not used yet, and it
+                cannot be undone.</span>
+            </div>
+          </div>
+          <!-- What the front door is holding for you. A Cell that cannot speak
+               for the Organ (the always-on VPS) parks strangers here instead of
+               deciding, and one of your own devices collects them on its next
+               sync pass. Shown even when empty, because "nobody has knocked" and
+               "you have no front door" are different answers. -->
+          <div class="panel" id="door-panel" hidden>
+            <div class="group-head">
+              <span>Waiting at the front door</span>
+              <button class="lynx-button lynx-icon-button info" id="door-info" type="button" aria-label="About the front door" data-lynx-tooltip-align="right" data-lynx-tooltip="Your always-on device answers strangers when your phone or laptop is off, but it holds no signing material, so it cannot accept anyone on your behalf. It parks the request here until one of your own devices picks it up — then it appears in your contacts as unknown, waiting for you to decide."></button>
+            </div>
+            <ul id="door-list" class="list"></ul>
+            <div class="row" id="door-empty">
+              <span class="status">Nobody is waiting.</span>
+            </div>
+          </div>
+          <!-- Devices of YOUR identity running a different build. An epoch cut
+               happens at the TLS layer, so from here a stale device and a
+               powered-off device look identical — this panel is the difference,
+               and it exists because silence reads as a bug. -->
+          <div class="panel" id="stale-panel" hidden>
+            <div class="group-head">
+              <span>Devices that need updating</span>
+              <button class="lynx-button lynx-icon-button info" id="stale-info" type="button" aria-label="About out-of-date devices" data-lynx-tooltip-align="right" data-lynx-tooltip="Lince keeps no compatibility with older builds, so a device one release behind cannot sync at all — it is not broken and it is not off, it is out of date. Update it and it rejoins on its own."></button>
+            </div>
+            <ul id="stale-list" class="list"></ul>
           </div>
           <div class="panel" id="root-key-panel">
             <div class="group-head">
@@ -283,6 +342,7 @@
             </div>
             <div class="row">
               <button class="lynx-button" id="c-talk" type="button" data-lynx-tooltip="Offers a conversation. They still have to accept, and nothing syncs until they do — this cannot put anything into someone's store.">Start a conversation</button>
+              <button class="lynx-button" id="c-audit" type="button" data-lynx-tooltip="Asks this contact what they hold of what you have written, and compares it with your own log. No data moves either way — it exchanges a summary. Use it when something you wrote does not seem to have reached them.">Check we agree</button>
               <button class="lynx-button" id="c-login" type="button" data-lynx-tooltip="Lets them open a live session on THIS Cell, acting as a Person here. No password: the connection already proved which Organ it is, with a key rather than a secret anyone could retype.">Give them a login</button>
               <button class="lynx-button" id="c-enter" type="button" data-lynx-tooltip="Work inside THEIR Cell, if they have given you a login there. The whole board switches: everything you read and every Action you take happens on their Organ, not yours. Your Cell reaches them over iroh — nothing needs a hostname or a certificate.">Enter their Lince</button>
               <button class="lynx-button lynx-button--primary primary" id="c-block" type="button">Block</button>
@@ -312,13 +372,40 @@
           <div class="panel" id="discovery-panel" hidden>
             <div class="group-head">
               <span>Discovery</span>
-              <button class="lynx-button lynx-icon-button info" id="dc-info" type="button" aria-label="About discovery" data-lynx-tooltip-align="right" data-lynx-tooltip="How findable this Cell is. Locally online advertises it over mDNS and listens for other Lince Cells on this LAN; it does not make unknown Organs trusted. Reachable over the internet publishes the address so contacts can find it from anywhere — the cost is that anyone holding your published key can resolve where you are and when you are online; nobody can read your data or forge your signature either way. Accepting chat requests from unknown Organs is off by default: while it is off, publishing your key grants strangers nothing. Changing reachability rebinds the endpoint, but the Organ key and NodeId do not change, so saved contacts stay valid."></button>
+              <button class="lynx-button lynx-icon-button info" id="dc-info" type="button" aria-label="About discovery" data-lynx-tooltip-align="right" data-lynx-tooltip="How findable this Cell is. Locally online advertises it over mDNS and listens for other Lince Cells on this LAN; it does not make unknown Organs trusted. Reachable over the internet lets contacts find this Cell from anywhere. By default it routes through a RELAY: peers see the relay's address, never this machine's, so being findable does not tell key holders where you are. Allow direct connections adds a faster path by publishing this machine's own addresses — which does tell anyone holding your published key roughly where you are and when you are online. Nobody can read your data or forge your signature either way. Accepting chat requests from unknown Organs is off by default: while it is off, publishing your key grants strangers nothing. Changing reachability rebinds the endpoint, but the Organ key and NodeId do not change, so saved contacts stay valid. A device marked FRONT DOOR in your device list is one that answers strangers when your other devices are off. It holds no signing material, so it cannot accept anyone on your behalf — it parks the request until one of your own devices collects it, and only the front door appears in what strangers can look up: your personal devices are never in that public record."></button>
             </div>
             <div class="row">
               <label class="lynx-toggle"><input class="lynx-toggle__input" type="checkbox" id="dc-local" /><span class="lynx-toggle__track" aria-hidden="true"></span><span>Locally online (LAN discovery)</span></label>
+              <select id="dc-local-for" class="lynx-input">
+                <option value="60">for 1 hour</option>
+                <option value="480">for 8 hours</option>
+                <option value="1440">for a day</option>
+                <option value="0">until I turn it off</option>
+              </select>
             </div>
             <div class="row">
               <label class="lynx-toggle"><input class="lynx-toggle__input" type="checkbox" id="dc-internet" /><span class="lynx-toggle__track" aria-hidden="true"></span><span>Reachable over the internet</span></label>
+              <label class="lynx-toggle"><input class="lynx-toggle__input" type="checkbox" id="dc-direct" /><span class="lynx-toggle__track" aria-hidden="true"></span><span>Allow direct connections (faster, reveals this machine's address)</span></label>
+            </div>
+            <div class="row">
+              <input id="dc-relays" class="lynx-input" placeholder="Your own relays, comma separated — blank uses the public ones" />
+            </div>
+            <!-- What an operator is asking of strangers, said where the person
+                 who runs the box will read it. It ships with the feature rather
+                 than living in a README nobody writes, because "we do not log"
+                 is only worth anything if it is stated. -->
+            <div class="row">
+              <span class="status" id="dc-local-note"></span>
+            </div>
+            <div class="row" id="dc-operator">
+              <span class="status">If you run this Cell as a relay for others: a relay
+                cannot read anything that passes through it — every connection is
+                encrypted end to end — but it does observe IP addresses, connection
+                times, and who dialled whom. That is exactly the trust this design
+                elsewhere says nobody should have to extend, so the only honest
+                mitigations are to not log it and to say so. Lince keeps no record of
+                relayed connections. Each peer is capped at 8 concurrent
+                connections so one of them cannot exhaust the machine.</span>
             </div>
             <div class="row">
               <label class="lynx-toggle"><input class="lynx-toggle__input" type="checkbox" id="dc-accept-unknown" /><span class="lynx-toggle__track" aria-hidden="true"></span><span>Accept chat requests from unknown Organs</span></label>
@@ -341,12 +428,106 @@
               </span>
               <span class="status" id="sy-status"></span>
             </div>
+            <!-- How WIDE the outbound feed is, which is a separate question
+                 from whether it is open. Three states, because the stored
+                 value has three and two of them are opposites: unnarrowed
+                 (everything), a named list, and the empty list (nothing but
+                 the identifying columns). A single text field would collapse
+                 the last two, and the collapse goes the unsafe way. -->
+            <div class="row" id="scope-row" hidden>
+              <label for="sc-mode">They may see</label>
+              <select id="sc-mode" class="lynx-input">
+                <option value="all">Everything they can already see</option>
+                <option value="some">Only these columns</option>
+                <option value="none">Nothing but which record it is</option>
+              </select>
+              <button class="lynx-button lynx-icon-button info" id="sc-info" type="button" aria-label="About the scope" data-lynx-tooltip-align="right" data-lynx-tooltip="Narrows WHICH columns of the records they can already see actually travel to them. Deletions always travel — a scope that could withhold one would leave them holding a record you removed. Head and body are a single collaborative document, so they can only be shared together or not at all. Narrowing takes effect on the next sync and does not reach back — it stops sending, it does not retract what they already hold. Widening does reach back: the newly shared columns are re-sent from the start, because their catch-up would never offer them again."></button>
+            </div>
+            <div class="row" id="sc-fields-row" hidden>
+              <input id="sc-fields" class="lynx-input" placeholder="head, body, when" />
+            </div>
+            <!-- The other half of the pairing, and a SEPARATE control rather
+                 than the same one with two ends. Outbound is a privacy
+                 question, inbound an integrity one; showing them as one
+                 setting would invite keeping them equal, which is the one
+                 thing they are not for. -->
+            <div class="row" id="accept-row" hidden>
+              <label for="ac-mode">You accept</label>
+              <select id="ac-mode" class="lynx-input">
+                <option value="all">Everything they send</option>
+                <option value="some">Only these columns</option>
+                <option value="none">Nothing but deletions</option>
+              </select>
+              <button class="lynx-button lynx-icon-button info" id="ac-info" type="button" aria-label="About what you accept" data-lynx-tooltip-align="right" data-lynx-tooltip="Which columns of their changes are applied to your copy. Deletions are always accepted — refusing one would leave you holding a record they removed. Anything outside this is dropped as it arrives and cannot be recovered later: unlike the outgoing scope, there is no way to ask them to send it again, so widening this only affects what arrives from now on."></button>
+            </div>
+            <div class="row" id="ac-fields-row" hidden>
+              <input id="ac-fields" class="lynx-input" placeholder="head, body, when" />
+            </div>
+            <!-- A stored scope that will not parse reads as unnarrowed, which
+                 is WIDER than anyone asked for. It must not look like an
+                 ordinary unnarrowed scope, so it says so here and saving from
+                 this panel is what replaces it. -->
+            <div class="row" id="sc-broken-row" hidden>
+              <span class="status err" id="sc-broken"></span>
+            </div>
+            <div class="row" id="sc-save-row" hidden>
+              <button class="lynx-button lynx-button--primary primary" id="sc-save" type="button">Save scope</button>
+              <span class="status" id="sc-status"></span>
+            </div>
+            <!-- WHICH records, where the scope above says which columns of
+                 them. Its own control and its own save, because hiding one
+                 record is a different act from re-scoping the whole feed and
+                 batching them would make an accidental widening ride along
+                 with a deliberate hide. -->
+            <div class="row" id="hide-row" hidden>
+              <label for="hide-input">Never send</label>
+              <input id="hide-input" class="lynx-input" placeholder="record slug or uid" />
+              <button class="lynx-button" id="hide-add" type="button">Hide</button>
+              <button class="lynx-button lynx-icon-button info" id="hide-info" type="button" aria-label="About hiding records" data-lynx-tooltip-align="right" data-lynx-tooltip="Keeps whole records out of this contact's feed, while the scope above keeps out columns. Hiding stops what travels NEXT: anything they already received stays on their machine, and no deletion is sent to make them drop it — sending one would confirm the record exists, which is most of what hiding was for. Hiding is per contact, so the same record can stay shared with everyone else."></button>
+            </div>
+            <div class="row" id="hide-list-row" hidden>
+              <div id="hide-list" class="hidden-records"></div>
+              <span class="status" id="hide-status"></span>
+            </div>
+            <!-- What we REFUSED from them. A bounded per-contact ring that
+                 nothing displayed was a table nobody read, which is the same
+                 as not keeping it. -->
+            <div class="row" id="qr-row" hidden>
+              <label>Refused from them</label>
+              <button class="lynx-button lynx-icon-button info" id="qr-info" type="button" aria-label="About refused ops" data-lynx-tooltip-align="right" data-lynx-tooltip="Changes from this contact that were rejected before being applied — a signature that did not verify, a claim to be someone else, a write into a conversation they were not part of. A steady stream here is either a bug on their side or someone trying something, and both are worth a look. Changes dropped by your own acceptance setting are NOT here: those are your setting working, and listing them would bury the ones that mean something. The list is capped, so only the most recent are kept."></button>
+            </div>
+            <div class="row" id="qr-list-row" hidden>
+              <div id="qr-list" class="hidden-records"></div>
+            </div>
             <div class="row">
               <label class="check lynx-check"><input type="checkbox" id="fs-enabled" /> File sync to disk</label>
-              <button class="lynx-button lynx-icon-button info" id="fs-info" type="button" aria-label="About file sync" data-lynx-tooltip-align="right" data-lynx-tooltip="Every plain record whose origin is this organ mirrors to a markdown file in this folder — head is the filename, body is the file's content. Editing a file updates the record; deleting a file deletes the record, after two consecutive misses so an editor's atomic save does not count; a new file becomes a new record. Picking exactly which records sync, beyond &quot;belongs to this organ&quot;, is a Protein filter and is not wired up yet."></button>
+              <button class="lynx-button lynx-icon-button info" id="fs-info" type="button" aria-label="About file sync" data-lynx-tooltip-align="right" data-lynx-tooltip="Every plain record whose origin is this organ mirrors to a markdown file in this folder — head is the filename, body is the file's content. Editing a file updates the record; deleting a file deletes the record, after two consecutive misses so an editor's atomic save does not count; a new file becomes a new record. Which records sync, beyond belonging to this organ, is set below. Origin is not part of that choice: a record whose origin is somebody else's organ is never mirrored here, because editing the file would edit their record."></button>
             </div>
             <div class="row">
               <input id="fs-path" class="lynx-input" placeholder="/path/on/disk" />
+            </div>
+            <!-- The selection filter. Same selector language as everywhere
+                 else in this cluster, which is the whole point of there being
+                 one — so the common shapes get a picker, and anything else
+                 gets the language itself rather than a second one. -->
+            <div class="row">
+              <label for="fs-filter-mode">Sync which records</label>
+              <select id="fs-filter-mode" class="lynx-input">
+                <option value="all">Everything from this organ</option>
+                <option value="concept">Only those tagged with a concept</option>
+                <option value="kind">Only one kind of record</option>
+                <option value="text">Only those whose text contains</option>
+                <option value="raw">A filter I write myself</option>
+              </select>
+            </div>
+            <div class="row" id="fs-filter-value-row" hidden>
+              <input id="fs-filter-value" class="lynx-input" placeholder="food" />
+            </div>
+            <div class="row" id="fs-filter-raw-row" hidden>
+              <input id="fs-filter-raw" class="lynx-input" placeholder='{"any":[{"kind_eq":"plain"},{"concept_in":"food"}]}' />
+            </div>
+            <div class="row" id="fs-filter-broken-row" hidden>
+              <span class="status err" id="fs-filter-broken"></span>
             </div>
             <div class="row">
               <button class="lynx-button lynx-button--primary primary" id="fs-save" type="button">Save</button>
@@ -487,6 +668,10 @@
       for (const r of (Array.isArray(rows) ? rows : [])) discovery[r.uid] = r.extension || {};
       renderDetail();
       renderLocalDiscoveryTool();
+      // The nearby list explains itself from these settings, so it has to be
+      // redrawn when they change — otherwise flipping a toggle leaves the
+      // list still describing the state before it.
+      renderNearby();
     });
 
     // The pairing code and its QR, mirrored onto the Organ record.
@@ -521,7 +706,33 @@
     function renderNearby() {
       const list = $("nb-list");
       list.innerHTML = "";
-      $("nb-empty").hidden = nearby.length > 0;
+      // An empty list has three different meanings and only one of them is
+      // "nobody is around". With LAN discovery off nothing can EVER appear
+      // here, and with the door shut a stranger who finds you is refused —
+      // both of which read as a broken feature unless the list says so. This
+      // is the legibility the accept-policy toggle was always supposed to
+      // have: the headline flow (meet someone on the LAN) needs both on.
+      const settings = discovery[(localOrgan() || {}).uid] || {};
+      const lanOff = settings.local === false;
+      const doorShut = settings.accept_unknown !== true;
+      $("nb-empty").hidden = nearby.length > 0 || lanOff;
+      const door = $("nb-door");
+      const notes = [];
+      if (lanOff) {
+        notes.push(
+          "LAN discovery is off, so nobody will ever appear here. Turn on “Locally online” under Discovery.",
+        );
+      }
+      if (doorShut) {
+        // Deliberately about THEM reaching US. Our own door does not stop us
+        // knocking on someone else's — theirs decides that — and saying
+        // otherwise would send people to the wrong switch.
+        notes.push(
+          "Chat requests from Organs you have not saved are refused. Turn on “Accept chat requests from unknown Organs” under Discovery to let a stranger start one with you.",
+        );
+      }
+      door.textContent = notes.join(" ");
+      door.hidden = notes.length === 0;
       // The count is on the summary so a closed section still says whether
       // anything is out there — the reason to open it.
       $("nb-count").textContent = String(nearby.length);
@@ -692,6 +903,22 @@
       if (mode === "devices") renderDevices(rosters[(localOrgan() || {}).uid] || {});
     });
 
+    // Nothing PUSHES "a stranger knocked while you were away" or "your phone
+    // is a build behind". The door queue is deliberately not a Record — a
+    // front door must never write into the identity — so the fact bus cannot
+    // carry it, and the stale list is an observation about right now. So this
+    // asks.
+    //
+    // Only while the Devices panel is actually open. A timer running behind
+    // every other panel forever is the pattern this codebase already removed
+    // once, when `/host/notifications` was polled every two seconds on every
+    // open board; `notifications_changed` exists because of it. One read on a
+    // panel you are looking at is a different thing from a background poll.
+    refreshRosterStatus();
+    setInterval(() => {
+      if (mode === "devices") refreshRosterStatus();
+    }, 30000);
+
     function renderDevices(roster) {
       const list = $("dv-list");
       list.innerHTML = "";
@@ -722,12 +949,18 @@
           remove.className = "lynx-button";
           remove.type = "button";
           remove.textContent = "Remove";
+          // The honest sentence, not the comfortable one. Revocation is
+          // EVENTUALLY CONSISTENT by decision: each of your other devices
+          // stops admitting this one as it learns the new list, and one that
+          // is switched off keeps admitting it until it syncs. Saying only
+          // "removed" would read as "cut off everywhere, now", which is not
+          // what happened.
           remove.onclick = () => ask(li, {
-            question: `Remove ${cell.label || cell.cell_uid}? It stops being part of your identity.`,
+            question: `Remove ${cell.label || cell.cell_uid}? It stops being part of your identity. Your other devices stop accepting it as each of them syncs — one that is switched off will keep accepting it until it comes back.`,
             confirm: "Remove",
             run: () => {
               H.act({ action: "roster-revoke-cell", cell_uid: cell.cell_uid })
-                .then(() => { $("dv-status").className = "status"; $("dv-status").textContent = "Removed."; })
+                .then(() => { $("dv-status").className = "status"; $("dv-status").textContent = "Removed from the list. Your other devices apply it as they sync."; })
                 .catch(reportDeviceError);
             },
           });
@@ -736,6 +969,126 @@
         list.appendChild(li);
       }
     }
+
+    // The front door queue and the out-of-date device list. Both are read
+    // through one Action because neither is a Record: the door queue is
+    // deliberately local-only (a front door must never write into the
+    // identity) and the stale list is an observation about right now.
+    //
+    // Refreshed on a timer AND after any device action, because the interesting
+    // moment is "someone knocked while I was away" and nothing pushes that.
+    function refreshRosterStatus() {
+      H.act({ action: "roster-status" })
+        .then((out) => {
+          const data = (out && out.data) || {};
+          // "Listed with no permissions" is a relay. "No roster at all" is a
+          // Cell that is the whole Organ, which is the ordinary first-boot
+          // state and must not be reported as a problem.
+          const caps = Array.isArray(data.capabilities) ? data.capabilities : [];
+          $("dv-relay").hidden = !(data.has_roster && !caps.includes("write"));
+          renderDoor(Array.isArray(data.waiting_at_the_door) ? data.waiting_at_the_door : []);
+          renderStale(Array.isArray(data.devices_needing_update) ? data.devices_needing_update : []);
+        })
+        .catch(() => {
+          // A failed status read is not worth shouting about — the panels
+          // simply keep what they last showed.
+        });
+    }
+
+    function renderDoor(rows) {
+      const panel = $("door-panel");
+      const list = $("door-list");
+      list.replaceChildren();
+      // Hidden entirely when there is nothing AND never was: a panel that
+      // permanently says "nobody is waiting" on a laptop with no front door is
+      // furniture. It appears the moment one arrives.
+      if (!rows.length) {
+        panel.hidden = true;
+        return;
+      }
+      panel.hidden = false;
+      $("door-empty").hidden = true;
+      for (const row of rows) {
+        const li = document.createElement("li");
+        const name = document.createElement("span");
+        name.className = "name";
+        // A claimed name is a CLAIM. The fingerprint is the part that was
+        // actually authenticated, so it is shown beside it, always.
+        name.textContent = row.claimed_name || "someone";
+        li.appendChild(name);
+        const fp = document.createElement("span");
+        fp.className = "badge";
+        fp.textContent = fingerprintOf(row.node_id);
+        li.appendChild(fp);
+        const note = document.createElement("span");
+        note.className = "status";
+        note.textContent = "waiting for one of your devices to collect it";
+        li.appendChild(note);
+        list.appendChild(li);
+      }
+    }
+
+    function renderStale(rows) {
+      const panel = $("stale-panel");
+      const list = $("stale-list");
+      list.replaceChildren();
+      if (!rows.length) {
+        panel.hidden = true;
+        return;
+      }
+      panel.hidden = false;
+      for (const row of rows) {
+        const li = document.createElement("li");
+        const name = document.createElement("span");
+        name.className = "name";
+        name.textContent = row.label || row.cell_uid;
+        li.appendChild(name);
+        const fp = document.createElement("span");
+        fp.className = "badge";
+        fp.textContent = fingerprintOf(row.node_id);
+        li.appendChild(fp);
+        const note = document.createElement("span");
+        note.className = "status err";
+        note.textContent = `runs build ${row.their_epoch}, this one is ${row.our_epoch} — update it and it rejoins on its own`;
+        li.appendChild(note);
+        list.appendChild(li);
+      }
+    }
+
+    // The cross-Organ audit. Compares two version-vector summaries and moves
+    // no ops — so it is safe to press, and it answers the question catch-up
+    // never asks: is this contact actually as up to date as we assume.
+    $("c-audit").addEventListener("click", () => {
+      const row = selected();
+      if (!row) return;
+      const status = $("c-status");
+      status.className = "status";
+      status.textContent = "Comparing…";
+      H.act({ action: "audit-contact", contact: row.uid })
+        .then((out) => {
+          const data = (out && out.data) || {};
+          if (!data.reached) {
+            // NOT a disagreement, and it must not read like one.
+            status.textContent = "Could not reach them just now — nothing is wrong.";
+            return;
+          }
+          const missing = Number(data.they_lack) || 0;
+          const unknown = Number(data.unknown_cells) || 0;
+          if (!missing && !unknown) {
+            status.textContent = "You agree: they hold everything you have written.";
+            return;
+          }
+          status.className = "status err";
+          const parts = [];
+          if (missing) parts.push(`they are missing ${missing} change(s) of yours`);
+          if (unknown) parts.push(`${unknown} of your devices they have never heard from`);
+          status.textContent = parts.join(", ") + ". This usually clears on the next sync; if it does not, something is stuck.";
+        })
+        .catch((err) => {
+          status.className = "status err";
+          status.textContent = "Error: " + (err && err.message ? err.message : err);
+        });
+    });
 
     function reportDeviceError(err) {
       const status = $("dv-status");
@@ -856,6 +1209,7 @@
       const cfg = row.extension || {};
       $("fs-enabled").checked = !!cfg.enabled;
       $("fs-path").value = cfg.path || "";
+      showFileSyncFilter(cfg.filter);
       $("fs-status").textContent = "";
       $("fs-status").className = "status";
       // Direction is a property of a FEED, so it exists only where there is
@@ -866,7 +1220,26 @@
         $("sy-in").setAttribute("aria-pressed", String(!!row.contact.sync_in));
         $("sy-status").textContent = "";
         $("sy-status").className = "status";
+        // `null` and `[]` are DIFFERENT stored answers, so they are read
+        // apart here rather than both falling through an `|| []`.
+        showScope("sc", row.contact.scope_fields);
+        showScope("ac", row.contact.accept_fields);
+        $("sc-status").textContent = "";
+        $("sc-status").className = "status";
+        showBrokenScopes(row.contact);
+        showQuarantine(row.contact.quarantined);
+        showHiddenRecords(row.uid, row.contact.hidden_records);
+        $("hide-input").value = "";
+        $("hide-status").textContent = "";
+        $("hide-status").className = "status";
       }
+      $("scope-row").hidden = !row.contact;
+      $("accept-row").hidden = !row.contact;
+      $("sc-save-row").hidden = !row.contact;
+      $("hide-row").hidden = !row.contact;
+      $("hide-list-row").hidden = !row.contact;
+      $("qr-row").hidden = !row.contact;
+      $("qr-list-row").hidden = !row.contact;
 
       const roster = (rosters[row.uid] || {});
       $("profile-panel").hidden = !local;
@@ -891,8 +1264,25 @@
         // Defaults must match the engine's: internet ON (a Cell nobody can
         // resolve cannot serve the case the design exists for), unknown
         // Organs OFF (publishing a key must grant nothing by itself).
-        $("dc-local").checked = dc.local !== false;
         $("dc-internet").checked = dc.internet !== false;
+        // OFF unless asked for: relay-only is the default, so a Cell that has
+        // never been configured routes through a relay and publishes no
+        // address of its own.
+        $("dc-direct").checked = dc.direct === true;
+        // Empty means the public relays, which is the honest default: depending
+        // on somebody else's boxes is still reachability, and pretending
+        // otherwise would just mean a Cell nobody can find.
+        $("dc-relays").value = Array.isArray(dc.relays) ? dc.relays.join(", ") : "";
+        // LAN presence expires: a laptop that announced itself in a café three
+        // months ago is otherwise still announcing itself in every café since.
+        const until = dc.local_until ? new Date(dc.local_until) : null;
+        const lapsed = until ? until <= new Date() : false;
+        $("dc-local").checked = dc.local === true && !lapsed;
+        $("dc-local-note").textContent = !until
+          ? ""
+          : lapsed
+            ? "LAN presence has lapsed — switch it on again to be visible in this room."
+            : "Visible on this network until " + until.toLocaleString() + ".";
         $("dc-accept-unknown").checked = dc.accept_unknown === true;
         $("dc-status").textContent = "";
         $("dc-status").className = "status";
@@ -1033,13 +1423,85 @@
       status.textContent = "Issuing…";
       H.act({ action: "roster-enrol-token" })
         .then((out) => {
-          // The plaintext exists here and nowhere else — it is never stored.
-          const token = out && (out.created || out.uid);
-          $("dv-token-row").hidden = !token;
-          $("dv-token").value = token || "";
-          status.textContent = token ? "Use within 10 minutes, once." : "Issued.";
+          // The plaintext exists here and nowhere else — it is never stored,
+          // and it must never be mirrored into an extension, because
+          // extensions on the Organ record travel to every contact.
+          const data = (out && out.data) || {};
+          const code = data.code || (out && out.created) || "";
+          $("dv-token-row").hidden = !code;
+          $("dv-token").value = code;
+          // The QR is rendered server-side (the sand runs under a CSP that
+          // blocks every external script) and is the part a phone can actually
+          // use — nobody types a code of this length.
+          const qr = $("dv-qr");
+          qr.replaceChildren();
+          if (data.qr_svg) {
+            const holder = document.createElement("div");
+            holder.innerHTML = data.qr_svg;
+            qr.appendChild(holder);
+          }
+          $("dv-qr-row").hidden = !data.qr_svg;
+          const minutes = Number(data.expires_in_minutes) || 10;
+          status.textContent = code
+            ? `Scan this on the new device, or paste the line into its "Join another Organ" box. Works once, within ${minutes} minutes.`
+            : "Issued.";
         })
         .catch(reportDeviceError);
+    });
+
+    // The other end of the same flow, on the device DOING the joining. It is
+    // in the same panel on purpose: whichever device you happen to be holding,
+    // the thing you are looking for is here.
+    $("dv-join").addEventListener("click", () => {
+      const open = $("dv-join-form").hidden;
+      $("dv-join-form").hidden = !open;
+      $("dv-join-warn").hidden = !open;
+    });
+
+    $("dv-join-scan").addEventListener("click", () => {
+      const status = $("dv-status");
+      status.className = "status";
+      status.textContent = "Point the camera at the code…";
+      // The host owns the camera and hands back only decoded text; this sand
+      // never receives an image.
+      H.scanCode()
+        .then((text) => {
+          if (text) {
+            $("dv-join-code").value = text;
+            status.textContent = "Scanned. Check it, then Join.";
+          } else {
+            status.textContent = "No code seen.";
+          }
+        })
+        .catch(reportDeviceError);
+    });
+
+    $("dv-join-go").addEventListener("click", () => {
+      const code = $("dv-join-code").value.trim();
+      if (!code) {
+        return;
+      }
+      ask($("dv-join-form"), {
+        question:
+          "Join that Organ? This device stops being its own identity and becomes one of theirs. It cannot be undone.",
+        confirm: "Join",
+        run: () => {
+          const status = $("dv-status");
+          status.className = "status";
+          status.textContent = "Joining…";
+          H.act({ action: "roster-join-organ", code })
+            .then((out) => {
+              const data = (out && out.data) || {};
+              const cells = Number(data.cells) || 0;
+              status.textContent = cells
+                ? `Joined. This identity now has ${cells} device(s).`
+                : "Joined.";
+              $("dv-join-form").hidden = true;
+              $("dv-join-warn").hidden = true;
+            })
+            .catch(reportDeviceError);
+        },
+      });
     });
 
     $("pf-root-export").addEventListener("click", () => {
@@ -1091,12 +1553,27 @@
       const fds = {
         local: $("dc-local").checked,
         internet: $("dc-internet").checked,
+        direct: $("dc-direct").checked,
+        // Written at SAVE time, so the clock starts when a person asked for
+        // it rather than when the setting was first invented.
+        local_until: (() => {
+          const minutes = Number($("dc-local-for").value) || 0;
+          if (!$("dc-local").checked || !minutes) return null;
+          return new Date(Date.now() + minutes * 60000).toISOString();
+        })(),
+        relays: $("dc-relays").value
+          .split(",")
+          .map((relay) => relay.trim())
+          .filter(Boolean),
         accept_unknown: $("dc-accept-unknown").checked,
       };
       const status = $("dc-status");
       status.className = "status";
       status.textContent = "Saving…";
-      H.act({ action: "set-extension", target: row.uid, namespace: "lince.discovery", fds })
+      // Cell config, not an Organ extension: these are per-DEVICE settings and
+      // they log no op, which is what lets a relay Cell — a device with no
+      // write capability at all — still configure itself.
+      H.act({ action: "set-cell-config", namespace: "lince.discovery", fds })
         .then(() => {
           // The endpoint rebinds in the background when reachability changed
           // (wire_supervisor watches this same Fact) — no reboot, and the
@@ -1159,6 +1636,311 @@
         });
     }
 
+    // The column list is meaningful only in the middle state. Leaving it
+    // visible under "everything" invites someone to type a list, save, and
+    // believe it applied.
+    function showScopeMode(prefix) {
+      $(prefix + "-fields-row").hidden = $(prefix + "-mode").value !== "some";
+    }
+
+    // `null` and `[]` are DIFFERENT stored answers, so they are read apart
+    // here rather than both falling through an `|| []`. Both directions use
+    // this, because both store the same three states for the same reason.
+    function showScope(prefix, scope) {
+      const mode = scope === null || scope === undefined
+        ? "all"
+        : (scope.length ? "some" : "none");
+      $(prefix + "-mode").value = mode;
+      $(prefix + "-fields").value = Array.isArray(scope) ? scope.join(", ") : "";
+      showScopeMode(prefix);
+      // Remembered so the save can tell a widening from a narrowing and say
+      // the true thing about each.
+      $(prefix + "-mode").dataset.was = JSON.stringify(scope === undefined ? null : scope);
+    }
+
+    // Reads a scope panel back out. Returns `undefined` for input the user
+    // has to fix, having already said so — distinct from `null`, which is a
+    // valid answer meaning unnarrowed.
+    function readScope(prefix, status) {
+      const mode = $(prefix + "-mode").value;
+      if (mode === "all") return null;
+      // "Nothing" is the empty list, NOT null. Sending null here would store
+      // the widest setting for someone who asked for the narrowest.
+      if (mode === "none") return [];
+      const fields = $(prefix + "-fields").value.split(",").map((f) => f.trim()).filter(Boolean);
+      if (!fields.length) {
+        status.className = "status err";
+        status.textContent = "Name at least one column, or choose the “nothing” option.";
+        return undefined;
+      }
+      return fields;
+    }
+
+    $("sc-mode").addEventListener("change", () => showScopeMode("sc"));
+    $("ac-mode").addEventListener("change", () => showScopeMode("ac"));
+
+    // Widening DOES reach backwards now — the newly-named columns are
+    // replayed to the contact, because ordinary catch-up never would. The two
+    // cases are still confirmed differently, but no longer because one of them
+    // is a lie of omission: a widening re-sends and a narrowing does not, and
+    // the difference is worth saying because one of them costs a full pass.
+    function isWidening(was, now) {
+      if (now === null) return was !== null;
+      if (was === null) return false;
+      return now.some((f) => !was.includes(f));
+    }
+
+    // One button for both directions, because they are one decision about one
+    // contact — but two Actions, because they are two settings and either can
+    // be refused on its own.
+    $("sc-save").addEventListener("click", () => {
+      const row = selected();
+      if (!row || !row.contact) return;
+      const status = $("sc-status");
+      status.className = "status";
+      const out = readScope("sc", status);
+      if (out === undefined) return;
+      const inbound = readScope("ac", status);
+      if (inbound === undefined) return;
+
+      let wasOut = null;
+      try { wasOut = JSON.parse($("sc-mode").dataset.was || "null"); } catch (e) { wasOut = null; }
+      const widened = isWidening(wasOut, out);
+      status.textContent = "Saving…";
+      H.act({ action: "set-contact-scope", target: row.uid, fields: out })
+        .then(() => H.act({ action: "set-contact-accept-scope", target: row.uid, fields: inbound }))
+        .then(() => {
+          status.textContent = widened
+            ? "Saved. The newly shared columns are sent to them on the next sync, including changes made before now."
+            : "Saved. Takes effect on the next sync.";
+        })
+        .catch((err) => {
+          status.className = "status err";
+          status.textContent = "Error: " + (err && err.message ? err.message : err);
+        });
+    });
+
+    // A stored scope that would not parse is being IGNORED, and ignoring it
+    // means the widest setting there is. The panel above shows "everything",
+    // which is true of what the engine is doing and false about what anyone
+    // chose — so this says which, names the direction, and shows the text that
+    // could not be read, because a repair nobody can see the input of is a
+    // guess. Saving the panel replaces it.
+    function showBrokenScopes(contact) {
+      const broken = [];
+      if (contact.scope_unreadable) {
+        broken.push("what they may see (" + contact.scope_unreadable + ")");
+      }
+      if (contact.accept_unreadable) {
+        broken.push("what you accept (" + contact.accept_unreadable + ")");
+      }
+      $("sc-broken-row").hidden = !broken.length;
+      $("sc-broken").textContent = broken.length
+        ? "Stored setting could not be read and is being ignored, so nothing is "
+          + "narrowed right now: " + broken.join(", ") + ". Saving replaces it."
+        : "";
+    }
+
+    // The File Sync selection filter. One Protein predicate, in the same
+    // vocabulary as every other filter in the system — the picker writes the
+    // three shapes people actually want and "a filter I write myself" exposes
+    // the language directly, so the common case needs no JSON and the
+    // uncommon case is not walled off behind a menu that will never be long
+    // enough.
+    const FS_SIMPLE = { concept: "concept_in", kind: "kind_eq", text: "text_contains" };
+
+    function showFileSyncFilterMode() {
+      const mode = $("fs-filter-mode").value;
+      $("fs-filter-value-row").hidden = !FS_SIMPLE[mode];
+      $("fs-filter-raw-row").hidden = mode !== "raw";
+    }
+
+    function showFileSyncFilter(stored) {
+      // Stored as text; an object is accepted too, because anything writing
+      // the extension directly would write one.
+      let parsed = null;
+      const text = typeof stored === "string" ? stored.trim() : "";
+      const broken = $("fs-filter-broken");
+      broken.textContent = "";
+      $("fs-filter-broken-row").hidden = true;
+      if (stored && typeof stored === "object") {
+        parsed = stored;
+      } else if (text) {
+        try { parsed = JSON.parse(text); } catch (e) { parsed = undefined; }
+      }
+      if (parsed === undefined) {
+        // Being IGNORED, not applied — so everything from this organ is
+        // syncing. Saying only "invalid" would leave the person to guess
+        // whether files are being written right now.
+        $("fs-filter-mode").value = "raw";
+        $("fs-filter-raw").value = text;
+        $("fs-filter-broken-row").hidden = false;
+        broken.textContent =
+          "This filter could not be read and is being ignored, so everything "
+          + "from this organ is syncing. Fix it or clear it.";
+        showFileSyncFilterMode();
+        return;
+      }
+      const keys = parsed ? Object.keys(parsed) : [];
+      const simple = keys.length === 1
+        ? Object.keys(FS_SIMPLE).find((mode) => FS_SIMPLE[mode] === keys[0])
+        : undefined;
+      if (!parsed) {
+        $("fs-filter-mode").value = "all";
+        $("fs-filter-value").value = "";
+        $("fs-filter-raw").value = "";
+      } else if (simple && typeof parsed[keys[0]] === "string") {
+        $("fs-filter-mode").value = simple;
+        $("fs-filter-value").value = parsed[keys[0]];
+        $("fs-filter-raw").value = "";
+      } else {
+        // A filter the picker cannot express is shown as itself rather than
+        // flattened to the nearest option — rewriting somebody's `any` as
+        // "everything" and then saving it would silently delete it.
+        $("fs-filter-mode").value = "raw";
+        $("fs-filter-raw").value = JSON.stringify(parsed);
+      }
+      showFileSyncFilterMode();
+    }
+
+    // Returns the string to store, or `undefined` when the input needs fixing
+    // (having already said so).
+    function readFileSyncFilter(status) {
+      const mode = $("fs-filter-mode").value;
+      if (mode === "all") return "";
+      if (FS_SIMPLE[mode]) {
+        const value = $("fs-filter-value").value.trim();
+        if (!value) {
+          status.className = "status err";
+          status.textContent = "Say what to match, or choose “everything from this organ”.";
+          return undefined;
+        }
+        const out = {};
+        out[FS_SIMPLE[mode]] = value;
+        return JSON.stringify(out);
+      }
+      const raw = $("fs-filter-raw").value.trim();
+      if (!raw) return "";
+      try {
+        JSON.parse(raw);
+      } catch (e) {
+        // Refused HERE rather than stored and ignored later. The stored-and
+        // -ignored path exists for values that are already on disk; it is not
+        // a reason to accept a new one that is already known to be broken.
+        status.className = "status err";
+        status.textContent = "That filter is not valid JSON.";
+        return undefined;
+      }
+      return raw;
+    }
+
+    $("fs-filter-mode").addEventListener("change", showFileSyncFilterMode);
+
+    // The refusal ring. The reason is the readable part and goes first; the
+    // payload is the op we would not take, shown on the row's title rather
+    // than inline — it is JSON from a peer, it is the least trustworthy text
+    // on this page, and it goes in as TEXT so it can never be markup.
+    function showQuarantine(rows) {
+      const list = $("qr-list");
+      list.textContent = "";
+      // Three states, not two: not loaded, nothing refused, and a list. An
+      // empty box would read as "this feature is broken" for the middle one,
+      // which is the good case.
+      if (!Array.isArray(rows)) {
+        list.textContent = "Not loaded.";
+        return;
+      }
+      if (!rows.length) {
+        list.textContent = "Nothing refused — everything they sent was applied.";
+        return;
+      }
+      rows.forEach((item) => {
+        const line = document.createElement("div");
+        line.className = "hidden-record";
+        const reason = document.createElement("span");
+        reason.textContent = item.reason || "(no reason recorded)";
+        reason.title = item.payload || "";
+        const when = document.createElement("span");
+        when.className = "status";
+        when.textContent = (item.at || "").slice(0, 16).replace("T", " ");
+        line.appendChild(reason);
+        line.appendChild(when);
+        list.appendChild(line);
+      });
+    }
+
+    // The hide list, drawn by name. A person knows a record by its head or
+    // its slug, so a list of bare uids is one nobody can audit — and a rule
+    // whose record was deleted since still shows, saying so, because a rule
+    // that still filters while being invisible is one nobody can remove.
+    function showHiddenRecords(contactUid, hidden) {
+      const list = $("hide-list");
+      list.textContent = "";
+      // `undefined` means the panel never loaded this; `[]` is the real
+      // answer "nothing is hidden". Saying "none" for both would report a
+      // failed load as a policy.
+      if (!Array.isArray(hidden)) {
+        list.textContent = "Not loaded.";
+        return;
+      }
+      if (!hidden.length) {
+        list.textContent = "Nothing hidden — they receive every record this feed carries.";
+        return;
+      }
+      hidden.forEach((item) => {
+        const line = document.createElement("div");
+        line.className = "hidden-record";
+        const name = document.createElement("span");
+        name.textContent = item.head || item.slug || "(deleted record)";
+        name.title = item.uid;
+        const drop = document.createElement("button");
+        drop.className = "lynx-button";
+        drop.type = "button";
+        drop.textContent = "Unhide";
+        drop.addEventListener("click", () => hideRecord(contactUid, item.uid, false));
+        line.appendChild(name);
+        line.appendChild(drop);
+        list.appendChild(line);
+      });
+    }
+
+    function hideRecord(contactUid, record, hidden) {
+      const status = $("hide-status");
+      status.className = "status";
+      status.textContent = "Saving…";
+      H.act({ action: "hide-record-from-contact", target: contactUid, record, hidden })
+        .then(() => {
+          // The two directions are NOT symmetric and the wording says which
+          // is which. Unhiding reaches back — the record's own history is
+          // replayed to them, because ordinary catch-up never would: those
+          // changes are already behind their cursor. Hiding does not reach
+          // back, because no delete is sent; sending one would confirm the
+          // record exists.
+          status.textContent = hidden
+            ? "Hidden from now on. Anything they already received stays with them."
+            : "Unhidden. The whole record is sent to them on the next sync, including what changed while it was hidden.";
+          // No manual refresh: the panel is driven by a Protein
+          // subscription, the same as every other control here.
+          $("hide-input").value = "";
+        })
+        .catch((err) => {
+          status.className = "status err";
+          status.textContent = "Error: " + (err && err.message ? err.message : err);
+        });
+    }
+
+    $("hide-add").addEventListener("click", () => {
+      const row = selected();
+      if (!row || !row.contact) return;
+      const record = $("hide-input").value.trim();
+      if (!record) {
+        $("hide-status").className = "status err";
+        $("hide-status").textContent = "Name a record by its slug or uid.";
+        return;
+      }
+      hideRecord(row.uid, record, true);
+    });
+
     $("sy-out").addEventListener("click", () => {
       const row = selected();
       if (!row || !row.contact) return;
@@ -1174,9 +1956,15 @@
     $("fs-save").addEventListener("click", () => {
       const row = selected();
       if (!row) return;
-      const fds = { enabled: $("fs-enabled").checked, path: $("fs-path").value.trim() };
       const status = $("fs-status");
       status.className = "status";
+      const filter = readFileSyncFilter(status);
+      if (filter === undefined) return;
+      const fds = {
+        enabled: $("fs-enabled").checked,
+        path: $("fs-path").value.trim(),
+        filter,
+      };
       status.textContent = "Saving…";
       H.act({ action: "set-extension", target: row.uid, namespace: "lince.file_sync", fds })
         .then(() => { status.textContent = "Saved."; })

@@ -255,6 +255,7 @@ fn karma_query(filter: Vec<Predicate>) -> Protein {
     Protein {
         source: Source::Karma,
         filter,
+        fields: None,
         include: Include::default(),
         aggregate: None,
         order: Vec::new(),

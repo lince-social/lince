@@ -189,6 +189,23 @@ pub async fn keys_of(store: &Store, actor_uid: &str) -> Result<Vec<(String, Stri
     .await?)
 }
 
+/// One published key of an actor, by key id. `None` when we hold none — which
+/// for `ROOT_KEY_ID` means we never paired with them, so there is nothing to
+/// check a roster or a directory record against.
+pub async fn key_of(
+    store: &Store,
+    actor_uid: &str,
+    key_id: &str,
+) -> Result<Option<String>, EngineError> {
+    Ok(store::sqlx::query_scalar::<_, String>(
+        "SELECT public_key FROM identity_key WHERE actor_uid = ? AND key_id = ?",
+    )
+    .bind(actor_uid)
+    .bind(key_id)
+    .fetch_optional(&store.pool)
+    .await?)
+}
+
 /// Store a foreign actor's public key (introduction, blueprint XI.1) so their
 /// signed facts verify on import.
 pub async fn adopt_key(

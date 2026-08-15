@@ -969,7 +969,10 @@ async fn pasting_the_code_of_a_blocked_organ_is_refused() {
             None,
         )
         .await;
-    assert!(refused.is_err(), "a blocked Organ must not be addable by code");
+    assert!(
+        refused.is_err(),
+        "a blocked Organ must not be addable by code"
+    );
     assert_eq!(
         store::organs::contact(&b.store.pool, &a_organ)
             .await
@@ -1022,10 +1025,7 @@ async fn pairing_leaves_a_contact_row_on_both_sides() {
         node_id: host_addr.id.to_string(),
         root_key: None,
         label: None,
-        addrs: host_addr
-            .ip_addrs()
-            .map(|addr| addr.to_string())
-            .collect(),
+        addrs: host_addr.ip_addrs().map(|addr| addr.to_string()).collect(),
     };
     let paired = guest_wire
         .pair_with(&invite, "The Server")
@@ -1047,5 +1047,276 @@ async fn pairing_leaves_a_contact_row_on_both_sides() {
         "being dialable is not a relationship: trust stays a separate decision"
     );
 
+    serving.abort();
+}
+
+/// Transfer over iroh (2026-08-08). Until this, Transfer was the last
+/// subsystem POSTing to `contact.base_url` — an address the peer wrote down
+/// about itself, routinely a loopback URL, and never something a contact on
+/// another network could dial. It now rides `lince/sync/1` like everything
+/// else, so a delivery reaches an identity rather than a hostname.
+struct EchoTransfer;
+
+#[async_trait::async_trait]
+impl engine::wire::TransferPeer for EchoTransfer {
+    async fn handle(
+        &self,
+        verb: engine::wire::TransferVerb,
+        body: serde_json::Value,
+    ) -> Result<serde_json::Value, String> {
+        // Stands in for the real delivery handler, which lives in `web`. What
+        // is under test here is the pipe, not what Transfer does with it.
+        Ok(serde_json::json!({ "saw": format!("{verb:?}"), "echo": body }))
+    }
+}
+
+#[tokio::test]
+async fn a_transfer_envelope_reaches_a_contact_over_iroh() {
+    let (a, a_organ) = cell("http://a.test").await;
+    let (b, b_organ) = cell("http://b.test").await;
+
+    let a_wire = Wire::bind(a.clone(), secret(21), Reach::Local)
+        .await
+        .expect("a binds");
+    let b_wire = Wire::bind(b.clone(), secret(22), Reach::Local)
+        .await
+        .expect("b binds");
+    know(&a, &b_organ, &b_wire.node_id().to_string()).await;
+    know(&b, &a_organ, &a_wire.node_id().to_string()).await;
+
+    // The dial resolves the contact's NodeId itself, so the test has to make
+    // the endpoint findable the same way `loopback()` does for the others.
+    a_wire.remember_addr(loopback(&b_wire));
+    b_wire.set_transfer_handler(Arc::new(EchoTransfer));
+    let serving = tokio::spawn(async move { b_wire.serve().await });
+
+    let reply = a_wire
+        .transfer_post(
+            &b_organ,
+            engine::wire::TransferVerb::Envelope,
+            serde_json::json!({ "envelope_uid": "e1" }),
+        )
+        .await
+        .expect("the envelope is delivered");
+    assert_eq!(reply["saw"], "Envelope");
+    assert_eq!(
+        reply["echo"],
+        serde_json::json!({ "envelope_uid": "e1" }),
+        "the signed body crosses untouched — the transport is a pipe"
+    );
+
+    serving.abort();
+}
+
+/// Riding the sync ALPN means inheriting its gate, and that is a tightening
+/// worth pinning: the HTTP path delivered to any contact that was not blocked,
+/// including one nobody had vetted. Value transfer is exactly where "there is
+/// a row for them" must not be enough.
+#[tokio::test]
+async fn a_transfer_is_not_delivered_to_an_unvetted_contact() {
+    let (a, a_organ) = cell("http://a.test").await;
+    let (b, b_organ) = cell("http://b.test").await;
+
+    let a_wire = Wire::bind(a.clone(), secret(23), Reach::Local)
+        .await
+        .expect("a binds");
+    let b_wire = Wire::bind(b.clone(), secret(24), Reach::Local)
+        .await
+        .expect("b binds");
+
+    // A row and a NodeId, but never promoted to `known`.
+    store::organs::add_contact(&a.store.pool, &b_organ, None, "peer", "", 0)
+        .await
+        .expect("contact");
+    store::organs::set_node_id(&a.store.pool, &b_organ, Some(&b_wire.node_id().to_string()))
+        .await
+        .expect("node id");
+    know(&b, &a_organ, &a_wire.node_id().to_string()).await;
+
+    a_wire.remember_addr(loopback(&b_wire));
+    b_wire.set_transfer_handler(Arc::new(EchoTransfer));
+    let serving = tokio::spawn(async move { b_wire.serve().await });
+
+    let refused = a_wire
+        .transfer_post(
+            &b_organ,
+            engine::wire::TransferVerb::Envelope,
+            serde_json::json!({ "envelope_uid": "e1" }),
+        )
+        .await;
+    assert!(
+        refused.is_err(),
+        "an unvetted contact must not receive an envelope"
+    );
+
+    serving.abort();
+}
+
+/// The dial RACE (Ontology §11, "Dial policy").
+///
+/// Sequential dialing made a dead Cell cost the FULL `DIAL_TIMEOUT` before the
+/// next candidate was tried — per contact, per pass — so one shut laptop
+/// listed first delayed everything behind it. Here the candidates are, in
+/// order: a NodeId pointed at a port nothing listens on (hangs), a NodeId with
+/// no address anywhere (fails fast), and a live Cell. The connection must come
+/// back in well under one dial timeout, which sequential dialing could not do
+/// by construction.
+///
+/// Both failure shapes on purpose. The fast one completes FIRST, before the
+/// staggered live candidate has even started, so it also pins that a finished
+/// failure falls through and keeps waiting rather than ending the race.
+#[tokio::test]
+async fn a_dead_cell_does_not_delay_the_live_one() {
+    let (a, a_organ) = cell("http://race-a.test").await;
+    let (b, b_organ) = cell("http://race-b.test").await;
+
+    let a_wire = Wire::bind(a.clone(), secret(41), Reach::Local)
+        .await
+        .expect("a binds");
+    let b_wire = Wire::bind(b.clone(), secret(42), Reach::Local)
+        .await
+        .expect("b binds");
+    know(&b, &a_organ, &a_wire.node_id().to_string()).await;
+
+    // A port nothing is listening on: the dial hangs rather than failing fast,
+    // which is what makes this a timing test rather than a lucky ordering.
+    let dead_port = {
+        let socket = std::net::UdpSocket::bind("127.0.0.1:0").expect("probe socket");
+        socket.local_addr().expect("probe addr").port()
+    };
+    let dead = secret(43).public();
+    a_wire.remember_addr(
+        EndpointAddr::new(dead)
+            .with_ip_addr(SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), dead_port)),
+    );
+    a_wire.remember_addr(loopback(&b_wire));
+
+    // A NodeId with no address anywhere: this one fails FAST rather than
+    // hanging, which is the commoner shape (an expired roster naming a Cell
+    // whose key was rotated). It must not end the race — a completed failure
+    // has to fall through and keep waiting on the others.
+    let unreachable = secret(44).public();
+
+    // The saved node id is the dead one; the roster adds the live Cell.
+    know(&a, &b_organ, &dead.to_string()).await;
+    let b_root = Signer::generate(&b_organ, engine::roster::ROOT_KEY_ID);
+    a.publish_roster(
+        &b_root,
+        vec![
+            engine::roster::CellEntry {
+                cell_uid: "c-dead".into(),
+                node_id: dead.to_string(),
+                label: "the shut laptop".into(),
+                operational_key: "k-dead".into(),
+                front_door: false,
+                capabilities: engine::roster::full_capabilities(),
+            },
+            engine::roster::CellEntry {
+                cell_uid: "c-unreachable".into(),
+                node_id: unreachable.to_string(),
+                label: "a Cell nothing can resolve".into(),
+                operational_key: "k-unreachable".into(),
+                front_door: false,
+                capabilities: engine::roster::full_capabilities(),
+            },
+            engine::roster::CellEntry {
+                cell_uid: "c-live".into(),
+                node_id: b_wire.node_id().to_string(),
+                label: "the one that is on".into(),
+                operational_key: "k-live".into(),
+                front_door: false,
+                capabilities: engine::roster::full_capabilities(),
+            },
+        ],
+    )
+    .await
+    .expect("a holds a roster for b");
+
+    let serving = tokio::spawn(async move { b_wire.serve().await });
+    let contact = store::organs::contact(&a.store.pool, &b_organ)
+        .await
+        .expect("query")
+        .expect("contact row");
+
+    let started = std::time::Instant::now();
+    let connection = a_wire.dial(&contact).await;
+    let took = started.elapsed();
+
+    assert!(connection.is_some(), "the live Cell must answer");
+    assert!(
+        took < std::time::Duration::from_secs(1),
+        "the race took {took:?}: the dead candidate is being waited on. It \
+         measures ~170ms — one DIAL_STAGGER plus a loopback handshake — \
+         against the 6s a sequential dial would spend timing out first"
+    );
+
+    serving.abort();
+}
+
+/// The per-peer connection cap (Ontology §11, C4), which exists from the first
+/// deploy rather than after the first incident.
+///
+/// An always-on Cell is a bandwidth donation with no natural ceiling, and an
+/// unbounded one takes down the operator's other services before it takes down
+/// Lince. Per PEER rather than global, so one noisy contact cannot lock
+/// everyone else out — which is exactly what a global cap would let it do.
+#[tokio::test]
+async fn one_peer_cannot_hold_unlimited_connections() {
+    let (a, a_organ) = cell("http://capped-a.test").await;
+    let (b, b_organ) = cell("http://capped-b.test").await;
+    let a_wire = Wire::bind(a.clone(), secret(111), Reach::Local)
+        .await
+        .expect("a binds");
+    let b_wire = Wire::bind(b.clone(), secret(112), Reach::Local)
+        .await
+        .expect("b binds");
+    know(&a, &b_organ, &b_wire.node_id().to_string()).await;
+    know(&b, &a_organ, &a_wire.node_id().to_string()).await;
+
+    let b_addr = loopback(&b_wire);
+    let serving = tokio::spawn(async move { b_wire.serve().await });
+
+    // Hold connections open, past the cap.
+    let mut held = Vec::new();
+    for _ in 0..engine::wire::MAX_CONNECTIONS_PER_PEER {
+        match tokio::time::timeout(
+            engine::wire::DIAL_TIMEOUT,
+            a_wire.endpoint().connect(b_addr.clone(), ALPN_SYNC),
+        )
+        .await
+        {
+            Ok(Ok(connection)) => held.push(connection),
+            _ => break,
+        }
+    }
+    assert_eq!(
+        held.len(),
+        engine::wire::MAX_CONNECTIONS_PER_PEER,
+        "the cap must admit everything up to it"
+    );
+    // Let the server finish admitting them before asking for one more.
+    tokio::time::sleep(std::time::Duration::from_millis(200)).await;
+
+    // The next one is accepted at the QUIC layer and then closed by us, so the
+    // refusal shows up as the connection going away rather than as a dial
+    // failure — which is why this asserts on the closed reason.
+    let extra = tokio::time::timeout(
+        engine::wire::DIAL_TIMEOUT,
+        a_wire.endpoint().connect(b_addr, ALPN_SYNC),
+    )
+    .await;
+    if let Ok(Ok(connection)) = extra {
+        let closed = tokio::time::timeout(
+            std::time::Duration::from_secs(5),
+            connection.closed(),
+        )
+        .await;
+        assert!(
+            closed.is_ok(),
+            "a connection past the cap must be closed rather than served"
+        );
+    }
+
+    drop(held);
     serving.abort();
 }

@@ -21,6 +21,7 @@ browser-watch = []
 native-picker = ["dep:rfd"]
 
 [dependencies]
+async-trait = { workspace = true }
 axum = { workspace = true, features = ["json", "multipart", "ws"] }
 chrono = { workspace = true }
 crossterm = { workspace = true }

@@ -409,6 +409,7 @@ impl Session {
                 created: outcome.created,
                 facts: outcome.facts.len(),
                 warnings: outcome.warnings,
+                data: outcome.data,
             },
             Err(e) => {
                 let code = e.code().map(str::to_string);
@@ -474,6 +475,7 @@ impl Session {
                 created: outcome.created,
                 facts: outcome.facts.len(),
                 warnings: outcome.warnings,
+                data: outcome.data,
             },
             Err(error) => action_error(id, error),
         }

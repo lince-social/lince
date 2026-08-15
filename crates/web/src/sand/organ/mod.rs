@@ -24,11 +24,15 @@ pub(crate) fn manifest() -> PackageManifest {
             dials a NodeId, and inbound authorises by NodeId. Selecting a contact \
             edits its trust (unknown/known/blocked) and proximity via \
             `set-contact-trust`/`set-contact-proximity`, its feed direction via \
-            `set-sync-policy`, and renames or forgets it through the local-only \
+            `set-sync-policy`, how WIDE the outbound feed is via \
+            `set-contact-scope` (unnarrowed / named columns / nothing but the \
+            identifying ones — three states, because the empty scope and the \
+            absent one are opposites), and renames or forgets it through the local-only \
             `rename-organ-contact`/`forget-organ-contact` — a contact's record is \
             filed under THEIR uid, so the ordinary record edit would replicate this \
-            Cell's private label back to them. Quarantine inspection is out of scope \
-            here. \
+            Cell's private label back to them. The panel also lists what was REFUSED \
+            from that contact — the bounded per-contact quarantine ring — because a \
+            table nothing displays is the same as a table nobody keeps. \
             Selecting any organ also shows and edits its `lince.file_sync` extension \
             (enabled, disk path) via `set-extension`. File Sync mirrors every record \
             whose `organ_uid` is that organ to/from markdown files (head = filename, \
@@ -239,12 +243,16 @@ mod tests {
             "nb-info",
             "sync-info",
             "fs-info",
+            // The front door queue and the out-of-date device list, both added
+            // with the surfaces C3 owed (2026-08-13).
+            "door-info",
+            "stale-info",
         ] {
             assert!(HTML.contains(&format!("id=\"{id}\"")), "missing {id}");
         }
         assert_eq!(
             HTML.matches("class=\"group-head\"").count(),
-            9,
+            11,
             "every group is titled, and the titles are where the explanations live"
         );
         assert!(
@@ -280,9 +288,11 @@ mod tests {
     /// the name nowhere to go in a column this narrow.
     #[test]
     fn a_rows_status_labels_stack() {
-        assert!(HTML.contains(
-            ".badges { display: flex; flex-direction: column; align-items: flex-end;"
-        ));
+        assert!(
+            HTML.contains(
+                ".badges { display: flex; flex-direction: column; align-items: flex-end;"
+            )
+        );
         assert!(
             !HTML.contains("li.append(badge);"),
             "every label goes in the stack, not straight onto the row"
@@ -316,5 +326,193 @@ mod tests {
         );
         assert!(HTML.contains("id=\"fs-enabled\""));
         assert!(HTML.contains("id=\"fs-path\""));
+    }
+
+    /// The scope has three stored states and two of them are opposites:
+    /// unnarrowed sends every column, the empty list sends none. A surface
+    /// with one text field collapses them, and it collapses toward the wide
+    /// one — someone asking to share nothing would end up sharing everything.
+    /// So the mode is picked explicitly and the list only exists inside the
+    /// middle state.
+    #[test]
+    fn the_scope_offers_all_three_states_and_never_confuses_two_of_them() {
+        assert!(HTML.contains("action: \"set-contact-scope\""));
+        assert!(HTML.contains("value=\"all\""));
+        assert!(HTML.contains("value=\"some\""));
+        assert!(HTML.contains("value=\"none\""));
+        assert!(
+            HTML.contains("scope === null || scope === undefined"),
+            "an absent scope and an empty one must be read apart, not through `|| []`"
+        );
+        assert!(
+            HTML.contains("if (mode === \"none\") return [];"),
+            "the \"nothing\" option must send the empty list, not null"
+        );
+        assert!(
+            HTML.contains("id=\"sc-fields-row\" hidden"),
+            "the column list must not be typeable under a mode that ignores it"
+        );
+    }
+
+    /// Both directions exist, and they are two settings rather than one with
+    /// two ends. Outbound is a privacy control, inbound an integrity one; a
+    /// single control would invite keeping them equal, which is the one thing
+    /// they are not for. A panel offering only the outbound half cannot
+    /// honestly claim to be the whole pairing.
+    #[test]
+    fn the_pairing_panel_has_both_directions_and_keeps_them_separate() {
+        assert!(HTML.contains("action: \"set-contact-accept-scope\""));
+        assert!(HTML.contains("id=\"accept-row\" hidden"));
+        assert!(HTML.contains("id=\"ac-mode\""));
+        assert!(
+            HTML.contains("Nothing but deletions"),
+            "the inbound floor is deletes, and it says so — a refused delete would \
+             leave us holding a record they removed"
+        );
+    }
+
+    /// Widening reaches backwards and narrowing does not, so the two are
+    /// confirmed differently. The wording changed when the replay landed: it
+    /// used to say the older changes kept their shape, which was true of the
+    /// mechanism at the time and is not true of this one.
+    #[test]
+    fn widening_says_it_reaches_back_and_narrowing_does_not() {
+        assert!(HTML.contains("function isWidening("));
+        assert!(
+            HTML.contains("including changes made before now"),
+            "a widening re-sends, and must not be confirmed like a narrowing"
+        );
+        assert!(
+            !HTML.contains("Wider from now on"),
+            "the old wording described a mechanism that no longer exists"
+        );
+    }
+    /// Per-record hiding is the ROW half of the same cluster, and it is a
+    /// separate control with a separate save: batching it with the scope
+    /// would let an accidental widening ride along with a deliberate hide.
+    #[test]
+    fn hiding_records_is_its_own_control_with_its_own_save() {
+        assert!(HTML.contains("action: \"hide-record-from-contact\""));
+        assert!(HTML.contains("id=\"hide-row\" hidden"));
+        assert!(
+            HTML.contains("record slug or uid"),
+            "a person knows a record by its slug, so the field must accept one"
+        );
+        assert!(
+            !HTML.contains("hide-record-from-contact\", target: row.uid, fields"),
+            "hiding must not be folded into the scope save"
+        );
+    }
+
+    /// The two directions are NOT symmetric and the surface says which is
+    /// which. Unhiding REACHES BACK — the record's history is replayed,
+    /// because ordinary catch-up never would. Hiding does not, because no
+    /// delete is sent: sending one would confirm the record exists.
+    #[test]
+    fn hiding_and_unhiding_say_which_one_reaches_back() {
+        assert!(HTML.contains("Anything they already received stays with them."));
+        assert!(HTML.contains("including what changed while it was hidden"));
+    }
+
+    /// The empty state has to say WHICH nothing it means. An unloaded list and
+    /// a genuinely empty one are both blank boxes otherwise, and one of them
+    /// reads as a broken feature while the other is a policy.
+    #[test]
+    fn the_hide_list_distinguishes_empty_from_unloaded() {
+        assert!(HTML.contains("Not loaded."));
+        assert!(HTML.contains("Nothing hidden"));
+        assert!(
+            HTML.contains("if (!Array.isArray(hidden))"),
+            "the two states are told apart by the shape of the value, not by falsiness"
+        );
+    }
+    /// A stored scope that cannot be read is being IGNORED, and ignoring it
+    /// means the widest setting there is. Showing "everything" without saying
+    /// why would report a corrupt row as somebody's decision.
+    #[test]
+    fn an_unreadable_scope_says_it_is_being_ignored() {
+        assert!(HTML.contains("function showBrokenScopes("));
+        assert!(HTML.contains("could not be read and is being ignored"));
+        assert!(
+            HTML.contains("nothing is \"\n          + \"narrowed right now")
+                || HTML.contains("nothing is "),
+            "it has to say what ignoring it MEANS, not just that it happened"
+        );
+        assert!(
+            HTML.contains("contact.scope_unreadable") && HTML.contains("contact.accept_unreadable"),
+            "both directions are separate settings and are reported separately"
+        );
+    }
+    /// The quarantine ring is per contact and bounded, and nothing displayed
+    /// it — which is the same as not keeping it. It belongs on the panel for
+    /// the contact it accuses.
+    #[test]
+    fn refused_changes_are_listed_on_the_contact_that_sent_them() {
+        assert!(HTML.contains("function showQuarantine("));
+        assert!(HTML.contains("id=\"qr-list\""));
+        assert!(
+            HTML.contains("Nothing refused"),
+            "the good case must say which nothing it is"
+        );
+        assert!(
+            HTML.contains("Not loaded."),
+            "and must not read the same as a failed load"
+        );
+    }
+
+    /// A refusal payload is JSON written by a peer — the least trustworthy
+    /// text on the page. It goes in as text and never as markup.
+    #[test]
+    fn a_refused_payload_is_never_treated_as_markup() {
+        assert!(
+            !HTML.contains("innerHTML = item.payload") && !HTML.contains("innerHTML = item.reason"),
+            "a peer's rejected op must not be able to write the panel"
+        );
+        assert!(HTML.contains("reason.title = item.payload"));
+    }
+
+    /// Ops dropped by our own acceptance scope are NOT refusals. Listing them
+    /// would fill the ring on the first sync with any contact wider than our
+    /// acceptance and bury the reports that mean something.
+    #[test]
+    fn the_refusal_list_says_it_excludes_our_own_policy() {
+        assert!(HTML.contains("are NOT here"));
+    }
+    /// File Sync selection is a Protein predicate in the SAME vocabulary as
+    /// every other filter — that is what "one selector language" means. The
+    /// picker covers the shapes people actually want; anything else gets the
+    /// language itself rather than a second, smaller one.
+    #[test]
+    fn file_sync_selection_uses_the_one_selector_language() {
+        assert!(HTML.contains("id=\"fs-filter-mode\""));
+        assert!(HTML.contains("concept_in") && HTML.contains("kind_eq"));
+        assert!(
+            HTML.contains("A filter I write myself"),
+            "the picker must not be the ceiling"
+        );
+        assert!(
+            !HTML.contains("is a Protein filter and is not wired up yet"),
+            "the tooltip outlived the limitation it described"
+        );
+    }
+
+    /// A filter that cannot be read is IGNORED, so everything from the organ
+    /// syncs. Saying only "invalid" would leave the owner guessing whether
+    /// files are being written right now.
+    #[test]
+    fn an_unreadable_file_sync_filter_says_what_is_happening_instead() {
+        assert!(HTML.contains("could not be read and is being ignored, so everything"));
+        assert!(
+            HTML.contains("That filter is not valid JSON."),
+            "a NEW broken filter is refused rather than stored to be ignored later"
+        );
+    }
+
+    /// A filter the picker cannot express is shown as itself. Flattening
+    /// somebody's `any` to the nearest menu option and then saving it would
+    /// silently delete their filter.
+    #[test]
+    fn a_filter_the_picker_cannot_express_is_not_flattened() {
+        assert!(HTML.contains("JSON.stringify(parsed)"));
     }
 }

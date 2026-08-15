@@ -383,8 +383,12 @@ export function createWidgetBridge({
   // Post an Action result in the shape the frame's protocol expects.
   // Warnings are non-fatal advisories (link cycles, Proof loops) — they ride
   // alongside ok, never turn a success into an error.
-  function postActionResult(req, ok, created, facts, message, warnings, code) {
+  function postActionResult(req, ok, created, facts, message, warnings, code, data) {
     const safeWarnings = Array.isArray(warnings) ? warnings : [];
+    // Structured result for surfaces that need more than a uid to render what
+    // happened — an enrolment code and its QR, a front door queue. Null when
+    // the Action had nothing extra to say, which is almost all of them.
+    const safeData = data === undefined ? null : data;
     if (req.protocol === "flat") {
       postFrame(req.instanceId, {
         type: FLAT_ACTION_RESULT,
@@ -395,6 +399,7 @@ export function createWidgetBridge({
         message: String(message || ""),
         code: String(code || ""),
         warnings: safeWarnings,
+        data: safeData,
       });
       return;
     }
@@ -408,6 +413,7 @@ export function createWidgetBridge({
         message: String(message || ""),
         code: String(code || ""),
         warnings: safeWarnings,
+        data: safeData,
       },
     });
   }
@@ -559,6 +565,7 @@ export function createWidgetBridge({
         message.message,
         message.warnings,
         message.code,
+        message.data,
       );
     }
   }

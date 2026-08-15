@@ -177,15 +177,40 @@ impl Engine {
         }
 
         // --- 2) Ledger -> disk (mirror) -----------------------------------
+        // Selection is `organ_uid` AND whatever else the owner configured.
+        //
+        // Origin is not negotiable and is not part of the configurable half:
+        // mirroring a Record whose origin is somebody else's Organ would put
+        // their writing in this owner's folder, where editing the file edits
+        // THEIR Record. So the extra filter can only narrow.
+        let mut filter = vec![protein::Predicate::OrganEq(organ_uid.to_string())];
+        let config =
+            store::records::get_extension(&self.store.pool, organ_uid, "lince.file_sync").await?;
+        if let Some(extra) = configured_filter(config.as_ref()) {
+            filter.push(extra);
+        }
         let protein = protein::Protein {
             source: protein::Source::Record,
-            filter: vec![protein::Predicate::OrganEq(organ_uid.to_string())],
+            filter,
+            fields: None,
             include: Default::default(),
             aggregate: None,
             order: vec![],
             limit: None,
         };
-        let matched = protein::matching_records(&self.store, &protein, None).await?;
+        let mut matched = protein::matching_records(&self.store, &protein, None).await?;
+        // Identity is not content. The Organ and Cell Records became visible
+        // here the moment origins were stamped on every row (the Organ's
+        // origin is itself, the Cell's is its Organ), and mirroring them to
+        // disk would put "Local Lince.md" and "this cell.md" in the owner's
+        // notes folder — where renaming or deleting the file would edit the
+        // identity. Excluded by slug, which is fixed for both.
+        matched.retain(|row| {
+            !matches!(
+                row.slug.as_deref(),
+                Some(store::organs::LOCAL_ORGAN_SLUG) | Some(store::cells::LOCAL_CELL_SLUG)
+            )
+        });
         let desired = desired_paths(dir, &matched);
 
         // Stray .md files no longer selected (deactivated elsewhere, re-homed
@@ -342,6 +367,7 @@ pub async fn spawn_configured_watchers(
     let protein = protein::Protein {
         source: protein::Source::Record,
         filter: vec![protein::Predicate::KindEq("organ".to_string())],
+        fields: None,
         include: Default::default(),
         aggregate: None,
         order: vec![],
@@ -384,6 +410,55 @@ fn desired_watch(config: Option<serde_json::Value>) -> Option<PathBuf> {
         .unwrap_or(false);
     let path = config.get("path").and_then(|v| v.as_str()).unwrap_or("");
     (enabled && !path.trim().is_empty()).then(|| PathBuf::from(path))
+}
+
+/// The owner's extra selection filter, or `None` for "everything from this
+/// Organ" (Ontology §12, C5 — the File Sync half of one selector language).
+///
+/// It is a `Predicate` in the SAME vocabulary every other filter uses, stored
+/// as JSON under `lince.file_sync.filter`. Not a bespoke mini-language: the
+/// whole point of the cluster is that there is one selector, so a Concept tag,
+/// a Record kind, a text match or an `All`/`Any`/`Not` of them all work here
+/// because they work everywhere.
+///
+/// A filter that will not parse is IGNORED — everything from the Organ syncs —
+/// rather than failing closed and silently mirroring nothing. Same choice as
+/// the unreadable contact scope, and made the same way: the failure that
+/// leaves someone with no files and no error is worse than the one that leaves
+/// them with too many, and the surface says which happened.
+fn configured_filter(config: Option<&serde_json::Value>) -> Option<protein::Predicate> {
+    let raw = config?.get("filter")?;
+    // An absent filter and an explicitly cleared one are the same request.
+    if raw.is_null() || raw.as_str().map(str::trim).is_some_and(str::is_empty) {
+        return None;
+    }
+    // Stored as a JSON string by the surface (a text field), or as an object
+    // by anything writing the extension directly. Both are accepted, because
+    // refusing one of them would make the same setting mean different things
+    // depending on which wrote it.
+    let value = match raw.as_str() {
+        Some(text) => serde_json::from_str::<serde_json::Value>(text).ok()?,
+        None => raw.clone(),
+    };
+    serde_json::from_value::<protein::Predicate>(value).ok()
+}
+
+/// Whether a stored filter is present but unreadable — what the surface needs
+/// to say "this is being ignored" rather than showing a filter that is not
+/// running. Mirrors `organs::scope_unreadable` deliberately: two settings that
+/// fail the same way should report the same way.
+pub fn unreadable_filter(config: Option<&serde_json::Value>) -> Option<String> {
+    let raw = config?.get("filter")?;
+    if raw.is_null() || raw.as_str().map(str::trim).is_some_and(str::is_empty) {
+        return None;
+    }
+    if configured_filter(config).is_some() {
+        return None;
+    }
+    Some(match raw.as_str() {
+        Some(text) => text.to_string(),
+        None => raw.to_string(),
+    })
 }
 
 /// Start/stop `organ_uid`'s watch loop to match its current `lince.file_sync`
@@ -430,6 +505,7 @@ async fn reconcile_all(
     let protein = protein::Protein {
         source: protein::Source::Record,
         filter: vec![protein::Predicate::KindEq("organ".to_string())],
+        fields: None,
         include: Default::default(),
         aggregate: None,
         order: vec![],

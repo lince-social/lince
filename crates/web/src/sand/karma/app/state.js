@@ -20,6 +20,11 @@ export const state = {
   // the rewrite is getting rid of.
   frequencies: [],
   occurrences: [],
+  // Karma Programs as THIS Cell sees them, carrying `executes_here`. Kept
+  // separate from `rules` on purpose: those are Cadence recurrences, and
+  // merging the lists would put a per-Cell execution switch on rows that have
+  // no Program behind them to switch.
+  programs: [],
   /// How far back the inbox asked for dates. Kept so the list can say where it
   /// stops instead of ending without explanation.
   occurrenceSince: null,
@@ -69,6 +74,10 @@ const SILENT_ACTIONS = new Set([
   "create-recurrence",
   "revise-recurrence",
   "set-recurrence-paused",
+  // Writes no Fact and no op — it is this machine's own setting — so nothing
+  // else invalidates the read the panel is drawn from.
+  "set-karma-execution",
+  "designate-karma-executor",
   "skip-recurrence-occurrence",
   "unskip-recurrence-occurrence",
   "classify-fact",
@@ -100,6 +109,7 @@ export async function act(action) {
 
 /** Re-open the reads a Factless change would not have invalidated. */
 function refreshSilent() {
+  subscribePrograms();
   subscribeRecurrence();
   subscribeFrequencies();
   subscribeEntries();
@@ -130,6 +140,22 @@ let unsubscribeFrequencies = null;
  * Small and shared by design: the completion list needs all of them, so there
  * is nothing to filter and no window to ask for.
  */
+let unsubscribePrograms = null;
+
+/**
+ * Karma Programs with this Cell's own execution answer beside each.
+ *
+ * Re-opened by the silent refresh as well as at startup: setting the execution
+ * flag writes no Fact, so nothing else would invalidate this read and the
+ * panel would keep showing the state the switch was just moved out of.
+ */
+export function subscribePrograms() {
+  unsubscribePrograms?.();
+  unsubscribePrograms = subscribe("programs", { source: "karma" }, (rows) => {
+    state.programs = rows.filter((row) => row?.object_kind === "program");
+  });
+}
+
 export function subscribeFrequencies() {
   unsubscribeFrequencies?.();
   unsubscribeFrequencies = subscribe("frequencies", { source: "frequency" }, (rows) => {
@@ -150,6 +176,7 @@ export function subscribeAll() {
     );
   });
 
+  subscribePrograms();
   subscribeRecurrence();
   subscribeFrequencies();
   subscribeEntries();

@@ -1075,6 +1075,39 @@ fully editable, and neither preset identity nor workflow state is persisted.
 - Every promise snapshots its canonical unit. A Transfer may provide a default
   location and each promise may override it. Neither signed unit nor location
   is reinterpreted when its referenced Record later changes.
+- A promise's delta is not always a quantity change. **Custody/responsibility**
+  — who currently holds or is answerable for a Record, distinct from who owns
+  or created it — is expressed the same way: a promise whose effect is an
+  assertion change (e.g. `@responsible`) rather than a quantity change. It goes
+  through the same invitation, agreement, activation, and confirmation
+  lifecycle as any other promise, because a custody handoff crossing an Organ
+  boundary needs the same consent every other Transfer needs — a bare
+  unilateral assertion cannot speak for someone who never agreed to hold
+  something. Within a single Organ, a plain assertion with no Transfer remains
+  enough, since the trust a shared Organ implies already covers it. The
+  existing `assignment` preset is this shape already; a delivery/loan/rental
+  preset is the same mechanism with a different verb. The quantity-specific
+  machinery — settlement slices, reservation/availability derivation,
+  percentage-coalition arithmetic — has nothing to act on when a promise
+  carries no quantity delta, and needs no special case to skip it: it stays
+  idle by construction, exactly the way a plain donation Transfer already
+  leaves the two-sided consideration/sale machinery unused today. A custody
+  Transfer is a normal Transfer whose promises simply don't touch quantity.
+- [ ] **Splitting for partial custody.** A fungible Record cannot hand only
+  part of itself into someone's custody through an assertion alone — the
+  split belongs to the Record, not to Transfer. Splitting off the exact
+  quantity changing hands into its own child Record (linked back, e.g.
+  `split-of`/`lot-of`) gives that smaller Record its own quantity and its own
+  `@responsible` assertion to carry into a custody Transfer, without adding a
+  second quantity field anywhere. Not built.
+- [ ] **Revoking custody is a proposal, not a command.** Lince has no way to
+  reach into the physical world, so "give it back" cannot be forced — it can
+  only be suggested, the same shape as any other Transfer proposal: the
+  current owner proposes an "un-custody" (a promise reverting `@responsible`
+  back), and the holder still has to agree for it to complete signed. If they
+  never agree, Lince has nothing further it can do — the proposal stays open
+  and visible, honestly, rather than pretending a revoke button changes
+  anything in the world by itself.
 - An OPEN promise is a signed suggestion/template owned by the proposing
   Person, with only the counterparty left open, and reuse policy
   `duplicate|consume`, defaulting to `duplicate`. A claimant may refine every
@@ -1139,6 +1172,45 @@ fully editable, and neither preset identity nor workflow state is persisted.
   evidence/tombstone. A never-shared draft may be hard-deleted; after invitation
   or publication it is cancelled/tombstoned instead.
 
+### Open: reservation/availability quantity projection
+
+`promise.reserve_from` and `transfer.reservation_policy` record intent, but
+nothing turns them into a live number yet. Needed: a projection of reserved /
+available / planned / surplus quantity per Record, derived from open promises
+and their `reserve_from` state, exposed as a query/view rather than a
+maintained column — this is the one real gap the old `transfer_quantity_influence`
+table pointed at (planned/active/consumed/released deltas competing under a
+protect/surplus/proportional/manual policy).
+
+The rest of that old design is already covered under a different shape, not
+missing: `transfer_structured_item` (a Transfer's line items) is `promise` —
+one signed row per give/receive commitment, `transfer_uid`-scoped. `transfer_interaction`'s
+`depends_on` kind is `transfer_dependency` (`scope: transfer|promise`,
+`upstream_uid`, `required_state`), already wired to `promise.condition`
+(`crates/store/src/transfers.rs`, "Promises with a condition that are waiting
+to activate"). Nothing needs rebuilding there.
+
+### Open: Transfer messaging and discovery ride the Thread system
+
+`transfer_message` should not be rebuilt as its own table. A Transfer's
+messages are a conversation — the same `record_doc`/`thread_invite`/
+`conversation` sand already used for direct chat (see
+[Synchronization](Ontology.md)), tagged/linked to the Transfer record instead
+of a Person. No new schema, just wiring the Transfer sand to open/attach a
+conversation the way the Record sand's Threads panel does.
+
+Discovering and inviting a counterparty into a Transfer should work the same
+way Organs discover and invite each other into a chat thread: a
+`thread_invite`-style one-pending-per-Organ offer, accept/decline, nothing
+exposed until accepted. That layer doesn't exist for Transfers today.
+`transfer_invitation` (migration `0013_transfer_invitations.sql`) is close but
+solves a different problem — it addresses a known Person on an
+already-created, already-addressable Transfer/party row; it has no answer for
+"an unknown Organ wants to open a Transfer with me" the way `thread_invite` +
+`organ_contact` adoption answers it for chat. Worth deciding whether
+`thread_invite` itself grows a "this offer is also a Transfer proposal" mode,
+or a parallel `transfer_invite` mirrors its one-pending/accept/decline shape
+at the Organ level, upstream of `transfer_invitation`.
 
 ## OLD STUFF DOWN HERE 
 

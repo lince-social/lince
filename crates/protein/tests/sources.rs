@@ -64,6 +64,7 @@ fn protein(source: Source) -> Protein {
     Protein {
         source,
         filter: vec![],
+        fields: None,
         include: Include::default(),
         aggregate: None,
         order: vec![],

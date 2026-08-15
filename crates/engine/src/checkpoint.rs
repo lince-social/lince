@@ -145,10 +145,14 @@ impl Engine {
         let uids: Vec<String> = archived.iter().map(|f| f.uid.clone()).collect();
         store::facts::delete_by_uids(&self.store.pool, &uids).await?;
 
-        // Anchor the archive from inside the Ledger. Carrier: the local organ
-        // record (the Cell itself); compaction is a Cell-level event.
-        let carrier = match store::organs::local(&self.store.pool).await? {
-            Some(organ) => organ.uid,
+        // Anchor the archive from inside the Ledger. Carrier: the CELL Record.
+        // Compaction is a Cell-level event — what got archived depends on this
+        // machine's retention, not on the identity — and the old comment said
+        // exactly that while naming the Organ, which is the confusion the
+        // Organ/Cell split exists to end. Anchoring on the Organ would make
+        // two Cells' independent compactions look like one Organ's history.
+        let carrier = match store::cells::local(&self.store.pool).await? {
+            Some(cell) => cell.uid,
             None => archived[0].record_uid.clone(),
         };
         let signer = self.signer.lock().await.clone();

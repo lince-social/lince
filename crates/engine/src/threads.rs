@@ -140,7 +140,7 @@ impl Engine {
 
     /// `(child) --in--> (parent)`, both necessarily inside the same root —
     /// `assertions::assert` refuses the link otherwise.
-    async fn link_in(
+    pub(crate) async fn link_in(
         &self,
         child_uid: &str,
         parent_uid: &str,

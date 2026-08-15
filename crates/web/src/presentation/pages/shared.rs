@@ -118,7 +118,7 @@ pub(crate) fn render_package_body(card: &BoardCard) -> Markup {
                     loading="lazy"
                     data-package-instance-id=(card.id.as_str())
                     data-lince-server-id=(card.server_id.as_str())
-                    sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-popups"
+                    sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-popups allow-downloads"
                     allow="fullscreen; webgpu"
                     allowfullscreen=""
                     srcdoc=(card.html.as_str())
@@ -130,7 +130,7 @@ pub(crate) fn render_package_body(card: &BoardCard) -> Markup {
                     loading="lazy"
                     data-package-instance-id=(card.id.as_str())
                     data-lince-server-id=(card.server_id.as_str())
-                    sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-popups"
+                    sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-popups allow-downloads"
                     allow="fullscreen; webgpu"
                     allowfullscreen=""
                     src=(frame_src)

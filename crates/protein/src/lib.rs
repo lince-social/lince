@@ -63,6 +63,21 @@ pub struct Protein {
     pub source: Source,
     #[serde(default, rename = "where")]
     pub filter: Vec<Predicate>, // top level is an implicit `all`
+    /// Which COLUMNS come back. `None` means all of them, which is what every
+    /// existing caller means and gets.
+    ///
+    /// Added for cluster C5, where it is load-bearing well beyond trimming a
+    /// payload: the same selector that decides a sand renders `assignee`
+    /// decides whether `assignee` TRAVELS to a contact. One language, learned
+    /// once, rather than a query language and a separate sharing language kept
+    /// laboriously in step.
+    ///
+    /// NAME-WHAT-YOU-WANT, never name-what-to-hide, and that asymmetry is the
+    /// whole security argument: a column added six months from now stays home
+    /// until some Protein names it. A deny-list would have leaked it by
+    /// default, and nobody would have noticed until it had.
+    #[serde(default)]
+    pub fields: Option<Vec<String>>,
     #[serde(default)]
     pub include: Include,
     #[serde(default)]
@@ -364,6 +379,17 @@ pub struct Include {
     /// ask whether a conversation with someone already exists.
     #[serde(default)]
     pub conversations: bool,
+    /// Who has READ this Record through a live reference, as `reference_reads`
+    /// (Ontology §11, C6). Reading a reference is an observable event on the
+    /// owner's Cell whether or not anyone records it, so the owner is shown
+    /// what their Cell already saw rather than left with an invisible side
+    /// effect.
+    ///
+    /// LOCAL ONLY. This never syncs and no op kind carries it: who read what
+    /// and when is exactly the behavioural trail that must not become someone
+    /// else's data.
+    #[serde(default)]
+    pub reference_reads: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -694,6 +720,7 @@ pub async fn transfer_delivery_projection(
     let protein = Protein {
         source: Source::Transfer,
         filter: vec![Predicate::UidEq(transfer_uid.to_string())],
+        fields: None,
         include: Include::default(),
         aggregate: None,
         order: Vec::new(),
@@ -955,10 +982,72 @@ async fn execute_karma(store: &Store, protein: &Protein) -> Result<Vec<Value>, P
         ));
     }
 
+    // C7 axis 2 — does THIS Cell execute each Program. Read once for the whole
+    // union rather than per row: the answer is a per-Cell setting, so it is one
+    // small local table and a query per Program would be the only reason this
+    // union scaled with the number of rules.
+    let executing: std::collections::BTreeMap<String, (bool, Option<String>)> =
+        store::karma::execution::list(&store.pool)
+            .await?
+            .into_iter()
+            .map(|row| (row.program_uid, (row.executes, row.note)))
+            .collect();
+
+    // Read once, used twice: the revision rows below, and the outward-consequence
+    // flag each Program handle needs. A Program's handle is the thing a person
+    // configures, so the flag has to reach the handle row — asking the surface
+    // to join a handle to its active revision to learn whether the rule acts
+    // outward is how that warning ends up omitted.
+    let revisions = store::karma::programs::list_revisions(&store.pool).await?;
+    let outward: std::collections::BTreeMap<String, bool> = revisions
+        .iter()
+        .map(|revision| {
+            (
+                revision.revision_hash.as_str().to_string(),
+                revision.program.is_externally_observable(),
+            )
+        })
+        .collect();
+
+    // Which Cell is answering. The surface needs it to tell "designated to me"
+    // from "designated to one of my others" — the same string in both cases,
+    // and the difference is the whole meaning of the row.
+    let this_cell: Option<String> = store::cells::local(&store.pool)
+        .await?
+        .map(|cell| cell.uid);
+
+    // Read once for the whole union, like the two maps above. Every per-row
+    // lookup in this loop is one query per Program per Protein query, and this
+    // union is read on every refresh of the panel it feeds.
+    let designations: std::collections::BTreeMap<String, Option<String>> = store::sqlx::query(
+        "SELECT record_uid, fds FROM record_extension WHERE namespace = ?",
+    )
+    .bind(store::executor::NAMESPACE)
+    .fetch_all(&store.pool)
+    .await
+    .map_err(store::StoreError::from)?
+    .into_iter()
+    .map(|row| {
+        use store::sqlx::Row as _;
+        let fds: String = row.get("fds");
+        let cell = serde_json::from_str::<Value>(&fds)
+            .ok()
+            .and_then(|fds| fds.get("cell").and_then(|c| c.as_str().map(str::to_string)));
+        (row.get::<String, _>("record_uid"), cell)
+    })
+    .collect();
+
     let mut rows = Vec::new();
     for handle in store::karma::programs::list_handles(&store.pool).await? {
         let can_activate = handle.active_revision_hash.as_ref() != Some(&handle.head_revision_hash);
         let can_pause = handle.status == nucleus::karma::DefinitionStatus::Active;
+        // Absent means executing, the same default the run path uses. Reading
+        // it as `false` here would make an unconfigured Organ's whole rule set
+        // look dormant in the interface while it ran normally underneath.
+        let (executes, execution_note) = executing
+            .get(&handle.record_uid)
+            .cloned()
+            .unwrap_or((true, None));
         rows.push(json!({
             "object_kind": "program",
             "uid": handle.record_uid,
@@ -970,10 +1059,36 @@ async fn execute_karma(store: &Store, protein: &Protein) -> Result<Vec<Value>, P
             "owner_person_uid": handle.owner_person_uid,
             "created_at": handle.created_at,
             "updated_at": handle.updated_at,
+            // Local to the Cell answering this query, and labelled so nothing
+            // downstream mistakes it for a property of the rule. The same
+            // Program queried on another Cell may answer differently, and that
+            // is the point of the axis rather than an inconsistency.
+            "executes_here": executes,
+            "execution_note": execution_note,
+            // The shared half of C7, beside the local half. Both are needed to
+            // read a row honestly: a rule can be designated elsewhere AND
+            // switched off here, and showing only one would explain the wrong
+            // reason for it not running.
+            "designated_cell": designations.get(handle.record_uid.as_str()).cloned().flatten(),
+            "this_cell": this_cell,
+            // Read from the ACTIVE revision, not the head: what this Cell would
+            // run right now is what the warning has to describe. A head
+            // revision that adds an outward consequence is not yet running, and
+            // warning about it would be warning about the wrong thing.
+            "externally_observable": handle
+                .active_revision_hash
+                .as_ref()
+                .and_then(|hash| outward.get(hash.as_str()))
+                .copied()
+                .unwrap_or(false),
             "capabilities": {
                 "revise": true,
                 "activate": can_activate,
                 "pause": can_pause,
+                // Always offered: holding a rule without running it is not
+                // gated on the rule's status. A paused Program is exactly one
+                // somebody may want to arrange before activating it.
+                "set_execution": true,
             },
             "blocking_reasons": {
                 "revise": Vec::<&str>::new(),
@@ -1001,12 +1116,29 @@ async fn execute_karma(store: &Store, protein: &Protein) -> Result<Vec<Value>, P
                     "program_uid": handle.record_uid,
                     "expected_handle_revision": handle.handle_revision,
                 },
+                // No `expected_handle_revision`: this is not a change to the
+                // Program, so revising the rule elsewhere must not invalidate
+                // a pending "do not run this here". Concurrency between two
+                // processes on ONE Cell is the only race, and last-write-wins
+                // is the right answer for a switch with two positions.
+                "set_execution": {
+                    "action": "set-karma-execution",
+                    "program_uid": handle.record_uid,
+                    "executes": !executes,
+                    "note": Value::Null,
+                },
             },
         }));
     }
-    for revision in store::karma::programs::list_revisions(&store.pool).await? {
+    for revision in revisions {
         rows.push(json!({
             "object_kind": "program_revision",
+            // C7: whether this revision's consequences leave the machine, so
+            // the interface can say what running it on several Cells costs AT
+            // THE MOMENT of choosing rather than leaving it to be discovered in
+            // the Ledger. Computed from the frozen AST, never stored, because a
+            // stored copy would drift from the revision it describes.
+            "externally_observable": revision.program.is_externally_observable(),
             "uid": revision.revision_hash,
             "program_uid": revision.program_uid,
             "revision_hash": revision.revision_hash,
@@ -1601,6 +1733,23 @@ async fn execute_records(
 ) -> Result<Vec<Value>, ProteinError> {
     let mut rows = matching_records(store, protein, visible).await?;
 
+    // The Cell Record is infrastructure, not content: it is this device, it
+    // never travels, and it exists so that "who wrote this" and "whose is
+    // this" can be different values. It appeared in ordinary queries only
+    // because the Organ/Cell split created it, so hiding it restores what
+    // every surface showed before rather than taking anything away.
+    //
+    // The ORGAN Record deliberately stays visible. It was always queryable,
+    // and surfaces depend on it: the organ list distinguishes you from your
+    // contacts by finding your own Organ row with no contact sidecar.
+    //
+    // Filtered HERE and not in `matching_records`, because that function is
+    // the shared primitive and internal callers legitimately scan with it.
+    //
+    // PROVISIONAL: a fixed slug exclusion is the blunt version of what the C5
+    // selector language should express properly.
+    rows.retain(|r| r.slug.as_deref() != Some(store::cells::LOCAL_CELL_SLUG));
+
     // aggregation short-circuits row output (blueprint VII.1)
     if let Some(agg) = &protein.aggregate {
         return Ok(aggregate_records(&rows, agg));
@@ -1650,9 +1799,30 @@ async fn execute_records(
             &protein.include,
         )
         .await?;
+        narrow_to_fields(&mut row, protein.fields.as_deref());
         out.push(row);
     }
     Ok(out)
+}
+
+/// Keep only the named columns, plus the ones a row is meaningless without.
+///
+/// `uid` and `kind` always survive: a row nobody can identify is not a
+/// narrower answer to the question, it is a different and useless one, and
+/// every surface and the sync path alike address rows by uid.
+///
+/// An absent selector returns everything, so this is invisible to callers that
+/// do not use it.
+fn narrow_to_fields(row: &mut Value, fields: Option<&[String]>) {
+    let Some(fields) = fields else {
+        return;
+    };
+    let Some(object) = row.as_object_mut() else {
+        return;
+    };
+    object.retain(|key, _| {
+        key == "uid" || key == "kind" || fields.iter().any(|wanted| wanted == key)
+    });
 }
 
 fn aggregate_records(rows: &[store::records::RecordRow], agg: &Aggregate) -> Vec<Value> {
@@ -1947,6 +2117,27 @@ async fn attach_includes(
                 .await?
                 .unwrap_or(Value::Null);
     }
+    if include.reference_reads {
+        // Named by the CONTACT's own head where we have one, because an Organ
+        // uid tells nobody who read their Record. Falls back to the uid rather
+        // than to a friendly placeholder: "someone" would be a worse answer
+        // than an unreadable one, since it implies we do not know.
+        let mut reads = Vec::new();
+        for (reader, count, at) in
+            store::replica::reference_reads(&store.pool, record_uid).await?
+        {
+            let name = store::organs::contact(&store.pool, &reader)
+                .await?
+                .map(|contact| contact.head);
+            reads.push(json!({
+                "reader_organ": reader,
+                "reader_name": name,
+                "reads": count,
+                "last_read_at": at,
+            }));
+        }
+        row["reference_reads"] = Value::Array(reads);
+    }
     if include.contact {
         row["contact"] = store::organs::contact(&store.pool, record_uid)
             .await?
@@ -1970,9 +2161,75 @@ async fn attach_includes(
                     // cannot see them cannot offer them.
                     "sync_out": c.sync_out,
                     "sync_in": c.sync_in,
+                    // THREE states, not two, and the difference is the whole
+                    // point: `null` is unnarrowed (they see every column of
+                    // the Records they can already see), `[]` is narrowed to
+                    // nothing but the identifying columns, and a list is
+                    // narrowed to that list. A surface that renders the first
+                    // two the same way turns "share nothing" into "share
+                    // everything" the moment someone saves.
+                    "scope_fields": c.scope_fields,
+                    // Carried so a surface can say what a WIDENING will and
+                    // will not do. Nothing consumes this yet (see the
+                    // re-snapshot box in Ontology §12) — until it does, the
+                    // honest claim is "from now on", not "retroactively".
+                    "scope_version": c.scope_version,
+                    // The inbound half. Same three states, same vocabulary,
+                    // and a separate value on purpose — outbound is what they
+                    // may see of us, this is what they may change about our
+                    // copy of the world, and they have no reason to agree.
+                    "accept_fields": c.accept_fields,
+                    "accept_version": c.accept_version,
+                    // A scope that would not parse reads as UNNARROWED, which
+                    // is wider than anybody asked for. It must therefore not
+                    // LOOK like an ordinary unnarrowed scope, so the raw text
+                    // comes out too and the panel says the setting is broken.
+                    // `null` in every other case, the absent scope included.
+                    "scope_unreadable": c.scope_unreadable,
+                    "accept_unreadable": c.accept_unreadable,
                 })
             })
             .unwrap_or(Value::Null);
+        // The row half of hiding, where `scope_fields` is the column half. A
+        // second query rather than a field on `Contact`, because it is a list
+        // of Records and every other contact surface loads without it.
+        //
+        // Always present when there is a contact, `[]` included: a panel that
+        // cannot tell "nothing hidden" from "not loaded" shows an empty box
+        // either way, and the empty state has to say WHICH nothing it means.
+        // What we REFUSED from this contact. The ring is bounded and per
+        // contact, so this is a short list by construction; it is here rather
+        // than behind its own query because the only place anyone would look
+        // for it is the panel for the contact it belongs to.
+        //
+        // Refusals, not policy: an op dropped by our acceptance scope is our
+        // own setting working and is never quarantined — putting those here
+        // would bury the reports that mean something under the ones that mean
+        // "as configured".
+        if row["contact"].is_object() {
+            row["contact"]["quarantined"] = json!(
+                store::organs::quarantined_for(&store.pool, record_uid, 20)
+                    .await?
+                    .into_iter()
+                    .map(|(reason, payload, at)| json!({
+                        "reason": reason,
+                        "payload": payload,
+                        "at": at,
+                    }))
+                    .collect::<Vec<_>>()
+            );
+            row["contact"]["hidden_records"] = json!(
+                store::visibility::hidden_records_from_organ(&store.pool, record_uid)
+                    .await?
+                    .into_iter()
+                    .map(|hidden| json!({
+                        "uid": hidden.uid,
+                        "head": hidden.head,
+                        "slug": hidden.slug,
+                    }))
+                    .collect::<Vec<_>>()
+            );
+        }
     }
     if include.conversations {
         // Keyed by the CONTACT's organ uid, which is what the grant stores —
@@ -2248,6 +2505,37 @@ async fn threads_for_record(
                 "sender": sender,
                 "organ_name": organ_name,
                 "references": record_references,
+                // References we CANNOT resolve locally — the live ones
+                // (Ontology §11, C6). `references` above inner-joins `record`,
+                // which is right for everything we hold and silently drops the
+                // case a reference exists for: a Record that lives on its
+                // owner's Cell and was never copied here. Through that join a
+                // remote reference is not unresolved, it is invisible, and a
+                // surface cannot offer to read what it cannot see.
+                "live_references": match &references {
+                    Some(predicate) => {
+                        let held: Vec<&str> = record_references
+                            .iter()
+                            .filter_map(|item| item["uid"].as_str())
+                            .collect();
+                        store::assertions::object_uids_from_subject(
+                            &store.pool,
+                            &message.uid,
+                            predicate,
+                        )
+                        .await?
+                        .into_iter()
+                        .filter(|uid| !held.iter().any(|kept| kept == uid))
+                        .collect::<Vec<_>>()
+                    }
+                    None => Vec::new(),
+                },
+                // Who to ask, and under which conversation. Both are needed to
+                // read a live reference and neither is derivable in the sand:
+                // the owner is the message's Organ, the root is the grant that
+                // authorises the read.
+                "organ_uid": message.organ_uid,
+                "replica_root": store::replica::root_of(&store.pool, &message.uid).await?,
             }));
             if messages.len() >= messages_limit {
                 break;
@@ -6077,6 +6365,14 @@ async fn origin_social_delivery_projection(
         })
     })
     .collect::<Vec<_>>();
+    // Which Cell retries this Transfer's deliveries (Ontology C7). The retry
+    // loop is the one non-Rule scheduler that reaches OUTWARD — two Cells
+    // draining the same outbox POST the same envelope twice — so it consults
+    // the same designation Karma does. `this_cell` rides along because
+    // "designated to me" and "designated to one of my others" are the same
+    // string otherwise, and the difference is the whole meaning of the row.
+    let designated_cell = store::executor::designated(&store.pool, transfer_uid).await?;
+    let this_cell = store::cells::local(&store.pool).await?.map(|cell| cell.uid);
     Ok(json!({
         "authority": {
             "role": "origin",
@@ -6084,12 +6380,22 @@ async fn origin_social_delivery_projection(
             "local_organ": local_organ.uid,
             "canonical_writes": "local",
         },
+        "executor": {
+            "designated_cell": designated_cell,
+            "this_cell": this_cell,
+        },
         "revision": transfer_revision,
         "recipients": recipients,
         "eligible_recipients": eligible_recipients,
         "package_receipts": receipt_values,
         "application_handoffs": settlement_handoffs,
-        "capabilities": { "configure_recipient": can_admin_delivery },
+        "capabilities": {
+            "configure_recipient": can_admin_delivery,
+            // Designating rides the same permission as configuring a recipient:
+            // both decide how this Transfer reaches the other side, and a
+            // person who may not do the first has no business doing the second.
+            "designate_executor": can_admin_delivery,
+        },
         "blocking_reasons": { "configure_recipient": if can_admin_delivery { Vec::<&str>::new() } else { vec!["delivery_admin_identity_required"] } },
         "action_payloads": if can_admin_delivery { json!({
             "configure_recipient": {
@@ -6100,6 +6406,15 @@ async fn origin_social_delivery_projection(
                 "person": acting_person,
                 "request_id": Value::Null,
                 "mode": "hosted",
+            },
+            "designate_executor": {
+                "action": "designate-transfer-executor",
+                "transfer_uid": transfer_uid,
+                // Filled by the surface with THIS Cell's uid, or left null to
+                // hand delivery back to every Cell. Naming a Cell you are not
+                // sitting at is how a Transfer ends up pinned to a machine that
+                // is no longer running.
+                "cell_uid": Value::Null,
             },
         }) } else { json!({}) },
     }))
@@ -9366,6 +9681,7 @@ pub fn focus_queue(order_kind: &str) -> Protein {
             Predicate::QuantityLt(0.0),
             Predicate::KindEq("plain".into()),
         ],
+        fields: None,
         include: Include::default(),
         aggregate: None,
         order: vec![
@@ -9384,6 +9700,7 @@ pub fn decision_queue() -> Protein {
     Protein {
         source: Source::Decision,
         filter: vec![],
+        fields: None,
         include: Include::default(),
         aggregate: None,
         order: vec![],

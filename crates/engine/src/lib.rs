@@ -13,7 +13,9 @@ pub mod checkpoint;
 pub mod collab;
 #[allow(dead_code)]
 pub mod communication;
+pub mod directory;
 pub mod effects;
+pub mod enrolment;
 pub mod error;
 pub mod expiry;
 pub mod file_sync;
@@ -24,6 +26,7 @@ pub mod karma_runtime;
 pub mod karma_timezone;
 pub mod pairing;
 pub mod peers;
+pub mod rebuild;
 pub mod roster;
 pub mod senses;
 pub mod signals;
@@ -112,6 +115,14 @@ pub struct Engine {
     /// for one. Before this existed the board covered the gap by polling
     /// `/host/notifications` every two seconds, forever, on every open board.
     notifications_changed: watch::Sender<u64>,
+    /// Bumped whenever this Cell's own LOCAL config changes.
+    ///
+    /// Cell config is written RAW — no op, no Fact — which is what lets a
+    /// relay Cell configure itself when it may not write. The cost is that
+    /// nothing on the fact bus announces it, so anything that must react to
+    /// a setting (the endpoint rebinding on a discovery change, above all)
+    /// would sleep through it. This is that announcement.
+    config_changed: watch::Sender<u64>,
     karma_runtime_config: RwLock<Option<karma_runtime::KarmaDeadlineDirectorConfig>>,
     /// Open Loro record-docs (LRU, lazy) — see `collab`.
     pub(crate) collab_docs: std::sync::Mutex<collab::DocRegistry>,
@@ -128,6 +139,59 @@ pub struct Engine {
     /// context. Mirroring them into a synced extension would instead tell
     /// every contact who is on your local network.
     pub(crate) nearby: std::sync::Mutex<Option<wire::Nearby>>,
+    /// Serializes op IMPORT, so the read-compare-append-materialise sequence
+    /// cannot interleave with another peer's (Ontology §11, C0).
+    ///
+    /// `wire.rs` serves every connection on its own task so one slow peer
+    /// cannot stall the others, and that is correct — but it means two peers
+    /// can be importing ops for the SAME field at once. Each reads the stored
+    /// stamp, each decides it wins, and the later writer materialises second:
+    /// the log keeps the correct winner while the read model ends up holding
+    /// the loser. It does not self-heal, and nothing noticed until
+    /// `audit_read_model` existed.
+    ///
+    /// A lock rather than a spanning transaction, deliberately. The sequence
+    /// crosses `store::sync_apply`, the Loro registry and an async boundary,
+    /// so threading a transaction through all three is a large refactor of
+    /// the most delicate path in the codebase; serializing it is small,
+    /// obviously correct, and costs nothing real because SQLite serializes
+    /// writes anyway. Only the import critical section serializes — serving,
+    /// dialing and reading stay concurrent.
+    ///
+    /// IN-PROCESS ONLY. Two Cells sharing a database from two processes would
+    /// need a database-level guard; that is the conditional
+    /// `UPDATE … WHERE field_hlc < ?` the Ontology describes, and it wants the
+    /// multi-process harness to test it.
+    pub(crate) import_lock: tokio::sync::Mutex<()>,
+    /// The pkarr client, built on FIRST USE and never before.
+    ///
+    /// Lazy on purpose: constructing it opens an HTTP client against public
+    /// relays, and the great majority of Engines — every test, every Cell with
+    /// internet discovery switched off — must never touch the network. A Cell
+    /// that neither publishes nor resolves a public record therefore builds no
+    /// client at all.
+    pub(crate) directory: tokio::sync::OnceCell<directory::Directory>,
+    /// Set while `join_organ` is rewriting this Cell's identity.
+    ///
+    /// There is a window inside enrolment where the local Organ is already the
+    /// JOINED one but its roster has not been stored yet, and "no roster" is
+    /// read elsewhere as "this single Cell is the whole Organ, so it may
+    /// represent it". An inbound knock landing in that window would be bound
+    /// on the spot by a Cell that is about to learn it holds no such
+    /// capability — a relay enrolling as a front door is exactly the case.
+    /// The ordering cannot fix it (the roster's mirror needs the joined Organ
+    /// Record to exist first), so the window is announced instead.
+    pub(crate) joining: std::sync::atomic::AtomicBool,
+    /// The transport this Cell enrols through, installed from above.
+    ///
+    /// WEAK on purpose: `Wire` holds an `Arc<Engine>`, so a strong handle
+    /// here would be a cycle that keeps an endpoint alive forever.
+    pub(crate) enroller: std::sync::Mutex<Option<std::sync::Weak<dyn enrolment::CellTransport>>>,
+    /// Cells of this Organ found running a different wire epoch on the last
+    /// sync pass. In memory and transient like `nearby`, and held HERE rather
+    /// than on the wire so a surface can read it through an Action — a
+    /// warning nobody can see is not a warning.
+    pub(crate) stale_siblings: std::sync::Mutex<Vec<wire::StaleSibling>>,
 }
 
 impl Engine {
@@ -158,6 +222,7 @@ impl Engine {
         let (bus, _) = broadcast::channel(1024);
         let (karma_deadline_changed, _) = watch::channel(0);
         let (notifications_changed, _) = watch::channel(0);
+        let (config_changed, _) = watch::channel(0);
         let engine = Engine {
             store,
             bus,
@@ -165,16 +230,28 @@ impl Engine {
             organ_signer: Mutex::new(None),
             karma_deadline_changed,
             notifications_changed,
+            config_changed,
             karma_runtime_config: RwLock::new(None),
             collab_docs: std::sync::Mutex::new(collab::DocRegistry::default()),
             root_key_path: std::sync::Mutex::new(None),
             nearby: std::sync::Mutex::new(None),
+            import_lock: tokio::sync::Mutex::new(()),
+            directory: tokio::sync::OnceCell::new(),
+            joining: std::sync::atomic::AtomicBool::new(false),
+            enroller: std::sync::Mutex::new(None),
+            stale_siblings: std::sync::Mutex::new(Vec::new()),
         };
         Ok(engine)
     }
 
     pub async fn open_memory() -> Result<Engine, EngineError> {
         Self::new(Store::open_memory().await?).await
+    }
+
+    /// Open a Cell against a database FILE. Used by the multi-process harness,
+    /// which is the only way to test what a process-wide clock actually does.
+    pub async fn open(url: &str) -> Result<Engine, EngineError> {
+        Self::new(Store::open(url).await?).await
     }
 
     /// Subscribe to committed facts (blueprint 0.2 `fact_bus`).
@@ -185,6 +262,17 @@ impl Engine {
     /// Watch for changes to the pending-notification set.
     pub fn watch_notifications(&self) -> watch::Receiver<u64> {
         self.notifications_changed.subscribe()
+    }
+
+    /// Watch for changes to this Cell's own local config.
+    pub fn watch_config(&self) -> watch::Receiver<u64> {
+        self.config_changed.subscribe()
+    }
+
+    /// Announce that a local config namespace was written.
+    pub fn notify_config_changed(&self) {
+        self.config_changed
+            .send_modify(|revision| *revision = revision.wrapping_add(1));
     }
 
     /// Announce that a notification arrived or was answered.

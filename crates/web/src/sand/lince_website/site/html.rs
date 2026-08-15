@@ -1,5 +1,4 @@
-use crate::config::INCLUDE_BLOG;
-use crate::i18n::{GITHUB_LATEST_RELEASE_URL, Translations, YOUTUBE_URL};
+use super::i18n::{GITHUB_LATEST_RELEASE_URL, Translations, YOUTUBE_URL};
 use maud::{DOCTYPE, PreEscaped, html};
 
 fn lang_suffix(lang: &str) -> &str {
@@ -12,16 +11,22 @@ fn lang_suffix(lang: &str) -> &str {
     }
 }
 
-pub fn page(body: &str, t: &Translations, current_page: &str, show_home: bool) -> String {
+pub fn page(
+    body: &str,
+    t: &Translations,
+    current_page: &str,
+    show_home: bool,
+    include_blog: bool,
+) -> String {
     let suffix = lang_suffix(t.lang_code);
 
     // Prepare language suffixes and page links so generated pages point
     // to the actual files produced by `main.rs` (e.g. `index.pt-br.html`).
-    let home_href = format!("/index{}.html", suffix);
-    let blog_href = format!("/blog{}.html", suffix);
-    let link_en = format!("/{}{}.html", current_page, "");
-    let link_pt = format!("/{}{}.html", current_page, ".pt-br");
-    let link_zh = format!("/{}{}.html", current_page, ".zh");
+    let home_href = format!("index{}.html", suffix);
+    let blog_href = format!("blog{}.html", suffix);
+    let link_en = format!("{}{}.html", current_page, "");
+    let link_pt = format!("{}{}.html", current_page, ".pt-br");
+    let link_zh = format!("{}{}.html", current_page, ".zh");
 
     html! {
             (DOCTYPE)
@@ -31,18 +36,19 @@ pub fn page(body: &str, t: &Translations, current_page: &str, show_home: bool) -
                 meta name="viewport" content="width=device-width, initial-scale=1.0";
                 meta http-equiv="X-UA-Compatible" content="ie=edge";
                 meta name="description" content="Lince - Registry, Interconnection, and Automation of Needs and Contributions";
-                link rel="icon" href="/assets/black_in_white.ico" type="image/x-icon";
+                link rel="icon" href="assets/black_in_white.ico" type="image/x-icon";
                 script {
                     (PreEscaped(r#"(function(){try{const s=localStorage.getItem('theme');if(s)document.documentElement.setAttribute('data-theme',s);else document.documentElement.setAttribute('data-theme','dark');}catch(e){} })();"#))
                 }
-                link rel="stylesheet" href="/assets/style.css";
+                link rel="stylesheet" href="assets/style.css";
+                script src="/board/frame.js" {}
                 title { "Lince" }
             }
             body {
                 nav.navbar {
                     .navbar-container {
                         a.navbar-brand href=(home_href) {
-                            img src="/assets/logo/white.svg" alt="Lince Logo";
+                            img src="assets/logo/white.svg" alt="Lince Logo";
                             "Lince"
                         }
                         ul.navbar-menu {
@@ -54,7 +60,7 @@ pub fn page(body: &str, t: &Translations, current_page: &str, show_home: bool) -
                                     }
                                 }
                             }
-                            @if INCLUDE_BLOG {
+                            @if include_blog {
                                 li {
                                     a class=(if current_page.starts_with("blog") || current_page == "blog" { "navbar-item active" } else { "navbar-item" })
                                         href=(blog_href.clone()) {
@@ -63,17 +69,20 @@ pub fn page(body: &str, t: &Translations, current_page: &str, show_home: bool) -
                                 }
                             }
                             li.desktop-only {
-                                a.navbar-item href="https://github.com/lince-social/lince" {
+                                a.navbar-item href="https://github.com/lince-social/lince"
+                                    target="_blank" rel="noopener noreferrer" {
                                     (t.nav_github)
                                 }
                             }
                             li.desktop-only {
-                                a.navbar-item href=(GITHUB_LATEST_RELEASE_URL) {
+                                a.navbar-item href=(GITHUB_LATEST_RELEASE_URL)
+                                    target="_blank" rel="noopener noreferrer" {
                                     (t.nav_download)
                                 }
                             }
                             li.desktop-only {
-                                a.navbar-item href=(YOUTUBE_URL) {
+                                a.navbar-item href=(YOUTUBE_URL)
+                                    target="_blank" rel="noopener noreferrer" {
                                     (t.nav_youtube)
                                 }
                             }
@@ -105,14 +114,25 @@ pub fn page(body: &str, t: &Translations, current_page: &str, show_home: bool) -
                                 h4 { (section.title) }
                                 ul.footer-links {
                                     @for link in &section.links {
-                                        @let href = if link.href.starts_with("http") {
-                                            link.href.to_string()
-                                        } else if link.href.starts_with("/") {
-                                            link.href.to_string()
-                                        } else {
-                                            format!("/{}", link.href)
-                                        };
-                                        li { a href=(href) { (link.text) } }
+                                        li {
+                                            @if link.href.starts_with("http") {
+                                                a href=(link.href) target="_blank"
+                                                    rel="noopener noreferrer" { (link.text) }
+                                            } @else {
+                                                @let localized_href = if suffix.is_empty()
+                                                    || !link.href.ends_with(".html")
+                                                    || link.href.trim_end_matches(".html").ends_with(suffix) {
+                                                    link.href.to_string()
+                                                } else {
+                                                    format!(
+                                                        "{}{}.html",
+                                                        link.href.trim_end_matches(".html"),
+                                                        suffix,
+                                                    )
+                                                };
+                                                a href=(localized_href) { (link.text) }
+                                            }
+                                        }
                                     }
                                 }
                             }
@@ -141,6 +161,12 @@ pub fn page(body: &str, t: &Translations, current_page: &str, show_home: bool) -
                         const text = link.dataset[os + 'Text'] || link.dataset.linuxText;
                         link.href = href;
                         link.textContent = text;
+                    }
+                    function configureExternalLinks() {
+                        document.querySelectorAll('a[href^="http://"], a[href^="https://"]').forEach((link) => {
+                            link.target = '_blank';
+                            link.rel = 'noopener noreferrer';
+                        });
                     }
                     async function copyHeroInstall(button) {
                         const row = button.closest('.hero-install-row');
@@ -193,6 +219,7 @@ pub fn page(body: &str, t: &Translations, current_page: &str, show_home: bool) -
                             document.documentElement.setAttribute('data-theme', saved);
                         }
                         configureHeroDownloadLink();
+                        configureExternalLinks();
                     })();
                     function toggleLangDropdown() {
                         document.getElementById('langDropdown').classList.toggle('show');

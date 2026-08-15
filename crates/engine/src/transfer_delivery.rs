@@ -1569,6 +1569,7 @@ impl Engine {
             created: Some(row.command_uid),
             facts: Vec::new(),
             warnings: Vec::new(),
+            data: None,
         }))
     }
 }

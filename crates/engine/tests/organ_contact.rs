@@ -11,6 +11,7 @@ fn organs_query() -> Protein {
     Protein {
         source: Source::Record,
         filter: vec![Predicate::KindEq("organ".into())],
+        fields: None,
         include: Include {
             contact: true,
             ..Include::default()
@@ -332,6 +333,273 @@ async fn sync_policy_sets_each_direction_independently() {
     assert_eq!(row["contact"]["sync_in"], true, "inbound alone is openable");
 }
 
+/// The scope's three states have to survive the whole round trip — action in,
+/// column out — as three, not as two. `null` is unnarrowed and `[]` is
+/// narrowed to nothing, and anything that maps them together maps the strict
+/// one onto the wide one.
+#[tokio::test]
+async fn a_scope_keeps_absent_and_empty_apart_end_to_end() {
+    let (e, _local, contact) = cell_with_contact().await;
+    let read = |e: &Engine, uid: String| {
+        let store = e.store.clone();
+        async move {
+            let rows = protein::execute(&store, &organs_query()).await.unwrap();
+            rows.iter().find(|r| r["uid"] == uid).unwrap()["contact"]["scope_fields"].clone()
+        }
+    };
+
+    assert!(
+        read(&e, contact.clone()).await.is_null(),
+        "a contact starts unnarrowed, which is what the boolean alone meant"
+    );
+
+    e.act(
+        Action::SetContactScope {
+            target: contact.clone(),
+            fields: Some(vec!["quantity".into(), "when".into()]),
+        },
+        None,
+    )
+    .await
+    .unwrap();
+    assert_eq!(
+        read(&e, contact.clone()).await,
+        serde_json::json!(["quantity", "when"]),
+        "a named scope comes back naming the same columns"
+    );
+
+    e.act(
+        Action::SetContactScope {
+            target: contact.clone(),
+            fields: Some(Vec::new()),
+        },
+        None,
+    )
+    .await
+    .unwrap();
+    assert_eq!(
+        read(&e, contact.clone()).await,
+        serde_json::json!([]),
+        "the empty scope must stay empty, not decay into unnarrowed"
+    );
+
+    e.act(
+        Action::SetContactScope {
+            target: contact.clone(),
+            fields: None,
+        },
+        None,
+    )
+    .await
+    .unwrap();
+    assert!(
+        read(&e, contact.clone()).await.is_null(),
+        "and a narrowed contact can be returned to unnarrowed — not a one-way door"
+    );
+}
+
+/// Every change to the scope has to move `scope_version`, because that is the
+/// only thing a widening leaves behind. The columns alone cannot be compared
+/// after the fact — the old value is gone by then.
+#[tokio::test]
+async fn every_scope_change_moves_the_version() {
+    let (e, _local, contact) = cell_with_contact().await;
+    let version = |e: &Engine, uid: String| {
+        let pool = e.store.pool.clone();
+        async move {
+            store::organs::contact(&pool, &uid)
+                .await
+                .unwrap()
+                .unwrap()
+                .scope_version
+        }
+    };
+
+    let before = version(&e, contact.clone()).await;
+    e.act(
+        Action::SetContactScope {
+            target: contact.clone(),
+            fields: Some(vec!["quantity".into()]),
+        },
+        None,
+    )
+    .await
+    .unwrap();
+    let after = version(&e, contact.clone()).await;
+    assert!(after > before, "narrowing moves the version");
+
+    e.act(
+        Action::SetContactScope {
+            target: contact.clone(),
+            fields: None,
+        },
+        None,
+    )
+    .await
+    .unwrap();
+    assert!(
+        version(&e, contact.clone()).await > after,
+        "and so does widening, which is the case the version exists for"
+    );
+}
+
+/// A column name that is blank matches nothing, so it narrows to nothing
+/// while looking configured. The usual way one appears is a trailing comma in
+/// a text field, which is exactly the input a surface hands over.
+#[tokio::test]
+async fn a_scope_refuses_a_blank_column_name() {
+    let (e, _local, contact) = cell_with_contact().await;
+    assert!(
+        e.act(
+            Action::SetContactScope {
+                target: contact.clone(),
+                fields: Some(vec!["quantity".into(), "  ".into()]),
+            },
+            None,
+        )
+        .await
+        .is_err()
+    );
+    assert!(
+        store::organs::contact(&e.store.pool, &contact)
+            .await
+            .unwrap()
+            .unwrap()
+            .scope_fields
+            .is_none(),
+        "a refused scope must not be half-stored"
+    );
+}
+
+/// The two directions are two settings, and setting one must not move the
+/// other. They are a privacy control and an integrity control over the same
+/// vocabulary, with no reason to agree — a contact we tell everything is
+/// routinely one we accept little from.
+#[tokio::test]
+async fn the_two_directions_of_a_scope_are_independent() {
+    let (e, _local, contact) = cell_with_contact().await;
+    e.act(
+        Action::SetContactScope {
+            target: contact.clone(),
+            fields: None,
+        },
+        None,
+    )
+    .await
+    .unwrap();
+    e.act(
+        Action::SetContactAcceptScope {
+            target: contact.clone(),
+            fields: Some(vec!["quantity".into()]),
+        },
+        None,
+    )
+    .await
+    .unwrap();
+
+    let row = store::organs::contact(&e.store.pool, &contact)
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(
+        row.scope_fields.is_none(),
+        "we still tell them everything…"
+    );
+    assert_eq!(
+        row.accept_fields.as_deref(),
+        Some(&["quantity".to_string()][..]),
+        "…while taking one column back"
+    );
+}
+
+/// The inbound scope refuses the same expressions the outbound one does,
+/// through the same validator. Two copies of these rules is how one direction
+/// quietly starts accepting something the other refuses.
+#[tokio::test]
+async fn accepting_is_validated_like_sending() {
+    let (e, _local, contact) = cell_with_contact().await;
+    for bad in [
+        vec!["head".to_string()],
+        vec!["quantity".to_string(), " ".to_string()],
+    ] {
+        assert!(
+            e.act(
+                Action::SetContactAcceptScope {
+                    target: contact.clone(),
+                    fields: Some(bad.clone()),
+                },
+                None,
+            )
+            .await
+            .is_err(),
+            "{bad:?} is unsayable in both directions"
+        );
+    }
+}
+
+/// `head` and `body` are one Loro document whose ops carry no field, so a
+/// scope naming one of them would silently deliver the other. Serve time
+/// cannot enforce the difference; configuration time can at least report it,
+/// which is the only place there is anybody to tell.
+#[tokio::test]
+async fn a_scope_refuses_to_split_the_collaborative_document() {
+    let (e, _local, contact) = cell_with_contact().await;
+    for one in ["head", "body"] {
+        assert!(
+            e.act(
+                Action::SetContactScope {
+                    target: contact.clone(),
+                    fields: Some(vec![one.into(), "quantity".into()]),
+                },
+                None,
+            )
+            .await
+            .is_err(),
+            "naming {one} alone must be refused, not quietly widened"
+        );
+    }
+    // Both together is the expressible request, and it is allowed.
+    e.act(
+        Action::SetContactScope {
+            target: contact.clone(),
+            fields: Some(vec!["head".into(), "body".into()]),
+        },
+        None,
+    )
+    .await
+    .unwrap();
+    // So is neither — that is the scope that withholds the document entirely.
+    e.act(
+        Action::SetContactScope {
+            target: contact.clone(),
+            fields: Some(vec!["quantity".into()]),
+        },
+        None,
+    )
+    .await
+    .unwrap();
+}
+
+/// This Cell's own Organ has no feed and so no scope on it — the same guard
+/// the direction switch uses, for the same reason.
+#[tokio::test]
+async fn a_scope_refuses_the_local_organ() {
+    let (e, local, _contact) = cell_with_contact().await;
+    assert!(
+        e.act(
+            Action::SetContactScope {
+                // A scope that would be VALID on a contact, so the refusal
+                // can only be about the local organ.
+                target: local,
+                fields: Some(vec!["quantity".into()]),
+            },
+            None,
+        )
+        .await
+        .is_err()
+    );
+}
+
 /// This Cell's own Organ is not a peer, so there is no feed to point in a
 /// direction — and the sand never offers it.
 #[tokio::test]
@@ -406,5 +674,55 @@ async fn a_configured_contact_can_still_be_forgotten() {
             .await
             .unwrap()
             .is_none()
+    );
+}
+
+/// A stored scope that will not parse is read as UNNARROWED — the choice is
+/// legibility over strictness, because failing closed would stop a contact's
+/// sync with no error at all. What it must NOT do is look like an ordinary
+/// unnarrowed scope: it is a WIDER setting than anyone asked for, so the raw
+/// text survives to the surface and the panel says so.
+#[tokio::test]
+async fn an_unreadable_scope_reads_as_unnarrowed_and_says_it_is_unreadable() {
+    let (e, _local, contact) = cell_with_contact().await;
+
+    store::sqlx::query("UPDATE organ_contact SET scope_fields = ? WHERE record_uid = ?")
+        .bind("{not a list at all")
+        .bind(&contact)
+        .execute(&e.store.pool)
+        .await
+        .expect("write a value the parser cannot read");
+
+    let stored = store::organs::contact(&e.store.pool, &contact)
+        .await
+        .unwrap()
+        .expect("contact");
+    assert_eq!(
+        stored.scope_fields, None,
+        "the engine goes on serving rather than silently stopping this feed"
+    );
+    assert_eq!(
+        stored.scope_unreadable.as_deref(),
+        Some("{not a list at all"),
+        "and the text that could not be read is carried out, so a repair is not a guess"
+    );
+    assert_eq!(
+        stored.accept_unreadable, None,
+        "the other direction is a separate setting and is not reported as broken"
+    );
+
+    // A GENUINELY absent scope is not an unreadable one, and the two must not
+    // be confused: one is the ordinary case and the other is a fault.
+    store::organs::set_contact_scope(&e.store.pool, &contact, None)
+        .await
+        .unwrap();
+    let repaired = store::organs::contact(&e.store.pool, &contact)
+        .await
+        .unwrap()
+        .expect("contact");
+    assert_eq!(repaired.scope_fields, None);
+    assert_eq!(
+        repaired.scope_unreadable, None,
+        "saving over it is the repair path"
     );
 }

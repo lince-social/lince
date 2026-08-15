@@ -180,6 +180,13 @@ pub enum ServerMessage {
         facts: usize,
         #[serde(default)]
         warnings: Vec<String>,
+        /// Structured result, when one uid is not enough to render what
+        /// happened — an enrolment code and its QR, what a front door is
+        /// holding, which device is out of date. Omitted when there is none,
+        /// so the frame stays the same shape it always was for every Action
+        /// that has nothing extra to say.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        data: Option<serde_json::Value>,
     },
     /// An Action or subscription failed.
     Error {

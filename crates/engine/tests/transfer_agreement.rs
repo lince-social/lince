@@ -278,6 +278,7 @@ async fn projected_transfer(engine: &Engine, transfer: &str, signer: &Person) ->
     let query = Protein {
         source: Source::Transfer,
         filter: vec![Predicate::UidEq(transfer.into())],
+        fields: None,
         include: Include::default(),
         aggregate: None,
         order: vec![],

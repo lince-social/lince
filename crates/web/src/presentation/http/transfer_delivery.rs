@@ -6,7 +6,7 @@
 
 use std::time::Duration;
 
-use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
+use axum::http::StatusCode;
 use chrono::{DateTime, Utc};
 use nucleus::transfer_delivery::{
     SignedOrganRequestV1, TransferApplicationAttestationV1, TransferDeliveryMode,
@@ -90,11 +90,11 @@ struct ApplicationAttestationResult {
 }
 
 pub(crate) async fn receive_envelope(
-    State(state): State<CellApiState>,
-    Json(wire): Json<Authenticated<DeliveryPush>>,
-) -> Result<impl IntoResponse, HttpError> {
+    state: &CellApiState,
+    wire: Authenticated<DeliveryPush>,
+) -> Result<serde_json::Value, HttpError> {
     let now = Utc::now();
-    verify_wire(&state, &wire, ENVELOPE_PATH, now).await?;
+    verify_wire(state, &wire, ENVELOPE_PATH, now).await?;
     if wire.auth.sender_organ_uid != wire.body.envelope.origin_organ_uid
         || wire.auth.recipient_organ_uid != wire.body.envelope.recipient_organ_uid
         || wire.body.policy.origin_organ_uid != wire.body.envelope.origin_organ_uid
@@ -106,8 +106,8 @@ pub(crate) async fn receive_envelope(
             "Organ request and Transfer envelope identities differ",
         ));
     }
-    accept_policy_event(&state, &wire.body.policy, now).await?;
-    accept_envelope(&state, &wire.body.envelope, now).await?;
+    accept_policy_event(state, &wire.body.policy, now).await?;
+    accept_envelope(state, &wire.body.envelope, now).await?;
 
     let receipt = state
         .engine
@@ -141,11 +141,11 @@ pub(crate) async fn receive_envelope(
 }
 
 pub(crate) async fn pull_envelope(
-    State(state): State<CellApiState>,
-    Json(wire): Json<Authenticated<PullRequest>>,
-) -> Result<impl IntoResponse, HttpError> {
+    state: &CellApiState,
+    wire: Authenticated<PullRequest>,
+) -> Result<serde_json::Value, HttpError> {
     let now = Utc::now();
-    verify_wire(&state, &wire, PULL_PATH, now).await?;
+    verify_wire(state, &wire, PULL_PATH, now).await?;
     let delivery: Option<String> = store::sqlx::query_scalar(
         "SELECT uid FROM transfer_delivery_policy
          WHERE transfer_uid = ? AND recipient_person_uid = ? AND recipient_organ_uid = ?
@@ -240,11 +240,11 @@ pub(crate) async fn pull_envelope(
 }
 
 pub(crate) async fn receive_policy_event(
-    State(state): State<CellApiState>,
-    Json(wire): Json<Authenticated<TransferDeliveryPolicyEventV1>>,
-) -> Result<impl IntoResponse, HttpError> {
+    state: &CellApiState,
+    wire: Authenticated<TransferDeliveryPolicyEventV1>,
+) -> Result<serde_json::Value, HttpError> {
     let now = Utc::now();
-    verify_wire(&state, &wire, POLICY_PATH, now).await?;
+    verify_wire(state, &wire, POLICY_PATH, now).await?;
     if wire.auth.sender_organ_uid != wire.body.origin_organ_uid
         || wire.auth.recipient_organ_uid != wire.body.recipient_organ_uid
     {
@@ -252,20 +252,20 @@ pub(crate) async fn receive_policy_event(
             "Organ request and Transfer policy identities differ",
         ));
     }
-    let reference = accept_policy_event(&state, &wire.body, now).await?;
-    Ok(Json(json!({
+    let reference = accept_policy_event(state, &wire.body, now).await?;
+    Ok(json!({
         "reference_uid": reference.uid,
         "policy_revision": reference.policy_revision,
         "state": reference.state,
-    })))
+    }))
 }
 
 pub(crate) async fn receive_application_attestation(
-    State(state): State<CellApiState>,
-    Json(wire): Json<Authenticated<ApplicationAttestationRequest>>,
-) -> Result<impl IntoResponse, HttpError> {
+    state: &CellApiState,
+    wire: Authenticated<ApplicationAttestationRequest>,
+) -> Result<serde_json::Value, HttpError> {
     let now = Utc::now();
-    verify_wire(&state, &wire, ATTESTATION_PATH, now).await?;
+    verify_wire(state, &wire, ATTESTATION_PATH, now).await?;
     if wire.auth.sender_organ_uid != wire.body.attestation.participant_organ_uid
         || wire.auth.recipient_organ_uid != wire.body.attestation.origin_organ_uid
     {
@@ -298,11 +298,11 @@ pub(crate) async fn receive_application_attestation(
 }
 
 pub(crate) async fn receive_receipt(
-    State(state): State<CellApiState>,
-    Json(wire): Json<Authenticated<TransferPackageReceiptV1>>,
-) -> Result<impl IntoResponse, HttpError> {
+    state: &CellApiState,
+    wire: Authenticated<TransferPackageReceiptV1>,
+) -> Result<serde_json::Value, HttpError> {
     let now = Utc::now();
-    verify_wire(&state, &wire, RECEIPT_PATH, now).await?;
+    verify_wire(state, &wire, RECEIPT_PATH, now).await?;
     state
         .engine
         .verify_transfer_package_receipt(&wire.body)
@@ -365,15 +365,15 @@ pub(crate) async fn receive_receipt(
     )
     .await
     .map_err(internal)?;
-    Ok(Json(json!({ "receipt_uid": uid })))
+    Ok(json!({ "receipt_uid": uid }))
 }
 
 pub(crate) async fn receive_command(
-    State(state): State<CellApiState>,
-    Json(wire): Json<Authenticated<TransferRemoteCommandV1>>,
-) -> Result<impl IntoResponse, HttpError> {
+    state: &CellApiState,
+    wire: Authenticated<TransferRemoteCommandV1>,
+) -> Result<serde_json::Value, HttpError> {
     let now = Utc::now();
-    verify_wire(&state, &wire, COMMAND_PATH, now).await?;
+    verify_wire(state, &wire, COMMAND_PATH, now).await?;
     if wire.auth.sender_organ_uid != wire.body.sender_organ_uid
         || wire.auth.recipient_organ_uid != wire.body.origin_organ_uid
     {
@@ -417,16 +417,9 @@ pub(crate) async fn receive_command(
 
 pub(crate) fn spawn_worker(state: CellApiState) {
     tokio::spawn(async move {
-        let client = match reqwest::Client::builder()
-            .timeout(Duration::from_secs(15))
-            .build()
-        {
-            Ok(client) => client,
-            Err(error) => {
-                tracing::error!(%error, "cannot start Transfer delivery worker");
-                return;
-            }
-        };
+        // No HTTP client any more: every drain below dials a contact's NodeId
+        // over the Cell's own iroh endpoint, which is also why nothing here
+        // needs a timeout of its own — the dial has one.
         let mut interval = tokio::time::interval(Duration::from_secs(5));
         interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
         loop {
@@ -434,16 +427,16 @@ pub(crate) fn spawn_worker(state: CellApiState) {
             if let Err(error) = enqueue_periodic_pulls(&state).await {
                 tracing::warn!(%error, "cannot schedule periodic Transfer pulls");
             }
-            if let Err(error) = drain_envelopes(&state, &client).await {
+            if let Err(error) = drain_envelopes(&state).await {
                 tracing::warn!(%error, "Transfer envelope drain failed");
             }
-            if let Err(error) = drain_commands(&state, &client).await {
+            if let Err(error) = drain_commands(&state).await {
                 tracing::warn!(%error, "Transfer command drain failed");
             }
-            if let Err(error) = drain_pulls(&state, &client).await {
+            if let Err(error) = drain_pulls(&state).await {
                 tracing::warn!(%error, "Transfer pull drain failed");
             }
-            if let Err(error) = drain_application_attestations(&state, &client).await {
+            if let Err(error) = drain_application_attestations(&state).await {
                 tracing::warn!(%error, "Transfer application attestation drain failed");
             }
         }
@@ -471,12 +464,26 @@ async fn enqueue_periodic_pulls(state: &CellApiState) -> Result<(), String> {
     Ok(())
 }
 
-async fn drain_envelopes(state: &CellApiState, client: &reqwest::Client) -> Result<(), String> {
+async fn drain_envelopes(state: &CellApiState) -> Result<(), String> {
     for row in store::transfer_delivery::outbox_due(&state.store.pool, Utc::now(), 32)
         .await
         .map_err(|error| error.to_string())?
     {
-        let attempt = push_envelope(state, client, &row).await;
+        // The designated executor (Ontology C7), read off the Transfer Record.
+        // This retry loop is the one non-Rule scheduler that reaches OUTWARD:
+        // two Cells draining the same outbox POST the same envelope to the
+        // recipient twice, and a retry loop's whole job is to keep trying. The
+        // other two schedulers — pruning and Organ polling — deliberately do
+        // NOT consult this, because each Cell prunes its own disk and polls for
+        // its own ops, and designating either would starve every other Cell.
+        //
+        // Skipped, not failed: a Cell that is not the designated one has
+        // nothing wrong with it and nothing to retry, and marking it failed
+        // would burn the attempt budget of the Cell that IS supposed to send.
+        if !executor_runs_here(state, &row).await? {
+            continue;
+        }
+        let attempt = push_envelope(state, &row).await;
         match attempt {
             Ok(cursor) => store::transfer_delivery::outbox_mark_sent(
                 &state.store.pool,
@@ -503,9 +510,33 @@ async fn drain_envelopes(state: &CellApiState, client: &reqwest::Client) -> Resu
     Ok(())
 }
 
+/// Whether this Cell is the one that delivers this envelope.
+///
+/// The designation lives on the TRANSFER Record rather than on the outbox row,
+/// so it is one answer for the whole conversation with a recipient rather than
+/// a per-envelope race — and it is the same read Karma does, on purpose: one
+/// mechanism to reason about, one place to look when a scheduler is quiet.
+///
+/// A delivery whose policy has vanished answers `true` and falls through to
+/// `push_envelope`, which is where that condition is already reported. Deciding
+/// it here would turn a broken delivery into a silently skipped one.
+async fn executor_runs_here(
+    state: &CellApiState,
+    row: &store::transfer_delivery::DeliveryOutboxRow,
+) -> Result<bool, String> {
+    let Some(policy) = store::transfer_delivery::policy(&state.store.pool, &row.delivery_uid)
+        .await
+        .map_err(|error| error.to_string())?
+    else {
+        return Ok(true);
+    };
+    store::executor::runs_here(&state.store.pool, &policy.transfer_uid)
+        .await
+        .map_err(|error| error.to_string())
+}
+
 async fn push_envelope(
     state: &CellApiState,
-    client: &reqwest::Client,
     row: &store::transfer_delivery::DeliveryOutboxRow,
 ) -> Result<u64, String> {
     let policy = store::transfer_delivery::policy(&state.store.pool, &row.delivery_uid)
@@ -519,8 +550,14 @@ async fn push_envelope(
         .await
         .map_err(|error| error.to_string())?
         .ok_or_else(|| "recipient Organ is not introduced".to_string())?;
-    if contact.trust == "blocked" || !contact.sync_out {
-        return Err("recipient Organ is blocked or outgoing delivery is disabled".into());
+    // `known`, not merely "not blocked". Delivery rides `lince/sync/1`, whose
+    // accept gate serves known contacts only, so checking the weaker condition
+    // here would dial and be refused — recording a failure that reads like a
+    // network problem when the answer is that nobody vetted this contact.
+    if contact.trust != "known" || !contact.sync_out {
+        return Err(
+            "recipient Organ is not a known contact, or outgoing delivery is disabled".into(),
+        );
     }
     let envelope: TransferEnvelopeV1 = serde_json::from_str(&row.payload)
         .map_err(|error| format!("invalid queued envelope: {error}"))?;
@@ -552,22 +589,13 @@ async fn push_envelope(
         )
         .await
         .map_err(|error| error.to_string())?;
-    let response = client
-        .post(format!(
-            "{}{ENVELOPE_PATH}",
-            contact.base_url.trim_end_matches('/')
-        ))
-        .json(&Authenticated { auth, body })
-        .send()
-        .await
-        .map_err(|error| error.to_string())?;
-    if !response.status().is_success() {
-        return Err(format!("recipient returned HTTP {}", response.status()));
-    }
-    let receipt: Authenticated<TransferPackageReceiptV1> = response
-        .json()
-        .await
-        .map_err(|error| format!("invalid recipient receipt: {error}"))?;
+    let receipt: Authenticated<TransferPackageReceiptV1> = post_to_peer(
+        state,
+        &contact.record_uid,
+        engine::wire::TransferVerb::Envelope,
+        &Authenticated { auth, body },
+    )
+    .await?;
     verify_wire(state, &receipt, RECEIPT_PATH, Utc::now())
         .await
         .map_err(|(_, error)| error)?;
@@ -609,12 +637,12 @@ async fn push_envelope(
     Ok(receipt.body.cursor)
 }
 
-async fn drain_commands(state: &CellApiState, client: &reqwest::Client) -> Result<(), String> {
+async fn drain_commands(state: &CellApiState) -> Result<(), String> {
     for row in store::transfer_delivery::remote_commands_due(&state.store.pool, Utc::now(), 16)
         .await
         .map_err(|error| error.to_string())?
     {
-        let result = push_command(state, client, &row).await;
+        let result = push_command(state, &row).await;
         match result {
             Ok(result) => {
                 let value = serde_json::to_value(&result).map_err(|error| error.to_string())?;
@@ -686,16 +714,13 @@ async fn drain_commands(state: &CellApiState, client: &reqwest::Client) -> Resul
     Ok(())
 }
 
-async fn drain_application_attestations(
-    state: &CellApiState,
-    client: &reqwest::Client,
-) -> Result<(), String> {
+async fn drain_application_attestations(state: &CellApiState) -> Result<(), String> {
     for row in
         store::transfer_delivery::application_attestations_due(&state.store.pool, Utc::now(), 16)
             .await
             .map_err(|error| error.to_string())?
     {
-        let result = push_application_attestation(state, client, &row).await;
+        let result = push_application_attestation(state, &row).await;
         match result {
             Ok(()) => store::transfer_delivery::application_attestation_mark_sent(
                 &state.store.pool,
@@ -719,15 +744,18 @@ async fn drain_application_attestations(
 
 async fn push_application_attestation(
     state: &CellApiState,
-    client: &reqwest::Client,
     row: &store::transfer_delivery::AttestationOutboxRow,
 ) -> Result<(), String> {
     let contact = store::organs::contact(&state.store.pool, &row.origin_organ_uid)
         .await
         .map_err(|error| error.to_string())?
         .ok_or_else(|| "origin Organ is not introduced".to_string())?;
-    if contact.trust == "blocked" || !contact.sync_out {
-        return Err("origin Organ is blocked or outgoing delivery is disabled".into());
+    // `known`, not merely "not blocked". Delivery rides `lince/sync/1`, whose
+    // accept gate serves known contacts only, so checking the weaker condition
+    // here would dial and be refused — recording a failure that reads like a
+    // network problem when the answer is that nobody vetted this contact.
+    if contact.trust != "known" || !contact.sync_out {
+        return Err("origin Organ is not a known contact, or outgoing delivery is disabled".into());
     }
     let attestation: TransferApplicationAttestationV1 = serde_json::from_str(&row.payload)
         .map_err(|error| format!("invalid queued application attestation: {error}"))?;
@@ -747,22 +775,13 @@ async fn push_application_attestation(
         )
         .await
         .map_err(|error| error.to_string())?;
-    let response = client
-        .post(format!(
-            "{}{ATTESTATION_PATH}",
-            contact.base_url.trim_end_matches('/')
-        ))
-        .json(&Authenticated { auth, body })
-        .send()
-        .await
-        .map_err(|error| error.to_string())?;
-    if !response.status().is_success() {
-        return Err(format!("origin returned HTTP {}", response.status()));
-    }
-    let wire: Authenticated<ApplicationAttestationResult> = response
-        .json()
-        .await
-        .map_err(|error| format!("invalid application attestation result: {error}"))?;
+    let wire: Authenticated<ApplicationAttestationResult> = post_to_peer(
+        state,
+        &row.origin_organ_uid,
+        engine::wire::TransferVerb::ApplicationAttestation,
+        &Authenticated { auth, body },
+    )
+    .await?;
     verify_wire(state, &wire, ATTESTATION_RESULT_PATH, Utc::now())
         .await
         .map_err(|(_, error)| error)?;
@@ -776,12 +795,12 @@ async fn push_application_attestation(
     Ok(())
 }
 
-async fn drain_pulls(state: &CellApiState, client: &reqwest::Client) -> Result<(), String> {
+async fn drain_pulls(state: &CellApiState) -> Result<(), String> {
     for row in store::transfer_delivery::pulls_due(&state.store.pool, Utc::now(), 16)
         .await
         .map_err(|error| error.to_string())?
     {
-        let attempt = pull_reference(state, client, &row).await;
+        let attempt = pull_reference(state, &row).await;
         match attempt {
             Ok(cursor) => store::transfer_delivery::pull_mark_completed(
                 &state.store.pool,
@@ -810,27 +829,29 @@ async fn drain_pulls(state: &CellApiState, client: &reqwest::Client) -> Result<(
 
 async fn pull_reference(
     state: &CellApiState,
-    client: &reqwest::Client,
     row: &store::transfer_delivery::PullRequestRow,
 ) -> Result<u64, String> {
-    let reference: Option<(String, String, String, String, Option<String>)> =
-        store::sqlx::query_as(
-            "SELECT origin_organ_uid, transfer_uid, recipient_person_uid,
-                    recipient_organ_uid, hosted_url
+    let reference: Option<(String, String, String, String)> = store::sqlx::query_as(
+        "SELECT origin_organ_uid, transfer_uid, recipient_person_uid,
+                    recipient_organ_uid
              FROM transfer_remote_reference WHERE uid = ? AND state = 'active'",
-        )
-        .bind(&row.reference_uid)
-        .fetch_optional(&state.store.pool)
-        .await
-        .map_err(|error| error.to_string())?;
-    let (origin, transfer, person, local_organ, hosted_url) =
+    )
+    .bind(&row.reference_uid)
+    .fetch_optional(&state.store.pool)
+    .await
+    .map_err(|error| error.to_string())?;
+    let (origin, transfer, person, local_organ) =
         reference.ok_or_else(|| "remote Transfer reference is absent or revoked".to_string())?;
     let contact = store::organs::contact(&state.store.pool, &origin)
         .await
         .map_err(|error| error.to_string())?
         .ok_or_else(|| "origin Organ is not introduced".to_string())?;
-    if contact.trust == "blocked" || !contact.sync_out {
-        return Err("origin Organ is blocked or outgoing delivery is disabled".into());
+    // `known`, not merely "not blocked". Delivery rides `lince/sync/1`, whose
+    // accept gate serves known contacts only, so checking the weaker condition
+    // here would dial and be refused — recording a failure that reads like a
+    // network problem when the answer is that nobody vetted this contact.
+    if contact.trust != "known" || !contact.sync_out {
+        return Err("origin Organ is not a known contact, or outgoing delivery is disabled".into());
     }
     let request = PullRequest {
         transfer_uid: transfer,
@@ -848,28 +869,20 @@ async fn pull_reference(
         )
         .await
         .map_err(|error| error.to_string())?;
-    let response = client
-        .post(format!(
-            "{}{PULL_PATH}",
-            hosted_url
-                .as_deref()
-                .unwrap_or(&contact.base_url)
-                .trim_end_matches('/')
-        ))
-        .json(&Authenticated {
+    // `hosted_url` used to override where this pull went. It is gone as an
+    // address: an Organ is reached by identity, and a URL carried inside a
+    // reference is the peer's view of itself — routinely a loopback address,
+    // and never something this Cell could dial.
+    let wire: Authenticated<PullResult> = post_to_peer(
+        state,
+        &origin,
+        engine::wire::TransferVerb::Pull,
+        &Authenticated {
             auth,
             body: request,
-        })
-        .send()
-        .await
-        .map_err(|error| error.to_string())?;
-    if !response.status().is_success() {
-        return Err(format!("origin returned HTTP {}", response.status()));
-    }
-    let wire: Authenticated<PullResult> = response
-        .json()
-        .await
-        .map_err(|error| format!("invalid signed pull result: {error}"))?;
+        },
+    )
+    .await?;
     verify_wire(state, &wire, PULL_RESULT_PATH, Utc::now())
         .await
         .map_err(|(_, error)| error)?;
@@ -885,14 +898,17 @@ async fn pull_reference(
     accept_envelope(state, &envelope, Utc::now())
         .await
         .map_err(|(_, error)| error)?;
-    send_received_receipt(state, client, &contact.base_url, &envelope).await?;
+    send_received_receipt(state, &contact.record_uid, &envelope).await?;
     Ok(envelope.cursor)
 }
 
+/// `origin_organ` replaces what used to be an `origin_base_url` threaded down
+/// from the caller. The address was travelling as a value and being trusted as
+/// a destination; the Organ uid is the thing that actually names who gets the
+/// receipt, and the transport resolves it.
 async fn send_received_receipt(
     state: &CellApiState,
-    client: &reqwest::Client,
-    origin_base_url: &str,
+    origin_organ: &str,
     envelope: &TransferEnvelopeV1,
 ) -> Result<(), String> {
     let receipt = state
@@ -927,39 +943,33 @@ async fn send_received_receipt(
         )
         .await
         .map_err(|error| error.to_string())?;
-    let response = client
-        .post(format!(
-            "{}{RECEIPT_PATH}",
-            origin_base_url.trim_end_matches('/')
-        ))
-        .json(&Authenticated {
+    let _: serde_json::Value = post_to_peer(
+        state,
+        origin_organ,
+        engine::wire::TransferVerb::Receipt,
+        &Authenticated {
             auth,
             body: receipt,
-        })
-        .send()
-        .await
-        .map_err(|error| error.to_string())?;
-    if response.status().is_success() {
-        Ok(())
-    } else {
-        Err(format!(
-            "origin rejected package receipt with HTTP {}",
-            response.status()
-        ))
-    }
+        },
+    )
+    .await?;
+    Ok(())
 }
 
 async fn push_command(
     state: &CellApiState,
-    client: &reqwest::Client,
     row: &store::transfer_delivery::RemoteCommandRow,
 ) -> Result<CommandResult, String> {
     let contact = store::organs::contact(&state.store.pool, &row.origin_organ_uid)
         .await
         .map_err(|error| error.to_string())?
         .ok_or_else(|| "origin Organ is not introduced".to_string())?;
-    if contact.trust == "blocked" || !contact.sync_out {
-        return Err("origin Organ is blocked or outgoing delivery is disabled".into());
+    // `known`, not merely "not blocked". Delivery rides `lince/sync/1`, whose
+    // accept gate serves known contacts only, so checking the weaker condition
+    // here would dial and be refused — recording a failure that reads like a
+    // network problem when the answer is that nobody vetted this contact.
+    if contact.trust != "known" || !contact.sync_out {
+        return Err("origin Organ is not a known contact, or outgoing delivery is disabled".into());
     }
     let command: TransferRemoteCommandV1 = serde_json::from_str(&row.payload)
         .map_err(|error| format!("invalid queued remote command: {error}"))?;
@@ -974,25 +984,16 @@ async fn push_command(
         )
         .await
         .map_err(|error| error.to_string())?;
-    let response = client
-        .post(format!(
-            "{}{COMMAND_PATH}",
-            contact.base_url.trim_end_matches('/')
-        ))
-        .json(&Authenticated {
+    let wire: Authenticated<CommandResult> = post_to_peer(
+        state,
+        &row.origin_organ_uid,
+        engine::wire::TransferVerb::Command,
+        &Authenticated {
             auth,
             body: command,
-        })
-        .send()
-        .await
-        .map_err(|error| error.to_string())?;
-    if !response.status().is_success() {
-        return Err(format!("origin returned HTTP {}", response.status()));
-    }
-    let wire: Authenticated<CommandResult> = response
-        .json()
-        .await
-        .map_err(|error| format!("invalid origin command result: {error}"))?;
+        },
+    )
+    .await?;
     verify_wire(state, &wire, COMMAND_RESULT_PATH, Utc::now())
         .await
         .map_err(|(_, error)| error)?;
@@ -1142,7 +1143,10 @@ async fn accept_policy_event(
                 "First Transfer delivery policy event must be an active reference".into(),
             ));
         }
-        let contact = store::organs::contact(&state.store.pool, &event.origin_organ_uid)
+        // Still required, still checked — the contact row is what makes the
+        // origin an Organ we have met. Nothing is read off it any more: the
+        // address it used to supply is the transport's business now.
+        store::organs::contact(&state.store.pool, &event.origin_organ_uid)
             .await
             .map_err(internal)?
             .ok_or_else(|| forbidden("Transfer origin is not introduced"))?;
@@ -1156,7 +1160,10 @@ async fn accept_policy_event(
                 recipient_organ_uid: &event.recipient_organ_uid,
                 mode: event.mode,
                 policy_revision: event.policy_revision,
-                hosted_url: Some(&contact.base_url),
+                // No address. A pull dials the origin Organ by identity, so
+                // recording where it "is" would be a stale copy of something
+                // the transport resolves for itself.
+                hosted_url: None,
                 policy_payload_hash: &event.payload_hash,
                 signed_policy_payload: &signed,
                 envelope_uid: None,
@@ -1216,6 +1223,37 @@ async fn accept_policy_event(
     .map_err(internal)
 }
 
+/// Send one signed Transfer body to a contact over iroh and hand back their
+/// reply.
+///
+/// This replaced an HTTP POST to `contact.base_url`. Nothing about the
+/// PAYLOAD changed: the same `Authenticated<T>` is signed and verified at
+/// either end, and the transport is a pipe. What changed is that we now dial
+/// an identity rather than an address, so a contact that moved network — or
+/// whose recorded URL was a loopback address, which was routine — is reachable
+/// where it previously was not.
+async fn post_to_peer<B, R>(
+    state: &CellApiState,
+    contact_organ: &str,
+    verb: engine::wire::TransferVerb,
+    body: &Authenticated<B>,
+) -> Result<R, String>
+where
+    B: Serialize,
+    R: DeserializeOwned,
+{
+    let wire =
+        state.wire.read().await.clone().ok_or_else(|| {
+            "this Cell has no iroh endpoint, so nothing can be delivered".to_string()
+        })?;
+    let payload = serde_json::to_value(body).map_err(|error| error.to_string())?;
+    let reply = wire
+        .transfer_post(contact_organ, verb, payload)
+        .await
+        .map_err(|error| error.to_string())?;
+    serde_json::from_value(reply).map_err(|error| format!("invalid peer reply: {error}"))
+}
+
 async fn verify_wire<T: Serialize>(
     state: &CellApiState,
     wire: &Authenticated<T>,
@@ -1241,7 +1279,7 @@ async fn signed_response<T: Serialize + DeserializeOwned>(
     recipient_organ_uid: &str,
     body: T,
     now: DateTime<Utc>,
-) -> Result<Json<Authenticated<T>>, HttpError> {
+) -> Result<serde_json::Value, HttpError> {
     let auth = state
         .engine
         .sign_organ_request(
@@ -1253,7 +1291,7 @@ async fn signed_response<T: Serialize + DeserializeOwned>(
         )
         .await
         .map_err(engine_error)?;
-    Ok(Json(Authenticated { auth, body }))
+    serde_json::to_value(Authenticated { auth, body }).map_err(internal)
 }
 
 fn body_bytes(value: &impl Serialize) -> Result<Vec<u8>, serde_json::Error> {
@@ -1276,4 +1314,54 @@ fn engine_error(error: engine::EngineError) -> HttpError {
         _ => StatusCode::BAD_REQUEST,
     };
     (status, error.to_string())
+}
+
+/// Serves the six Transfer exchanges over `lince/sync/1`.
+///
+/// These were HTTP routes on this Cell until 2026-08-08. Nothing about the
+/// bodies changed — the same `Authenticated<T>` is verified by the same
+/// `verify_wire` — so this type is a dispatch table and deliberately nothing
+/// more. The verbs and the old paths are one-to-one, and the paths survive as
+/// SIGNING DOMAINS: `sign_organ_request` binds each signature to its path, so
+/// the constants above are still what a signature covers even though nothing
+/// routes on them.
+pub(crate) struct TransferPeerHandler {
+    state: CellApiState,
+}
+
+impl TransferPeerHandler {
+    pub(crate) fn new(state: CellApiState) -> Self {
+        Self { state }
+    }
+}
+
+#[async_trait::async_trait]
+impl engine::wire::TransferPeer for TransferPeerHandler {
+    async fn handle(
+        &self,
+        verb: engine::wire::TransferVerb,
+        body: serde_json::Value,
+    ) -> Result<serde_json::Value, String> {
+        use engine::wire::TransferVerb;
+        // The error text is the peer's, so it says what went wrong without
+        // saying anything a refusal should not: `forbidden`/`engine_error`
+        // already decide that, and the HTTP status they carried is dropped
+        // rather than translated into a second vocabulary.
+        fn parse<T: DeserializeOwned>(body: serde_json::Value) -> Result<T, String> {
+            serde_json::from_value(body)
+                .map_err(|error| format!("malformed Transfer body: {error}"))
+        }
+        let state = &self.state;
+        match verb {
+            TransferVerb::Envelope => receive_envelope(state, parse(body)?).await,
+            TransferVerb::Pull => pull_envelope(state, parse(body)?).await,
+            TransferVerb::Receipt => receive_receipt(state, parse(body)?).await,
+            TransferVerb::Command => receive_command(state, parse(body)?).await,
+            TransferVerb::PolicyEvent => receive_policy_event(state, parse(body)?).await,
+            TransferVerb::ApplicationAttestation => {
+                receive_application_attestation(state, parse(body)?).await
+            }
+        }
+        .map_err(|(_, message)| message)
+    }
 }

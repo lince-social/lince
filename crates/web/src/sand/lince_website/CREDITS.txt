@@ -1,0 +1,12 @@
+Lince Website Sand — bundled asset credits
+
+Lince logos and editable Excalidraw artwork
+Copyright the Lince contributors. Distributed under the repository's MIT license.
+
+Lato font
+Copyright 2010-2014 Łukasz Dziedzic. Licensed under the SIL Open Font License 1.1.
+The complete license is bundled as assets/fonts/Lato-OFL.txt.
+
+Aleo font
+Copyright 2011-2018 Alessio Laiso and Aleo contributors. Licensed under the SIL Open Font License 1.1.
+The complete license is bundled as assets/fonts/Aleo-OFL.txt.

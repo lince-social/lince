@@ -1,8 +1,17 @@
-# A NixOS service for a Lince Cell, in any of its three postures.
+# A NixOS service for a Lince Cell, in any of its four postures.
 #
 #   mode = "server"   `lince --server`: API only, no board, login forced on.
 #   mode = "board"    `lince`: the full board over HTTP, for a browser.
 #   mode = "desktop"  `lince-desktop`: the Tauri window, in your session.
+#   mode = "relay"    a Cell that CARRIES and authors nothing (Ontology C4).
+#
+# A relay is a MODE and not a flag on server, because almost nothing about it
+# is a server with a switch flipped: it serves no board, needs no admin
+# password (the assertion demanding one for `server` must not extend to it, and
+# a matching one refuses a relay that is given one), and wants its own resource
+# limits. What makes it a relay is not this module at all — it is the Organ's
+# signed roster giving that Cell no capabilities, which the database enforces.
+# This module only shapes the unit around that fact.
 #
 # A server has no board, so the things the board configures are set from the
 # shell instead, as the unit's own user:
@@ -58,7 +67,9 @@ let
           "--listen-addr"
           cfg.listenAddr
         ]
-        ++ lib.optional (cfg.mode == "server") "--server"
+        # A relay serves no board either, so it takes the same flag. The
+        # difference between them is authority, not UI.
+        ++ lib.optional (cfg.mode == "server" || cfg.mode == "relay") "--server"
         ++ lib.optionals (cfg.initialAdminPasswordFile != null) [
           "--initial-admin-password-file"
           (toString cfg.initialAdminPasswordFile)
@@ -99,6 +110,17 @@ let
       ProtectKernelModules = true;
       ProtectControlGroups = true;
       RestrictSUIDSGID = true;
+    }
+    // lib.optionalAttrs (!isUserScope && cfg.mode == "relay") {
+      # A relay is a donation of somebody's bandwidth and RAM, and an
+      # unbounded donation takes down the operator's other services before it
+      # takes down Lince. Conservative rather than tuned: raise them
+      # deliberately, having watched the box.
+      MemoryMax = cfg.relay.memoryMax;
+      CPUQuota = cfg.relay.cpuQuota;
+      # It stores no conversations and hosts nobody's identity, so it needs far
+      # less of the filesystem than a personal Cell.
+      TasksMax = 512;
     };
   }
   // {
@@ -122,13 +144,17 @@ in
         "server"
         "board"
         "desktop"
+        "relay"
       ];
       default = "server";
       description = ''
         "server" passes --server: no board UI, no sands, no static assets, and
         login is forced on. "board" serves the whole UI over HTTP — only bind
         that to loopback. "desktop" runs the Tauri app and requires
-        scope = "user".
+        scope = "user". "relay" is a carrier: same binary as server, no admin
+        password, tighter limits. A relay holds no signing material because its
+        Organ's roster gives it no capabilities — enrol it, then remove every
+        capability from a device that holds your root key.
       '';
     };
 
@@ -159,6 +185,26 @@ in
       type = lib.types.nullOr lib.types.package;
       default = null;
       description = "Override the package for the chosen mode. Rarely needed.";
+    };
+
+    relay = {
+      memoryMax = lib.mkOption {
+        type = lib.types.str;
+        default = "512M";
+        description = ''
+          systemd MemoryMax for a relay unit. A relay caches and forwards; it
+          holds no conversations, so this is generous rather than tight.
+        '';
+      };
+
+      cpuQuota = lib.mkOption {
+        type = lib.types.str;
+        default = "50%";
+        description = ''
+          systemd CPUQuota for a relay unit. A ceiling so a busy relay cannot
+          starve whatever else the operator runs on the box.
+        '';
+      };
     };
 
     listenAddr = lib.mkOption {
@@ -264,6 +310,19 @@ in
           (out of band). Without one the unit starts, finds no admin and no TTY,
           and exits — by design, so you get a failed unit instead of a running
           login wall nobody can get into.
+        '';
+      }
+      {
+        assertion =
+          cfg.mode != "relay"
+          || (cfg.initialAdminPasswordFile == null && cfg.initialAdminPassword == null);
+        message = ''
+          services.lince.mode = "relay" must NOT be given an admin password. A
+          relay has no board to log into and no authority to exercise — it
+          carries traffic and authors nothing — so a password on it is either a
+          misunderstanding of what a relay is, or a login wall on a machine that
+          should not have one. Use mode = "server" if you meant a Cell someone
+          logs into.
         '';
       }
       {

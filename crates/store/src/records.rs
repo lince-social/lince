@@ -133,10 +133,21 @@ pub async fn create_in_root(
     // `replica_root` it is written once and never changes.
     let created_hlc = nucleus::hlc::next();
     let (mantissa, scale) = decimal_columns(new.quantity);
+    // The origin Organ, IN the insert. It used to be stamped by a separate
+    // UPDATE below, which left every new Record briefly unattributable and —
+    // when no local Organ existed — permanently so. `Store::open` mints the
+    // identity, so the `None` arm is unreachable; it is an error rather than a
+    // silent skip because a Record with no origin can no longer be stored.
+    let origin = crate::organs::local(pool)
+        .await?
+        .map(|organ| organ.uid)
+        .ok_or_else(|| {
+            sqlx::Error::Protocol("cannot create a Record before this Cell has an Organ".into())
+        })?;
     sqlx::query(
         "INSERT INTO record (uid, slug, kind, head, body, quantity_mantissa, quantity_scale,
-                             created_at, updated_at, replica_root, created_hlc)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                             organ_uid, created_at, updated_at, replica_root, created_hlc)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
     .bind(&uid)
     .bind(new.slug)
@@ -145,22 +156,13 @@ pub async fn create_in_root(
     .bind(new.body)
     .bind(&mantissa)
     .bind(scale)
+    .bind(&origin)
     .bind(&now)
     .bind(&now)
     .bind(root)
     .bind(&created_hlc)
     .execute(pool)
     .await?;
-    // Stamp the origin organ (this Cell) so Protein/Sync can filter by it
-    // later — centralized here so EVERY create path gets it (threads,
-    // messages, saved Proteins, ...), not just the top-level CreateRecord
-    // action. No local organ yet (early bootstrap, most unit tests, and the
-    // organ-bootstrap insert itself, which bypasses this fn) = no stamp,
-    // origin stays "unknown" rather than erroring.
-    let origin = crate::organs::local(pool).await?.map(|organ| organ.uid);
-    if let Some(organ_uid) = origin.as_deref() {
-        set_organ_origin(pool, &uid, Some(organ_uid)).await?;
-    }
     log_set(pool, &uid, "kind", serde_json::json!(new.kind.as_str())).await?;
     log_set(pool, &uid, "head", serde_json::json!(new.head)).await?;
     log_set(pool, &uid, "body", serde_json::json!(new.body)).await?;
@@ -174,9 +176,9 @@ pub async fn create_in_root(
     if let Some(slug) = new.slug {
         log_set(pool, &uid, "slug", serde_json::json!(slug)).await?;
     }
-    if let Some(organ_uid) = origin.as_deref() {
-        log_set(pool, &uid, "organ_uid", serde_json::json!(organ_uid)).await?;
-    }
+    // The column is written by the INSERT now; the op is still logged so
+    // contacts learn the origin from the feed like every other field.
+    log_set(pool, &uid, "organ_uid", serde_json::json!(&origin)).await?;
     get(pool, &uid).await.map(|r| r.expect("just inserted"))
 }
 
@@ -330,6 +332,34 @@ pub async fn all_levels(pool: &SqlitePool) -> Result<Vec<(String, DecimalValue)>
 
 /// Namespaced fds sidecar (blueprint I.2) — also where saved Proteins live
 /// (`namespace = "lince.protein"`).
+/// Write an extension WITHOUT logging an op, for a projection that every
+/// Cell derives for itself rather than replicating.
+///
+/// The roster mirror is the case that forced this: it is display state
+/// derived from a signed blob both sides already hold, and as a logged write
+/// it locked a relay Cell out of publishing its own roster — the relay has no
+/// write capability, so the mirror was refused and the whole publish failed.
+/// A projection nobody needs to receive should not be an op in the first
+/// place.
+pub async fn set_extension_raw(
+    pool: &SqlitePool,
+    record_uid: &str,
+    namespace: &str,
+    fds: &serde_json::Value,
+) -> Result<(), StoreError> {
+    sqlx::query(
+        "INSERT INTO record_extension (record_uid, namespace, fds) VALUES (?, ?, ?)
+         ON CONFLICT(record_uid, namespace)
+         DO UPDATE SET fds = excluded.fds, version = version + 1",
+    )
+    .bind(record_uid)
+    .bind(namespace)
+    .bind(fds.to_string())
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
 pub async fn set_extension(
     pool: &SqlitePool,
     record_uid: &str,
@@ -519,9 +549,13 @@ pub async fn set_slug(pool: &SqlitePool, uid: &str, slug: Option<&str>) -> Resul
     Ok(())
 }
 
-/// Set (or clear, with `None`) the record's origin organ — stamped locally on
-/// creation (the local organ) or carried through Sync (the true origin, so
-/// lineage survives relaying through an intermediate organ).
+/// Re-stamp the record's origin Organ — carried through Sync, so lineage
+/// survives a relaying intermediate.
+///
+/// No longer clearable. Origin is written by the INSERT now, and a Record with
+/// none is a state the schema refuses: `record_origin_required_update` aborts
+/// a `None` here rather than letting the front door re-create what the
+/// migration deleted.
 pub async fn set_organ_origin(
     pool: &SqlitePool,
     uid: &str,

@@ -98,3 +98,181 @@ pub async fn rules_for_target(
     })
     .collect())
 }
+
+// ---------------------------------------------------------------------------
+// Per-record hiding on the sync feed (Ontology §12, C5)
+// ---------------------------------------------------------------------------
+//
+// The gate above answers "what may this logged-in Person READ here". This one
+// answers a different question — "what may this contact Organ RECEIVE" — and
+// the two default OPPOSITE ways on purpose. Local reads are default-hidden
+// because a Cell holds other people's records. The sync feed is default-shared
+// because §12 says so: pairing with a contact and switching `sync_out` on IS
+// the grant, and hiding is a named exception to it.
+//
+// Reusing `visible_targets` here would have inverted that: every contact would
+// see nothing until each Record was granted one at a time, which is not the
+// design and would have looked like sync breaking rather than a policy.
+// `subject_kind = 'organ'` with `grant_level = 'hidden'` is the exception list,
+// and the column has carried both levels since `0001_init.sql`.
+
+/// The Records this contact is not to receive. Usually empty, which is why
+/// every caller checks that first and pays nothing when it is.
+pub async fn hidden_from_organ(
+    pool: &SqlitePool,
+    organ_uid: &str,
+) -> Result<HashSet<String>, StoreError> {
+    Ok(sqlx::query(
+        "SELECT target_uid AS uid FROM visibility_rule
+          WHERE subject_kind = 'organ' AND subject_uid = ? AND grant_level = 'hidden'",
+    )
+    .bind(organ_uid)
+    .fetch_all(pool)
+    .await?
+    .into_iter()
+    .map(|row| row.get("uid"))
+    .collect())
+}
+
+/// Hide or unhide one Record from one contact. Idempotent both ways, because
+/// the surface is a toggle and a double click must not leave two rows behind
+/// that a later unhide only half removes.
+pub async fn set_hidden_from_organ(
+    pool: &SqlitePool,
+    organ_uid: &str,
+    target_uid: &str,
+    hidden: bool,
+) -> Result<(), StoreError> {
+    sqlx::query(
+        "DELETE FROM visibility_rule
+          WHERE subject_kind = 'organ' AND subject_uid = ? AND target_uid = ?
+            AND grant_level = 'hidden'",
+    )
+    .bind(organ_uid)
+    .bind(target_uid)
+    .execute(pool)
+    .await?;
+    if hidden {
+        sqlx::query(
+            "INSERT INTO visibility_rule (uid, subject_kind, subject_uid, target_uid, grant_level)
+             VALUES (?, 'organ', ?, ?, 'hidden')",
+        )
+        .bind(nucleus::new_uid("v"))
+        .bind(organ_uid)
+        .bind(target_uid)
+        .execute(pool)
+        .await?;
+    }
+    Ok(())
+}
+
+/// One hidden Record as a surface needs it: a person recognises a Record by
+/// its head or slug, never by its uid, and a panel listing bare uids is a list
+/// nobody can audit.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct HiddenRecordRow {
+    pub uid: String,
+    pub head: String,
+    pub slug: Option<String>,
+}
+
+/// The hide list for one contact, named. A rule whose Record was deleted since
+/// still appears, with an empty head — dropping it would make the rule
+/// invisible while it still filters, and a rule nobody can see is one nobody
+/// can remove.
+pub async fn hidden_records_from_organ(
+    pool: &SqlitePool,
+    organ_uid: &str,
+) -> Result<Vec<HiddenRecordRow>, StoreError> {
+    Ok(sqlx::query(
+        "SELECT v.target_uid AS uid,
+                COALESCE(r.head, '') AS head,
+                r.slug AS slug
+           FROM visibility_rule v
+           LEFT JOIN record r ON r.uid = v.target_uid
+          WHERE v.subject_kind = 'organ' AND v.subject_uid = ?
+            AND v.grant_level = 'hidden'
+          ORDER BY head, uid",
+    )
+    .bind(organ_uid)
+    .fetch_all(pool)
+    .await?
+    .into_iter()
+    .map(|row| HiddenRecordRow {
+        uid: row.get("uid"),
+        head: row.get("head"),
+        slug: row.get("slug"),
+    })
+    .collect())
+}
+
+/// The Records an op is ABOUT — the same shape as `replica::root_for_op`, and
+/// deliberately next to nothing else: an op names a table and a uid, and only
+/// this mapping says which Record's policy governs it.
+///
+/// An Assertion returns BOTH endpoints and is withheld if EITHER is hidden.
+/// Hiding one side and letting a link to it through would disclose the hidden
+/// uid and its relation, which is most of what hiding was for — the same
+/// reason `root_for_link` refuses to join two roots.
+pub async fn records_of_op(
+    pool: &SqlitePool,
+    tbl: &str,
+    uid: &str,
+) -> Result<Vec<String>, StoreError> {
+    Ok(match tbl {
+        "record" => vec![uid.to_string()],
+        "fact" => sqlx::query_scalar::<_, Option<String>>(
+            "SELECT record_uid FROM fact WHERE uid = ?",
+        )
+        .bind(uid)
+        .fetch_optional(pool)
+        .await?
+        .flatten()
+        .into_iter()
+        .collect(),
+        "record_assertion" => sqlx::query(
+            "SELECT subject_uid, object_uid FROM record_assertion WHERE uid = ?",
+        )
+        .bind(uid)
+        .fetch_optional(pool)
+        .await?
+        .into_iter()
+        .flat_map(|row| {
+            let subject: String = row.get("subject_uid");
+            let object: Option<String> = row.get("object_uid");
+            std::iter::once(subject).chain(object)
+        })
+        .collect(),
+        // An unknown table is not silently shared. A fourth logged table is a
+        // change to this mapping, and defaulting to "no Record governs it"
+        // would make the omission invisible until it leaked.
+        _ => Vec::new(),
+    })
+}
+
+/// Whether this op must be kept out of `hidden`'s owner's feed.
+///
+/// Unlike the field scope, there is NO tombstone exemption here, and the
+/// difference is the point. A narrowed contact still holds the Record, so
+/// withholding its delete would strand it. A hidden Record is one they were
+/// never to have — sending the delete would tell them it existed. §12's
+/// honest half applies instead: hiding stops what travels NEXT, and whatever
+/// they already received stays received.
+pub async fn op_hidden_from(
+    pool: &SqlitePool,
+    hidden: &HashSet<String>,
+    tbl: &str,
+    uid: &str,
+) -> Result<bool, StoreError> {
+    if hidden.is_empty() {
+        return Ok(false);
+    }
+    // A `record` op is the overwhelming majority and needs no query at all.
+    if tbl == "record" {
+        return Ok(hidden.contains(uid));
+    }
+    Ok(records_of_op(pool, tbl, uid)
+        .await?
+        .iter()
+        .any(|record| hidden.contains(record)))
+}

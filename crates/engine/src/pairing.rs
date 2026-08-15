@@ -125,6 +125,100 @@ impl PairingInvite {
     }
 }
 
+/// Version tag for an ENROLMENT code. A separate prefix from `lince1`, and
+/// that separation is the point: a pairing code adds a contact, an enrolment
+/// code adds a device to your own identity. They are shown in the same shape,
+/// scanned by the same camera, and one of them grants strictly more than the
+/// other, so neither may ever be read as the other by accident.
+const ENROLMENT_PREFIX: &str = "lincecell1";
+
+/// Everything a NEW DEVICE needs to join an existing Organ.
+///
+/// Enrolling is pairing with YOURSELF, and it earns its own flow rather than
+/// reusing contact pairing (Ontology §11). The single-use, short-lived token
+/// is what makes it safe to show on a screen: it grants membership in an
+/// identity, which is strictly more than a contact code grants, so it expires
+/// in minutes and works exactly once.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EnrolmentInvite {
+    /// The enrolling Cell — an existing member that holds the root.
+    pub node_id: String,
+    /// The Organ being joined. Carried so the new Cell knows what identity it
+    /// is about to become part of BEFORE it connects, and so the roster it
+    /// gets back can be checked against what it was offered.
+    pub organ_uid: String,
+    /// The Organ root public key, adopted by the joining Cell as its own
+    /// identity's root. Same trust-on-first-use as pairing, over the same
+    /// unrelayable visual channel.
+    pub root_key: String,
+    /// Single-use, minutes-long. `roster::ENROLMENT_TOKEN_TTL_MINUTES`.
+    pub token: String,
+    /// Direct addresses, so enrolment works with no discovery at all — the
+    /// case that matters on guest wifi and in hotels, exactly as for pairing.
+    pub addrs: Vec<String>,
+}
+
+impl EnrolmentInvite {
+    pub fn encode(&self) -> String {
+        format!(
+            "{ENROLMENT_PREFIX}{SEP}{}{SEP}{}{SEP}{}{SEP}{}{SEP}{}",
+            self.node_id,
+            self.organ_uid,
+            self.root_key,
+            self.token,
+            self.addrs.join(",")
+        )
+    }
+
+    pub fn decode(text: &str) -> Result<EnrolmentInvite, EngineError> {
+        let parts: Vec<&str> = text.trim().split(SEP).collect();
+        if parts.len() != 6 || parts[0] != ENROLMENT_PREFIX {
+            return Err(EngineError::Consequence(
+                "not a Lince enrolment code. It must be the whole line starting \
+                 `lincecell1|` from the Add a device panel on a Cell you already \
+                 own — a pairing code adds a contact and cannot enrol a device."
+                    .into(),
+            ));
+        }
+        // Every field is load-bearing: without the node id there is nobody to
+        // ask, without the uid and key there is no identity to verify the
+        // answer against, and without the token the ask is refused.
+        for (index, what) in [(1, "node id"), (2, "organ"), (3, "root key"), (4, "token")] {
+            if parts[index].is_empty() {
+                return Err(EngineError::Consequence(format!(
+                    "enrolment code carries no {what}"
+                )));
+            }
+        }
+        Ok(EnrolmentInvite {
+            node_id: parts[1].to_string(),
+            organ_uid: parts[2].to_string(),
+            root_key: parts[3].to_string(),
+            token: parts[4].to_string(),
+            addrs: parts[5]
+                .split(',')
+                .filter(|value| !value.is_empty())
+                .map(str::to_string)
+                .collect(),
+        })
+    }
+
+    /// The invite as an SVG QR code, for showing on the enrolling Cell's
+    /// screen. Same reasoning as [`PairingInvite::qr_svg`].
+    pub fn qr_svg(&self) -> Result<String, EngineError> {
+        use qrcode::QrCode;
+        use qrcode::render::svg;
+        let code = QrCode::new(self.encode().as_bytes())
+            .map_err(|error| EngineError::Consequence(format!("QR encode failed: {error}")))?;
+        Ok(code
+            .render()
+            .min_dimensions(220, 220)
+            .dark_color(svg::Color("#000000"))
+            .light_color(svg::Color("#ffffff"))
+            .build())
+    }
+}
+
 /// Read a QR code out of a captured camera frame.
 ///
 /// The mirror of [`PairingInvite::qr_svg`], and here for the same reason plus

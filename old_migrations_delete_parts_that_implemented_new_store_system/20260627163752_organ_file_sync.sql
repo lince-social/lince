@@ -1,3 +1,0 @@
--- Reset migration compatibility:
--- organ.file_sync_enabled and organ.file_sync_path are owned by the reset/base schema.
--- Keep this migration file as a no-op so existing migration history remains valid.

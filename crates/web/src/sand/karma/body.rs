@@ -618,6 +618,33 @@ pub(super) fn body() -> Markup {
                 }
             }
 
+            // ---------------------------------------------------- where it runs
+            //
+            // C7 axis 2. An Organ with one Cell never needs this and is told so
+            // rather than shown an empty list, because an empty box reads as a
+            // broken feature in exactly the case that is fine.
+            //
+            // The wording is about THIS Cell throughout — "runs here", not
+            // "enabled" — because the setting is local and the same rule may be
+            // running on another Cell at the same moment. "Enabled" would read
+            // as a property of the rule and make the other Cell's behaviour
+            // look like a bug.
+            section class="panel executionPanel" aria-labelledby="execution-heading" {
+                div class="panelHead" {
+                    h2 id="execution-heading" { "Where rules run" }
+                }
+                p class="hint" {
+                    "Every rule you hold runs on this Cell unless you say otherwise. "
+                    "Turning one off here leaves it running on your other Cells — "
+                    "it is this device's setting, not a change to the rule."
+                }
+                ul id="execution-list" class="ruleList" {}
+                p id="execution-empty" class="empty" hidden {
+                    "No rules on this Cell yet."
+                }
+                p id="execution-notice" class="hint" role="status" aria-live="polite" hidden {}
+            }
+
             // --------------------------------------------------------- timeline
             section class="panel graphPanel" aria-labelledby="graph-heading" {
                 div class="panelHead" {

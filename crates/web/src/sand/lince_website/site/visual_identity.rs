@@ -18,84 +18,68 @@ fn sections() -> Vec<IdentitySection> {
         IdentitySection {
             title: "White Logo",
             description: Some("Use on dark backgrounds."),
-            preview_src: "/assets/logo/white.svg",
+            preview_src: "assets/logo/white.svg",
             preview_alt: "Lince white logo",
             links: vec![
                 AssetLink {
                     label: "SVG",
-                    href: "/assets/logo/white.svg",
+                    href: "assets/logo/white.svg",
                 },
                 AssetLink {
                     label: "PNG",
-                    href: "/assets/logo/white.png",
-                },
-                AssetLink {
-                    label: "JPG",
-                    href: "/assets/logo/white.jpg",
+                    href: "assets/logo/white.png",
                 },
             ],
         },
         IdentitySection {
             title: "White on Black",
             description: Some("Logo with fixed dark background."),
-            preview_src: "/assets/logo/white_in_black.svg",
+            preview_src: "assets/logo/white_in_black.svg",
             preview_alt: "Lince white logo on black background",
             links: vec![
                 AssetLink {
                     label: "SVG",
-                    href: "/assets/logo/white_in_black.svg",
+                    href: "assets/logo/white_in_black.svg",
                 },
                 AssetLink {
                     label: "PNG",
-                    href: "/assets/logo/white_in_black.png",
-                },
-                AssetLink {
-                    label: "JPG",
-                    href: "/assets/logo/white_in_black.jpg",
+                    href: "assets/logo/white_in_black.png",
                 },
             ],
         },
         IdentitySection {
             title: "Black Logo",
             description: Some("Use on light backgrounds."),
-            preview_src: "/assets/logo/black.svg",
+            preview_src: "assets/logo/black.svg",
             preview_alt: "Lince black logo",
             links: vec![
                 AssetLink {
                     label: "SVG",
-                    href: "/assets/logo/black.svg",
+                    href: "assets/logo/black.svg",
                 },
                 AssetLink {
                     label: "PNG",
-                    href: "/assets/logo/black.png",
-                },
-                AssetLink {
-                    label: "JPG",
-                    href: "/assets/logo/black.jpg",
+                    href: "assets/logo/black.png",
                 },
             ],
         },
         IdentitySection {
             title: "Black on White",
             description: None,
-            preview_src: "/assets/logo/black_in_white.svg",
+            preview_src: "assets/logo/black_in_white.svg",
             preview_alt: "Lince black logo on white background",
             links: vec![
                 AssetLink {
                     label: "SVG",
-                    href: "/assets/logo/black_in_white.svg",
+                    href: "assets/logo/black_in_white.svg",
                 },
                 AssetLink {
                     label: "PNG",
-                    href: "/assets/logo/black_in_white.png",
-                },
-                AssetLink {
-                    label: "JPG",
-                    href: "/assets/logo/black_in_white.jpg",
+                    href: "assets/logo/black_in_white.png",
                 },
                 AssetLink {
                     label: "ICO",
-                    href: "/assets/black_in_white.ico",
+                    href: "assets/black_in_white.ico",
                 },
             ],
         },
@@ -110,7 +94,7 @@ pub fn page_visual_identity() -> String {
             section.content-block {
                 h1.content-block__title { "Visual Identity" }
                 p.content-block__body {
-                    "Official logo files for download in SVG, PNG, JPG, and ICO formats."
+                    "Official logo files for download in SVG, PNG, ICO, and editable formats."
                 }
             }
 
@@ -124,13 +108,22 @@ pub fn page_visual_identity() -> String {
                         p.content-block__body {
                             @for (i, link) in section_data.links.iter().enumerate() {
                                 @if i > 0 { " • " }
-                                a href=(link.href) { (link.label) }
+                                a href=(link.href) download { (link.label) }
                             }
                         }
                     }
                     .content-block__image {
                         img src=(section_data.preview_src) alt=(section_data.preview_alt);
                     }
+                }
+            }
+
+            section.content-block {
+                h2.content-block__title { "Editable source" }
+                p.content-block__body {
+                    a href="assets/lince.excalidraw" download { "Download the Excalidraw artwork" }
+                    " • "
+                    a href="assets/black_in_white.icns" download { "Download the macOS icon" }
                 }
             }
         }

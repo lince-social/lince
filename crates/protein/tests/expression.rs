@@ -162,6 +162,7 @@ async fn concept_dag_filter_and_provenance_include() {
             Predicate::QuantityLt(0.0),
             Predicate::ConceptIn("food".into()),
         ],
+        fields: None,
         include: Include {
             facts: Some(FactsInclude { limit: 5 }),
             ..Default::default()
@@ -281,6 +282,7 @@ async fn promise_lifecycle_through_actions() {
     let p = Protein {
         source: Source::Promise,
         filter: vec![Predicate::StateIn(vec!["active".into()])],
+        fields: None,
         include: Include::default(),
         aggregate: None,
         order: vec![],

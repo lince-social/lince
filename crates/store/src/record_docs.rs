@@ -28,6 +28,14 @@ pub async fn get(pool: &SqlitePool, record_uid: &str) -> Result<Option<RecordDoc
         }))
 }
 
+/// Store this Cell's own compacted snapshot.
+///
+/// Written ONLY by local compaction. A `snapshot` op arriving from a peer is
+/// imported into the open doc and left in the log for `doc_tail` to replay,
+/// not written here — because `through_seq` moves in lockstep with the open
+/// doc's `snapshot_vv`, and advancing one without the other is how updates get
+/// dropped with no way to notice. Replaying a peer's snapshot on every load
+/// costs a little; the alternative risks losing text.
 pub async fn put(
     pool: &SqlitePool,
     record_uid: &str,
@@ -59,15 +67,22 @@ pub async fn delete(pool: &SqlitePool, record_uid: &str) -> Result<(), StoreErro
     Ok(())
 }
 
-/// Crdt ops for one record past the snapshot's seq — the doc's load tail.
-pub async fn crdt_tail(
+/// One record's doc history past the stored snapshot's seq — the load tail.
+///
+/// Includes `snapshot` ops as well as `crdt` ops, in seq order. Loro imports
+/// both blob kinds identically, and a snapshot op that arrived from a peer is
+/// deliberately left in the log rather than written into `record_doc` (see
+/// `put`), so the loader has to replay it like any other entry. Filtering to
+/// `crdt` here would silently drop a peer's entire document base.
+pub async fn doc_tail(
     pool: &SqlitePool,
     record_uid: &str,
     through_seq: i64,
 ) -> Result<Vec<(i64, String)>, StoreError> {
     Ok(sqlx::query(
         "SELECT seq, value FROM sync_op
-          WHERE tbl = 'record' AND kind = 'crdt' AND uid = ? AND seq > ?
+          WHERE tbl = 'record' AND kind IN ('crdt', 'snapshot')
+            AND uid = ? AND seq > ?
             AND value IS NOT NULL
           ORDER BY seq",
     )
@@ -97,8 +112,41 @@ pub async fn crdt_ops_since(
     .get("n"))
 }
 
-/// Whether any crdt history exists for this record (snapshot or logged op) —
-/// the "has collab started" test that decides seeding and set-op precedence.
+/// Records whose doc has accumulated at least `min_ops` `crdt` ops past its
+/// stored snapshot — the compaction sweep's worklist.
+///
+/// A doc edited heavily and then ABANDONED is the case this exists for.
+/// Compaction used to happen only on the next write, which never comes for an
+/// abandoned doc, so its tail grew forever and none of it was ever prunable —
+/// the exact unboundedness snapshots-in-the-log exist to end.
+pub async fn records_needing_compaction(
+    pool: &SqlitePool,
+    min_ops: i64,
+) -> Result<Vec<String>, StoreError> {
+    Ok(sqlx::query(
+        "SELECT o.uid AS uid, COUNT(1) AS n
+           FROM sync_op o
+           LEFT JOIN record_doc d ON d.record_uid = o.uid
+          WHERE o.tbl = 'record' AND o.kind = 'crdt'
+            AND o.seq > COALESCE(d.through_seq, 0)
+          GROUP BY o.uid
+         HAVING n >= ?",
+    )
+    .bind(min_ops)
+    .fetch_all(pool)
+    .await?
+    .into_iter()
+    .map(|row| row.get("uid"))
+    .collect())
+}
+
+/// Whether any collaborative history exists for this record — the "has collab
+/// started" test that decides seeding and set-op precedence.
+///
+/// Counts `snapshot` ops as well as `crdt` ops. Once crdt ops below a snapshot
+/// become prunable, a long-lived document can end up represented by a snapshot
+/// ALONE; answering `false` there would let a stale scalar `set` on
+/// `head`/`body` win against the record-doc and clobber the text.
 pub async fn has_crdt_history(pool: &SqlitePool, record_uid: &str) -> Result<bool, StoreError> {
     if sqlx::query("SELECT 1 FROM record_doc WHERE record_uid = ?")
         .bind(record_uid)
@@ -109,7 +157,8 @@ pub async fn has_crdt_history(pool: &SqlitePool, record_uid: &str) -> Result<boo
         return Ok(true);
     }
     Ok(sqlx::query(
-        "SELECT 1 FROM sync_op WHERE tbl = 'record' AND kind = 'crdt' AND uid = ? LIMIT 1",
+        "SELECT 1 FROM sync_op
+          WHERE tbl = 'record' AND kind IN ('crdt', 'snapshot') AND uid = ? LIMIT 1",
     )
     .bind(record_uid)
     .fetch_optional(pool)

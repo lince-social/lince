@@ -9,7 +9,7 @@
 //!
 //! The alternative — pruning everything below the floor and adding a snapshot
 //! protocol to compensate — was rejected: it needs synthesized ops with
-//! invented `(actor_organ, hlc)` identities, and that identity IS the unique
+//! invented `(actor_cell, hlc)` identities, and that identity IS the unique
 //! index the import path dedupes on.
 
 use engine::Engine;
@@ -253,7 +253,12 @@ async fn the_newest_op_for_a_live_field_is_never_pruned() {
     e.prune_op_log(false).await.expect("prune");
 
     // Every live (tbl, uid, field) still has at least one surviving op.
-    let live = store::sync_ops::after(&e.store.pool, 0, 10_000)
+    let organ = store::organs::local(&e.store.pool)
+        .await
+        .expect("local")
+        .expect("organ")
+        .uid;
+    let live = store::sync_ops::after(&e.store.pool, &organ, 0, 10_000)
         .await
         .expect("ops");
     assert!(

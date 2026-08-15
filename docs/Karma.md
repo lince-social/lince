@@ -486,6 +486,14 @@ is the real mechanism rather than a placeholder for one.
       rule**, and enforce at the engine and Action boundary, never in a sand.
 - [ ] **Freeze the effective grant at proposal time** for explanation, and
       recheck it at apply time.
+- [ ] **Role/permission grants themselves become Karma-drivable.** Assigning a
+      role to a Person, or granting/revoking a permission, is today only a
+      direct auth-table mutation (Interface.md's permissions sand). Once the
+      effect worker exists, a Rule's Consequence should be able to do the same
+      thing a person does by hand today — grant, revoke, or reassign a role —
+      under the same signed-grant/Authority discipline as any other
+      Consequence, never a bypass of it. Not started; the direct auth-table
+      mutation path stays the only one until this lands.
 
 # 6 — Effects
 
@@ -734,6 +742,49 @@ violation enters stage-effects rather than continuing.
       `emergency-stop` — each surviving reboot.
 - [ ] **Enforce CPU, memory, storage, I/O and notification limits** per rule.
 
+## 14.1 — Which Cell executes
+
+**Purpose:** An Organ may hold several Cells, and every one of them has the
+whole rule set. Three Cells means each rule fires three times, schedules three
+Transfers and mints three Records — so this section decides which Cell acts,
+and bounds what a rule may cost when it feeds itself.
+
+**How it works:** Two INDEPENDENT axes, not one setting. First, *is the Rule
+synced?* — a Rule is a Record, so this is ordinary per-Record sync, default on.
+Second, *does THIS Cell execute it?* — a local, per-Cell, per-rule flag that
+never travels, because executing is a property of a machine and not of the
+rule. Every useful arrangement falls out: all Cells running the same synced
+Karma; one Cell running the common Karma while the others hold it without
+executing; each Cell running different unsynced Karma over the same shared
+Records; and any mixture per rule. A lease is how "exactly one executes" gets
+implemented, not the model itself.
+
+The dividing line for the default is **not** recurring vs reactive — reactive
+rules are the worse case, since every Cell sees every change and so they fire
+more often than scheduled ones. What divides them is whether the consequence is
+*local* (recompute a view, refresh a projection — safe everywhere, and running
+everywhere is the point) or *externally observable* (creates a Record, schedules
+a Transfer, sends a message — must happen exactly once). Cycles are a FEATURE
+and are bounded rather than forbidden: two rules settling into a converging
+exchange is a legitimate program, and forbidding it outlaws a whole class of
+design to prevent a failure the author may have chosen. What is not acceptable
+is an UNBOUNDED cycle, because every iteration writes an op that enters the log,
+the outbox and the feed of every contact — freedom for the author, yes;
+unbounded cost to third parties, no.
+
+**Interacts:** §14's Cell modes and per-rule limits are the same machinery seen
+from the resource side. The duplication problem itself is described in
+Ontology's "Who does the recurring work when an Organ has several Cells", which
+also owns the non-Karma schedulers that inherit it.
+
+**Implementation:** none yet. **The boxes for this section live in
+`Ontology.md` under cluster C7, not here** — deliberately, because the lease
+they describe is the same lease the pruning schedule, the Organ polling
+scheduler and transfer delivery retries need, and tracking the Rule half
+separately is how it would get built twice. This section is the specification;
+C7 is the plan. Nothing in it is done until the surface exists that says which
+Cell holds the lease right now and what fired where.
+
 # 15 — Shared and collective Karma
 
 **Purpose:** Let a household, a team or a neighbourhood compute something
@@ -908,6 +959,14 @@ bar each section's own boxes have to clear.
       - [ ] Creating components for the frontend.
       - [ ] Suggesting Karma, or more Lince ways of doing things.
       - [ ] Doing imperative changes like: change this, start a call with someone, i did this task...
+      - [ ] **Actual accessibility is Fiote's job, not a base-UI checklist item.**
+            A person who cannot use the standard visual/mouse Sand surface
+            should be able to reach the same field-candidate contract through
+            Fiote instead: describe what they want in speech or plain text,
+            hear or read back what a Sand would otherwise show them. This is
+            the same narrow client role as every other Fiote entry point —
+            field candidates, never a privileged mutation path — applied to
+            the surface itself rather than to one Record at a time.
 
 If harness builders like Pi are just a bunch of markdowns, or if markdowns are really used for agents we could use the file sync feature to make what the agent writes to organize his thoughts to be a markdown file somewhere, and that will be then synced into a lince record because we are listening in that dir for file sync. 
 

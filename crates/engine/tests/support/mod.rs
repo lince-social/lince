@@ -280,6 +280,7 @@ pub async fn settlement_preview(
             Predicate::UidEq(occurrence.into()),
             Predicate::QuantityEq(quantity),
         ],
+        fields: None,
         include: Include::default(),
         aggregate: None,
         order: Vec::new(),

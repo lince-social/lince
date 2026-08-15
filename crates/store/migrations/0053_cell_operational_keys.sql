@@ -1,0 +1,17 @@
+-- Operational keys move from one-per-ORGAN to one-per-CELL (Ontology §11,
+-- decision 4; the C1 box, closed with C3).
+--
+-- `identity_key` is keyed (actor_uid, key_id) and every Cell published its
+-- transport key under the same `ed25519:organ:v1`, so two Cells of one Organ
+-- collided on a single row — and `require_published_key` refuses to overwrite
+-- a published key, so the second Cell could not bind its own at all. The uid
+-- stays the ORGAN, because everything that resolves a key asks by Organ; what
+-- changes is that the key id now names the Cell
+-- (`ed25519:cell:<cell_uid>:v1`).
+--
+-- The old rows are DELETED rather than translated. A row cannot be translated
+-- without knowing which Cell wrote it, and that is exactly what the old shape
+-- failed to record. Each Cell re-files its own key under the new id on the
+-- next boot; a contact re-learns it through the Introduction exchange. Under
+-- no-legacy-peer-compat this is the intended cost.
+DELETE FROM identity_key WHERE key_id = 'ed25519:organ:v1';

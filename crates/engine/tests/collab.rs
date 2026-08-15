@@ -215,7 +215,8 @@ async fn deleted_record_freezes_its_doc() {
             kind: "crdt".into(),
             value: crdt_op.value.clone(),
             hlc: nucleus::hlc::next(),
-            actor_organ: a_organ.clone(),
+            actor_cell: a_organ.clone(),
+        organ_uid: a_organ.clone(),
             fact: None,
         }],
     })
@@ -285,7 +286,7 @@ async fn first_collab_write_preserves_preexisting_text() {
 /// the text written before it with no way to recover: the materialized columns
 /// would survive on the sender, and the new replica would simply never see
 /// them. Pruning them safely requires serving `record_doc.snapshot` as part of
-/// a bootstrap, which needs a synthesized op identity — and `(actor_organ,
+/// a bootstrap, which needs a synthesized op identity — and `(actor_cell,
 /// hlc)` is the unique index import dedupes on, so that is not free.
 #[tokio::test]
 async fn no_crdt_op_is_ever_pruned() {
@@ -310,7 +311,12 @@ async fn no_crdt_op_is_ever_pruned() {
         .await
         .expect("advance");
 
-    let before: Vec<i64> = store::sync_ops::after(&e.store.pool, 0, 10_000)
+    let organ = store::organs::local(&e.store.pool)
+        .await
+        .expect("local")
+        .expect("organ")
+        .uid;
+    let before: Vec<i64> = store::sync_ops::after(&e.store.pool, &organ, 0, 10_000)
         .await
         .expect("ops")
         .into_iter()
@@ -321,7 +327,7 @@ async fn no_crdt_op_is_ever_pruned() {
 
     e.prune_op_log(false).await.expect("prune");
 
-    let after: Vec<i64> = store::sync_ops::after(&e.store.pool, 0, 10_000)
+    let after: Vec<i64> = store::sync_ops::after(&e.store.pool, &organ, 0, 10_000)
         .await
         .expect("ops")
         .into_iter()

@@ -338,6 +338,7 @@ async fn karma_rows(engine: &Engine, object_kind: &str) -> Vec<Value> {
         &Protein {
             source: Source::Karma,
             filter: vec![Predicate::KindEq(object_kind.to_string())],
+            fields: None,
             include: Include::default(),
             aggregate: None,
             order: Vec::new(),
@@ -359,15 +360,21 @@ async fn signed_engine() -> Engine {
 
 /// A Person Record with a chosen uid, so a session can be bound to it.
 async fn person_record(engine: &Engine, person_uid: &str, slug: &str) {
+    let organ = store::organs::local(&engine.store.pool)
+        .await
+        .unwrap()
+        .expect("local organ")
+        .uid;
     store::sqlx::query(
         "INSERT INTO record (uid, slug, kind, head, body, quantity_mantissa, quantity_scale,
-                             created_at, updated_at)
-         VALUES (?, ?, 'person', ?, '', '1', 0, '2026-07-24T12:00:00Z', '2026-07-24T12:00:00Z')
+                             organ_uid, created_at, updated_at)
+         VALUES (?, ?, 'person', ?, '', '1', 0, ?, '2026-07-24T12:00:00Z', '2026-07-24T12:00:00Z')
          ON CONFLICT(uid) DO NOTHING",
     )
     .bind(person_uid)
     .bind(slug)
     .bind(slug)
+    .bind(&organ)
     .execute(&engine.store.pool)
     .await
     .unwrap();

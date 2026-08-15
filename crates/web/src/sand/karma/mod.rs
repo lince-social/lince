@@ -59,6 +59,7 @@ const APP_CANVAS_JS: &str = include_str!("app/canvas.js");
 const APP_BLOCKS_JS: &str = include_str!("app/blocks.js");
 const APP_BUILDER_JS: &str = include_str!("app/builder.js");
 const APP_FREQUENCY_JS: &str = include_str!("app/frequency.js");
+const APP_EXECUTION_JS: &str = include_str!("app/execution.js");
 
 pub(crate) fn package() -> LincePackage {
     let manifest = PackageManifest {
@@ -99,6 +100,10 @@ pub(crate) fn package() -> LincePackage {
     assets.insert(
         "app/frequency.js".into(),
         APP_FREQUENCY_JS.as_bytes().to_vec(),
+    );
+    assets.insert(
+        "app/execution.js".into(),
+        APP_EXECUTION_JS.as_bytes().to_vec(),
     );
 
     LincePackage::new_archive(
@@ -158,6 +163,7 @@ mod tests {
             "app/blocks.js",
             "app/builder.js",
             "app/frequency.js",
+            "app/execution.js",
         ] {
             assert!(assets.contains(&asset), "missing {asset}");
         }
@@ -465,5 +471,117 @@ mod tests {
             !lowered.contains("add to total") && !lowered.contains("category total"),
             "totals are queries over classification, never a thing to file into"
         );
+    }
+
+    /// C7 axis 2 has a surface, and it says "this Cell" rather than naming the
+    /// rule's state.
+    ///
+    /// The wording assertion is the substance of the test, not decoration. A
+    /// control labelled "disable" or "pause" describes the RULE, and a person
+    /// reading it would expect their other Cells to stop too — the exact
+    /// opposite of what the setting does. The three honest states are: runs
+    /// here, held here and running elsewhere, and nothing to configure.
+    #[test]
+    fn where_rules_run_is_a_per_cell_surface_and_says_so() {
+        let html = package().html_document();
+        assert!(html.contains("id=\"execution-list\""));
+        assert!(html.contains("id=\"execution-empty\""));
+        assert!(
+            html.contains("Where rules run"),
+            "the panel has to be findable by the question it answers"
+        );
+        assert!(
+            html.contains("running on your other Cells"),
+            "the panel must state that other Cells are unaffected"
+        );
+        let lowered = html.to_lowercase();
+        for forbidden in ["disable rule", "pause rule", "turn off rule"] {
+            assert!(
+                !lowered.contains(forbidden),
+                "{forbidden:?} describes the rule; this control is about one Cell"
+            );
+        }
+    }
+
+    /// The empty state is a sentence, not an empty list.
+    ///
+    /// An Organ with one Cell is the common case and has nothing to arrange
+    /// here, and a blank panel in that case reads as a feature that failed to
+    /// load rather than one with nothing to say.
+    #[test]
+    fn the_execution_panel_has_something_to_say_when_there_is_nothing_to_show() {
+        let html = package().html_document();
+        assert!(html.contains("No rules on this Cell yet."));
+        assert!(
+            html.contains("unless you say otherwise"),
+            "the default has to be stated, since absence means execute"
+        );
+    }
+
+    /// Nothing on this panel asks through a browser modal.
+    ///
+    /// The same rule the Organ sand pins. A `confirm()` here would be
+    /// especially wrong: turning a rule off on one Cell is reversible in one
+    /// click and needs no ceremony at all.
+    /// A rule that acts outside the Cell says so on its own row.
+    ///
+    /// The classification is `Act`-routed consequences only — the other four
+    /// routes end in something a person answers, and one person answering one
+    /// proposal is one answer however many Cells proposed it. The sentence
+    /// names the consequence ("it acts twice") rather than warning vaguely
+    /// about duplicates, because the vague version is the one people skip.
+    /// The note the store and the migration both promise is actually asked for.
+    ///
+    /// Written because the selector existed before the field did: the toggle
+    /// read `[data-execution-note]`, nothing rendered one, and the note was
+    /// therefore always null — a feature that silently did nothing while three
+    /// layers of comment described it working.
+    #[test]
+    fn turning_a_rule_off_can_carry_a_reason() {
+        assert!(super::APP_EXECUTION_JS.contains("data-execution-note"));
+        assert!(
+            super::APP_EXECUTION_JS.contains("(optional)"),
+            "a demanded reason just teaches people to type a space"
+        );
+    }
+
+    #[test]
+    fn an_outward_rule_says_what_running_it_twice_would_do() {
+        assert!(
+            super::APP_EXECUTION_JS.contains("externally_observable"),
+            "the panel must read the outward-consequence flag"
+        );
+        assert!(
+            super::APP_EXECUTION_JS.contains("it acts twice"),
+            "the cost has to be stated at the moment of choosing"
+        );
+    }
+
+    /// Designating an executor is offered, is reversible, and names THIS Cell.
+    ///
+    /// Naming only the local Cell is the design, not a limitation: it is the
+    /// one uid this page can be certain of, and choosing a Cell you are not
+    /// sitting at is how a rule ends up designated to a machine that is no
+    /// longer running. Moving it means going to that Cell and pressing it
+    /// there — the manual takeover chosen over a heartbeat lease.
+    #[test]
+    fn an_executor_can_be_designated_and_undesignated_from_the_cell_itself() {
+        let js = super::APP_EXECUTION_JS;
+        assert!(js.contains("designate-karma-executor"));
+        assert!(
+            js.contains("Only this Cell") && js.contains("Let any Cell run it"),
+            "designation has to be reversible from the same control"
+        );
+        assert!(
+            js.contains("designated to another Cell"),
+            "a rule that runs elsewhere must say so rather than looking idle"
+        );
+    }
+
+    #[test]
+    fn the_execution_panel_asks_nothing_through_a_browser_modal() {
+        assert!(!super::APP_EXECUTION_JS.contains("confirm("));
+        assert!(!super::APP_EXECUTION_JS.contains("prompt("));
+        assert!(!super::APP_EXECUTION_JS.contains("alert("));
     }
 }

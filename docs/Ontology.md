@@ -263,6 +263,33 @@ Blood carries and validates the envelope; Ontology explains the Records/
 assertions it expresses; Lingua says which meanings are shared; policy
 decides what the Organ accepts, reveals, trusts, or acts upon.
 
+**Important — one outward layer, many formats.** The machinery that turns a
+Lince event into an integration event for another system is the *same*
+machinery that writes a file in somebody else's format. A protocol adapter and
+a file writer differ only in the transport at the end: both take a Record or a
+Fact, run it through a Lingua mapping, and emit it in a vocabulary that is not
+ours. So they must not be built as two unrelated features. Cadence and Karma
+firings become `.ics`; the Ledger and Transfer become `.csv`; a Record body
+becomes `.md`. **Markdown is one output format among many, not the special
+case it currently looks like.** File Sync is therefore an early, hard-coded
+instance of Blood, and should eventually be re-founded as one: *Blood is the
+integration organ, and syncing Markdown to a directory is a single Blood
+adapter whose transport happens to be the local filesystem.* The design test
+for any new export work is whether adding `.csv` next to `.md` means writing a
+mapping or rewriting a subsystem — if it means the latter, the seam is in the
+wrong place.
+
+**This is NOT planned work and NOT a cluster.** No boxes, deliberately — it is
+a direction recorded so that the next person to touch File Sync does not build
+a second hard-coded exporter beside the first. The shape it would take when its
+time comes: an adapter names a selection (already Protein), a Lingua mapping,
+and a transport, where the filesystem is one transport among several; the
+second and third formats would be `.ics` from Cadence/Karma firings and `.csv`
+from the Ledger and Transfer, chosen because they are *not* text bodies and so
+would prove the seam holds where Markdown flatters it; and round-trip would be
+per-adapter and declared, since Markdown reads back while `.ics` and `.csv`
+plausibly do not.
+
 - [x] Adapter contract: preserve external identity, source version/context,
   original payload where appropriate, and anything untranslatable.
   Interpretation never silently becomes local authorship or authority.
@@ -726,16 +753,17 @@ Each Cell's database holds TWO `kind=organ` Records, and this is where the
 bugs will live:
 
 - The **Cell Record** — this running instance, this laptop. What
-  `organs::local()` returns (fixed slug). Its uid is stamped as
-  `sync_op.actor_organ` on every op written here, which keeps ops from the
-  laptop and the phone distinguishable and the `(actor_organ, hlc)` uniqueness
-  intact.
+  `cells::local()` returns (fixed slug `local-cell`). Its uid is stamped as
+  `sync_op.actor_cell` on every op written here, which keeps ops from the
+  laptop and the phone distinguishable and the `(actor_cell, hlc)` uniqueness
+  intact. (Before C1 this said `organs::local()` and `actor_organ`, because one
+  row was both — the confusion the split ends.)
 - The **Organ Record** — the person across all their devices. Holds the
   published identity key and the Cell roster. What `record.organ_uid` points
   at, so a Record reads as coming from *you*, not from *your laptop*.
 
 The op-log consequence dictates the shape: `idx_sync_op_identity` is UNIQUE on
-`(actor_organ, hlc)` and an HLC is unique per actor, so the index IS the op uid
+`(actor_cell, hlc)` and an HLC is unique per actor, so the index IS the op uid
 AND the import idempotency key. Three Cells appending under one shared uid
 would be three independent `hlc::next()` clocks in one uniqueness domain — two
 Cells could mint the same identity for different ops, and because import
@@ -1534,30 +1562,148 @@ purpose — the *why* is the part that is not recoverable from the code.
 
 ### Identity, roster, and publishing
 
-- [ ] **pkarr publishing of the signed roster.** Without it, "one key is all
-  they save" stays false: a contact learns roster v2 only by reaching a Cell
-  listed in roster v1, so adding a laptop while the old Cells are off or lost
-  strands the new one forever. Publish the SIGNED ROSTER under the Organ
-  identity key via pkarr — it stores signed records addressed by an ed25519
-  public key, which is exactly what the identity key is. Then identity key →
-  current Cells resolves with no prior roster and the saved key is genuinely
-  self-sufficient.
-  What pkarr is, in one line: a phone book whose lookup key is your public
-  key. You publish a small signed blob into the BitTorrent DHT; anyone knowing
-  the public key fetches it and verifies the signature. Nothing to do with
-  Lince Records — the "record" in "resource record" is a DNS-style entry. The
-  size limit is the DHT's per-entry byte cap (mainline BEP44: 1000 bytes) and
-  a roster fits with room to spare: a NodeId is 32 bytes, so five Cells plus a
-  version counter, expiry and signature lands near 250 bytes. DHT entries
-  expire in hours, so something must republish on a timer — a natural job for
-  the always-on Cell, and a reason a laptop-only Organ should republish at
-  every boot.
-  **Republishing needs no private key.** It re-broadcasts an already-signed
-  blob, so the VPS Cell can do it while holding no identity-signing material —
-  do not let "the VPS republishes the roster" become "the VPS signs the
-  roster" and quietly undo the key split.
-- [ ] **Two tiers of publishing** — the resolution of "I want an add-me-in-Lince
-  key without exposing my devices." The identity key itself is safe to publish
+**Built 2026-08-11 (C3): catch-up is a VERSION VECTOR, and the epoch is bumped.**
+
+`FetchOpsSince { vector, limit }` replaces `FetchOps { after }`. The client
+sends what it already holds of that Organ's ops, keyed by the Cell that wrote
+each — `actor_cell → max hlc` — and the server returns the rest. The idiom is
+Automerge's sync protocol and Loro's `ExportMode::updates(vv)`; it works here
+for free because C1 already made `actor_cell` the op identity, so the vector is
+one entry per device rather than per record.
+
+It replaces a cursor that could not survive the peer's own maintenance.
+`last_synced_seq` is the SERVER's local seq, which stops meaning anything the
+moment they prune, and never meant anything for ops that reached the client by
+another path. The column is kept as a diagnostic — "how far had we got", for a
+human reading a contact row — but no correctness depends on it. Pinned by a
+test where the server prunes and the client still converges in one pass, then
+asks for nothing on the second.
+
+**The vector names ONE Organ's Cells, never our whole log.** Sending everything
+we hold would disclose which Cells of OTHER Organs we sync with, and those
+third parties never agreed to be named. Also pinned by test.
+
+**The retention floor is now derived, not reported.** The old `FetchOps` took
+the peer's word for what it had received; the vector says which of our ops they
+actually hold, so the floor is computed as the last seq before the first op
+they lack — not the count they hold. A gap in the middle means everything after
+it is unconfirmed however much of the tail they have, and pruning past a gap
+deletes ops the peer can no longer ask for.
+
+**Relaying is off on the PULL side too — that was a hole.** `sync_ops::after`
+served every op in the log regardless of who authored it, so a catch-up feed
+carried ops imported from a third Organ. The receiver rejects those (an op's
+`organ_uid` must equal the sending Organ), so they arrived as pure quarantine
+noise — and on the way they told the peer the uids and values of Records
+authored by someone else entirely. Push had relay-off by construction since
+2026-08-10; pull did not, and nothing had noticed because the symptom was
+quarantine entries rather than an error.
+
+**The grant channel got the same treatment.** `FetchGrantOpsSince` replaces a
+cursor that was pinned at `after: 0`, so every pass re-fetched a conversation's
+entire history and re-imported it — idempotent, therefore invisible, and
+O(history) per conversation per pass forever. It also left the grant channel
+with no retention floor at all, because nothing was ever confirmed received.
+That vector legitimately names the other party's Cells: both sides write inside
+a conversation and they are already in it.
+
+**The difference is computed in SQL, not in memory.** The first version loaded
+the whole feed and filtered afterwards, applying the limit at the end — which
+turned an indexed range scan into a full read of the log, per contact, per
+pass. `idx_sync_op_feed` on `(organ_uid, seq)` plus a generated
+`NOT (actor_cell = ? AND hlc <= ?)` clause keeps it a range scan; a vector has
+one entry per device, so the clause stays short.
+
+**An empty vector means "send me everything"**, which is exactly what a first
+sync is — and also what a hostile contact could send every pass to make us
+serve the whole log repeatedly. The old cursor had the same property, so this
+is not a regression, and the answer is the per-contact rate-limiting already
+filed under C5. Named here so the two connect.
+
+**The ALPNs are `/2`.** Not optional by this point: `WireOp` renamed
+`actor_organ` and added a non-defaulted `organ_uid`, `CellEntry` gained a
+signed capability set, and `FetchOps` is gone. The wire was already
+incompatible; the bump makes it fail at the TLS layer instead of one frame
+later. All three bump together — `lince/thread/N` carries `CellEntry` through
+`Introduction` and `Enrol`.
+
+**Built 2026-08-11 (C3): the public directory record.** `engine::directory`
+publishes this Organ's front doors under its identity key via pkarr, and
+`Wire::dial` resolves a contact by that key when every Cell it knows of has
+failed. That is what finally makes "one key is all they save" true: previously
+a contact learned roster v2 only by reaching a Cell listed in roster v1, so
+adding a laptop while the old Cells were off or lost stranded the new one
+forever.
+
+pkarr in one line: a phone book whose lookup key is your public key. A small
+signed blob goes into the mainline DHT (or a relay fronting it); anyone holding
+the public key fetches it and verifies the signature. Nothing to do with Lince
+Records — the "record" in "resource record" is the DNS sense.
+
+**The byte cap decided the design, and the old estimate here was wrong.** This
+document said "a NodeId is 32 bytes, so five Cells plus a version counter,
+expiry and signature lands near 250 bytes". That counted NodeIds only. A real
+`CellEntry` also carries a uuid, a label, a 44-char operational key and a
+capability list, so one Cell is ~520 bytes of JSON and five are ~1330 — past
+the 1000-byte DNS packet the DHT will carry. **The full roster does not fit.**
+That is not an obstacle to work around: it is the two-tier design arriving as a
+hard constraint, which is why pkarr publishing and "two tiers of publishing"
+landed as ONE piece of work rather than two. The measurement is a test
+(`the_full_roster_does_not_fit_and_the_public_tier_does`) so it cannot quietly
+stop being true.
+
+**There is no second signature layer.** The packet is signed by the keypair it
+is addressed BY, and that keypair is the Organ root key — so pkarr's own
+signature check IS the root signature check, and a separate signed front-door
+payload would be a second scheme to get wrong for no gain. What a resolver
+still must check is that the `organ_uid` inside matches the one it expected for
+that key; a key saved under one uid answering with another is a substitution,
+and `verify_for` refuses it.
+
+**Publishing needs the root; republishing does not.** The signed bytes are
+stored (`organ_public_record`) and re-broadcast verbatim on an hourly timer in
+the sync runner, because DHT entries expire in hours. Re-signing each time
+would quietly require the root online forever and undo the key split. Bytes off
+disk are re-verified before they are re-sent — `SignedPacket::deserialize` does
+not check the signature, so trusting it directly would let anything that could
+write the database choose where contacts dial.
+
+**The same content signs to the same bytes**, and that is load-bearing rather
+than tidy. Signing happens on every boot that holds the root — otherwise an
+Organ whose roster is already correct would never get a record at all, since
+the unchanged-roster path returns early — but it re-signs only when the record
+actually differs from the stored one. pkarr orders packets by an embedded
+timestamp and refuses a publish older than what a relay holds, so minting a
+fresh signature each boot would put the root-holding Cell into a timestamp race
+with the keyless Cell republishing stored bytes: two packets for one key,
+differing only in when they were signed.
+
+**`LINCE_DISCOVERY_INTERNET=0` is the first-boot off switch.**
+`lince.discovery.internet` lives on an Organ Record that boot itself creates,
+so before a first boot there is nowhere to say "never reach the internet". The
+env var is that answer, and it has two real users: an air-gapped or headless
+install that must not publish an address before a human can switch it off, and
+every test that boots a real Cell — `server_mode` and `live_relay_reason` were
+otherwise about to publish node addresses AND a directory record under a
+throwaway identity key, to public infrastructure, on every run.
+
+**Relays, not a DHT client.** A DHT client opens its own UDP socket and
+bootstrap alongside iroh's, which is a second network stack in-process for a
+few hundred bytes an hour. Relays are HTTP over machinery that already exists,
+and they give C4 its extension point: `lince.discovery.relays` points an Organ
+at its own relay instead of the public ones.
+
+**Everything public is gated on the ENDPOINT's reach, not on config.** `Reach`
+is fixed when the endpoint is built, so reading `lince.discovery.internet`
+again later can disagree with what the endpoint is actually serving — which is
+exactly what a test Cell, bound `Local` while the config default says internet,
+would have done. `front_door`, publishing and resolving all now ask
+`wire.reach()`. No test touches the network as a result: the pkarr client is
+built on first use and nothing in the offline paths builds one.
+
+- [x] **Two tiers of publishing** — the resolution of "I want an add-me-in-Lince
+  key without exposing my devices." Built with the above; the byte cap made it
+  the only shape that fits. The identity key itself is safe to publish
   anywhere: on its own it is an identifier and reveals nothing. The exposure is
   not in the key, it is in what the key RESOLVES TO.
   example:
@@ -1581,143 +1727,1254 @@ purpose — the *why* is the part that is not recoverable from the code.
   not outbound-only, and contacts holding the roster do dial them directly.
   Cost to accept: if the front door is down, a stranger cannot reach the Organ
   at all. Existing contacts, holding the full roster, still can.
-- [ ] **Front-door mechanics** — currently undefined and needed for "add me in
-  Lince" to actually work. A stranger's invite arrives at the VPS, whose owner
-  may be on a phone that is not in the public record and may be offline. The
-  front door QUEUES the invite until a personal Cell syncs, reusing the
-  offline send queue rather than forwarding live. The VPS holds no
-  identity-signing material, so it cannot accept on the owner's behalf — it
-  can only hold the request until a Cell that can decide sees it.
-- [ ] **Dial policy: RACE all known Cells** and take the first that answers,
-  with a preference order only as a tiebreak (prefer a LAN-local Cell for
-  latency, the always-on one for bulk). No leader election — leaders exist for
-  consensus, and an op log with CRDTs converges without one.
-- [ ] **Key-succession chains shown to contacts.** The storage exists
-  (`identity_succession`, `record_succession` / `successions`); what is left is
-  the enforcement and the surface. Contacts store the full chain for each
-  Organ, not just the current key, and a succession is accepted only if it
-  chains from a key already held. Anything else is a loud, blocking warning
-  that requires a human decision — NEVER a silent update. This is the cheap
-  approximation of key transparency (CONIKS, Certificate Transparency), and it
-  converts a silent takeover into a visible alarm. Build the signed succession
-  record even if the UI lands later, so an Organ can rotate without every
-  contact re-pairing.
-- [ ] **Pre-signed revocation certificate**, generated at key creation and
-  stored offline beside the root. It does not prove a new key is genuine, but
-  it kills the old one immediately — damage limitation that works even when
-  identity cannot yet be re-established. PGP has done this for decades and it
-  costs nothing. Storing it WITH the root is what makes one drawer trip yield
-  both revocation and re-establishment.
-- [ ] **Serve BOTH ALPN versions during a transition.** The strings are
-  versioned (`lince/sync/1`, `lince/thread/1`, `lince/live/1`) but `wire.rs`
-  offers exactly those three and nothing else, so a bump to `/2` today would
-  hard-cut every peer on the old build. What is missing is the transition
-  path: accept `/1` and `/2` simultaneously for a release, so an old peer gets
-  old behaviour rather than a broken half-upgrade. Cheap now, brutal once keys
-  are in other people's hands.
-- [ ] **Fail closed on the unknown**: an unrecognised op `kind`, grant version,
-  or frame type quarantines rather than crashing or silently applying. A newer
-  Organ syncing to an older one must degrade, never widen.
-- [ ] **Nearby lists show a short NodeId fingerprint** beside the untrusted
-  display name — disambiguation among many peers, explicitly not a security
-  check, and impossible to spoof by choosing a name.
-- [ ] **Label manual paste as TOFU in the UI.** Pasting a key in the Organ
-  sand is trust-on-first-use on the identity key. Fine when the key came from
-  somewhere you trust; say so rather than implying the typing verified
-  anything.
-- [ ] **Discovery UI in the Organ sand**: a nearby list of announced organs;
-  selecting one runs the normal introduction flow and, on confirmation, adds
-  it to contacts. Display names are untrusted labels — the UI must never
-  present a name as identity. The pairing code is required on FIRST contact
-  through discovery and skippable over an already-verified channel; what it
-  defends is not key substitution on the wire (iroh retires that) but a relay
-  attacker announcing their own NodeId under a friend's display name.
-- [ ] **The accept-policy toggle must be legible.** Default is CLOSED, so
-  publishing the key advertises reachability to people who already know you
-  and grants nothing to anyone else. Turning it on is what opens the invite
-  door, and the discovery UI must SAY so: the headline flow (meet a stranger
-  on the LAN) needs the toggle on, and a nearby list that silently refuses
-  everyone reads as broken.
-- [ ] **State the privacy cost of publishing the key** — a PRIVACY issue, not
-  a security one, and the distinction matters. Reaching a Cell across the
-  internet works because discovery publishes NodeId → current addresses, so
-  anyone holding the published key can resolve that Cell's current IP. Nobody
-  thereby reads your data or forges your signature; what leaks is roughly
-  WHERE you are (city-level geolocation) and WHEN you are online. For a key
-  pasted on a personal website, that is a daily-pattern and approximate-home-
-  location leak to anyone who looks. It is the same mechanism that makes
-  beach-then-home work, so it is not separable — but it IS optional:
-  relay-only mode publishes no direct addresses and peers see only the relay.
+**Front-door mechanics are built** (2026-08-11). A stranger's `Introduce`
+reaching a Cell without `CAP_REPRESENT` is HELD in `door_request` and answered
+`held_for_owner` — an honest "this is a front door, your request is waiting for
+one of their devices" rather than a decision it may not make. A Cell that can
+decide collects it over `FetchDoorRequests` on the ordinary sibling pass, binds
+it exactly as a direct knock would be bound (`unknown`, pending a person), and
+releases it with `ReleaseDoorRequests`.
+
+**The queue is LOCAL, never in the op log**, and that is the whole point. A
+front door holds `relay_capabilities()` — no write, no karma, no represent — so
+a queue in the log would require it to write into the identity, and "the front
+door holds no signing material" would stop being a structural fact and go back
+to being a promise. Instead the door holds an inbox and a personal Cell pulls
+it.
+
+**Fetch and release are separate verbs** so a deciding Cell that dies between
+reading and binding finds the requests still waiting rather than silently
+dropped. A binding that is REFUSED still releases: the stranger claimed
+something that conflicts with what we hold, and re-fetching it every pass would
+leave the door permanently full.
+
+**Building the test found a real bug in sibling sync.** `pull_siblings` skipped
+Cells without `CAP_WRITE` — and a front door has none by design, so nobody
+would ever have emptied the door, which is its one job. Every other Cell is now
+dialed; whether its OPS are taken is the separate question, and that one still
+requires `CAP_WRITE`, because a relay that cannot write has no ops of its own
+to give.
+
+**A front door holds a thread offer too** (2026-08-13). `OfferGrant` from a
+stranger carries an Introduction, and accepting it BINDS them as a peer — which
+is speaking for the Organ, and a door holding no `CAP_REPRESENT` may not. So it
+holds the introduction on the same path `Introduce` uses. The offer itself is
+NOT preserved: the stranger asks again once they are known. That is the honest
+boundary — the door never promised to carry a conversation, only not to lose
+the knock, and queuing conversation state on a Cell that cannot read it would
+be the front door quietly becoming a participant.
+**The republish-comparison bug is fixed** (found 2026-08-09, closed
+2026-08-11). The re-sign decision asked
+`held.roster.cells.iter().any(|cell| cell.node_id == node_id)` — satisfied by
+THIS Cell being present regardless of who else was removed, so revoking a
+different device re-signed nothing and the revoked Cell stayed a member of the
+published identity until the roster expired 30 days later. A revocation that
+never publishes is not a revocation. It now compares the whole member set, in
+`engine::roster::needs_publishing` rather than inside the web boot path,
+because a decision with a security consequence wants a test more than it wants
+to be near its caller. Order-insensitive, since a roster is a set; a member
+with an empty capability set still forces a republish.
+
+**Dialing is a RACE** (built 2026-08-11). Every KNOWN candidate starts
+together — the saved `organ_contact.node_id` and every Cell in the roster we
+hold — and the first to answer wins; dropping the set cancels the rest. No
+leader election, as planned: leaders exist for consensus, and an op log with
+CRDTs converges without one.
+
+The directory is a SECOND ROUND, not part of that set: only once every known
+candidate has lost do the front doors it resolves race among themselves. That
+ordering is deliberate — the lookup costs a network round trip and buys nothing
+for a contact whose laptop is simply on — but it does mean a contact who has
+moved every Cell pays the known set's full race before the directory is asked.
+
+What sequential dialing actually cost: a dead Cell held the whole pass for a
+full `DIAL_TIMEOUT` (6s) before the next candidate was tried, per contact, per
+pass — so one shut laptop listed first delayed everything behind it. The race
+is staggered by 150ms rather than simultaneous, so preference still means
+something: a better candidate gets a head start measured in milliseconds, and
+if it is off the others are already in flight. Happy eyeballs, for the same
+reason it exists there. The test dials a dead Cell first and a live one second
+and finishes in ~170ms.
+
+**The preference order is a tiebreak, and only one half of it is built.**
+LAN-local Cells go first — that is the one difference between candidates this
+Cell can actually observe, and it is worth milliseconds. Preferring the
+always-on Cell "for bulk" is NOT implemented: nothing at dial time knows how
+much is about to move, and guessing would make every small sync pay a relay
+hop.
+Key succession and revocation closed 2026-08-08.
+
+**Rotation works end to end.** `POST /organ/identity/succession` signs "this
+old root endorses this new one" with the root this Cell holds; contacts pull it
+on the next sync pass over the new `FetchSuccessions` verb and adopt it only if
+it chains from a key they already hold. Everything else is a refusal, logged
+loudly — the silent takeover the chain rule exists to make visible. Order in
+the pass is deliberate: revocations first, so a dead key cannot endorse a live
+one in the same pass that learns it is dead; then successions; then the roster,
+which `adopt_roster` checks with `key_chains`.
+
+Until this landed, `sign_succession` had no callers and nothing carried a
+succession between Cells, so rotating produced a roster every contact correctly
+refused with no path to ever accept it.
+
+**The pre-signed revocation certificate** is written at key creation beside the
+root (`root-ed25519-v1.revocation.json`), so the drawer trip that fetches the
+root to re-establish identity also yields the thing that kills the old key. It
+does not prove a replacement is genuine; it is damage limitation that works
+when identity cannot yet be re-established at all.
+Two boxes closed here on 2026-08-08, in opposite ways.
+
+**No ALPN transition period, by decision.** The strings are versioned
+(`lince/sync/1`, `lince/thread/1`, `lince/live/1`) and `wire.rs` offers exactly
+those, so bumping to `/2` hard-cuts every peer on an older build — which is the
+intended behaviour. Lince keeps no compatibility with older peers: no
+side-by-side serving, no fallback branch for an older frame shape, no field
+kept alive so an old build can still read it. Every Lince on the network is
+expected to be current, so the transition code would buy nothing and be
+untested by definition. Recorded in `AGENTS.md`.
+
+**Fail closed already works**, and is a different thing from the above.
+`WireRequest`/`WireResponse` are internally tagged (`#[serde(tag = "op")]`), so
+an unrecognised verb from a newer peer fails to deserialize and is answered
+with an error rather than being misread as a neighbouring variant. A newer
+Organ degrades against an older one; it never widens.
+**The discovery UI is built** and these two boxes closed 2026-08-08. The Organ
+sand's nearby list (`/organ/nearby`, `source: "nearby"`) renders announced
+Cells with a NodeId fingerprint beside the untrusted display name, shows a
+claimed name as a claim, and offers Chat / Add known per row. The Discovery
+panel carries the three toggles with an intent tooltip on each.
+
+What was actually missing was the accept-policy LEGIBILITY: an empty nearby
+list has three meanings and only one of them is "nobody is around". It now
+says which — LAN discovery off means nothing can ever appear, and a shut door
+means a stranger who finds you is refused. Both read as a broken feature
+otherwise, and the headline flow (meet someone on the LAN) needs both on.
+
+The note the UI must keep honouring: a display name is a label, never
+identity; the pairing code is required on FIRST contact through discovery and
+skippable over an already-verified channel. What it defends is not key
+substitution on the wire (iroh retires that) but a relay attacker announcing
+their own NodeId under a friend's display name.
+Three more boxes closed 2026-08-08, all already satisfied by the Organ sand's
+tooltips: the nearby list shows the NodeId **fingerprint** and says in so many
+words that it is disambiguation and not a security check; "Add someone by
+code" **labels the paste as TOFU** ("trusts it on sight, so where you got it
+from is the whole of the security"); and the Discovery panel **states the
+privacy cost** of publishing — anyone holding the key can resolve where you
+are and when you are online, while nobody can read your data or forge your
+signature either way. That last one is a PRIVACY issue, not a security one,
+and it is the same mechanism that makes beach-then-home work, so it is not
+separable — but relay-only mode publishes no direct addresses.
 
 ### Profile vs device surfaces
 
 The Cell/Organ split earns its cost only if each side owns real things.
 
-- [ ] **Organ Record = the public profile.** Display name, description,
-  avatar, published identity key, the Cell roster, discovery preference
-  (visible / relay-only / dark). This is what a contact saves, what a QR
-  encodes, what goes on a website. It survives every device change.
-- [ ] **Cell Record = this device.** Device label ("laptop", "phone", "vps"),
-  its node key, whether it is always-on, and every local-only setting that has
-  no business travelling: File Sync paths, storage config, local cache sizes.
-  Never published except as a roster entry.
-- [ ] **Audit every `organs::local()` caller.** The funnel is
-  `store::organs::local()` (`organs.rs:76`, fixed slug) — today one row does
-  both jobs, so every call site says `organs::local()` meaning "who am I" and
-  "who authored this" interchangeably. After the split each one has to be
-  re-read and assigned, and both ways of getting it wrong are bad: a site that
-  means identity but keeps using the Cell uid makes one person look like three
-  different Organs to everyone else; a site that means authorship but uses the
-  Organ uid brings back the HLC collision that silently swallows remote ops.
-  Two known examples of each meaning: `collab.rs` passes `&local.uid` as
-  `actor_organ`, which means the CELL; `records.rs:121-131` stamps the origin
-  through `set_organ_origin`, which means the ORGAN. Every `actor_organ` write
-  site (they run through `store::sync_ops::append`) must mean the Cell, and
-  every place reading `record.organ_uid` must mean the published Organ.
-  Nothing else may assume the two are the same value. Audit, do not
-  pattern-match. Note `record.organ_uid` is `Option<String>` and the origin is
-  stamped by a separate call after insert, so the split lands on a field that
-  can already be NULL — existing rows with no origin need a defined meaning
-  BEFORE the audit lands, not after.
-- [ ] **Enrolling a new device is pairing with YOURSELF**, and deserves its
-  own flow rather than reusing contact pairing: an existing Cell shows a QR
-  carrying its NodeId plus the single-use, short-lived enrolment token; the
-  new Cell scans, connects, proves the token, and is signed into the roster.
-  The token side is built; the flow and the QR are not.
+**Built 2026-08-10 (cluster C1).** The split is real in the schema, in the log,
+and on the wire.
+
+An **Organ Record** is the published profile — display name, description,
+avatar, published identity key, the Cell roster, discovery preference — living
+in the `lince.organ` extension (`store/src/organs.rs`). It is what a contact
+saves, what a QR encodes, and it survives every device change. A **Cell
+Record** is one device: a `device`-kind Record on the fixed slug `local-cell`
+(`store/src/cells.rs`), inserted RAW so it logs no op and therefore never
+travels. A Cell reaches other people exactly one way, as an entry in the signed
+roster, which is why local-only settings belong on it.
+
+**Both are minted by `Store::open`, not by a later bootstrap step.** That
+placement is load-bearing rather than tidy. `sync_ops::log_local` used to
+answer a missing identity by silently skipping the op: the write landed in the
+read model, never entered the log, synced to nobody, and nothing said so. "Most
+unit tests have no Organ" was the reason that path existed, and the fix was to
+make the state unreachable instead of handled. A store that opened at all has
+an identity, so there is no such thing as a local write that fails to become an
+op.
+
+**The log carries both identities, and they are not interchangeable.**
+`sync_op.actor_cell` is who wrote it — one device — and `(actor_cell, hlc)` is
+the op identity the unique index dedupes on. `sync_op.organ_uid` is whose it
+is, and it is what `record.organ_uid` gets stamped from. Deriving the second
+from the first would make one person with three devices look like three
+different Organs to everyone else, so it travels explicitly, on the wire too
+(`WireOp`).
+
+**The `actor_cell` rule was forced by the schema, not chosen.**
+`idx_sync_op_identity` is `UNIQUE(actor_cell, hlc)` and `nucleus::hlc::next()`
+is a per-PROCESS counter over a static `LAST`, so two Cells of one Organ mint
+identical HLC values as a matter of course. With the Organ in that column the
+second Cell's op collided with the first's, import treated it as an
+already-seen duplicate, and it never applied — no error, no log. `hlc.rs:9`
+had been asserting the invariant its own caller violated ("per-actor
+uniqueness"), so this was a stated invariant being restored rather than a
+preference being adopted. `engine/tests/organ_cell_split.rs` now checks it,
+which nothing did before — which is how the two drifted apart.
+
+**`record.organ_uid` is required.** Enforced by
+`record_origin_required_insert` / `_update` (`0051_cell_identity.sql`) rather
+than by rebuilding the table: 47 tables carry `REFERENCES record`, the
+connection runs with `PRAGMA foreign_keys = ON`, and that pragma is a no-op
+inside a transaction — which is where sqlx runs every migration. The trigger
+gives the identical guarantee at the identical place, write time. An Organ
+Record's origin is itself; a contact's Organ Record is its own; a thread
+invite's is whoever offered it.
+
+**The `organs::local()` audit is done.** Every call site was re-read and
+assigned. Only two meant authorship and both moved to the Cell: `collab.rs`,
+which the old text named, and `checkpoint.rs`, whose comment said "the Cell
+itself" while naming the Organ — compaction is a Cell-level event, so
+anchoring the archive on the Organ would have made two Cells' independent
+compactions look like one Organ's history. Everything else means "who am I"
+and correctly stays the Organ.
+
+Two consequences worth knowing, because both look like bugs and are not.
+Stamping origins on every row made the identity Records visible to
+origin-filtered Protein queries and to File Sync; File Sync now excludes them
+by slug, since renaming `this cell.md` in a notes folder would otherwise edit
+the identity. And `transfer_delivery`'s `actor_organ_uid` is a different
+column on a different table — it means the acting ORGAN and was correctly left
+alone.
+
+- [x] **`trust::set_organ_signer` bound the transport key to the ORGAN uid.**
+  Deferred out of C1 on purpose and CLOSED 2026-08-11 with C3, before sibling
+  sync rather than after — it was the thing blocking it. The uid stays the
+  Organ and the Cell moved into the key id (`ed25519:cell:<cell_uid>:v1`), so
+  `keys_of(organ)`, envelope `origin_key_id` and the Introduction exchange all
+  keep resolving by Organ unchanged. See "Operational keys are PER-CELL" above,
+  including the escalation hole it closed on the way: `key_chains` used to
+  accept a device's traffic key as able to endorse a roster.
+- [ ] **`log_local_tx` never resolves `replica_root`.** Pre-existing, found
+  during the C1 audit and NOT introduced by it: the transaction-path logger
+  writes `replica_root = NULL`, so a write to a Record inside an individual
+  replica made through that path rides the general feed. C1 made the `None`
+  explicit where it had been an unbound placeholder, which now reads as
+  deliberate — it is not. It belongs with the scoping work in C5.
+**Enrolling a new device is pairing with YOURSELF, and it is built**
+(2026-08-11, C3). `EnrolmentInvite` carries the enroller's NodeId and
+addresses, the Organ uid, the root public key and the single-use token, under
+its own `lincecell1|` prefix — a separate prefix from `lince1|` because a
+pairing code adds a CONTACT and an enrolment code adds a DEVICE TO YOUR
+IDENTITY, and the two are shown in the same shape and scanned by the same
+camera. `Wire::enrol` dials the thread door, redeems the token, and
+`Engine::join_organ` performs the swap.
+
+**The order is the security property.** The joining Cell does not adopt the
+identity first and ask afterwards: it mints the operational key it intends to
+be known by, sends `Enrol`, and rewrites its local identity only once a roster
+comes back that is for the Organ the code offered, signed by the root key the
+code carried, and actually naming this Cell. A refused enrolment leaves the
+device exactly as it was.
+
+That order also closes a C1 leftover cleanly rather than by exception.
+`set_organ_signer` binds the operational key's `actor_uid` to the ORGAN, so a
+key minted before the swap would be filed under an Organ that stops existing
+locally. The key is therefore minted for the JOINED uid from the start — same
+secret, so the key file on disk still matches after a reboot — and bound after
+the swap.
+
+**The enrolment window IS the door policy.** A device being enrolled is not yet
+a contact of anything, so it arrives at the thread door as a stranger. Making
+the owner also switch on "accept unknown Organs" to add their own phone would
+conflate two unrelated decisions and leave that door open long afterwards. So
+the thread door opens while an issued token is unused and unexpired — minutes —
+and the verb gate still admits nothing but `Enrol`. A spent code therefore
+finds the door shut, and the client says so in those terms instead of
+"connection lost".
+
+**Joining is refused on a Cell that holds Records of its own**, and on one that
+has already published an identity. The first would have to merge two
+identities — re-stamping every Record and re-attributing every op — which is
+not something a scanned code should do silently. The second has contacts
+holding its key, and joining would strand every one of them.
+
+**First boot's own ops are PURGED, not re-stamped.** `ensure_local` writes the
+`lince.organ` extension through the logged path, so a fresh Cell already has
+ops stamped with an Organ uid that is about to stop existing. Re-stamping them
+would publish this device's `baseUrl` and `local` flag onto the shared Organ
+Record and ship them to every sibling. They have never been sent anywhere, so
+deleting them loses nothing — and the enrolment test then runs C2b's
+`audit_read_model` and `rebuild_read_model` against the joined Cell, which is
+what proves the purge was complete rather than merely plausible.
+
+**A wart named while passing:** the local surface config (`baseUrl`, `aliases`,
+`local`) lives on the Organ Record, which SYNCS. It is per-Cell state and
+belongs on the Cell Record, which does not. Written raw during the swap so it
+cannot travel; moving it properly is scoping work.
+
+**Operational keys are PER-CELL** (built 2026-08-11; the C1 box deferred to
+C3, closed before sibling sync rather than after). `identity_key` is keyed
+`(actor_uid, key_id)` and every Cell published its transport key under the same
+`ed25519:organ:v1`, so two Cells of one Organ wanted one row with different
+public keys — and `require_published_key` refuses to overwrite a published key,
+so the second Cell could not bind its own at all. Enrolment never tripped it
+(only the root travels there, under a different id); sibling sync trips it
+immediately.
+
+The uid stays the ORGAN and the CELL moves into the key id
+(`ed25519:cell:<cell_uid>:v1`). Everything that resolves a key — `keys_of`, a
+transfer envelope's `origin_key_id`, the Introduction exchange — asks by Organ
+and keeps working unchanged, while each device gets its own row and
+immutability becomes per-Cell rather than per-Organ.
+
+**An operational key must never validate a roster, and now cannot.**
+`key_chains` collected every key held for an Organ as the set a roster
+signature may chain from. With one operational key per Organ that set quietly
+contained it, so a device's traffic key could endorse a roster — a stolen phone
+signing itself more devices, which is precisely what the two-key split exists
+to prevent. `key_chains` is filtered to ROOT key ids, with a test that signs a
+roster with a Cell key and watches it be `Refused`. The two questions — may
+this key speak for the identity, may it sign traffic in the identity's name —
+had never been separated because there had only ever been one answer to each.
+
+Migration `0053` DELETES the old rows rather than translating them: a row
+cannot be attributed to a Cell without knowing which Cell wrote it, and failing
+to record that is exactly what the old shape did. Each Cell re-files on the
+next boot; a contact re-learns through the Introduction exchange.
+
+**Decision 8 — the roster's authority over local tables (settled 2026-08-11).**
+The roster governs ADMISSION LIVE; durable artifacts verify from STORED rows.
+
+The question was one wearing three hats: a revoked Cell keeps its
+`identity_key` row so what it signed still verifies; the retention floor is
+keyed by contact so a sibling holds nothing down; a front door's held requests
+are local rows no roster change touches. Individually defensible, together they
+meant "revoke a device" had a different meaning per subsystem.
+
+- **Admission** — may this Cell connect, may it write in the Organ's name —
+  consults the current roster on every connection (`sibling_organ`, `cell_may`,
+  `may_represent`). Cheap, no history involved, and it is what makes revocation
+  take effect at all.
+- **Verification of durable artifacts** — envelopes, receipts, transfer
+  history — resolves the signing key from `identity_key` as it always has. A
+  receipt is a record of something that happened; a device losing membership
+  today does not unmake last week.
+
+**What this costs, stated plainly because a person has to live with it:
+revocation is EVENTUALLY CONSISTENT.** A revoked device stops being admitted by
+each Cell as that Cell learns the new roster, not the moment the root signs it.
+A laptop that has been off for three weeks still lets the revoked phone in
+until it syncs. The rejected alternative — verification consulting the roster
+live — would make revocation immediate and uniform, but it invalidates
+everything the Cell ever signed and makes every verify path depend on holding a
+fresh roster, which is the deadlock `sibling_organ` already documents: refusing
+a stale roster cuts the only connection that could refresh it.
+
+**The UI says the eventual-consistency out loud** (2026-08-13). Removing a
+device asks "…your other devices stop accepting it as each of them syncs — one
+that is switched off will keep accepting it until it comes back", and the
+result reads "Removed from the list. Your other devices apply it as they sync."
+Not "Removed.", which would promise cut-off-everywhere-now and is not what
+happened.
+**Sibling sync is built** (2026-08-11): two Cells of one Organ converge, which
+is what makes an enrolled device useful rather than merely listed.
+
+**The roster is the sibling list, and it has to be.** `organ_contact` is keyed
+by the contact's ORGAN uid and a sibling's is OUR OWN, so no contact row could
+describe one without colliding with ourselves. `Wire::sibling_organ` resolves a
+peer NodeId against our own signed roster, at the point the contact is
+resolved — the ALPN arms close the connection before any verb is read, so
+recognising a sibling any later is recognising it too late.
+
+**`CAP_WRITE` is the bar, not membership.** A relay Cell holds no capabilities
+by design, and "the front door holds no signing material" stops being a
+structural fact the moment a listed Cell may push ops for having been listed.
+Tested with a front-door entry carrying `relay_capabilities()`.
+
+**Nothing is exempted from the import gate.** A sibling's ops carry our own
+Organ uid, which is exactly what `inadmissible` demands of a batch
+(`op.organ_uid == from_organ`), and its roster check then confirms the
+authoring Cell is a member. So sibling batches are verified by machinery that
+already existed, with no special case.
+
+**Roster EXPIRY is deliberately not consulted for siblings.** Expiry is how a
+removed device falls out of a CONTACT's view on its own, and it works there
+because that contact has other ways to hear from the Organ. Between two devices
+of one Organ it would deadlock: the only path to a fresher roster runs through
+a sibling holding the root, so refusing a stale one inbound would cut the exact
+connection that repairs it — a laptop offline for a month could never converge
+with its own phone again. So revoking a device propagates at the speed of
+roster DISTRIBUTION, not of expiry, and a revoked Cell keeps sibling access
+until the Cells that remain learn the new roster. Said plainly because the
+roster is the whole authority here — there is no contact row behind it the way
+there is for a contact.
+
+**Siblings are PULL-ONLY, by decision.** The outbox is keyed by
+`contact_organ`, so a reactive push would need a second queue keyed by Cell.
+What pull-only costs is immediacy between two devices that are both awake: a
+change typed on the phone reaches an open laptop within the catch-up interval
+rather than at once. What it does not cost is the case the design is actually
+for — "edited on the phone all day, walk in the door, laptop converges" — which
+is catch-up by definition. No per-sibling cursor exists or is wanted: the
+version vector is derived from our own log every pass.
+
+**Sibling sync is verified across OS PROCESSES** (2026-08-13). `cell_worker`
+gained two modes — `host` (become an Organ, write a Record, publish an
+enrolment code, serve) and `join` (enrol from the code, run one sibling pass) —
+so the harness C0 built ahead of this finally exercises what it was built for.
+Two databases, two endpoints, two processes, and crucially two `nucleus::hlc`
+clocks that genuinely do not share an atomic, which is the one thing the
+in-process test cannot arrange. The Record the host wrote BEFORE the second
+Cell existed arrives through sibling sync and belongs to the identity both now
+share. The harness waits on the code file appearing rather than sleeping,
+because that file is written only once the endpoint is serving.
+**Pruning deliberately does not account for siblings** (decided 2026-08-11).
+The retention floor comes from `advance_peer_acked_seq`, which is keyed by
+contact; a sibling has no such row, so an offline second device holds nothing
+down. That is safe ONLY because the prune predicate removes just SUPERSEDED ops
+— what a returning sibling loses is intermediate values LWW would have
+discarded anyway, never current state. The alternative was giving siblings
+their own acked-seq, which reintroduces the per-peer state version-vector
+catch-up exists to remove and lets a device that is off forever block pruning
+forever.
+
+**This is a standing condition on the prune predicate, not a one-off.**
+Widening pruning beyond supersede — any rule that can remove an op still
+carrying live state — invalidates the reasoning above and requires siblings to
+be tracked in the floor. Whoever touches `PRUNABLE` next owns this paragraph.
+**The Add-a-device UI is built** (2026-08-13), and building it exposed how much
+of C3 was unreachable. The Devices panel now shows the WHOLE enrolment code
+plus its server-rendered QR — the token alone was useless, since a new device
+also needs to know where to send it, whose identity it is joining and which
+root key to expect back. The same panel carries the other end, "Join another
+Organ", with paste and scan, because whichever device you happen to be holding
+is the one you will look at.
+
+Three pieces of plumbing existed nowhere and had to:
+
+- **`ActionOutcome.data`**, a structured result for surfaces. `created` is one
+  uid, which cannot carry a code plus a QR plus an expiry. The alternative was
+  mirroring into an extension the way the pairing code does — and that is
+  exactly wrong here, because extensions on the Organ Record TRAVEL and an
+  enrolment code carries a live secret.
+- **`Engine::set_enroller`**, a weak, narrow handle to the transport. Actions
+  run on the Engine, which holds no `Wire` by design, so "join an Organ" was
+  callable from a test and from nowhere else. Weak because `Wire` owns an
+  `Arc<Engine>` and the reverse would be a cycle.
+- **`RosterStatus`**, a read shaped as an Action. A sand's only channels are
+  Protein subscriptions and Actions, and neither the door queue nor the stale
+  list is a Record — the first is deliberately local-only, the second is
+  transient.
+
+**The Discovery panel explains the front door** (2026-08-13). It says what the
+badge in the device list means — a device that answers strangers when the
+others are off, holds no signing material so it cannot accept anyone on your
+behalf, and is the ONLY one that appears in what a stranger can look up. That
+last clause is the two-tier design stated where a person will actually meet it,
+rather than only in this document.
+
+### The Organ Profile in three tiers
+
+Designed 2026-08-09. Nothing here is built.
+
+**Trimming the profile mitigates none of the leaks people reach for it to
+fix.** This is the first thing to say because it is the intuitive move and it
+is wrong. "Where am I" and "when am I online" do not leak through the profile;
+they leak through the TRANSPORT, because publishing NodeId → current addresses
+is what lets anyone holding the key resolve a Cell's IP, and that happens
+whether the profile says a great deal or nothing at all. An Organ with an
+empty profile and a published key leaks exactly as much position and presence
+as one with a header photo. The three real mitigations are all elsewhere and
+all already planned: relay-only mode publishes no direct addresses, so peers
+see the relay's IP instead of yours; the two-tier roster keeps the public tier
+resolving to the front-door Cell alone, so device COUNT never leaves the
+authenticated tier; and an always-on front door makes "reachable" a constant,
+which is what actually kills the online-times leak, since presence at a door
+that is never down says nothing about whether its owner is awake. Note what
+survives honestly: the relay operator still sees your IP and your online
+times. That is moving the leak, not deleting it, which is the argument for
+self-hosting the relay (§11c infrastructure) rather than a reason to pretend
+it is gone.
+
+**What each mechanism actually leaks**, worked through 2026-08-09. Four
+things are at stake and they do not move together: your IP (hence city-level
+position), your position in real time, your online HOURS, and how many devices
+you have. Per mechanism:
+
+- **Published key + direct addresses (the public tier).** Anyone holding the
+  key resolves current addresses on demand: IP, therefore city-level position,
+  and — because resolution can be repeated — your online hours from the
+  republish cadence. Device count leaks only if the two-tier roster is absent,
+  and that case is much worse than "one extra number": addresses for laptop,
+  phone and VPS, polled over a week, are a MOVEMENT PROFILE. Phone on a mobile
+  network during the day, laptop on a home IP at night, both quiet on
+  Saturday. The two-tier roster is the only thing standing between a published
+  key and that, which is why it is not a nicety.
+- **Relay-only mode.** Peers see the relay's address instead of yours, so the
+  leak does not shrink — it RELOCATES to the relay operator, who now sees your
+  IP, your hours, and how many distinct Cells connect. Self-hosting the relay
+  moves it to you and is a genuine win for a specific reason: the address
+  everyone resolves is then your VPS, and your home IP never appears at all.
+- **Dark (publish nothing).** Nothing is resolvable; only peers already
+  holding an address, or a relay you dial outbound, reach you. The cost is the
+  whole of discovery.
+- **The LAN announcement is the sharpest leak in the system** and nobody
+  expects it, because it is the friendliest-sounding feature. mDNS tells
+  everyone on the café wifi that you are here, right now, under this name and
+  key. That is precise real-time position — categorically sharper than
+  city-level IP geolocation — and it is default-on for the headline flow of
+  meeting someone locally. The toggle exists (`local_discovery`,
+  `wire.rs:460`); what is missing is that the surface must SAY this, in these
+  terms, rather than describing it as "let nearby people find you".
+- **A gossiped card is better for presence than direct resolution**, and this
+  is the one place the design gains privacy rather than spending it. A
+  store-and-forward card is a cached artefact: reading it says nothing about
+  whether its author is online now, or where they are, or how many Cells they
+  run. It leaks exactly its own contents, to an unbounded audience,
+  permanently — which is a real cost, but a different one, and it is not a
+  presence leak.
+- **A directory Cell** sees the publisher's card and, far more sharply, every
+  QUERY: who searched for what, when, from which address. That disclosure
+  lands on the SEARCHER, who is usually not the person the privacy
+  conversation was about.
+- **Facade fetch** — see the Facade boxes below. From the origin it is a read
+  receipt on a profile view; content-addressed from any holder, it is not.
+- **An always-on front door** is what actually removes the online-hours leak,
+  and it comes free with the infrastructure work: a door that is never down
+  makes "reachable" a constant, so observing it reveals nothing about whether
+  its owner is awake.
+
+**Identity verification is deliberately NOT part of this**, dropped
+2026-08-09. A `lince.txt`-on-your-website check proves that whoever controls a
+domain asserts a key — which is not the claim "the Organ announcing this holds
+that key", and the checkmark it produces is earned just as easily by an
+attacker who copies a real profile wholesale, real key included. A profile is
+a self-description. It is never evidence, and no surface may present it as
+any.
+
+**Where a choice exists, the safe branch is the one that ships.** Settled
+2026-08-09, gathered here so nobody has to reconstruct it from a dozen boxes.
+The governing rule is that a default is the state someone is in BEFORE they
+have thought about it, so every default below is the quiet one and every
+disclosure is a deliberate act. None of this forbids the open behaviour; it
+forbids arriving at it by accident.
+
+**Reach is THREE states and defaults to relay-only** (built 2026-08-13).
+`Reach::Relay` is the new middle: relays and address publishing, with every
+IP transport removed (`clear_ip_transports`), so there is no direct path to
+publish and none is published — a peer resolving this Cell sees the relay's
+address and never this machine's. `Reach::Internet` adds direct addresses and
+holepunching; `Reach::Local` publishes nothing at all.
+
+Two settings rather than three states in the UI, because that is how a person
+thinks about it: "reachable over the internet" (default ON, via a relay) and
+"allow direct connections" (default OFF, faster, reveals this machine's
+address). mDNS is a third and independent switch, now default OFF.
+
+**The defaults are REVERSED from what shipped before**, and the reasoning is
+the one already written down here: a default describes a fresh install on a
+café network, not an Organ that has decided to be reachable. The old defaults
+were right for the second and wrong for the first. What relay-only costs is
+latency and someone else's bandwidth; what it buys is that being findable no
+longer tells every key holder roughly where you are and when you are awake.
+- [ ] **Reach defaults to relay-only.** Direct address publication — the thing
+  that puts your home IP in front of anyone holding your key — is opt-in, and
+  the surface must say what it buys (lower latency, no relay operator in the
+  middle) and what it costs. Today `Reach::Internet` publishes directly.
+- [ ] **mDNS defaults to OFF, and turning it on is TIME-BOUNDED.** It is the
+  sharpest leak in the system (above) and its whole use is a few minutes long:
+  you are meeting someone in a room. A persistent toggle means one afternoon's
+  meeting leaves you announcing yourself in every café for months. Ship it as
+  "discoverable for the next N minutes", expiring on its own, with a persistent
+  mode available but never the default.
+- [ ] **The two-tier roster is not a setting.** There is no configuration in
+  which the public tier lists more than the front door; the movement profile
+  it prevents is too large a loss to leave to a checkbox someone can be talked
+  into.
+- [ ] **Gossiping your card is opt-in, per tier.** T0 announcement, T1 card
+  propagation and T2 Facade availability are three separate consents, and none
+  implies the next. Publishing a profile locally must not silently enrol you
+  in unbounded propagation — a card that has travelled cannot be recalled, so
+  this consent is the one that is hardest to undo and therefore must be the
+  most explicit.
+- [ ] **Coarse area defaults to unset**, and when set defaults to its COARSEST
+  granularity, so the finer settings are always a deliberate step down rather
+  than a default someone forgot to raise.
+- [ ] **The seen-set, the per-source budget and the age expiry are mandatory,
+  not tunables.** A relay that forwards without dedup harms the whole network,
+  not only itself, so it may not be configured off.
+- [ ] **Publishing into a directory is a separate, explicit act** from
+  gossiping, and joining a directory is never automatic on discovering one.
+- [ ] **The invite door stays default-closed**, unchanged and restated here so
+  the profile work does not quietly open it: making yourself describable is
+  not making yourself contactable.
+
+**Richness is the Organ's publishing choice, never a function of distance.**
+The tiers below are cut by SIZE, because a 245-byte mDNS record and an HTML
+page are different budgets, not different audiences. A stranger three hops out
+must never see MORE because they are far away.
+
+- [ ] **T0 — the announcement. 245 bytes, text only, forever.**
+  `iroh::address_lookup::UserData` caps at 245 bytes (`engine/src/wire.rs:436`)
+  and today carries a bare display name clipped to `MAX_LENGTH/4`
+  (`wire.rs:476`). It must instead carry a structured pair: display name and
+  the profile version number. That is a real encoding change rather than a
+  longer string, and it is free — `AGENTS.md` keeps no compatibility with
+  older peers. No image reaches this tier and none ever will.
+- [ ] **The published organ key must NOT ride T0** — reversing what this
+  section said on 2026-08-09, corrected the same day. Putting the key in the
+  announcement looked like a convenience (a nearby row could then show a
+  profile card without connecting) and is a real regression. The Cell's NodeId
+  is already exposed by mDNS as a matter of how mDNS works, and that is
+  unavoidable; the ORGAN key is additive and avoidable, and it is the value
+  that links every one of your Cells to each other and to your public profile.
+  Broadcast it on the café wifi and a passive listener — who needed no
+  connection, no contact row, and no permission — keeps a permanent handle
+  that resolves your addresses anywhere afterwards and correlates you across
+  every network you ever sit on. The key arrives AFTER connect instead. The
+  cost is that a nearby row shows no card until connection, which is consistent
+  with the standing rule that the nearby list renders claims only.
+- [ ] **The T1 card DOES carry the key, and the difference is consent, not
+  readability.** Stated explicitly because the two rules look contradictory
+  and the next reader would otherwise resolve them by guessing. A gossiped
+  card is more widely readable than an mDNS announcement, not less, and is
+  received just as passively — so readability cannot be what separates them.
+  What separates them is that gossiping is opt-in per tier and time-unbounded
+  by nature, while mDNS was default-on and incidental to standing in a room:
+  one is a disclosure a person chose, the other is one they walked into. The
+  key must also stay in T1 on pain of breaking the card signature, which has
+  nothing to verify against without it.
+- [ ] **T1 — the card. A few KB, and the only tier that gossips.** Name,
+  description, organ key, coarse area if set, and a SMALL avatar inline —
+  128px webp lands around 4–8KB. This is the unit that travels hop to hop and
+  the thing a nearby list renders. Over a long-range low-bandwidth radio even
+  this is large, so the card must degrade to its text half rather than fail to
+  send.
+- [ ] **T2 — the Facade. An HTML page, fetched on demand, never gossiped.**
+  This is the Playground Facade (`docs/Interface.md`) and the machinery is
+  ALREADY BUILT: `board/archive.js` exports a workspace as one self-contained
+  file with a four-layer no-network guarantee — every script, `on*` handler,
+  `<link>`, `<base>`, `javascript:` URL and media src stripped; images and
+  stylesheets inlined as `data:` URIs with leftover CSS `url()` neutralised to
+  `url("data:,")`; each document embedded as `<iframe srcdoc sandbox>` with
+  the empty sandbox attribute; and `default-src 'none'` on the outer page,
+  which srcdoc children inherit. So a person builds a sand describing
+  themselves from their real data, exports it, and that file is the Facade.
+- [ ] **"JavaScript disabled" is not the property that makes this safe** — say
+  so wherever the feature is described. Plain scripts-off HTML still beacons
+  through `<img src>`, CSS `url()`, `<link>`, webfonts and form actions, and
+  every one of those tells the profile's AUTHOR who opened their page and
+  when. That is the online-times leak again, pointed at whoever was merely
+  curious, and it is worse than the original because the reader never chose to
+  be reachable. The CSP and the empty sandbox are what close it. The Facade
+  must therefore BE an archive export, not "an HTML page with JS off".
+- [ ] **Rendering a STRANGER's Facade is a threat model `archive.js` was never
+  built for.** Its four layers are anti-exfiltration and were designed for a
+  file you exported yourself. They are not anti-deception: sandboxed static
+  HTML can still imitate Lince's own chrome and phish a password. A Facade
+  therefore renders inside a bounded card that visibly belongs to someone
+  else, never fullscreen, never chrome-shaped, never able to present anything
+  that reads as a Lince prompt. This is a NEW requirement; nobody may later
+  read "we already have the safe export" as covering it.
+- [ ] **SANITISE ON RECEIPT, not on export — this corrects the box above.**
+  `archive.js` cleans a document as it WRITES the file, which protects a file
+  you exported yourself and does nothing whatever against the only adversary
+  that matters here: a hostile author simply does not use the exporter and
+  hand-writes the HTML, scripts and beacons intact. Every guarantee listed
+  above is void in that case. The receiving Cell must therefore run the strip/
+  inline/neutralise pass itself on every Facade before rendering it, treating
+  the sender's file as raw untrusted input; the export path is a convenience
+  for honest authors and nothing more. Practically this means the sanitiser
+  stops being an export-only routine in board chrome and becomes a shared
+  function with a second, mandatory caller on the ingest side. **A Facade that
+  fails sanitisation is refused, not cleaned** — rendering the stripped
+  remainder is what turns a partial-strip miss into a live bypass, and every
+  other failure branch in this section already resolves the same way (a bad
+  signature drops the card, a cache miss renders nothing).
+- [ ] **Render-side leakage is solved; fetch-side is the part that remains.**
+  Be precise about the limit rather than promising unlinkability: the CSP and
+  the empty sandbox mean a rendered Facade cannot phone home, so its AUTHOR
+  learns nothing about who read it — provided the fetch was content-addressed
+  from whoever happened to hold the bytes. What cannot be hidden is the fetch
+  from WHOEVER SERVES IT; that party sees a request. The mitigation is not
+  anonymity, it is choosing a server who already knows you: fetch through the
+  relay you already use for everything else, never directly from the origin
+  Organ.
+- [ ] **Fetch only on an explicit click.** A Facade pulled automatically
+  because its card scrolled into view is a passive beacon in everything but
+  name, and it converts the one leak into the one thing the tiers exist to
+  avoid.
+- [ ] **Links inside a Facade are INERT by default**, rendered as visible URL
+  text that does not navigate. Navigation out is an exfiltration channel the
+  CSP does not cover: a target the viewer clicks reaches the author's server
+  with timing and referrer, which is the read receipt returning by hand.
+  Click-to-confirm showing the full URL is available as an explicit
+  per-viewer setting, never the default, because the default is the state
+  someone is in before they have thought about it.
+- [ ] **Who serves T2: decided for the private answer, not the convenient
+  one.** A Facade is fetched BY HASH from any holder that has it, and never
+  from the origin Organ — not even as a fallback when no holder is found. The
+  three candidates were origin-serves (requires the author online and directly
+  reachable, which is exactly what has already failed for a card that came
+  three hops, and hands the author a read receipt on every view), relay-caches
+  (costs relays megabytes per profile), and origin-only-when-up (the feature
+  then mostly does not work at the distance it exists for). Relay-caching wins
+  because the cost is storage, which is boundable, while the others cost
+  privacy, which is not. The critical part is the absence of a fallback: an
+  origin fetch offered when the cache misses would be taken almost every time
+  a Facade is new, which is precisely when the author most wants to know who
+  is looking. **A cache miss renders nothing and says so.** Bound the storage
+  instead — a conservative per-Facade size cap, shown before the fetch, and
+  relay-side eviction under the separate cache lifetime below.
+- [ ] **Sign the card with the organ key — for integrity, not identity.**
+  Without a signature any relay carrying your card can rewrite your
+  description or swap your photo before passing it on, and the reader three
+  hops out cannot tell. This is what makes forwarding safe at all, and it is
+  one signature. It is NOT the verification dropped above, and the difference
+  must survive into the UI: a valid signature is a precondition for DISPLAYING
+  the card, never a mark drawn beside it. A card whose signature fails is
+  dropped silently — not shown with a warning icon, because a badge that can
+  be absent is a badge, and a badge is the checkmark coming back through the
+  side door.
+- [ ] **Content-address every image, and every Facade.** Referencing a photo
+  by the hash of its bytes means a relay that already holds it re-forwards the
+  card for free, two Organs using the same picture store it once, and — the
+  part that matters for privacy — fetching a Facade by hash from whoever has
+  it does not tell its author that you looked. Fetching from the origin is a
+  read receipt on a profile view. Content addressing is what removes it.
+- [ ] **A version number and a card TTL.** The version is monotonic and
+  highest-wins, so an edit supersedes rather than races; the TTL stops
+  relays re-spreading a card forever. Without both, a photo you deleted keeps
+  circulating and stale copies overwrite fresh ones.
+- [ ] **Cache eviction is a SEPARATE lifetime from the card TTL.** A
+  content-addressed image cached by a relay outlives the card that referenced
+  it unless its eviction is specified on its own. Otherwise the deleted-photo-
+  returns-forever problem survives the fix aimed at it.
+- [ ] **A last-updated timestamp**, so a stale card visibly looks stale rather
+  than reading as current.
+- [ ] **Pronouns and language** as first-class card fields. Both are tiny and
+  both are genuinely what a stranger needs to decide whether to speak to you.
+- [ ] **A reachability hint** — direct / relay-only / an always-on Cell
+  exists. Someone three hops out otherwise cannot tell whether reaching you is
+  possible at all before spending the attempt. It says a door exists; it never
+  names the Cells behind it.
+- [ ] **What you are offering or looking for travels WITH the card.** This is
+  the actual reason to gossip and it already has a home: OPEN promises are
+  named below as the propagating payload. The card is the person; the promises
+  are the content. Two systems that ship separately will not meet.
+- [ ] **A self-declared coarse area, and nothing finer.** Granularity is the
+  Organ's choice — country, region, city, neighbourhood — and the field is
+  NEVER derived from IP geolocation or GPS. The distinction that makes this
+  coherent alongside everything above: the transport leak is involuntary and
+  precise, while this is voluntary and as vague as its owner wants. A
+  "precise location" default-on would collapse the two and undo the section.
+- [ ] **Stays OUT of every tier**: the Cell roster (device count and
+  online-time leak — the public tier resolves to the front door alone), the
+  contact list, and any link rendered as anything other than plain unverified
+  text. A link presented with a mark of any kind puts back the mechanism
+  dropped at the top of this section by accident.
 
 ### Individual replica and threads
 
-- [ ] **Adopting an EXISTING Record into a replica root.** Deferred from the
-  `replica_root` work because it opens a window: the Record already logged ops
-  with `replica_root = NULL`, those ops already rode the general feed, and any
-  `sync_in` contact gets them on their next catch-up. Needs a backfill
-  decision and a UI that says plainly that already-sent ops cannot be un-sent.
-  Sharing an arbitrary existing Record would make it its own root
-  (`replica_root = own uid`) and stamp its subtree in ONE walk at that moment;
-  new descendants inherit thereafter.
-- [ ] **Bidirectional by agreement**: the sharer offers, the receiver accepts,
-  and only then does the Record land in their Cell. Acceptance is what turns
-  "you may see this" into "I keep a copy," and it is also what stops an Organ
-  from pushing unwanted Records into someone's store.
-- [ ] **Message Records must NOT ride the ordinary record sync feed.** They
-  are delivered over the thread ALPN only. Otherwise a visibility bug in the
-  normal feed leaks a private conversation to an unrelated contact, and even a
-  sealed body would still expose who is talking to whom.
-- [ ] **Key exchange IS the promotion step, and it happens inside the thread**:
-  a "send my key" button posts the local Organ's identity key + NodeId as a
-  message; receiving one offers "add as known Organ" with a name field the
-  local user types (never the sender's claimed label). That single action
-  writes the contact, adopts the key, and sets `trust='known'`. The Organ sand
-  keeps the same thing by hand — paste a key, type a name — for contacts who
-  never used a thread.
-- [ ] **What remains after deletion is exactly one thing**: they may send an
-  INVITE to open a new thread, one pending at a time, which lands in
-  notifications. `trust='blocked'` drops invites too.
-- [ ] **Conversation view in the Record sand**: thread list plus a message
-  composer over the message Records. The existing text binding is the other
-  branch of the same sand, untouched — a Record is either being talked in or
-  being co-written, and the two views never contend. (A `conversation` sand
-  exists; this is the Record-sand branch of it.)
+**Mentioning a Record in a thread REFERENCES it and reads it live; it does
+not copy it.** Settled 2026-08-09, replacing the copy-on-share design this
+section carried before — the earlier box is preserved below because the
+window it describes is the reason the new answer is better.
+
+The rejected design: sharing an existing Record into a thread made it its own
+replica root and stamped everything under it in one walk. It needed a backfill
+decision and a UI admitting that ops already logged with `replica_root = NULL`
+had already ridden the general feed to every `sync_in` contact and could not
+be un-sent. That admission is the tell. The new design has nothing to admit:
+the message carries a POINTER, opening it reads through to the owner's Cell
+over the live door (`lince/live/1`, already built and exercised by
+`crates/transport/tests/live_workflow.rs`), and no copy is ever made.
+
+The property this buys is the one the rest of the system cannot offer:
+**revocation becomes real.** Everywhere else — §12 revoke, thread deletion,
+the `forget` request — stopping a share is polite, because the remote already
+holds bytes and runs its own code. Here, stopping means the next read fails,
+because there was never a copy. It is the single place in the design where
+"undo" is enforceable rather than requested, and that is worth the costs
+below rather than being free of them.
+
+**A live reference read resolves THROUGH the §12 gate — built 2026-08-14.**
+`WireRequest::FetchReference { root, record }`, served on the thread door
+because a conversation may exist with someone still `unknown` and a reference
+posted in one has to be readable or the pointer is decoration.
+
+Three checks, in a fixed order, and the ORDER is part of the design: the asker
+holds an accepted grant on `root`; a message inside that root actually
+references `record`; then the ordinary gate — the same hide list and the same
+per-contact scope the feed uses, not a second more permissive path to the same
+row. Reversing the first two would answer "does this uid exist on your Cell" to
+anyone who guessed one.
+
+**Withheld, retracted, never-mentioned and deleted-since all return the SAME
+refusal.** They are different facts, and distinguishing them would turn a
+conversation into a way to probe another Cell's uids one guess at a time. It is
+also what the reader should be told: from their side all four mean the same
+thing, and "that is no longer shared with you" is a permission answer rather
+than an error that reads like a bug.
+
+The scope narrows the row through `Protein.fields` — the same selector doing
+both of its jobs, and the first caller where the absent-not-blank rule bites
+for real: a withheld column is missing from the object, not present and null.
+
+**It required narrowing a safety rule, which is worth reading carefully.**
+`assertions::assert` refused any link whose endpoints did not share a root,
+and a reference IS such a link: a message inside a conversation pointing at an
+ordinary Record. The rule named two hazards and refused three cases. The two
+stand — two DIFFERENT roots would silently widen both conversations, and a
+general-feed subject with a private object would ride the general feed carrying
+a private uid. The third was collateral: a private subject with a general-feed
+object takes the SUBJECT's root, so the op reaches only that conversation's
+grant holders, nothing is widened, and the mentioned Record is not pulled into
+the root. `replica::root_for_link` had answered this case correctly all along —
+the two disagreed, which is the one-question-two-implementations shape again.
+All three cases are now pinned by a test, because a narrowed safety rule needs
+its new edge visible.
+**A reference resolves live, or it resolves to nothing — built 2026-08-14.**
+There is no cache, here or anywhere on this path, and there must not be one: a
+cached copy is the thing that would make revocation stop working, which is the
+single property this design has that the rest of the system cannot offer.
+
+The two failures are told APART all the way to the surface, because they mean
+opposite things to the reader. `403` is the owner's answer and reads as one;
+anything else is the network and reads as temporary. Collapsing them would show
+"they are not sharing this with you any more" to somebody whose friend closed
+their laptop — a false accusation the interface has no business making. The
+offline message also says WHY there is nothing to fall back to, so the absence
+of a cached copy reads as the design rather than as a missing feature.
+
+**Surfacing it needed a Protein fix first**, and the fix is the same shape as
+several others this week: `threads_for_record` built each message's
+`references` by inner-joining `record`, which is right for everything we hold
+and silently drops the one case a reference EXISTS for — a Record that lives on
+its owner's Cell and was never copied here. Through that join a remote
+reference was not unresolved, it was invisible, and a surface cannot offer to
+read what it cannot see. Messages now also carry `live_references` (the
+unresolvable ones), plus the `organ_uid` and `replica_root` needed to ask —
+neither of which the sand can derive.
+**Reading a reference is a read receipt to its owner — built 2026-08-14.**
+The read is a live request against their Cell, so it is observable whether or
+not anyone records it. The alternative to recording it is therefore not privacy,
+it is an invisible side effect, so BOTH sides are told: the reader before
+pressing Read, because after is too late to be a choice, and the owner in an
+"Opened by" panel on the Record.
+
+Three decisions inside it, each the narrow one:
+
+* **The Organ, never the Cell.** Which of their devices opened it is theirs to
+  know; recording it would make this a device-tracking table.
+* **A count and a last-read time, not a row per read.** A conversation left
+  open in a tab would otherwise turn a receipt into a surveillance log, and
+  "when did they last look" is the question anyone actually has.
+* **A refusal is not a read.** Only a read that actually served something is
+  recorded — logging refusals would build a record of who ATTEMPTED what,
+  which is a different and nastier table, and one nobody consented to.
+
+`reference_read` is LOCAL ONLY and no op kind carries it. Writing it must
+never fail the read either: the receipt is a courtesy to the owner, and
+withholding the answer because we could not write our own note would punish
+the reader for our problem.
+
+The panel is ABSENT rather than empty when nobody has opened the Record. Most
+Records are never referenced, and a permanent empty panel on every one of them
+would train people to ignore the one that eventually says something.
+**A reference shows the Record as it is NOW, and says so — built 2026-08-14.**
+The read is labelled with the fact that it happened just now and that the owner
+may change it at any time. Pinning a version stays rejected: more machinery than
+a conversation needs, and it would require keeping a copy, which is the one
+thing this path must not do.
+
+Nothing is displayed until the reader presses Read. That is not laziness about
+prefetching — an unread reference has not been read, and drawing its contents
+before anyone asked would both make the read receipt below a lie and blur the
+line between a pointer and a copy, which is the distinction the whole design
+rests on.
+**"Send a copy" — built 2026-08-14 as a separate and explicitly irreversible
+act.** `send-record-copy` creates a NEW Record inside the conversation with the
+source's head and body, leaving the original untouched on the general feed.
+
+The new uid is load-bearing, not hygiene: reusing the source uid would make the
+copy and the original the same Record to every later merge, so an edit on
+either side would flow back through the grant channel. That is a shared
+document, which is a different thing that nobody agreed to. The slug is dropped
+for a smaller reason — it is a local suggestion and would collide with the
+original on our own Cell.
+
+A Record already inside ANOTHER conversation cannot be copied across. That is
+the same cross-root widening `assertions::assert` refuses, and letting a copy do
+it would be the same disclosure wearing a different verb.
+
+Permissioned as `record:create`, not as an update on the source: the original is
+not touched, and the other way round would leave someone who may only READ a
+Record unable to pass it on while someone who may edit it could, which is
+backwards.
+
+Surface: its own button beside Post — never one control with a mode, or the
+irreversible act becomes reachable by the same gesture as the reversible one.
+The confirmation appears AT the moment of copying, names the DIFFERENCE rather
+than asking "are you sure" (which tells nobody anything), says that later edits
+here will not reach it, and states the alternative — write `@its-slug` — so the
+safer option is visible at the point of choosing. Asked in the page, not
+through a browser modal, matching the rule the Organ sand already pins.
+**Replica sync requires consent from BOTH parties — already built, pinned
+2026-08-14.** The correction this box called for had landed: `OfferGrant`
+records `offered` and never `accepted`, the outbox fans out only to `accepted`
+grants, and `import_grant_batch` refuses a channel without one. What was
+missing was a test for the state in between — every existing test covered "no
+grant at all", which passes just as well if an OFFER were enough. Both sides
+are now checked in one test, because either gate alone would look like it
+worked.
+**Message Records do NOT ride the ordinary record sync feed — already built.**
+Enforced structurally rather than by a rule anyone has to remember: every
+general-feed query carries `replica_root IS NULL`, and a message is born inside
+its conversation's root, so there is no path by which one reaches the ordinary
+feed. `a_full_sync_contact_without_a_grant_receives_nothing` is the standing
+proof, and it checks both the outbox and a catch-up fetch.
+**Key exchange IS the promotion step — completed 2026-08-14.** The sending half
+(`share-my-key`, which posts this Cell's pairing code as a message) already
+existed with no button; the receiving half did not exist at all. Both are now
+in the conversation, which is the point: you talk to someone first, then decide
+they are someone you know, without a trip to another screen carrying a string
+in the clipboard.
+
+A message containing a `lince1|` code renders an "Add as known" control. It
+does NOT parse the code — `add-known-organ` decodes it and refuses what does
+not decode, and that judgement belongs in exactly one place.
+
+**The name field is the load-bearing part and is never prefilled.** A sender's
+claimed label is a string they chose and is not identity, so the local user
+types what THEY call this person. Prefilling from the message would quietly
+promote an untrusted label into a name, which is the thing this design refuses
+everywhere. Submitting with it empty is refused with the REASON — "a name is
+not something they send you" — because a bare validation error reads as a quirk
+rather than as a rule.
+
+The control also says what adding someone opens: the ordinary feed, which a
+conversation on its own does not. One Action does the whole promotion — writes
+the contact, adopts the key, sets `trust='known'` — so there is no half-added
+state to be stranded in.
+**What remains after deletion is exactly one thing — built 2026-08-14.**
+`delete-conversation` is local removal PLUS revocation, and both halves are
+needed: revoking alone leaves the conversation in the list, removing alone
+leaves their ops still welcome so it repopulates on the next sync. It resolves
+the root from whatever was named, because someone deleting a conversation
+usually has a thread selected and deleting only that would leave it
+half-present and still syncing.
+
+**It emits NO tombstone**, and that is the honest limit rather than an
+omission: a tombstone is a synced op kind, so deleting these Records the
+ordinary way would delete THEIR copy too, and nobody agreed to that. Their copy
+is theirs — §12's revoke/forget split says plainly we cannot reach into their
+Cell. A test asserts the tombstone count is unchanged, because this is the kind
+of thing a later refactor "fixes" by routing deletion through the normal path.
+
+The op rows go with the Records. They could only ever be served on this root's
+grant channel, so with the grants gone they reach nobody — and leaving them
+would keep the conversation reconstructible by a C2b rebuild, which is not what
+"deleted" means to the person who asked. Read receipts inside it go too:
+keeping a record of who read what in a conversation that no longer exists is
+the opposite of deleting it.
+
+The anti-spam half was already built and is now pinned: `invites` has a UNIQUE
+on `from_organ`, so one pending invite per Organ, and a blocked Organ never
+reaches the invite path at all — the connection closes before the ALPN split.
+That one pending invite is what makes it a knock rather than a channel.
+**Conversation view in the Record sand: built** (box closed 2026-08-08). The
+sand has the thread tab list, the composer, per-message delete under
+`record:delete_own`, @-reference hops and inline images, and thread search —
+covered by `scripts/other/record-selftest.sh`. The text binding is the other
+branch of the same sand and the two never contend. Since 2026-08-07 it also
+follows the `organ` an ABI event names, so the threads shown belong to the
+Cell the record lives on.
+
+One tidy-up left, not a gap: the Record sand posts with `create-message` while
+the Conversation sand uses `send-message`. Both inherit `replica_root` through
+`create_in_root`, so both are correct — `create-message` additionally carries
+parent/references and tolerates a thread with no root. Two names for one act
+is worth collapsing before a third appears.
+
+### Op authenticity: signing, clocks, and who may write
+
+Found 2026-08-09 by reading the import path. Three defects that are
+individually arguable and together are not, because they compose into a
+single capability: **any sync contact can forge any write, attributed to any
+Organ, and make it permanent.**
+
+1. **Ops carry no signature.** `WireOp` is
+   `{tbl, uid, field, kind, value, hlc, actor_organ}` and nothing more. The
+   connection authenticates the SENDER; nothing authenticates the AUTHOR.
+   `actor_organ` is a bare wire string stored verbatim — a grep for any
+   validation of it in `engine/src/sync.rs` returns nothing.
+2. **Ops relay transitively by default.** `append`'s `relay_exclude` exists
+   precisely because an imported op is re-enqueued to every other sync-out
+   contact, so attribution must survive hops and has nothing to survive on.
+3. **`hlc::observe(op.hlc)` is called on wire values with no bound.** One op
+   stamped near `i64::MAX` pins the clock to the far future permanently —
+   `lib.rs:156` re-observes the log max at boot and the poisoned op is now in
+   the log. `next()` then does `last + 1` on a near-`MAX` value: panic in
+   debug, wrap to negative in release, at which point ordering collapses.
+
+Composed: contact B sends a batch claiming `actor_organ = A` with an
+unbeatable HLC against any field of any Record. It stores, wins LWW forever,
+renders as A's work, and relays onward as A's work. Facts are the exception —
+they keep a signed envelope — which means the money-shaped thing is protected
+and nothing else is, the inversion one would least choose.
+
+**Signing is the fix, NOT encryption**, and the distinction was worth
+settling explicitly (2026-08-09) because the instinct runs the other way.
+Encryption hides content from third parties; it does nothing against forgery,
+since a liar encrypts a lie just as well. Confidentiality on the 1-on-1 path
+is ALREADY solved: QUIC encrypts end to end, so nothing between two contacts
+reads anything today. Encryption earns its cost in exactly one place — when a
+THIRD PARTY carries the bytes, i.e. store-and-forward through a relay — where
+the payload is sealed to the recipient. Encrypting op content generally would
+buy nothing and cost a great deal: one ciphertext per recipient instead of one
+shared log, no dedup, and key rotation becoming a re-encryption pass over
+history.
+
+**Concurrent imports can leave the read model disagreeing with the log.**
+Found 2026-08-09. `wire.rs:994` serves each connection on its own task — "so
+one slow peer cannot stall the others" — so two contacts import concurrently.
+`import_ops` then does four steps per op with NO transaction spanning them:
+read `latest_hlc_for_field`, `append` to the log, compare against the value
+read in step one, and write the read model through `set_record_field`.
+
+Interleave two contacts delivering ops for the same record and field, X with
+`hlc = 100` and Y with `hlc = 90`, against a stored prior of 50. Both read
+prior = 50. X appends, wins its comparison, materialises its value. Y appends,
+compares against the 50 it read BEFORE X's write, also believes it wins, and
+materialises over the top. The final displayed value is Y's, at `hlc = 90`,
+while the log's rightful winner is X at 100.
+
+The log stays correct, which is what makes this nasty: every op is present and
+ordered, so an integrity audit recomputing from the log flags a mismatch it
+cannot explain, and the wrong value persists until something else happens to
+write that field. Nothing recomputes the read model from the log on a
+schedule, so it does not self-heal. It also gets MORE likely in exactly the
+topology the plan promotes — several peers pushing into one always-on Cell.
+
+- [x] **Make the per-op read-compare-append-materialise sequence atomic.**
+  Done 2026-08-10 as `Engine::import_lock`, held for the whole batch.
+  Held for a whole import batch, and by every OTHER entry point that logs an
+  op or compacts — `write_record_text`, `apply_client_crdt_update`, and the
+  compaction sweep. Not by `compact_doc` itself, which the import path already
+  reaches with the lock held; locking there deadlocks on any imported crdt op
+  large enough to trip the compaction threshold, which no ordinary test
+  reaches. There is a regression test that imports a 256KB-plus op under a
+  timeout, because a deadlock that only appears with real documents is worth
+  one deliberate test.
+  **A lock rather than the transaction this box suggested**, and the reason is
+  worth keeping: the sequence crosses `store::sync_apply`, the Loro doc
+  registry and an async boundary, so threading a transaction through all three
+  is a large refactor of the most delicate path in the codebase. Serializing it
+  is small, obviously correct, and costs nothing real because SQLite serialises
+  writes anyway — only the import critical section serializes, while serving,
+  dialing and reading stay concurrent. Pinned by a test that imports two peers'
+  ops for the same field concurrently and asserts the read model agrees with
+  the log afterwards.
+  **IN-PROCESS ONLY**, and this is the part that must not be forgotten: two
+  Cells sharing a database across processes still need a database-level guard,
+  which is the conditional `UPDATE … WHERE field_hlc < ?` this box described.
+  It wants the multi-process harness to test it, so it belongs with that box
+  rather than being done blind now.
+- [x] **A read-model rebuild from the log, as a repair the audit can call.**
+  Built 2026-08-10 in C2b as `rebuild_read_model`, and `audit_read_model` is
+  the caller. See "Retention, audit, and modes".
+  **This box used to say "the integrity audit currently detects divergence
+  with no way to fix it". That was wrong** — checked 2026-08-10, `audit` does
+  not exist anywhere in the codebase, so nothing detects anything. Corrected
+  here because the sentence made the gap sound half-closed when it is open,
+  and "the log is authoritative" is only true once something can act on it.
+  What DID land is the half that makes a rebuild possible at all: with
+  snapshots in the log, text can be reconstructed from it.
+**Built 2026-08-10, with C1.** `observe` is bounded against local wall time by
+`MAX_CLOCK_DRIFT_MS` and the importer quarantines anything past it rather than
+clamping, so a broken or hostile clock is visible instead of silently absorbed.
+`next()` saturates. And the attribution rule is now `op.organ_uid ==
+batch.from_organ`, checked in `Engine::inadmissible` — the post-split form of
+the same idea, since the op carries the Organ explicitly. Attribution IS the
+authenticated connection and needs no cryptography, exactly as intended.
+
+The gate also refuses an op whose `actor_cell` is not in the sender's roster,
+which closes a hole the split would otherwise have opened: `(actor_cell, hlc)`
+is the dedup key, so a peer free to invent a Cell uid could pre-insert
+`(your_cell, some_future_hlc)` and make your real op arrive at every contact
+holding that row and be dropped as an already-seen duplicate.
+
+- [ ] **Close the no-roster gap in the Cell check.** When we hold no roster for
+  the sending Organ the op is admitted, because refusing would drop every
+  contact paired before rosters travelled. Until roster exchange is part of
+  pairing (C3), the dedup-poisoning attack above is open against those
+  contacts.
+**Relaying defaults OFF, and that is what makes the rule above free.** BUILT
+  2026-08-10: `sync_ops::append` returns without enqueuing when the op arrived
+  from a contact, so an imported op is stored (and still served on a catch-up
+  feed to a peer that asks for our log) but never pushed onward. It had to land
+  with the attribution check rather than after it — the check refuses relayed
+  ops at the receiving end, so leaving the sending end relaying would have made
+  every forwarded op arrive as quarantine noise, which is worse than either
+  choice on its own.
+  Settled 2026-08-09. Transitive relay is not a latency feature — a direct
+  dial is always faster — its only real purpose is availability: A and C both
+  sync with B, A is offline, and C's change reaches A later through B. Turned
+  off, `actor_organ == from_organ` holds by construction and the entire
+  forgery class disappears WITHOUT any signatures. Ordinary sync is 1-on-1.
+  **The availability case it was supposed to serve is already covered**, which
+  was worked through on 2026-08-09 and settles the question rather than
+  deferring it. C tracks per-contact op progress (`last_synced_seq`), so when
+  A comes back online C compares cursors and sends exactly what A is missing —
+  directly, which is strictly better than B forwarding it. That leaves one
+  residual case: A and C are contacts who are NEVER online at the same time.
+  The answer there is an always-on Cell in your OWN roster, not a third party
+  relaying on your behalf — your Cell, your key, no unconsented disclosure.
+  And if A and C are NOT contacts, relaying C's ops to A is precisely the
+  disclosure this design refuses elsewhere. So there is no case left that
+  transitive relay serves better, and this is a second reason to run the VPS
+  Cell rather than a reason to build relaying.
+- [ ] **When relay does arrive, it carries a SIGNED BATCH envelope** from the
+  original author, verified on arrival and passed along intact — one signature
+  per batch, never per op. Per-op signing is the version that hurts: a burst of
+  keystrokes is a burst of `crdt` ops, and a signature on each would put
+  asymmetric crypto in the typing path. Jazz reached the same shape from the
+  other direction, signing per SESSION with Ed25519 after each transaction
+  rather than per value. Batch signing is invisible (~50µs sign, ~100µs
+  verify, amortised over a whole drain); this belongs with the relay work, not
+  as a tax on ordinary sync.
+- [ ] **Relaying, if it returns, is a per-contact setting defaulting the quiet
+  way.** Forwarding a contact's ops to your other contacts is a disclosure
+  nobody in that chain consented to, independent of whether it is
+  cryptographically sound.
+
+### Inbound Protein: authorization is currently one-directional
+
+Imported ops **bypass the Action layer entirely** — straight into the log and
+the read model — so permission checks that govern local writes do not apply to
+remote ones. A contact could write fields no local permission set would ever
+allow, because `sync_in` was a boolean: accept everything they send, or
+nothing.
+
+**One Protein language, both directions** (built 2026-08-13).
+`organ_contact.accept_fields` is the same encoding, the same vocabulary and
+the same three states as the outbound scope, applied at `import_ops` — which
+covers pull and push together, since both arrive through it.
+
+**The two directions share ONE predicate** (`sync_ops::op_in_scope`) and that
+is the load-bearing part. They are different policies — outbound is a privacy
+control, inbound an integrity one, with no reason to agree — but the same
+question, and the question has enough edges (deletes exempt; the Loro document
+carrying two columns under an empty field) that deriving it twice means
+deriving it differently. The second copy would be the one that leaks, and
+nothing would fail until it did. The validator is shared for the same reason:
+what is unsayable one way is unsayable the other.
+
+**Out-of-scope ops are dropped silently, not quarantined.** An op outside our
+acceptance is our own policy working, not the peer misbehaving; quarantining
+it would fill the bounded ring on the first sync with any contact wider than
+our acceptance and bury the reports that mean something.
+
+Inbound has no re-snapshot and cannot have one: we cannot ask a peer to
+re-send what we chose not to take. Widening applies to what arrives next and
+to nothing already past. `accept_version` moves anyway, so the change is
+visible locally and the two directions keep the same shape.
+
+**How Jazz does it, and why Lince differs deliberately** (reviewed
+2026-08-09). Jazz attaches permission to the DATA: a Group owns a CoValue,
+members hold roles (reader/writer/admin), nested CoValues inherit from the
+referencing one, and encryption enforces it — so permissions travel and
+survive a dishonest server. Lince attaches permission to the SERVE PATH: the
+visibility gate filters at feed-serve time. Lince's model needs the serving
+Cell to be honest, but costs no crypto and makes per-field narrowing nearly
+free, which Jazz's model cannot do cheaply. Worth holding deliberately rather
+than drifting into. Jazz's revocation is also worth copying as a statement of
+limits, because it is the same limit stated honestly: removing a member
+rotates the read key for future data, while data they already read stays
+read — exactly §12's "revoke is hard and local, `forget` is polite".
+
+### Tree sync: syncing from a root Record, and the Move verb
+
+Settled 2026-08-09. This absorbs what the Recipes section called "moving a
+selection of one's data to live in a chosen Organ", and it is the old Karma
+synctree idea landing where it belongs — **in sync, not in Karma**, and
+configured with Protein rather than with a bespoke bundle format.
+
+The unit that travels is a **Record tree from a root**, plus the aggregate
+rows that hang off it — karma, transfers, concepts and links, all of which
+are already keyed by record uid and so come along without being enumerated
+separately. A Protein selects what within that tree actually travels, which
+is the same selector §12 uses for per-contact narrowing, so there is one
+language for "what a sand shows", "what a contact receives" and "what a tree
+carries". A single Record is the degenerate case of a tree, not a special
+mode. Anything that cannot be expressed as a tree from a root is OUT of scope
+rather than a reason to invent a bundle table — the point of this design is
+that it needs no new tables at all.
+
+**Copy is an incoming sync of a tree, and that is why it is nearly free.**
+Move is the genuinely new verb, and it is the dangerous one:
+
+- [ ] **The walk needs a visited set and a depth bound.** Records link to
+  Records, so a tree from a root over a link graph can cycle.
+- [ ] **A uid already present in the receiver's store MERGES, it does not
+  duplicate.** Same uid means same Record, reconciled by op identity like any
+  other sync. There is no "copy as new" and the interface must not imply one.
+- [ ] **Move's manual delete emits tombstones that propagate.** Moving a tree
+  to Organ B therefore also announces the deletion to contacts C and D. That
+  is correct behaviour AND a surprise, so it is said before the button is
+  pressed rather than discovered after.
+- [ ] **Copy first, and Copy alone, in the first version.** It reuses the
+  walk, the ops and the consent handshake that already exist.
+- [ ] **Move is Copy plus a SEPARATE manual deletion**, pressed by a human
+  after seeing the data arrive. Never automatic, never on an acknowledgement.
+  Delete-after-confirmed across two machines is a distributed transaction:
+  lose the ack and you either destroy something that never landed or keep
+  something you promised to drop. The cheap correct answer is a person
+  looking at the screen, and it is the chosen one.
+- [ ] **Taking a tree requires the receiver's consent**, like every other
+  incoming sync. A DNA published as free to use is the same act with the
+  consent pre-granted by the publisher — it enters your store AND stays in
+  theirs, which makes it a Copy in both directions of the word.
+- [ ] **Do not name this "Trail" in the code or the schema.** The word is
+  useful as an idea and there is nothing here a more fundamental primitive
+  does not already do; naming it would also collide with the shipped **Trail
+  mode** in `Interface.md:143` (a predicate's forward assertion graph). This
+  is tree sync, and that is all it needs to be called.
+
+**One consent handshake, two delivery semantics.** Four things currently
+spell the same handshake four ways: thread invites, replica agreement,
+accepting a tree, and transfer acceptance. An offer lands, it sits pending,
+the receiver accepts or refuses, nothing moves before, and a refusal is
+remembered. That IS one implementation and unifying it is a real
+simplification worth doing.
+
+**Verdict on merging sync and transfer generally: NO, decided 2026-08-09**
+after weighing both sides, and the three things that DO merge are named below
+so the question stays answered rather than reopening.
+
+*For the merge:* one consent handshake; one retry/backoff scheduler, where
+today the transfer delivery worker and the outbox drain are two schedulers
+with two policies and two chances to mishandle an offline peer; one "did it
+arrive?" surface, where today receipts and checkpoints give the same user
+question two different answers; one permission gate, which is what stops the
+drift the August merge had to fix; fewer wire shapes, since every ALPN bump
+hard-cuts peers; and the honest conceptual point that both are consented
+movement of data between Organs.
+
+*Against:* opposite guarantees, opposite failure costs, opposite lifetimes
+(a Transfer is a completed event with a receipt you keep, sync is a moving
+cursor with no "done"); a Transfer is a user-visible DOMAIN object with its
+own Records and Rules while sync is invisible plumbing, so merging couples a
+domain concept to a transport concern; the convergence-under-replay test that
+currently IS the sync contract would stop meaning anything; and transfer
+signatures cover the old HTTP paths as signing domains, so merging further
+means a format break bought for tidiness rather than capability.
+
+*Resolution:* merge the consent handshake, the retry scheduler and the
+delivery-status surface — genuinely one thing spelled twice. Keep the
+delivery semantics and the domain objects apart. That takes half the benefit
+at none of the cost, and it is reversible in a way a full merge is not.
+
+What must not be unified is what happens after acceptance. Sync is
+idempotent and endless — deliver an op five times and nothing happens, lose
+one and catch-up fixes it, worst case is temporarily stale. Move is
+exactly-once with an acknowledgement — deliver twice and there are two
+copies, lose the ack and data is destroyed or duplicated, and it never
+self-heals. The transport merge that mattered already happened (transfer
+rides `lince/sync/1` since 2026-08-08, one door, one auth check). Merging
+further would put the exactly-once case inside machinery whose every reflex,
+test and retry loop assumes at-least-once is harmless. One door, one consent
+handshake, two delivery semantics.
 
 ### Transport cleanup
 
@@ -1728,9 +2985,19 @@ The Cell/Organ split earns its cost only if each side owns real things.
   `contact_by_node_id`. What is left of `base_url` is a display string plus
   these callers, each of which must move to a NodeId dial before the column
   can go:
-  - `web::presentation::http::transfer_delivery` — every envelope, receipt and
-    pull request is an HTTP POST to `contact.base_url`. The largest of them;
-    Transfer is the only subsystem still speaking HTTP peer-to-peer.
+  - ~~`web::presentation::http::transfer_delivery`~~ — DONE 2026-08-08.
+    Transfer rides `lince/sync/1` as `TransferPost { verb, body }`, served
+    through a `TransferPeer` handler installed from `web` (the same seam as
+    `LiveSessions`). The six `/organ/transfers/*` peer routes are deleted and
+    the delivery worker holds no HTTP client. Nothing about the payloads
+    changed — they were already signed and verified with `sign_organ_request` /
+    `verify_wire`, so the transport is a pipe — and the old paths survive as
+    the SIGNING DOMAINS those signatures cover. Two addresses stopped
+    travelling as values: `hosted_url` on a remote reference, and the
+    `origin_base_url` threaded into a receipt. Riding the sync ALPN inherits
+    its gate, which is a deliberate tightening: delivery now requires a
+    `known` contact, where the HTTP path served any contact that was not
+    blocked.
   - `engine::sync::Introduction.base_url` — carried in the introduction and
     written onto the contact by `adopt_introduction`. Harmless as a label,
     misleading as an address: it is the peer's view of itself, routinely a
@@ -1744,6 +3011,14 @@ The Cell/Organ split earns its cost only if each side owns real things.
 - [ ] **Transport reuse for reactive deltas**: when a live Protein WS to the
   contact is already open, reactive deltas ride it; the outbox drain is the
   fallback, not a second channel — the one-WS rule stays intact.
+  **A WS delivery must delete the outbox row by `seq`**, with the same guard
+  `outbox_delete` uses, or a delta sent over the socket stays queued and
+  re-sends on every drain forever. The seq guard is what keeps an op that was
+  superseded while in flight from being dropped.
+- [ ] **Retiring `base_url` changes `Introduction`, which is a wire break.**
+  Fine under the no-legacy rule, but batch it with other wire changes rather
+  than spending an ALPN bump — and therefore a hard cut of every peer — on a
+  cleanup that delivers no capability.
 - [ ] **IPv6: prefer it wherever available.** NAT exists only because IPv4 ran
   out; with IPv6 every device can have a globally routable address, so there
   is no translation layer to defeat and direct connections succeed far more
@@ -1784,57 +3059,911 @@ exists, which is why it comes first among the later items.
   NAT is not. Both VPS jobs coexist on one box — `iroh-relay` on its public
   address, and a Lince Cell that is a member of the Organ roster — as separate
   processes with separate ports and no interaction.
-- [ ] **Self-host address publishing** (a pkarr/DNS publisher), so
-  reachability does not depend on n0's infrastructure either.
+**Self-hosted address publishing is configurable** (2026-08-13):
+`lince.discovery.relays` on the CELL Record names the pkarr relays this
+machine publishes through, with a field for it in the Discovery panel. Empty
+means the public defaults, which is the honest starting point — reachability
+that depends on somebody else's boxes is still reachability, and pretending
+otherwise would only mean a Cell nobody can find. It is per-DEVICE because a
+laptop on a home connection and a VPS in a datacentre have no reason to agree.
 - [ ] **Run a Cell on the VPS as a member of the Organ roster**: the always-on
   device that makes offline delivery work without either laptop being up.
 - [ ] **Only then does relay-only mode cost nothing that matters** — the relay
   being depended on is the user's own. Depending on your own machine is not a
   dependency problem.
-- [ ] **Discovery settings as ordinary config**, never a build flag: `local`
-  controls mDNS advertising/listening on the LAN, independently from
-  `internet`, which controls internet address publication (DHT + DNS). Both
-  default ON, because a Cell that is not resolvable across the internet cannot
-  serve the case that motivates the whole design — the VPS telling the phone
-  about a change the laptop made. Off is the deliberate choice, not the
-  default. Configured through `lince.discovery`, which already exists.
-- [ ] **Live mode via iroh for hostname-less Cells**: your Cell fronts a
-  remote Organ that has no public door. Your local Lince becomes the door to
-  an Organ that has none of its own.
+**Discovery settings ARE ordinary config** (built 2026-08-13, never a build
+flag). `local` controls mDNS on the LAN, independently from `internet`, which
+controls whether this Cell is reachable at all, and `direct`, which controls
+whether it publishes this machine's own addresses. All three live on the CELL
+Record — they describe a machine, not an identity — and are edited in the
+Discovery panel.
+
+**The defaults are REVERSED** from what shipped, on the reasoning already
+recorded here: both used to default ON, because a Cell nobody can resolve
+cannot serve the case that motivates the design — the VPS telling the phone
+about a change the laptop made. That holds for an Organ that has decided to be
+reachable and not for a fresh install on a café network, which is the state a
+default describes. So `local` defaults OFF, and `internet` defaults to
+RELAY-ONLY rather than direct address publication. Turning either on is one
+setting, once.
+
+**mDNS presence EXPIRES** (built 2026-08-13). Switching LAN discovery on writes
+`local_until`, and `discovery_is_local` reads it: past the expiry, presence is
+off whether or not anyone remembered. The Discovery panel offers an hour, eight
+hours, a day, or until switched off, and says when it lapses. The thing about a
+room is that you leave it — a laptop that announced itself in a café three
+months ago is otherwise still announcing itself in every café since.
+
+An UNPARSEABLE expiry counts as expired: failing closed is the only safe
+reading of a disclosure setting we do not understand. A missing one with
+`local: true` stays on, because that is a Cell configured before the bound
+existed, and silently killing someone's working LAN discovery would be worse.
+
+**A regression this stretch caused, found and fixed here.** Moving discovery to
+the Cell Record made its writes RAW — no op, no Fact — which is what lets a
+relay configure itself, and which also meant nothing on the fact bus announced
+a change. `wire_supervisor` rebinds the endpoint on that bus, so saving a
+discovery setting appeared to work and took effect only at the next reboot.
+`Engine::watch_config` is the announcement; the supervisor selects on both now.
+**Live mode via iroh for hostname-less Cells is BUILT** — checked 2026-08-13
+rather than assumed, and it turned out to have landed with the live-mode work
+itself. `presentation::http::live_proxy` is exactly this box: a browser cannot
+speak QUIC to a NodeId, so it opens an ordinary websocket to its OWN Cell on
+localhost — no certificate, no hostname, nothing to configure — and that Cell
+relays the frames to the host Cell over `lince/live/2`. Your local Lince IS the
+door to an Organ that has none of its own.
+
+The split is what makes a session survive a changing network: the only leg that
+crosses one is the iroh leg, authenticated by key rather than address, and the
+browser leg never leaves the machine.
+
+**What to run on a donated VPS, ranked by how much it actually helps.**
+Settled 2026-08-09, for an operator who wants to give the network capacity
+and is running this on a machine SEPARATE from their personal Cell.
+
+The ranking matters because the intuitive answer is wrong. A **Lince relay
+Cell** (next section) is worth the most by a wide margin, for an unglamorous
+reason: iroh relays already exist in reasonable numbers, and Lince relay
+Cells number approximately zero, so the marginal one is the difference
+between the gossip layer working and not existing. An **`iroh-relay`** is
+worth running second — it genuinely shortens paths and reduces how much of
+the network leans on n0's boxes — but it is a donation to a functioning
+system rather than the thing that makes a broken one work. **Publishing to
+Mainline DHT via pkarr** is a client action every Cell does for its own
+reachability; it is not a contribution and does not belong in this ranking.
+**Running a full Mainline DHT node** is where the recommendation turns
+negative: Mainline has millions of nodes so the marginal contribution is a
+rounding error, while the cost is a public UDP service that is scraped
+continuously and has a long history of being conscripted into traffic
+amplification. Do not run one, and never in a Lince process.
+
+- [ ] **Both relay jobs on one VPS, as separate everything.** Separate
+  processes, ports, system users and state directories, with no interaction
+  and no shared keys. Neither may read the personal Cell's store — which is
+  the reason the personal Cell belongs on a different machine entirely.
+**"The front door holds no signing material" is ENFORCED** (2026-08-13, the
+first C4 box). The refusal is a TRIGGER in the database, below every client,
+because a property you can defeat by pointing a second client at the same store
+is not a security property. `local_capability` is this Cell's own capability
+set, flattened out of the signed roster whenever one for our Organ is stored —
+from either direction, since a relay never publishes a roster and only ever
+adopts one. Three conditions guard it: the op must be authored BY THIS CELL (an
+imported op belongs to someone else and a relay must still carry it), our own
+Organ must have a roster (before one exists a Cell is the whole Organ), and
+`write` must be absent. The root can give the capability back, which is what
+makes it a capability rather than a one-way door.
+
+**Turning it on immediately found the thing that would have made relay mode
+unusable: a relay could not configure itself.** Discovery settings lived on the
+shared Organ Record, so writing them was a logged write, so a Cell with no
+write capability could not set its own `lince.discovery` — and a relay that
+cannot be configured cannot be operated. They are per-DEVICE settings and never
+belonged on a Record that syncs. They now live on the CELL Record, written raw
+through `cells::set_config` and a `set-cell-config` Action, with a read
+fallback to the old location. **The roster MIRROR had the same defect** — a
+logged write that made publishing a relay roster fail halfway, having already
+recorded the capability that forbade the rest of it. It is display state each
+Cell derives from a signed blob both sides already hold, so it never needed to
+travel: `set_extension_raw`.
+
+**The Devices panel says when this Cell is a relay** (2026-08-13), so the first
+a person learns of it is not a write failing with a database error. It reads:
+this device carries traffic and authors nothing, your device list gives it no
+permission to write, that is what a front door IS — it holds no signing
+material, so a break-in here cannot write as you — and permissions come back
+from a device holding the root.
+
+**"Has a roster" and "what the roster grants" are deliberately separate
+questions** in `RosterStatus`, and conflating them was a bug caught before it
+shipped: a relay HAS a roster and NO capabilities, so deriving one from the
+other made exactly the state this panel exists for unreportable. A Cell with no
+roster at all is the ordinary first-boot state — it is the whole Organ — and
+must never be reported as a problem.
+- [ ] **The Facade cache needs a PER-SOURCE quota, not only a global cap.** A
+  global cap alone means one hostile publisher fills the cache and evicts
+  everyone else's pages at no cost to itself.
+**The operator statement ships in the Discovery panel** (2026-08-13), where
+the person who runs the box will read it: a relay cannot read anything passing
+through it, it does observe addresses, connection times and who dialled whom,
+that is exactly the trust this design elsewhere says nobody should have to
+extend, and the only honest mitigations are to not log it and to say so. Lince
+keeps no record of relayed connections. It is in the product rather than in a
+README because a README is where such statements go to not be read.
+**A per-peer connection cap ships from the first deploy** (2026-08-13):
+`MAX_CONNECTIONS_PER_PEER`, conservative at 8, refused with a closed
+connection rather than a punishment — redialing is cheap. PER PEER rather than
+global, because a global cap is precisely what would let one noisy contact lock
+everyone else out. It is the half of a bandwidth cap that can be enforced
+without accounting for bytes; byte accounting is still open, and a relay
+operator who needs a hard bandwidth ceiling should set one at the machine.
+**Nix: a relay is a fourth `mode`** (built 2026-08-13).
+`services.lince.mode` is now desktop | server | board | RELAY. A mode rather
+than a boolean because almost nothing about it is a server with a switch
+flipped: no board, no admin password — the assertion demanding one for
+`server` does not extend to it, and a MATCHING assertion refuses a relay that
+is given one — and its own systemd limits (`services.lince.relay.memoryMax`,
+`.cpuQuota`), conservative rather than tuned. Both assertions were checked by
+EVALUATING the module, not by reading it.
+
+**What makes a Cell a relay is not this module.** It is the Organ's signed
+roster giving that Cell no capabilities, which the database enforces. The
+module only shapes the unit around that fact — which is why a relay still
+passes `--server`: the difference between them is authority, not UI.
+
+The Facade storage quota the original box wanted under
+`services.lince.relay.*` belongs to C9, which is where Facades are. Stubbing
+an option for a thing that does not exist would have been a worse answer than
+saying where it goes.
+
+**`iroh-relay` has its own module** (2026-08-13):
+`scripts/deploy/nixos/iroh-relay-module.nix`, `services.iroh-relay.*`, outside
+the Lince namespace — it is not Lince, it is a dependency Lince can use, and
+putting it under `services.lince` would imply it shares state with a Cell. Its
+own system user, `ProtectHome`, and no permission to read a Cell's store: the
+separation is structural rather than asserted. `package` is deliberately NOT
+defaulted, because silently picking a relay version is how you end up running
+one nobody chose. The config is generated from options rather than taking a
+path, so what is deployed lives in one place.
+
+**A relay Cell is infrastructure; a townsquare is a place. They are not the
+same node and should not become one concept**, even when one VPS runs both.
+
+A relay forwards gossiped cards under the TTL and seen-set rules, caches
+Facades by hash so a page can be read without touching its author, and may
+keep a queryable index. It holds no accounts, hosts nobody's identity, and
+stores no conversations. Nobody has to trust it, which is precisely what the
+card signature and the content addressing buy.
+
+A **townsquare Organ** — the "common place for communication" — is an
+ordinary Organ that many people keep as a contact and that publishes public
+Records, with a moderator and a membership. The comparison worth writing
+down is `user@mastodon.social`: there, the server HOSTS the identity, so the
+address changes if the server dies and the user disappears with it. In Lince
+identity is the user's own key, so a townsquare cannot host anyone. Joining
+one does not change your address and leaving costs a contact row. That is a
+real improvement over the federated model and it comes for free from the
+identity design, so nothing new is needed to support it — a townsquare needs
+no protocol, only a posting policy.
+
+**Two kinds of always-on box, both supported, and the difference is whether
+it can READ your data.** Settled 2026-08-10 in answer to "would that relay be
+a normal server where ops change data and both sides get updates?".
+
+- [ ] **A full Cell on the VPS** — a member of your roster, holding your keys
+  and your plaintext data, merging ops and serving them like any other Cell.
+  Both sides genuinely converge through it, because it IS you. Maximum
+  capability, and the honest cost is that whoever controls that box has your
+  data. This is `mode = "server"`, and it is the one the always-on-Cell boxes
+  above describe.
+- [ ] **A blind mailbox** — holds SEALED envelopes it cannot read and hands
+  them over when the recipient appears. It is not a member of any roster,
+  holds no keys, and converges nothing; it stores and forwards. This is
+  `mode = "relay"`, and it is the one case where encrypting op payloads earns
+  its cost (see "Op authenticity"), precisely because a third party is
+  carrying the bytes.
+- [ ] **Never blur them into a middle option.** A box that holds plaintext
+  "just to help" is a full Cell with none of a full Cell's accountability.
+  The choice is readable-and-yours, or unreadable-and-anyone's.
+- [ ] **Keep the two separate in configuration and in the interface**, so an
+  operator never believes moderating a townsquare gives them any power over
+  what a relay forwards, or that running a relay makes them responsible for
+  what a townsquare publishes. Stateless plumbing anyone may run and nobody
+  trusts, versus a social space with a person answerable for it.
+
+### Multi-hop discovery: relays, gossip, and ask-around
+
+Everything above this line finds a peer you already hold a key for, or a peer
+within mDNS/BLE range. Neither answers "there is a Need three hops away that I
+could meet, and I have never heard of that Organ." That question needs its own
+answer. An early sketch of it existed once, in Transfer's now-superseded
+tracker prose ("gossip cache," "delegated ask-around search with hop/TTL
+limits") — worth reviving as a first-class part of this document rather than
+left buried where it can't be found.
+
+- [ ] **Relay Cells, not just `iroh-relay`.** `iroh-relay` above only
+  rendezvouses and falls back for two Cells that already know each other's
+  NodeId. A discovery relay is a different role: a Cell willing to carry OTHER
+  Organs' discovery/gossip traffic onward — over the internet, or, for the case
+  with no internet at all, LoRa or another long-range low-bandwidth radio. New
+  infrastructure, not a mode switch on the existing relay.
+- [ ] **OPEN promises are already the payload for this.** `GET
+  /organ/open-promises` (§11a) already exports what a subject may publicly
+  see; the missing piece is letting that propagate past direct contacts, hop by
+  hop, with a TTL so it cannot circulate forever, and a per-hop visibility
+  check so a hop never sees more than the Organ that sent it already allowed.
+  "Gossip" here means OPEN promises spreading outward through willing relay
+  Cells — not a new message type.
+- [ ] **Hop count is the only distance a Cell without internet or GPS can
+  reason about honestly** — no claim of physical distance, just "how many
+  willing Cells forwarded this." Proximity (§13) stays the separate,
+  local-only, decaying signal it already is; hop count is a network-topology
+  fact, not a nearness claim, and the two must never be conflated in the UI.
+- [ ] **LoRa (or similar) as its own transport, not a variant of iroh/QUIC.**
+  Long-range radio implies its own framing, its own tiny payload budget, and
+  almost certainly store-and-forward rather than a live connection — closer in
+  spirit to the existing durable outbox (§11a Threads) than to a live socket.
+  Worth treating as its own transport adapter from the start.
+- [ ] **Consent to relay is explicit per Cell**, the same way running
+  `iroh-relay` on the VPS above is a deliberate act, not ambient behavior every
+  Cell does by default — a Cell opts in to spending its own bandwidth/battery
+  carrying a stranger's discovery traffic.
+
+**Gossip cannot reach the world, and the TTL is not the reason why.** Recorded
+2026-08-09 against the wish for unbounded relaying. A flood with no hop limit
+means every participating Cell eventually stores every profile and every OPEN
+promise on Earth; that is arithmetic, not policy, and no privacy setting
+rescues it. The TTL exists first to keep the network from melting and only
+second to limit exposure — reading it as a privacy knob invites someone to
+raise it "because I don't mind being seen", which is the one change that
+breaks everyone else's storage.
+
+**The hop counter, and what it is not enough on its own.** Settled 2026-08-09.
+Each forward increments a counter and a relay drops anything past the limit
+IT chose rather than the limit the sender asked for — that is the standard
+mechanism (IP TTL, Bluetooth Mesh, Scuttlebutt hops) and the relay-decides
+half is the important half to have got right. But TTL alone is not the state
+of the art and shipping it alone reproduces Gnutella, which melted for exactly
+this reason:
+
+- [ ] **A seen-set is the missing piece, and it matters more than the TTL.**
+  Dedup on the card's content hash and drop anything already forwarded. TTL
+  bounds DEPTH, not fan-out multiplicity: in any graph with cycles the same
+  card arrives by many paths and is re-forwarded each time, so cost explodes
+  well inside the hop limit. TTL without a seen-set is the classic flood
+  failure.
+- [ ] **Forward to a random subset, not to everyone.** Epidemic/push-pull
+  gossip converges with dramatically less traffic than full flooding, and full
+  flooding plus TTL is precisely the design that did not survive contact with
+  real networks.
+- [ ] **A per-source rate budget**, or one Organ republishing in a loop is
+  indistinguishable from an attack and costs every relay downstream.
+- [ ] **Age-based expiry independent of remaining hops.** A card with hops
+  left but thirty days old must still die, or a slow corner of the network
+  keeps ancient copies alive forever.
+- [ ] **Hop count is sender-spoofable and nothing may depend on it.** A sender
+  chooses the counter's starting value, so "three hops away" is a claim, not a
+  measurement, and a receiver cannot tell it from a lie. This is the concrete
+  justification for the box above forbidding hop count from being read as a
+  nearness claim — it is not merely a different KIND of distance, it is not
+  reliably a distance at all.
+
+World reach is a genuinely different mechanism and must be named as one rather
+than allowed to grow quietly out of gossip:
+
+- [ ] **A directory Cell** — a relay that keeps a QUERYABLE INDEX an Organ
+  publishes into and others search, instead of forwarding to everyone in the
+  hope the right person is downstream. Push versus pull, and the reach an
+  index gives is the reach the wish was actually asking for.
+- [ ] **The directory's trust story is its own, and it is worse.** A
+  forwarding relay sees what passes through it; an index sees every QUERY —
+  who is looking for what, and when. That is a sharper disclosure than
+  anything gossip does, it lands on the searcher rather than the published
+  Organ, and it must be stated on the surface where someone searches. Several
+  independent directories are the mitigation; one blessed directory is a
+  naming authority in everything but name, which §11c refuses elsewhere.
+- [ ] **Searching an area resolves against the self-declared coarse area
+  field** (see The Organ Profile in three tiers) and nothing else. A search
+  never asks a Cell where it is, never derives an answer from IP geolocation,
+  and never returns anything finer than the Organ chose to publish. Asking to
+  mitigate the location leak and adding "people search an area and you tell
+  them where you are" would otherwise be the same paragraph contradicting
+  itself; what makes the pair coherent is that the transport leak is
+  involuntary and precise while the published area is voluntary and as vague
+  as its owner wants.
+
+### Who does the recurring work when an Organ has several Cells
+
+Not a bug yet — nobody can have two Cells until enrolment ships — but a whole
+CLASS the Organ/Cell split creates, and every scheduled feature built before
+it is settled will assume the wrong thing. Karma rule evaluation, Cadence
+firing, the pruning schedule, the Organ polling scheduler and transfer
+delivery retries all currently assume they are the only copy running. Three
+Cells means three of each: rules fire three times and schedule three
+Transfers, Cadence produces three occurrences. They cannot dedupe by op
+identity, because identity is `(actor_organ, hlc)` and the HLC is per-process
+— three Cells mint three DIFFERENT identities for what is semantically one
+consequence. Note this is the cluster-1 defect seen from the other side:
+making `actor_organ` the Cell is right for writes and precisely wrong for
+consequences, where sameness was the property wanted.
+
+**The axis is not recurring vs reactive.** Confirmed 2026-08-09: reactive
+rules are the WORSE case, since they fire on changes and every Cell sees every
+change, so they fire more often than scheduled ones. What actually divides
+them is whether the consequence is **local** — recompute a view, refresh a
+projection, safe to run on every Cell — or **externally observable** — creates
+a Record, schedules a Transfer, sends a message — which must happen exactly
+once. Whatever mechanism guards the second kind guards it whatever triggered
+it.
+
+**The mechanism's prose spec is `Karma.md` §14.1** (written 2026-08-14): two
+independent axes — *is the Rule synced?*, ordinary per-Record sync, default on;
+and *does THIS Cell execute it?*, a local per-Cell per-rule flag that never
+travels, because executing is a property of a machine and not of the rule. Every
+arrangement follows: all Cells running the same synced Karma, one Cell running
+the common Karma while the others hold it without executing, each Cell running
+different unsynced Karma over shared Records, or any mixture per rule. A lease is
+how "exactly one" gets implemented, not the model itself. Cycles are a FEATURE
+and get bounded rather than forbidden — but an UNBOUNDED cycle is not
+acceptable, because every iteration writes an op that enters the log, the outbox
+and the feed of every contact: freedom for the author, unbounded cost to third
+parties no.
+
+**Axis 2 is built — 2026-08-14.** `karma_program_execution` holds one Cell's
+answer for one Program, and the filter sits in `freeze_next_epoch`, at the
+moment the turn's member list is frozen. That placement is the whole of it:
+excluded there, a Program is never evaluated, consumes no fuel and touches no
+Program state. Filtering later — at the point a run would write its effect —
+would let a dormant rule advance its own state on a Cell that is not supposed to
+be running it, and the executing Cell's next run reads exactly that state.
+
+**Absence means execute**, and the table stores deviations only. Three reasons,
+all of them the same reason from different angles: an Organ that never opens the
+setting behaves as it always did; a Program arriving from another Cell runs
+rather than sitting silently dormant; and a row lost to a restored backup fails
+toward running, which is visible in the Ledger, instead of toward a rule that
+quietly stopped, which is visible nowhere. Every read is a LEFT JOIN with
+`IS NOT 0` rather than `= 1`, which is the direction a refactor breaks.
+
+It is LOCAL and structurally so — `sync_op` carries five tables and this is not
+one of them. Pinned by a test that counts ops before and after, because the
+whole axis inverts if it travels: turning a rule off on the laptop would turn it
+off on the always-on Cell.
+
+**Surface: "Where rules run" in the Karma sand.** Every Program this Cell holds,
+each with "runs on this Cell" or "held here, runs elsewhere", and a note field
+asked for but never demanded when switching one off. The wording is pinned by
+selftest: "disable", "pause" and "turn off" are refused as labels because they
+describe the RULE, and someone reading them would expect their other Cells to
+stop too.
+
+**The boxes stay here**, in the plan, including the Karma ones — the lease is
+one mechanism, and the pruning schedule, the Organ polling scheduler and
+transfer delivery retries all had to be asked about it. That was a per-scheduler
+decision rather than an assumption, and **decided 2026-08-15 it splits two to
+one**, on one test: what does a SECOND Cell doing this work cost someone else?
+
+**Pruning does NOT take the designation.** A Cell prunes its own op log, which
+is its own disk and nobody else's; the work is not merely idempotent but
+per-Cell by nature, since the retention floor is computed from what THIS Cell's
+contacts have confirmed. Designating it would mean one Cell's log shrinks and
+every other Cell's grows without bound — a lease that creates the problem it
+was borrowed to prevent.
+
+**Organ polling does NOT take the designation either**, for a stronger reason:
+each Cell polls in order to receive its OWN ops, so a designated poller would
+leave the others simply not syncing. Two Cells polling the same contact costs a
+duplicate fetch, and the ops dedupe on arrival by `(tbl, uid, field)` and HLC.
+That is bandwidth, paid by us, and the alternative is silence.
+
+**Transfer delivery retries DO take it.** This is the one where a second Cell
+reaches OUTWARD — the same envelope POSTed to a recipient twice, from a retry
+loop whose whole job is to keep trying. It is `Act` in the classification above,
+which is exactly the line the designation was built for, so it borrows the
+mechanism rather than growing a second one. Its accepted cost is the same and no
+worse: if the designated Cell is off, deliveries wait, and a waiting delivery is
+visible in the Transfer's own state where a duplicate one is not.
+
+**Wired 2026-08-15.** `drain_envelopes` asks `store::executor::runs_here` on the
+Transfer Record before each envelope and SKIPS rather than fails — a Cell that
+is not the designated one has nothing wrong with it, and marking it failed would
+burn the attempt budget belonging to the Cell that is supposed to send. The
+designation sits on the Transfer rather than on the outbox row, so it is one
+answer for the whole conversation with a recipient instead of a per-envelope
+race.
+
+**And it is reachable — "Delivering Cell" in the Transfer's social delivery
+panel.** The mechanism landed first, which meant the skip could never be true
+and the whole path was code nobody could get to: nothing wrote a designation
+onto a Transfer Record. The control names THIS Cell and no other, for the same
+reason the Karma one does — it is the only uid the page can be sure of — and it
+refuses rather than sending a null when the Cell cannot identify itself, since
+that null would CLEAR the designation under a button labelled "Only this Cell".
+It rides the delivery-admin permission: whoever may configure a recipient may
+say which Cell reaches them. The wording is pinned by test against "pause" and
+"stop delivering", which describe the Transfer rather than this machine.
+
+The multi-Cell half stays in
+`dst_deferred.rs::two_cells_do_not_each_retry_the_same_transfer_delivery`: what
+cannot be tested from one process is the part the recipient actually
+experiences, that the OTHER Cell stays quiet.
+
+**The namespace moved with it: `lince.schedule.executor`, in
+`store::executor`.** It was `lince.karma.executor` under `karma::execution`, and
+read off a Transfer that name would have sent the next reader looking for a rule
+that does not exist. The move also splits C7's two axes into two modules, which
+is what they are: `store::executor` is the shared answer that syncs, and
+`karma::execution` keeps the local per-Cell flag that never leaves the machine.
+The replacement still carries two dots, so
+`sync_ops.rs::the_executor_designation_survives_the_wire` keeps biting on the
+`rsplit_once` field split it was written for.
+
+**The lease is built — 2026-08-14 — as a designated executor with MANUAL
+takeover, and it is a VALUE rather than a lock.** `lince.schedule.executor` is a
+Record extension naming one Cell, so it syncs, converges last-writer-wins, and
+needs no renewal: Automerge's answer rather than a coordination protocol. The
+run path tests it beside the local flag and the two are BOTH VETOES, ANDed —
+either can withhold this Cell, neither can compel it, and there is no precedence
+between them to get wrong. A person at the machine saying "not here" is not
+overridden by a designation arriving over the network; a designation to another
+Cell is not overridden by this Cell's flag being on. Designating names the Cell
+you are sitting at, because that is the only uid the surface can be sure of, and
+moving it means going to the other Cell and pressing it there. The cost is
+stated at the moment of designating: if that Cell is off, the rule does not run.
+That silence is visible; the alternative's duplicates are not.
+
+**Why not a heartbeat.** There is already a lease in `karma_schedule_cursor` and
+it is not this one: it is SQL compare-and-swap inside one database, which works
+only because both claimants open the same SQLite file. Cells do not share a
+file, and the op log between them is eventually consistent, so a lease expressed
+as synced rows is not mutual exclusion. Do not extend `lease_owner` to reach
+across Cells — reusing the word would leave the next reader believing it is
+handled. The bind is that automatic failover, exactly-once, and a transport
+where Cells are routinely unreachable are three properties that cannot hold
+together. In the shape this project actually has — an always-on Cell plus a
+laptop offline half the time — heartbeat-and-expiry makes the laptop take over
+WHENEVER IT MERELY CANNOT SEE the VPS, which is most of the time, so it would
+produce duplicate Records and duplicate Transfers precisely in the steady state.
+That is worse than having no lease. The two honest options are a designated
+executor with manual takeover, or automatic takeover gated on currently reaching
+the holder — which in a two-Cell setup proves the holder is alive and therefore
+never fires. The first was taken. The multi-Cell half is written as
+`dst_deferred.rs::a_designated_rule_acts_exactly_once_across_three_cells` and
+`::an_unreachable_holder_does_not_hand_the_lease_to_whoever_cannot_see_it`, the
+second being the exact scenario that ruled the heartbeat out, so it is the one
+that must fail loudly if anyone reintroduces one.
+**The classification is built and surfaced — 2026-08-14; the DEFAULT is not
+(see the finding below).** `ProgramAst::is_externally
+_observable` answers it from the frozen AST: `Act` is the line, because the
+other four routes (`Observe`, `Recommend`, `Draft`, `Ask`) end in something a
+person answers, and one person answering one proposal is one answer however many
+Cells proposed it. A Program with no route at all computes and stops, which is
+the case where running everywhere is the point. The flag rides the Protein
+`karma` row from the ACTIVE revision rather than the head — what this Cell runs
+right now is what a warning must describe — and the panel puts it on the row:
+"acts outside this Cell — if another Cell also runs it, it acts twice". Naming
+the consequence rather than warning about "possible duplicates" is deliberate;
+the vague version is the one people skip.
+
+**The default is still open, and this is a finding rather than a deferral —
+checked 2026-08-15.** The lease decision settled how a designation is
+EXPRESSED; it did not settle what one should default TO, and those are separate
+questions. The obvious implementation — designate the activating Cell when an
+outward rule is activated — picks the WRONG Cell and does it without consent.
+Rules are authored on the laptop, so every outward rule would end up pinned to
+the machine whose being offline half the time is the reason the heartbeat was
+rejected; and the accepted cost ("if that Cell is off, the rule does not run")
+was accepted for an explicit press with a warning attached, not for something
+that happens silently. Nothing today marks a Cell as the always-on one: the
+reachability hint is an unchecked box in §9 and "run a Cell on the VPS" is an
+unchecked box in C4, so the role a default would name does not yet exist.
+
+- [ ] **Make single-executor the DEFAULT for those rules** — blocked on a Cell
+  having a ROLE to be defaulted to (C4's always-on Cell, or the §9 reachability
+  hint), not on the lease. When it lands: a per-Organ default executor read as a
+  FALLBACK at freeze time, not a designation copied onto each rule at
+  activation. The fallback writes no op, so it has no ordering race against the
+  activation it would otherwise ride alongside, and changing the default moves
+  every un-pinned rule rather than only future ones. It must apply to OUTWARD
+  rules only — a default applied to every rule would silently stop non-outward
+  rules on every other Cell, which is the "quietly stopped, visible nowhere"
+  direction absence-means-execute exists to prevent. That constraint is what
+  sizes the box: `is_externally_observable` is an AST property the freeze SQL
+  cannot see, so it must first be stored on the revision at the single place
+  revisions are written (so it cannot drift from the AST) or the freeze needs a
+  Rust-side second pass.
+  Until then the warning is the whole of it: a person is told, and chooses.
+**Axis 1 has no transport — found 2026-08-15, and it is bigger than the two
+boxes it was written as.** `op_in_scope` enumerates the tables that sync —
+`record`, `fact`, `record_assertion`, `record_extension`, `concept`, plus
+`crdt`/`snapshot` — and no `karma_*` table is among them. A Program's Record row
+travels, so its NAME reaches another Cell; the rule itself lives in
+`karma_program_revision`, which does not. So "Karma NOT synced" is not a second
+mode waiting to be supported: it is the only mode that exists, and it is the
+default by accident rather than by choice. Everything axis 2 says about the
+always-on Cell holding the common Karma describes an arrangement that cannot be
+reached yet, which is worth stating plainly next to the axis that IS built.
+
+The shape when it lands, following the executor designation rather than
+inventing a second mechanism: carry the AST as `record_extension` ops on the
+Program's Record — namespace `lince.karma.program`, key = the revision hash (hex,
+so it survives the `rsplit_once` field split), plus one LWW key naming the
+active hash. That is an append-only set of revisions and a pointer, which
+converges by construction, reuses the op path, the scope filter and the epoch,
+and arrives content-addressed so the receiver can verify the hash it already has
+a function for.
+
+**The hash-as-key reaches your own Cells, and only them — checked 2026-08-15.**
+A key nobody would ever type into a scope is unreachable under `op_in_scope`,
+which would be the same silent nothing the activation default was rejected for,
+so it was worth confirming rather than assuming. It holds: an un-narrowed
+contact has `scope_fields = None` and `op_in_scope` returns true before it looks
+at the field at all, and a replica op (`replica_root` set) bypasses the scope
+check entirely. So Programs ride to your own Cells and fail closed to every
+narrowed contact, which is the right pair.
+
+**Growth is the cost, and it is stated rather than discovered.** Extension ops
+have no snapshot to become prunable under — that mechanism exists for `crdt`
+and is a C10 box. Keyed per revision hash, a rule edited fifty times carries
+fifty ASTs to every Cell forever. So key on the ACTIVE hash only: revision
+HISTORY stays local to the Cell that authored it, where it already is and where
+it is read, and what crosses is the rule that runs.
+
+- [ ] **Sync a Program's active revision as an extension on its Record**, and
+  materialise it on import through a dedicated importer — never by calling the
+  ordinary `karma::programs` writers, which would re-log ops and re-derive
+  hashes locally.
+- [ ] **An arriving Program from a CONTACT must never become executable.** Only
+  Programs whose ops arrived in a batch AUTHENTICATED AS THIS ORGAN'S OWN Cell
+  materialise into `karma_program` — not those whose Record carries our
+  `organ_uid`, which is a column the sender filled in and therefore says only
+  what the sender wanted it to say. A peer's Program extension is stored and
+  displayable and nothing else. This is the fail-closed half and it is the
+  reason the importer is separate rather than shared: code arriving over a
+  socket that runs on receipt is the failure mode, and the freeze query joining
+  `karma_program` is the only place that decides.
+- [ ] **Karma sync is a per-Organ default (ON) that any single Rule may
+  override**, since the axes are independent and the useful cases are mixed. The
+  override suppresses emission, so it is a decision at CREATE time: ops already
+  sent cannot be recalled, and a rule switched to private after the fact would
+  be private on this Cell while still running on another.
+**The next three boxes have no producer to stamp yet — checked 2026-08-14, and
+this is a finding rather than a deferral.** All three are about ops a RULE
+produced, and today no rule produces one. A run emits a candidate; a candidate
+becomes an intent only when a person accepts it; and intents are still inert
+(`karma_intent` has no dispatching state — `intents.rs` says so, and
+`act_routed_candidate_is_atomic_durable_and_still_inert` pins it). So the Fact
+that reaches the Ledger is caused by the PERSON's review, and it is already
+stamped that way: `CauseKind::Action` carrying the review's request id.
+`Cause::rule` exists in `nucleus::fact` and has exactly one caller — a unit
+test.
+
+This matters for the cycle boxes specifically. The stated hazard is that "every
+iteration writes an op, and every op enters the log, the outbox, and the feed of
+every contact" — and with nothing dispatching, an unbounded rule loop produces
+unbounded LOCAL candidate rows and no ops at all. The third-party cost the
+ceiling exists to prevent does not exist yet. Building the counter now would be
+building it against a guess about how dispatch will attribute its writes, and
+the attribution is the whole mechanism.
+
+- [ ] **Rule-produced ops carry provenance** — enough to say which rule
+  produced them. Provenance exists to ATTRIBUTE and COUNT, and breaking a cycle
+  is a policy on top of it that the author selects, including "let it run".
+  **Blocked on intent dispatch**, not on design: the moment a rule can write
+  without a person, `Cause::rule(program_uid)` is what it must write with, and
+  the type is already there waiting.
+- [ ] **A generation counter on rule-triggered ops, plus a per-rule budget
+  over a window.** A cycle that converges finishes well inside the budget and
+  nobody notices. One that does not hits the ceiling, PAUSES, and says which
+  rule and which cycle — visible and resumable, never silently killed and never
+  silently infinite. Same shape as the gossip TTL and seen-set, applied to rules.
+- [ ] **The budget is not a per-contact tunable.** An unbounded loop harms the
+  network rather than only its author, so the ceiling exists on every Cell and
+  is not something a config can remove.
+- [ ] **Surface: which Cell holds the lease, and what fired where.** None of the
+  boxes above are done until that view exists, and it must cover the three
+  non-Rule schedulers too.
+
+### Quarantine needs a lifecycle
+
+`quarantine()` is called on every malformed or out-of-scope op and stores the
+payload verbatim. Nothing bounded it, aged it out, rate-limited the source, or
+defined who read it — so the REJECT path was cheaper for a hostile contact than
+the valid one, and filling a disk cost them nothing.
+
+**Built 2026-08-10 (C0).** Bounded as a per-contact ring of
+`QUARANTINE_PER_CONTACT` (200), oldest dropped, trimmed by `rowid` rather than
+by timestamp because two rejections inside one millisecond share an `at` and
+ordering by it would make the survivor arbitrary.
+
+**Per contact, not one global cap**, and that is the security-relevant part: a
+peer flooding a shared cap could evict the evidence of what a DIFFERENT peer
+did, which is exactly what someone would do to hide a real attack behind noise.
+Pinned by test — a flood from one contact leaves another contact's single entry
+untouched.
+
+`quarantine_by_contact` (counts, worst first), `quarantined_for` (newest first)
+and `clear_quarantine` give it the readable surface it lacked. The ring keeps
+the NEWEST entries, which is what someone diagnosing a live problem needs.
+
+This became urgent rather than tidy because C1 and C2 each added ways IN — a
+forged Organ uid, a Cell outside the sender's roster, a stamp from the future,
+a collab op with no payload — without adding a way out.
+
+Two follow-ons, and neither is C0 — they are moved to **C5**, which owns
+per-contact configuration and the Organ sand pairing surface. C0 is bedrock:
+"prevents damage that cannot be undone", and the ring is what does that. An
+optimisation and a view are not bedrock, and leaving them filed under a ticked
+C0 would be the "quietly means mostly" the working rule forbids.
+
+- [ ] **Rate-limit a contact that keeps filling it** (C5). The ring bounds
+  storage; it does not stop the work. A contact producing a steady stream of
+  rejected ops is reporting either a bug or an attack and both warrant backing
+  off — but a backoff that is too eager becomes a way for a peer to get itself
+  ignored, so it wants the per-contact sync policy C5 builds.
+**Surfaced in the Organ sand — built 2026-08-14.** The ring is per contact, so
+it is on the panel for the contact it accuses, carried by the `contact` include
+as `quarantined`. A bounded table nothing displays is the same as a table
+nobody keeps.
+
+Three states, not two: not loaded, nothing refused, and a list — an empty box
+would read as a broken feature in the case that is actually the good one. The
+reason leads because it is the readable part; the payload sits on the row's
+title and goes in as TEXT, never markup, because it is a rejected op written by
+a peer and therefore the least trustworthy string on the page.
+
+The tooltip says what is NOT here: ops dropped by our own acceptance scope are
+our setting working, not a refusal, and listing them would fill the ring on the
+first sync with any contact wider than our acceptance and bury the reports that
+mean something.
 
 ### Retention, audit, and modes
 
-- [ ] **Put pruning on a schedule.** The reason it was manual is GONE:
-  superseded-only retention means a from-zero replay is always complete, so
-  there is no longer a contact that pruning can strand (§11a, and
-  `replica_bootstrap.rs` pins it end to end). What remains is only the decision
-  to run a destructive maintenance pass unattended, plus where it belongs — the
-  sync runner's idle moment is the obvious place. Keep the dry-run mode either
-  way; the report is computed from the same predicate as the delete, so it can
-  never disagree with it.
-- [ ] **Op kinds, written down as a closed set**, with snapshots explicitly
-  not among them.
-  example:
-  ```
-  set        field value
-  tombstone  delete record / assertion / extension-key
-  fact       existing signed fact rows, unchanged semantics — they join
-             the log rather than a parallel channel
-  crdt       a binary Loro update for one record-doc; commutes by
-             construction, so ordering is irrelevant and idempotency is
-             Loro's own dedupe plus the op identity
+- [ ] **A visible recent-changes diff, not just correct merges.** The CRDT/op
+  machinery above resolves concurrent edits correctly by construction, but
+  correctness is not the same thing as legibility to the person it happened
+  to. Someone whose field-level edit lost a last-write-wins race today has no
+  way to know it happened. A short-lived, per-Record log of recent field
+  changes — this field changed because of a local edit, this one because an
+  incoming op from Organ X arrived at a later HLC and won — turns a silent
+  merge into something a person can actually see, without needing full
+  history/blame UI. Scope: recent and local only, an aid to noticing, not a
+  permanent audit trail (the Ledger/Facts already are that for quantity).
 
-  NOT an op kind: snapshot. Bootstrap and visibility grants serve the
-  current row state synthesized from the read model at serve time (each
-  field carrying its stored HLC; record-docs as a Loro shallow snapshot),
-  so the log holds only real writes and never bloats with copies of state.
-  ```
-- [ ] **Integrity audit — on-demand command, never a loop.** Checkpoints trust
-  the peer's log, so a corrupted or buggy peer log is invisible to catch-up.
-  `audit(organ)` walks both synced sets in uid order, streams
-  `(uid, field_hlc_hash)` pages, and reports rows whose state disagrees
-  despite equal checkpoints; repair reuses the normal import path.
-- [ ] **Replica bootstrap and initial snapshot**, over iroh streams.
+**Built 2026-08-10 (cluster C2, the enabling half).** `snapshot` is an op kind,
+and that one change closed the three problems decision 2 predicted it would.
+
+**Pruning runs unattended**, in `sync_once`'s idle moment after every peer has
+been served, dry-run mode kept. The reason it was manual — a contact falling
+behind the pruned floor with no recovery path — is gone twice over:
+superseded-only retention already made a from-zero replay complete, and
+snapshots in the log make it complete for text too.
+
+**A Cell with no contacts never prunes anything, ever.** `retention_floor`
+returns `None` when there is nobody to owe ops to, so the scheduled prune above
+is a no-op for exactly the person who has not paired with anyone yet. That is
+correct — there is no floor to be safe against — but it is invisible, and
+somebody will eventually watch a lone Cell's log grow and go looking for a bug
+in the predicate. It is not there.
+
+**Compaction runs on a sweep, not only on the next write.** `maybe_compact`
+returned early when the doc had been evicted, reasoning that the next write
+compacts — true for a live doc, false for one edited heavily and then
+abandoned, whose tail then grew forever and none of which was ever prunable.
+`compact_stale_docs` runs beside pruning and does not care whether anyone has
+the doc open. This box was filed under C10; it moved here because it is
+load-bearing for C2 rather than a refinement of it, and C10 keeps only the
+shallow-snapshot work.
+
+**Order within the pass matters**: compact, then prune. Compaction is what puts
+a `snapshot` above a record's crdt tail, and a crdt op is prunable only once
+one exists. Pruning first merely finds less to do; the reverse of the pair —
+crdt ops pruned with no snapshot above them — is the text loss the interlock
+existed to prevent, and the predicate now refuses it structurally rather than
+by a rule someone has to remember.
+
+**The supersede predicate is kind-aware, and that was a live bug.** It matched
+on `(tbl, uid, field)` alone while `tombstone`, `crdt` and now `snapshot` all
+use `field = ''` — so a snapshot superseded a record's tombstone, the delete
+was pruned, and a peer replaying from zero would never learn the record was
+deleted. It would come back, for that peer only. Same-kind supersede now, plus
+exactly one deliberate cross-kind rule: a `crdt` tail is superseded by a later
+`snapshot` of the same record. NOT by another crdt op, even though tails are
+cumulative — they are cumulative since the writing CELL's baseline, so one
+Cell's tail does not contain another's.
+
+**The outbox key gained `kind`**, which is the same collision one layer up: a
+tombstone and a crdt op shared a queue slot and replaced each other. Delete
+replacing edit is harmless; the reverse resurrects a deleted Record for one
+contact and only that contact.
+
+**Snapshot ops are logged and served, never queued.** A peer keeping up already
+holds every op the snapshot folds together, so pushing a whole document copy on
+every compaction is waste; a from-zero peer picks it up from the catch-up feed
+by seq range. That IS replica bootstrap collapsing into catch-up — there is no
+second mechanism to keep correct, and no bootstrap protocol to write.
+
+**A deleted record is never compacted**, so a `snapshot` op cannot be created
+above its own tombstone locally. It can still ARRIVE above one — a peer that
+had not yet heard about the delete sends its snapshot, and the op joins the log
+before the tombstone freeze refuses to apply it — which is why the kind-aware
+supersede rule is load-bearing rather than belt-and-braces. Both halves are
+pinned by test: the freeze holds, and the tombstone survives the prune.
+
+**Importing a peer's snapshot does not trigger local compaction**, or two Cells
+volley whole documents at each other forever: the blob clears the byte
+threshold on arrival, so answering it with our own snapshot op would clear
+theirs in turn. A peer's snapshot is also NOT written into `record_doc` — it
+stays in the log for the loader to replay — because `through_seq` moves in
+lockstep with the open doc's version vector, and advancing one without the
+other drops updates silently.
+
+**The op kinds are a closed set**, in two places that cannot disagree: the
+`OpKind` enum and the `CHECK` on `sync_op.kind`. An unknown kind quarantines
+rather than being ignored.
+
+```
+set        field value
+tombstone  delete record / assertion / extension-key
+fact       existing signed fact rows, unchanged semantics — they join
+           the log rather than a parallel channel. No payload: the signed
+           row lives in `fact` and is hydrated at serve time.
+crdt       a binary Loro update for one record-doc, cumulative since the
+           WRITING CELL's last snapshot; commutes by construction, so
+           ordering is irrelevant and idempotency is Loro's own dedupe
+           plus the op identity
+snapshot   a full Loro snapshot of one record-doc, asserted by the Cell
+           that compacted it. Logged and served, never queued.
+```
+
+This entry previously ended "NOT an op kind: snapshot", on the reasoning that
+bootstrap could synthesize current state at serve time and so the log need
+never hold copies of state. That was right while snapshots were local and
+became wrong the moment they had to travel — serve-time synthesis is exactly
+the invented-identity design the log cannot dedupe.
+
+**The identity objection dissolved on contact.** `sync_ops.rs` had recorded
+that snapshots-in-the-log "needs a synthesized op identity — `(actor_organ,
+hlc)` is the unique index import dedupes on, so inventing one is not free". The
+compacting Cell signs its snapshot with its own `(actor_cell, hlc)` like any
+other write. Nothing is invented, nothing collides, and it satisfies C1's rule
+that an op's Cell must appear in its Organ's roster — which a synthesized
+identity would have failed the moment C3 makes rosters ubiquitous.
+
+**C2b — the repair half. COMPLETE 2026-08-13.** `engine::rebuild` holds both, and
+they only make sense together: a detector with no repair leaves you knowing you
+are broken, and a repair with no detector never runs.
+
+**`audit_read_model` compares the read model against the log** and changes
+neither. It is aimed at one specific failure, the one C0's atomic-import box
+describes: `import_ops` reads the stored stamp, appends, compares and
+materialises with no spanning transaction while connections are served on
+separate tasks, so two concurrent imports can leave a LOWER-HLC value in the
+read model while the log correctly keeps the higher one. Nothing noticed, and
+it does not self-heal. Now something notices.
+
+**`rebuild_read_model` replays the log in HLC order** — stamp order, not
+arrival order — which is what makes it simple: last-write-wins IS the replay
+sequence, so every op applies unconditionally and none of import's comparison
+machinery is needed. `audit_and_repair` runs the repair only when the audit
+found something, so "clean" stays a report rather than a side effect.
+
+**The factoring landed first, as planned.** `Materialise` is the shared step —
+what one op does to the READ MODEL, with the LWW decision already taken —
+called by both `import_ops` and the rebuild. Appending to the log, advancing
+the clock, deciding whether an op wins, and quarantine stay with import. The
+copy that would have drifted is the rebuild's, and it runs precisely when the
+read model is already suspect, which is the worst possible moment to discover
+the two disagree about how a field applies.
+
+**A `(table, kind)` pair the read model does not own is skipped, not guessed
+at.** The `CHECK` constrains `kind` alone, never the pair, so the log can hold
+a `concept` row carrying `kind = 'crdt'`. Import never reaches one — its outer
+dispatch quarantines first — but the rebuild calls `materialise` with whatever
+is actually stored, and a catch-all arm would have run `delete_concept` on it.
+
+**A rebuild replays; it never truncates.** Superseded-only retention keeps, for
+every live field, the op that established its current value, so replaying is
+sufficient — and not truncating means the repair can never become the thing
+that loses data it failed to reconstruct. Pinned by test: a record whose ops
+have been wiped survives a rebuild.
+
+**Quantity is skipped, and finding out why cost a failing test.** Creation logs
+one `set` carrying a record's opening quantity, and every change after is a
+signed fact folded into the column. The first rebuild therefore reset a
+balance of 7 back to 0 — replaying creation. `fact` ops are skipped for the
+reason already written down (no payload in the log, and re-folding a correct
+chain corrupts the Ledger); `quantity` `set` ops had to be skipped for a
+different one, which nobody had noticed.
+
+**Quantity is ADDED on import, never assigned — fixed 2026-08-10.** This was
+raised as an open Ledger design question ("genesis fact, or keep the `set`
+op?") and the answer turned out to be neither: the field simply had the wrong
+verb.
+
+`record.quantity` is the fold of a record's fact chain over its opening value,
+and `bump_quantity` adds. Exactly one `quantity` op exists per record — the one
+creation logs — so it IS the opening value, and everything after it is a signed
+fact. Applying it as an assignment made the result depend on arrival order: a
+peer that received the facts first held the sum of the deltas, and the creation
+op then overwrote that with the opening value, silently discarding every change
+the record had ever seen. Reachable by any peer catching up from zero, since a
+catch-up feed is served in local seq order and nothing puts creation before the
+facts on the wire.
+
+Adding gives `opening + deltas` in either order, and the log's identity dedupe
+(`UNIQUE(actor_cell, hlc)`) is what makes it exactly-once — an add applied
+twice would be as wrong as a set applied late. Pinned by a test that imports
+the two batches in the adversarial order.
+
+**Why a genesis fact was NOT the answer**, since it was the obvious candidate:
+`store::records::create` is in the store layer and the fact appender is in the
+engine, so the opening value could not become a fact without inverting that
+dependency or hunting down every creation site. Additive genesis needs neither,
+and it makes the rule uniform — quantity is only ever reached by addition, from
+creation and from facts alike, which is what `bump_quantity` already assumed.
+
+The rebuild still skips `quantity` ops, and that is now consistent rather than
+a special case: replaying an additive op would double it, and the column
+already holds the fold.
+
+**Cross-Organ audit — BUILT 2026-08-13.** `FetchVector` asks a contact what
+they hold of OUR ops; comparing their summary against our own log says which
+side lacks what while moving no ops at all. It REPORTS rather than repairs, and
+that is the point: a disagreement between two Organs is not obviously anyones
+bug — a peer legitimately prunes, an outbox legitimately has not drained — so
+silently re-sending on the next pass would hide the one case worth seeing, two
+logs that never converge however many passes run. **Surface:** a "Check we
+agree" button per contact, which says plainly that being unreachable is NOT a
+disagreement. The verb is served only for the askers own Organ or ours, so the
+same third-party rule the sent vector follows holds here too.
+
+**Superseded note, kept because the reasoning chose the design.** **The mechanism landed 2026-08-11**
+  as `FetchOpsSince` — the version vector described below is built and is what
+  catch-up now runs on (see "Identity, roster, and publishing"). What remains
+  is the AUDIT framing on top of it: comparing two vectors already says which
+  side lacks what, so the missing piece is surfacing a disagreement to a person
+  rather than silently repairing it on the next pass, plus the third-party
+  privacy decision below.
+  Original note, kept because the reasoning is what chose the design: What is built compares this Cell against its OWN log. The
+  other half is "checkpoints trust the peer's log, so a corrupted or buggy
+  peer log is invisible to catch-up".
+  This box used to describe streaming `(uid, field_hlc_hash)` pages over the
+  wire. That is the expensive way, and the CRDT literature has the cheap one:
+  Automerge's sync protocol and Loro's `ExportMode::updates(from_vv)` both
+  exchange a compact per-ACTOR summary and derive the difference from it. Ours
+  falls out for free, because C1 made `actor_cell` the op identity: a map of
+  `actor_cell → max hlc` is a version vector over this Cell's whole log. One
+  entry per device rather than per record, and the difference between two of
+  them says exactly which ops each side is missing.
+  It also repairs a weakness in the cursor model rather than only adding a
+  check. `last_synced_seq` is the PEER's local seq — a number that means
+  nothing after they prune, and nothing at all for ops that reached them from
+  a third party. A version vector is stated in terms both sides already agree
+  on, so it survives both.
+  **The cost, chosen rather than discovered**: a version vector keyed by
+  `actor_cell` tells the peer how many devices you have and how active each
+  one is. **Partly addressed in the build**: the vector we send names only the
+  Cells of the Organ we are asking, so nothing about third parties leaks. What
+  a contact still learns is our device count and activity FOR THEIR OWN ops —
+  which a contact syncing with those Cells largely learns anyway.
+  **DECIDED 2026-08-13: keep the vector keyed by `actor_cell`.** The doc asked
+  for this to be settled in C3 rather than inherited, and the two alternatives
+  do not survive contact with what the vector is for. Keying by ORGAN cannot
+  work at all: the difference between two logs is computed from per-actor
+  maxima, so an Organ-keyed summary cannot say which ops are missing — it would
+  trade correctness for privacy and get neither, since the ops would still have
+  to be sent and enumerated some other way. Sending it only to contacts holding
+  the full roster is very nearly a no-op, because the roster LISTS our Cells:
+  anyone holding it already knows the device count.
+  So the residual exposure, stated exactly: a contact learns **how active each
+  of our devices is**, on top of a device list they already have. Not the count
+  — the roster gave them that — the activity. That is real and it is the price
+  of correct catch-up, and it is bounded by the same rule everywhere else here:
+  the vector we send names only the Cells of the Organ we are asking, so a
+  third party is never disclosed.
+  Still C3, because it is a wire change and must ride the epoch C1 already
+  forced. Worth designing WITH catch-up rather than bolting it alongside: the
+  same summary that answers "are we in sync" answers "what do I send".
 - [ ] **Branch on the `mode` column.** It exists and DEFAULTs to `'replica'`
   but no code reads it yet. Until then `sync_out=1` is mode-independent: the
   outbox drains to every non-blocked contact with the flag set, fact-bus-woken
@@ -1848,13 +3977,15 @@ exists, which is why it comes first among the later items.
 
 ### Collab: the reusable binding and everything above it
 
-- [ ] **Compaction = Loro shallow snapshot.** Today `maybe_compact` stores a
-  FULL snapshot; shallow snapshots were deferred because a peer compacting at
-  a divergent frontier could produce unimportable tails. Per record-doc,
-  triggered by update count or byte threshold; store one snapshot, prune older
-  `crdt` ops under the normal checkpoint-gated retention; loading a doc is
-  snapshot + tail — never a history replay, so cost is O(current state), not
-  O(edit history). Materialized text must be identical before and after. This
+- [ ] **Compaction = Loro SHALLOW snapshot.** Everything around this landed in
+  C2 — compaction is triggered by update count or byte threshold, stores one
+  snapshot, logs it as an op, prunes the `crdt` ops below it under the normal
+  checkpoint-gated retention, and a doc load is snapshot + tail rather than a
+  history replay. What is still deferred is the SHALLOW part: `compact_doc`
+  exports a FULL snapshot, because a peer compacting at a divergent frontier
+  could produce unimportable tails and that needed more thought than C2 had
+  room for. Cost is already O(current state) rather than O(edit history);
+  shallow makes the constant smaller. Materialized text must be identical before and after. This
   matters only for genuinely long-lived collab documents, where human
   authorship bounds the size anyway — a thread is rows, not a document, so
   chat no longer creates the urgency it once did.
@@ -1866,6 +3997,15 @@ exists, which is why it comes first among the later items.
   values (quantity) are structurally excluded; quantity displays update live
   because fact ops arrive on the same channel, not because the number is a
   CRDT.
+  **`slug` is a hazard as a freely-bindable LWW column**: slugs are
+  identifiers, and last-write-wins across two Cells silently breaks every link
+  that used the old one. Either exclude it from binding or route it through a
+  uniqueness check.
+  **What this is FOR, confirmed 2026-08-09**: one binding serving every place
+  a field is edited — the record body in a kanban card and the same body in
+  the Record sand are the same live document, and any other field in any other
+  sand joins by naming a path rather than by growing its own editor. Three
+  editors that happen to agree is the failure this replaces.
 - [ ] **`record_editor` sand** — the rich UI on top of the binding, standalone
   and embedded modes. Rich editing lives HERE, above the CRDT: the doc stores
   plain markdown text; slash commands are input affordances that insert
@@ -1918,21 +4058,837 @@ exists, which is why it comes first among the later items.
   vendored `loro-wasm` asset ships its LICENSE/notice files and both pins are
   the same version.
 
+### Seven architectural decisions, settled 2026-08-10
+
+Taken together because they interlock, and decided for the best architecture
+rather than the smallest change — breaking shapes is allowed and preferred
+over carrying a worse one.
+
+**1. Wire changes land in EPOCHS, not opportunistically.** The no-legacy rule
+stays: an ALPN bump hard-cuts old peers, by design. What the Organ/Cell split
+adds is that a peer may now be your OWN phone, and an app store review can
+hold it stale for a week while your laptop refuses to sync. Negotiation is the
+wrong fix — it reintroduces the compatibility shapes the rule exists to
+forbid. Instead every wire change is held and released as one numbered epoch
+per release train, so the hard cut happens on a schedule people can plan
+around instead of arriving whenever a cleanup lands.
+
+- [x] **One ALPN version per epoch.** All three bumped together to `/2` on
+  2026-08-11 and `WIRE_EPOCH` names the train, so a wire change queues against
+  the next number rather than spending a cut of its own.
+- [x] **An ALPN mismatch WITHIN your own roster reports "this device needs
+  updating"**, naming the Cell (built 2026-08-11). This needed something that
+  did not exist: **`lince/hello/1`, the one ALPN that must never be bumped.**
+  An epoch cut happens at the TLS layer, so from the dialing side a Cell one
+  release behind and a Cell that is switched off are the same silence — and
+  only one of them is a thing a person can fix. Speaking across an epoch
+  boundary requires a protocol that never changes, so this one carries a single
+  integer, the epoch its speaker supports, and has no verbs and no state.
+  Adding a field to it later would defeat the point, because the peer that
+  needs to answer is by definition running the older build. Answered only to a
+  Cell of our own roster or a known contact, since "which version do you run"
+  is a fingerprint. `Wire::stale_siblings()` surfaces what the last pass found,
+  in memory and transient like the nearby list.
+- [ ] `base_url` retirement and the `Introduction` change ride an epoch (see
+  Transport cleanup) rather than spending a cut of their own.
+
+**2. Make "the log is authoritative" TRUE, by putting snapshots in the log.**
+Today it is false for collaborative text: the Loro snapshot lives in
+`record_doc`, which is local and never travels, while `crdt` ops are
+cumulative only since that snapshot. So a rebuild from the log alone cannot
+reconstruct text, and two subsystems currently believe different things about
+what the log guarantees. The comment at `sync_ops.rs:465` correctly notes that
+fixing this needs a synthesized op identity and is "not free" — but it is the
+right price, because ONE change resolves three open problems at once: full
+rebuild becomes possible, `crdt` pruning becomes safe, and replica bootstrap
+becomes ordinary catch-up rather than a separate mechanism.
+
+- [ ] **A `snapshot` op kind**, with an identity minted from the producing
+  Cell and its HLC like any other op. This reverses "op kinds, written down as
+  a closed set, with snapshots explicitly NOT among them" — that exclusion was
+  correct while snapshots were local and is wrong once they must travel.
+- [ ] **`crdt` ops below a snapshot become prunable**, which is what finally
+  bounds the one part of the log that grows with edit history rather than with
+  live state.
+- [ ] **Replica bootstrap collapses into catch-up.** A peer starting from zero
+  receives a snapshot op and the tail after it — the same path as any other
+  cursor, not a second mechanism to keep correct.
+
+**3. Storage is bounded, and decision 2 is most of the answer.** With
+snapshot-plus-truncate the log becomes O(live state) for text as it already is
+for scalars. What remains needs its own ceilings rather than a shared one,
+because they fail differently.
+
+**The "most of the answer" part is built (2026-08-10).** Snapshot ops plus
+crdt pruning below them bound the one part of the log that grew with edit
+history. The ceilings below are C2c, deferred because two of their three
+consumers do not exist yet.
+
+One cost worth stating rather than discovering: a compacted doc's snapshot is
+stored TWICE — as a BLOB in `record_doc` for fast local loads, and base64 on
+the op for travel and rebuild. Deliberate, and bounded by live state rather
+than by history, so it does not reintroduce the growth this decision removes.
+Collapsing it to one copy means reading the blob back out of the log on every
+doc load, which trades a constant factor of disk for latency on the hot path.
+
+- [ ] **A stated total budget per Cell**, with the media store, the Facade
+  cache and quarantine each holding a share and each evicting within it. A
+  single global cap lets whichever grows fastest evict everything else.
+- [ ] **The budget is visible and answerable**: "how big is this Lince, and
+  what is using it" is a question a phone owner will ask on day one.
+
+**4. A Cell IS a permission subject.** Three open boxes already assume this
+without saying so — a revoked phone should be limited as well as cut off, and
+"the front door holds no signing material" is unenforceable while a Cell is
+either wholly you or not you at all.
+
+**Built 2026-08-10 (C1) — DEFINED, not yet consumed.**
+`CellEntry.capabilities` is carried in the roster and pushed into
+`roster_signing_payload`, so a Cell cannot widen its own grant in transit and
+have the root's endorsement still verify. `Engine::cell_may` is where the
+intersection is evaluated — the ONE place, once anything calls it. **Nothing
+calls it yet.** The rule is defined and the grants are signed; the decision
+points that will consume it are the relay Cell (C4) and inbound Protein (C5).
+It degrades safely at every
+unknown — no roster, no entry, or no capability set all answer `false`. Three
+capabilities exist: `write` (log ops and sync outward), `karma` (run rules in
+the Organ's name), `represent` (speak for it to contacts). `relay_capabilities()`
+is the empty set, which is what turns "the front door holds no signing
+material" from a promise into a structural fact.
+
+Every roster signed before this becomes `Refused`, because its payload no
+longer matches its signature. That is correct under no-legacy-compat and it is
+not a bug. `publish_local_roster` treats a held entry with no capability set as
+CHANGED for the same reason: the rule is that an absent set grants nothing, so
+leaving one in place would quietly strip this Cell of the right to write in its
+own Organ, and the unchanged-guard would never re-sign to fix it.
+
+- [ ] **Relay mode uses `relay_capabilities()`.** The empty set exists and is
+  enforced by `cell_may`; nothing yet publishes a Cell with it. Lands with the
+  relay work in C4.
+- [ ] **A stolen phone can be NARROWED as well as revoked**, which is the
+  humane version — losing a device should not require reissuing an identity.
+  The mechanism is built; the act of editing one Cell's capabilities is not
+  exposed anywhere.
+
+**5. There is no clock authority, and nothing may need one.** Cadence firing,
+lease expiry, card TTLs and the HLC drift bound all need real time, and Cells
+will disagree. Electing a time authority would make a single Cell load-bearing
+for correctness, which is exactly what the roster design avoids everywhere
+else.
+
+**The constant exists and has its first user (2026-08-10).**
+`nucleus::hlc::MAX_CLOCK_DRIFT_MS` is five minutes, and `hlc::within_drift`
+is what the op importer refuses a future-stamped op by. Only the FUTURE is
+bounded: a stamp from the past is ordinary — an op written while a peer was
+offline, or a Cell whose clock is behind — and refusing those would drop honest
+history. `observe` ignores anything past the bound as a backstop for callers
+that cannot refuse a whole op, and `next()` is saturating so a packed stamp can
+never wrap negative and start comparing below every real one.
+
+- [ ] **Lease takeover and TTL grace use the SAME constant.** Neither exists
+  yet (C7 and C9). The point of writing the constant down now is that they
+  find it rather than inventing their own tolerance.
+- [ ] **Every cross-Cell time decision is tolerant by construction.** A lease
+  is a duration measured by its holder; takeover requires observing
+  non-renewal for lease + drift. A TTL is evaluated by the RECEIVER against a
+  timestamp inside the signed card. Nothing anywhere assumes two clocks agree.
+
+**6. Root succession is a signed chain, and history is never reattributed.
+CLOSED 2026-08-11** — the mechanism landed 2026-08-08 and the case this
+decision actually named is now pinned by test.
+
+- [x] **A succession record: the new root signed by the old**, published and
+  RETAINED rather than replaced. `key_chains` walks forward transitively from
+  every key we hold, so a contact offline across TWO rotations, returning with
+  only the oldest key, still validates a roster signed by the newest — which is
+  the case this decision was written about and which only one hop had been
+  tested for (`a_contact_offline_across_two_rotations_still_chains`).
+- [x] **Ops are attributed by Cell and Organ uid, never by key.** True by
+  construction since C1: a `WireOp` carries `actor_cell` and `organ_uid` and no
+  key at all, so rotation changes who may sign NEXT and rewrites nothing.
+  Stated because the opposite is the intuitive assumption.
+- [x] **The pre-signed revocation certificate is the other half** and needed no
+  change.
+
+**A revoked key cannot endorse a successor**, checked rather than assumed. The
+worry: the chain walk starts from keys we hold, so a thief with a stolen-then-
+revoked key signing `stolen → theirs` would install a key of their own and
+every later roster would verify — the revocation buying nothing. It does not
+happen, and the defence is in the right place: `adopt_succession` calls
+`key_chains` on the OLD key, a revoked key does not chain, so the endorsement
+is never adopted in the first place. Walk-time filtering was the tempting fix
+and would have been wrong — revoking the old root right after rotating to a new
+one is normal practice, and refusing to traverse revoked keys would break every
+legitimate rotation-then-revoke.
+
+**7. Multi-process test infrastructure comes BEFORE the Cell split.**
+`hlc.rs:9` says it plainly: *"Two Cells sharing a process (as integration
+tests do) share the counter."* The harness therefore shares the very state
+whose non-sharing causes the collision, so today's tests pass for a reason
+unrelated to the property they appear to check.
+
+- [ ] **A harness that spawns real processes with separate stores**, and the
+  cluster-1 test written against it. Until this exists, no claim about
+  multi-Cell correctness has any evidence behind it, and every cluster below
+  that touches identity is unverifiable rather than merely untested.
+
+## Implementation clusters, in order
+
+Each cluster is a coherent unit whose members share a schema, a subsystem or
+a proof. Detail lives in the sections above; this is the order and the
+grouping, and the rule is that a cluster's own boxes may interleave freely
+while the clusters themselves do not.
+
+**Clusters close behind you, not ahead of you** (the working rule, also in
+`AGENTS.md` so it is read by whoever is building rather than only by whoever
+is planning):
+
+- A bug found while building a later cluster is fixed in the cluster that
+  OWNS it — go back, land it there, then carry on. Never work around an
+  earlier cluster's defect from inside a later one: the workaround makes the
+  earlier cluster look finished while leaving the defect for whoever trusts
+  the checkbox. C1 pulled three C0 items forward for exactly this reason, and
+  C2 went back into C1's Protein visibility for the same one.
+- Expand a cluster freely when completing it honestly demands work nobody
+  listed. This list is a plan, not a contract. C2 absorbed the compaction
+  sweep from C10 and the outbox `kind` key because neither could be left out
+  and still call C2 done.
+- Advance only when everything behind is CLEAR — done, not started. Anything
+  split out or deferred gets named in the doc with its reason, because a
+  ticked box that quietly means "mostly" is what this rule exists to prevent.
+- **A box is not done until a HUMAN CAN USE IT.** Every box that adds a
+  capability carries its surface — a sand panel, a button, a screen — in the
+  same box. Tests prove a mechanism is correct; they do not let the owner try
+  it, and a feature reachable only from `cargo test` cannot be human-tested at
+  all. Split the surface out only when it genuinely belongs to another cluster,
+  and then say so in both places. Two standing riders: "obvious from the API"
+  is not a surface, and a panel showing nothing must say WHICH nothing it means
+  ("none yet" / "not switched on" / "cannot reach anyone"), because the empty
+  state reads as a broken feature otherwise. C3 accrued this debt across
+  enrolment, the front door and the directory record, and the boxes below are
+  it being paid.
+
+- [x] **C0 — Bedrock. Complete 2026-08-11.** Quarantine's two follow-ons
+  (rate-limiting, the sand view) moved to C5 rather than sitting under a ticked
+  cluster — neither is bedrock.
+  Cheap, small, and each prevents damage that cannot be
+  undone later. **Three of five landed with C1 on 2026-08-10**, because C1
+  edited the exact lines and leaving them half-done would have meant coming
+  back: `hlc::observe` is bounded and `next()` saturates; `op.organ_uid ==
+  batch.from_organ` is required, which is the post-split form of the
+  actor-equals-sender rule; and the admissibility gate (`Engine::inadmissible`)
+  quarantines rather than errors, so one bad op does not fail a batch. What
+  remains:
+  - [x] **Make the per-op import sequence atomic.** Done 2026-08-10 as
+    `Engine::import_lock` — a lock rather than a spanning transaction, for
+    reasons kept in "Op authenticity". In-process only; the cross-process
+    guard belongs with the harness box below.
+  - [x] **Give quarantine its lifecycle.** Done 2026-08-10: a bounded
+    per-contact ring with a readable surface. Two follow-ons named in
+    "Quarantine needs a lifecycle" — rate-limiting, which needs per-contact
+    sync scheduling that does not exist, and showing it in the Organ sand.
+  - [x] **Build the multi-process harness** (decision 7). Done 2026-08-11:
+    `tests/multi_process.rs` plus the `cell_worker` binary, spawning real OS
+    processes against one database.
+    **It found a data-loss bug on its first run**, which is the entire
+    argument for building it before C3's enrolment client rather than after.
+    Two processes sharing a database resolve to the SAME Cell — one database,
+    one fixed `local-cell` slug — while each runs its own `nucleus::hlc`
+    static. Op identity is `(actor_cell, hlc)`, so they minted colliding
+    identities and `INSERT OR IGNORE` swallowed the loser: 7 of 80 writes
+    existed in the read model and produced no op at all, syncing to nobody,
+    silently. Every in-process test had passed throughout.
+    **Not an exotic topology**: it is what happens whenever the CLI touches
+    the database while the web Cell is running, which SQLite in WAL mode
+    permits.
+    **The fix is `insert_local`**, and it turns on a distinction that had been
+    invisible: a local write and an import mean OPPOSITE things by "this
+    identity is taken". For an import it means "I already have this op" and
+    skipping is right. For a local write it is impossible within one process,
+    so it can only mean another process writing as this Cell — and the write
+    re-mints its stamp, jumping past the highest stamp that process has
+    published. Exhausting the retries is a loud error, because refusing beats
+    writing the read model and losing the op.
+    Still the thing that would catch a second Cell's behaviour for real: the
+    in-process tests prove the identity invariant and the import lock, neither
+    of which is the process split. It also owns the cross-process half of the
+    atomicity fix — a database-level conditional write — because writing that
+    without a way to test it would be guessing.
+- [x] **C1 — The Organ/Cell split. Built 2026-08-10.** `actor_organ` became
+  `actor_cell` and `sync_op` gained `organ_uid`, on the log and on the wire;
+  `record.organ_uid` is required by trigger; the `organs::local()` audit is
+  done; Cell capability sets are signed into the roster with `cell_may` as the
+  one evaluation point; `organ_cell_split.rs` holds the distinct-identity test
+  and four others. Two migrations — `0040` edited in place, `0051` added —
+  and the log work below is now against final columns. See "Profile vs device
+  surfaces" for what was built and the two boxes it left.
+  **The second identity column was not in the original plan and is not
+  optional.** `ensure_record_stub` stamped `record.organ_uid` from
+  `actor_organ`; renaming that column alone would have given every imported
+  record a CELL uid as its origin Organ — one contact with three devices
+  looking like three different people, written into the read model. The op has
+  to carry both or the read model loses the Organ.
+- [x] **C2 — A complete log. Enabling half built 2026-08-10.** Snapshot op
+  kind, crdt pruning gated on snapshots, the compaction sweep, scheduled
+  pruning, the kind-aware supersede rule, the closed op-kind set, and replica
+  bootstrap as catch-up. See "Retention, audit, and modes" for what each one
+  turned out to be. The question this entry warned about — "whose Cell signed
+  this snapshot" — is answered: the compacting Cell, with its own
+  `(actor_cell, hlc)`, so nothing is synthesized and C1's roster gate is
+  satisfied by construction rather than exempted.
+  **Three of the original eight items MOVED rather than landing:** read-model
+  rebuild → C2b, integrity audit → C2b, storage budgets → C2c. Said here
+  because a reader scanning checkboxes sees C2 ticked and stops.
+- [x] **C2b — the repair half. Complete 2026-08-13.**
+  `engine::rebuild`: `audit_read_model` compares the read model against the
+  log, `rebuild_read_model` replays the log in HLC order to repair it, and
+  `Materialise` is the shared apply step so import and rebuild cannot drift.
+  The quantity hazard it was unticked for is FIXED (quantity is added, never
+  assigned — see "Retention, audit, and modes"). The cross-Organ audit — the
+  box this was held open for — landed 2026-08-13 as `FetchVector` plus a
+  per-contact "Check we agree", so the cluster is now closed on both halves:
+  detect locally, detect against a peer, repair locally.
+- [ ] **C2c — storage budgets** (decision 3). Deferred with C2b and for a
+  different reason: decision 3 says snapshot-plus-truncate is "most of the
+  answer", and that part is now built — the log is O(live state) for text as
+  it already was for scalars. What remains is per-area ceilings for the media
+  store, the Facade cache and quarantine, and TWO of those three do not exist
+  yet (the Facade cache is C9; quarantine has no eviction until C0's
+  lifecycle box). Building a budget for absent consumers would be guessing.
+- [ ] **C3 — Reachability and identity.** The harness prerequisite is met (C0
+  complete). **Landed 2026-08-11**: the wire epoch (`/2` on all three ALPNs,
+  mandatory rather than policy by then) and version-vector catch-up, which also
+  closed relay-off on the pull side. **Also landed 2026-08-11**: the public
+  directory record — pkarr publishing, the two publishing tiers (one piece of
+  work, because the byte cap left no other shape), the republish-comparison
+  fix, dial falling back to the directory when no known Cell answers, and the
+  dial race.
+  **Still do not start the rest at the
+  enrolment client** — it is what makes a second Cell possible, so it wants the
+  identity chain under it first. Remaining, in order: the enrolment
+  client, front-door mechanics, root succession (decision 6) and the epoch
+  policy (decision 1). One chain, in that order.
+  **The epoch bump is no longer optional policy — C1 made it mandatory.**
+  `WireOp` renamed `actor_organ` to `actor_cell` and added a non-defaulted
+  `organ_uid`, so an older peer's batch no longer parses at all. Every roster
+  signed before capabilities existed is `Refused` for the same reason. That is
+  correct under no-legacy-peer-compat, but it means the wire is already broken
+  and the epoch has to say so. C11 rides the same epoch and now has a second
+  passenger.
+**Each remaining entry names its SURFACE** — the thing a person opens to use
+what the cluster builds. That line is part of the cluster, not a follow-up: a
+cluster that lands its mechanism and defers its surface has shipped something
+its owner cannot try. C3 proved how easily that happens — enrolment, the front
+door and the directory record were all built, all tested, and all unreachable
+from the running app until 2026-08-13.
+
+- [ ] **C4 — Your own infrastructure.** iroh-relay, self-hosted address
+  publishing, the always-on Cell, blind-mailbox mode, the Nix modules, and
+  discovery as ordinary config. Depends on C3 and unblocks relay-only mode
+  costing nothing.
+  **Surface:** the Discovery panel gains "where this Cell is reachable from" —
+  which relay, whose, and a plain statement of what relay-only mode costs. A
+  Nix module with no way to see whether it is working is a config file, not a
+  feature.
+- [ ] **C5 — Scoping.** Protein in both directions: outbound per-field
+  narrowing, inbound acceptance, the tombstone rule, re-snapshot on widening,
+  mutable-predicate grants, honest empty states. One selector language.
+  **Surface:** the per-contact pairing panel already filed into this cluster —
+  what they may see of you, what you accept from them, per field. Scoping
+  nobody can inspect is scoping nobody can trust.
+- [x] **C6 — Threads and references. Complete 2026-08-14.** Live references
+  through the visibility gate, the read receipt both sides are told about, copy
+  as an explicit irreversible act, replica consent from both parties, messages
+  off the general feed, key exchange as promotion inside the thread, and
+  deletion that reaches nobody. Detail in "Individual replica and threads".
+  **Two of the boxes were already built and needed proving rather than
+  building** — both-party consent and messages-off-the-feed — and saying so
+  matters, because the tests that existed for each covered a NEIGHBOURING case
+  and would have passed with the property absent.
+  **One box required narrowing a safety rule**: `assertions::assert` refused
+  every link whose endpoints did not share a root, which is exactly the shape a
+  reference has. It named two hazards and refused three cases; the third was
+  collateral, and all three are now pinned.
+  **Surface:** the conversation view carries all of it — the live-reference
+  panel with its three honest states, the copy control beside Post with the
+  choice named at the moment of copying, and both halves of promotion.
+- [ ] **C7 — Scheduling across Cells, Karma included.** The two axes, the lease,
+  rule provenance, the generation counter and per-rule budget, single-executor
+  defaults for externally-observable consequences. The prose spec is `Karma.md`
+  §14.1; the boxes live here, because that file is the specification and this
+  list is the plan. Karma is built in this cluster rather than deferred to its
+  own — the lease is one mechanism and the schedulers that need it are the same
+  schedulers, so building it twice is the only way to get it wrong.
+  C7 also owns the schedulers that are NOT Rules and inherit the same
+  duplication: the **pruning schedule**, the **Organ polling scheduler** (moved
+  out of Transfer T1) and **transfer delivery retries**. Asked and answered
+  2026-08-15: the first two do NOT borrow the designation (both are per-Cell
+  work on this Cell's own disk and own inbox, and designating either would
+  starve the other Cells), transfer retries DO (the only one that reaches
+  outward).
+  **Surface:** which Cell holds the lease right now, and what fired where. A
+  rule with outward consequences running on a device you did not expect is
+  exactly the thing a person must be able to see — and the same view answers it
+  for the three non-Rule schedulers.
+- [ ] **C8 — Tree sync.** Copy, then Move as copy-plus-manual-delete, the
+  visited set and depth bound, merge-not-duplicate, and the three things that
+  DO unify with transfer: consent handshake, retry scheduler, delivery-status
+  surface.
+  **Surface:** the delivery-status view is already in that list — it IS the
+  surface, and it covers transfer too.
+- [ ] **C9 — Profile and discovery.** The three tiers, the security defaults,
+  the Facade, gossip with seen-set and budgets, hop rules, the directory Cell.
+  Largest cluster; depends on C3 for identity and C4 for anywhere to run.
+  **Surface:** a profile editor per tier that shows what each tier reveals, and
+  to whom, BEFORE anything is published. This cluster's whole risk is people
+  publishing more than they meant to.
+- [ ] **C10 — Collab and the editor.** Loro compaction, `record.<column>` as a
+  bindable path, `record_editor`, `Note`, embeds, tombstone rules, tests. No
+  dependents — safe to run in parallel with everything from C2 onward.
+  **Surface:** the editor itself. This cluster is almost entirely surface,
+  which is part of why it is the safest to run in parallel.
+- [ ] **C11 — Transport cleanup.** `base_url` retirement, WS reuse deleting
+  the outbox row, IPv6 preference. Rides an epoch from C3.
+  **Surface:** none of its own, and that is legitimate — it REMOVES things.
+  What it must not do is remove something a surface still shows: the Organ
+  sand's contact rows read `base_url` today.
+- [ ] **PARKED — not being built**: §13 Proximity, the §9 federation adapters
+  (Schema.org, Nostr, ActivityPub), and the Recipe origin stamp.
+
+**Coverage map — every open box belongs to exactly one cluster.** Checked
+2026-08-10 by walking the sections; kept here so the next person can re-check
+it rather than trust it.
+
+| Section | Cluster |
+| --- | --- |
+| Op authenticity: signing, clocks, and who may write | C0 |
+| Quarantine needs a lifecycle | C0 |
+| Profile vs device surfaces | C1 |
+| Retention, audit, and modes — *except the three below* | C2 / C2b / C2c |
+| Identity, roster, and publishing | C3 |
+| The user's own infrastructure | C4 |
+| §12 Visibility | C5 |
+| Inbound Protein | C5 |
+| Individual replica and threads | C6 |
+| Who does the recurring work (spec in `Karma.md` §14.1) | C7 |
+| Tree sync | C8 |
+| The Organ Profile in three tiers | C9 |
+| Multi-hop discovery | C9 |
+| Collab: the reusable binding and everything above it | C10 |
+| Transport cleanup | C11 |
+| §13 Proximity, §9 Federation and Blood, Recipe origin stamp | PARKED |
+
+**Amended 2026-08-14, so the map's own invariant still holds.** The Karma
+mechanism's prose now lives in `Karma.md` §14.1, but its BOXES are back here
+under C7 — the doc is the spec, the cluster is the plan, and splitting those
+was the mistake. §9's outward-layer note carries no boxes at all and is parked
+with the rest of federation: it is a direction, not scheduled work.
+
+The three boxes filed under Retention that do NOT belong to C2, because they
+are per-contact configuration and scheduled work rather than log integrity:
+
+**"Organ sand controls the whole pairing per contact"** — built 2026-08-13.
+Direction, both scopes, trust, proximity, rename and forget are all on the one
+contact panel, and both directions of the feed now have a width.
+**"Arbitrary configurable Protein filter for File Sync selection" — built
+2026-08-14.** `lince.file_sync.filter` holds one `Predicate`, in the same
+vocabulary every other filter uses, ANDed with the Organ origin. Origin is not
+part of the configurable half and cannot be: mirroring a Record whose origin is
+somebody else's Organ would put their writing in this owner's folder, where
+editing the file edits THEIR Record. The extra filter can only narrow.
+
+Surface: a picker for the three shapes people actually want (a Concept tag, a
+Record kind, a text match) plus "a filter I write myself", which exposes the
+predicate language directly. The picker is not the ceiling, and a filter the
+picker cannot express — an `any`, a `not` — is shown as itself rather than
+flattened to the nearest option, because flattening it and then saving would
+silently delete it.
+
+An unreadable filter is IGNORED, so everything from the Organ syncs. Failing
+closed here means mirroring nothing, which is a folder that silently empties
+itself with no error to explain it — the same trade as the unreadable scope
+above, reported the same way. A NEW filter that is already broken is refused at
+the surface rather than stored to be ignored later: the stored-and-ignored path
+exists for values already on disk, not as a reason to accept another.
+- [ ] **"Organ polling scheduler" → C7.** It is recurring work and duplicates
+  once per Cell, not retention work, despite sitting next to the retention
+  machinery. It is one of the three schedulers C7 still owns after the Karma
+  mechanism moved to `Karma.md` §14.1 — and specifically NOT covered by that
+  move, since it is not a Rule.
+
+The eighteen boxes under "Seven architectural decisions" are not a cluster of
+their own; each belongs to the cluster its decision serves — epochs to C3,
+snapshots and storage to C2, Cell capabilities to C1, the drift constant and
+the test harness to C0, succession to C3.
+
 ## 12. Visibility: what a logged-in Organ may see
 
 Deliberately simple: login to an Organ plus `read record` permission grants
 full visibility of the sync feed; hiding is per-record (whole rows kept out
-of a contact's feed), never per-field. What §10 already excludes stays
+of a contact's feed) **and per-field**. What §10 already excludes stays
 excluded — Decision Queue, concept-level promises, and proximity never
 leave a Cell. The visibility gate is the *single* filter applied when
 serving ops, snapshots, and audits; nothing else decides what travels.
 
-- [ ] Per-record hiding: the existing visibility gate, applied at feed-serve
-  time, is the one mechanism; no per-contact state on the write path.
-- [ ] Per-contact Protein narrowing on top of the visibility gate (§2).
-- [ ] Grant: a record becoming visible enters the contact's feed as a
-  snapshot generated at serve time from the read model — grants don't write
-  history into the op log.
+**"Never per-field" was wrong and is REVERSED, 2026-08-09.** That rule was
+written before the op log existed and was carried forward without being
+re-checked against it. `migrations/0040_sync_op.sql` gives `sync_op` a
+`field TEXT NOT NULL` column and indexes `(tbl, uid, field)` — ops have been
+field-level since the table was created. Withholding a column from a contact
+is therefore a predicate on the op stream at serve time: no op rewriting, no
+re-signing, no new table, nothing that could invalidate a signature or a
+checkpoint. The constraint that justified the rule does not exist.
+
+**Per-record hiding — built 2026-08-14, and NOT by reusing the existing gate.**
+This box said "the existing visibility gate, applied at feed-serve time, is the
+one mechanism", and that turned out to be the wrong mechanism. `visible_targets`
+answers "what may this logged-in Person READ here" and is DEFAULT-HIDDEN,
+because a Cell holds other people's Records. The sync feed defaults the other
+way, and §12 says so in its first line: pairing and switching `sync_out` on IS
+the grant. Pointing one at the other would have meant every contact seeing
+nothing until each Record was granted individually — not a policy anyone chose,
+and it would have read as sync being broken rather than as a rule.
+
+So hiding is the EXCEPTION list to a default-shared feed:
+`visibility_rule` rows with `subject_kind = 'organ'` and
+`grant_level = 'hidden'`, a level the column has carried since `0001_init.sql`.
+`hide-record-from-contact` takes a slug or a uid and resolves it — a uid naming
+no Record would store a rule that hides nothing while reading as applied.
+
+**An op belongs to a Record even when it names another table.** `record`,
+`fact` and `record_assertion` are the three logged tables, and hiding a Record
+that still shipped its facts would be no hiding at all — a quantity is most of
+what many Records are. `visibility::records_of_op` is the one mapping, shaped
+after `replica::root_for_op`, and an Assertion is withheld if EITHER endpoint is
+hidden: letting a link to a hidden Record through discloses its uid and its
+relation, which is most of what hiding was for. An unknown fourth table returns
+NO governing Record and is therefore withheld, so adding one is a visible change
+here rather than a silent leak.
+
+**There is no tombstone exemption here, and that is the difference from the
+scope.** A narrowed contact still holds the Record, so withholding its delete
+would strand it. A hidden Record is one they were never to have, and sending
+the delete would tell them it existed. §12's honest half applies instead:
+hiding stops what travels NEXT, and the surface says so in both directions —
+hiding does not retract what they hold, unhiding does not re-send what they
+missed.
+
+The cost is one indexed lookup per contact per pass, and nothing more when the
+list is empty, which is the normal case: `record` ops resolve without a query
+at all, and the other two are only asked about once something is actually
+hidden. The pull path fails CLOSED on an unreadable hide list — the one place
+in the serve path where guessing wide sends a Record somebody named as
+withheld.
+
+Surface: the contact panel's "Never send" field plus the named list, with its
+own save. Batching it into the scope button would let an accidental widening
+ride along with a deliberate hide. A rule whose Record was deleted since still
+appears, because a rule that filters while being invisible is one nobody can
+remove. The better surface — a "hide from…" control on the Record itself — is
+C10's, and is not a reason to hold this one back.
+**Protein can select COLUMNS — built 2026-08-13, and it did not exist.** This
+box assumed it did: "Protein selection is already name-what-you-want". It was
+not, at the column level. `Include` names related things (facts, promises, an
+extension namespace); a Protein returned whole Records and there was no way to
+ask for `head` and not `body`. The one selector the whole cluster hangs off had
+to be built before anything could hang off it.
+
+`Protein.fields: Option<Vec<String>>`. `None` means every column, which is what
+every existing caller means and gets, so the addition is invisible to all of
+them. `uid` and `kind` always survive: a row nobody can identify is not a
+narrower answer to the question, it is a useless one, and every surface and the
+sync path alike address rows by uid.
+
+**Name-what-you-want, never name-what-to-hide**, and the asymmetry is the
+security argument rather than a style preference: a column added six months
+from now stays home until some Protein names it. A deny-list would have leaked
+it by default and nobody would have noticed until it had. Pinned by a test that
+asks for a column which does not exist.
+
+**Per-contact narrowing applies at serve time** (built 2026-08-13).
+`organ_contact.scope_fields` is a JSON array in the same vocabulary
+`Protein.fields` uses, and `narrow_ops_to_scope` drops ops for columns it does
+not name. Applied when the feed is SERVED and nowhere else — no per-contact
+state on the write path, which is what lets one log serve every contact
+differently.
+
+**It covers BOTH delivery paths, and at first it covered one** (fixed
+2026-08-14). The narrowing went into `FetchOpsSince` — the path a peer takes
+when it asks us — and `drain_outbox`, the path we take to them and the one the
+sync runner actually drives, sent every column regardless. A narrowing that
+holds on one of two paths is not a narrowing, and the one it missed was the
+default. The predicate is now applied in both, and the push-path test drives
+the outbox rather than the fetch so it cannot pass on the strength of the other
+path working.
+
+The general feed has two ways out and they are not symmetric, which is what
+made this easy to miss: pull is per-request and reads the contact anyway, push
+is per-outbox-row and previously only asked the contact a yes/no question
+(`sync_out`). Withheld rows are DELETED from the outbox rather than left
+queued — an op this contact will never receive under this scope is not owed,
+and leaving it would retry forever and hold the retention floor down behind it.
+`Engine::ops_after` takes a checkpoint and no contact, so it cannot narrow at
+all; it has no production caller and must not acquire one.
+
+Replica-grant ops are exempt, the same exemption `sync_out` already makes: a
+grant is an explicit per-record permission the receiver accepted, and
+half-delivering a document somebody agreed to take is worse than not scoping
+it. The scope governs the broad feed.
+
+`NULL` is unnarrowed, and is deliberately NOT the same as the empty list. An
+empty list is a real and different answer — nothing but deletes — and
+conflating "not configured" with "configured to nothing" is how a migration
+silently stops someone's sync. Both are tested.
+
+**The head is taken BEFORE narrowing**, which reads like an ordering detail and
+is not: it is a position in our log, not a count of what was sent. If narrowing
+moved it backwards, a contact whose scope excludes the newest ops would re-ask
+for the same range forever.
+
+**The scope is set from the Organ sand, and it offers THREE states** (built
+2026-08-13). `set-contact-scope` carries `fields: Option<Vec<String>>`, and the
+sand picks between "everything they can already see", "only these columns", and
+"nothing but which record it is" from a mode selector rather than a text field
+that is empty or not. This is the surface rule doing real work: a single text
+box has two states for a setting that has three, and the collapse runs the
+unsafe way — someone asking to share NOTHING would be stored as sharing
+EVERYTHING. The column list is only reachable inside the middle mode, so a list
+typed under "everything" cannot look applied.
+
+`fields` is deliberately not `#[serde(default)]`: an omitted field would
+deserialise to `None`, which is the widest setting there is, so a caller that
+forgets it gets an error instead of silently unnarrowing someone. Blank column
+names are refused rather than stored — a trailing comma in a text field is the
+ordinary way one appears, and a blank matches nothing while looking configured.
+
+**Widening reaches back and narrowing does not**, and the sand says which is
+which on both the tooltip and the confirmation. `scope_version` still moves on
+every change so the two directions stay distinguishable locally; what it was
+originally added for — letting a serve path detect an un-repaired widening —
+is no longer needed, because the repair is queued at the moment the scope
+changes rather than discovered later.
+
+**A scope that will not parse reads as UNNARROWED, and now SAYS so** (built
+2026-08-14). The default is unchanged and the box was right that it should be:
+failing closed means a corrupt row silently stops a contact's sync with no
+error at all, and the visibility gate is still in front of it either way. What
+was missing is that "read as unnarrowed" was indistinguishable FROM unnarrowed
+— a wider setting than anyone asked for, displayed as though somebody had asked
+for it.
+
+So the raw text survives to the surface as `scope_unreadable` (and
+`accept_unreadable` — separate values, because the two directions are separate
+settings and a shared flag would report one as broken because the other is).
+The panel says the setting is being ignored, says what that MEANS — nothing is
+narrowed right now — and shows the text that could not be read, because a
+repair whose input nobody can see is a guess. Saving the panel is the repair.
+
+Two functions over one column rather than one returning a three-way answer:
+every caller wants the ordinary value, and making all of them unwrap a failure
+they cannot act on is how the failure ends up ignored at each of them.
+
+The same shape is now used for the File Sync filter below, deliberately — two
+settings that fail the same way should report the same way.
+**Collaborative text is ONE unit, and the first narrowing let it escape**
+(fixed 2026-08-13). The tombstone rule was written as "empty `field` rides",
+and `crdt`/`snapshot` share that empty field — so the Loro document went to
+every contact whose scope excluded it, INCLUDING the empty scope. The document
+holds exactly `head` and `body`, so a scope naming neither still shipped both.
+
+The rule was too coarse rather than wrong: a tombstone must ride because
+withholding a delete strands a Record forever, and that argument does not
+extend to text, which strands nothing.
+
+**And the fix was applied to one table out of five** (finished 2026-08-14).
+The general lesson was written down — "the empty field marks 'not a column',
+not 'always send'" — and then not applied to the other tables that use one.
+`fact`, `record_assertion` and `concept` all log under `field = ''`, so for
+another day a contact narrowed to `head` was still receiving every quantity
+change we made, every link between Records, and the whole vocabulary of this
+Cell. Writing the rule down is not the same as enforcing it, and a predicate
+that has leaked twice is one to make exhaustive rather than patch a third time.
+
+`op_in_scope` now takes the TABLE, and needed to: `kind` alone cannot tell a
+Record tombstone (which must always ride) from an Assertion tombstone (which
+must not), because both are spelled `tombstone`. The shape is an ALLOW-list
+over tables, matching the cluster's own name-what-you-want rule — a sixth
+logged table reaches nobody narrowed until someone decides which column it
+carries, which is a visible omission instead of a silent leak. Per table:
+
+* `record` — tombstone always rides (the stranding rule, and it belongs to
+  this table alone, because nothing else here can strand anything);
+  `crdt`/`snapshot` ride when the scope names `head` or `body`; `set` rides
+  when the scope names its column, and an EMPTY field is refused rather than
+  read as a wildcard, which is the bug twice over.
+* `fact` — answers for `quantity`. A fact logs under an empty field because
+  the fact's own uid is the identity, which is not the same as being
+  field-less.
+* `record_assertion` — a relationship BETWEEN Records, not a column of one, and
+  the column vocabulary cannot name it. A narrowed contact receives no links at
+  all, tombstones included (they strand nothing, because the Assertion never
+  arrived). Fail-closed rather than inventing a reserved word: letting links
+  through would disclose the shape of the graph to someone narrowed to one
+  column. Naming links in a scope is a vocabulary extension and is deferred.
+* `record_extension` — names a real `namespace.key`, so it follows the ordinary
+  column rule. In practice that withholds extensions from every narrowed
+  contact, because nobody types `lince.file_sync.enabled` into a scope. That is
+  the right default and is now the deliberate one.
+* `concept` — shared vocabulary rather than anyone's content, and a narrowed
+  contact gets none of it. The cost is honest and small: a column holding a
+  concept uid arrives opaque, exactly as a withheld column arrives absent.
+  Riding unconditionally told a contact narrowed to one column the whole
+  vocabulary of this Cell.
+
+Splitting head from body is still not expressible, and is now refused where
+the scope is SET rather than silently honoured at serve time — configuration
+is the only place with somebody to tell. Name both or neither.
+
+One consequence to read as intended rather than as stranding: a contact who
+already holds text and is then given a scope excluding it keeps the text they
+have, frozen, rather than receiving a delete. Narrowing stops sending; it does
+not reach back and retract, which is the same asymmetry widening has in the
+other direction. It is moot in practice — no scope could be set before today —
+but it is the semantics from here on.
+**An excluded field is ABSENT, never blank** (built 2026-08-13). `retain`
+removes the key rather than nulling it, so `undefined` means withheld and `""`
+means genuinely empty — the distinction needs no marker invented for it, and a
+test now puts an empty body next to a withheld one so it cannot quietly stop
+being true.
+
+What is left is a RENDERER rule, not a data-model gap: `row.body || ""`
+collapses the two, and a sand that draws a missing `assignee` as unassigned
+draws a permission boundary as data. It is not swept through every renderer
+today, deliberately — **no shipped sand narrows** (every `Protein.fields` is
+`None`), so there are zero live instances and a sweep would be a large diff
+against a hypothetical. The File Sync Protein filter below is the first real
+narrowing caller, and is where the rule first bites.
+
+- [ ] **A contact cannot tell "withheld by their scope" from "empty".** The
+  absence rule above is LOCAL — the sand issued the Protein and knows what it
+  asked for. A peer does not know our scope, so a narrowed column arrives
+  indistinguishable from one nobody filled in. Telling them would mean putting
+  our scope on the wire, which discloses the shape of what we are hiding, so
+  this stays a known limitation rather than a design in progress. Named here
+  so it is not rediscovered as a bug.
+**A tombstone is not a field, and rides with the Record** (built 2026-08-13,
+and it is the rule that makes narrowing safe to apply at all). Tombstones,
+`crdt` and `snapshot` ops all use `field = ''`, so an allowlist naming columns
+would exclude every DELETE by construction: a narrowed contact would never
+learn a Record was removed, and their copy would live forever — worse than the
+leak the narrowing was for. Empty-field is a real value and never a wildcard,
+the same rule the supersede predicate follows, now stated in both directions
+and pinned by its own test.
+**Widening reaches back — built 2026-08-14.** Adding `assignee` to a contact's
+scope leaves every op for that column below their version vector, so catch-up
+would never offer it again and the column would stay permanently blank for them
+while the panel read as shared. `widens_scope` compares the stored scope to the
+incoming one BEFORE the write, and a widening queues the general feed for that
+contact — the same replay-by-identity a re-grant uses, over the whole feed
+rather than one Record.
+
+**It queues the DIFFERENCE, and the difference is exact.** The first version
+replayed the whole feed and let the drain filter it back down — correct, but
+O(current state) of queue churn and bandwidth for a change that usually adds
+one column. The worry that stopped it being a diff was that a hand-written
+"which columns are new" rule could be wrong in the narrow direction and
+silently fail to repair. The answer is not to hand-write it: an op is queued
+iff `op_in_scope` says the NEW scope permits it and the OLD one did not. The
+repair asks the same predicate the drain will ask, so the two cannot disagree,
+and there is no second copy to drift.
+
+`widens_scope` decides only WHETHER to repair, and stays conservative: it may
+say "wider" for a change that is not, costing one redundant pass, and it must
+never say "not wider" for one that is. Nothing reaches this path except
+somebody widening a scope by hand.
+
+Narrowing has no counterpart and must not acquire one: it stops sending, it
+does not reach back and retract. A test pins that it queues nothing about the
+Records it narrows — checked against the Record rather than against the whole
+outbox, because every contact action annotates the contact's own Record and
+that is an ordinary logged write.
+
+The three predictions this box made are all now wrong in the same direction and
+worth keeping as a record of it: the cursor is not `last_synced_seq` (that is a
+diagnostic; catch-up is a version vector), the repair is not a re-snapshot, and
+the confirmation does NOT stop distinguishing the two cases — a widening
+re-sends and a narrowing does not, which is a real difference and one that
+costs a pass.
+
+Surface: the scope tooltip and the save confirmation both say which direction
+reaches back, and a selftest refuses the old "wider from now on" wording so the
+prose cannot outlive the mechanism it described.
+- [ ] **A Protein selecting on MUTABLE state fires grants and revokes.**
+  **DEFERRED 2026-08-14 with its reason, not quietly skipped.** This box called
+  itself "the existing mid-stream box extended to Protein rather than a new
+  mechanism", and that is now the wrong way round: the mid-stream half IS built
+  (hiding filters only subsequent ops; unhiding replays), and what is missing is
+  the capability underneath it. **Nothing in the sync path evaluates a Protein
+  predicate at all.** Row selection for a contact is an explicit hide LIST, not
+  a query, so there is no predicate for a Record to cross.
+
+  Closing it honestly means three things nothing currently asks for: a
+  per-contact predicate on the feed, evaluating it per Record per op on the
+  serve path, and a served-set table so a Record CROSSING the predicate can be
+  told from one that always matched — crossing detection is the whole point,
+  and without stored state a serve pass cannot know whether a match is new.
+  That table is legitimate (written at serve time, not on the write path) but
+  it is real machinery, and the concrete need it would serve — "keep these
+  Records from this contact" — is already met by the hide list.
+
+  It is not blocked, and it is not hard for the wrong reasons; it is
+  speculative. C6's live references and C7's rules both put predicates near the
+  serve path, and either will say what shape this actually wants. Building it
+  first would be guessing at an interface with no caller.
+**Grant — built 2026-08-14, and NOT as the snapshot this box specified.** The
+box said "a record becoming visible enters the contact's feed as a snapshot
+generated at serve time from the read model", and the mechanism it describes was
+designed in full before being abandoned for a smaller one. Both halves of the
+reasoning are kept, because the discarded design is where the constraints came
+from.
+
+**Why the snapshot design was abandoned.** A synthesized op needs an identity,
+and the only identity available is the serving Cell's own `(actor_cell, hlc)` —
+which puts its stamp ABOVE every real op in our log. A peer folds whatever
+arrives into a `MAX(hlc) GROUP BY actor_cell` vector, so one synthesized op
+would hand them coverage of every real op of ours they had NOT yet received —
+a pass truncated by `limit`, a failed push — stranding those permanently. That
+is fixable (only re-snapshot once `ops_missing_from_vector` comes back empty,
+which makes the dominance harmless and the acknowledgement exact) but it costs
+a convergence gate, a progress column and a cursor.
+
+**What replaced it: replay by identity.** A contact who was never to have this
+Record holds NONE of its ops, so its own history is exactly what they are
+missing. Sending it under the original `(actor_cell, hlc)` invents nothing:
+no signature, roster or clock question arises, and the stamps sit BELOW the
+peer's high-water mark, so the replay moves their vector not at all. The whole
+dominance problem is an artefact of minting.
+
+Two guards had to be checked rather than assumed, and both already existed:
+`import_ops` compares `op.hlc <= prior` per FIELD before materialising, so a
+replayed op cannot overwrite something newer; and `import_fact_op` dedupes by
+op identity and then by fact uid, so a quantity cannot be added twice. The
+first reading of `sync_apply::set_record_field` — which is blind last-write-wins
+on its own — suggested replay was unsafe, and the guard is one layer up.
+
+This is also why a re-grant CANNOT be a snapshot of current state, quite apart
+from cost: `quantity` is added and never assigned (see C2b), so an op carrying
+the current total would double it on arrival.
+
+Delivery reuses the outbox rather than adding a path, and the bounded outbox
+does the compaction for free: its conflict clause keeps the latest op per
+`(tbl, uid, field, kind)`, so a Record's history collapses to its current value
+per column while facts — each with its own uid — all survive. The enqueue is
+addressed to ONE contact, unlike the ordinary fan-out; the scope and the hide
+list are applied where the outbox drains, which both delivery paths already
+share.
+
+Grants still do not write history into the op log — that part of the box was
+right, and replay satisfies it more literally than a snapshot would have.
+
+Surface: unhiding now says the whole Record is sent including what changed
+while it was hidden, where it previously said "from the next change onwards".
+The two directions of hiding are asymmetric and the panel says which is which.
 - [ ] Revoke — the honest part: revoking stops all future ops for that
   record, but the remote already holds what it saw, and a "delete your copy"
   instruction is *unenforceable* — the remote runs its own code and promised
@@ -1940,10 +4896,14 @@ serving ops, snapshots, and audits; nothing else decides what travels.
   nothing more travels) and `forget` request (a polite op the remote MAY
   honor; honoring is a trust signal, not a protocol guarantee). Never let UI
   imply revoke reaches into another Organ.
-- [ ] Mid-stream changes vs checkpoints: hiding a record after some of its
-  ops were served filters only *subsequent* ops; no history rewriting, no
-  checkpoint rollback. A re-grant later re-snapshots current state rather
-  than replaying the hidden gap.
+**Mid-stream changes vs checkpoints — settled 2026-08-14, with its second
+sentence reversed.** Hiding a Record after some of its ops were served filters
+only SUBSEQUENT ops: no history rewriting, no checkpoint rollback. That half
+stands. The other half said "a re-grant later re-snapshots current state rather
+than replaying the hidden gap", and the built answer replays the gap precisely —
+for the reasons under Grant above. Replaying is what the op log is FOR, and the
+sentence was written when a snapshot looked like the only way to avoid
+clobbering newer values; the per-field guard in `import_ops` means it never was.
 
 ## 13. Proximity: physical nearness as a local signal (post-sync)
 
@@ -1978,6 +4938,19 @@ strongest signal:
    precise-but-rare option; design must treat it as a bonus, never a
    requirement.
 
+**PARKED 2026-08-09 — nothing here gets built, and the reason is not
+technical.** The owner's position is that Lince should not tell people who is
+physically close, for now. The section stays because the analysis above is
+worth keeping and because parking it in one place is what stops proximity
+signals from leaking into discovery piecemeal. Two notes for whenever it is
+revisited: this was only ever for contacts you ALREADY know — matching needs
+a fingerprint you hold, unknown beacons are ignored outright, and BLE never
+introduces anyone to anyone — and the score never leaves the Cell. "Buckets,
+not metres" means radio signal strength is a bad ruler: a wall, a body or a
+phone in a pocket moves RSSI more than five metres of actual distance does,
+so immediate/near/far is the honest resolution and any number in metres would
+be invented.
+
 - [ ] Same-LAN sighting bumps proximity: a verified discovery announce
   from a known contact raises the score with time-decay (nearness fades if
   never seen again); the bump uses the *verified* fingerprint, never the
@@ -2005,7 +4978,32 @@ In Lince, the Alexandria vibe means sharing Records as knowledge of what things 
 
 That in turn means possibly caring for the building of interfaces and components to access knowledge, learn it and help use it while also helping with the management of knowledge: writing it and sharing it.
 
-Below are some cases for the first steps towards having such alexandria abstraction with lince, a free flow of information to better us all. We must advance our knowledge of how to perform this great task, turning knowledge refinement into a craft. Many have done it in the past, and we now stand in their shoulders. Knowledge can be inbued into components, when it is activated it creates Records with that content. Or maybe knowledge can be data in one specific server, but then you would need to contact such server to access it, if it's gated you loose access. Would it be best if it where inside a binary, inside a sand, in seed? We must find out which one is best, and support ourselves with past work, that made available to all a vast amount of knowledge in the internet, free, maybe we can import it, integrate with it, to jumpstart Alexandria.
+## Recipe: the DNA of doing something
+
+A Recipe is not a new storage mechanism, and not a new concept in Lince's model. It is a name for a *purpose*, not a thing: a bundle of ordinary table rows — Records, Assertions, Concepts, Transfers, Karma rules, referencing each other however the activity they describe requires — that someone can import as one unit because together they happen to be a recipe for doing X. Calling a bundle a Recipe, or DNA, is a convention over data already fully described by this document (§1-§7), the same way "tag" and "link" are interface words over Assertion rather than separate models.
+
+- A Recipe lives in an Organ the way any Records do. An Organ that specializes in keeping Recipes well-formed and current is an Alexandria Organ — curated the way the historical library was, by people who care for it, not by a ruling schema.
+- **Importing a Recipe is copying its rows into your own Organ's data.** There is no package it stays wrapped in and no lineage it keeps once imported — the moment it lands, it is simply more of your data, exactly as if you had entered it yourself. There is nothing to unpack: the referencing rows already form whatever structure the Recipe needs, the same way any other set of Records, Assertions, and Concepts does.
+- **Studying** a Recipe is reading it — its Records and their bodies are the documentation, nothing separate to render.
+- **Doing what it says** is Karma reading the imported data exactly like any other data: a Rule's Condition matches against the newly-arrived Records the same way it matches anything else, and its Consequence acts on them — changes a Record, schedules a Transfer — the same way it acts on data a person entered by hand. Nothing about "this came from a Recipe" is special to Karma; the import is what was special, execution is ordinary.
+- **Changing it** is ordinary editing. Once imported, a Recipe's Records are your data, not a tracked copy of someone else's — there is no fork-with-provenance step to perform, because there is no package boundary left to fork away from. Where a piece of your data originally came from is the same open question any other imported or adopted content already has, not something Recipes need to solve specially.
+- [ ] **An optional origin stamp, display-only.** Not lineage, not a package, not tracked for dedup or re-import: a small "came from Organ X's DNA of Y, at this time" note a Record may carry, purely informational, the way a photo carries EXIF. Worth doing only once a good place for it is found (a `record_extension` namespace is the obvious candidate) — deferred until then rather than guessed at now.
+
+## Recipes that need more than one Organ
+
+Some Recipes cannot be enacted by one Organ alone. Ride-sharing is the clean example: the DNA of "a ride happened" needs a Record in the driver's Organ and a Record in the rider's Organ, because the Transfer that is the actual ride is a condition/need match between the two — each side brings their own half. Today, making that happen requires a person to manually recreate the right Records in each Organ by hand before the Transfer that connects them can exist.
+
+**This is tree sync, and it is no longer specified here.** Resolved
+2026-08-09: the primitive this section asked for — taking a selection of
+one's data and placing it, by copy or by move, in a chosen Organ — is §11
+"Tree sync: syncing from a root Record, and the Move verb". A Recipe naming
+its cross-Organ half names a root Record and a Protein; the placing is an
+ordinary consented sync of that tree. Nothing Recipe-specific is needed, and
+specifying it twice is how the two definitions drift apart. What remains true
+and belongs here is only the line below.
+- This stays a thin, explicit act — a Person choosing to place specific data in a specific Organ — never an automatic replication triggered by adopting a Recipe alone; adoption is data at rest, placement is a deliberate step on top of it.
+
+Below are earlier open cases for the Alexandria abstraction generally, kept for the questions they still ask rather than answers already found: knowledge can be inbued into components, when it is activated it creates Records with that content. Or maybe knowledge can be data in one specific server, but then you would need to contact such server to access it, if it's gated you loose access. Would it be best if it where inside a binary, inside a sand, in seed? We must find out which one is best, and support ourselves with past work, that made available to all a vast amount of knowledge in the internet, free, maybe we can import it, integrate with it, to jumpstart Alexandria.
 
 # Nutrition - Home Manager.
 
@@ -2314,7 +5312,62 @@ under `wasm32-unknown-unknown`, so it should not be assumed to work in the
 sand.
 
 
-# Simulation
+# Resenha — the Lince manager, and where untestable tests go to live
+
+**Decided 2026-08-14.** Resenha runs several Linces on one machine and is the
+only place a multi-Cell property can be observed. It has two modes over the same
+node list, and the second is the reason it exists.
+
+**Normal mode** is a manager: each node is a name, a port, a data directory and
+a state, and Resenha starts, stops and watches them. This is already how
+multi-Cell development is done, except by hand with terminals and remembered
+port numbers, and doing it by hand is precisely why multi-Cell behaviour is the
+least-tested part of the system.
+
+**DST mode** replaces the environment. Time, the network and the disk are
+supplied by a pseudo-randomly seeded simulator rather than by the host, which is
+Turso's structure and TigerBeetle's discipline: everything a node waits on has
+to be something the harness can drive, so that one seed reproduces one run
+exactly. Two sub-modes: **scripted**, where named scenarios run and each node
+reports pass or fail per assertion, and **random**, which explores from a seed
+and records what it broke. A failure is reported as a SEED, because a seed is a
+bug report you can replay — the log of what happened is a description, and
+descriptions of concurrency bugs are how they escape.
+
+**Why this is the answer to "tests I cannot run".** Several properties this
+document already depends on have no test today, and each has the same shape: it
+needs two or more Cells, or a partition, or a clock nobody's laptop can produce.
+Left as prose they are hopes. Written as DST scenarios they are code with a
+`#[ignore]` on them today and a runner tomorrow — so the rule from here on is
+that **a property that cannot be tested now gets WRITTEN now as an ignored DST
+scenario naming its seed conditions**, rather than recorded as a sentence in a
+plan. `crates/engine/tests/dst_deferred.rs` holds them, and the file is the
+backlog: when Resenha's DST mode lands, its first job is turning those `#[ignore]`
+attributes off one at a time.
+
+**When lost on sync, the reference is Automerge and Ink & Switch**, and their
+answer is consistently the same one: converge by construction rather than by
+coordination, and make the merge a property of the data instead of a protocol
+step. Where this document reaches for a lock or a leader, the first question is
+whether the state could have been a CRDT instead — and where it genuinely cannot
+be (an outward act must happen exactly once, and no data structure makes sending
+one message twice into sending it once), that is the point to say so out loud
+rather than to invent a weaker lock.
+
+- [ ] **The node list and normal mode**: name, port, data directory, running
+  state, start/stop, and a log pane per node. Ratatui.
+- [ ] **The simulated environment**: clock, network and disk behind traits the
+  engine already has to go through, so a node cannot accidentally read the host
+  clock. This is the load-bearing item — the modes above it are a menu without
+  it, and every place the engine calls `Utc::now()` directly is a hole in it.
+- [ ] **Scripted mode**: named scenarios, per-node pass/fail, and the deferred
+  suite as the first source of scenarios.
+- [ ] **Random mode**: explore from a seed, record failures AS seeds, and keep a
+  corpus of seeds that once failed so a fixed bug stays fixed.
+- [ ] **Fault injection worth the name**: partition, one-way partition, delay,
+  reorder, duplicate, and a Cell that stops and comes back with an old clock.
+  A partition that is only "both nodes paused" tests nothing — the asymmetric
+  cases are where every one of this document's sync decisions actually lives.
 
 DST - Deterministic Simulation Testing.
 

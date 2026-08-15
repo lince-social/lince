@@ -93,6 +93,7 @@ fn role_specific_claims_gate_an_idempotent_settlement() {
                         Predicate::UidEq(occurrence.clone()),
                         Predicate::QuantityEq(5.0),
                     ],
+                    fields: None,
                     include: Include::default(),
                     aggregate: None,
                     order: Vec::new(),
@@ -422,6 +423,7 @@ fn balance_is_advisory_and_conversation_uses_generic_threads() {
             &Protein {
                 source: Source::Transfer,
                 filter: vec![Predicate::UidEq(fixture.transfer.clone())],
+                fields: None,
                 include: Include::default(),
                 aggregate: None,
                 order: Vec::new(),
@@ -468,6 +470,7 @@ fn balance_is_advisory_and_conversation_uses_generic_threads() {
             &Protein {
                 source: Source::Record,
                 filter: vec![Predicate::UidEq(fixture.transfer)],
+                fields: None,
                 include: Include {
                     threads: Some(protein::ThreadsInclude { messages_limit: 10 }),
                     ..Default::default()

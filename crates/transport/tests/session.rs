@@ -121,6 +121,7 @@ async fn visibility_subject_gates_the_session() {
     let p = protein::Protein {
         source: protein::Source::Record,
         filter: vec![protein::Predicate::QuantityLt(0.0)],
+        fields: None,
         include: protein::Include::default(),
         aggregate: None,
         order: vec![],

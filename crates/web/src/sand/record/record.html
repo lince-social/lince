@@ -115,6 +115,17 @@
     .msg + .msg { margin-top: 2px; }
     .msg.run-start { margin-top: 8px; }
     .msg-sender { font-size: .68rem; font-weight: 600; color: var(--muted); margin-bottom: 1px; }
+    /* A reference is a pointer, and looks like one: its own box, its own
+       read control, and nothing shown until it has actually been read. */
+    .copy-warning { flex-basis: 100%; font-size: .7rem; color: var(--muted); line-height: 1.4; }
+    .copy-error { flex-basis: 100%; font-size: .7rem; color: var(--danger, #f85149); }
+    .live-ref { display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+      margin-top: 4px; padding: 6px 8px; border: 1px dashed var(--border, #333);
+      border-radius: 6px; }
+    .live-ref-label { font-size: .7rem; color: var(--muted); }
+    .live-ref-body { flex-basis: 100%; font-size: .8rem; }
+    .live-ref-body.err { color: var(--danger, #f85149); }
+    .live-ref-when { font-size: .65rem; color: var(--muted); margin-top: 2px; }
     .msg-footer { font-size: .65rem; color: var(--muted); margin-top: 2px;
       display: flex; justify-content: flex-end; align-items: center; gap: .5rem; }
     .msg-when { font-variant-numeric: tabular-nums; }
@@ -296,6 +307,32 @@
         <div class="inline">
           <textarea id="cm-body" class="lynx-textarea" placeholder="Message… (@slug references a record; image URLs render)" style="min-height:44px"></textarea>
           <button id="cm-post" type="button" class="lynx-button lynx-button--primary accent">Post</button>
+          <!-- The other way to put a record in a conversation, and a SEPARATE
+               button because it is a separate decision. Mentioning @a-record
+               points at it and can be taken back; this sends it, and cannot.
+               The two must never be one control with a mode. -->
+          <button id="cm-copy" type="button" class="lynx-button">Send a copy…</button>
+          <!-- The other half of promotion. Posting your code INTO the
+               conversation is what makes "we talked, now I know you" a single
+               gesture instead of a trip to another screen with a string in
+               the clipboard. -->
+          <button id="cm-key" type="button" class="lynx-button">Send my key</button>
+        </div>
+        <!-- The confirmation lives HERE, at the moment of the act, because
+             that is the only moment at which it can still be declined. It
+             names the DIFFERENCE rather than asking "are you sure", which
+             tells nobody anything, and it states the alternative — a mention
+             — so the safer option is visible at the point of choosing. -->
+        <div class="inline" id="cm-copy-row" hidden>
+          <div class="copy-warning">
+            A copy leaves this cell and lands on theirs. You cannot take it back,
+            and later edits here will not reach it. To point at a record instead —
+            readable only while you keep sharing it — write @its-slug in a message.
+          </div>
+          <input id="cm-copy-target" class="lynx-input" placeholder="@slug or uid" />
+          <button id="cm-copy-send" type="button" class="lynx-button">Send the copy</button>
+          <button id="cm-copy-cancel" type="button" class="lynx-button">Cancel</button>
+          <div class="copy-error" id="cm-copy-error"></div>
         </div>
       </div>
     </details>
@@ -303,6 +340,15 @@
     <details id="sec-facts" class="lynx-disclosure" open>
       <summary>History</summary>
       <ul id="facts-list"></ul>
+    </details>
+
+    <!-- Who has opened this through a reference in a conversation. The
+         owner's own cell served those reads; not showing them would not make
+         them private, only invisible. Closed by default — it is a thing to
+         check, not a thing to watch. -->
+    <details id="sec-reads" class="lynx-disclosure" hidden>
+      <summary>Opened by</summary>
+      <ul id="reads-list"></ul>
     </details>
   </div>
   </div>
@@ -475,6 +521,11 @@
             links: { kinds: ["*"], direction: "both" },
             threads: { messages_limit: 50 },
             extension: { namespace: WORK_NS },
+            // Who has opened this record through a reference in a
+            // conversation. The owner sees what their own cell already
+            // observed — leaving it unshown would not make the read private,
+            // only invisible.
+            reference_reads: true,
           },
         },
         ({ rows }) => {
@@ -630,6 +681,7 @@
       renderLinks();
       renderComments();
       renderFacts();
+      renderReferenceReads();
       arrangeSections();
     }
 
@@ -1343,6 +1395,17 @@
           setTimeout(() => area.focus(), 0);
         } else {
           el.appendChild(renderMessageBody(String(m.body || "")));
+          // References to Records we do not hold. They are POINTERS, read
+          // live from their owner every time, so they get their own control
+          // rather than looking like something already here.
+          (m.live_references || []).forEach((uid) => {
+            el.appendChild(liveReference(uid, m.organ_uid, m.replica_root, m.organ_name));
+          });
+          // A pairing code posted into the conversation. Promotion happens
+          // INSIDE the thread: you talk to someone first, then decide they are
+          // someone you know.
+          const code = pairingCodeIn(String(m.body || ""));
+          if (code) el.appendChild(pairingOffer(code));
         }
         // Footer: timestamp bottom-right, every message (not just run
         // starts) — an unbroken run still needs its own edit/delete control
@@ -1441,6 +1504,143 @@
     });
     // Body -> nodes via the shared K6 renderer (same blocks everywhere);
     // regex fallback keeps @hops + images when the module is unavailable.
+    // A pairing code posted as a message. `lince1|` is the whole prefix and
+    // the code is one unbroken token, so this needs no parser — and must not
+    // grow one here: `add-known-organ` decodes it properly and refuses what
+    // does not decode, which is the only place that judgement belongs.
+    function pairingCodeIn(body) {
+      const match = body.match(/lince1\|\S+/);
+      return match ? match[0] : null;
+    }
+
+    // Key exchange IS the promotion step, and it happens inside the thread.
+    //
+    // The name field is the load-bearing part. A sender's claimed label is a
+    // string they chose and is never identity — so the local user types what
+    // THEY call this person, and that is what gets stored. Prefilling it from
+    // the message would quietly turn an untrusted label into a name, which is
+    // the whole thing this design refuses.
+    function pairingOffer(code) {
+      const box = document.createElement("div");
+      box.className = "live-ref";
+      const label = document.createElement("span");
+      label.className = "live-ref-label";
+      label.textContent = "They sent their pairing code.";
+      const name = document.createElement("input");
+      name.className = "lynx-input";
+      name.placeholder = "What you call them";
+      const add = document.createElement("button");
+      add.type = "button";
+      add.className = "lynx-button";
+      add.textContent = "Add as known";
+      const out = document.createElement("div");
+      out.className = "live-ref-body";
+      out.textContent =
+        "Adding them opens your ordinary feed to them, which a conversation "
+        + "on its own does not.";
+      add.addEventListener("click", async () => {
+        const typed = name.value.trim();
+        if (!typed) {
+          out.className = "live-ref-body err";
+          out.textContent = "Type what you call them first — a name is not something they send you.";
+          return;
+        }
+        out.className = "live-ref-body";
+        out.textContent = "Adding…";
+        try {
+          // One action: it writes the contact, adopts the key and sets trust,
+          // so there is no half-added state to be left in.
+          await act({ action: "add-known-organ", invite: code, name: typed });
+          out.textContent = `Added as ${typed}.`;
+        } catch (err) {
+          out.className = "live-ref-body err";
+          out.textContent = (err && err.message) ? err.message : String(err);
+        }
+      });
+      box.append(label, name, add, out);
+      return box;
+    }
+
+    // A reference to a Record this Cell does not hold.
+    //
+    // It is a POINTER, not a copy, and the interface has to say so or the two
+    // become indistinguishable — which would be the one lie that matters here,
+    // because the whole property this buys is that the owner can still take it
+    // back. So: nothing is shown until it is read, every read is live, and
+    // what comes back is labelled with WHEN it was read, because the owner may
+    // have changed it since and a stale panel would silently misquote them.
+    function liveReference(uid, owner, root, ownerName) {
+      const box = document.createElement("div");
+      box.className = "live-ref";
+      const label = document.createElement("span");
+      label.className = "live-ref-label";
+      label.textContent = ownerName
+        ? `A record on ${ownerName}'s cell`
+        : "A record on their cell";
+      const open = document.createElement("button");
+      open.type = "button";
+      open.className = "lynx-button";
+      open.textContent = "Read it";
+      // Said BEFORE the read, not after, because after is too late to be a
+      // choice. Reading fetches from their cell, so their cell sees it happen
+      // — that is what "live" costs, and it is not ours to leave unmentioned.
+      open.title =
+        "Reading asks their cell for it, so they can see that you opened it and when.";
+      const out = document.createElement("div");
+      out.className = "live-ref-body";
+      // Missing routing is a real state and not an error: an older message, or
+      // one whose conversation we cannot identify, cannot be read at all and
+      // must say that rather than offering a button that always fails.
+      if (!owner || !root) {
+        open.disabled = true;
+        out.textContent = "There is no way to reach the cell this belongs to.";
+      }
+      open.addEventListener("click", async () => {
+        out.textContent = "Reading…";
+        try {
+          const response = await fetch("/organ/reference/read", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ owner, root, record: uid }),
+          });
+          if (!response.ok) {
+            const message = await response.text();
+            out.className = "live-ref-body err";
+            // The two failures mean OPPOSITE things to the reader, so they
+            // are never collapsed: 403 is the owner's answer, anything else
+            // is the network. Showing "no longer shared" to somebody whose
+            // friend closed their laptop is a false accusation.
+            out.textContent = response.status === 403
+              ? "They are not sharing this with you any more."
+              : "Could not reach their cell right now — this reads live, so there is nothing stored to show. Try again when they are online.";
+            return;
+          }
+          const data = await response.json();
+          const row = (data && data.row) || {};
+          out.className = "live-ref-body";
+          out.textContent = "";
+          const head = document.createElement("strong");
+          head.textContent = row.head || "(untitled)";
+          const body = document.createElement("div");
+          body.textContent = row.body || "";
+          const when = document.createElement("div");
+          when.className = "live-ref-when";
+          // Not decoration. A reference shows the Record as it is NOW, and the
+          // owner editing it afterwards silently changes what the message
+          // appears to have said. Labelling the read is the cheap fix; pinning
+          // a version was considered and rejected as more machinery than a
+          // conversation needs.
+          when.textContent = "Read live from their cell just now — they may change it at any time.";
+          out.append(head, body, when);
+        } catch (err) {
+          out.className = "live-ref-body err";
+          out.textContent = "Could not reach their cell right now.";
+        }
+      });
+      box.append(label, open, out);
+      return box;
+    }
+
     function renderMessageBody(body) {
       const holder = document.createElement("div");
       holder.className = "body";
@@ -1481,6 +1681,48 @@
       }
       return holder;
     }
+    // Sending a copy. The confirmation happens HERE, at the moment of the act,
+    // because that is the only moment at which it can still be declined — and
+    // it names the difference rather than asking "are you sure", which tells
+    // nobody anything. Copying is the one thing in this design that genuinely
+    // cannot be undone: the bytes land on their machine and they run their own
+    // code.
+    $("cm-copy").addEventListener("click", async () => {
+      if (!row || !activeThreadUid) return;
+      $("cm-copy-row").hidden = false;
+      $("cm-copy-target").focus();
+    });
+
+    $("cm-key").addEventListener("click", async () => {
+      if (!activeThreadUid) return;
+      try {
+        await act({ action: "share-my-key", thread: activeThreadUid });
+      } catch (err) {
+        console.warn(err);
+      }
+    });
+
+    $("cm-copy-cancel").addEventListener("click", () => {
+      $("cm-copy-row").hidden = true;
+      $("cm-copy-target").value = "";
+      $("cm-copy-error").textContent = "";
+    });
+
+    $("cm-copy-send").addEventListener("click", async () => {
+      if (!row || !activeThreadUid) return;
+      const target = $("cm-copy-target").value.trim().replace(/^@/, "");
+      if (!target) return;
+      const error = $("cm-copy-error");
+      error.textContent = "";
+      try {
+        await act({ action: "send-record-copy", thread: activeThreadUid, record: target });
+        $("cm-copy-row").hidden = true;
+        $("cm-copy-target").value = "";
+      } catch (err) {
+        error.textContent = (err && err.message) ? err.message : String(err);
+      }
+    });
+
     $("cm-post").addEventListener("click", async () => {
       const body = $("cm-body").value.trim();
       if (!row || !body) return;
@@ -1515,6 +1757,28 @@
     });
 
     // ---- facts ------------------------------------------------------------------
+    // The owner's half of the read receipt.
+    //
+    // Hidden entirely when nobody has opened it, rather than showing an empty
+    // "no one yet". Most records are never referenced at all, and a permanent
+    // empty panel on every record would train people to ignore the one that
+    // eventually says something.
+    function renderReferenceReads() {
+      const reads = Array.isArray(row?.reference_reads) ? row.reference_reads : [];
+      $("sec-reads").hidden = reads.length === 0;
+      const ul = $("reads-list");
+      ul.innerHTML = "";
+      reads.forEach((item) => {
+        const li = document.createElement("li");
+        // The contact's name where we have one, the uid where we do not.
+        // Never "someone": that would imply we do not know, and we do.
+        const who = item.reader_name || item.reader_organ;
+        const times = item.reads > 1 ? ` · ${item.reads} times` : "";
+        li.textContent = `${who} · ${shortDateTime(item.last_read_at)}${times}`;
+        ul.appendChild(li);
+      });
+    }
+
     function renderFacts() {
       const ul = $("facts-list");
       ul.innerHTML = "";

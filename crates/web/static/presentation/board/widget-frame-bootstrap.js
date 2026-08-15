@@ -202,6 +202,9 @@ const PROTEIN_ACTION_RESULT = "lince:protein-action-result";
         pending.resolve({
           created: payload.created || null,
           facts: Number(payload.facts) || 0,
+          // Structured result, when the Action had more to say than a uid.
+          data: payload.data === undefined ? null : payload.data,
+          warnings: Array.isArray(payload.warnings) ? payload.warnings : [],
         });
       } else {
         const error = new Error(payload.message || "Action failed.");

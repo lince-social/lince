@@ -12,6 +12,7 @@ mod kanban;
 #[path = "karma/mod.rs"]
 mod karma;
 mod lince_logo_led;
+mod lince_website;
 pub mod lynx_ui;
 #[path = "ontology/mod.rs"]
 mod ontology;
@@ -105,7 +106,7 @@ impl OfficialWidgetBuilder {
 // Only current frame.js sands are wired for construction, plus `shell` (the
 // board's own chrome). Legacy sources may remain under `sand/`, but stay
 // unwired until rebuilt on the current bridge and explicitly added here.
-const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 24] = [
+const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 25] = [
     OfficialWidgetBuilder::Html {
         feature_flag: shell::FEATURE_FLAG,
         source_builder: shell::edit_source,
@@ -135,6 +136,10 @@ const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 24] = [
     OfficialWidgetBuilder::Package {
         feature_flag: lince_logo_led::FEATURE_FLAG,
         package_builder: lince_logo_led::package,
+    },
+    OfficialWidgetBuilder::Package {
+        feature_flag: lince_website::FEATURE_FLAG,
+        package_builder: lince_website::package,
     },
     OfficialWidgetBuilder::Package {
         feature_flag: terminal::FEATURE_FLAG,
@@ -317,6 +322,7 @@ mod catalog_tests {
             "document-viewer.lince",
             "freedoom-portal.lince",
             "lince-logo-led.html",
+            "lince-website.lince",
             "ghostty-terminal.lince",
         ] {
             let package = packages

@@ -48,6 +48,33 @@ pub struct InputBinding {
     pub expected_type: ValueType,
 }
 
+impl ProgramAst {
+    /// Does this Program have a consequence anyone outside this Cell can
+    /// observe? (C7: the axis that decides whether running it on three Cells
+    /// means doing the thing three times.)
+    ///
+    /// The dividing line is NOT recurring vs reactive — reactive rules are the
+    /// worse case, since every Cell sees every change and so they fire more
+    /// often. It is whether the consequence leaves the machine. `Act` is the
+    /// only route that proceeds without a person: the other four end in
+    /// something someone reads and answers, and a person answering the same
+    /// proposal on one Cell is one answer however many Cells proposed it.
+    ///
+    /// A Program with no `RouteCandidate` at all answers `false` — it computes
+    /// and stops, which is the case where running everywhere is the point.
+    pub fn is_externally_observable(&self) -> bool {
+        self.nodes.values().any(|node| {
+            matches!(
+                node.operation,
+                NodeOperation::RouteCandidate {
+                    route: crate::karma::CandidateRoute::Act,
+                    ..
+                }
+            )
+        })
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct NodeAst {
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]

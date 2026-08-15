@@ -11,7 +11,7 @@ use std::sync::Arc;
 use engine::Engine;
 use engine::sync::OpBatch;
 use engine::trust::Signer;
-use engine::wire::{ALPN_SYNC, Reach, Wire, WireRequest, WireResponse};
+use engine::wire::{ALPN_SYNC, ALPN_THREAD, Reach, Wire, WireRequest, WireResponse};
 use iroh::{EndpointAddr, SecretKey};
 use nucleus::RecordKind;
 use store::records::NewRecord;
@@ -154,8 +154,10 @@ async fn a_full_sync_contact_without_a_grant_receives_nothing() {
         .request(
             a_addr,
             ALPN_SYNC,
-            &WireRequest::FetchOps {
-                after: 0,
+            &WireRequest::FetchOpsSince {
+                // An empty vector is "I have nothing of yours", which is what a
+                // from-zero pull IS — no special case, no cursor.
+                vector: Vec::new(),
                 limit: 2000,
             },
         )
@@ -345,7 +347,8 @@ async fn a_grant_channel_cannot_touch_a_record_outside_its_root() {
             kind: "set".into(),
             value: Some("\"overwritten\"".into()),
             hlc: nucleus::hlc::next(),
-            actor_organ: a_organ.clone(),
+            actor_cell: a_organ.clone(),
+        organ_uid: a_organ.clone(),
             fact: None,
         }],
     };
@@ -396,7 +399,8 @@ async fn revoking_a_grant_stops_further_ops() {
             kind: "set".into(),
             value: Some("\"still talking\"".into()),
             hlc: nucleus::hlc::next(),
-            actor_organ: a_organ,
+            actor_cell: a_organ.clone(),
+        organ_uid: a_organ,
             fact: None,
         }],
     };
@@ -662,6 +666,7 @@ async fn a_contact_carries_the_conversations_shared_with_them() {
             &Protein {
                 source: Source::Record,
                 filter: vec![Predicate::KindEq("organ".to_string())],
+                fields: None,
                 include: Include {
                     conversations: true,
                     ..Include::default()
@@ -742,4 +747,797 @@ async fn a_contact_carries_the_conversations_shared_with_them() {
         Some(1),
         "a granted note is not a conversation"
     );
+}
+
+/// Per-record hiding on the PULL path (Ontology §12, C5).
+///
+/// The push path has its own test in `organ_sync.rs`, and the two exist
+/// separately on purpose: the field scope shipped covering pull alone and the
+/// gap survived a green suite, because every test that could have caught it
+/// drove the other path. A filter on the general feed needs one test per way
+/// out of it.
+#[tokio::test]
+async fn a_hidden_record_is_absent_from_a_pulled_feed() {
+    let (a, _a_organ) = cell("http://a.test").await;
+    let (b, b_organ) = cell("http://b.test").await;
+
+    let a_wire = Wire::bind(a.clone(), secret(40), Reach::Local)
+        .await
+        .expect("a binds");
+    let b_wire = Wire::bind(b.clone(), secret(41), Reach::Local)
+        .await
+        .expect("b binds");
+    full_contact(&a, &b_organ, &b_wire.node_id().to_string()).await;
+
+    for (slug, head) in [("shared-note", "Shared"), ("hidden-note", "Hidden")] {
+        store::records::create(
+            &a.store.pool,
+            NewRecord {
+                slug: Some(slug),
+                kind: RecordKind::Plain,
+                head,
+                body: "",
+                quantity: store::exact::zero(),
+            },
+        )
+        .await
+        .expect("record");
+    }
+    let hidden_uid = store::records::resolve(&a.store.pool, "hidden-note")
+        .await
+        .expect("resolve")
+        .expect("record")
+        .uid;
+    store::visibility::set_hidden_from_organ(&a.store.pool, &b_organ, &hidden_uid, true)
+        .await
+        .expect("hide");
+
+    let a_addr = loopback(&a_wire);
+    let _ = loopback(&b_wire);
+    let a_serving = tokio::spawn(async move { a_wire.serve().await });
+    let response = b_wire
+        .request(
+            a_addr,
+            ALPN_SYNC,
+            &WireRequest::FetchOpsSince {
+                vector: Vec::new(),
+                limit: 2000,
+            },
+        )
+        .await
+        .expect("fetch");
+    let ops = match response {
+        WireResponse::Ops { ops, .. } => ops,
+        other => panic!("expected Ops, got {other:?}"),
+    };
+
+    assert!(
+        ops.iter()
+            .any(|op| op.value.as_deref() == Some("\"Shared\"")),
+        "the ordinary feed must still work, or this test proves nothing"
+    );
+    assert!(
+        ops.iter().all(|op| op.uid != hidden_uid),
+        "not one op of a hidden Record may be served"
+    );
+    assert!(
+        ops.iter()
+            .all(|op| op.value.as_deref() != Some("\"Hidden\"")),
+        "and its contents least of all"
+    );
+
+    a_serving.abort();
+}
+
+/// A live reference resolves THROUGH the §12 gate, never around it
+/// (Ontology §11, C6).
+///
+/// The load-bearing test is the negative one, as it was for grants: mentioning
+/// a Record in a thread must not become a way to serve something the ordinary
+/// feed is withholding, and a grantee must not be able to name any uid they
+/// like and get an answer.
+#[tokio::test]
+async fn a_reference_read_goes_through_the_visibility_gate() {
+    let (a, a_organ) = cell("http://a.test").await;
+    let (b, b_organ) = cell("http://b.test").await;
+
+    let a_wire = Wire::bind(a.clone(), secret(50), Reach::Local)
+        .await
+        .expect("a binds");
+    let b_wire = Wire::bind(b.clone(), secret(51), Reach::Local)
+        .await
+        .expect("b binds");
+    full_contact(&a, &b_organ, &b_wire.node_id().to_string()).await;
+    full_contact(&b, &a_organ, &a_wire.node_id().to_string()).await;
+
+    // A conversation A shares with B, and a Record A mentions in it.
+    let (conversation, thread) = a
+        .start_conversation(&b_organ, "About the plan")
+        .await
+        .expect("conversation");
+    store::replica::accept(&a.store.pool, &conversation, &b_organ)
+        .await
+        .expect("accept");
+    let mentioned = store::records::create(
+        &a.store.pool,
+        NewRecord {
+            slug: Some("the-plan"),
+            kind: RecordKind::Plain,
+            head: "The plan",
+            body: "meet at six",
+            quantity: store::exact::zero(),
+        },
+    )
+    .await
+    .expect("record")
+    .uid;
+    let unmentioned = store::records::create(
+        &a.store.pool,
+        NewRecord {
+            slug: Some("private-note"),
+            kind: RecordKind::Plain,
+            head: "Private",
+            body: "not for B",
+            quantity: store::exact::zero(),
+        },
+    )
+    .await
+    .expect("record")
+    .uid;
+    a.act(
+        engine::actions::Action::CreateMessage {
+            thread: thread.clone(),
+            body: "see this".into(),
+            parent: None,
+            references: vec![mentioned.clone()],
+        },
+        None,
+    )
+    .await
+    .expect("message with a reference");
+
+    let a_addr = loopback(&a_wire);
+    let _ = loopback(&b_wire);
+    let a_serving = tokio::spawn(async move { a_wire.serve().await });
+
+    // The reference resolves, live, and carries the Record.
+    let response = b_wire
+        .request(
+            a_addr.clone(),
+            ALPN_THREAD,
+            &WireRequest::FetchReference {
+                root: conversation.clone(),
+                record: mentioned.clone(),
+            },
+        )
+        .await
+        .expect("fetch");
+    match response {
+        WireResponse::Reference { row } => {
+            assert_eq!(row["head"], "The plan", "the pointer resolves to the record");
+        }
+        other => panic!("expected the referenced record, got {other:?}"),
+    }
+
+    // A uid that was NEVER mentioned is refused, however good the grant is.
+    // Without this the conversation is a read oracle for the whole Cell.
+    let response = b_wire
+        .request(
+            a_addr.clone(),
+            ALPN_THREAD,
+            &WireRequest::FetchReference {
+                root: conversation.clone(),
+                record: unmentioned.clone(),
+            },
+        )
+        .await
+        .expect("fetch");
+    assert!(
+        matches!(&response, WireResponse::Refused { code, .. } if code == "not_shared"),
+        "an unmentioned record must not be readable: {response:?}"
+    );
+
+    // Hiding the mentioned Record from B closes the reference too — the gate
+    // is the SAME gate, not a second more permissive path to the same row.
+    store::visibility::set_hidden_from_organ(&a.store.pool, &b_organ, &mentioned, true)
+        .await
+        .expect("hide");
+    let response = b_wire
+        .request(
+            a_addr.clone(),
+            ALPN_THREAD,
+            &WireRequest::FetchReference {
+                root: conversation.clone(),
+                record: mentioned.clone(),
+            },
+        )
+        .await
+        .expect("fetch");
+    assert!(
+        matches!(&response, WireResponse::Refused { code, .. } if code == "not_shared"),
+        "revocation is REAL here: the next read fails, because there was never a copy"
+    );
+
+    a_serving.abort();
+}
+
+/// The per-contact scope narrows a reference read exactly as it narrows the
+/// feed — one selector language, doing both jobs — and a withheld column comes
+/// back ABSENT rather than present and blank.
+#[tokio::test]
+async fn a_reference_read_is_narrowed_by_the_contacts_scope() {
+    let (a, a_organ) = cell("http://a.test").await;
+    let (b, b_organ) = cell("http://b.test").await;
+
+    let a_wire = Wire::bind(a.clone(), secret(52), Reach::Local)
+        .await
+        .expect("a binds");
+    let b_wire = Wire::bind(b.clone(), secret(53), Reach::Local)
+        .await
+        .expect("b binds");
+    full_contact(&a, &b_organ, &b_wire.node_id().to_string()).await;
+    full_contact(&b, &a_organ, &a_wire.node_id().to_string()).await;
+    store::organs::set_contact_scope(&a.store.pool, &b_organ, Some(&["head".to_string(), "body".to_string()]))
+        .await
+        .expect("scope");
+
+    let (conversation, thread) = a
+        .start_conversation(&b_organ, "Narrowed")
+        .await
+        .expect("conversation");
+    store::replica::accept(&a.store.pool, &conversation, &b_organ)
+        .await
+        .expect("accept");
+    let mentioned = store::records::create(
+        &a.store.pool,
+        NewRecord {
+            slug: Some("narrowed-record"),
+            kind: RecordKind::Plain,
+            head: "Visible head",
+            body: "visible body",
+            quantity: store::exact::zero(),
+        },
+    )
+    .await
+    .expect("record")
+    .uid;
+    a.act(
+        engine::actions::Action::CreateMessage {
+            thread: thread.clone(),
+            body: "look".into(),
+            parent: None,
+            references: vec![mentioned.clone()],
+        },
+        None,
+    )
+    .await
+    .expect("message");
+
+    let a_addr = loopback(&a_wire);
+    let _ = loopback(&b_wire);
+    let a_serving = tokio::spawn(async move { a_wire.serve().await });
+
+    let response = b_wire
+        .request(
+            a_addr,
+            ALPN_THREAD,
+            &WireRequest::FetchReference {
+                root: conversation,
+                record: mentioned,
+            },
+        )
+        .await
+        .expect("fetch");
+    match response {
+        WireResponse::Reference { row } => {
+            assert_eq!(row["head"], "Visible head");
+            assert!(
+                row.get("quantity").is_none(),
+                "a withheld column is ABSENT, not blank — a surface drawing \
+                 `null` as zero would draw a permission boundary as data: {row}"
+            );
+            assert!(
+                row.get("uid").is_some(),
+                "the identifying columns always survive, or the answer is useless"
+            );
+        }
+        other => panic!("expected the referenced record, got {other:?}"),
+    }
+
+    a_serving.abort();
+}
+
+/// The boundary rule was written as "same root or refuse", which refused three
+/// cases when only two are leaks — and the third is how a reference is
+/// expressed at all. This pins all three, because the fix is a narrowing of a
+/// safety rule and the next person needs to see exactly how far it went.
+#[tokio::test]
+async fn a_message_may_mention_an_ordinary_record_but_not_the_reverse() {
+    let (a, _) = cell("http://a.test").await;
+    let (conversation, thread) = a
+        .start_conversation("o-friend", "Private")
+        .await
+        .expect("conversation");
+    let (other_conversation, other_thread) = a
+        .start_conversation("o-someone-else", "Also private")
+        .await
+        .expect("second conversation");
+    let public = store::records::create(
+        &a.store.pool,
+        NewRecord {
+            slug: Some("ordinary"),
+            kind: RecordKind::Plain,
+            head: "Ordinary",
+            body: "",
+            quantity: store::exact::zero(),
+        },
+    )
+    .await
+    .expect("record")
+    .uid;
+    let predicate = store::concepts::ensure(&a.store.pool, "mentions")
+        .await
+        .expect("predicate");
+    let link = |subject: String, object: String| {
+        let pool = a.store.pool.clone();
+        let predicate = predicate.clone();
+        async move {
+            store::assertions::assert(
+                &pool,
+                store::assertions::NewAssertion {
+                    subject_uid: &subject,
+                    predicate_uid: &predicate,
+                    object_uid: Some(&object),
+                    role: store::assertions::AssertionRole::Ordinary,
+                    quantity: None,
+                    unit_uid: None,
+                    asserted_by: None,
+                },
+            )
+            .await
+        }
+    };
+
+    // ALLOWED: private subject, general-feed object. The op takes the
+    // subject's root, so it reaches only that conversation's grant holders.
+    let allowed = link(thread.clone(), public.clone()).await;
+    assert!(
+        allowed.is_ok(),
+        "a message must be able to mention an ordinary record: {allowed:?}"
+    );
+    let root = store::replica::root_of(&a.store.pool, &thread)
+        .await
+        .expect("root");
+    assert_eq!(
+        root,
+        Some(conversation.clone()),
+        "and mentioning must not drag the message out of its conversation"
+    );
+    assert_eq!(
+        store::replica::root_of(&a.store.pool, &public)
+            .await
+            .expect("root"),
+        None,
+        "nor pull the mentioned record INTO it"
+    );
+
+    // REFUSED: general-feed subject, private object — the op would ride the
+    // general feed carrying a private uid.
+    assert!(
+        link(public.clone(), thread.clone()).await.is_err(),
+        "a private uid must not reach the general feed"
+    );
+
+    // REFUSED: two different conversations — joining them widens both.
+    assert!(
+        link(thread, other_thread).await.is_err(),
+        "two conversations must not be joined by a link"
+    );
+    let _ = other_conversation;
+}
+
+/// Consent from BOTH parties: the sharer offers, the receiver accepts, and
+/// only then does anything land. An offer on its own must move no ops in
+/// either direction — otherwise announcing a conversation is a way to push
+/// Records into somebody's store.
+///
+/// The gate exists on both sides and this checks both, because either one
+/// alone would look like it worked: the outbox only fans out to `accepted`
+/// grants, and `import_grant_batch` refuses a channel without one.
+#[tokio::test]
+async fn an_offer_alone_moves_nothing_until_it_is_accepted() {
+    let (a, a_organ) = cell("http://a.test").await;
+    let (b, b_organ) = cell("http://b.test").await;
+
+    let (conversation, thread) = a
+        .start_conversation(&b_organ, "Not yet agreed")
+        .await
+        .expect("conversation");
+    store::organs::add_contact(&a.store.pool, &b_organ, None, "B", "", 0)
+        .await
+        .expect("contact");
+    store::organs::set_sync_policy(&a.store.pool, &b_organ, true, true)
+        .await
+        .expect("policy");
+    store::replica::offer(&a.store.pool, &conversation, &b_organ)
+        .await
+        .expect("offer");
+    let message = a
+        .send_message(&thread, "me", "sent before they agreed")
+        .await
+        .expect("message");
+
+    // Outbound: an offered-but-unaccepted grant is not a delivery target.
+    assert!(
+        store::sync_ops::outbox_due(&a.store.pool)
+            .await
+            .expect("outbox")
+            .iter()
+            .all(|row| row.uid != message),
+        "nothing may be queued for a conversation nobody has accepted"
+    );
+
+    // Inbound: and if it arrived anyway, the receiver refuses the channel.
+    // The root is taken from the CHANNEL, never the payload — and B has
+    // agreed to nothing, so the channel itself is refused before any op is
+    // looked at.
+    let forced = b
+        .import_grant_batch(
+            &conversation,
+            &OpBatch {
+                from_organ: a_organ,
+                ops: Vec::new(),
+            },
+        )
+        .await;
+    assert!(
+        forced.is_err(),
+        "a grant channel into a conversation B never accepted must be refused"
+    );
+    assert!(
+        store::records::get(&b.store.pool, &message)
+            .await
+            .expect("get")
+            .is_none(),
+        "and B holds no copy of a conversation they never accepted"
+    );
+}
+
+/// Reading a reference is a read receipt to its owner (Ontology §11, C6).
+///
+/// The read is a live request against their Cell, so it is observable whether
+/// or not anyone records it. Recording it is what lets BOTH sides be told:
+/// the reader before they read, the owner afterwards.
+#[tokio::test]
+async fn reading_a_reference_leaves_a_receipt_but_a_refusal_does_not() {
+    let (a, a_organ) = cell("http://a.test").await;
+    let (b, b_organ) = cell("http://b.test").await;
+
+    let a_wire = Wire::bind(a.clone(), secret(54), Reach::Local)
+        .await
+        .expect("a binds");
+    let b_wire = Wire::bind(b.clone(), secret(55), Reach::Local)
+        .await
+        .expect("b binds");
+    full_contact(&a, &b_organ, &b_wire.node_id().to_string()).await;
+    full_contact(&b, &a_organ, &a_wire.node_id().to_string()).await;
+
+    let (conversation, thread) = a
+        .start_conversation(&b_organ, "Receipts")
+        .await
+        .expect("conversation");
+    store::replica::accept(&a.store.pool, &conversation, &b_organ)
+        .await
+        .expect("accept");
+    let mentioned = store::records::create(
+        &a.store.pool,
+        NewRecord {
+            slug: Some("read-me"),
+            kind: RecordKind::Plain,
+            head: "Read me",
+            body: "",
+            quantity: store::exact::zero(),
+        },
+    )
+    .await
+    .expect("record")
+    .uid;
+    let never_mentioned = store::records::create(
+        &a.store.pool,
+        NewRecord {
+            slug: Some("do-not-read-me"),
+            kind: RecordKind::Plain,
+            head: "Private",
+            body: "",
+            quantity: store::exact::zero(),
+        },
+    )
+    .await
+    .expect("record")
+    .uid;
+    a.act(
+        engine::actions::Action::CreateMessage {
+            thread: thread.clone(),
+            body: "here".into(),
+            parent: None,
+            references: vec![mentioned.clone()],
+        },
+        None,
+    )
+    .await
+    .expect("message");
+
+    let a_addr = loopback(&a_wire);
+    let _ = loopback(&b_wire);
+    let a_serving = tokio::spawn(async move { a_wire.serve().await });
+
+    assert!(
+        store::replica::reference_reads(&a.store.pool, &mentioned)
+            .await
+            .expect("reads")
+            .is_empty(),
+        "nothing is recorded before anyone reads"
+    );
+
+    for _ in 0..2 {
+        let response = b_wire
+            .request(
+                a_addr.clone(),
+                ALPN_THREAD,
+                &WireRequest::FetchReference {
+                    root: conversation.clone(),
+                    record: mentioned.clone(),
+                },
+            )
+            .await
+            .expect("fetch");
+        assert!(matches!(response, WireResponse::Reference { .. }));
+    }
+
+    let reads = store::replica::reference_reads(&a.store.pool, &mentioned)
+        .await
+        .expect("reads");
+    assert_eq!(reads.len(), 1, "one row per reader, not one per read");
+    assert_eq!(reads[0].0, b_organ, "and it names the Organ, never the Cell");
+    assert_eq!(reads[0].1, 2, "counted, so an open tab is not a surveillance log");
+
+    // A REFUSAL is not a read. Recording one would turn this into a record of
+    // who attempted what, which is a different and nastier table.
+    let refused = b_wire
+        .request(
+            a_addr,
+            ALPN_THREAD,
+            &WireRequest::FetchReference {
+                root: conversation,
+                record: never_mentioned.clone(),
+            },
+        )
+        .await
+        .expect("fetch");
+    assert!(matches!(refused, WireResponse::Refused { .. }));
+    assert!(
+        store::replica::reference_reads(&a.store.pool, &never_mentioned)
+            .await
+            .expect("reads")
+            .is_empty(),
+        "a refused attempt leaves no trace"
+    );
+
+    a_serving.abort();
+}
+
+/// "Send a copy" is a SEPARATE and irreversible act, not a variant of
+/// referencing (Ontology §11, C6).
+///
+/// A reference is a pointer that can be taken back; a copy lands in the other
+/// party's store and cannot be recalled. The mechanics have to make that real:
+/// a new uid, inside the conversation, with the original untouched.
+#[tokio::test]
+async fn a_copy_is_a_new_record_inside_the_conversation() {
+    let (a, _a_organ) = cell("http://a.test").await;
+    let (conversation, thread) = a
+        .start_conversation("o-friend", "Working on it")
+        .await
+        .expect("conversation");
+    let source = store::records::create(
+        &a.store.pool,
+        NewRecord {
+            slug: Some("the-draft"),
+            kind: RecordKind::Plain,
+            head: "The draft",
+            body: "first version",
+            quantity: store::exact::zero(),
+        },
+    )
+    .await
+    .expect("record")
+    .uid;
+
+    let copy = a
+        .act(
+            engine::actions::Action::SendRecordCopy {
+                thread: thread.clone(),
+                record: source.clone(),
+            },
+            None,
+        )
+        .await
+        .expect("copy")
+        .created
+        .expect("the copy's uid");
+
+    assert_ne!(
+        copy, source,
+        "a copy must be its own Record — sharing the uid would make later edits \
+         flow back through the grant channel, which is a shared document, not a copy"
+    );
+    assert_eq!(
+        store::replica::root_of(&a.store.pool, &copy)
+            .await
+            .expect("root"),
+        Some(conversation),
+        "the copy lives inside the conversation, which is what makes it travel"
+    );
+    assert_eq!(
+        store::replica::root_of(&a.store.pool, &source)
+            .await
+            .expect("root"),
+        None,
+        "and the original is untouched, still on the general feed"
+    );
+    let copied = store::records::get(&a.store.pool, &copy)
+        .await
+        .expect("get")
+        .expect("the copy");
+    assert_eq!(copied.head, "The draft");
+    assert_eq!(copied.body, "first version");
+    assert_eq!(
+        copied.slug, None,
+        "the slug is a local suggestion and must not collide with the original"
+    );
+
+    // Editing the ORIGINAL afterwards must not reach the copy. This is the
+    // difference from a reference stated as a test: a reference would have
+    // shown the new text, a copy shows what was sent.
+    a.act(
+        engine::actions::Action::EditRecordText {
+            target: source.clone(),
+            head: None,
+            body: Some("second version".into()),
+        },
+        None,
+    )
+    .await
+    .expect("edit");
+    assert_eq!(
+        store::records::get(&a.store.pool, &copy)
+            .await
+            .expect("get")
+            .expect("the copy")
+            .body,
+        "first version",
+        "a copy is a moment, not a window"
+    );
+}
+
+/// A Record already inside another conversation cannot be copied across.
+/// Going through a copy would be the same cross-root widening `assert`
+/// refuses, wearing a different verb.
+#[tokio::test]
+async fn a_copy_cannot_move_a_record_between_conversations() {
+    let (a, _a_organ) = cell("http://a.test").await;
+    let (_first, first_thread) = a
+        .start_conversation("o-friend", "One")
+        .await
+        .expect("conversation");
+    let (_second, second_thread) = a
+        .start_conversation("o-someone-else", "Two")
+        .await
+        .expect("conversation");
+    let message = a
+        .send_message(&first_thread, "me", "private to the first")
+        .await
+        .expect("message");
+
+    let result = a
+        .act(
+            engine::actions::Action::SendRecordCopy {
+                thread: second_thread,
+                record: message,
+            },
+            None,
+        )
+        .await;
+    assert!(
+        result.is_err(),
+        "copying across conversations would widen both, exactly as a link would"
+    );
+}
+
+/// Deleting a conversation ends it HERE and reaches nobody (Ontology §11, C6).
+///
+/// Both halves are needed and the test checks both: revoking alone leaves it
+/// in the list, removing alone leaves their ops welcome so it repopulates on
+/// the next sync. And no tombstone may be emitted — a tombstone is a synced op
+/// kind, so it would delete THEIR copy too.
+#[tokio::test]
+async fn deleting_a_conversation_is_local_and_emits_no_tombstone() {
+    let (a, a_organ) = cell("http://a.test").await;
+    let (b, b_organ) = cell("http://b.test").await;
+
+    let (conversation, thread) = a
+        .start_conversation(&b_organ, "Ending this")
+        .await
+        .expect("conversation");
+    store::organs::add_contact(&a.store.pool, &b_organ, None, "B", "", 0)
+        .await
+        .expect("contact");
+    store::replica::accept(&a.store.pool, &conversation, &b_organ)
+        .await
+        .expect("accept");
+    let message = a
+        .send_message(&thread, "me", "before the end")
+        .await
+        .expect("message");
+
+    let tombstones_before = store::sync_ops::after(&a.store.pool, &a_organ, 0, 10_000)
+        .await
+        .expect("ops")
+        .into_iter()
+        .filter(|op| op.kind == "tombstone")
+        .count();
+
+    a.act(
+        engine::actions::Action::DeleteConversation {
+            // Named by a THREAD, not the root: a person deleting a
+            // conversation may well have a thread selected, and deleting only
+            // that would leave the conversation half-present and still syncing.
+            conversation: thread.clone(),
+        },
+        None,
+    )
+    .await
+    .expect("delete");
+
+    for uid in [&conversation, &thread, &message] {
+        assert!(
+            store::records::get(&a.store.pool, uid)
+                .await
+                .expect("get")
+                .is_none(),
+            "the conversation, its threads and its messages all go"
+        );
+    }
+    assert!(
+        !store::replica::is_accepted(&a.store.pool, &conversation, &b_organ)
+            .await
+            .expect("grant"),
+        "and their grant goes with it, or their ops would still be accepted"
+    );
+    assert_eq!(
+        store::sync_ops::after(&a.store.pool, &a_organ, 0, 10_000)
+            .await
+            .expect("ops")
+            .into_iter()
+            .filter(|op| op.kind == "tombstone")
+            .count(),
+        tombstones_before,
+        "NO tombstone: it is a synced op kind, so one here would delete their \
+         copy too — and their copy is theirs"
+    );
+
+    // What remains is exactly one thing: they may knock again. One pending at
+    // a time, which is what makes it a knock rather than a channel.
+    let first = store::invites::put(&a.store.pool, &b_organ, "r-new-root", "Try again")
+        .await
+        .expect("invite");
+    assert!(first.is_some(), "a new invite may arrive after a deletion");
+    let second = store::invites::put(&a.store.pool, &b_organ, "r-another", "And again")
+        .await
+        .expect("invite");
+    assert!(
+        second.is_none(),
+        "but only one pending at a time, or deletion buys nothing"
+    );
+    let _ = b;
 }

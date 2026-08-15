@@ -49,6 +49,7 @@ fn query(source: Source, filter: Vec<Predicate>) -> Protein {
     Protein {
         source,
         filter,
+        fields: None,
         include: Include::default(),
         aggregate: None,
         order: vec![],

@@ -41,6 +41,10 @@ export function normalizeSocialDelivery(raw) {
     package_receipts: receipts,
     conflicts,
     replica_history: projectedArray(raw.replica_history ?? localView.replica_history, "items", "revisions"),
+    // Which Cell retries this Transfer (Ontology C7). Normalised like every
+    // other block so a host that has not shipped it yet renders the "any Cell"
+    // state rather than throwing on an absent field.
+    executor: normalizedObject(raw.executor),
     capabilities: normalizedObject(raw.capabilities),
     blocking_reasons: normalizedObject(raw.blocking_reasons),
     action_payloads: normalizedObject(raw.action_payloads ?? raw.actions),

@@ -5,11 +5,14 @@
 pub mod action_intents;
 pub mod assertions;
 pub mod auth;
+pub mod cells;
 pub mod communication;
 pub mod concepts;
 pub mod config;
+pub mod door;
 pub mod entries;
 pub mod exact;
+pub mod executor;
 pub mod facts;
 pub mod frequency;
 pub mod invites;
@@ -65,6 +68,7 @@ impl Store {
                 other => sqlx::Error::Protocol(other.to_string()),
             })?;
         linguas::ensure_local(&pool).await?;
+        ensure_identity(&pool).await?;
         Ok(Store { pool })
     }
 
@@ -86,6 +90,25 @@ impl Store {
                 other => sqlx::Error::Protocol(other.to_string()),
             })?;
         linguas::ensure_local(&pool).await?;
+        ensure_identity(&pool).await?;
         Ok(Store { pool })
     }
+}
+
+/// Mint this Cell's identity — its Organ and its Cell Record — as part of
+/// OPENING the store, not as a later bootstrap step.
+///
+/// It has to be here. `sync_ops::log_local` stamps every local write with the
+/// actor Cell and the origin Organ, and before this it answered a missing
+/// identity by silently skipping the op: a write that landed in the read model
+/// and never entered the log, so it synced to nobody and no error said so.
+/// "Most unit tests have no Organ" was the reason that path existed, and the
+/// fix is for the state to be unreachable rather than handled.
+///
+/// The base URL starts empty and `organs::ensure_local` fills it in when the
+/// web Cell binds a port. A URL is a reachability hint, not identity (Ontology
+/// §11), so it is not something identity may wait on.
+async fn ensure_identity(pool: &SqlitePool) -> Result<(), StoreError> {
+    organs::ensure_local(pool, "").await?;
+    Ok(())
 }

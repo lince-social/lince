@@ -25,6 +25,7 @@ import { renderGraph, wireGraph } from "./graph.js";
 import { renderCanvas, wireCanvas } from "./canvas.js";
 import { renderBuilder, wireBuilder } from "./builder.js";
 import { renderFrequencies, wireFrequencyForm } from "./frequency.js";
+import { renderExecution, wireExecution } from "./execution.js";
 
 const byId = (id) => document.getElementById(id);
 
@@ -148,6 +149,9 @@ const elements = {
   occurrenceList: byId("occurrence-list"),
   occurrenceEmpty: byId("occurrence-empty"),
   occurrenceMore: byId("occurrence-more"),
+  executionList: byId("execution-list"),
+  executionEmpty: byId("execution-empty"),
+  executionNotice: byId("execution-notice"),
 
   graphConcept: byId("graph-concept"),
   graphWindow: byId("graph-window"),
@@ -212,6 +216,7 @@ function render() {
   renderRules(elements);
   renderGraph(elements);
   renderCanvas(elements);
+  renderExecution(elements);
 }
 
 function start() {
@@ -235,6 +240,7 @@ function start() {
   wireRecurrenceForm(elements);
   wireGraph(elements);
   wireCanvas(elements);
+  wireExecution(elements);
 
   onChange(render);
   subscribeAll();

@@ -63,7 +63,7 @@ impl crate::Engine {
     async fn load_state(&self, record_uid: &str) -> Result<LoadedState, EngineError> {
         let doc_row = store::record_docs::get(&self.store.pool, record_uid).await?;
         let through = doc_row.as_ref().map(|d| d.through_seq).unwrap_or(0);
-        let tail = store::record_docs::crdt_tail(&self.store.pool, record_uid, through).await?;
+        let tail = store::record_docs::doc_tail(&self.store.pool, record_uid, through).await?;
         Ok(LoadedState {
             snapshot: doc_row.map(|d| d.snapshot),
             tail,
@@ -159,6 +159,12 @@ impl crate::Engine {
         head: Option<&str>,
         body: Option<&str>,
     ) -> Result<(), EngineError> {
+        // Same lock the import path takes. A local write logs a crdt op and may
+        // compact, and compaction records "everything up to this seq is folded
+        // into the snapshot" — which must not be decided while a peer's op is
+        // mid-import, or `through_seq` can move past a blob that never reached
+        // the doc. Silent text loss, and the hardest kind to trace back.
+        let _op = self.import_lock.lock().await;
         let record = store::records::get(&self.store.pool, uid)
             .await?
             .ok_or_else(|| EngineError::UnknownRecord(uid.to_string()))?;
@@ -190,7 +196,11 @@ impl crate::Engine {
                 })
             },
         )?;
-        if let Some(local) = store::organs::local(&self.store.pool).await? {
+        // The CELL, not the Organ. This call site is the one the Ontology names
+        // as the example of the confusion the split resolves: it passed the
+        // Organ uid as the op actor, which collides two Cells on
+        // `UNIQUE(actor_cell, hlc)`.
+        if let Some(local) = store::cells::local(&self.store.pool).await? {
             store::sync_ops::append(
                 &self.store.pool,
                 "record",
@@ -200,6 +210,7 @@ impl crate::Engine {
                 Some(&write.tail_b64),
                 nucleus::hlc::next(),
                 &local.uid,
+                &local.organ_uid,
                 None,
                 // A local collab write inherits whatever root the Record was
                 // born in, resolved from the row rather than assumed: a
@@ -247,6 +258,25 @@ impl crate::Engine {
         )
     }
 
+    /// The record-doc's current text, rebuilt from the stored snapshot and the
+    /// logged tail — NOT read from the materialized columns.
+    ///
+    /// The distinction is the whole point: this is what the doc says, so
+    /// comparing it against `record.head`/`record.body` is how you find out
+    /// whether the log can still reconstruct the text it is supposed to own.
+    /// No seeding, deliberately — a doc with no history answers empty rather
+    /// than inventing content from the columns it is meant to be checked
+    /// against.
+    pub async fn doc_text(&self, uid: &str) -> Result<(String, String), EngineError> {
+        let loaded = self.load_state(uid).await?;
+        self.with_doc(uid, loaded, None, |doc, _| {
+            Ok((
+                doc.get_text("head").to_string(),
+                doc.get_text("body").to_string(),
+            ))
+        })
+    }
+
     /// The record-doc's full snapshot, base64 — what a joining collab client
     /// imports into its fresh browser-side doc. Seeds the doc from the
     /// materialized head/body when no history exists anywhere (same
@@ -282,6 +312,8 @@ impl crate::Engine {
         uid: &str,
         update_b64: &str,
     ) -> Result<(), EngineError> {
+        // See `write_record_text` — same reason.
+        let _op = self.import_lock.lock().await;
         let update = B64
             .decode(update_b64)
             .map_err(|_| EngineError::Consequence("collab update is not valid base64".into()))?;
@@ -306,7 +338,8 @@ impl crate::Engine {
                 })
             },
         )?;
-        let local = store::organs::local(&self.store.pool).await?;
+        // The CELL, not the Organ — see the sibling call above.
+        let local = store::cells::local(&self.store.pool).await?;
         if let Some(local) = &local {
             store::sync_ops::append(
                 &self.store.pool,
@@ -317,6 +350,7 @@ impl crate::Engine {
                 Some(&write.tail_b64),
                 nucleus::hlc::next(),
                 &local.uid,
+                &local.organ_uid,
                 None,
                 // A local collab write inherits whatever root the Record was
                 // born in, resolved from the row rather than assumed: a
@@ -353,12 +387,21 @@ impl crate::Engine {
         Ok(())
     }
 
-    /// Apply one remote `crdt` update to the record-doc and materialize.
-    /// Returns Err(reason) suitable for quarantine on a malformed payload.
+    /// Apply one remote `crdt` or `snapshot` blob to the record-doc and
+    /// materialize. Returns Err(reason) suitable for quarantine on a malformed
+    /// payload.
+    ///
+    /// `was_snapshot` suppresses the compaction check, and that is not an
+    /// optimization. A snapshot blob is large, so it clears the byte threshold
+    /// on arrival; compacting in response would emit OUR snapshot op, which the
+    /// peer imports, which clears their threshold, which emits theirs — two
+    /// Cells volleying whole documents at each other forever. There is also
+    /// nothing to compact: we just adopted someone else's compaction.
     pub(crate) async fn apply_remote_crdt(
         &self,
         uid: &str,
         value_b64: &str,
+        was_snapshot: bool,
     ) -> Result<Result<(), String>, EngineError> {
         let Ok(update) = B64.decode(value_b64) else {
             return Ok(Err("crdt op is not valid base64".into()));
@@ -382,7 +425,9 @@ impl crate::Engine {
                     &text.body,
                 )
                 .await?;
-                self.maybe_compact(uid, value_b64.len()).await?;
+                if !was_snapshot {
+                    self.maybe_compact(uid, value_b64.len()).await?;
+                }
                 Ok(Ok(()))
             }
             Err(reason) => Ok(Err(reason)),
@@ -400,28 +445,119 @@ impl crate::Engine {
         if ops < COMPACT_OPS && last_tail_len < COMPACT_BYTES {
             return Ok(());
         }
+        self.compact_doc(uid).await?;
+        Ok(())
+    }
+
+    /// Compact one record-doc: store the snapshot, reset the tail baseline,
+    /// and LOG the snapshot as an op.
+    ///
+    /// The op is the point. Without it the snapshot lives only in `record_doc`,
+    /// which is local and never travels, so a rebuild from the log alone cannot
+    /// reconstruct text and no `crdt` op can ever be pruned — each is only
+    /// cumulative since a base the log does not contain. With it, all three of
+    /// those resolve at once (Ontology §11, decision 2).
+    ///
+    /// The snapshot op's identity is this Cell's, minted like any other write.
+    /// That was the objection to snapshots-in-the-log ("it needs a synthesized
+    /// op identity, and that identity IS the unique index") and it dissolves on
+    /// contact: the compacting Cell is a real actor asserting a real fact about
+    /// a doc it holds. Nothing is invented, so nothing collides — and it passes
+    /// the import gate that requires an op's Cell to be in its Organ's roster.
+    ///
+    /// Returns whether a snapshot was written.
+    pub async fn compact_doc(&self, uid: &str) -> Result<bool, EngineError> {
+        // BEFORE the export: an op appended concurrently then lands ABOVE
+        // `through_seq` and is replayed on the next load. The reverse would
+        // mark it folded when it is not, and lose it.
+        //
+        // WHOSE WINDOW IS THIS: the compaction decision is guarded by the op
+    // lock, taken by every entry point rather than here. This function does
+    // NOT take it, and must not: it is
+        // reached from the import path
+        // (`import_ops` → `materialise` → `apply_remote_crdt` → `maybe_compact`),
+        // which already holds it, so locking here would deadlock on any
+        // imported crdt op that trips the compaction threshold. Every entry
+        // point holds it instead: `write_record_text`, `apply_client_crdt_update`,
+        // `import_ops` and `compact_stale_docs`.
+        // A deleted record's doc takes no more updates — that is the tombstone
+        // freeze, and a snapshot is an update like any other. Compacting one
+        // would log a `snapshot` op above its tombstone, which is the exact
+        // shape the kind-aware supersede rule exists to survive; there is no
+        // reason to manufacture it locally as well.
+        if store::sync_apply::record_deleted(&self.store.pool, uid).await? != Some(false) {
+            return Ok(false);
+        }
         let max_seq = store::sync_ops::max_seq(&self.store.pool).await?;
-        // Export from the ALREADY-OPEN doc only: snapshotting a freshly
-        // created empty doc would erase real history. If the doc was evicted
-        // between the write and here, skip — the next write compacts.
-        let snapshot = {
+        // Load rather than requiring the doc to be open. Requiring it is what
+        // made an abandoned doc never compact: `maybe_compact` returned early
+        // when the doc had been evicted, on the reasoning that the next write
+        // compacts — true for a live doc, false for one edited heavily and then
+        // left alone, whose tail then grew forever.
+        let loaded = self.load_state(uid).await?;
+        let snapshot = self.with_doc(uid, loaded, None, |doc, _| {
+            doc.export(ExportMode::Snapshot)
+                .map_err(|e| EngineError::Consequence(format!("snapshot export: {e}")))
+        })?;
+        // An empty doc has no history worth asserting, and logging one would
+        // make a snapshot op that a peer could import over real text.
+        if snapshot.is_empty() {
+            return Ok(false);
+        }
+        {
             let mut registry = self
                 .collab_docs
                 .lock()
                 .map_err(|_| EngineError::Consequence("collab registry poisoned".into()))?;
-            let Some(open) = registry.docs.get_mut(uid) else {
-                return Ok(());
-            };
-            let snapshot = open
-                .doc
-                .export(ExportMode::Snapshot)
-                .map_err(|e| EngineError::Consequence(format!("snapshot export: {e}")))?;
-            // Reset the tail baseline to the compacted version.
-            open.snapshot_vv = open.doc.oplog_vv();
-            snapshot
-        };
+            if let Some(open) = registry.docs.get_mut(uid) {
+                // Reset the tail baseline to the compacted version.
+                open.snapshot_vv = open.doc.oplog_vv();
+            }
+        }
         store::record_docs::put(&self.store.pool, uid, &snapshot, max_seq).await?;
-        Ok(())
+        let Some(local) = store::cells::local(&self.store.pool).await? else {
+            return Ok(false);
+        };
+        store::sync_ops::append(
+            &self.store.pool,
+            "record",
+            uid,
+            "",
+            store::sync_ops::OpKind::Snapshot,
+            Some(&B64.encode(&snapshot)),
+            nucleus::hlc::next(),
+            &local.uid,
+            &local.organ_uid,
+            None,
+            store::replica::root_of(&self.store.pool, uid)
+                .await?
+                .as_deref(),
+        )
+        .await?;
+        Ok(true)
+    }
+
+    /// Compact every doc whose tail has grown past the threshold, whether or
+    /// not anyone still has it open. Run from the sync loop's idle moment,
+    /// alongside pruning — a doc that is never written again never compacts on
+    /// its own, and until it does, none of its history can be pruned.
+    pub async fn compact_stale_docs(&self) -> Result<usize, EngineError> {
+        // Taken HERE and not in `compact_doc`, deliberately. `compact_doc` is
+        // also reached from the import path
+        // (`import_ops` → `materialise` → `apply_remote_crdt` → `maybe_compact`),
+        // which already holds this lock — locking again there would deadlock on
+        // any imported crdt op that happens to trip the compaction threshold.
+        // The sweep's only caller is `sync_once`, which holds nothing.
+        let _op = self.import_lock.lock().await;
+        let stale =
+            store::record_docs::records_needing_compaction(&self.store.pool, COMPACT_OPS).await?;
+        let mut compacted = 0;
+        for uid in stale {
+            if self.compact_doc(&uid).await? {
+                compacted += 1;
+            }
+        }
+        Ok(compacted)
     }
 
     /// Drop a doc from the open registry (tests / tombstone cleanup).

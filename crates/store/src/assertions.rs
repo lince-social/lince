@@ -145,19 +145,46 @@ pub async fn assert(pool: &SqlitePool, new: NewAssertion<'_>) -> Result<String, 
             "an identity assertion must be unary and unquantified".into(),
         ));
     }
-    // Both endpoints must sit in the SAME individual-replica root (Ontology
-    // §11 "Threads"). An Assertion's op takes its root from the SUBJECT, so a
-    // link from a general-feed Record to a private one would put the private
-    // uid on the general feed; a link between two DIFFERENT roots would
-    // silently widen both conversations. Neither has a correct answer, so
-    // refuse rather than pick one.
+    // An Assertion's op takes its root from the SUBJECT, and that decides
+    // which of three cases is a leak (Ontology §11 "Threads", C6).
+    //
+    // This was written as `subject_root != object_root`, which refused all
+    // three — and one of them is the entire mechanism C6 is built on. The two
+    // that are genuinely wrong stay wrong; the third was collateral.
     if let Some(object_uid) = new.object_uid {
         let subject_root = crate::replica::root_of(pool, new.subject_uid).await?;
         let object_root = crate::replica::root_of(pool, object_uid).await?;
-        if subject_root != object_root {
-            return Err(sqlx::Error::Protocol(
-                "an assertion cannot cross an individual-replica boundary".into(),
-            ));
+        match (subject_root, object_root) {
+            // Two DIFFERENT conversations. Joining them would silently widen
+            // both, and there is no correct answer about which root the op
+            // belongs to, so refuse rather than pick one.
+            (Some(subject), Some(object)) if subject != object => {
+                return Err(sqlx::Error::Protocol(
+                    "an assertion cannot cross an individual-replica boundary".into(),
+                ));
+            }
+            // General-feed subject, PRIVATE object. The op would ride the
+            // general feed carrying a private uid, disclosing that the
+            // conversation exists to everyone we sync with. Still refused.
+            (None, Some(_)) => {
+                return Err(sqlx::Error::Protocol(
+                    "an assertion cannot put a private record on the general feed".into(),
+                ));
+            }
+            // PRIVATE subject, general-feed object — a message mentioning an
+            // ordinary Record, which is how a reference is expressed at all.
+            // Safe in the direction that matters: the op takes the subject's
+            // root, so it travels only to that conversation's grant holders,
+            // and what it discloses to them is a general-feed uid they are
+            // being deliberately pointed at. Nothing is widened; the general
+            // feed never sees this op, and the mentioned Record is not pulled
+            // into the root.
+            //
+            // `replica::root_for_link` has always answered this case exactly
+            // this way. The two now agree, which they should have from the
+            // start: one question with two implementations is the shape that
+            // eventually gets an edge wrong.
+            _ => {}
         }
     }
     let existing = sqlx::query(
@@ -820,4 +847,30 @@ pub async fn edges_of_predicates(
         out.extend(edges_of_predicate(pool, predicate_uid).await?);
     }
     Ok(out)
+}
+
+/// The object UIDs of a subject's links, WITHOUT requiring the object to exist
+/// locally (Ontology §11, C6).
+///
+/// `objects_from_subject` inner-joins `record`, which is right everywhere the
+/// link points at something we hold — and silently drops the case a reference
+/// exists FOR: a message mentioning a Record that lives on its owner's Cell and
+/// was never copied here. Through that join a remote reference is not merely
+/// unresolved, it is invisible, and a surface cannot offer to read what it
+/// cannot see.
+pub async fn object_uids_from_subject(
+    pool: &SqlitePool,
+    subject_uid: &str,
+    predicate_uid: &str,
+) -> Result<Vec<String>, StoreError> {
+    Ok(sqlx::query_scalar(
+        "SELECT object_uid FROM record_assertion
+          WHERE subject_uid = ? AND predicate_uid = ?
+            AND object_uid IS NOT NULL AND retracted_at IS NULL
+          ORDER BY created_at, uid",
+    )
+    .bind(subject_uid)
+    .bind(predicate_uid)
+    .fetch_all(pool)
+    .await?)
 }

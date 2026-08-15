@@ -26,6 +26,7 @@ fn entry(label: &str, node_id: &str, key: &str) -> CellEntry {
         label: label.into(),
         operational_key: key.into(),
         front_door: false,
+        capabilities: engine::roster::full_capabilities(),
     }
 }
 
@@ -449,4 +450,381 @@ fn root_key_detach_refuses_without_a_verified_copy() {
     );
 
     let _ = std::fs::remove_dir_all(&dir);
+}
+
+/// Rotation end to end through the paths that actually run in production:
+/// `sign_succession` issues it, `published_successions` serves it, and the
+/// peer adopts what it was served. The test above builds the signed payload by
+/// hand, which proved the rule and not the plumbing — until this existed,
+/// `sign_succession` had no callers anywhere and nothing carried a succession
+/// between two Cells, so rotating produced a roster every contact correctly
+/// refused with no way to ever accept it.
+#[tokio::test]
+async fn a_signed_succession_travels_and_lets_a_rotated_roster_land() {
+    let (them, their_organ) = cell("http://them.test").await;
+    let (us, _) = cell("http://us.test").await;
+
+    let old_root = Signer::generate(&their_organ, engine::roster::ROOT_KEY_ID);
+    let new_root = Signer::generate(&their_organ, engine::roster::ROOT_KEY_ID);
+    engine::trust::adopt_key(
+        &us.store,
+        &their_organ,
+        engine::roster::ROOT_KEY_ID,
+        &old_root.public_key_b64(),
+    )
+    .await
+    .expect("pairing on the OLD key");
+
+    // Nothing to serve before anything is signed.
+    assert!(
+        them.published_successions(&their_organ)
+            .await
+            .expect("successions")
+            .is_empty()
+    );
+
+    them.sign_succession(&old_root, &new_root.public_key_b64())
+        .await
+        .expect("sign the succession");
+
+    let published = them
+        .published_successions(&their_organ)
+        .await
+        .expect("successions");
+    assert_eq!(published.len(), 1, "the endorsement is there to be served");
+    let cert = &published[0];
+    assert_eq!(cert.old_key, old_root.public_key_b64());
+    assert_eq!(cert.new_key, new_root.public_key_b64());
+
+    // The receiver verifies what it was handed. `created_at` is inside the
+    // signed payload, so it has to survive the trip — regenerating it on
+    // arrival would make every signature fail.
+    assert!(
+        us.adopt_succession(
+            &their_organ,
+            &cert.old_key,
+            &cert.new_key,
+            &cert.created_at,
+            &cert.signature,
+        )
+        .await
+        .expect("adopt"),
+        "a succession signed by the held key is accepted"
+    );
+
+    them.publish_root_key(&new_root).await.expect("publish");
+    let signed = them
+        .publish_roster(&new_root, vec![entry("phone", "node-phone", "opkey-phone")])
+        .await
+        .expect("roster");
+    assert_eq!(
+        us.adopt_roster(&signed).await.expect("adopt"),
+        RosterOutcome::Accepted,
+        "and the rotated roster lands with nobody re-pairing"
+    );
+}
+
+/// The alarm half. A key nobody endorsed cannot introduce itself, however
+/// well-formed the certificate is — this is the silent-takeover case, and the
+/// only correct outcome is a refusal.
+#[tokio::test]
+async fn a_succession_from_an_unheld_key_is_refused() {
+    let (them, their_organ) = cell("http://them.test").await;
+    let (us, _) = cell("http://us.test").await;
+
+    let real_root = Signer::generate(&their_organ, engine::roster::ROOT_KEY_ID);
+    let attacker = Signer::generate(&their_organ, engine::roster::ROOT_KEY_ID);
+    let theirs_next = Signer::generate(&their_organ, engine::roster::ROOT_KEY_ID);
+    engine::trust::adopt_key(
+        &us.store,
+        &their_organ,
+        engine::roster::ROOT_KEY_ID,
+        &real_root.public_key_b64(),
+    )
+    .await
+    .expect("pairing");
+
+    // Signed correctly — by a key we have never held.
+    them.sign_succession(&attacker, &theirs_next.public_key_b64())
+        .await
+        .expect("sign");
+    let cert = &them
+        .published_successions(&their_organ)
+        .await
+        .expect("successions")[0];
+    assert!(
+        !us.adopt_succession(
+            &their_organ,
+            &cert.old_key,
+            &cert.new_key,
+            &cert.created_at,
+            &cert.signature,
+        )
+        .await
+        .expect("adopt"),
+        "an endorsement that chains from nothing we hold is refused"
+    );
+    assert!(
+        !us.key_chains(&their_organ, &theirs_next.public_key_b64())
+            .await
+            .expect("chain"),
+        "and the key it tried to install still speaks for nobody"
+    );
+}
+
+/// The re-sign decision, and the bug it was written to end.
+///
+/// The old form asked "is this Cell in the held roster with a node id and
+/// capabilities". That is satisfied by THIS Cell being present regardless of
+/// who else was removed — so revoking a different device re-signed nothing,
+/// published nothing, and left the revoked Cell a member of the identity until
+/// the roster expired.
+#[test]
+fn revoking_a_different_cell_still_needs_publishing() {
+    use engine::roster::{Roster, needs_publishing};
+
+    let held = SignedRoster {
+        roster: Roster {
+            organ_uid: "organ-1".into(),
+            root_key: "root".into(),
+            version: 3,
+            not_after: "2026-09-01T00:00:00+00:00".into(),
+            cells: vec![
+                entry("laptop", "n-laptop", "k-laptop"),
+                entry("phone", "n-phone", "k-phone"),
+            ],
+        },
+        signature: "sig".into(),
+    };
+
+    assert!(
+        !needs_publishing(
+            Some(&held),
+            "root",
+            &[
+                entry("laptop", "n-laptop", "k-laptop"),
+                entry("phone", "n-phone", "k-phone"),
+            ]
+        ),
+        "an unchanged roster must not burn a version on every boot"
+    );
+    assert!(
+        !needs_publishing(
+            Some(&held),
+            "root",
+            // Same members, other order: a roster is a set.
+            &[
+                entry("phone", "n-phone", "k-phone"),
+                entry("laptop", "n-laptop", "k-laptop"),
+            ]
+        ),
+        "reordering is not a change"
+    );
+    assert!(
+        needs_publishing(Some(&held), "root", &[entry("laptop", "n-laptop", "k-laptop")]),
+        "THE BUG: the phone was revoked and this Cell is still present, which \
+         used to read as unchanged"
+    );
+    assert!(
+        needs_publishing(
+            Some(&held),
+            "root",
+            &[
+                entry("laptop", "n-laptop", "k-laptop"),
+                entry("phone", "n-phone", "k-phone"),
+                entry("vps", "n-vps", "k-vps"),
+            ]
+        ),
+        "an enrolment is a change too"
+    );
+    assert!(
+        needs_publishing(
+            Some(&held),
+            "rotated-root",
+            &[
+                entry("laptop", "n-laptop", "k-laptop"),
+                entry("phone", "n-phone", "k-phone"),
+            ]
+        ),
+        "a rotated root must be published under the new key"
+    );
+    assert!(
+        needs_publishing(None, "root", &[entry("laptop", "n-laptop", "k-laptop")]),
+        "with nothing held there is nothing to compare against"
+    );
+}
+
+/// A held entry with no capability set is NOT unchanged: an absent set grants
+/// nothing, so leaving it in place would strip a Cell of the right to write in
+/// its own Organ and nothing would ever re-sign to fix it.
+#[test]
+fn a_capability_less_member_forces_a_republish() {
+    use engine::roster::{Roster, needs_publishing};
+
+    let mut stale = entry("laptop", "n-laptop", "k-laptop");
+    stale.capabilities.clear();
+    let held = SignedRoster {
+        roster: Roster {
+            organ_uid: "organ-1".into(),
+            root_key: "root".into(),
+            version: 1,
+            not_after: "2026-09-01T00:00:00+00:00".into(),
+            cells: vec![stale.clone()],
+        },
+        signature: "sig".into(),
+    };
+
+    assert!(needs_publishing(Some(&held), "root", &[stale]));
+}
+
+/// Decision 6's actual gap: the contact who is offline across a WHOLE
+/// succession and comes back holding only the oldest key.
+///
+/// One hop was already covered. This is two, because that is the case the
+/// decision names — the chain has to be walked transitively, and successions
+/// are retained rather than replaced so the walk still has its first step.
+#[tokio::test]
+async fn a_contact_offline_across_two_rotations_still_chains() {
+    let (them, their_organ) = cell("http://rotating.test").await;
+    let (us, _) = cell("http://returning.test").await;
+
+    let first = Signer::generate(&their_organ, engine::roster::ROOT_KEY_ID);
+    let second = Signer::generate(&their_organ, engine::roster::ROOT_KEY_ID);
+    let third = Signer::generate(&their_organ, engine::roster::ROOT_KEY_ID);
+
+    // We paired long ago, on the FIRST key, and then went away.
+    engine::trust::adopt_key(
+        &us.store,
+        &their_organ,
+        engine::roster::ROOT_KEY_ID,
+        &first.public_key_b64(),
+    )
+    .await
+    .expect("pairing on the first key");
+
+    // They rotated twice while we were gone.
+    them.sign_succession(&first, &second.public_key_b64())
+        .await
+        .expect("first rotation");
+    them.sign_succession(&second, &third.public_key_b64())
+        .await
+        .expect("second rotation");
+
+    // We come back and pull what they published — both hops, in order.
+    for cert in them
+        .published_successions(&their_organ)
+        .await
+        .expect("successions")
+    {
+        us.adopt_succession(
+            &their_organ,
+            &cert.old_key,
+            &cert.new_key,
+            &cert.created_at,
+            &cert.signature,
+        )
+        .await
+        .expect("adopt");
+    }
+
+    assert!(
+        us.key_chains(&their_organ, &third.public_key_b64())
+            .await
+            .expect("chain"),
+        "a key two rotations away must chain from the one we last knew"
+    );
+    them.publish_root_key(&third).await.expect("publish");
+    let signed = them
+        .publish_roster(&third, vec![entry("laptop", "node-laptop", "opkey-laptop")])
+        .await
+        .expect("roster");
+    assert_eq!(
+        us.adopt_roster(&signed).await.expect("adopt"),
+        RosterOutcome::Accepted,
+        "and a roster signed by it is accepted without re-pairing"
+    );
+}
+
+/// A key revoked because it was STOLEN must not be able to endorse a successor.
+///
+/// The chain walk starts from keys we already hold, so if a thief holding a
+/// revoked key can sign `stolen -> theirs` and have us walk through it, the
+/// revocation bought nothing: the thief installs a key of their own choosing
+/// and every later roster verifies.
+#[tokio::test]
+async fn a_revoked_key_cannot_endorse_a_successor() {
+    let (them, their_organ) = cell("http://stolen.test").await;
+    let (us, _) = cell("http://careful-chain.test").await;
+
+    let root = Signer::generate(&their_organ, engine::roster::ROOT_KEY_ID);
+    let stolen = Signer::generate(&their_organ, engine::roster::ROOT_KEY_ID);
+    let thiefs_choice = Signer::generate(&their_organ, engine::roster::ROOT_KEY_ID);
+
+    engine::trust::adopt_key(
+        &us.store,
+        &their_organ,
+        engine::roster::ROOT_KEY_ID,
+        &root.public_key_b64(),
+    )
+    .await
+    .expect("pairing");
+    // A legitimate rotation to the key that is later stolen.
+    them.sign_succession(&root, &stolen.public_key_b64())
+        .await
+        .expect("rotation");
+    for cert in them
+        .published_successions(&their_organ)
+        .await
+        .expect("successions")
+    {
+        us.adopt_succession(
+            &their_organ,
+            &cert.old_key,
+            &cert.new_key,
+            &cert.created_at,
+            &cert.signature,
+        )
+        .await
+        .expect("adopt");
+    }
+    // It is stolen and revoked.
+    us.adopt_revocation(
+        &their_organ,
+        &stolen.public_key_b64(),
+        &them.revocation_certificate(&stolen).1,
+    )
+    .await
+    .expect("revocation");
+    assert!(
+        !us.key_chains(&their_organ, &stolen.public_key_b64())
+            .await
+            .expect("chain"),
+        "the revoked key itself must not chain"
+    );
+
+    // The thief now endorses a key of their own with the stolen one.
+    let created_at = chrono::Utc::now().to_rfc3339();
+    let payload = engine::roster::succession_signing_payload(
+        &their_organ,
+        &stolen.public_key_b64(),
+        &thiefs_choice.public_key_b64(),
+        &created_at,
+    );
+    let signature = stolen.sign_bytes(&payload);
+    let _ = us
+        .adopt_succession(
+            &their_organ,
+            &stolen.public_key_b64(),
+            &thiefs_choice.public_key_b64(),
+            &created_at,
+            &signature,
+        )
+        .await;
+
+    assert!(
+        !us.key_chains(&their_organ, &thiefs_choice.public_key_b64())
+            .await
+            .expect("chain"),
+        "a revoked key must not be able to install a successor"
+    );
 }

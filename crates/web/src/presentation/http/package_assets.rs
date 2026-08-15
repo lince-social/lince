@@ -108,6 +108,7 @@ fn content_type_for_path(asset_path: &str) -> &'static str {
         Some("csv") => "text/csv; charset=utf-8",
         Some("gif") => "image/gif",
         Some("htm") | Some("html") => "text/html; charset=utf-8",
+        Some("ico") => "image/x-icon",
         Some("jpeg") | Some("jpg") => "image/jpeg",
         Some("js") | Some("mjs") => "text/javascript; charset=utf-8",
         Some("json") => "application/json; charset=utf-8",

@@ -23,9 +23,26 @@ pub(crate) type WireSlot = Arc<RwLock<Option<Arc<engine::wire::Wire>>>>;
 pub(crate) fn spawn(state: CellApiState, key_dir: std::path::PathBuf) {
     tokio::spawn(async move {
         let mut bus = state.engine.subscribe();
+        // Cell config is written raw and drops no Fact, so the bus alone would
+        // never hear a discovery change — see `Engine::watch_config`.
+        let mut config = state.engine.watch_config();
         let mut current = discovery_of(&state).await;
         loop {
-            match bus.recv().await {
+            let event = tokio::select! {
+                received = bus.recv() => received,
+                changed = config.changed() => {
+                    if changed.is_err() {
+                        break;
+                    }
+                    let wanted = discovery_of(&state).await;
+                    if wanted != current {
+                        current = wanted;
+                        rebind(&state, &key_dir, wanted).await;
+                    }
+                    continue;
+                }
+            };
+            match event {
                 Ok(fact) => {
                     // Only the local Organ's own extension matters here.
                     let Ok(Some(organ)) = store::organs::local(&state.store.pool).await else {
@@ -64,15 +81,11 @@ struct Discovery {
 async fn discovery_of(state: &CellApiState) -> Discovery {
     let Ok(Some(organ)) = store::organs::local(&state.store.pool).await else {
         return Discovery {
-            reach: engine::wire::Reach::Internet,
-            local: true,
+            reach: engine::wire::Reach::Relay,
+            local: false,
         };
     };
-    let reach = if crate::discovery_reaches_internet(&state.store, &organ.uid).await {
-        engine::wire::Reach::Internet
-    } else {
-        engine::wire::Reach::Local
-    };
+    let reach = crate::discovery_reach(&state.store, &organ.uid).await;
     Discovery {
         reach,
         local: crate::discovery_is_local(&state.store, &organ.uid).await,
@@ -120,6 +133,13 @@ async fn rebind(state: &CellApiState, key_dir: &std::path::Path, discovery: Disc
             wire.set_live_handler(transport::live::LiveHost::new(
                 state.engine.clone(),
                 state.lanes.clone(),
+            ));
+            // Same reasoning for Transfer: the delivery worker dials through
+            // whatever endpoint is current, and a rebound endpoint with no
+            // handler would answer every peer's envelope with "this Cell does
+            // not deliver Transfers".
+            wire.set_transfer_handler(std::sync::Arc::new(
+                super::transfer_delivery::TransferPeerHandler::new(state.clone()),
             ));
             *state.wire.write().await = Some(wire.clone());
             tokio::spawn(async move { wire.serve().await });

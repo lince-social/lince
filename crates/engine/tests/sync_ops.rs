@@ -54,7 +54,7 @@ async fn record_create_and_edit_log_field_ops() {
         let ops = ops_for(&e, "record", &uid, field).await;
         assert_eq!(ops.len(), 1, "one create op for {field}");
         assert_eq!(ops[0].kind, "set");
-        assert_eq!(ops[0].actor_organ, organ);
+        assert_eq!(ops[0].organ_uid, organ);
     }
 
     // A text edit logs ONE cumulative crdt op (the record-doc owns text);
@@ -201,8 +201,15 @@ async fn assertions_and_facts_join_the_log() {
     assert!(fact_ops[0].value.is_none());
 }
 
+/// The inverse of the rule this test used to assert.
+///
+/// It was `no_local_organ_means_no_ops`: a Cell without an Organ wrote to the
+/// read model and logged nothing, so the write synced to nobody and no error
+/// said so. That silent-loss path is gone — `Store::open` mints the identity,
+/// so a store that opened at all has one, and there is no such thing as a
+/// local write that fails to become an op.
 #[tokio::test]
-async fn no_local_organ_means_no_ops() {
+async fn a_bare_store_still_has_an_identity_and_still_logs() {
     let e = Engine::open_memory().await.expect("engine");
     let uid = store::records::create(
         &e.store.pool,
@@ -217,12 +224,20 @@ async fn no_local_organ_means_no_ops() {
     .await
     .expect("record")
     .uid;
-    assert!(ops_for(&e, "record", &uid, "head").await.is_empty());
+    let ops = ops_for(&e, "record", &uid, "head").await;
+    assert_eq!(ops.len(), 1, "the write became an op");
+    assert!(!ops[0].actor_cell.is_empty());
+    assert!(!ops[0].organ_uid.is_empty());
 }
 
 #[tokio::test]
 async fn op_identity_is_actor_plus_hlc() {
     let (e, organ) = cell().await;
+    let cell_uid = store::cells::local(&e.store.pool)
+        .await
+        .expect("cell")
+        .expect("cell record")
+        .uid;
     let hlc = nucleus::hlc::next();
     let first = sync_ops::append(
         &e.store.pool,
@@ -232,6 +247,7 @@ async fn op_identity_is_actor_plus_hlc() {
         sync_ops::OpKind::Set,
         Some("\"a\""),
         hlc,
+        &cell_uid,
         &organ,
         None,
         None,
@@ -239,7 +255,12 @@ async fn op_identity_is_actor_plus_hlc() {
     .await
     .expect("append");
     assert!(first.is_some());
-    // Same (actor, hlc) again: idempotent no-op, not an error.
+    // Same (actor, hlc) again FROM A CONTACT: idempotent no-op, not an error.
+    //
+    // The import path is where this property belongs. A LOCAL write that finds
+    // its identity taken has met another PROCESS writing as the same Cell, so
+    // it re-mints its stamp instead of skipping — see `insert_local`. Skipping
+    // there loses a write that exists in the read model and reaches nobody.
     let dup = sync_ops::append(
         &e.store.pool,
         "record",
@@ -248,13 +269,32 @@ async fn op_identity_is_actor_plus_hlc() {
         sync_ops::OpKind::Set,
         Some("\"b\""),
         hlc,
+        &cell_uid,
         &organ,
-        None,
+        Some("r-a-contact"),
         None,
     )
     .await
     .expect("dup append");
     assert!(dup.is_none());
+
+    // ...while the same collision on a LOCAL write lands, under a fresh stamp.
+    let relocal = sync_ops::append(
+        &e.store.pool,
+        "record",
+        "r-x",
+        "head",
+        sync_ops::OpKind::Set,
+        Some("\"c\""),
+        hlc,
+        &cell_uid,
+        &organ,
+        None,
+        None,
+    )
+    .await
+    .expect("local append");
+    assert!(relocal.is_some(), "a local write is never silently dropped");
 }
 
 // ---- retention (Ontology §11 "Op log") --------------------------------------
@@ -499,5 +539,70 @@ async fn a_grant_only_contact_cannot_raise_the_floor_alone() {
         e.prune_op_log(false).await.expect("prune").removed,
         0,
         "nothing may be dropped while a contact is still owed it",
+    );
+}
+
+/// C7 — the executor designation survives the trip to another Cell.
+///
+/// The load-bearing half of "it syncs, so every Cell learns the same answer",
+/// and the half a write-side op count cannot reach. The hazard is specific:
+/// the op's field is `"{namespace}.{key}"`, and this namespace is the first one
+/// carrying TWO dots (`lince.schedule.executor` + `cell`). A `split_once` on the
+/// receiving side would yield namespace `"lince"` and key
+/// `"karma.executor.cell"` — the value would land in a namespace nothing reads,
+/// the receiving Cell would never learn the designation, and it would keep
+/// running a Program designated elsewhere. Silent, and exactly the duplicate
+/// the whole mechanism exists to prevent.
+#[tokio::test]
+async fn the_executor_designation_survives_the_wire() {
+    let (a, a_organ) = cell().await;
+    let (b, b_organ) = cell().await;
+    let a_intro = a.introduction().await.unwrap();
+    let b_intro = b.introduction().await.unwrap();
+    b.adopt_introduction(&a_intro, 1).await.unwrap();
+    a.adopt_introduction(&b_intro, 1).await.unwrap();
+    store::organs::set_sync_policy(&a.store.pool, &b_organ, true, false)
+        .await
+        .unwrap();
+    store::organs::set_sync_policy(&b.store.pool, &a_organ, true, false)
+        .await
+        .unwrap();
+
+    let uid = plain(&a, "rule").await;
+    store::records::set_extension(
+        &a.store.pool,
+        &uid,
+        store::executor::NAMESPACE,
+        &serde_json::json!({ "cell": "r_01ARZ3NDEKTSV4RRFFQ69G5FAX" }),
+    )
+    .await
+    .unwrap();
+
+    let target = &b;
+    a.drain_outbox(|_contact, root, batch| async move {
+        match root {
+            Some(root) => target.import_grant_batch(&root, &batch).await,
+            None => target.import_op_batch(&batch).await,
+        }
+        .map(|_| ())
+        .map_err(|e| e.to_string())
+    })
+    .await
+    .expect("drain");
+
+    let landed = store::records::get_extension(
+        &b.store.pool,
+        &uid,
+        store::executor::NAMESPACE,
+    )
+    .await
+    .unwrap();
+    assert_eq!(
+        landed
+            .as_ref()
+            .and_then(|fds| fds.get("cell"))
+            .and_then(|cell| cell.as_str()),
+        Some("r_01ARZ3NDEKTSV4RRFFQ69G5FAX"),
+        "the designation must arrive under the namespace the reader queries"
     );
 }

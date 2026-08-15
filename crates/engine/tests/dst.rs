@@ -206,10 +206,18 @@ async fn recorded_log_replays_deterministically_and_idempotently() {
     // uid in real sync — here the initial quantities are the seed state).
     let b = Engine::open_memory().await.unwrap();
     for r in store::records::list_all(&a.store.pool).await.unwrap() {
+        // Not the identity records: `Store::open` already minted this Cell its
+        // own Organ and Cell Record, and they hold the same fixed slugs.
+        if matches!(
+            r.slug.as_deref(),
+            Some(store::organs::LOCAL_ORGAN_SLUG) | Some(store::cells::LOCAL_CELL_SLUG)
+        ) {
+            continue;
+        }
         store::sqlx::query(
             "INSERT INTO record (uid, slug, kind, head, body, quantity_mantissa, quantity_scale,
-                                 created_at, updated_at)
-             VALUES (?, ?, ?, ?, '', ?, ?, ?, ?)",
+                                 organ_uid, created_at, updated_at)
+             VALUES (?, ?, ?, ?, '', ?, ?, ?, ?, ?)",
         )
         .bind(&r.uid)
         .bind(&r.slug)
@@ -217,6 +225,7 @@ async fn recorded_log_replays_deterministically_and_idempotently() {
         .bind(&r.head)
         .bind(initial_quantity(&r, &recorded).mantissa().to_string())
         .bind(i64::from(initial_quantity(&r, &recorded).scale()))
+        .bind(&r.organ_uid)
         .bind(at("2026-07-05T00:00:00Z").to_rfc3339())
         .bind(at("2026-07-05T00:00:00Z").to_rfc3339())
         .execute(&b.store.pool)

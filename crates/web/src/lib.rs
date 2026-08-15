@@ -881,7 +881,8 @@ pub async fn serve_cell_api_only(
             .await
             .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
         let bucket_key = format!("lince/dna/sand/{prefix}/{slug}/{version}/{transport_filename}");
-        let sand_toml_key = format!("lince/dna/sand/{prefix}/{slug}/{version}/{sand_toml_filename}");
+        let sand_toml_key =
+            format!("lince/dna/sand/{prefix}/{slug}/{version}/{sand_toml_filename}");
 
         let record = store::records::create(
             &state.store.pool,
@@ -1109,6 +1110,67 @@ pub async fn serve_cell_api_only(
         Ok(Json(serde_json::json!({ "peers": peers })))
     }
 
+    /// Endorse a NEW identity key with the current root: "this old root says
+    /// this new one is also me."
+    ///
+    /// This is the whole of rotation that can happen on a Cell. The new key
+    /// itself is generated wherever the owner keeps key material — offline, if
+    /// they took the advice — and only its PUBLIC half comes here. Contacts
+    /// pull the endorsement on their next sync pass (`FetchSuccessions`) and
+    /// accept a roster signed by the new key from then on, with nobody
+    /// re-pairing.
+    ///
+    /// Needs the root, so it fails on a Cell that has deliberately moved the
+    /// root offline — which is the same trade as enrolling or revoking a
+    /// device, and the reason the split exists.
+    async fn sign_key_succession(
+        State(state): State<CellApiState>,
+        headers: HeaderMap,
+        Json(body): Json<serde_json::Value>,
+    ) -> Result<impl IntoResponse, (StatusCode, String)> {
+        authenticate_headers(&state, &headers).await?;
+        let new_key = body
+            .get("new_key")
+            .and_then(|value| value.as_str())
+            .unwrap_or("")
+            .trim()
+            .to_string();
+        if new_key.is_empty() {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                "Informe a chave publica nova.".to_string(),
+            ));
+        }
+        let root = state
+            .engine
+            .root_signer()
+            .await
+            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?
+            .ok_or((
+                StatusCode::CONFLICT,
+                "A chave raiz nao esta nesta Cell. Traga-a de volta para assinar a sucessao."
+                    .to_string(),
+            ))?;
+        // Endorsing the key you are already using would write an edge from a
+        // key to itself, which chains nothing and only makes the chain harder
+        // to read later.
+        if new_key == root.public_key_b64() {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                "Essa ja e a chave atual.".to_string(),
+            ));
+        }
+        state
+            .engine
+            .sign_succession(&root, &new_key)
+            .await
+            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+        Ok(Json(serde_json::json!({
+            "old_key": root.public_key_b64(),
+            "new_key": new_key,
+        })))
+    }
+
     /// Ceiling on one camera frame. A scan loop posts frames continuously, and
     /// a still photograph of a QR code is tens of kilobytes — nothing
     /// legitimate approaches this.
@@ -1245,6 +1307,68 @@ pub async fn serve_cell_api_only(
         })))
     }
 
+    #[derive(Deserialize)]
+    struct ReferenceReadRequest {
+        owner: String,
+        root: String,
+        record: String,
+    }
+
+    /// Read a Record a message REFERENCES, live from its owner's Cell
+    /// (Ontology §11, C6).
+    ///
+    /// No cache, here or anywhere: a reference resolves live or it resolves to
+    /// nothing. That is what makes revocation real in this one place — the
+    /// reader never held a copy — and a cache would trade it away for a
+    /// convenience nobody asked for.
+    ///
+    /// The two failures are told APART for the surface, because they mean
+    /// opposite things to the person reading. Unreachable is temporary and
+    /// worth retrying; refused is an answer. Collapsing them into one error
+    /// would show "no longer shared" to somebody whose friend simply closed
+    /// their laptop, which is a false accusation the interface has no business
+    /// making.
+    async fn read_reference(
+        State(state): State<CellApiState>,
+        headers: HeaderMap,
+        Json(request): Json<ReferenceReadRequest>,
+    ) -> Result<impl IntoResponse, (StatusCode, String)> {
+        authenticate_headers(&state, &headers).await?;
+        let wire = state.wire.read().await.clone().ok_or_else(|| {
+            (
+                StatusCode::SERVICE_UNAVAILABLE,
+                "no iroh endpoint".to_string(),
+            )
+        })?;
+        match wire
+            .fetch_reference(
+                request.owner.trim(),
+                request.root.trim(),
+                request.record.trim(),
+            )
+            .await
+        {
+            Ok(row) => Ok(Json(serde_json::json!({ "row": row, "live": true }))),
+            Err(error) => {
+                let message = error.to_string();
+                // The owner's own words for a permission answer. Matched on
+                // the message rather than a typed error because the refusal
+                // crosses the wire as text — worth replacing with a typed
+                // refusal when another caller needs the same distinction.
+                let refused = message.contains("no longer shared")
+                    || message.contains("no accepted grant");
+                Err((
+                    if refused {
+                        StatusCode::FORBIDDEN
+                    } else {
+                        StatusCode::BAD_GATEWAY
+                    },
+                    message,
+                ))
+            }
+        }
+    }
+
     async fn organ_open_promises(
         State(state): State<CellApiState>,
         headers: HeaderMap,
@@ -1307,14 +1431,13 @@ pub async fn serve_cell_api_only(
         // Accept either shape, exactly as pairing does: a full code carries
         // addresses (what makes this work where discovery is blocked), a bare
         // NodeId does not.
-        let invite = engine::pairing::PairingInvite::decode(raw).unwrap_or(
-            engine::pairing::PairingInvite {
+        let invite =
+            engine::pairing::PairingInvite::decode(raw).unwrap_or(engine::pairing::PairingInvite {
                 node_id: raw.to_string(),
                 root_key: None,
                 label: None,
                 addrs: Vec::new(),
-            },
-        );
+            });
         let login = live_proxy::RemoteLogin {
             username: request.username.trim().to_string(),
             password: request.password.clone(),
@@ -1404,7 +1527,9 @@ pub async fn serve_cell_api_only(
     ) -> Result<impl IntoResponse, (StatusCode, String)> {
         authenticate_headers(&state, &headers).await?;
         state.remote_logins.write().await.remove(&organ);
-        Ok(Json(serde_json::json!({ "organ": organ, "authenticated": false })))
+        Ok(Json(
+            serde_json::json!({ "organ": organ, "authenticated": false }),
+        ))
     }
 
     /// Open a live session against a contact Organ and relay this browser
@@ -1508,10 +1633,17 @@ pub async fn serve_cell_api_only(
         .map_err(IoError::other)?
         .ok_or_else(|| IoError::other("local Organ was not initialized"))?;
     let key_dir = utils::config::lince_data_dir().unwrap_or_else(|| PathBuf::from("."));
+    // Filed under THIS CELL's key id. The secret file is unchanged and still
+    // per-device; what moved is the id it is published under, so two Cells of
+    // one Organ no longer collide on a single `identity_key` row.
+    let this_cell = store::cells::local(&cell_store.pool)
+        .await
+        .map_err(IoError::other)?
+        .ok_or_else(|| IoError::other("this Cell has no Cell Record"))?;
     let organ_signer = engine::trust::Signer::load_or_create(
         &key_dir.join("keys").join("organ-ed25519-v1.key"),
         &local_organ.uid,
-        "ed25519:organ:v1",
+        &engine::roster::cell_key_id(&this_cell.uid),
     )
     .map_err(IoError::other)?;
     engine
@@ -1528,11 +1660,7 @@ pub async fn serve_cell_api_only(
         .map_err(IoError::other)
     {
         Ok(secret) => {
-            let reach = if discovery_reaches_internet(&cell_store, &local_organ.uid).await {
-                engine::wire::Reach::Internet
-            } else {
-                engine::wire::Reach::Local
-            };
+            let reach = discovery_reach(&cell_store, &local_organ.uid).await;
             match engine::wire::Wire::bind_with_discovery(
                 engine.clone(),
                 secret,
@@ -1571,6 +1699,10 @@ pub async fn serve_cell_api_only(
             engine.clone(),
             lanes.clone(),
         ));
+        // Makes "join an Organ from a code" reachable as an Action, which is
+        // what turns the enrolment client into something a person can use
+        // rather than something only a test can call.
+        wire.serve_enrolment();
         tokio::spawn(async move { wire.serve().await });
     }
     // Held behind a lock because discovery is a builder option: changing it
@@ -1651,7 +1783,8 @@ pub async fn serve_cell_api_only(
     };
 
     let static_dir = crate::infrastructure::paths::static_dir();
-    let router = axum::Router::new().route("/api/auth/login", post(login))
+    let router = axum::Router::new()
+        .route("/api/auth/login", post(login))
         .route("/auth/login", post(login))
         .route("/host/auth/login", post(login))
         .route("/organ", get(list_organs))
@@ -1695,32 +1828,17 @@ pub async fn serve_cell_api_only(
         .route("/organ/nearby", get(organ_nearby))
         .route("/organ/pair", post(organ_pair))
         .route("/organ/conversation/offer", post(offer_nearby_conversation))
+        // A reference is READ, never fetched-and-kept: this route proxies one
+        // live read to the owner and returns what their gate allows.
+        .route("/organ/reference/read", post(read_reference))
         .route("/organ/qr-decode", post(qr_decode))
+        .route("/organ/identity/succession", post(sign_key_succession))
         .route("/organ/open-promises", get(organ_open_promises))
-        .route(
-            "/organ/transfers/envelopes",
-            post(crate::presentation::http::transfer_delivery::receive_envelope),
-        )
-        .route(
-            "/organ/transfers/pull",
-            post(crate::presentation::http::transfer_delivery::pull_envelope),
-        )
-        .route(
-            "/organ/transfers/receipts",
-            post(crate::presentation::http::transfer_delivery::receive_receipt),
-        )
-        .route(
-            "/organ/transfers/commands",
-            post(crate::presentation::http::transfer_delivery::receive_command),
-        )
-        .route(
-            "/organ/transfers/policy-events",
-            post(crate::presentation::http::transfer_delivery::receive_policy_event),
-        )
-        .route(
-            "/organ/transfers/application-attestations",
-            post(crate::presentation::http::transfer_delivery::receive_application_attestation),
-        )
+        // The six `/organ/transfers/*` peer routes are gone (2026-08-08).
+        // Transfer was the last subsystem speaking HTTP peer-to-peer; it now
+        // rides `lince/sync/1` as `TransferPost`, so a delivery is dialed by
+        // identity like everything else and no contact needs a reachable URL.
+        // The paths survive as SIGNING DOMAINS inside `transfer_delivery`.
         .route("/host/transport/ws", get(connect));
     // Only lince-desktop enables `native-picker` (see the Cargo.toml
     // comment) — the plain `lince` CLI never registers this route.
@@ -1818,6 +1936,15 @@ pub async fn serve_cell_api_only(
     if let Some(sender) = bound_addr_sender {
         let _ = sender.send(local_addr);
     }
+    // Serve Transfer over iroh. Installed here rather than beside the live
+    // handler above because it needs the whole `CellApiState`, which does not
+    // exist yet at bind time — and on every rebind too (`wire_supervisor`),
+    // since the handler belongs to the endpoint.
+    if let Some(wire) = state.wire.read().await.clone() {
+        wire.set_transfer_handler(Arc::new(
+            crate::presentation::http::transfer_delivery::TransferPeerHandler::new(state.clone()),
+        ));
+    }
     crate::presentation::http::transfer_delivery::spawn_worker(state.clone());
     // Organ sync (Ontology §11): reactive deltas + catch-up reconciliation
     // against every synced contact, woken by the fact bus.
@@ -1860,7 +1987,8 @@ async fn publish_local_roster(
     // WITH a roster means the root is deliberately elsewhere, and this Cell
     // simply cannot sign until it comes back.
     engine.set_root_key_path(root_path.clone());
-    if !root_path.exists() {
+    let creating = !root_path.exists();
+    if creating {
         if held.is_some() {
             tracing::info!(
                 "root key is not on this Cell; the published roster stays valid \
@@ -1872,6 +2000,37 @@ async fn publish_local_roster(
     let root =
         engine::trust::Signer::load_or_create(&root_path, organ_uid, engine::roster::ROOT_KEY_ID)
             .map_err(IoError::other)?;
+    // The pre-signed revocation certificate is made at key CREATION and never
+    // again, and it lives beside the root so the drawer trip that fetches the
+    // root to re-establish identity also yields the thing that kills the old
+    // key. Generating it later would need the root anyway — which is exactly
+    // the situation where you may no longer have it.
+    //
+    // It does not prove a replacement key is genuine. It is damage limitation
+    // that still works when identity cannot yet be re-established at all.
+    if creating {
+        let (revoked_key, signature) = engine.revocation_certificate(&root);
+        let certificate = serde_json::json!({
+            "organ_uid": organ_uid,
+            "revoked_key": revoked_key,
+            "signature": signature,
+        });
+        let certificate_path = root_path.with_extension("revocation.json");
+        if let Err(error) = std::fs::write(
+            &certificate_path,
+            serde_json::to_vec_pretty(&certificate).map_err(IoError::other)?,
+        ) {
+            // Not fatal: an Organ with no revocation certificate is the state
+            // every Organ was in until now, and refusing to boot over it would
+            // be a worse trade than starting without one.
+            tracing::warn!(%error, "could not write the pre-signed revocation certificate");
+        } else {
+            tracing::info!(
+                path = %certificate_path.display(),
+                "wrote the pre-signed revocation certificate; keep it with the root key, offline"
+            );
+        }
+    }
     engine
         .publish_root_key(&root)
         .await
@@ -1887,13 +2046,10 @@ async fn publish_local_roster(
     // on every boot would burn through versions and, worse, train contacts to
     // accept a stream of rosters they have no reason to inspect.
     let node_id = wire.node_id().to_string();
-    if let Some(held) = &held {
-        let unchanged = held.roster.root_key == root.public_key_b64()
-            && held.roster.cells.iter().any(|cell| cell.node_id == node_id);
-        if unchanged {
-            return Ok(());
-        }
-    }
+    let cell = store::cells::local(&engine.store.pool)
+        .await
+        .map_err(IoError::other)?
+        .ok_or_else(|| IoError::other("this Cell has no Cell Record"))?;
     let operational_key = engine
         .local_organ_public_key()
         .await
@@ -1904,27 +2060,68 @@ async fn publish_local_roster(
     // list, so dropping a name from it IS revocation, and that must never be
     // a side effect of a reboot.
     let mut cells: Vec<engine::roster::CellEntry> = held
-        .map(|held| held.roster.cells)
+        .as_ref()
+        .map(|held| held.roster.cells.clone())
         .unwrap_or_default()
         .into_iter()
-        .filter(|cell| cell.cell_uid != organ_uid)
+        // By CELL uid. Before the split this compared the Organ uid, because
+        // one row was both — which is exactly the confusion the split ends.
+        .filter(|held_cell| held_cell.cell_uid != cell.uid)
         .collect();
     cells.push(engine::roster::CellEntry {
-        cell_uid: organ_uid.to_string(),
+        cell_uid: cell.uid.clone(),
         node_id,
-        label: "this cell".to_string(),
+        label: cell.label.clone(),
         operational_key,
-        // A Cell is a front door only if it publishes addresses publicly,
-        // which is exactly what `lince.discovery.internet` controls. Deriving
-        // it keeps the roster from claiming a public tier the endpoint is not
-        // actually serving.
-        front_door: discovery_reaches_internet(&engine.store, organ_uid).await,
+        // The Cell that holds the root and serves the owner is an ordinary
+        // full member. Relay Cells get `relay_capabilities()`.
+        capabilities: engine::roster::full_capabilities(),
+        // A Cell is a front door only if it publishes addresses publicly.
+        // Taken from the ENDPOINT rather than from `lince.discovery.internet`
+        // directly: reach is fixed when the endpoint is built, so reading the
+        // config again here could claim a public tier the endpoint is not
+        // actually serving — which is precisely what a test Cell, bound
+        // `Local` while the config default says internet, would have done.
+        front_door: wire.reach() != engine::wire::Reach::Local,
     });
-    engine
-        .publish_roster(&root, cells)
-        .await
-        .map_err(IoError::other)?;
+    // The re-sign decision — the whole member set, not membership of self —
+    // lives in `engine::roster` where it can be tested against a revocation.
+    if engine::roster::needs_publishing(held.as_ref(), &root.public_key_b64(), &cells) {
+        engine
+            .publish_roster(&root, cells)
+            .await
+            .map_err(IoError::other)?;
+    }
+    // Sign the directory record on EVERY boot that holds the root, not only
+    // when the roster changed. An Organ whose roster is already correct would
+    // otherwise never get one — the early return skipped it — and would stay
+    // unpublished until the next enrolment. Cheap and idempotent in effect:
+    // the record is cut from the roster, so an unchanged roster produces the
+    // same front doors.
+    //
+    // Failing here must not fail the boot. An Organ with no published record
+    // is still reachable by every contact holding a roster, which is everyone
+    // it has ever paired with.
+    if let Err(error) = engine.sign_public_record(&root).await {
+        tracing::warn!(%error, "could not sign the public directory record");
+    }
+    // Broadcast on every boot: the DHT entry expires in hours, so a boot that
+    // changes nothing is exactly when re-broadcasting matters.
+    republish_public_record(engine, organ_uid).await;
     Ok(())
+}
+
+/// Broadcast the stored public record, if there is one.
+///
+/// Needs no key — it re-sends already-signed bytes — and every failure is a
+/// warning rather than an error, because the network being unreachable at boot
+/// says nothing about whether this Cell should run.
+async fn republish_public_record(engine: &engine::Engine, organ_uid: &str) {
+    match engine.republish_public_record(organ_uid).await {
+        Ok(true) => tracing::info!("published this Organ's front door under its identity key"),
+        Ok(false) => {}
+        Err(error) => tracing::warn!(%error, "could not publish the directory record"),
+    }
 }
 
 /// Whether this Cell should be resolvable across the internet (DHT + DNS), from
@@ -1938,27 +2135,116 @@ async fn publish_local_roster(
 ///
 /// Read once at bind because discovery is an Endpoint builder option fixed at
 /// construction; changing it must rebind the endpoint, not mutate it.
-pub(crate) async fn discovery_reaches_internet(store: &Store, organ_uid: &str) -> bool {
-    match store::records::get_extension(&store.pool, organ_uid, "lince.discovery").await {
-        Ok(Some(fields)) => fields
-            .get("internet")
-            .and_then(serde_json::Value::as_bool)
-            .unwrap_or(true),
-        _ => true,
+/// How reachable this Cell should be (Ontology §11, C4).
+///
+/// THREE states, not two, and the middle one is the default. `internet`
+/// says whether this Cell is reachable at all; `direct` says whether it also
+/// publishes this machine's own addresses. Relay-only is the default because
+/// a default describes a fresh install on a café network, not an Organ that
+/// has already decided to be reachable — and publishing direct addresses
+/// tells anyone holding the published key roughly where you are and when you
+/// are awake.
+///
+/// The defaults were REVERSED here on 2026-08-13: `internet` used to mean
+/// direct publication and defaulted on.
+pub(crate) async fn discovery_reach(store: &Store, organ_uid: &str) -> engine::wire::Reach {
+    if !internet_default() {
+        return engine::wire::Reach::Local;
     }
+    let fields = discovery_config(store, organ_uid).await;
+    let reachable = fields
+        .as_ref()
+        .and_then(|fields| fields.get("internet").and_then(serde_json::Value::as_bool))
+        .unwrap_or(true);
+    if !reachable {
+        return engine::wire::Reach::Local;
+    }
+    let direct = fields
+        .as_ref()
+        .and_then(|fields| fields.get("direct").and_then(serde_json::Value::as_bool))
+        // OFF unless asked for. This is the reversal.
+        .unwrap_or(false);
+    if direct {
+        engine::wire::Reach::Internet
+    } else {
+        engine::wire::Reach::Relay
+    }
+}
+
+/// This Cell's discovery settings.
+///
+/// Read from the CELL Record first, and only then from the Organ Record where
+/// they used to live. Discovery is per-DEVICE — which LAN this machine is on,
+/// whether this machine publishes an address — so it never belonged on the
+/// shared Organ Record, and keeping it there had a concrete cost: a relay Cell
+/// may not write, an Organ-Record extension IS a logged write, so a relay could
+/// not configure itself at all. Cell config is written raw and logs no op.
+///
+/// The fallback stays because an Organ that set these before the move still
+/// means them, and one extra row read costs nothing.
+pub(crate) async fn discovery_config(store: &Store, organ_uid: &str) -> Option<serde_json::Value> {
+    if let Ok(Some(fields)) = store::cells::config(&store.pool, "lince.discovery").await {
+        return Some(fields);
+    }
+    store::records::get_extension(&store.pool, organ_uid, "lince.discovery")
+        .await
+        .ok()
+        .flatten()
+}
+
+/// The FIRST-BOOT answer, before anyone has set `lince.discovery.internet`.
+///
+/// `LINCE_DISCOVERY_INTERNET=0` is the only way to say "never reach the
+/// internet" for a Cell that has not booted yet, because the setting lives on
+/// an Organ Record that boot itself creates. Two real users: a headless or
+/// air-gapped install that must not publish an address before a human can
+/// switch it off, and every test that boots a real Cell — without it they
+/// publish node addresses AND this Organ's directory record to public
+/// infrastructure, under a throwaway identity key, on every run.
+fn internet_default() -> bool {
+    !matches!(
+        std::env::var("LINCE_DISCOVERY_INTERNET").as_deref(),
+        Ok("0") | Ok("false") | Ok("no")
+    )
 }
 
 /// Whether this Cell advertises and listens for nearby Lince Cells over mDNS.
 ///
 /// Default ON preserves the existing LAN behavior. Unlike internet address
 /// publication this is room-scoped, so it has its own switch.
+/// Whether this Cell advertises and listens for nearby Lince Cells over mDNS.
+///
+/// OFF by default, and TIME-BOUNDED when switched on (Ontology §11, C4).
+/// Announcing yourself to a room is a disclosure, and the thing about a room
+/// is that you leave it — a laptop that announced itself in a café three
+/// months ago is still announcing itself in every café since. So enabling it
+/// writes an expiry, and this reads it: past `local_until`, LAN presence is
+/// off again whether or not anyone remembered.
+///
+/// A missing `local_until` with `local: true` stays on, deliberately — that
+/// is a Cell configured before the bound existed, and silently switching off
+/// someone's working LAN discovery would be worse than leaving it.
 pub(crate) async fn discovery_is_local(store: &Store, organ_uid: &str) -> bool {
-    match store::records::get_extension(&store.pool, organ_uid, "lince.discovery").await {
-        Ok(Some(fields)) => fields
-            .get("local")
-            .and_then(serde_json::Value::as_bool)
-            .unwrap_or(true),
-        _ => true,
+    let Some(fields) = discovery_config(store, organ_uid).await else {
+        return false;
+    };
+    let on = fields
+        .get("local")
+        .and_then(serde_json::Value::as_bool)
+        // OFF by default (reversed 2026-08-13). A default describes a café,
+        // not a living room.
+        .unwrap_or(false);
+    if !on {
+        return false;
+    }
+    match fields.get("local_until").and_then(serde_json::Value::as_str) {
+        Some(until) => chrono::DateTime::parse_from_rfc3339(until)
+            .map(|when| when.with_timezone(&chrono::Utc) > chrono::Utc::now())
+            // An unparseable expiry is treated as EXPIRED. Failing closed on
+            // a disclosure setting is the only safe reading of a value we do
+            // not understand.
+            .unwrap_or(false),
+        None => true,
     }
 }
 
@@ -1982,4 +2268,138 @@ pub fn default_lince_db_url() -> String {
     let dir = utils::config::lince_data_dir().unwrap_or_else(|| PathBuf::from("."));
     let _ = std::fs::create_dir_all(&dir);
     format!("sqlite://{}", dir.join("lince.db").display())
+}
+
+#[cfg(test)]
+mod discovery_tests {
+    use super::*;
+
+    async fn cell() -> (Store, String) {
+        let store = Store::open_memory().await.expect("store");
+        let organ = store::organs::ensure_local(&store.pool, "http://d.test")
+            .await
+            .expect("organ")
+            .uid;
+        (store, organ)
+    }
+
+    /// The reversal: a Cell nobody has configured is reachable through a
+    /// RELAY and announces itself to no room. A default describes a fresh
+    /// install on a café network.
+    #[tokio::test]
+    async fn defaults_are_relay_only_and_lan_silent() {
+        let (store, organ) = cell().await;
+        assert_eq!(
+            discovery_reach(&store, &organ).await,
+            engine::wire::Reach::Relay,
+            "reachable, but never publishing this machine's own address"
+        );
+        assert!(
+            !discovery_is_local(&store, &organ).await,
+            "announcing yourself to a room is a disclosure, not a default"
+        );
+    }
+
+    /// Direct addresses are an explicit act, and only then.
+    #[tokio::test]
+    async fn direct_connections_are_opt_in() {
+        let (store, organ) = cell().await;
+        store::cells::set_config(
+            &store.pool,
+            "lince.discovery",
+            &serde_json::json!({ "internet": true, "direct": true }),
+        )
+        .await
+        .expect("config");
+        assert_eq!(
+            discovery_reach(&store, &organ).await,
+            engine::wire::Reach::Internet
+        );
+
+        store::cells::set_config(
+            &store.pool,
+            "lince.discovery",
+            &serde_json::json!({ "internet": false }),
+        )
+        .await
+        .expect("config");
+        assert_eq!(
+            discovery_reach(&store, &organ).await,
+            engine::wire::Reach::Local,
+            "switching internet off publishes nothing at all"
+        );
+    }
+
+    /// LAN presence EXPIRES. A laptop that announced itself in a café three
+    /// months ago must not still be announcing itself in every café since.
+    #[tokio::test]
+    async fn lan_presence_lapses_on_its_own() {
+        let (store, organ) = cell().await;
+        let future = (chrono::Utc::now() + chrono::Duration::hours(1)).to_rfc3339();
+        store::cells::set_config(
+            &store.pool,
+            "lince.discovery",
+            &serde_json::json!({ "local": true, "local_until": future }),
+        )
+        .await
+        .expect("config");
+        assert!(discovery_is_local(&store, &organ).await, "on while it lasts");
+
+        let past = (chrono::Utc::now() - chrono::Duration::minutes(1)).to_rfc3339();
+        store::cells::set_config(
+            &store.pool,
+            "lince.discovery",
+            &serde_json::json!({ "local": true, "local_until": past }),
+        )
+        .await
+        .expect("config");
+        assert!(
+            !discovery_is_local(&store, &organ).await,
+            "and off afterwards, whether or not anyone remembered"
+        );
+
+        // An expiry we cannot read is treated as expired: failing closed is
+        // the only safe reading of a disclosure setting we do not understand.
+        store::cells::set_config(
+            &store.pool,
+            "lince.discovery",
+            &serde_json::json!({ "local": true, "local_until": "soon-ish" }),
+        )
+        .await
+        .expect("config");
+        assert!(!discovery_is_local(&store, &organ).await);
+    }
+
+    /// Per-DEVICE: the Cell Record answers, and the Organ Record is only a
+    /// fallback for Cells configured before the move.
+    #[tokio::test]
+    async fn cell_config_wins_over_the_organ_record() {
+        let (store, organ) = cell().await;
+        store::records::set_extension(
+            &store.pool,
+            &organ,
+            "lince.discovery",
+            &serde_json::json!({ "internet": true, "direct": true }),
+        )
+        .await
+        .expect("organ extension");
+        assert_eq!(
+            discovery_reach(&store, &organ).await,
+            engine::wire::Reach::Internet,
+            "the old location still answers when nothing newer exists"
+        );
+
+        store::cells::set_config(
+            &store.pool,
+            "lince.discovery",
+            &serde_json::json!({ "internet": true, "direct": false }),
+        )
+        .await
+        .expect("cell config");
+        assert_eq!(
+            discovery_reach(&store, &organ).await,
+            engine::wire::Reach::Relay,
+            "and this device's own answer wins once it has one"
+        );
+    }
 }

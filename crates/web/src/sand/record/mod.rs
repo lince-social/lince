@@ -69,7 +69,10 @@ mod tests {
         assert!(HTML.contains("id=\"f-head\" class=\"titleinput\""));
         assert!(HTML.contains("id=\"c-head\" class=\"titleinput\""));
         assert!(HTML.contains(".titleinput { flex: 1; min-width: 0; border: 0;"));
-        for label in ["<span class=\"k\">Head</span>", "<span class=\"k\">Body</span>"] {
+        for label in [
+            "<span class=\"k\">Head</span>",
+            "<span class=\"k\">Body</span>",
+        ] {
             assert!(!HTML.contains(label), "still labelled: {label}");
         }
     }
@@ -117,5 +120,121 @@ mod tests {
             "assignees have their own section; counting them as links marks Links \
              filled for every assigned record"
         );
+    }
+    /// A reference is a POINTER read live, not a copy, and the interface has
+    /// to say so — the whole property it buys is that the owner can still take
+    /// it back, and a panel indistinguishable from held data would hide that.
+    #[test]
+    fn a_live_reference_is_read_on_demand_and_never_cached() {
+        assert!(HTML.contains("function liveReference("));
+        assert!(HTML.contains("/organ/reference/read"));
+        assert!(
+            HTML.contains("Read live from their cell just now"),
+            "what came back must be labelled with when it was read"
+        );
+    }
+
+    /// Unreachable and refused mean OPPOSITE things to the reader and are
+    /// never collapsed. Showing "no longer shared" to somebody whose friend
+    /// closed their laptop is a false accusation.
+    #[test]
+    fn a_failed_reference_read_says_which_failure_it_was() {
+        assert!(HTML.contains("response.status === 403"));
+        assert!(HTML.contains("not sharing this with you any more"));
+        assert!(
+            HTML.contains("Could not reach their cell right now"),
+            "offline is temporary and must read as temporary"
+        );
+        assert!(
+            HTML.contains("there is nothing stored to show"),
+            "and must say WHY there is no fallback: a cached copy would be the \
+             thing that makes revocation stop working"
+        );
+    }
+    /// Reading a reference is observable by its owner whether or not anyone
+    /// records it. Both sides are told: the reader BEFORE the read, because
+    /// after is too late to be a choice.
+    #[test]
+    fn both_sides_are_told_that_a_reference_read_is_observable() {
+        assert!(
+            HTML.contains("they can see that you opened it and when"),
+            "the reader is warned before pressing, not after"
+        );
+        assert!(HTML.contains("function renderReferenceReads("));
+        assert!(HTML.contains("reference_reads: true"));
+    }
+
+    /// Most records are never referenced. A permanent empty "opened by" panel
+    /// on every record would train people to ignore the one that eventually
+    /// says something.
+    #[test]
+    fn the_opened_by_panel_is_absent_rather_than_empty() {
+        assert!(HTML.contains("$(\"sec-reads\").hidden = reads.length === 0"));
+        assert!(
+            HTML.contains("item.reader_name || item.reader_organ"),
+            "a reader is named, or identified by uid — never \"someone\", which \
+             would imply we do not know"
+        );
+    }
+    /// A copy and a reference are separate decisions and get separate
+    /// controls. One control with a mode would let the irreversible act be
+    /// reached by the same gesture as the reversible one.
+    #[test]
+    fn sending_a_copy_is_its_own_control_not_a_mode_of_posting() {
+        assert!(HTML.contains("action: \"send-record-copy\""));
+        assert!(HTML.contains("id=\"cm-copy\""));
+        assert!(
+            !HTML.contains("prompt("),
+            "this sand asks in the page, never through a browser modal"
+        );
+    }
+
+    /// The warning appears AT the moment of copying, names the difference
+    /// rather than asking "are you sure", and states the safer alternative so
+    /// it is visible at the point of choosing.
+    #[test]
+    fn the_copy_warning_names_the_difference_and_the_alternative() {
+        assert!(HTML.contains("You cannot take it back"));
+        assert!(
+            HTML.contains("later edits here will not reach it"),
+            "a copy is a moment, not a window, and the wording must say so"
+        );
+        assert!(
+            HTML.contains("To point at a record instead"),
+            "the reversible option belongs in front of the irreversible one"
+        );
+    }
+    /// Key exchange IS the promotion step and it happens inside the thread:
+    /// you talk to someone first, then decide they are someone you know.
+    /// Both halves live in the conversation — sending the code and acting on
+    /// one that arrives.
+    #[test]
+    fn promotion_happens_inside_the_conversation_in_both_directions() {
+        assert!(HTML.contains("action: \"share-my-key\""));
+        assert!(HTML.contains("function pairingOffer("));
+        assert!(HTML.contains("action: \"add-known-organ\""));
+    }
+
+    /// A sender's claimed label is a string they chose and is never identity.
+    /// The local user types what THEY call this person; prefilling the field
+    /// from the message would quietly turn an untrusted label into a name.
+    #[test]
+    fn a_pairing_offer_never_names_the_sender_for_you() {
+        assert!(HTML.contains("What you call them"));
+        assert!(
+            HTML.contains("a name is not something they send you"),
+            "the refusal must say WHY, or it reads as a validation quirk"
+        );
+        assert!(
+            !HTML.contains("name.value = m.organ_name") && !HTML.contains("name.value = code"),
+            "the name field must never be prefilled from anything they sent"
+        );
+    }
+
+    /// Adding someone widens more than the conversation did, and the control
+    /// says so before it is pressed.
+    #[test]
+    fn adding_a_contact_says_what_it_opens() {
+        assert!(HTML.contains("opens your ordinary feed to them, which a conversation"));
     }
 }

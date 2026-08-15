@@ -34,6 +34,7 @@ fn base(source: Source, filter: Vec<Predicate>) -> Protein {
     Protein {
         source,
         filter,
+        fields: None,
         include: Include::default(),
         aggregate: None,
         order: vec![],
@@ -123,20 +124,10 @@ async fn uid_eq_targets_one_record_directly() {
 #[tokio::test]
 async fn organ_eq_and_organ_in_filter_by_record_origin() {
     let e = engine().await;
-    // Created BEFORE any local organ exists: no origin ever stamped (record
-    // creation, wherever it happens, only stamps when a local organ IS set).
-    store::records::create(
-        &e.store.pool,
-        store::records::NewRecord {
-            slug: Some("orphan"),
-            kind: RecordKind::Plain,
-            head: "orphan",
-            body: "",
-            quantity: store::exact::zero(),
-        },
-    )
-    .await
-    .unwrap();
+    // There is no "created before any local Organ existed" case any more. That
+    // record used to be born with no origin and stay unattributable forever;
+    // `Store::open` now mints the identity, so every Record has one from the
+    // first write and the orphan state this test used to set up is unreachable.
 
     // A local organ so every record creation from here on stamps origin
     // (blueprint: Sync/File Sync pick WHAT travels by pointing a Protein at
@@ -164,9 +155,18 @@ async fn organ_eq_and_organ_in_filter_by_record_origin() {
         .await
         .unwrap();
 
+    // `KindEq` throughout: this Cell's own Organ and Cell Records are ordinary
+    // Records with an origin of their own now, so an unscoped query over the
+    // local Organ legitimately returns them too.
     let a_only = protein::execute(
         &e.store,
-        &base(Source::Record, vec![Predicate::OrganEq(organ_a.clone())]),
+        &base(
+            Source::Record,
+            vec![
+                Predicate::OrganEq(organ_a.clone()),
+                Predicate::KindEq("plain".into()),
+            ],
+        ),
     )
     .await
     .unwrap();
@@ -177,7 +177,10 @@ async fn organ_eq_and_organ_in_filter_by_record_origin() {
         &e.store,
         &base(
             Source::Record,
-            vec![Predicate::OrganIn(vec![organ_a, organ_b])],
+            vec![
+                Predicate::OrganIn(vec![organ_a, organ_b]),
+                Predicate::KindEq("plain".into()),
+            ],
         ),
     )
     .await
@@ -203,7 +206,16 @@ async fn quantity_lte_and_gte_include_the_boundary() {
     // deterministic base order by lowercased `head` then uid
     // (`order_records`), which puts "edge" before "low". The original literal
     // predated that rule and asserted an order this query never promised.
-    let lte = base(Source::Record, vec![Predicate::QuantityLte(0.0)]);
+    // Scoped to `plain`, because this Cell's Organ and Cell Records are
+    // ordinary Records carrying a quantity of 1 and would otherwise show up in
+    // an unscoped quantity query.
+    let lte = base(
+        Source::Record,
+        vec![
+            Predicate::QuantityLte(0.0),
+            Predicate::KindEq("plain".into()),
+        ],
+    );
     let mut lte_slugs: Vec<String> = protein::execute(&e.store, &lte)
         .await
         .unwrap()
@@ -215,7 +227,7 @@ async fn quantity_lte_and_gte_include_the_boundary() {
 
     let gte_json = serde_json::json!({
         "source": "record",
-        "where": [ { "quantity_gte": 0.0 } ]
+        "where": [ { "quantity_gte": 0.0 }, { "kind_eq": "plain" } ]
     });
     let gte: Protein = serde_json::from_value(gte_json).unwrap();
     let gte_slugs: Vec<String> = protein::execute(&e.store, &gte)
@@ -442,6 +454,7 @@ async fn threads_include_keeps_an_empty_thread_without_a_message_predicate() {
     let p = Protein {
         source: Source::Record,
         filter: vec![Predicate::UidEq(subject)],
+        fields: None,
         include: Include {
             threads: Some(ThreadsInclude { messages_limit: 20 }),
             ..Default::default()
@@ -506,6 +519,7 @@ async fn threads_include_returns_nested_record_messages() {
     let p = Protein {
         source: Source::Record,
         filter: vec![Predicate::UidEq(subject)],
+        fields: None,
         include: Include {
             threads: Some(ThreadsInclude { messages_limit: 20 }),
             ..Default::default()
@@ -592,6 +606,7 @@ async fn threads_include_resolves_sender_name_from_the_actor() {
     let p = Protein {
         source: Source::Record,
         filter: vec![Predicate::UidEq(subject)],
+        fields: None,
         include: Include {
             threads: Some(ThreadsInclude { messages_limit: 20 }),
             ..Default::default()
@@ -977,4 +992,106 @@ fn legacy_filter_field_is_rejected() {
         "filter": [{ "kind_eq": "plain" }]
     }));
     assert!(result.is_err());
+}
+
+/// Column selection (Ontology §12, cluster C5) — the selector the whole
+/// scoping cluster hangs off.
+///
+/// It matters far beyond trimming a payload: the same Protein that decides a
+/// sand renders `body` is the one that decides `body` TRAVELS to a contact.
+/// One language rather than a query language and a sharing language kept
+/// laboriously in step.
+#[tokio::test]
+async fn fields_narrow_a_row_to_what_was_asked_for() {
+    let e = engine().await;
+    make(&e, "narrowed", RecordKind::Plain, 3.0).await;
+
+    let mut p = base(Source::Record, vec![Predicate::SlugEq("narrowed".into())]);
+    p.fields = Some(vec!["head".into()]);
+    let rows = protein::execute(&e.store, &p).await.unwrap();
+    let row = rows.first().expect("one row");
+
+    assert!(row.get("head").is_some(), "what was asked for is there");
+    assert!(
+        row.get("body").is_none() && row.get("quantity").is_none(),
+        "and nothing else is: {row}"
+    );
+    // A row nobody can identify is not a narrower answer, it is a useless one —
+    // every surface and the sync path address rows by uid.
+    assert!(row.get("uid").is_some(), "uid always survives");
+    assert!(row.get("kind").is_some(), "and so does kind");
+}
+
+/// NAME-WHAT-YOU-WANT, never name-what-to-hide. The asymmetry is the whole
+/// security argument: a column added six months from now stays home until some
+/// Protein names it. A deny-list would have leaked it by default, and nobody
+/// would have noticed until it had.
+#[tokio::test]
+async fn a_field_nobody_named_does_not_appear() {
+    let e = engine().await;
+    make(&e, "unnamed", RecordKind::Plain, 7.0).await;
+
+    let mut p = base(Source::Record, vec![Predicate::SlugEq("unnamed".into())]);
+    // A selector naming a column that does not exist yet — which is exactly
+    // what an older Protein looks like after the schema grows.
+    p.fields = Some(vec!["head".into(), "a_column_invented_later".into()]);
+    let rows = protein::execute(&e.store, &p).await.unwrap();
+    let row = rows.first().expect("one row");
+
+    assert!(row.get("head").is_some());
+    assert!(
+        row.get("organ").is_none() && row.get("created_at").is_none(),
+        "columns the selector never named stay home: {row}"
+    );
+}
+
+/// A withheld column is ABSENT, not blank, and the difference has to survive
+/// as far as the renderer. A sand that draws a missing `body` as an empty one
+/// draws a permission boundary as data — an unassigned task that is really a
+/// task you are not allowed to see the assignee of.
+///
+/// The mechanism is `retain` removing the key, so `undefined` means withheld
+/// and `""` means genuinely empty. Nothing has to be invented to mark it; what
+/// is required is that renderers stop at `row.body === undefined` instead of
+/// collapsing it with `row.body || ""`.
+#[tokio::test]
+async fn a_withheld_column_is_absent_rather_than_blank() {
+    let e = engine().await;
+    // A record whose body is genuinely empty, so the two cases are side by
+    // side rather than argued about in the abstract.
+    make(&e, "blank-body", RecordKind::Plain, 1.0).await;
+
+    let p = base(Source::Record, vec![Predicate::SlugEq("blank-body".into())]);
+    let rows = protein::execute(&e.store, &p).await.unwrap();
+    let unnarrowed = rows.first().expect("one row");
+    assert_eq!(
+        unnarrowed.get("body").and_then(|b| b.as_str()),
+        Some(""),
+        "unnarrowed, an empty body is present and empty"
+    );
+
+    let mut p = base(Source::Record, vec![Predicate::SlugEq("blank-body".into())]);
+    p.fields = Some(vec!["head".into()]);
+    let rows = protein::execute(&e.store, &p).await.unwrap();
+    let narrowed = rows.first().expect("one row");
+    assert!(
+        narrowed.get("body").is_none(),
+        "narrowed, it is ABSENT — not null, which a renderer would draw as empty: {narrowed}"
+    );
+}
+
+/// No selector means everything, so this is invisible to every caller that
+/// does not use it — which is all of them today.
+#[tokio::test]
+async fn no_selector_returns_the_whole_row() {
+    let e = engine().await;
+    make(&e, "whole", RecordKind::Plain, 1.0).await;
+
+    let p = base(Source::Record, vec![Predicate::SlugEq("whole".into())]);
+    let rows = protein::execute(&e.store, &p).await.unwrap();
+    let row = rows.first().expect("one row");
+
+    for column in ["uid", "head", "body", "quantity", "organ", "created_at"] {
+        assert!(row.get(column).is_some(), "{column} must still be there");
+    }
 }

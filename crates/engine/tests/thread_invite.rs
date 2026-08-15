@@ -46,7 +46,12 @@ async fn an_invite_is_local_and_is_never_pushed_to_anyone() {
     let (us, _) = cell("http://us.test").await;
     know(&us, "o-bystander").await;
 
-    let before = store::sync_ops::after(&us.store.pool, 0, 1000)
+    let organ = store::organs::local(&us.store.pool)
+        .await
+        .expect("local")
+        .expect("organ")
+        .uid;
+    let before = store::sync_ops::after(&us.store.pool, &organ, 0, 1000)
         .await
         .expect("ops")
         .len();
@@ -56,7 +61,7 @@ async fn an_invite_is_local_and_is_never_pushed_to_anyone() {
         .expect("put")
         .expect("a first invite is accepted");
 
-    let after = store::sync_ops::after(&us.store.pool, 0, 1000)
+    let after = store::sync_ops::after(&us.store.pool, &organ, 0, 1000)
         .await
         .expect("ops");
     assert_eq!(

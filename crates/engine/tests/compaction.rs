@@ -165,9 +165,11 @@ async fn compaction_folds_history_into_the_checkpoint_and_anchors_the_archive() 
     assert_eq!(lines.len(), 4);
     assert!(lines.iter().all(nucleus::fact::verify_chain_step));
 
-    // Anchor: on the local organ record, payload hash matches the file bytes.
-    let organ = store::organs::local(&e.store.pool).await.unwrap().unwrap();
-    assert_eq!(anchor.record_uid, organ.uid);
+    // Anchor: on this CELL's Record — compaction is a Cell-level event, and
+    // what got archived depends on this machine's retention rather than on the
+    // identity. Payload hash matches the file bytes.
+    let this_cell = store::cells::local(&e.store.pool).await.unwrap().unwrap();
+    assert_eq!(anchor.record_uid, this_cell.uid);
     let payload: serde_json::Value =
         serde_json::from_str(anchor.payload.as_deref().unwrap()).unwrap();
     assert_eq!(

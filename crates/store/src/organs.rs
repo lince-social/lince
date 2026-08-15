@@ -19,7 +19,16 @@ pub struct OrganRecord {
 }
 
 pub async fn ensure_local(pool: &SqlitePool, base_url: &str) -> Result<OrganRecord, StoreError> {
-    let base_url = normalize_base_url(base_url);
+    // An EMPTY base_url means "do not change the address". `Store::open` mints
+    // the identity before anything knows which port this Cell will bind and
+    // passes ""; treating that as "clear the address" would make every CLI
+    // invocation wipe the address the running web Cell wrote.
+    let mut base_url = normalize_base_url(base_url);
+    if base_url.is_empty() {
+        if let Some(existing) = local(pool).await? {
+            base_url = existing.base_url;
+        }
+    }
     let now = Utc::now().to_rfc3339();
     let existing_uid = sqlx::query_scalar::<_, String>("SELECT uid FROM record WHERE slug = ?")
         .bind(LOCAL_ORGAN_SLUG)
@@ -51,14 +60,19 @@ pub async fn ensure_local(pool: &SqlitePool, base_url: &str) -> Result<OrganReco
             let uid = nucleus::new_uid("r");
             sqlx::query(
                 "INSERT INTO record (uid, slug, kind, head, body, quantity_mantissa, quantity_scale,
-                                     created_at, updated_at)
-                 VALUES (?, ?, ?, ?, ?, '1', 0, ?, ?)",
+                                     organ_uid, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, '1', 0, ?, ?, ?)",
             )
             .bind(&uid)
             .bind(LOCAL_ORGAN_SLUG)
             .bind(RecordKind::Organ.as_str())
             .bind("Local Lince")
             .bind(&base_url)
+            // An Organ Record's origin is itself. The alternative — leaving it
+            // unstamped because "there is no Organ yet" — is the circularity
+            // that made the column nullable in the first place, and the answer
+            // to it is that identity is self-asserting, not conferred.
+            .bind(&uid)
             .bind(&now)
             .bind(&now)
             .execute(pool)
@@ -67,6 +81,10 @@ pub async fn ensure_local(pool: &SqlitePool, base_url: &str) -> Result<OrganReco
         }
     };
 
+    // Before anything can log an op: `sync_ops::log_local` stamps the CELL as
+    // the op's actor, and the `set_extension` below is a logged write.
+    crate::cells::ensure_local(pool, &uid, "this cell").await?;
+
     let fds = json!({
         "baseUrl": base_url,
         "aliases": ["http://127.0.0.1", "http://localhost"],
@@ -74,6 +92,130 @@ pub async fn ensure_local(pool: &SqlitePool, base_url: &str) -> Result<OrganReco
     });
     crate::records::set_extension(pool, &uid, LOCAL_ORGAN_EXTENSION, &fds).await?;
     local(pool).await?.ok_or(sqlx::Error::RowNotFound)
+}
+
+/// Whether this Cell holds any Record beyond the two every Cell boots with.
+///
+/// The enrolment eligibility test, and it lives here so the CHECK and the SWAP
+/// cannot drift: asking it only inside `adopt_identity` would mean the caller
+/// discovers it is ineligible after the single-use token has already been
+/// redeemed on the other side — a spent code, a roster naming a Cell that
+/// never joined, and a user who has to go and generate another one.
+pub async fn holds_own_records(pool: &SqlitePool) -> Result<bool, StoreError> {
+    let count: i64 =
+        sqlx::query_scalar("SELECT COUNT(*) FROM record WHERE slug IS NULL OR slug NOT IN (?, ?)")
+            .bind(LOCAL_ORGAN_SLUG)
+            .bind(crate::cells::LOCAL_CELL_SLUG)
+            .fetch_one(pool)
+            .await?;
+    Ok(count > 0)
+}
+
+/// Replace this Cell's freshly-minted Organ with one it is JOINING
+/// (Ontology §11, enrolment).
+///
+/// A new device boots, creates an Organ of its own, and only then learns it is
+/// meant to be a second Cell of an existing identity. This is that swap: the
+/// bootstrap Organ Record is deleted and the joined one takes its slug, and
+/// the Cell Record is repointed at it.
+///
+/// **Only on a Cell that holds no data of its own.** Merging two identities is
+/// a different and much larger act — every Record would need re-stamping and
+/// every op re-attributing — and doing it silently as a side effect of
+/// scanning a code is exactly the wrong default. Refused with a readable
+/// reason instead.
+///
+/// **The bootstrap ops are PURGED, not re-stamped.** First boot already writes
+/// ops (the `lince.organ` extension is a logged write), stamped with an Organ
+/// uid that is about to stop existing. Re-stamping them to the joined Organ
+/// would publish this device's local settings — its `baseUrl`, its `local`
+/// flag — onto the shared Organ Record and over the wire to every sibling
+/// Cell. They have never been sent anywhere (a fresh Cell has no contacts), so
+/// deleting them loses nothing and keeps `rebuild_read_model` able to replay a
+/// log that is coherent with the identity it belongs to.
+pub async fn adopt_identity(
+    pool: &SqlitePool,
+    joined_organ_uid: &str,
+    base_url: &str,
+) -> Result<OrganRecord, StoreError> {
+    let Some(current) = local(pool).await? else {
+        return Err(sqlx::Error::Protocol(
+            "this Cell has no Organ to replace".into(),
+        ));
+    };
+    if current.uid == joined_organ_uid {
+        return Ok(current);
+    }
+    if holds_own_records(pool).await? {
+        return Err(sqlx::Error::Protocol(
+            "this Cell already holds Records of its own, so joining another \
+                      Organ would have to merge two identities. Enrol a device that \
+                      has not been used yet."
+                .into(),
+        ));
+    }
+
+    let mut tx = pool.begin().await?;
+    // Order matters: the extension references the Record.
+    sqlx::query("DELETE FROM sync_op")
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("DELETE FROM record_extension WHERE record_uid = ?")
+        .bind(&current.uid)
+        .execute(&mut *tx)
+        .await?;
+    // The Cell first, so the Organ Record it points at never briefly does not
+    // exist — `record_origin_required_update` would abort on an empty origin.
+    sqlx::query("UPDATE record SET organ_uid = ? WHERE slug = ?")
+        .bind(joined_organ_uid)
+        .bind(crate::cells::LOCAL_CELL_SLUG)
+        .execute(&mut *tx)
+        .await?;
+    sqlx::query("DELETE FROM record WHERE uid = ?")
+        .bind(&current.uid)
+        .execute(&mut *tx)
+        .await?;
+    let now = Utc::now().to_rfc3339();
+    sqlx::query(
+        "INSERT INTO record (uid, slug, kind, head, body, quantity_mantissa, quantity_scale,
+                             organ_uid, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, '1', 0, ?, ?, ?)",
+    )
+    .bind(joined_organ_uid)
+    .bind(LOCAL_ORGAN_SLUG)
+    .bind(RecordKind::Organ.as_str())
+    .bind(&current.head)
+    .bind(base_url)
+    // An Organ Record's origin is itself, joined or minted.
+    .bind(joined_organ_uid)
+    .bind(&now)
+    .bind(&now)
+    .execute(&mut *tx)
+    .await?;
+    // RAW, logging no op. These are this DEVICE's settings — its base url, its
+    // `local` flag — and they now sit on a Record that SYNCS. Writing them
+    // through the logged path would ship one Cell's address to every sibling
+    // and have the last writer win. That the local surface config lives on the
+    // shared Organ Record at all is a wart; it belongs on the Cell Record
+    // (which never syncs) and moving it is scoping work.
+    let fds = json!({
+        "baseUrl": base_url,
+        "aliases": ["http://127.0.0.1", "http://localhost"],
+        "local": true
+    });
+    sqlx::query(
+        "INSERT INTO record_extension (record_uid, namespace, fds) VALUES (?, ?, ?)
+         ON CONFLICT(record_uid, namespace)
+         DO UPDATE SET fds = excluded.fds, version = version + 1",
+    )
+    .bind(joined_organ_uid)
+    .bind(LOCAL_ORGAN_EXTENSION)
+    .bind(fds.to_string())
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+
+    local(pool).await?.ok_or(sqlx::Error::RowNotFound.into())
 }
 
 pub async fn local(pool: &SqlitePool) -> Result<Option<OrganRecord>, StoreError> {
@@ -144,6 +286,46 @@ pub struct Contact {
     /// Seconds between catch-up pulls; 0 disables the cycle (reactive deltas
     /// and reconnect catch-up still run).
     pub catchup_interval_secs: i64,
+    /// Which COLUMNS of the Records this contact can see actually travel to
+    /// them (Ontology §12, C5). `None` is unnarrowed — everything the
+    /// visibility gate already allows.
+    ///
+    /// Not the same as `Some(vec![])`, which is a real and different answer:
+    /// nothing but the identifying columns. Conflating "not configured" with
+    /// "configured to nothing" is how a migration silently stops someone's
+    /// sync.
+    pub scope_fields: Option<Vec<String>>,
+    /// Bumped whenever the scope changes, so a WIDENING is detectable — the
+    /// catch-up vector never goes back on its own.
+    pub scope_version: i64,
+    /// The stored text of a scope that would NOT parse, if there is one.
+    ///
+    /// The unparseable case is read as unnarrowed rather than as empty, which
+    /// is a choice for legibility over strictness (a corrupt row silently
+    /// stopping a contact's sync is the worse failure, and the visibility gate
+    /// is still in front of it either way). But "read as unnarrowed" must not
+    /// mean "look identical to unnarrowed": that is a WIDER setting than
+    /// anyone asked for, showing as if somebody had asked for it. So the raw
+    /// text survives to the surface, which says the setting is broken and
+    /// offers to replace it.
+    ///
+    /// `None` in the ordinary case — including a scope that is genuinely
+    /// absent. Only a value that failed to parse appears here.
+    pub scope_unreadable: Option<String>,
+    /// The same for the inbound half. Separate value, separate repair: the two
+    /// directions are separate settings everywhere else and a shared flag
+    /// would report one of them as broken because the other is.
+    pub accept_unreadable: Option<String>,
+    /// Which columns we ACCEPT from this contact. `None` is unnarrowed, which
+    /// is what `sync_in` alone meant. The other half of the pairing: outbound
+    /// is what they may see of us, this is what they may change about our
+    /// copy of the world.
+    pub accept_fields: Option<Vec<String>>,
+    /// Bumped on every acceptance change. Nothing consumes it yet — inbound
+    /// has no cursor to re-open, since we cannot ask a peer to re-send what
+    /// we chose to drop. Kept so a WIDENING is at least visible locally, and
+    /// so the two directions have the same shape.
+    pub accept_version: i64,
     /// The last address a SIGNED exchange succeeded from — a cached hint,
     /// never identity (Ontology §11 "Peers"). Only the verified handshake
     /// writes it; discovery announces alone never do.
@@ -181,14 +363,18 @@ pub async fn add_contact(
         };
         sqlx::query(
             "INSERT INTO record (uid, slug, kind, head, body, quantity_mantissa, quantity_scale,
-                                 created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, '1', 0, ?, ?)",
+                                 organ_uid, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, '1', 0, ?, ?, ?)",
         )
         .bind(uid)
         .bind(if slug_taken { None } else { slug })
         .bind(RecordKind::Organ.as_str())
         .bind(head)
         .bind(&base_url)
+        // A contact's Organ Record originates from that contact, not from us.
+        // Stamping it with the local Organ would make every address book entry
+        // look like something this Cell authored.
+        .bind(uid)
         .bind(&now)
         .bind(&now)
         .execute(pool)
@@ -247,9 +433,104 @@ pub async fn set_sync_policy(
     Ok(())
 }
 
+/// Narrow (or unnarrow) what travels to one contact.
+///
+/// `None` clears the narrowing. The version bump is not bookkeeping: adding a
+/// column leaves every op for it below this contact's version vector, so
+/// without a detectable change the field would stay blank for them forever and
+/// the setting would look applied while doing nothing.
+pub async fn set_contact_scope(
+    pool: &SqlitePool,
+    organ_uid: &str,
+    fields: Option<&[String]>,
+) -> Result<(), StoreError> {
+    let encoded = match fields {
+        Some(fields) => Some(
+            serde_json::to_string(fields)
+                .map_err(|error| sqlx::Error::Protocol(error.to_string()))?,
+        ),
+        None => None,
+    };
+    sqlx::query(
+        "UPDATE organ_contact
+            SET scope_fields = ?, scope_version = scope_version + 1
+          WHERE record_uid = ?",
+    )
+    .bind(encoded)
+    .bind(organ_uid)
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+/// Narrow (or unnarrow) what we ACCEPT from one contact.
+///
+/// Deliberately a separate column and a separate function from
+/// `set_contact_scope`, not a direction parameter on one: the outbound scope
+/// is a privacy control and this is an integrity one, and a surface that made
+/// them look like one setting with two ends would invite keeping them equal,
+/// which is exactly what they are not for.
+pub async fn set_contact_accept_scope(
+    pool: &SqlitePool,
+    organ_uid: &str,
+    fields: Option<&[String]>,
+) -> Result<(), StoreError> {
+    let encoded = match fields {
+        Some(fields) => Some(
+            serde_json::to_string(fields)
+                .map_err(|error| sqlx::Error::Protocol(error.to_string()))?,
+        ),
+        None => None,
+    };
+    sqlx::query(
+        "UPDATE organ_contact
+            SET accept_fields = ?, accept_version = accept_version + 1
+          WHERE record_uid = ?",
+    )
+    .bind(encoded)
+    .bind(organ_uid)
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+/// A stored scope, or `None` for both "not set" and "will not parse".
+fn parse_scope(raw: Option<String>) -> Option<Vec<String>> {
+    raw.and_then(|raw| serde_json::from_str::<Vec<String>>(&raw).ok())
+}
+
+/// The stored text ONLY when it failed to parse — the one case the two
+/// answers above have to be told apart, and the reason they are computed by
+/// two functions over the same column rather than by one that returns a
+/// three-way enum: every caller of `scope_fields` wants the ordinary answer,
+/// and making all of them unwrap a failure they cannot act on is how the
+/// failure ends up ignored at each of them.
+fn unreadable_scope(raw: Option<String>) -> Option<String> {
+    let raw = raw?;
+    match serde_json::from_str::<Vec<String>>(&raw) {
+        Ok(_) => None,
+        Err(_) => Some(raw),
+    }
+}
+
 fn map_contact(r: sqlx::sqlite::SqliteRow) -> Contact {
     Contact {
         record_uid: r.get("record_uid"),
+        // A stored scope that will not parse is read as UNNARROWED rather than
+        // as empty. Failing closed would be the instinct, but here it would
+        // mean a corrupt row silently stops a contact's sync with no error —
+        // and the visibility gate is still in front of this either way.
+        //
+        // What it must NOT do is look the same as an ordinary unnarrowed
+        // scope, which is why the raw text is carried out alongside: this is a
+        // wider setting than anybody chose, and a surface has to be able to
+        // say so. See `scope_unreadable`.
+        scope_fields: parse_scope(r.get("scope_fields")),
+        scope_unreadable: unreadable_scope(r.get("scope_fields")),
+        scope_version: r.get("scope_version"),
+        accept_fields: parse_scope(r.get("accept_fields")),
+        accept_unreadable: unreadable_scope(r.get("accept_fields")),
+        accept_version: r.get("accept_version"),
         slug: r.get("slug"),
         head: r.get("head"),
         base_url: r.get("body"),
@@ -502,6 +783,24 @@ pub async fn contacts(pool: &SqlitePool) -> Result<Vec<Contact>, StoreError> {
 
 /// Record a rejected import row (blueprint XI.1: reject the row, keep the
 /// package, remember why).
+/// How many rejected ops are kept per contact. A ring: the oldest is dropped
+/// to make room, so a contact that keeps sending garbage keeps only its most
+/// recent garbage.
+pub const QUARANTINE_PER_CONTACT: i64 = 200;
+
+/// Record a rejected op, bounded (Ontology §11 "Quarantine needs a
+/// lifecycle").
+///
+/// The bound is the point. Every malformed or out-of-scope op lands here with
+/// its payload verbatim, and nothing aged it out — so the REJECT path was
+/// cheaper for a hostile contact than the valid one, and filling a disk cost
+/// them nothing. Worse after C1 and C2, which added three new ways in (a
+/// forged Organ, a Cell outside the roster, a stamp from the future) without
+/// adding a way out.
+///
+/// Per contact rather than one global cap, so a peer flooding it cannot evict
+/// the evidence of what a different peer did — which is exactly what someone
+/// would do to hide a real attack behind noise.
 pub async fn quarantine(
     pool: &SqlitePool,
     from_organ: &str,
@@ -519,7 +818,70 @@ pub async fn quarantine(
     .bind(Utc::now().to_rfc3339())
     .execute(pool)
     .await?;
+    // Trim by rowid, not by `at`: two rejections inside the same millisecond
+    // share a timestamp, and ordering by it would make which one survives
+    // arbitrary.
+    sqlx::query(
+        "DELETE FROM sync_quarantine
+          WHERE from_organ = ?
+            AND rowid NOT IN (SELECT rowid FROM sync_quarantine
+                               WHERE from_organ = ?
+                               ORDER BY rowid DESC LIMIT ?)",
+    )
+    .bind(from_organ)
+    .bind(from_organ)
+    .bind(QUARANTINE_PER_CONTACT)
+    .execute(pool)
+    .await?;
     Ok(())
+}
+
+/// One contact's rejected ops, newest first — what a person reads when asking
+/// why a peer is not syncing.
+pub async fn quarantined_for(
+    pool: &SqlitePool,
+    from_organ: &str,
+    limit: i64,
+) -> Result<Vec<(String, String, String)>, StoreError> {
+    Ok(sqlx::query(
+        "SELECT reason, payload, at FROM sync_quarantine
+          WHERE from_organ = ? ORDER BY rowid DESC LIMIT ?",
+    )
+    .bind(from_organ)
+    .bind(limit)
+    .fetch_all(pool)
+    .await?
+    .into_iter()
+    .map(|row| (row.get("reason"), row.get("payload"), row.get("at")))
+    .collect())
+}
+
+/// Rejected-op counts per contact, worst first.
+///
+/// A contact producing a steady stream of rejections is reporting either a bug
+/// or an attack, and both deserve a human's attention — this is what makes
+/// that visible instead of leaving a table nobody reads.
+pub async fn quarantine_by_contact(pool: &SqlitePool) -> Result<Vec<(String, i64)>, StoreError> {
+    Ok(sqlx::query(
+        "SELECT from_organ, COUNT(1) AS n FROM sync_quarantine
+          GROUP BY from_organ ORDER BY n DESC",
+    )
+    .fetch_all(pool)
+    .await?
+    .into_iter()
+    .map(|row| (row.get("from_organ"), row.get("n")))
+    .collect())
+}
+
+/// Forget one contact's rejected ops — the "I have read this" action.
+pub async fn clear_quarantine(pool: &SqlitePool, from_organ: &str) -> Result<u64, StoreError> {
+    Ok(
+        sqlx::query("DELETE FROM sync_quarantine WHERE from_organ = ?")
+            .bind(from_organ)
+            .execute(pool)
+            .await?
+            .rows_affected(),
+    )
 }
 
 pub async fn quarantine_count(pool: &SqlitePool) -> Result<i64, StoreError> {

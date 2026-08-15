@@ -94,6 +94,13 @@ pub async fn set_record_field(
                 .rows_affected()
                 > 0
         }
+        // A peer may not clear a Record's origin. `record_origin_required_update`
+        // ABORTS a null here, and that error would propagate out of
+        // `import_ops` and fail the WHOLE batch — turning one malformed op
+        // into a denial of the rest, which is the opposite of the
+        // quarantine-one-op behaviour the admissibility gate exists for. So an
+        // empty origin is simply not applied.
+        "organ_uid" if text.as_deref().unwrap_or_default().is_empty() => false,
         "unit_uid" | "organ_uid" => {
             let sql = format!("UPDATE record SET {field} = ?, updated_at = ? WHERE uid = ?");
             sqlx::query(&sql)
@@ -105,6 +112,21 @@ pub async fn set_record_field(
                 .rows_affected()
                 > 0
         }
+        // Quantity is ADDED, never assigned — the one field where "last write
+        // wins" is the wrong rule (Ontology §11, C2b).
+        //
+        // `record.quantity` is the fold of a record's fact chain over its
+        // OPENING value, and `bump_quantity` adds. Exactly one `quantity` op
+        // exists per record — the one creation logs — so it is that opening
+        // value, and every later change is a signed fact.
+        //
+        // Assigning it made the result depend on arrival order: a peer that
+        // received the facts first held the sum of the deltas, and the genesis
+        // op then overwrote it with the opening value, silently discarding
+        // every change. Adding gives `opening + deltas` whichever order they
+        // arrive in, and the op log's identity dedupe (`UNIQUE(actor_cell,
+        // hlc)`) is what keeps it exactly-once — an add applied twice would be
+        // just as wrong as a set applied late.
         "quantity" => {
             let mantissa = value
                 .get("mantissa")
@@ -114,21 +136,50 @@ pub async fn set_record_field(
                 .get("scale")
                 .and_then(|item| item.as_i64())
                 .unwrap_or(0);
-            let quantity = crate::exact::parse_decimal(mantissa, scale)?;
-            let (mantissa, scale) = crate::exact::decimal_columns(quantity);
-            sqlx::query(
-                "UPDATE record
-                    SET quantity_mantissa = ?, quantity_scale = ?, updated_at = ?
-                  WHERE uid = ?",
-            )
-            .bind(mantissa)
-            .bind(scale)
-            .bind(&now)
-            .bind(uid)
-            .execute(pool)
-            .await?
-            .rows_affected()
-                > 0
+            let opening = crate::exact::parse_decimal(mantissa, scale)?;
+            if opening.is_zero() {
+                // Nothing to add, but an undelete may still be riding this op.
+                // Still gated on the row EXISTING, so a zero opening cannot
+                // report "applied" for a record that is not there — which
+                // would inflate the count and push a phantom uid into the
+                // refresh set.
+                sqlx::query("SELECT 1 FROM record WHERE uid = ?")
+                    .bind(uid)
+                    .fetch_optional(pool)
+                    .await?
+                    .is_some()
+            } else {
+                let row = sqlx::query(
+                    "SELECT quantity_mantissa, quantity_scale FROM record WHERE uid = ?",
+                )
+                .bind(uid)
+                .fetch_optional(pool)
+                .await?;
+                let Some(row) = row else {
+                    return Ok(false);
+                };
+                let updated = crate::exact::read_decimal(&row, "quantity")?
+                    .aligned_add(opening)
+                    .ok_or_else(|| {
+                        StoreError::Decode(
+                            format!("quantity of {uid} overflows i128 exact range").into(),
+                        )
+                    })?;
+                let (mantissa, scale) = crate::exact::decimal_columns(updated);
+                sqlx::query(
+                    "UPDATE record
+                        SET quantity_mantissa = ?, quantity_scale = ?, updated_at = ?
+                      WHERE uid = ?",
+                )
+                .bind(mantissa)
+                .bind(scale)
+                .bind(&now)
+                .bind(uid)
+                .execute(pool)
+                .await?
+                .rows_affected()
+                    > 0
+            }
         }
         _ => false,
     };

@@ -22,6 +22,8 @@ export function renderSocialDelivery(row, options) {
 
   const refresh = refreshControl(row, delivery, options);
   if (refresh) section.append(refresh);
+  const executor = executorControl(row, delivery, options);
+  if (executor) section.append(executor);
   section.append(
     renderDeliveryRecipients(row, delivery, options),
     renderApplicationHandoffs(row, delivery, options),
@@ -107,6 +109,70 @@ function refreshControl(transfer, delivery, options) {
     if (action) options.onAction?.(key, action);
   });
   block.append(copy, button);
+  if (state?.error) {
+    const alert = el("div", "inlineAlert", state.error);
+    alert.setAttribute("role", "alert");
+    block.append(alert);
+  }
+  return block;
+}
+
+/**
+ * Which of YOUR Cells retries this Transfer's deliveries (Ontology C7).
+ *
+ * Every word here is about your own machines. Delivery retries are the one
+ * non-Rule scheduler that reaches outward — two Cells draining the same outbox
+ * send the recipient the same envelope twice — so this names one of them and
+ * the others stand down. It changes nothing the recipient agreed to, which is
+ * why it sits beside the refresh control rather than among the recipients.
+ *
+ * The button names THIS Cell and no other. It is the only uid this page can be
+ * sure of, and pinning delivery to a machine you are not sitting at is how a
+ * Transfer ends up waiting on a laptop that is closed. Moving it means opening
+ * the other Cell and pressing it there — the manual takeover the design chose
+ * over a heartbeat that would hand delivery to whichever Cell merely cannot see
+ * the current one.
+ */
+function executorControl(transfer, delivery, options) {
+  if (!capability(delivery, "designate_executor")) return null;
+  const template = projectedAction(delivery, "designate_executor");
+  if (!template) return null;
+  const executor = delivery.executor && typeof delivery.executor === "object"
+    ? delivery.executor
+    : {};
+  const designated = executor.designated_cell || null;
+  const thisCell = executor.this_cell || null;
+  const key = `delivery:${transfer.uid}:executor`;
+  const state = options.actionState?.(key);
+  const block = el("div", "socialDeliveryRefresh");
+  const copy = el("div", "socialDeliveryRefreshCopy");
+  copy.append(
+    el("strong", "", "Delivering Cell"),
+    el("span", "", !designated
+      ? "Every Cell holding this Transfer retries it"
+      : designated === thisCell
+        ? "This Cell delivers it; your other Cells stand down"
+        : `Another Cell delivers it (${compactId(designated)})`),
+  );
+  const clearing = Boolean(designated);
+  const button = el(
+    "button",
+    "secondaryButton",
+    state?.busy ? "Saving" : clearing ? "Let any Cell deliver" : "Only this Cell",
+  );
+  button.type = "button";
+  // Without a uid for this Cell, "Only this Cell" would send a null and CLEAR
+  // the designation — a button doing the opposite of its label.
+  button.disabled = options.mutationsEnabled === false
+    || Boolean(state?.busy)
+    || (!clearing && !thisCell);
+  button.addEventListener("click", () => {
+    options.onAction?.(key, { ...template, cell_uid: clearing ? null : thisCell });
+  });
+  block.append(copy, button);
+  if (!clearing && !thisCell) {
+    block.append(el("span", "", "This Cell cannot identify itself, so it cannot be designated."));
+  }
   if (state?.error) {
     const alert = el("div", "inlineAlert", state.error);
     alert.setAttribute("role", "alert");

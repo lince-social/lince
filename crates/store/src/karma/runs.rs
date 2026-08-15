@@ -189,15 +189,63 @@ async fn freeze_next_epoch(
         return Ok(Some((occurrence, epoch)));
     }
 
+    // C7 axis 2 — does THIS Cell execute it. The filter belongs HERE, at epoch
+    // freezing, rather than at the point a run would write its effect: the
+    // epoch is the frozen list of what this turn will evaluate, so excluding a
+    // Program here means it is never evaluated, never consumes fuel, and never
+    // reaches a Program-state event. Filtering later would let a dormant rule
+    // advance its own state on a Cell that is not supposed to be running it,
+    // and that state is what the executing Cell's next run depends on.
+    //
+    // A LEFT JOIN with `IS NOT 0`, never `= 1`: absence is the default and the
+    // default is to execute, so an inner join here would stop every Program on
+    // every Organ that has never opened the setting.
+    // This Cell's own uid, for the designation test below. `None` is not a
+    // reason to skip the turn — a store with no Cell Record cannot have been
+    // opened — but it does mean no designation can match, so a designated
+    // Program correctly stays put rather than running on an unidentifiable
+    // Cell.
+    let this_cell: Option<String> = sqlx::query_scalar(
+        "SELECT uid FROM record WHERE slug = ? AND kind = 'device' LIMIT 1",
+    )
+    .bind(crate::cells::LOCAL_CELL_SLUG)
+    .fetch_optional(&mut *tx)
+    .await?;
+
+    // Two independent filters, and they are not the same question.
+    //
+    // `karma_program_execution` is axis 2: this machine's own answer, local,
+    // never synced. The executor designation is the shared one — a Record
+    // extension, so every Cell reads the same value — and it is a VALUE rather
+    // than a lock: a last-writer-wins register that converges by construction
+    // instead of a claim needing renewal. Designated elsewhere means this Cell
+    // does not run it, and an undesignated Program runs everywhere, which is
+    // the behaviour every existing Organ already has.
+    //
+    // Both are vetoes and neither is a precedence: ANDed, either one can
+    // withhold this Cell and neither can compel it. So a rule switched off
+    // locally stays off however it is designated, and a rule designated
+    // elsewhere stays off however the local flag reads — there is no ordering
+    // between them to get wrong.
     let rows = sqlx::query(
         "SELECT program.record_uid, program.active_revision_hash, program.handle_revision
          FROM karma_program program
          JOIN record ON record.uid = program.record_uid
+         LEFT JOIN karma_program_execution execution
+                ON execution.program_uid = program.record_uid
+         LEFT JOIN record_extension executor
+                ON executor.record_uid = program.record_uid
+               AND executor.namespace = 'lince.schedule.executor'
          WHERE program.status = 'active'
            AND program.active_revision_hash IS NOT NULL
            AND record.deleted_at IS NULL
+           AND execution.executes IS NOT 0
+           AND (executor.fds IS NULL
+                OR json_extract(executor.fds, '$.cell') IS NULL
+                OR json_extract(executor.fds, '$.cell') = ?)
          ORDER BY program.record_uid, program.active_revision_hash",
     )
+    .bind(this_cell.as_deref())
     .fetch_all(&mut *tx)
     .await?;
     let members = rows

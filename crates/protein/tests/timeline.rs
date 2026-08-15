@@ -73,6 +73,7 @@ fn timeline(concept: &str, since: String, before: String) -> Protein {
             Predicate::AtSince(since),
             Predicate::AtBefore(before),
         ],
+        fields: None,
         include: Include::default(),
         aggregate: None,
         order: vec![],
@@ -109,6 +110,7 @@ async fn a_timeline_needs_to_be_a_timeline_of_something() {
         &Protein {
             source: Source::Timeline,
             filter: vec![Predicate::AtSince(since), Predicate::AtBefore(before)],
+            fields: None,
             include: Include::default(),
             aggregate: None,
             order: vec![],

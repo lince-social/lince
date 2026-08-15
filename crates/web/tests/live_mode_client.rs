@@ -33,10 +33,8 @@ fn run(label: &str, body: &str) {
         .duration_since(UNIX_EPOCH)
         .expect("clock")
         .as_nanos();
-    let dir: PathBuf = std::env::temp_dir().join(format!(
-        "lince-live-{label}-{}-{nanos}",
-        std::process::id()
-    ));
+    let dir: PathBuf =
+        std::env::temp_dir().join(format!("lince-live-{label}-{}-{nanos}", std::process::id()));
     fs::create_dir_all(&dir).expect("create dir");
 
     let transport =

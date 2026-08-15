@@ -327,3 +327,83 @@ async fn supervisor_starts_and_stops_watch_loops_live_without_reboot() {
         "disabled watch loop must not apply disk edits"
     );
 }
+
+/// Selection is `organ_uid` AND whatever the owner configured, in the SAME
+/// Protein vocabulary every other filter uses (Ontology §12, C5).
+#[tokio::test]
+async fn a_configured_filter_narrows_what_reaches_disk() {
+    let (e, organ) = cell_with_local_organ().await;
+    let kept_uid = plain(&e, "Kept", "in the folder").await;
+    let dropped = plain(&e, "Dropped", "not selected").await;
+    e.act(
+        Action::SetExtension {
+            target: organ.clone(),
+            namespace: "lince.file_sync".into(),
+            fds: serde_json::json!({
+                "enabled": true,
+                "path": "/unused-here",
+                // Stored as text, which is what a text field writes.
+                "filter": r#"{"slug_eq":"kept-slug"}"#,
+            }),
+        },
+        None,
+    )
+    .await
+    .expect("configure");
+    store::records::set_slug(&e.store.pool, &dropped, Some("other-slug"))
+        .await
+        .expect("slug");
+    store::records::set_slug(&e.store.pool, &kept_uid, Some("kept-slug"))
+        .await
+        .expect("slug");
+
+    let dir = tmp_dir();
+    let mut state = FileSyncState::new();
+    e.file_sync_tick(&dir, &organ, &mut state).await.unwrap();
+
+    assert!(dir.join("Kept.md").exists(), "the selected record is mirrored");
+    assert!(
+        !dir.join("Dropped.md").exists(),
+        "and one the filter excludes is not — origin alone is no longer the whole selection"
+    );
+}
+
+/// A filter that will not parse is IGNORED rather than failing closed. Failing
+/// closed here means mirroring NOTHING, which is a folder that silently
+/// empties itself and no error to explain it.
+#[tokio::test]
+async fn an_unreadable_filter_syncs_everything_rather_than_nothing() {
+    let (e, organ) = cell_with_local_organ().await;
+    plain(&e, "Still here", "body").await;
+    e.act(
+        Action::SetExtension {
+            target: organ.clone(),
+            namespace: "lince.file_sync".into(),
+            fds: serde_json::json!({
+                "enabled": true,
+                "path": "/unused-here",
+                "filter": "{this is not a predicate",
+            }),
+        },
+        None,
+    )
+    .await
+    .expect("configure");
+
+    let dir = tmp_dir();
+    let mut state = FileSyncState::new();
+    e.file_sync_tick(&dir, &organ, &mut state).await.unwrap();
+    assert!(
+        dir.join("Still here.md").exists(),
+        "an unreadable filter must not silently empty the folder"
+    );
+
+    let config = store::records::get_extension(&e.store.pool, &organ, "lince.file_sync")
+        .await
+        .unwrap();
+    assert_eq!(
+        engine::file_sync::unreadable_filter(config.as_ref()).as_deref(),
+        Some("{this is not a predicate"),
+        "and the surface must be able to say it is being ignored"
+    );
+}

@@ -355,6 +355,95 @@ pub enum Action {
         sync_out: bool,
         sync_in: bool,
     },
+    /// WHICH columns of the Records a contact can already see actually travel
+    /// to them (Ontology §12).
+    ///
+    /// `sync_out` decides whether the feed is open at all; this decides how
+    /// wide it is. `fields` is `None` for unnarrowed and `Some(list)` for a
+    /// scope — including `Some([])`, which is a real answer meaning nothing
+    /// but the identifying columns, NOT the same as `None`. Serialising these
+    /// two the same way is the one mistake here that leaks rather than
+    /// annoys, so the wire keeps them distinct.
+    ///
+    /// Narrowing takes effect on the next serve. WIDENING does not reach back:
+    /// the ops for a newly-added column are already below the contact's
+    /// version vector, so they travel from now on and existing Records need a
+    /// re-snapshot that does not exist yet. Surfaces must say so.
+    /// `fields` is deliberately NOT `#[serde(default)]`: an omitted field
+    /// would deserialise to `None`, and `None` is the widest setting there
+    /// is. A caller that forgets to send it should get an error, not silently
+    /// unnarrow someone.
+    SetContactScope {
+        target: String,
+        fields: Option<Vec<String>>,
+    },
+    /// WHICH columns we accept FROM a contact (Ontology §12).
+    ///
+    /// The other half of the pairing, and deliberately its own action rather
+    /// than a direction flag on the one above: outbound narrowing is a
+    /// privacy control, this is an integrity one. They have different reasons
+    /// to be narrow and no reason to agree — a contact we tell everything is
+    /// routinely one we accept little from — and one setting with two ends
+    /// would invite keeping them equal.
+    ///
+    /// Out-of-scope ops are dropped at import, silently and permanently:
+    /// unlike the outbound side there is no cursor to re-open, because we
+    /// cannot ask a peer to re-send what we chose not to take. Widening
+    /// therefore applies to what arrives next and to nothing already past.
+    SetContactAcceptScope {
+        target: String,
+        fields: Option<Vec<String>>,
+    },
+    /// End a conversation on THIS Cell (Ontology §11, C6).
+    ///
+    /// Local removal plus revocation, and both halves are needed: revoking
+    /// alone leaves it sitting in the list, removing alone leaves their ops
+    /// still welcome so it repopulates on the next sync.
+    ///
+    /// It emits NO tombstones. That is the honest limit rather than a
+    /// shortcut: a tombstone is a synced op, so deleting these Records the
+    /// ordinary way would delete THEIR copy too, and nobody agreed to that.
+    /// Their copy is theirs. What remains is exactly one thing — they may send
+    /// an invite to open a new conversation, one pending at a time, which is a
+    /// knock rather than a channel.
+    DeleteConversation {
+        conversation: String,
+    },
+    /// Put a COPY of a Record into a conversation (Ontology §11, C6).
+    ///
+    /// The deliberate opposite of a reference, and a separate verb because it
+    /// is a separate decision. A reference is a pointer read live, and can be
+    /// taken back by hiding the Record; a copy LEAVES this Cell, lands in the
+    /// other party's store, and cannot be recalled — they run their own code
+    /// and promised nothing.
+    ///
+    /// It is the right tool for a document two people are editing, where "the
+    /// owner went offline so there is nothing to show" is the wrong answer,
+    /// and the wrong default for everything else — which is why it is not the
+    /// default for anything. Surfaces must present the choice AT the moment of
+    /// copying, in its own wording, because that is the only moment at which
+    /// it can still be declined.
+    SendRecordCopy {
+        thread: String,
+        record: String,
+    },
+    /// Keep one whole Record out of one contact's feed (Ontology §12).
+    ///
+    /// The other half of hiding: the scope above says which COLUMNS a contact
+    /// receives, this says which ROWS. Per-contact and per-record, so the same
+    /// Record can be shared with one person and withheld from another without
+    /// anything on the write path knowing — the filter runs where the feed is
+    /// served, like everything else in this cluster.
+    ///
+    /// Honest about its limit, and surfaces must be too: this stops what
+    /// travels NEXT. A contact who already received the Record keeps it, and
+    /// no delete is sent to make them drop it — sending one would confirm the
+    /// Record exists, which is most of what hiding was for.
+    HideRecordFromContact {
+        target: String,
+        record: String,
+        hidden: bool,
+    },
     /// Drop a contact and the Record standing in for it — locally, and only
     /// locally. `delete-record` on the same uid would log a tombstone against
     /// THEIR Organ record and push it to them and everyone else; this forgets
@@ -427,6 +516,47 @@ pub enum Action {
     /// to re-add a stolen device. Requires the root key.
     RosterRevokeCell {
         cell_uid: String,
+    },
+    /// What this Cell knows about its own identity right now: who is waiting
+    /// at the front door, and which devices are running a different build.
+    ///
+    /// A READ shaped as an Action because a sand's only channels are Protein
+    /// subscriptions and Actions, and neither the door queue nor the stale
+    /// list is a Record — the first is deliberately local-only (a front door
+    /// must not write into the identity) and the second is transient. Without
+    /// it both are invisible, which for a queue of people waiting to reach you
+    /// is the same as broken.
+    RosterStatus,
+    /// Write a LOCAL-ONLY config namespace on this Cell's own Record
+    /// (Ontology §11, C4).
+    ///
+    /// Separate from `SetExtension` because it logs no op and never syncs.
+    /// That is what makes it usable by a relay Cell, which may not write —
+    /// and discovery settings are per-DEVICE anyway, so putting them on the
+    /// shared Organ Record was always the wrong shape.
+    SetCellConfig {
+        namespace: String,
+        fds: serde_json::Value,
+    },
+    /// Compare logs with a contact and report what disagrees, moving no ops
+    /// (Ontology §11, C2b — the cross-Organ audit).
+    ///
+    /// REPORTS rather than repairs, deliberately. A disagreement between two
+    /// Organs is not obviously anyone's bug — a peer legitimately prunes, an
+    /// outbox legitimately has not drained — so silently re-sending would hide
+    /// the one case worth seeing: two logs that never converge however many
+    /// passes run. That is a person's call, so a person is told.
+    AuditContact {
+        contact: String,
+    },
+    /// Join an existing Organ as a new device, from a code shown by a Cell
+    /// that already belongs to it (Ontology §11, C3).
+    ///
+    /// The counterpart of `RosterEnrolToken`, and the reason this is an action
+    /// rather than a wire detail: without it the enrolment client is reachable
+    /// only from a test, which is not a feature anyone can use.
+    RosterJoinOrgan {
+        code: String,
     },
     /// Copy the root key to removable media, at mode 0600. Refuses to
     /// overwrite anything already there.
@@ -995,6 +1125,46 @@ pub enum Action {
         request_id: String,
         program_uid: String,
         expected_handle_revision: u64,
+    },
+    /// C7 axis 2: does THIS Cell execute this Program.
+    ///
+    /// Deliberately unlike its neighbours in two ways. There is no
+    /// `request_id`, because idempotency exists to stop a retried mutation
+    /// minting a second revision and this mutation has no history to duplicate
+    /// — setting a switch twice leaves it where it was. And there is no
+    /// `expected_handle_revision`, because this changes nothing about the
+    /// Program: revising the rule on another Cell must not invalidate a
+    /// pending "do not run this one here".
+    SetKarmaExecution {
+        program_uid: String,
+        executes: bool,
+        #[serde(default)]
+        note: Option<String>,
+    },
+    /// C7: name the one Cell that runs this Program, or clear the designation.
+    ///
+    /// `cell_uid: None` clears it and returns the Program to running wherever
+    /// it is held. Unlike its neighbour above this one SYNCS — "which Cell is
+    /// the one" is a fact every Cell needs, where "do I run it" is each
+    /// machine's own business.
+    DesignateKarmaExecutor {
+        program_uid: String,
+        #[serde(default)]
+        cell_uid: Option<String>,
+    },
+    /// C7: name the one Cell that retries this Transfer's deliveries.
+    ///
+    /// The same designation as the Karma one — `store::executor`, the same
+    /// namespace, the same last-writer-wins value — read off a Transfer Record
+    /// instead of a Program. Kept as a separate variant rather than one generic
+    /// `DesignateExecutor { record_uid }` because the permission differs: this
+    /// one belongs to whoever may configure the Transfer's delivery, and a
+    /// single variant taking any uid would have to pick one permission for
+    /// every kind of Record there will ever be.
+    DesignateTransferExecutor {
+        transfer_uid: String,
+        #[serde(default)]
+        cell_uid: Option<String>,
     },
     RespondKarmaCandidate {
         request_id: String,
@@ -1699,6 +1869,16 @@ pub struct ActionOutcome {
     /// Non-fatal advisories (blueprint IV.2: cycle warnings on save). The
     /// action succeeded; these are for the surface to show.
     pub warnings: Vec<String>,
+    /// Structured result for the surface, when `created` (one uid) is not
+    /// enough to render what happened.
+    ///
+    /// Exists because a feature is not done until a human can use it, and some
+    /// results are not a uid: an enrolment code plus the QR that carries it,
+    /// what a front door is holding, which of your devices is out of date. The
+    /// alternative was mirroring those into a synced extension, which is what
+    /// the pairing code does — and that is exactly wrong for anything secret,
+    /// since an extension on the Organ Record TRAVELS.
+    pub data: Option<serde_json::Value>,
 }
 
 fn apply_program_mutation(
@@ -2888,6 +3068,211 @@ impl Engine {
                     )
                     .await?;
             }
+            Action::SetContactAcceptScope { target, fields } => {
+                let uid = self.resolve(&target).await?;
+                if store::organs::contact(&self.store.pool, &uid).await?.is_none() {
+                    return Err(EngineError::Consequence(
+                        "not a contact — this Cell's own Organ sends us nothing to accept".into(),
+                    ));
+                }
+                validate_scope(fields.as_deref())?;
+                store::organs::set_contact_accept_scope(
+                    &self.store.pool,
+                    &uid,
+                    fields.as_deref(),
+                )
+                .await?;
+                outcome.facts = self
+                    .annotate(
+                        uid,
+                        actor,
+                        serde_json::json!({ "accept_fields": fields }),
+                        now,
+                    )
+                    .await?;
+            }
+            Action::DeleteConversation { conversation } => {
+                let uid = self.resolve(&conversation).await?;
+                // The ROOT, resolved from whatever inside it was named — a
+                // person deleting a conversation may well have a thread
+                // selected, and deleting only the thread would leave the
+                // conversation half-present and still syncing.
+                let root = store::replica::root_of(&self.store.pool, &uid)
+                    .await?
+                    .ok_or_else(|| {
+                        EngineError::Consequence("that is not part of a conversation".into())
+                    })?;
+                let removed =
+                    store::replica::delete_root_locally(&self.store.pool, &root).await?;
+                outcome.data = Some(serde_json::json!({ "removed": removed }));
+            }
+            Action::SendRecordCopy { thread, record } => {
+                let thread_uid = self.resolve(&thread).await?;
+                let source_uid = self.resolve(&record).await?;
+                let root = store::replica::root_of(&self.store.pool, &thread_uid)
+                    .await?
+                    .ok_or_else(|| {
+                        EngineError::Consequence("that thread is not inside a conversation".into())
+                    })?;
+                let source = store::records::get(&self.store.pool, &source_uid)
+                    .await?
+                    .ok_or_else(|| EngineError::Consequence("no such record to copy".into()))?;
+                // A Record already inside a root is not copyable into another
+                // one: that is the cross-root widening `assert` refuses, and
+                // going through a copy would be the same disclosure wearing a
+                // different verb.
+                if let Some(existing) =
+                    store::replica::root_of(&self.store.pool, &source_uid).await?
+                {
+                    if existing != root {
+                        return Err(EngineError::Consequence(
+                            "that record belongs to another conversation and cannot be copied \
+                             into this one"
+                                .into(),
+                        ));
+                    }
+                }
+                // A NEW uid, deliberately. Reusing the source uid would make
+                // the copy and the original the same Record to every later
+                // merge, so an edit either side would flow back through the
+                // grant channel — which is a shared document, not a copy, and
+                // not what was agreed to.
+                //
+                // Slug is dropped for the same reason: it is a local
+                // suggestion and a copy carrying it would collide with the
+                // original on our own Cell.
+                let copy = store::records::create_in_root(
+                    &self.store.pool,
+                    store::records::NewRecord {
+                        slug: None,
+                        kind: nucleus::RecordKind::parse(&source.kind)
+                            .unwrap_or(nucleus::RecordKind::Plain),
+                        head: &source.head,
+                        body: &source.body,
+                        quantity: store::exact::zero(),
+                    },
+                    Some(&root),
+                )
+                .await?;
+                self.link_in(&copy.uid, &thread_uid, crate::threads::MESSAGE_IN_PREDICATE)
+                    .await?;
+                outcome.created = Some(copy.uid.clone());
+                outcome.facts = self
+                    .annotate(
+                        copy.uid,
+                        actor,
+                        serde_json::json!({ "copied_from": source_uid }),
+                        now,
+                    )
+                    .await?;
+            }
+            Action::HideRecordFromContact {
+                target,
+                record,
+                hidden,
+            } => {
+                let uid = self.resolve(&target).await?;
+                if store::organs::contact(&self.store.pool, &uid).await?.is_none() {
+                    return Err(EngineError::Consequence(
+                        "not a contact — this Cell's own Organ has no feed to hide from".into(),
+                    ));
+                }
+                // Resolved, not taken on trust: a uid that names nothing would
+                // store a rule that hides no Record while reading as applied,
+                // and the surface accepts a slug because that is what a person
+                // actually knows a Record by.
+                let record_uid = self.resolve(&record).await?;
+                if store::records::get(&self.store.pool, &record_uid)
+                    .await?
+                    .is_none()
+                {
+                    return Err(EngineError::Consequence(
+                        "no such record to hide".into(),
+                    ));
+                }
+                store::visibility::set_hidden_from_organ(
+                    &self.store.pool,
+                    &uid,
+                    &record_uid,
+                    hidden,
+                )
+                .await?;
+                // UNHIDING is a grant, and a grant has to reach back or it
+                // grants nothing: the ops this contact missed are already
+                // below their version vector, so ordinary catch-up will never
+                // offer them again and the Record would stay permanently
+                // absent while reading as shared.
+                //
+                // Replayed by identity rather than re-snapshotted — see
+                // `sync_ops::enqueue_record_for_contact` for why that is the
+                // cheaper AND the safer of the two.
+                if !hidden {
+                    store::sync_ops::enqueue_record_for_contact(
+                        &self.store.pool,
+                        &uid,
+                        &record_uid,
+                    )
+                    .await?;
+                }
+                outcome.facts = self
+                    .annotate(
+                        uid,
+                        actor,
+                        serde_json::json!({ "hidden_record": record_uid, "hidden": hidden }),
+                        now,
+                    )
+                    .await?;
+            }
+            Action::SetContactScope { target, fields } => {
+                let uid = self.resolve(&target).await?;
+                let Some(contact) = store::organs::contact(&self.store.pool, &uid).await? else {
+                    return Err(EngineError::Consequence(
+                        "not a contact — this Cell's own Organ has no scope to narrow".into(),
+                    ));
+                };
+                // Read BEFORE the write, because the repair below depends on
+                // which direction the change went and the stored value is
+                // about to stop saying.
+                let before = contact.scope_fields;
+                // A scope names COLUMNS, and a column name that matches
+                // nothing narrows to nothing while looking configured. Empty
+                // and blank entries are the common way that happens (a
+                // trailing comma in a surface's text field), so they are
+                // refused rather than stored.
+                validate_scope(fields.as_deref())?;
+                store::organs::set_contact_scope(
+                    &self.store.pool,
+                    &uid,
+                    fields.as_deref(),
+                )
+                .await?;
+                // A WIDENING has to reach back or it widens nothing: every op
+                // for a newly-named column is already below the contact's
+                // version vector, so catch-up will never offer it again and
+                // the column would stay permanently blank for them while the
+                // panel reads as shared. Same replay-by-identity as a
+                // re-grant, over the whole feed rather than one Record.
+                //
+                // Narrowing needs no counterpart. It stops sending; it does
+                // not reach back and retract, and there is nothing to repair.
+                if widens_scope(before.as_deref(), fields.as_deref()) {
+                    store::sync_ops::enqueue_widened_for_contact(
+                        &self.store.pool,
+                        &uid,
+                        before.as_deref(),
+                        fields.as_deref(),
+                    )
+                    .await?;
+                }
+                outcome.facts = self
+                    .annotate(
+                        uid,
+                        actor,
+                        serde_json::json!({ "scope_fields": fields }),
+                        now,
+                    )
+                    .await?;
+            }
             Action::ForgetOrganContact { target } => {
                 let uid = self.resolve(&target).await?;
                 if store::organs::contact(&self.store.pool, &uid).await?.is_none() {
@@ -3131,7 +3516,186 @@ impl Engine {
                         "the root key is not on this Cell — bring it back to enrol a device".into(),
                     ));
                 }
-                outcome.created = Some(self.issue_enrolment_token().await?);
+                let token = self.issue_enrolment_token().await?;
+                // The TOKEN ALONE IS UNUSABLE. A new device needs to know
+                // where to send it, whose identity it is joining, and which
+                // root key to expect back — so what the owner is shown is the
+                // whole enrolment code, not the secret out of context.
+                //
+                // The reachable parts are taken from the pairing code this
+                // Cell already mirrors (NodeId and current addresses), because
+                // that is the one place they are already assembled. What must
+                // NOT happen is the reverse: an enrolment code carries a live
+                // secret and can never be mirrored into an extension, since
+                // extensions on the Organ Record travel to every contact.
+                let organ = store::organs::local(&self.store.pool)
+                    .await?
+                    .ok_or_else(|| EngineError::Consequence("no local Organ".into()))?;
+                let root_key = crate::trust::key_of(
+                    &self.store,
+                    &organ.uid,
+                    crate::roster::ROOT_KEY_ID,
+                )
+                .await?
+                .unwrap_or_default();
+                let pairing = store::records::get_extension(
+                    &self.store.pool,
+                    &organ.uid,
+                    "lince.pairing",
+                )
+                .await?
+                .and_then(|fields| {
+                    fields
+                        .get("invite")
+                        .and_then(serde_json::Value::as_str)
+                        .map(str::to_string)
+                })
+                .and_then(|encoded| crate::pairing::PairingInvite::decode(&encoded).ok());
+                match pairing {
+                    Some(pairing) => {
+                        let invite = crate::pairing::EnrolmentInvite {
+                            node_id: pairing.node_id,
+                            organ_uid: organ.uid.clone(),
+                            root_key,
+                            token: token.clone(),
+                            addrs: pairing.addrs,
+                        };
+                        outcome.created = Some(invite.encode());
+                        outcome.data = Some(serde_json::json!({
+                            "code": invite.encode(),
+                            "qr_svg": invite.qr_svg().unwrap_or_default(),
+                            "expires_in_minutes": crate::roster::ENROLMENT_TOKEN_TTL_MINUTES,
+                        }));
+                    }
+                    None => {
+                        // No endpoint bound yet, so there is no address to put
+                        // in a code. Say that rather than handing back a token
+                        // that cannot be used.
+                        return Err(EngineError::Consequence(
+                            "this Cell has no network identity yet, so a device cannot be \
+                             told where to reach it. Wait for the endpoint to bind and try \
+                             again."
+                                .into(),
+                        ));
+                    }
+                }
+            }
+            Action::RosterStatus => {
+                let held = store::door::held(&self.store.pool, 50).await?;
+                let waiting: Vec<serde_json::Value> = held
+                    .into_iter()
+                    .map(|row| {
+                        // The NodeId is what iroh authenticated at the door.
+                        // Anything inside `intro` is a CLAIM, and the surface
+                        // has to keep saying so.
+                        let claimed = serde_json::from_str::<serde_json::Value>(&row.intro)
+                            .ok()
+                            .and_then(|intro| {
+                                intro
+                                    .get("display_name")
+                                    .and_then(serde_json::Value::as_str)
+                                    .map(str::to_string)
+                            })
+                            .unwrap_or_default();
+                        serde_json::json!({
+                            "uid": row.uid,
+                            "node_id": row.node_id,
+                            "organ_uid": row.organ_uid,
+                            "claimed_name": claimed,
+                            "received_at": row.received_at,
+                        })
+                    })
+                    .collect();
+                let stale: Vec<serde_json::Value> = self
+                    .stale_siblings
+                    .lock()
+                    .expect("stale siblings")
+                    .iter()
+                    .map(|cell| {
+                        serde_json::json!({
+                            "cell_uid": cell.cell_uid,
+                            "label": cell.label,
+                            "node_id": cell.node_id,
+                            "their_epoch": cell.their_epoch,
+                            "our_epoch": cell.our_epoch,
+                        })
+                    })
+                    .collect();
+                // This Cell's OWN standing, so a surface can say "this device
+                // carries traffic and authors nothing" instead of letting a
+                // person meet that fact as a failed write.
+                let this_cell = store::cells::local(&self.store.pool).await?;
+                let held = match store::organs::local(&self.store.pool).await? {
+                    Some(organ) => self.roster_of(&organ.uid).await?,
+                    None => None,
+                };
+                // Whether a roster EXISTS is a different question from what it
+                // grants, and conflating them is a bug: a relay has a roster
+                // and no capabilities, so deriving one from the other would
+                // make the relay state unreportable — exactly the case this is
+                // for.
+                let has_roster = held.is_some();
+                let capabilities: Vec<String> = match (&this_cell, held) {
+                    (Some(cell), Some(signed)) => signed
+                        .roster
+                        .cells
+                        .into_iter()
+                        .find(|member| member.cell_uid == cell.uid)
+                        .map(|member| member.capabilities)
+                        .unwrap_or_default(),
+                    _ => Vec::new(),
+                };
+                outcome.data = Some(serde_json::json!({
+                    "waiting_at_the_door": waiting,
+                    "devices_needing_update": stale,
+                    "this_cell": this_cell.as_ref().map(|cell| cell.uid.clone()),
+                    "capabilities": capabilities,
+                    // No roster yet means this Cell IS the whole Organ, which
+                    // is a different state from "listed with nothing".
+                    "has_roster": has_roster,
+                }));
+            }
+            Action::SetCellConfig { namespace, fds } => {
+                store::cells::set_config(&self.store.pool, &namespace, &fds).await?;
+                // A raw write drops no Fact, so nothing on the bus would say
+                // this happened — and the endpoint rebinds on a discovery
+                // change. Without this announcement, saving a discovery
+                // setting would appear to work and take effect only at the
+                // next reboot.
+                self.notify_config_changed();
+            }
+            Action::AuditContact { contact } => {
+                let contact_uid = self.resolve(&contact).await?;
+                match self.audit_contact(&contact_uid).await? {
+                    Some(report) => {
+                        outcome.data = Some(serde_json::json!({
+                            "contact_organ": report.contact_organ,
+                            "they_lack": report.they_lack,
+                            "unknown_cells": report.unknown_cells,
+                            "reached": true,
+                        }));
+                    }
+                    // Unreachable is NOT a disagreement, and saying so is the
+                    // whole difference between a useful audit and an alarming
+                    // one. A contact with a closed laptop is the normal case.
+                    None => {
+                        outcome.data = Some(serde_json::json!({ "reached": false }));
+                    }
+                }
+            }
+            Action::RosterJoinOrgan { code } => {
+                let roster = self.join_from_code(code.trim()).await?;
+                outcome.created = Some(roster.roster.organ_uid.clone());
+                outcome.data = Some(serde_json::json!({
+                    "organ_uid": roster.roster.organ_uid,
+                    "version": roster.roster.version,
+                    "cells": roster.roster.cells.len(),
+                }));
+                outcome.warnings.push(format!(
+                    "this device is now part of that Organ, alongside {} other device(s). \
+                     Its own previous identity is gone.",
+                    roster.roster.cells.len().saturating_sub(1)
+                ));
             }
             Action::RosterRevokeCell { cell_uid } => {
                 let root = self.root_signer().await?.ok_or_else(|| {
@@ -6916,6 +7480,71 @@ impl Engine {
                     .await?;
                 apply_program_mutation(commit, &mut outcome)?;
             }
+            Action::SetKarmaExecution {
+                program_uid,
+                executes,
+                note,
+            } => {
+                store::karma::execution::set_executes(
+                    &self.store.pool,
+                    &program_uid,
+                    executes,
+                    note.as_deref(),
+                    now,
+                )
+                .await?;
+                // No Fact and no op. This is a machine's own setting, so it has
+                // nothing to say to the Ledger and nothing to send to a peer —
+                // recording it as either would make one Cell's arrangement look
+                // like a change to the shared rule.
+                outcome.warnings.push(if executes {
+                    "This Cell now runs that rule.".into()
+                } else {
+                    "This Cell now holds that rule without running it. Other Cells are unchanged."
+                        .into()
+                });
+            }
+            Action::DesignateKarmaExecutor {
+                program_uid,
+                cell_uid,
+            } => {
+                store::executor::designate(
+                    &self.store.pool,
+                    &program_uid,
+                    cell_uid.as_deref(),
+                )
+                .await?;
+                // The cost of a designation is stated when it is made. If the
+                // named Cell is off, the rule does not run — a visible silence,
+                // which is the trade taken deliberately over a heartbeat lease
+                // that would hand execution to whichever Cell merely cannot see
+                // the holder.
+                outcome.warnings.push(match cell_uid {
+                    Some(_) => "Only that Cell will run this rule. If it is off, the rule does not run until you move it."
+                        .into(),
+                    None => "Every Cell holding this rule will run it again.".into(),
+                });
+            }
+            Action::DesignateTransferExecutor {
+                transfer_uid,
+                cell_uid,
+            } => {
+                let transfer = self.resolve(&transfer_uid).await?;
+                // Same permission as configuring a recipient — both decide how
+                // this Transfer reaches the other side.
+                self.require_transfer_editor(&transfer, actor.as_deref())
+                    .await?;
+                store::executor::designate(&self.store.pool, &transfer, cell_uid.as_deref())
+                    .await?;
+                // No Fact. Which of MY Cells does the retrying is an arrangement
+                // between machines I own; the Ledger records what was agreed
+                // with the other side, and this changes none of it.
+                outcome.warnings.push(match cell_uid {
+                    Some(_) => "Only that Cell will deliver this Transfer. If it is off, deliveries wait until you move it."
+                        .into(),
+                    None => "Every Cell holding this Transfer will deliver it again.".into(),
+                });
+            }
             Action::RespondKarmaCandidate {
                 request_id,
                 candidate_hash,
@@ -8039,6 +8668,10 @@ impl Engine {
             | Action::AgreeTransfer { transfer, .. }
             | Action::ActivateTransfer { transfer }
             | Action::SettleTransfer { transfer, .. } => Some(transfer.as_str()),
+            // Designating a deliverer is the ORIGIN's call: it names which of
+            // the origin's own Cells retries, and a recipient has no Cells in
+            // that answer.
+            Action::DesignateTransferExecutor { transfer_uid, .. } => Some(transfer_uid.as_str()),
             _ => None,
         };
         if let Some(transfer) = direct {
@@ -9313,13 +9946,25 @@ impl Engine {
             | Action::RenameLingua { .. } => "record:update",
             Action::CreateThread { .. }
             | Action::CreateMessage { .. }
+            // Creating a Record inside a conversation, which is what a copy
+            // IS. Not a `record:update` on the source: the original is not
+            // touched, and permissioning it that way would let someone who
+            // may only READ a Record be unable to pass it on, while someone
+            // who may edit it could — which is backwards.
+            | Action::SendRecordCopy { .. }
             | Action::CreateTransferThread { .. }
             | Action::CreateTransferMessage { .. }
             | Action::CreateConcept { .. }
             | Action::CreateLingua { .. }
             | Action::CreateSignal { .. }
             | Action::CreateMatchRule { .. } => "record:create",
-            Action::DeleteConcept { .. } | Action::DeleteLingua { .. } => "record:delete",
+            Action::DeleteConcept { .. }
+            | Action::DeleteLingua { .. }
+            // Ending a conversation removes Records, so it is a delete — even
+            // though it logs nothing and reaches nobody. Permissioning it
+            // lower because it is local would let someone who may not delete
+            // a Record delete a whole conversation of them.
+            | Action::DeleteConversation { .. } => "record:delete",
 
             // Frequency/Recurrence (Frequency's own catalog subject)
             Action::CreateFrequency { .. } | Action::CreateRecurrence { .. } => {
@@ -9338,6 +9983,9 @@ impl Engine {
             Action::AddKnownOrgan { .. } => "organ:create",
             Action::RenameOrganContact { .. }
             | Action::SetSyncPolicy { .. }
+            | Action::SetContactScope { .. }
+            | Action::SetContactAcceptScope { .. }
+            | Action::HideRecordFromContact { .. }
             | Action::ShareMyKey { .. }
             | Action::StartConversation { .. }
             | Action::OpenThread { .. }
@@ -9350,7 +9998,22 @@ impl Engine {
             | Action::RootKeyDetach { .. }
             | Action::SetContactTrust { .. }
             | Action::SetContactProximity { .. }
-            | Action::RosterEnrolToken => "organ:update",
+            | Action::RosterEnrolToken
+            // A READ gated as an update, and that is a compromise rather than
+            // a design: the organ permissions are create/update/delete with no
+            // read tier, so there is nothing narrower to ask for. The cost is
+            // real — someone allowed to look at this Organ but not change it
+            // cannot see who is waiting at their own front door, and the panel
+            // renders empty for them, which is the empty-state failure the
+            // surface rule exists to prevent. Fix it by adding `organ:read`
+            // when the permission set next moves, not by widening this.
+            | Action::SetCellConfig { .. }
+            | Action::AuditContact { .. }
+            | Action::RosterStatus
+            // Joining REPLACES this Cell's identity, which is the largest
+            // organ-scoped change there is — but it is still an organ-scoped
+            // change, and the real gate is the enrolment token itself.
+            | Action::RosterJoinOrgan { .. } => "organ:update",
             Action::ForgetOrganContact { .. } | Action::RosterRevokeCell { .. } => {
                 "organ:delete"
             }
@@ -9370,6 +10033,7 @@ impl Engine {
             | Action::EnqueueTransferDelivery { .. }
             | Action::RetryTransferDelivery { .. }
             | Action::RevokeTransferDelivery { .. }
+            | Action::DesignateTransferExecutor { .. }
             | Action::RefreshTransferDelivery { .. }
             | Action::BeginRemoteTransferSettlement { .. }
             | Action::ApplyRemoteTransferApplication { .. }
@@ -9386,6 +10050,8 @@ impl Engine {
             Action::ReviseKarmaProgram { .. }
             | Action::ActivateKarmaProgram { .. }
             | Action::PauseKarmaProgram { .. }
+            | Action::SetKarmaExecution { .. }
+            | Action::DesignateKarmaExecutor { .. }
             | Action::RespondKarmaCandidate { .. }
             | Action::NarrowKarmaGrant { .. }
             | Action::ActivateKarmaGrant { .. }
@@ -10053,6 +10719,61 @@ async fn kind_cycles(
         tuples.push((edge.from.clone(), edge.to.clone()));
     }
     Ok(nucleus::graph::cycles(&nodes, &tuples))
+}
+
+/// The rules a column scope has to satisfy, in EITHER direction.
+///
+/// Shared because the two directions are different policies over the same
+/// vocabulary: what is unsayable outbound is unsayable inbound, and letting
+/// them validate separately is how one of them quietly starts accepting an
+/// expression the other refuses.
+/// Whether a scope change lets MORE through than it did before.
+///
+/// `None` is the widest setting there is, so moving to it from anything else
+/// is a widening and moving away from it never is. Between two lists, one new
+/// name is enough — a change that both adds and removes columns is a widening
+/// for the added ones, and the repair it triggers is filtered back down by the
+/// new scope anyway.
+///
+/// Deliberately conservative in one direction: it may answer "wider" for a
+/// change that is not, which costs a redundant re-send, and it must never
+/// answer "not wider" for one that is, which would leave a column permanently
+/// blank on the other side with nothing to say so.
+fn widens_scope(before: Option<&[String]>, after: Option<&[String]>) -> bool {
+    match (before, after) {
+        (None, _) => false,
+        (Some(_), None) => true,
+        (Some(before), Some(after)) => after.iter().any(|field| !before.contains(field)),
+    }
+}
+
+fn validate_scope(fields: Option<&[String]>) -> Result<(), EngineError> {
+    let Some(fields) = fields else {
+        return Ok(());
+    };
+    // A blank matches nothing, so it narrows to nothing while looking
+    // configured. A trailing comma in a text field is the ordinary way one
+    // arrives, which is to say it comes straight from a surface.
+    if fields.iter().any(|f| f.trim().is_empty()) {
+        return Err(EngineError::Consequence(
+            "a scope cannot contain a blank column name".into(),
+        ));
+    }
+    // `head` and `body` are one Loro document, and its ops carry no field to
+    // filter on — so a scope naming one of them gets the other too. That
+    // cannot be enforced at serve time, but it CAN be reported here, where
+    // there is somebody to tell. Silently widening a scope the user wrote is
+    // the failure this refusal exists to prevent.
+    let head = fields.iter().any(|f| f == "head");
+    let body = fields.iter().any(|f| f == "body");
+    if head != body {
+        return Err(EngineError::Consequence(
+            "head and body are one collaborative document and cannot be separated — \
+             name both or neither"
+                .into(),
+        ));
+    }
+    Ok(())
 }
 
 fn message_head(body: &str) -> String {

@@ -2567,7 +2567,7 @@ function renderPackageBody(card) {
         loading="lazy"
         data-package-instance-id="${escapeHtml(card.id)}"
         ${frameAttributes}
-        sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-popups"
+        sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-popups allow-downloads"
         allow="fullscreen"
         allowfullscreen
         ${frameSrc ? `src="${escapeHtml(frameSrc)}"` : `srcdoc="${escapeHtml(enhancePackageHtml(card.html || ""))}"`}

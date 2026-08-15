@@ -50,6 +50,32 @@ use crate::trust::Signer;
 /// roster is checked against it.
 pub const ROOT_KEY_ID: &str = "ed25519:root:v1";
 
+/// The key id an individual Cell's OPERATIONAL key is published under
+/// (Ontology §11, decision 4; the C1 box closed 2026-08-11).
+///
+/// One row per Cell, all under the Organ's `actor_uid`, because everything
+/// that resolves a key — `keys_of(organ)`, a transfer envelope's
+/// `origin_key_id`, the Introduction exchange — asks by Organ and must keep
+/// working. Putting the Cell in the KEY ID rather than in `actor_uid` gives
+/// each device its own row without moving that question.
+///
+/// It was `ed25519:organ:v1` for every Cell, which made the identity of a
+/// second device impossible to represent: `identity_key` is keyed
+/// `(actor_uid, key_id)` and `require_published_key` refuses to overwrite a
+/// published key, so two Cells of one Organ collided on one row and the second
+/// could not bind its own key at all. Enrolment did not trip it — only the
+/// root travels there, under a different id — but sibling sync trips it
+/// immediately.
+pub fn cell_key_id(cell_uid: &str) -> String {
+    format!("ed25519:cell:{cell_uid}:v1")
+}
+
+/// Whether a key id names a ROOT key — the only kind that may speak for the
+/// identity itself.
+pub fn is_root_key_id(key_id: &str) -> bool {
+    key_id == ROOT_KEY_ID
+}
+
 /// How long a published roster stays valid. Self-limiting credentials beat
 /// remembering to revoke: a Cell that stops syncing fresh rosters loses
 /// authority on its own.
@@ -96,6 +122,50 @@ pub struct CellEntry {
     /// turns it off and publishes no addresses at all.
     #[serde(default)]
     pub front_door: bool,
+    /// What this Cell may do IN THE ORGAN'S NAME (Ontology §11, decision 4).
+    ///
+    /// A Cell is a permission subject, not merely a member. Without this a
+    /// device is either wholly you or not you at all, which makes two things
+    /// unbuildable: narrowing a stolen phone instead of reissuing an identity,
+    /// and the promise that a front door holds no signing material — that one
+    /// stays an assertion rather than a structural fact.
+    ///
+    /// Signed by the root along with the membership, so a Cell cannot widen
+    /// its own grant. Empty = nothing, deliberately: an unknown or missing
+    /// capability set must degrade to no authority, never to full authority.
+    #[serde(default)]
+    pub capabilities: Vec<String>,
+}
+
+/// Write into the Organ's data at all — log ops, sync outward. A relay Cell
+/// has this and nothing else, which is what turns "the front door holds no
+/// signing material" from a promise into a structural fact.
+pub const CAP_WRITE: &str = "write";
+/// Run Karma rules in the Organ's name. Separable because a Cell that carries
+/// traffic should not also be firing rules with outward consequences.
+pub const CAP_KARMA: &str = "karma";
+/// Speak for the Organ to contacts: pair, accept grants, answer for it.
+pub const CAP_REPRESENT: &str = "represent";
+
+/// What an ordinary personal device gets. Named rather than inlined because
+/// "what a normal Cell may do" is a policy that will move.
+pub fn full_capabilities() -> Vec<String> {
+    vec![
+        CAP_WRITE.to_string(),
+        CAP_KARMA.to_string(),
+        CAP_REPRESENT.to_string(),
+    ]
+}
+
+/// A carrier and nothing more: no writes, no rules, no speaking for anyone.
+pub fn relay_capabilities() -> Vec<String> {
+    Vec::new()
+}
+
+impl CellEntry {
+    pub fn may(&self, capability: &str) -> bool {
+        self.capabilities.iter().any(|held| held == capability)
+    }
 }
 
 /// The published identity: one Organ, one root key, its member Cells.
@@ -160,9 +230,56 @@ pub fn roster_signing_payload(roster: &Roster) -> Result<Vec<u8>, EngineError> {
         push(&mut out, &cell.label)?;
         push(&mut out, &cell.operational_key)?;
         push(&mut out, if cell.front_door { "1" } else { "0" })?;
+        // Inside the signature, or a Cell could widen its own grant in transit
+        // and the root's endorsement would still verify.
+        for capability in &cell.capabilities {
+            push(&mut out, capability)?;
+        }
         out.push(RECORD_SEP);
     }
     Ok(out.into_bytes())
+}
+
+/// Whether a roster naming `cells` under `root_key` would differ from the one
+/// we already hold — that is, whether publishing is worth a new version.
+///
+/// Re-signing on every boot would burn through versions and, worse, train
+/// contacts to accept a stream of rosters they have no reason to inspect. But
+/// the comparison has to be of the WHOLE MEMBER SET.
+///
+/// **The bug this function exists to end (found 2026-08-09, fixed here).** The
+/// caller used to ask "is this Cell present with a node id and capabilities",
+/// which is satisfied by THIS Cell being present no matter who else was
+/// removed. So revoking a DIFFERENT Cell re-signed nothing, nothing was
+/// published, and the revoked device stayed a member of the published identity
+/// until the roster expired 30 days later. A revocation that never publishes
+/// is not a revocation.
+pub fn needs_publishing(held: Option<&SignedRoster>, root_key: &str, cells: &[CellEntry]) -> bool {
+    let Some(held) = held else {
+        return true;
+    };
+    if held.roster.root_key != root_key {
+        return true;
+    }
+    // An entry with NO capability set is not "unchanged" either. Capabilities
+    // arrived after some rosters were signed and an absent set grants nothing,
+    // so leaving one in place would quietly strip a Cell of the right to write
+    // in its own Organ — and nothing would ever re-sign to fix it.
+    if held
+        .roster
+        .cells
+        .iter()
+        .any(|cell| cell.capabilities.is_empty())
+    {
+        return true;
+    }
+    // Order is not meaning: a roster is a set, and re-signing because two
+    // members swapped positions would burn a version for nothing.
+    let mut held_cells = held.roster.cells.clone();
+    let mut next_cells = cells.to_vec();
+    held_cells.sort_by(|left, right| left.cell_uid.cmp(&right.cell_uid));
+    next_cells.sort_by(|left, right| left.cell_uid.cmp(&right.cell_uid));
+    held_cells != next_cells
 }
 
 pub fn succession_signing_payload(
@@ -253,6 +370,28 @@ impl Engine {
     }
 
     async fn store_roster(&self, signed: &SignedRoster) -> Result<(), EngineError> {
+        // Whenever a roster for OUR OWN Organ lands — published here or signed
+        // on another device and adopted — flatten this Cell's capabilities out
+        // of it so the database can enforce them. Both directions matter: a
+        // relay Cell never publishes a roster, it only ever adopts one, and it
+        // is precisely the Cell the enforcement is for.
+        if let (Some(local_organ), Some(local_cell)) = (
+            store::organs::local(&self.store.pool).await?,
+            store::cells::local(&self.store.pool).await?,
+        ) {
+            if local_organ.uid == signed.roster.organ_uid {
+                let capabilities = signed
+                    .roster
+                    .cells
+                    .iter()
+                    .find(|cell| cell.cell_uid == local_cell.uid)
+                    // Not named at all means revoked, and an absent capability
+                    // set grants nothing — the same rule everywhere else.
+                    .map(|cell| cell.capabilities.clone())
+                    .unwrap_or_default();
+                store::roster::project_local_capabilities(&self.store.pool, &capabilities).await?;
+            }
+        }
         store::roster::put(
             &self.store.pool,
             &store::roster::StoredRoster {
@@ -290,9 +429,17 @@ impl Engine {
         if store::roster::is_revoked(&self.store.pool, organ_uid, key).await? {
             return Ok(false);
         }
+        // ROOT keys only. An operational key is a device's key for signing
+        // traffic; it must never be able to validate a roster, or a stolen
+        // phone could sign itself a roster adding more devices and the whole
+        // two-key split would be decoration. Before per-Cell key ids there was
+        // exactly one operational key per Organ and this set quietly contained
+        // it — the questions "may this key speak for the identity" and "may
+        // this key sign traffic in its name" had never been separated.
         let held: HashSet<String> = crate::trust::keys_of(&self.store, organ_uid)
             .await?
             .into_iter()
+            .filter(|(key_id, _)| is_root_key_id(key_id))
             .map(|(_, public_key)| public_key)
             .collect();
         if held.contains(key) {
@@ -369,6 +516,33 @@ impl Engine {
             .unwrap_or(true))
     }
 
+    /// Whether a Cell may do something in its Organ's name.
+    ///
+    /// **Effective permission = the Organ's permissions ∩ the Cell's
+    /// capabilities**, and this is the intersection's second half — the first
+    /// is whatever already decides what that Organ may do. One rule, evaluated
+    /// in one place, degrading safely at every unknown: no roster, no entry,
+    /// or no capability set all answer `false`. A device we cannot describe is
+    /// a device we do not extend authority to.
+    pub async fn cell_may(
+        &self,
+        organ_uid: &str,
+        cell_uid: &str,
+        capability: &str,
+    ) -> Result<bool, EngineError> {
+        Ok(self
+            .roster_of(organ_uid)
+            .await?
+            .and_then(|signed| {
+                signed
+                    .roster
+                    .cells
+                    .into_iter()
+                    .find(|cell| cell.cell_uid == cell_uid)
+            })
+            .is_some_and(|cell| cell.may(capability)))
+    }
+
     /// Additional dial candidates for a contact, from their roster.
     ///
     /// DELIBERATELY additive: `organ_contact.node_id` stays the authoritative
@@ -409,10 +583,15 @@ impl Engine {
                     "node_id": cell.node_id,
                     "label": cell.label,
                     "front_door": cell.front_door,
+                    "capabilities": cell.capabilities,
                 })
             })
             .collect();
-        store::records::set_extension(
+        // RAW: this mirror is display state each Cell derives from a signed
+        // blob it already holds, so it never needed to travel — and as a
+        // logged write it locked a relay Cell out of publishing its own
+        // roster, since a relay has no write capability.
+        store::records::set_extension_raw(
             &self.store.pool,
             &signed.roster.organ_uid,
             "lince.roster",
@@ -589,6 +768,17 @@ impl Engine {
         )
         .await?;
         Ok(true)
+    }
+
+    /// Every succession this Organ has signed about its own keys, for serving
+    /// to contacts. Without this the chain rule is a one-way street: rotating
+    /// produces a roster every contact correctly REFUSES, and nothing carries
+    /// the endorsement that would let them accept it.
+    pub async fn published_successions(
+        &self,
+        organ_uid: &str,
+    ) -> Result<Vec<store::roster::SuccessionRow>, EngineError> {
+        Ok(store::roster::published_successions(&self.store.pool, organ_uid).await?)
     }
 
     /// Generate the pre-signed revocation certificate for a root key.

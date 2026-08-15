@@ -268,3 +268,167 @@ pub async fn records_in_root(pool: &SqlitePool, root: &str) -> Result<Vec<String
             .collect(),
     )
 }
+
+/// Whether a message INSIDE `root` references `record` (Ontology §11, C6).
+///
+/// This is what authorises a live reference read, and it is the reason such a
+/// read is not a general "give me that uid" oracle: the pointer has to exist,
+/// in a conversation the asker was granted, before the §12 gate is even asked
+/// what the Record looks like.
+///
+/// A RETRACTED reference does not count. Removing the mention is the only way
+/// to take back a pointer once it has been posted, so treating a retracted one
+/// as live would make that gesture do nothing.
+pub async fn root_references_record(
+    pool: &SqlitePool,
+    root: &str,
+    record: &str,
+) -> Result<bool, StoreError> {
+    Ok(sqlx::query_scalar::<_, i64>(
+        "SELECT 1 FROM record_assertion a
+           JOIN record m ON m.uid = a.subject_uid
+          WHERE a.object_uid = ? AND m.replica_root = ?
+            AND a.retracted_at IS NULL
+          LIMIT 1",
+    )
+    .bind(record)
+    .bind(root)
+    .fetch_optional(pool)
+    .await?
+    .is_some())
+}
+
+/// One read of a live reference, from the OWNER's side (Ontology §11, C6).
+///
+/// Recorded because it is observable whether or not we record it: the read is a
+/// live request against this Cell, so the alternative is not privacy, it is an
+/// invisible side effect. Collapsed to a count and a last-read time rather than
+/// a row per read — a conversation left open in a tab would otherwise turn a
+/// receipt into a surveillance log, and "when did they last look" is the
+/// question anyone actually has.
+pub async fn note_reference_read(
+    pool: &SqlitePool,
+    reader_organ: &str,
+    record: &str,
+    root: &str,
+) -> Result<(), StoreError> {
+    sqlx::query(
+        "INSERT INTO reference_read (reader_organ, record_uid, root_record, reads, last_read_at)
+         VALUES (?, ?, ?, 1, ?)
+         ON CONFLICT(reader_organ, record_uid, root_record)
+         DO UPDATE SET reads = reads + 1, last_read_at = excluded.last_read_at",
+    )
+    .bind(reader_organ)
+    .bind(record)
+    .bind(root)
+    .bind(chrono::Utc::now().to_rfc3339())
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+/// Who has read a Record of ours through a reference, most recent first.
+pub async fn reference_reads(
+    pool: &SqlitePool,
+    record: &str,
+) -> Result<Vec<(String, i64, String)>, StoreError> {
+    Ok(sqlx::query(
+        "SELECT reader_organ, reads, last_read_at FROM reference_read
+          WHERE record_uid = ? ORDER BY last_read_at DESC",
+    )
+    .bind(record)
+    .fetch_all(pool)
+    .await?
+    .into_iter()
+    .map(|row| {
+        (
+            row.get("reader_organ"),
+            row.get("reads"),
+            row.get("last_read_at"),
+        )
+    })
+    .collect())
+}
+
+/// Remove a conversation from THIS Cell, locally and without logging anything
+/// (Ontology §11, C6).
+///
+/// The other half of `revoke`, which that function's own comment already
+/// describes: deletion is local removal plus revocation. Both halves are needed
+/// and neither is enough — revoking alone leaves the conversation sitting in
+/// the list, and removing alone leaves their ops still welcome, so the thread
+/// would quietly repopulate on the next sync.
+///
+/// UNLOGGED, deliberately, and this is the part that would be wrong the
+/// obvious way: `tombstone` is a SYNCED op kind, so deleting these Records
+/// through the ordinary path would emit tombstones that travel down the grant
+/// channel and delete THEIR copy too. Nobody agreed to that. Deleting a
+/// conversation ends it here; their copy is theirs, and §12's revoke/forget
+/// split says plainly that we cannot reach into their Cell.
+///
+/// What remains afterwards is exactly one thing: they may send an INVITE to
+/// open a new conversation, one pending at a time — which is a knock, not a
+/// channel.
+pub async fn delete_root_locally(pool: &SqlitePool, root: &str) -> Result<u64, StoreError> {
+    // Grants first. If this failed halfway, the safe half to have done is the
+    // one that stops accepting their ops — the opposite order could leave a
+    // deleted conversation still importing.
+    sqlx::query("DELETE FROM replica_grant WHERE root_record = ?")
+        .bind(root)
+        .execute(pool)
+        .await?;
+    sqlx::query(
+        "DELETE FROM sync_outbox WHERE uid IN (SELECT uid FROM record WHERE replica_root = ?)",
+    )
+    .bind(root)
+    .execute(pool)
+    .await?;
+    // The ops go too. They are only ever served on the grant channel for this
+    // root, so with the grants gone they can reach nobody — and keeping them
+    // would leave the conversation reconstructible from our own log by a
+    // rebuild, which is not what "deleted" means to the person who asked.
+    sqlx::query("DELETE FROM sync_op WHERE replica_root = ?")
+        .bind(root)
+        .execute(pool)
+        .await?;
+    // What HANGS OFF those Records has to go first, or the foreign keys refuse
+    // the delete. Both directions of an Assertion are covered: a reference
+    // posted in this conversation has its subject inside the root and its
+    // object out on the general feed, and deleting only by subject would leave
+    // the reverse case behind for whatever adds one next.
+    sqlx::query(
+        "DELETE FROM record_assertion
+          WHERE subject_uid IN (SELECT uid FROM record WHERE replica_root = ?)
+             OR object_uid IN (SELECT uid FROM record WHERE replica_root = ?)",
+    )
+    .bind(root)
+    .bind(root)
+    .execute(pool)
+    .await?;
+    sqlx::query(
+        "DELETE FROM fact WHERE record_uid IN (SELECT uid FROM record WHERE replica_root = ?)",
+    )
+    .bind(root)
+    .execute(pool)
+    .await?;
+    // Read receipts for Records inside the conversation. Keeping them would
+    // leave a record of who read what in a conversation that no longer exists,
+    // which is the opposite of what deleting it means.
+    sqlx::query(
+        "DELETE FROM reference_read
+          WHERE record_uid IN (SELECT uid FROM record WHERE replica_root = ?)
+             OR root_record = ?",
+    )
+    .bind(root)
+    .bind(root)
+    .execute(pool)
+    .await?;
+    // The root Record itself carries `replica_root = uid`, so this one
+    // statement covers the conversation, its threads and its messages.
+    let removed = sqlx::query("DELETE FROM record WHERE replica_root = ?")
+        .bind(root)
+        .execute(pool)
+        .await?
+        .rows_affected();
+    Ok(removed)
+}

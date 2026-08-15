@@ -69,6 +69,80 @@ pub async fn put(pool: &SqlitePool, roster: &StoredRoster) -> Result<(), StoreEr
     Ok(())
 }
 
+/// Flatten THIS Cell's capabilities out of a roster, so the database can
+/// enforce them (Ontology §11, C4).
+///
+/// Called whenever a roster for our OWN Organ is stored, from either
+/// direction: publishing one here, or adopting one signed elsewhere. A Cell
+/// that is not named in it ends up with an empty set, which is the correct
+/// reading — an absent capability set grants nothing, and a Cell removed from
+/// the roster has been revoked.
+///
+/// A projection, never the source of truth. The signed blob is.
+pub async fn project_local_capabilities(
+    pool: &SqlitePool,
+    capabilities: &[String],
+) -> Result<(), StoreError> {
+    let mut tx = pool.begin().await?;
+    sqlx::query("DELETE FROM local_capability")
+        .execute(&mut *tx)
+        .await?;
+    for capability in capabilities {
+        sqlx::query("INSERT OR IGNORE INTO local_capability (capability) VALUES (?)")
+            .bind(capability)
+            .execute(&mut *tx)
+            .await?;
+    }
+    tx.commit().await?;
+    Ok(())
+}
+
+/// Store the signed public directory record, replacing any earlier one.
+///
+/// The caller has already signed it; this module still only stores.
+pub async fn put_public_packet(
+    pool: &SqlitePool,
+    organ_uid: &str,
+    packet: &[u8],
+) -> Result<(), StoreError> {
+    sqlx::query(
+        "INSERT INTO organ_public_record (organ_uid, packet, updated_at)
+         VALUES (?, ?, ?)
+         ON CONFLICT(organ_uid) DO UPDATE SET
+           packet = excluded.packet,
+           updated_at = excluded.updated_at",
+    )
+    .bind(organ_uid)
+    .bind(packet)
+    .bind(Utc::now().to_rfc3339())
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+pub async fn public_packet(
+    pool: &SqlitePool,
+    organ_uid: &str,
+) -> Result<Option<Vec<u8>>, StoreError> {
+    Ok(
+        sqlx::query_scalar("SELECT packet FROM organ_public_record WHERE organ_uid = ?")
+            .bind(organ_uid)
+            .fetch_optional(pool)
+            .await?,
+    )
+}
+
+/// Stop publishing. Called when the last front door goes away, so switching a
+/// Cell off the public tier stops the broadcast instead of leaving the timer
+/// re-announcing an address that is no longer meant to be public.
+pub async fn clear_public_packet(pool: &SqlitePool, organ_uid: &str) -> Result<(), StoreError> {
+    sqlx::query("DELETE FROM organ_public_record WHERE organ_uid = ?")
+        .bind(organ_uid)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
 /// Issue an enrolment token by storing only its hash.
 pub async fn put_enrolment_token(
     pool: &SqlitePool,
@@ -106,6 +180,25 @@ pub async fn redeem_enrolment_token(
     .await?
     .rows_affected();
     Ok(affected > 0)
+}
+
+/// Whether an enrolment token is outstanding: issued, unused, unexpired.
+///
+/// This is a DOOR POLICY, not a lookup. A device being enrolled is not yet a
+/// contact of anything, so it arrives at the thread door as a stranger — and
+/// requiring the owner to also switch on "accept unknown Organs" just to add
+/// their own phone would conflate two unrelated decisions and leave a door
+/// open long after the phone was added. Instead the door opens exactly while
+/// the owner has asked for a code, and closes when it is used or expires.
+pub async fn enrolment_is_open(pool: &SqlitePool) -> Result<bool, StoreError> {
+    let now = Utc::now().to_rfc3339();
+    let outstanding: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM enrolment_token WHERE used_at IS NULL AND expires_at > ?",
+    )
+    .bind(&now)
+    .fetch_one(pool)
+    .await?;
+    Ok(outstanding > 0)
 }
 
 pub async fn record_succession(
@@ -146,6 +239,40 @@ pub async fn successions(
             .map(|row| (row.get("old_key"), row.get("new_key")))
             .collect(),
     )
+}
+
+/// One succession edge with everything a peer needs to verify it for itself:
+/// the signature and the `created_at` are both inside the signed payload, so
+/// neither can be dropped on the way out.
+pub struct SuccessionRow {
+    pub old_key: String,
+    pub new_key: String,
+    pub signature: String,
+    pub created_at: String,
+}
+
+/// Every succession an Organ has signed about its OWN keys, for publishing.
+/// `successions()` above is the local chain-walk view and deliberately carries
+/// no signature — nothing verifies a chain it already holds.
+pub async fn published_successions(
+    pool: &SqlitePool,
+    organ_uid: &str,
+) -> Result<Vec<SuccessionRow>, StoreError> {
+    Ok(sqlx::query(
+        "SELECT old_key, new_key, signature, created_at
+           FROM identity_succession WHERE organ_uid = ? ORDER BY created_at",
+    )
+    .bind(organ_uid)
+    .fetch_all(pool)
+    .await?
+    .into_iter()
+    .map(|row| SuccessionRow {
+        old_key: row.get("old_key"),
+        new_key: row.get("new_key"),
+        signature: row.get("signature"),
+        created_at: row.get("created_at"),
+    })
+    .collect())
 }
 
 pub async fn record_revocation(

@@ -24,6 +24,10 @@ async fn boot_cell() -> SocketAddr {
     let _ = std::fs::remove_dir_all(&data_dir);
     std::fs::create_dir_all(&data_dir).expect("create the test data dir");
     utils::config::set_lince_data_dir_override(data_dir).expect("set the data dir override");
+    // A test Cell must reach NOTHING. Without this the endpoint binds for the
+    // internet — publishing node addresses to public DNS and this throwaway
+    // Organ's directory record to public pkarr relays — on every run.
+    unsafe { std::env::set_var("LINCE_DISCOVERY_INTERNET", "0") };
 
     let (addr_tx, addr_rx) = tokio::sync::oneshot::channel();
     tokio::spawn(async move {

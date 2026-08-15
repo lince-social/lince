@@ -55,12 +55,16 @@ pub async fn put(
     // Unlogged on purpose — see the module comment.
     sqlx::query(
         "INSERT INTO record (uid, slug, kind, head, body, quantity_mantissa, quantity_scale,
-                             created_at, updated_at)
-         VALUES (?, NULL, ?, ?, '', '0', 0, ?, ?)",
+                             organ_uid, created_at, updated_at)
+         VALUES (?, NULL, ?, ?, '', '0', 0, ?, ?, ?)",
     )
     .bind(&uid)
     .bind(nucleus::RecordKind::ThreadInvite.as_str())
     .bind(title)
+    // An invite originates from whoever offered it, not from us. It is the
+    // one thing an Organ you may not know can put in front of you, so
+    // attributing it here would erase the only fact you need to judge it by.
+    .bind(from_organ)
     .bind(&now)
     .bind(&now)
     .execute(pool)

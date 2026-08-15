@@ -77,7 +77,12 @@ impl Engine {
         let theirs = crate::trust::keys_of(&self.store, contact_organ).await?;
         let pick = |keys: &[(String, String)]| {
             keys.iter()
-                .find(|(key_id, _)| key_id.contains(":organ:"))
+                // The OPERATIONAL key, which is now per-Cell
+                // (`ed25519:cell:<uid>:v1`). An Organ with several devices has
+                // several, and the code is between the two Cells actually
+                // talking — which is what a verification code compared out
+                // loud has always meant.
+                .find(|(key_id, _)| key_id.contains(":cell:"))
                 .or_else(|| keys.first())
                 .map(|(_, public_key)| public_key.clone())
         };

@@ -2,7 +2,7 @@
 //! write became a field-level op in the `sync_op` log; this module moves op
 //! BATCHES between Organs (reactive deltas through the bounded outbox,
 //! catch-up through per-contact checkpoints) and applies incoming ops with
-//! per-field LWW, idempotent by `(actor_organ, hlc)`. Facts keep their signed,
+//! per-field LWW, idempotent by `(actor_cell, hlc)`. Facts keep their signed,
 //! hash-chained semantics and simply ride the log as kind `fact`.
 
 use chrono::Utc;
@@ -23,7 +23,14 @@ pub struct WireOp {
     pub kind: String,
     pub value: Option<String>,
     pub hlc: i64,
-    pub actor_organ: String,
+    /// The DEVICE that wrote this op. Half of the op identity
+    /// `(actor_cell, hlc)`, and the half that makes it unique.
+    pub actor_cell: String,
+    /// The Organ this op is attributed to — the published identity. Carried
+    /// separately because it is what `record.organ_uid` is stamped from, and
+    /// deriving it from `actor_cell` would make one contact with three
+    /// devices look like three different people.
+    pub organ_uid: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub fact: Option<Fact>,
 }
@@ -76,7 +83,8 @@ impl Engine {
                 kind: row.kind,
                 value,
                 hlc: row.hlc,
-                actor_organ: row.actor_organ,
+                actor_cell: row.actor_cell,
+                organ_uid: row.organ_uid,
                 fact,
             });
         }
@@ -91,7 +99,12 @@ impl Engine {
         after: i64,
         limit: i64,
     ) -> Result<(Vec<WireOp>, i64), EngineError> {
-        let rows = sync_ops::after(&self.store.pool, after, limit).await?;
+        // Only what THIS Organ authored. Relaying is off, and serving a third
+        // Organ's ops here would both leak them and be rejected on arrival.
+        let Some(local) = store::organs::local(&self.store.pool).await? else {
+            return Ok((Vec::new(), after));
+        };
+        let rows = sync_ops::after(&self.store.pool, &local.uid, after, limit).await?;
         let head = rows
             .last()
             .map(|row| row.seq)
@@ -150,11 +163,101 @@ impl Engine {
     }
 
     /// Apply a batch of remote ops from the GENERAL feed. Returns how many
-    /// were newly applied. Idempotent by op identity `(actor_organ, hlc)`;
+    /// were newly applied. Idempotent by op identity `(actor_cell, hlc)`;
     /// rejected rows land in quarantine and the rest of the batch still
     /// applies; batches from blocked organs are rejected wholesale.
     pub async fn import_op_batch(&self, batch: &OpBatch) -> Result<usize, EngineError> {
         self.import_ops(batch, None).await
+    }
+
+    /// Whether an op may be believed at all, before anything looks at what it
+    /// says. `Some(reason)` refuses it into quarantine; `None` admits it.
+    ///
+    /// Three checks, and each closes a hole that an unauthenticated identity
+    /// field opens. There is no signature on a `WireOp` yet, so what stands in
+    /// for one is the connection: an op arrives over an authenticated QUIC
+    /// stream from a known Organ, and everything it claims about itself must
+    /// agree with who is on the other end.
+    ///
+    /// 1. **The op's Organ must be the sending Organ.** `op.organ_uid` is
+    ///    stamped straight onto `record.organ_uid`, so an unchecked field lets
+    ///    any sync contact write records that claim to originate from anyone.
+    ///    This holds only while relaying is off, which is the default and the
+    ///    reason it is the default: with relay on, `from_organ` is a carrier
+    ///    and this check has to become a signature.
+    ///
+    /// 2. **The op's Cell must belong to that Organ.** `(actor_cell, hlc)` is
+    ///    the dedup key. A peer free to invent `actor_cell` can pre-insert
+    ///    `(your_cell, some_future_hlc)`; your real op then arrives at every
+    ///    contact holding that row and is dropped as an already-seen
+    ///    duplicate. No error, no log — the same silent swallow the Organ/Cell
+    ///    collision causes, reachable by anyone you sync with. Checked against
+    ///    the signed roster, which is the only thing that says which Cells an
+    ///    Organ has.
+    ///
+    ///    **Known gap**: when we hold NO roster for that Organ the op is
+    ///    admitted, because refusing would drop every contact paired before
+    ///    rosters travelled. It closes when roster exchange is part of
+    ///    pairing.
+    ///
+    /// 3. **The stamp must be close to now.** See `hlc::within_drift`.
+    async fn inadmissible(
+        &self,
+        batch: &OpBatch,
+        op: &WireOp,
+    ) -> Result<Option<&'static str>, EngineError> {
+        if op.organ_uid != batch.from_organ {
+            return Ok(Some("op claims an Organ other than the sending one"));
+        }
+        if !nucleus::hlc::within_drift(op.hlc) {
+            return Ok(Some("op is stamped too far in the future"));
+        }
+        if let Some(signed) = self.roster_of(&batch.from_organ).await? {
+            if !signed
+                .roster
+                .cells
+                .iter()
+                .any(|cell| cell.cell_uid == op.actor_cell)
+            {
+                return Ok(Some("op claims a Cell that is not in the sender's roster"));
+            }
+        }
+        Ok(None)
+    }
+
+    /// Put an incoming op into the log under its ORIGINAL identity, and say
+    /// whether it was new. `false` means we already hold `(actor_cell, hlc)`
+    /// and the caller should stop — re-applying a duplicate is not wrong, but
+    /// counting it as applied would be.
+    ///
+    /// Also the one place `hlc::observe` is called on the import path, so the
+    /// clock advances exactly when an op is genuinely new.
+    async fn log_incoming(
+        &self,
+        op: &WireOp,
+        kind: OpKind,
+        from: Option<&str>,
+        replica_root: Option<&str>,
+    ) -> Result<bool, EngineError> {
+        let logged = sync_ops::append(
+            &self.store.pool,
+            &op.tbl,
+            &op.uid,
+            &op.field,
+            kind,
+            op.value.as_deref(),
+            op.hlc,
+            &op.actor_cell,
+            &op.organ_uid,
+            from,
+            replica_root,
+        )
+        .await?
+        .is_some();
+        if logged {
+            nucleus::hlc::observe(op.hlc);
+        }
+        Ok(logged)
     }
 
     async fn import_ops(
@@ -162,6 +265,7 @@ impl Engine {
         batch: &OpBatch,
         replica_root: Option<&str>,
     ) -> Result<usize, EngineError> {
+        let mut accept: Option<Vec<String>> = None;
         if let Some(contact) = store::organs::contact(&self.store.pool, &batch.from_organ).await? {
             if contact.trust == "blocked" {
                 return Err(EngineError::Consequence(format!(
@@ -169,12 +273,41 @@ impl Engine {
                     batch.from_organ
                 )));
             }
+            accept = contact.accept_fields;
         }
+        // Held for the whole batch: the read-compare-append-materialise
+        // sequence below must not interleave with another peer's. See
+        // `Engine::import_lock` for why this is a lock and not a transaction.
+        let _import = self.import_lock.lock().await;
         let pool = &self.store.pool;
         let from = Some(batch.from_organ.as_str());
         let mut applied = 0usize;
         let mut touched: Vec<String> = Vec::new();
         for op in &batch.ops {
+            // What we are willing to TAKE from them, which is a different
+            // question from what they were willing to send. Dropped silently
+            // rather than quarantined: an out-of-scope op is our own policy
+            // working, not the peer misbehaving, and quarantining it would
+            // fill the ring on the first sync with any contact wider than our
+            // acceptance — burying the reports that mean something.
+            //
+            // The same predicate the outbound side uses, so a delete still
+            // arrives (refusing one would leave us holding a Record they
+            // removed) and the Loro document is judged by the two columns it
+            // actually carries.
+            if !store::sync_ops::op_in_scope(&op.tbl, &op.kind, &op.field, accept.as_deref()) {
+                continue;
+            }
+            if let Some(refusal) = self.inadmissible(batch, op).await? {
+                store::organs::quarantine(
+                    pool,
+                    &batch.from_organ,
+                    refusal,
+                    &serde_json::to_string(op).unwrap_or_default(),
+                )
+                .await?;
+                continue;
+            }
             // The general feed may not touch an individually-replicated
             // Record. Without this, a contact with ordinary `sync_out` could
             // write into a conversation shared with someone else entirely by
@@ -219,24 +352,9 @@ impl Engine {
                     let prior =
                         sync_ops::latest_hlc_for_field(pool, "record", &op.uid, &op.field).await?;
                     let tomb = sync_ops::latest_hlc_for_field(pool, "record", &op.uid, "").await?;
-                    if sync_ops::append(
-                        pool,
-                        &op.tbl,
-                        &op.uid,
-                        &op.field,
-                        kind,
-                        op.value.as_deref(),
-                        op.hlc,
-                        &op.actor_organ,
-                        from,
-                        replica_root,
-                    )
-                    .await?
-                    .is_none()
-                    {
+                    if !self.log_incoming(op, kind, from, replica_root).await? {
                         continue; // duplicate identity
                     }
-                    nucleus::hlc::observe(op.hlc);
                     if op.hlc <= prior.unwrap_or(i64::MIN) {
                         continue; // older than the stored value: log only
                     }
@@ -245,70 +363,25 @@ impl Engine {
                             continue; // deleted stays deleted; late sets lose
                         }
                     }
-                    // Once collab history exists, the record-doc owns text:
-                    // a late create-era head/body set op is log-only. The
-                    // op's undelete power still applies — it won its HLC race.
-                    if (op.field == "head" || op.field == "body")
-                        && store::record_docs::has_crdt_history(pool, &op.uid).await?
-                    {
-                        if tomb.is_some() {
-                            store::sync_apply::undelete_record(pool, &op.uid).await?;
-                            applied += 1;
-                            touched.push(op.uid.clone());
-                        }
-                        continue;
-                    }
-                    let value: serde_json::Value = op
-                        .value
-                        .as_deref()
-                        .and_then(|raw| serde_json::from_str(raw).ok())
-                        .unwrap_or(serde_json::Value::Null);
-                    store::sync_apply::ensure_record_stub(
-                        pool,
-                        &op.uid,
-                        if op.field == "kind" {
-                            value.as_str().unwrap_or("plain")
-                        } else {
-                            "plain"
-                        },
-                        &op.actor_organ,
-                        replica_root,
-                        Some(op.hlc),
-                    )
-                    .await?;
-                    store::sync_apply::set_record_field(
-                        pool,
-                        &op.uid,
-                        &op.field,
-                        &value,
-                        tomb.is_some(), // newer set undeletes
-                    )
-                    .await?;
-                    applied += 1;
-                    touched.push(op.uid.clone());
+                    let outcome = self
+                        .materialise(Materialise {
+                            op,
+                            kind,
+                            replica_root,
+                            undelete: tomb.is_some(),
+                        })
+                        .await?;
+                    let outcome = outcome.unwrap_or_default();
+                    applied += outcome.applied;
+                    touched.extend(outcome.touched);
                 }
                 ("record", OpKind::Tombstone) => {
                     let prior = sync_ops::latest_hlc_for_field(pool, "record", &op.uid, "").await?;
                     let latest_set =
                         sync_ops::latest_set_hlc_for_row(pool, "record", &op.uid).await?;
-                    if sync_ops::append(
-                        pool,
-                        &op.tbl,
-                        &op.uid,
-                        &op.field,
-                        kind,
-                        None,
-                        op.hlc,
-                        &op.actor_organ,
-                        from,
-                        replica_root,
-                    )
-                    .await?
-                    .is_none()
-                    {
+                    if !self.log_incoming(op, kind, from, replica_root).await? {
                         continue;
                     }
-                    nucleus::hlc::observe(op.hlc);
                     if op.hlc <= prior.unwrap_or(i64::MIN) {
                         continue;
                     }
@@ -316,219 +389,70 @@ impl Engine {
                     // "undelete is a newer write". A concurrent newer edit
                     // keeps the record alive; otherwise the tombstone lands.
                     if op.hlc > latest_set.unwrap_or(i64::MIN) {
-                        store::sync_apply::tombstone_record(pool, &op.uid).await?;
-                        applied += 1;
-                        touched.push(op.uid.clone());
-                    }
-                }
-                ("record_extension", OpKind::Set | OpKind::Tombstone) => {
-                    let prior = sync_ops::latest_hlc_for_field(
-                        pool,
-                        "record_extension",
-                        &op.uid,
-                        &op.field,
-                    )
-                    .await?;
-                    if sync_ops::append(
-                        pool,
-                        &op.tbl,
-                        &op.uid,
-                        &op.field,
-                        kind,
-                        op.value.as_deref(),
-                        op.hlc,
-                        &op.actor_organ,
-                        from,
-                        replica_root,
-                    )
-                    .await?
-                    .is_none()
-                    {
-                        continue;
-                    }
-                    nucleus::hlc::observe(op.hlc);
-                    if op.hlc <= prior.unwrap_or(i64::MIN) {
-                        continue;
-                    }
-                    store::sync_apply::ensure_record_stub(
-                        pool,
-                        &op.uid,
-                        "plain",
-                        &op.actor_organ,
-                        replica_root,
-                        Some(op.hlc),
-                    )
-                    .await?;
-                    // Field is "{namespace}.{key}" — keys have no dots,
-                    // namespaces may. No dot at all = whole-value namespace.
-                    match op.field.rsplit_once('.') {
-                        Some((namespace, key)) => match kind {
-                            OpKind::Set => {
-                                let value = op
-                                    .value
-                                    .as_deref()
-                                    .and_then(|raw| serde_json::from_str(raw).ok())
-                                    .unwrap_or(serde_json::Value::Null);
-                                store::sync_apply::set_extension_key(
-                                    pool, &op.uid, namespace, key, value,
-                                )
-                                .await?;
-                            }
-                            _ => {
-                                store::sync_apply::tombstone_extension_key(
-                                    pool, &op.uid, namespace, key,
-                                )
-                                .await?;
-                            }
-                        },
-                        None => {
-                            let value = op
-                                .value
-                                .as_deref()
-                                .and_then(|raw| serde_json::from_str(raw).ok())
-                                .unwrap_or(serde_json::Value::Null);
-                            store::sync_apply::set_extension_whole(
-                                pool, &op.uid, &op.field, &value,
-                            )
+                        let outcome = self
+                            .materialise(Materialise {
+                                op,
+                                kind,
+                                replica_root,
+                                undelete: false,
+                            })
                             .await?;
-                        }
+                        let outcome = outcome.unwrap_or_default();
+                        applied += outcome.applied;
+                        touched.extend(outcome.touched);
                     }
-                    applied += 1;
-                    touched.push(op.uid.clone());
                 }
-                ("record_assertion", OpKind::Set | OpKind::Tombstone) => {
+                ("record_extension", OpKind::Set | OpKind::Tombstone)
+                | ("record_assertion", OpKind::Set | OpKind::Tombstone)
+                | ("concept", OpKind::Set | OpKind::Tombstone) => {
+                    // All three are per-uid (or per-uid-and-field) LWW with no
+                    // tombstone/undelete interplay, so one guard serves them.
+                    let field = if op.tbl == "record_assertion" {
+                        ""
+                    } else {
+                        &op.field
+                    };
                     let prior =
-                        sync_ops::latest_hlc_for_field(pool, "record_assertion", &op.uid, "")
-                            .await?;
-                    if sync_ops::append(
-                        pool,
-                        &op.tbl,
-                        &op.uid,
-                        &op.field,
-                        kind,
-                        op.value.as_deref(),
-                        op.hlc,
-                        &op.actor_organ,
-                        from,
-                        replica_root,
-                    )
-                    .await?
-                    .is_none()
-                    {
+                        sync_ops::latest_hlc_for_field(pool, &op.tbl, &op.uid, field).await?;
+                    if !self.log_incoming(op, kind, from, replica_root).await? {
                         continue;
                     }
-                    nucleus::hlc::observe(op.hlc);
-                    if op.hlc <= prior.unwrap_or(i64::MIN) {
-                        continue; // later HLC wins per assertion uid
-                    }
-                    match kind {
-                        OpKind::Set => {
-                            let Some(value) = op.value.as_deref().and_then(|raw| {
-                                serde_json::from_str::<serde_json::Value>(raw).ok()
-                            }) else {
-                                continue;
-                            };
-                            if let Some(subject) = value.get("subject_uid").and_then(|v| v.as_str())
-                            {
-                                store::sync_apply::ensure_record_stub(
-                                    pool,
-                                    subject,
-                                    "plain",
-                                    &op.actor_organ,
-                                    replica_root,
-                                    Some(op.hlc),
-                                )
-                                .await?;
-                                touched.push(subject.to_string());
-                            }
-                            store::sync_apply::upsert_assertion(pool, &op.uid, &value).await?;
-                        }
-                        _ => {
-                            store::sync_apply::retract_assertion(pool, &op.uid).await?;
-                        }
-                    }
-                    applied += 1;
-                }
-                ("concept", OpKind::Set | OpKind::Tombstone) => {
-                    let prior =
-                        sync_ops::latest_hlc_for_field(pool, "concept", &op.uid, &op.field).await?;
-                    if sync_ops::append(
-                        pool,
-                        &op.tbl,
-                        &op.uid,
-                        &op.field,
-                        kind,
-                        op.value.as_deref(),
-                        op.hlc,
-                        &op.actor_organ,
-                        from,
-                        replica_root,
-                    )
-                    .await?
-                    .is_none()
-                    {
-                        continue;
-                    }
-                    nucleus::hlc::observe(op.hlc);
                     if op.hlc <= prior.unwrap_or(i64::MIN) {
                         continue;
                     }
-                    match kind {
-                        OpKind::Set => {
-                            let name = op
-                                .value
-                                .as_deref()
-                                .and_then(|raw| serde_json::from_str::<serde_json::Value>(raw).ok())
-                                .and_then(|v| v.as_str().map(str::to_string))
-                                .unwrap_or_default();
-                            if !name.is_empty() {
-                                store::sync_apply::upsert_concept(
-                                    pool,
-                                    &op.uid,
-                                    &name,
-                                    &op.actor_organ,
-                                )
-                                .await?;
-                            }
-                        }
-                        _ => {
-                            store::sync_apply::delete_concept(pool, &op.uid).await?;
-                        }
-                    }
-                    applied += 1;
+                    let outcome = self
+                        .materialise(Materialise {
+                            op,
+                            kind,
+                            replica_root,
+                            undelete: false,
+                        })
+                        .await?;
+                    let outcome = outcome.unwrap_or_default();
+                    applied += outcome.applied;
+                    touched.extend(outcome.touched);
                 }
-                ("record", OpKind::Crdt) => {
-                    let Some(value) = op.value.as_deref() else {
+                // Both carry a base64 Loro blob and Loro imports the two
+                // identically, so one arm serves both. A `snapshot` is a peer
+                // Cell asserting a whole doc state; a `crdt` op is a tail.
+                ("record", OpKind::Crdt | OpKind::Snapshot) => {
+                    if op.value.is_none() {
                         store::organs::quarantine(
                             pool,
                             &batch.from_organ,
-                            "crdt op without a payload",
+                            "collab op without a payload",
                             &serde_json::to_string(op).unwrap_or_default(),
                         )
                         .await?;
                         continue;
-                    };
-                    if sync_ops::append(
-                        pool,
-                        &op.tbl,
-                        &op.uid,
-                        &op.field,
-                        kind,
-                        Some(value),
-                        op.hlc,
-                        &op.actor_organ,
-                        from,
-                        replica_root,
-                    )
-                    .await?
-                    .is_none()
-                    {
+                    }
+                    if !self.log_incoming(op, kind, from, replica_root).await? {
                         continue; // duplicate identity
                     }
-                    nucleus::hlc::observe(op.hlc);
                     match store::sync_apply::record_deleted(pool, &op.uid).await? {
                         // Tombstone freeze: a deleted record's doc takes no
-                        // more updates — the op stays in the log for relay.
+                        // more updates — the op stays in the log, so a peer
+                        // that has not heard about the delete is still served.
                         Some(true) => continue,
                         Some(false) => {}
                         None => {
@@ -536,19 +460,28 @@ impl Engine {
                                 pool,
                                 &op.uid,
                                 "plain",
-                                &op.actor_organ,
+                                &op.organ_uid,
                                 replica_root,
                                 Some(op.hlc),
                             )
                             .await?;
                         }
                     }
-                    match self.apply_remote_crdt(&op.uid, value).await? {
-                        Ok(()) => {
-                            applied += 1;
-                            touched.push(op.uid.clone());
+                    match self
+                        .materialise(Materialise {
+                            op,
+                            kind,
+                            replica_root,
+                            undelete: false,
+                        })
+                        .await
+                    {
+                        Ok(outcome) => {
+                            let outcome = outcome.unwrap_or_default();
+                            applied += outcome.applied;
+                            touched.extend(outcome.touched);
                         }
-                        Err(reason) => {
+                        Err(EngineError::Consequence(reason)) => {
                             store::organs::quarantine(
                                 pool,
                                 &batch.from_organ,
@@ -557,6 +490,7 @@ impl Engine {
                             )
                             .await?;
                         }
+                        Err(other) => return Err(other),
                     }
                 }
                 _ => {
@@ -648,7 +582,8 @@ impl Engine {
             OpKind::Fact,
             None,
             op.hlc,
-            &op.actor_organ,
+            &op.actor_cell,
+            &op.organ_uid,
             Some(from_organ),
             // Facts do not participate in individual replica today; the
             // scope is `record` and `record_assertion` rows, which is what a
@@ -665,7 +600,7 @@ impl Engine {
             pool,
             &fact.record_uid,
             "plain",
-            &op.actor_organ,
+            &op.organ_uid,
             None,
             Some(op.hlc),
         )
@@ -809,6 +744,10 @@ impl Engine {
                 sync_ops::outbox_clear_contact(pool, &contact_uid).await?;
                 continue;
             }
+            // Per-record hiding, read once per contact per pass. Almost always
+            // empty, and every use of it checks that first, so a Cell nobody
+            // hides anything on pays one indexed lookup and nothing else.
+            let hidden = store::visibility::hidden_from_organ(pool, &contact_uid).await?;
             let mut log_rows = Vec::new();
             let mut kept = Vec::new();
             for row in rows {
@@ -819,7 +758,48 @@ impl Engine {
                     Some(op) if !contact.sync_out && op.replica_root.is_none() => {
                         sync_ops::outbox_delete(pool, &row).await?;
                     }
+                    // The per-contact scope, applied to the PUSH path as well
+                    // as the pull one (Ontology §12, C5). It was built into
+                    // `FetchOpsSince` alone at first, which narrowed only the
+                    // path a peer takes when it asks us — while push, the path
+                    // we take to them and the one the sync runner actually
+                    // drives, sent every column regardless. A narrowing that
+                    // covers one of two delivery paths is not a narrowing.
+                    //
+                    // Same shape as the `sync_out` arm above and for the same
+                    // reason: a replica grant is an explicit per-record
+                    // permission the receiver accepted, and half-delivering a
+                    // document somebody agreed to take is worse than not
+                    // scoping it. The scope governs the broad feed.
+                    Some(op)
+                        if op.replica_root.is_none()
+                            && !store::sync_ops::op_in_scope(
+                                &op.tbl,
+                                op.kind.as_str(),
+                                &op.field,
+                                contact.scope_fields.as_deref(),
+                            ) =>
+                    {
+                        // Deleted rather than left queued: it will never be
+                        // sent to this contact under this scope, and leaving
+                        // it would retry it forever and hold the retention
+                        // floor down behind an op nobody is owed.
+                        sync_ops::outbox_delete(pool, &row).await?;
+                    }
                     Some(op) => {
+                        // Whole rows kept out of a contact's feed — the other
+                        // half of §12's "hiding is per-record AND per-field".
+                        // Async, so it cannot be a match guard like the two
+                        // above; the guard-shaped ones stay guards.
+                        if op.replica_root.is_none()
+                            && store::visibility::op_hidden_from(
+                                pool, &hidden, &op.tbl, &op.uid,
+                            )
+                            .await?
+                        {
+                            sync_ops::outbox_delete(pool, &row).await?;
+                            continue;
+                        }
                         log_rows.push(op);
                         kept.push(row);
                     }
@@ -970,4 +950,204 @@ impl Engine {
         }
         Ok(stored)
     }
+}
+
+/// One op's effect on the READ MODEL, with the last-write-wins decision
+/// already taken by the caller.
+///
+/// Split out of `import_ops` so that importing an op and rebuilding from the
+/// log cannot disagree about what an op MEANS. Before this they would have
+/// been two copies of the same per-table logic, and the copy that drifts is
+/// the one nobody runs — the rebuild, which is used precisely when the read
+/// model is already suspect.
+///
+/// What is NOT here, deliberately: appending to the log, advancing the clock,
+/// deciding whether this op beats what is stored, and quarantine. Those are
+/// import's concerns. A rebuild replays in HLC order, so "later wins" falls
+/// out of the ordering and it needs none of them.
+pub struct Materialise<'a> {
+    pub op: &'a WireOp,
+    pub kind: OpKind,
+    pub replica_root: Option<&'a str>,
+    /// A `set` that beat a tombstone revives the record.
+    pub undelete: bool,
+}
+
+/// What one materialisation did, so the caller can count and refresh.
+#[derive(Default)]
+pub struct Materialised {
+    pub applied: usize,
+    pub touched: Vec<String>,
+}
+
+impl Engine {
+    /// `None` means this `(table, kind)` pair is not one the read model knows
+    /// how to apply. Import never sees it — its outer dispatch quarantines
+    /// first — but the REBUILD calls this with whatever the log happens to
+    /// hold, and the `kind` CHECK constrains the kind alone, not the pair. A
+    /// `concept` row carrying `kind = 'crdt'` is storable, and a catch-all
+    /// would have run `delete_concept` on it.
+    pub async fn materialise(
+        &self,
+        m: Materialise<'_>,
+    ) -> Result<Option<Materialised>, EngineError> {
+        let pool = &self.store.pool;
+        let Materialise {
+            op,
+            kind,
+            replica_root,
+            undelete,
+        } = m;
+        let mut out = Materialised::default();
+        match (op.tbl.as_str(), kind) {
+            ("record", OpKind::Set) => {
+                // Once collab history exists, the record-doc owns the text: a
+                // late create-era head/body set is log-only. Its undelete
+                // power still applies — it won its HLC race.
+                if (op.field == "head" || op.field == "body")
+                    && store::record_docs::has_crdt_history(pool, &op.uid).await?
+                {
+                    if undelete {
+                        store::sync_apply::undelete_record(pool, &op.uid).await?;
+                        out.applied += 1;
+                        out.touched.push(op.uid.clone());
+                    }
+                    return Ok(Some(out));
+                }
+                let value = json_value(op.value.as_deref());
+                store::sync_apply::ensure_record_stub(
+                    pool,
+                    &op.uid,
+                    if op.field == "kind" {
+                        value.as_str().unwrap_or("plain")
+                    } else {
+                        "plain"
+                    },
+                    &op.organ_uid,
+                    replica_root,
+                    Some(op.hlc),
+                )
+                .await?;
+                store::sync_apply::set_record_field(pool, &op.uid, &op.field, &value, undelete)
+                    .await?;
+                out.applied += 1;
+                out.touched.push(op.uid.clone());
+            }
+            ("record", OpKind::Tombstone) => {
+                store::sync_apply::tombstone_record(pool, &op.uid).await?;
+                out.applied += 1;
+                out.touched.push(op.uid.clone());
+            }
+            ("record_extension", OpKind::Set | OpKind::Tombstone) => {
+                store::sync_apply::ensure_record_stub(
+                    pool,
+                    &op.uid,
+                    "plain",
+                    &op.organ_uid,
+                    replica_root,
+                    Some(op.hlc),
+                )
+                .await?;
+                // Field is "{namespace}.{key}" — keys have no dots,
+                // namespaces may. No dot at all = whole-value namespace.
+                match op.field.rsplit_once('.') {
+                    Some((namespace, key)) => match kind {
+                        OpKind::Set => {
+                            store::sync_apply::set_extension_key(
+                                pool,
+                                &op.uid,
+                                namespace,
+                                key,
+                                json_value(op.value.as_deref()),
+                            )
+                            .await?;
+                        }
+                        _ => {
+                            store::sync_apply::tombstone_extension_key(
+                                pool, &op.uid, namespace, key,
+                            )
+                            .await?;
+                        }
+                    },
+                    None => {
+                        store::sync_apply::set_extension_whole(
+                            pool,
+                            &op.uid,
+                            &op.field,
+                            &json_value(op.value.as_deref()),
+                        )
+                        .await?;
+                    }
+                }
+                out.applied += 1;
+                out.touched.push(op.uid.clone());
+            }
+            ("record_assertion", OpKind::Set) => {
+                let Some(value) = op
+                    .value
+                    .as_deref()
+                    .and_then(|raw| serde_json::from_str::<serde_json::Value>(raw).ok())
+                else {
+                    return Ok(Some(out));
+                };
+                if let Some(subject) = value.get("subject_uid").and_then(|v| v.as_str()) {
+                    store::sync_apply::ensure_record_stub(
+                        pool,
+                        subject,
+                        "plain",
+                        &op.organ_uid,
+                        replica_root,
+                        Some(op.hlc),
+                    )
+                    .await?;
+                    out.touched.push(subject.to_string());
+                }
+                store::sync_apply::upsert_assertion(pool, &op.uid, &value).await?;
+                out.applied += 1;
+            }
+            ("record_assertion", OpKind::Tombstone) => {
+                store::sync_apply::retract_assertion(pool, &op.uid).await?;
+                out.applied += 1;
+            }
+            ("concept", OpKind::Set) => {
+                let name = op
+                    .value
+                    .as_deref()
+                    .and_then(|raw| serde_json::from_str::<serde_json::Value>(raw).ok())
+                    .and_then(|v| v.as_str().map(str::to_string))
+                    .unwrap_or_default();
+                if !name.is_empty() {
+                    store::sync_apply::upsert_concept(pool, &op.uid, &name, &op.organ_uid).await?;
+                }
+                out.applied += 1;
+            }
+            ("concept", OpKind::Tombstone) => {
+                store::sync_apply::delete_concept(pool, &op.uid).await?;
+                out.applied += 1;
+            }
+            ("record", OpKind::Crdt | OpKind::Snapshot) => {
+                let value = op.value.as_deref().unwrap_or_default();
+                // `Consequence` rather than a silent skip: import turns it
+                // into quarantine, and a rebuild wants to know its own log
+                // holds a blob Loro will not accept.
+                match self
+                    .apply_remote_crdt(&op.uid, value, matches!(kind, OpKind::Snapshot))
+                    .await?
+                {
+                    Ok(()) => {
+                        out.applied += 1;
+                        out.touched.push(op.uid.clone());
+                    }
+                    Err(reason) => return Err(EngineError::Consequence(reason)),
+                }
+            }
+            _ => return Ok(None),
+        }
+        Ok(Some(out))
+    }
+}
+
+fn json_value(raw: Option<&str>) -> serde_json::Value {
+    raw.and_then(|raw| serde_json::from_str(raw).ok())
+        .unwrap_or(serde_json::Value::Null)
 }

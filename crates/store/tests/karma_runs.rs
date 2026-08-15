@@ -677,6 +677,390 @@ async fn act_routed_candidate_is_atomic_durable_and_still_inert() {
     );
 }
 
+/// C7 axis 2: a Program this Cell does not execute is not in the frozen epoch.
+///
+/// The assertion is about the EPOCH, not only about the run count, because
+/// those are different claims. A dormant Program that was frozen into the epoch
+/// and then skipped at evaluation time would still advance the cursor past its
+/// ordinal and could still touch its own Program state — and the executing
+/// Cell's next run reads that state. Excluded means never considered.
+#[tokio::test]
+async fn a_program_this_cell_does_not_execute_is_not_in_the_epoch() {
+    let store = Store::open_memory().await.unwrap();
+    let now = instant();
+    let frequency = active_frequency(&store, now).await;
+    let activation_hash = frequency.active_activation_hash.clone().unwrap();
+    let running = active_program(&store, "run.here", &frequency.record_uid, "here", now).await;
+    let dormant = active_program(&store, "run.elsewhere", &frequency.record_uid, "away", now).await;
+
+    store::karma::execution::set_executes(
+        &store.pool,
+        &dormant.record_uid,
+        false,
+        Some("the always-on Cell owns this one"),
+        now,
+    )
+    .await
+    .unwrap();
+    assert!(
+        store::karma::execution::executes(&store.pool, &running.record_uid)
+            .await
+            .unwrap()
+    );
+    assert!(
+        !store::karma::execution::executes(&store.pool, &dormant.record_uid)
+            .await
+            .unwrap()
+    );
+
+    ingest_tick(&store, &activation_hash, 1, 0, '7', now).await;
+    let limits = EvaluationLimits {
+        fuel: 100,
+        max_expression_depth: 16,
+    };
+    let turn = process_next_occurrence(&store.pool, limits, NonZeroU32::new(4).unwrap(), now, None)
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(turn.completed);
+    let frozen = list_epochs(&store.pool).await.unwrap().pop().unwrap();
+    let members: Vec<&str> = frozen
+        .epoch
+        .members
+        .iter()
+        .map(|member| member.program_uid.as_str())
+        .collect();
+    assert_eq!(members, vec![running.record_uid.as_str()]);
+    assert!(
+        list_runs(&store.pool)
+            .await
+            .unwrap()
+            .iter()
+            .all(|row| row.run.program_uid != dormant.record_uid)
+    );
+}
+
+/// Absence means execute, and that is the property every existing single-Cell
+/// Organ depends on. Written as its own test rather than as an assertion inside
+/// the one above, because it is the direction a refactor breaks: an inner join
+/// or an `executes = 1` reads naturally and stops every rule on every Organ
+/// that never opened the setting.
+#[tokio::test]
+async fn a_program_nobody_configured_runs_and_the_table_stays_empty() {
+    let store = Store::open_memory().await.unwrap();
+    let now = instant();
+    let frequency = active_frequency(&store, now).await;
+    let activation_hash = frequency.active_activation_hash.clone().unwrap();
+    let program = active_program(&store, "run.default", &frequency.record_uid, "default", now).await;
+
+    assert_eq!(count(&store, "karma_program_execution").await, 0);
+    ingest_tick(&store, &activation_hash, 1, 0, '7', now).await;
+    let limits = EvaluationLimits {
+        fuel: 100,
+        max_expression_depth: 16,
+    };
+    let turn = process_next_occurrence(&store.pool, limits, NonZeroU32::new(4).unwrap(), now, None)
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(turn.completed);
+    assert!(
+        turn.runs
+            .iter()
+            .any(|row| row.run.program_uid == program.record_uid)
+    );
+
+    // The surface lists it as executing even with no row of its own — showing
+    // only configured Programs would leave "what runs here" unanswerable.
+    let listed = store::karma::execution::list(&store.pool).await.unwrap();
+    let row = listed
+        .iter()
+        .find(|row| row.program_uid == program.record_uid)
+        .unwrap();
+    assert!(row.executes);
+    assert_eq!(row.note, None);
+}
+
+/// Turning execution back on removes the row rather than storing a 1, so an
+/// empty table keeps meaning "nothing here has been narrowed".
+#[tokio::test]
+async fn re_enabling_execution_clears_the_deviation() {
+    let store = Store::open_memory().await.unwrap();
+    let now = instant();
+    let frequency = active_frequency(&store, now).await;
+    let program = active_program(&store, "run.toggle", &frequency.record_uid, "toggle", now).await;
+
+    store::karma::execution::set_executes(&store.pool, &program.record_uid, false, None, now)
+        .await
+        .unwrap();
+    assert_eq!(count(&store, "karma_program_execution").await, 1);
+    store::karma::execution::set_executes(&store.pool, &program.record_uid, true, None, now)
+        .await
+        .unwrap();
+    assert_eq!(count(&store, "karma_program_execution").await, 0);
+    assert!(
+        store::karma::execution::executes(&store.pool, &program.record_uid)
+            .await
+            .unwrap()
+    );
+}
+
+/// A setting stored against a uid that names no Program would never be read by
+/// anything. Refused by name, so the surface can say why rather than surfacing
+/// a foreign-key failure.
+#[tokio::test]
+async fn execution_cannot_be_set_for_a_program_that_does_not_exist() {
+    let store = Store::open_memory().await.unwrap();
+    let error = store::karma::execution::set_executes(
+        &store.pool,
+        "r_01ARZ3NDEKTSV4RRFFQ69G5FAX",
+        false,
+        None,
+        instant(),
+    )
+    .await
+    .unwrap_err();
+    assert!(format!("{error}").contains("no such Karma Program"));
+    assert_eq!(count(&store, "karma_program_execution").await, 0);
+}
+
+/// The axis is LOCAL. This is the property the whole design rests on: if the
+/// flag travelled, turning a rule off on the laptop would turn it off on the
+/// always-on Cell, which is the opposite of the setting's purpose.
+#[tokio::test]
+async fn the_execute_flag_never_becomes_a_synced_op() {
+    let store = Store::open_memory().await.unwrap();
+    let now = instant();
+    let frequency = active_frequency(&store, now).await;
+    let program = active_program(&store, "run.local", &frequency.record_uid, "local", now).await;
+
+    let before: i64 = sqlx_count(&store, "SELECT COUNT(*) FROM sync_op").await;
+    store::karma::execution::set_executes(
+        &store.pool,
+        &program.record_uid,
+        false,
+        Some("laptop holds it without running it"),
+        now,
+    )
+    .await
+    .unwrap();
+    assert_eq!(sqlx_count(&store, "SELECT COUNT(*) FROM sync_op").await, before);
+    assert_eq!(
+        sqlx_count(
+            &store,
+            "SELECT COUNT(*) FROM sync_op WHERE tbl = 'karma_program_execution'",
+        )
+        .await,
+        0
+    );
+}
+
+/// C7 — a Program designated to another Cell does not run here.
+///
+/// Designated executor with MANUAL takeover, not a heartbeat lease. The
+/// designation is a synced value rather than a claim, so this test is about a
+/// single Cell reading it correctly; the multi-Cell half — that exactly one of
+/// three acts, and that an unreachable holder does NOT hand the lease to
+/// whoever cannot see it — lives in `engine/tests/dst_deferred.rs` and needs
+/// Resenha.
+#[tokio::test]
+async fn a_program_designated_to_another_cell_does_not_run_here() {
+    let store = Store::open_memory().await.unwrap();
+    let now = instant();
+    let frequency = active_frequency(&store, now).await;
+    let activation_hash = frequency.active_activation_hash.clone().unwrap();
+    let mine = active_program(&store, "run.mine", &frequency.record_uid, "mine", now).await;
+    let theirs = active_program(&store, "run.theirs", &frequency.record_uid, "theirs", now).await;
+
+    let this_cell: String = store::sqlx::query_scalar(
+        "SELECT uid FROM record WHERE kind = 'device' LIMIT 1",
+    )
+    .fetch_one(&store.pool)
+    .await
+    .unwrap();
+
+    // Designating THIS Cell must not stop it running — the filter has to test
+    // equality, not merely the presence of a designation.
+    store::executor::designate(&store.pool, &mine.record_uid, Some(&this_cell))
+        .await
+        .unwrap();
+    store::executor::designate(
+        &store.pool,
+        &theirs.record_uid,
+        Some("r_01ARZ3NDEKTSV4RRFFQ69G5FAX"),
+    )
+    .await
+    .unwrap();
+    assert_eq!(
+        store::executor::designated(&store.pool, &theirs.record_uid)
+            .await
+            .unwrap()
+            .as_deref(),
+        Some("r_01ARZ3NDEKTSV4RRFFQ69G5FAX")
+    );
+
+    ingest_tick(&store, &activation_hash, 1, 0, '7', now).await;
+    let limits = EvaluationLimits {
+        fuel: 100,
+        max_expression_depth: 16,
+    };
+    let turn = process_next_occurrence(&store.pool, limits, NonZeroU32::new(4).unwrap(), now, None)
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(turn.completed);
+    let frozen = list_epochs(&store.pool).await.unwrap().pop().unwrap();
+    let members: Vec<&str> = frozen
+        .epoch
+        .members
+        .iter()
+        .map(|member| member.program_uid.as_str())
+        .collect();
+    assert_eq!(members, vec![mine.record_uid.as_str()]);
+}
+
+/// Clearing a designation returns the Program to running everywhere.
+///
+/// The undesignated state has to be reachable, not just the initial one:
+/// otherwise designating a Cell is a one-way door, and a person whose
+/// designated Cell died would have no way back except designating another
+/// blind.
+#[tokio::test]
+async fn a_cleared_designation_lets_every_cell_run_it_again() {
+    let store = Store::open_memory().await.unwrap();
+    let now = instant();
+    let frequency = active_frequency(&store, now).await;
+    let program = active_program(&store, "run.freed", &frequency.record_uid, "freed", now).await;
+
+    store::executor::designate(
+        &store.pool,
+        &program.record_uid,
+        Some("r_01ARZ3NDEKTSV4RRFFQ69G5FAX"),
+    )
+    .await
+    .unwrap();
+    store::executor::designate(&store.pool, &program.record_uid, None)
+        .await
+        .unwrap();
+    assert_eq!(
+        store::executor::designated(&store.pool, &program.record_uid)
+            .await
+            .unwrap(),
+        None
+    );
+
+    let activation_hash = frequency.active_activation_hash.clone().unwrap();
+    ingest_tick(&store, &activation_hash, 1, 0, '7', now).await;
+    let limits = EvaluationLimits {
+        fuel: 100,
+        max_expression_depth: 16,
+    };
+    let turn = process_next_occurrence(&store.pool, limits, NonZeroU32::new(4).unwrap(), now, None)
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(
+        turn.runs
+            .iter()
+            .any(|row| row.run.program_uid == program.record_uid)
+    );
+}
+
+/// The designation SYNCS — unlike the local execute flag beside it.
+///
+/// The two settings sit next to each other and mean opposite things about
+/// travel, which is exactly the pair a later change conflates. "Which Cell is
+/// the one" is a fact every Cell needs; "do I run it" is this machine's own
+/// business.
+#[tokio::test]
+async fn the_designation_travels_even_though_the_local_flag_does_not() {
+    let store = Store::open_memory().await.unwrap();
+    let now = instant();
+    let frequency = active_frequency(&store, now).await;
+    let program = active_program(&store, "run.shared", &frequency.record_uid, "shared", now).await;
+
+    let before = sqlx_count(
+        &store,
+        "SELECT COUNT(*) FROM sync_op WHERE tbl = 'record_extension'",
+    )
+    .await;
+    store::executor::designate(
+        &store.pool,
+        &program.record_uid,
+        Some("r_01ARZ3NDEKTSV4RRFFQ69G5FAX"),
+    )
+    .await
+    .unwrap();
+    assert!(
+        sqlx_count(
+            &store,
+            "SELECT COUNT(*) FROM sync_op WHERE tbl = 'record_extension'",
+        )
+        .await
+            > before,
+        "the designated executor has to reach the other Cells"
+    );
+
+    let local_before = sqlx_count(&store, "SELECT COUNT(*) FROM sync_op").await;
+    store::karma::execution::set_executes(&store.pool, &program.record_uid, false, None, now)
+        .await
+        .unwrap();
+    assert_eq!(
+        sqlx_count(&store, "SELECT COUNT(*) FROM sync_op").await,
+        local_before,
+        "the per-Cell flag must never travel"
+    );
+}
+
+/// The outward-consequence classification, which decides what the interface
+/// warns about before a rule is left running on several Cells.
+///
+/// `Act` is the line: the other four routes end in something a person answers,
+/// and one person answering one proposal is one answer however many Cells
+/// proposed it. A Program with no route at all computes and stops — running it
+/// everywhere is the point, not a hazard.
+#[test]
+fn only_an_act_routed_rule_counts_as_acting_outside_the_cell() {
+    let plain = program("run.plain", "r_01ARZ3NDEKTSV4RRFFQ69G5FAX");
+    assert!(!plain.is_externally_observable());
+
+    let acting = candidate_program("r_01ARZ3NDEKTSV4RRFFQ69G5FAX");
+    assert!(
+        acting
+            .nodes
+            .values()
+            .any(|node| matches!(node.operation, NodeOperation::RouteCandidate { .. })),
+        "the fixture must actually route a candidate for this to mean anything"
+    );
+    assert!(acting.is_externally_observable());
+
+    // The discriminating half. A rule that ROUTES — so it is not the trivial
+    // no-consequence case — but routes somewhere a person has to answer. Three
+    // Cells proposing the same thing is still one question and one answer, so
+    // it is not the hazard the warning is about, and asserting it here is what
+    // stops `Act` quietly widening to "any route" later.
+    let mut asking = acting.clone();
+    for node in asking.nodes.values_mut() {
+        if let NodeOperation::RouteCandidate { route, .. } = &mut node.operation {
+            *route = CandidateRoute::Ask;
+        }
+    }
+    assert!(
+        asking
+            .nodes
+            .values()
+            .any(|node| matches!(node.operation, NodeOperation::RouteCandidate { .. })),
+    );
+    assert!(!asking.is_externally_observable());
+}
+
+async fn sqlx_count(store: &Store, query: &str) -> i64 {
+    store::sqlx::query_scalar(query)
+        .fetch_one(&store.pool)
+        .await
+        .unwrap()
+}
+
 async fn active_frequency(store: &Store, now: DateTime<Utc>) -> FrequencyHandleRow {
     let created = committed_frequency(
         create_frequency(

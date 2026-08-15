@@ -1,88 +1,92 @@
-# Web Interface
+Interfaces in Lince aspire to be as minimalist as possible, and flexible to fit the user. We maintain Lince's philosophy of meeting the Need of an interface, making it adaptable will meet more Needs with user configuration, some theorize that the best interface is Interfaceless, with people using Lince as little as possible and the user interactions being as quick as possible and UI as small as possible without loosing the capability of using a Lince with complete control of every part.
 
-The Web interface is an HTML based one. It can be run in browsers or as a desktop app with Tauri.
+This document contains the following structure that must be maintained:
 
-The base app should be minimalist to give as much space as possible for user's to express themselves. That expression should feel familiar, reflecting what they want.
+Goals & Conditions: with the high abstraction and requirements for the features to be called complete. This is not to be touched except for checking boxes, dont change it's contents in any other way, it is mine.
+Implementation: this section can be changed freely, as long as it maintains the '## Parts' that reference the goals and conditions, no other parts can be created, only the checkboxes can be created, deleted, upated, and moved around the parts as deemed fit.
 
-In addition to what we say is the base app we have possibly many components, widgets, called 'Sand'. They are HTML iframes inside a canvas, so like blocks of lego in a whiteboard. We have an edit mode for being able to move components around, add or remove them, including many other actions.
+The header levels must be kept in the following order, # for structural points, ## for subsections inside it. In # Implementation The ## Are the goals and conditions, all ### an so on headings must have on each level the same meaning, so if #implementation##sand###kanban then you cant have #implementation##sand##kanban-details, it must be ### Kanban Details (if needed).
 
-Vibe: As minimalist as possible, without loosing friendliness.
-"No dashboard." The north star is Ana spending under four minutes, all of it on decisions only a human can make. The UI's job is to disappear. Attention is the scarcest resource in the system, so color, motion and elevation are spent, never decorated with.
-Honesty over decoration. "A number on a chart that nobody can explain is worse than no number." Surfaces are opaque, line styles carry truth (settled vs. declared), color never carries meaning alone, as much as possible we replace colors as the main meaning (like a green ball for connection up with an icon for good connection that can be configured to have a color).
-A whiteboard, not a cockpit. Sand are lego blocks on a blank canvas — dots, strokes, hand-drawn arrows, blocks the user arranges. Familiar, paper-like, user-owned. When the user makes their lince, it feels like they are creating an art piece, the built-in ui should be minimalist to not carry the composition away from the user's intention.
+Each part in implementation should be divided into two groups, or for consolidated and done work, that is deemed as being done and well made to be carried out into the future, with an abstracted description of it, saying what it is and how it interacts, possibly with examples and schemas. And a group below with the tasks, so we can track progress by the difference between textual and checkbox size. When checkboxes are complete and consolidated after the features regarding it are done aswell it can become textual description for it is stable. On your rounds of execution I dont want to have to ask you for a report on what is done, i want to be able to look at the Goals and conditions and assess quickly what is to be done and what is thought to be complete.
+
+# Goals & Conditions
+
+- [ ] [Sand](#sand): Sand is a component, the whole interface is the sandbox. When you build sandcastles you put water in them, so by rearranging things inside the sandbox with hydration you get form, components, widgets. The goal of a sand is to be minimal and composable, unix like. You must be able to group sands together to make a bigger one, with buttons that do actions when clicked affecting part of other sands because they are connected, like a visual programming environment. When we talk about sands we talk about the smaller sands that make them, so there is no distinction between what some would call a component library (LynxUI) and the whole sand store, its all one thing, if buttons can be given events and data then it is a sand, because a sand can be only a form, dead, or full of interactions and be used for one workflow or highly specific.
+      - [ ] The sands must be built in a way that allows for hihg customization live on the Box, and high composeability when creating preset sands. So using a button can be referencing it and possibly adding a lot of Behavior to it. If we just copy the HTML it will get stale one we change the original. This must be well thought of so changing the original one changes all existing uses of it instantaneously. From the built-in sands that Lince delivers to the user to the ones already on the people's boards.
+      - [ ] Buttons, dropdowns, lists, checkboxes... All you would expect of a Design System and Component Library for the general purpose cases. Not every generic component is supposed to be built before building the group of them, the complete sands that can form a Kanban or a Table or an Editor, they can be built on demand, when some workflow needs them and then add to the store to use them.
+- [ ] [Box: Base Capabilities](#base): The base of the app is called Box, it is the best playground for creating the sands and interacting with them, it feels alive with the topology and capabilities to control and move the sands. This should be built first to have the best possible environment for managing your components, not a sidebar with icons for your apps, a holistic integrated playground.
+      - [ ] Add external sands to the Box.
+      - [ ] Add the built-in Sands of Lince, from small buttons to complete Sands.
+      - [ ] Link Sands together with interactions, data passing, events and shared state. Make groups to move them around together and shelter the outside of the group from the events produced by the sands inside.
+      - [ ] Have extensive documentation on how to build a sand in a simple way, to query data with Protein and interact with other Sands, this should be human readable and so any non-technical person can create one, no sand editor as a sand, the Box has the full capabilites to compose new sands, take parts from existing ones of the store and of existing ones already in the box. In edit mode one can see all of the connections, event ingestion and creation and data subscriptions, and copy that aswell, not only the appearance.
+- [ ] [Highly customizable](#customization): one must be able to alter the physical appearance of the sands and base app as much as possible, with high degree of ergonomics and integration with exising styles, from padding to colorschemes and more.
+- [  [Interoperability](#interoperability): many great systems exist, the interface must allow interaction with people that use these other systems, Lince aims to coexist with other systems with the use of the [Blood](Ontology.md) feature to create similar components throughout the different systems and show data from other systems in the Interface.
+      - [ ] Open source canvas specs must be decided to be used or not. Being able to export the data of the state of the board to a file to be used somewhere is good, it is great if the file format is some Open spec for canvas or something like it, but we should NEVER limit the Box's canvas capabilites because the spec doesn't comply with a feature we need. This checkbox is to be gone in place of a decision.
+- [ ] [Mobile](#mobile): after all the sandbox desktop version is coded we should focus on mobile, and not think about it until then.
+
+## UI Guidelines
+
+- Honesty over decoration. "A number on a chart that nobody can explain is worse than no number."
+- Surfaces are opaque, line styles carry truth (settled vs. declared), color never carries meaning alone, as much as possible we replace colors as the main meaning (like a green ball for connection up with an icon for good connection that can be configured to have a color).
+- A whiteboard, not a cockpit. Sand are lego blocks on a blank canvas — dots, strokes, hand-drawn arrows, blocks the user arranges.
+- Familiar, paper-like, user-owned. When the user makes their lince, it feels like they are creating an art piece, the built-in ui should be minimalist to not carry the composition away from the user's intention.
+
 The brand is black and white by default, with purple as the supporting color.
+
+Purple Cobalt — CMYK: 66, 71, 0, 36; HEX: `#3730A3`; RGB: 55, 48, 163.
+Noturnal Purple — CMYK: 59, 58, 0, 5; HEX: `#6366F1`; RGB: 99, 102, 241.
+Deep Lead — CMYK: 10, 10, 0, 92; HEX: `#121214`; RGB: 18, 18, 20.
+Gray — CMYK: 10, 5, 0, 12; HEX: `#A7B4C2`; RGB: 203, 213, 225.
+Ice White — CMYK: 2, 1, 0, 1; HEX: `#F8FAFC`; RGB: 248, 250, 252.
+
 Components are flat by default. A component may opt into the one restrained shadow utility when it needs to appear above an adjacent region; the area that is not content should feel tight and shunk, boiled to the essence, minimal, functional.
 
-## Lince palette reference
 
-Roxo Cobalt — CMYK: 66, 71, 0, 36; HEX: `#3730A3`; RGB: 55, 48, 163.
-Roxo Noturno — CMYK: 59, 58, 0, 5; HEX: `#6366F1`; RGB: 99, 102, 241.
-Chumbo Profundo — CMYK: 10, 10, 0, 92; HEX: `#121214`; RGB: 18, 18, 20.
-Cinza — CMYK: 10, 5, 0, 12; HEX: `#A7B4C2`; RGB: 203, 213, 225.
-Branco Gelo — CMYK: 2, 1, 0, 1; HEX: `#F8FAFC`; RGB: 248, 250, 252.
+# Implementation
 
-# Web Platform
+## Base
 
-## Board and sand infrastructure — the shipped web surface
+The Web interface is an HTML based one. It can be run in browsers or as a desktop app with Tauri. The base app should be minimalist to give as much space as possible for user's to express themselves. That expression should feel familiar, reflecting what they want
+. In addition to what we say is the base app we have possibly many components, widgets, called 'Sand'. They are HTML iframes inside a canvas, so like blocks of lego in a whiteboard.
+We have an edit mode for being able to move components around, add or remove them, including many other actions.
 
-- [x] One WebSocket (`/host/transport/ws`) shared by the unified bridge and the Data panel; the bridge speaks both the legacy nested-payload chrome shape and the current flat `frame.js` shape, routing by subscription id and lane room (ids never collide across consumers).
-- [x] Sands are Rust-canonical: each official sand is a self-contained `.html` via `include_str!`, registered in `OFFICIAL_WIDGETS`; groups ship as `.lince` workspace archives; the catalog peeks content so a group archive is never mis-parsed as a single sand, and a group entry replaces a same-named single sand.
-- [x] Groups nest: `BoardCard.group_ids` (outer → inner) is authoritative; disbanding an outer group preserves inner ones; adding a catalog group re-homes to a fresh inner id each time, so repeated adds are independent.
-- [x] Events are scoped to a grouped sand's innermost group; ungrouped sources broadcast board-wide; cross-session mirroring rides lane rooms, never persisted.
-- [x] (2026-07-19) Kanban, Relations, and Communication no longer ship as a GROUP bundled with their own Record sand — every board already has exactly one pinned Record (`shell-record`, bottom-right corner, icon by default), so bundling a second one per sand was redundant and, worse, its group scoping meant a grouped kanban's `recordClicked` never reached the pinned one. These three now ship as plain single `.html` packages (ungrouped), so their board-wide `recordClicked`/`recordCreate` reaches the pinned Record directly. The generic group-archive machinery (`.lince` workspace archives, `is_group` catalog entries, drag-drop import) stays for user-authored/imported groups — only the three OFFICIAL auto-grouped catalog entries were removed. Kanban's default add-to-board size also grew (`initial_width`/`initial_height` 6×6, up from 7×5 pre-clamp) since it's no longer sharing space with a bundled Record card.
-- [x] Per-card host state flows both ways (`H.getCardState()`/`H.onCardState`/`H.patchCardState`) — any sand persists UI prefs without touching the Ledger; board chrome itself (pan/zoom/workspaces/position/size/pin/z-index/grouping/edit mode) is ALWAYS host state, never a Ledger fact.
-- [x] The Data panel is the one place Protein gets configured (source, nested AND/OR filters up to 10 levels, sort, limit, includes) per card — sands ship with NO default driving Protein; an unconfigured card shows an explicit "pick a Protein" prompt instead of silently dumping every record. Negation belongs to one condition. Record filters include assignee, work dates, assertion predicate, quantity, text, and generic directional assertions. The builder autocompletes predicate inputs from a `concept` source subscription; "All records" drives an explicit `{source:"record"}`, distinct from "unconfigured." The binary-assertion include is multi-predicate ("+ predicate" rows, `"*"` = every predicate, both AST spellings round-trip) — one Protein pulls several predicates and the Relation graph draws parallel assertions between the same two Records as fanned-out bent lines. See [Ontology](Ontology.md) for the shared model.
-- [x] The shared slash-block editor (`window.LinceBodyEditor`) is used by every sand that touches record bodies: `/` opens a Notion-like block palette (headings, image placeholder, checkbox), `@` opens the Record picker; the body stays canonical markdown, checkboxes toggle by original line index, and `@slug` chips navigate and become `@references` assertions on save. Optional — a sand without it degrades to a plain textarea.
-- [x] Local images: the editor's "/image" block picks/uploads a file (native OS dialog first, browser `<input type=file>` fallback), sniffs bytes against a raster allowlist, and stores under an opaque generated name — there is still no route serving an arbitrary disk path.
-- [x] Action `warnings` reach sands end-to-end (bridge → `frame.js` → amber sand status), never surfaced as errors.
-- [x] Record deletion is permission-gated (`record:delete` vs `record:delete_own` + creator match) at the one `DeleteRecord` action — since threads/messages are themselves records, this single gate covers all three; viewer identity (`H.getViewer()`/`H.onViewer`) flows to every sand so delete controls can show/hide correctly, though the engine gate (not the UI hint) is what actually enforces it.
-- [x] The permission/role/user system is Protein(`source:"auth"`) + five gated Actions (`create-role`, `create-user`, `assign-role`, `grant-permission`, `revoke-permission`) — a plain CRUD sand on top, no different in kind from any other sand; auth-table mutations emit no facts, so the sand re-subscribes after every mutation instead of relying on live invalidation.
-- [x] (2026-08-07) Package publish/catalog is disk-backed, not bucket-backed — no object-store backend runs anywhere in this codebase (see `media_assets.rs`) and `crates/transport` carries no package-fetch frames, so it is scoped to this Cell's own local organ (`/organ` already only ever returns the local organ). `sand_publisher` (now registered in `OFFICIAL_WIDGETS`) previews an uploaded `.html`/`.sand`/`.lince` package, writes it under `paths::dna_dir()` (`lince/dna/sand/<prefix>/<slug>/<version>/...`), and creates a `record` + `record_extension(namespace="lince.dna")` — the same op-log sync that already replicates `record_extension` (`engine::sync`) carries a published package to a paired organ with no bespoke cross-organ publish protocol. Cross-organ *search* (browsing another organ's catalog before it has synced in) stays out of scope until such a protocol exists. Unpublish drops the extension row only — the Record itself stays, since removing it from the catalog is not the same act as deleting it (that stays the permission-gated `delete-record` Action's job).
-- [x] (2026-08-07) Blanket read/write permission enforcement: every `Action` variant not already bespoke-gated (`delete-record`'s ownership-aware check, `transfer:create`/the 17 inline `transfer:update` sites, the five auth actions) is now checked against a catalog key from `utils::auth::ALL_PERMISSIONS` — a catalog that already declared `record:update`, `transfer:read`, `karma:create`, etc. and already let every role toggle them in the permissions sand, so this is wiring, not new permission strings. Every Protein source likewise checks a `record:read`/`transfer:read`/`frequency:read`/`karma:read` key at the one dispatch point in `execute_for_with_context`; `Decision`/`Nearby` stay fully hidden from any non-local subject as before, `Concept`/`Lingua` stay deliberately ungated ("shared vocabulary travels freely"). Both checks use a LENIENT actor resolution: only a `Some` actor that parses as a real numeric `app_user` id is checked — `None` (local, no-auth Cell) and any other actor shape (a Person uid, an organ id — legitimate Ledger attribution from Karma/internal call sites, not a permission-bearing session) are unrestricted, matching every action's pre-existing behavior. Operational note: only the seeded `admin` role is auto-granted the full catalog at bootstrap; a role created later through the permissions sand starts with **zero** permissions until granted — a non-admin user now genuinely needs `record:create`/`record:read`/etc. checked on to do ordinary work once auth is required, which was not true before this landed.
-<!-- - [ ] Per-sand capability/permission model before imported sands can write arbitrary Actions (today any sand can call any Action — fine for official sands, needed before running imported ones freely); sand provenance `cause=sand:<uid>`. -->
-<!-- - [ ] `.lince` GROUP drag/drop import: client routing still checks the `.group.sand` extension — route by content instead, like the catalog does. -->
-<!-- - [ ] Host-state sync for board presentation state across devices (today it's Cell-local only, in `board-state.json`; not Ledger data, so it should NOT ride the op-log record sync — it would need its own small sync path, or to live in a synced settings-record, if cross-device parity is ever wanted). -->
+Maybe the user can enter in editing mode a smoosh tool to alter the topography of the base web version, in 3d camera. Do we need HTML? why dont ditch it and go full GPUI or Pulsar Engine? or Bevy? (Lets go for the best absolute performance). Why not making it a game-like experience already? The base app as a game with full topography and minecraft like features and optimization. Why the fuck not? Its slopping time afterall... Or not, too token hungry for when the bubble pops. This might be the prototype version of lince so no need to waste tokens on something that needs to prove a point and expand to the needs of lince and then be rebuilt well, the lean-se version might have that, this one cant, too slopped up?
 
-## Wire protocol — how a sand talks to the Cell
+## Sand
 
-- [x] One WebSocket (`/host/transport/ws`), multiplexed: Protein (reads) + Actions (writes) + ephemeral lanes (presence/cursors/events) + explicit host capabilities (e.g. a terminal PTY session) whose bytes don't belong in the Ledger.
-- [x] Actions are JSON with a kebab-case `"action"` tag, snake_case everywhere else; Protein predicates/includes are snake_case too.
-- [x] A subscription answers with a snapshot then re-executes and pushes on every relevant commit; invalidation is coarse-by-source — render idempotently, a sand may get refreshes it doesn't strictly need.
-- [x] Action responses carry `created`, `facts` (what the Ledger committed, including any Karma cascade), and `warnings` (non-fatal advisories) — show warnings, never treat them as errors.
-- [x] Ephemeral-lane and host-capability traffic (cursors, clicks, presence, PTY bytes) is never persisted; terminal PTYs are scoped to one connection and die with it.
-
-
-# Supercomponent, a Theory
+Supercomponent: a theory of componentization
 
 All components are a configuration of the theoretical potential Supercomponent. They are configured with some sliders, like:
 
-How much information of records do you show?
-
-How much information of the interactions between records (links and such) do you show?
-
-Does a record position on the component matters?
-
-How much information of other features of Lince can I see that are related to this Record (like transfers and automations that envolve it)?
+- How much information of records do you show?
+- How much information of the interactions between records (links and such) do you show?
+- Does a record position on the component matters?
+- How much information of other features of Lince can I see that are related to this Record (like transfers and automations that envolve it)?
 
 The supercomponent could have a configuration to change how records are shown and simulate a kanban, a relation graph, etc.
 
-Kanban sand is: variable info, not much interaction beyond parent/child task, position matters a lot because of columns for state, no extra info about automations and transfers.
+- Kanban sand is: variable info, not much interaction beyond parent/child task, position matters a lot because of columns for state, no extra info about automations and transfers.
+- Relation sand is: low information about record, spatial positioning doesnt matter, interactions between records matter, links. Show no automation or transfers.
+_ Karma is: show little info, spatial doesnt matter, interactions matter for automation, transfers matter when records have automatic transfers.
 
-Relation sand is: low information about record, spatial positioning doesnt matter, interactions between records matter, links. Show no automation or transfers.
-
-Karma is: show little info, spatial doesnt matter, interactions matter for automation, transfers matter when records have automatic transfers.
-
-The supercomponent could be built once, and then when someone wants a karma that shows a lot of info, or that orders records spatially in a certain way they will tweak configurations of the component, not create a new one. I feel like that is the future of interfaces, configuration above creation, AI might make creation easy, but if i dont have a need to create another, pressing one button is always less work than prompting then we minimize work on the side of users to fit their workflows.
-
-We are implementing different sands, not thinking about the supercomponent, how much implementation of the same physics engine, the same sorting, the same querying of record info can we do until we decide its time for the ultimate Lince component?
-
-But let's go one step further, what if we dont have the supercomponent, what if base lince has all of those capabilities? We are doing canvas inside canvas, remove nesting, records will be nodes just like other html components, why not?
-
-We need to know when to go further in the crazyness, and when to retreat to a more strategic point of implementation. The theoretical supercomponent is too powerful to be implemented right now, and should be guarded from existing until the time is right. The best right now if we are to advance in it's direction is to join done components into a proto-Supercomponent. When Kanban is ready it is joined with Relation, so we can manifest a Kanban, a Relation sand or some other one that has some features of each but different points, something in between, never seen. And we could then keep on absorbing components, with a click in it's configuration to make it instantly fit it's lever and sliders to be exactly like a kanban or a Relation, snap into position, so it feels like we have many components inside one, but it's actually exponentially diverse.
+The supercomponent could be built once, and then when someone wants a karma that shows a lot of info, or that orders records spatially in a certain way they will tweak configurations of the component, not create a new one. I feel like that is the future of interfaces, configuration above creation, AI might make creation easy, but if i dont have a need to create another, pressing one button is always less work than prompting then we minimize work on the side of users to fit their workflows. We are implementing different sands, not thinking about the supercomponent, how much implementation of the same physics engine, the same sorting, the same querying of record info can we do until we decide its time for the ultimate Lince component? But let's go one step further, what if we dont have the supercomponent, what if base lince has all of those capabilities? We are doing canvas inside canvas, remove nesting, records will be nodes just like other html components, why not? We need to know when to go further in the crazyness, and when to retreat to a more strategic point of implementation. The theoretical supercomponent is too powerful to be implemented right now, and should be guarded from existing until the time is right. The best right now if we are to advance in it's direction is to join done components into a proto-Supercomponent. When Kanban is ready it is joined with Relation, so we can manifest a Kanban, a Relation sand or some other one that has some features of each but different points, something in between, never seen. And we could then keep on absorbing components, with a click in it's configuration to make it instantly fit it's lever and sliders to be exactly like a kanban or a Relation, snap into position, so it feels like we have many components inside one, but it's actually exponentially diverse.
 
 Down here are the past implementations of a subset of the Supercomponent, with specific names like Kanban, Relation, etc. They have an identity and think they are unique, but they are actually part of a whole, they just don't know it:
 
-# Record
+
+The Supercomponent theory above is the destination; this is the mechanism to get closer to it without waiting for the whole thing to be theoretically finished.
+
+A Sand should not be authored as one monolithic HTML file forever. It should be built from smaller named pieces — LynxUI components, each already able to bind to a Protein subscription or hold its own slice of Sand state — and the *consequence* of interacting with a piece lives on the piece itself: a button that opens a creation panel carries "open panel" as its behavior, a button that deletes a Record carries the delete Action call as its behavior, not as separate wiring bolted on by whichever Sand happens to contain it. A piece is self-describing: what it reads (its Protein shape), what it can do (its Action calls), and what it renders.
+
+The **Sand Editor** is the tool responsible for composing pieces into a Sand: arranging them, wiring a piece's declared Protein need to a live subscription, and leaving a piece's declared Action untouched since the piece already knows what it does. This is what makes the following possible without inventing a second mechanism:
+
+- [ ] **A `Sandbox` sand** — an official Sand whose entire purpose is building other Sands out of existing pieces, in the same edit-mode spirit as arranging cards on a board today, but one level down: dragging pieces instead of dragging whole Sands. This is the closest concrete step toward the Supercomponent without trying to build the Supercomponent directly.
+- [ ] **Absorbing a done Sand into the proto-Supercomponent** (as already described above) becomes "this Sand's pieces are now available to the Sandbox," not a separate migration.
+- [ ] A piece composed into a new arrangement is still just a piece — no new persistence shape, no new wire message; it rides the same Protein/Actions contract every Sand already uses.
+
+This means the near-term refactor priority for every official Sand is: extract its buttons, panels, and list rows into named LynxUI pieces with their consequences attached, before adding new features to it. A Sand that is already pieces costs nothing extra to expose to the Sandbox later; a Sand that stays monolithic has to be taken apart eventually anyway.
+
+### Record
 
 Slash commands, to be able to put several types of blocks in the body of Records as cards of kanban, or even as any Markdown body (reusable). If you type the underlying character/s you will end up seeing the same visual block, but you can enter slash mode to select from a list by name or start typing characters to filter them.
 
@@ -96,7 +100,8 @@ The list, with the characters and their blocks goes as following:
 
 - [x] **Record** (formerly "record_info" — the sole markdown editor, viewer, and creator for a record, and the home for every other per-record concern) — the get view IS the edit view (head/slug/quantity/ body writable, Save writes only what changed, a dirty form is never clobbered by live updates); Zero (`deactivate`) and Delete (`delete-record`, permission-gated) are separate buttons; creation mode shows the same fields empty, Create + focuses the new record; carries the shared slash-block editor (headings/images/checkboxes/`@slug`, the same palette everywhere in a body); collapsible sections for **Work** (start/due dates, estimate, worklogs with play/pause, on the `work` record extension, offline-queued writes), **Assignees** (`assigned-to` assertions), **Relations** (every hop-1 binary assertion in either direction, predicate+object inputs, both autocompleted — a document/URL is an asserted relationship or inline media in the body, with no separate resource/attachment model), and **Threads** (a real multi-thread system — a tab per thread, search filters which tabs list without hiding messages; chat-style runs (2026-08-07) show the sender name — `user@organ` when the message's origin-organ name differs from the sender's, just `user` when they match (the common single-user-organ case) — only on the first message of an unbroken run from the same `created_by`, every message keeps its own bottom-right timestamp and edit/delete controls, and editing an existing message now uses the same shared slash-block editor as composing one; `@slug` in a post becomes a Record reference, delete controls per permission). Reusable — any sand drives it via a scoped `recordClicked`/`recordCreate`; no sand keeps a private record sidepanel. Full real-time collaborative editing is blocked on the CRDT text relay in [Synchronization](<Synchronization.md>).
 
-# Kanban
+### Kanban
+
 The Kanban sand when ready will be able to provide teams the organization necessary to tackle projects together in a classic way. The data they CRUD in Kanban is accessible in other sands to fit greater workflows though.
 
 - [x] Have a way to create a new Record.
@@ -119,7 +124,7 @@ The Kanban sand when ready will be able to provide teams the organization necess
 - [x] Optionally group cards in swimlanes by assignee, parent, concept, or a Protein grouping key.
 - [x] Order based on several important fields, from head of record, to quantity, @concept and links. 
 
-# Relation
+### Relation
 
 Relation is a graph projection of **binary Record assertions**. It does not own
 a separate relation or link model; the shared data semantics, CRUD operations,
@@ -137,12 +142,13 @@ hierarchy widening, and Protein behavior live in [Ontology](../Ontology.md).
 - [x] **Protein trails and Focus** — consumes a directed assertion-order item
   from Record Protein. The returned ordering supplies traversal and the
   earliest root; Focus advances through matching Record states.
+- [ ] Later on, some form of creation of data, similar to ontology's trail should exist and be able to see it in this sand, to input in some dsl or lingua the creation of data to make this demo of paradigms of intelligence: https://paradigms-of-intelligence.github.io/morpho/.
 
-# Table
+### Table
 
 Table sand is responsible for being the base of the components. Since original data in database is in a table the Table sand is the simplest to translate the incoming data to a visual structure.
 
-# Communication
+### Communication
 
 The Communication sand is a messaging-app surface for Lince. Every
 conversation — with one user of your organ, users of other organs, or a mixed
@@ -155,6 +161,7 @@ The Communication sand never invents a chat system. It imports into places as
 a **group together with the Record sand** (same one-product pattern as
 kanban + record_info): Communication owns the list and the room; Record owns
 threads, messages, and `@slug` references.
+
 
 Everything below is the implementation order. A stage's title checkbox is
 ticked only when all its inner checkboxes are ticked and its selftest passes.
@@ -552,11 +559,11 @@ after the provider/scale decision.
 - LiveKit docs: Egress overview and screen sharing; LiveKit / Jitsi+Jibri:
   Apache-2.0; mediasoup: ISC; Janus: GPL-3.0
 
-# 2D Map
+### 2D Map
 
 - [ ] Take the location of Records and/or people, display them in a 2d map in real time, synced between organs.
 
-# Ergon
+### Ergon
 
 Ergon is the enduring, physical manifestation of our conscious actions that shapes both our world and our own evolution. Born from the Proto-Indo-European root *wérǵom, it represents the primordial energy of bringing reality into being through purposeful creation. Though long degraded by ruling elites as the mindless toil of the unfree, it is truly the highest form of conscious practice—a liberating force that allows a species to reclaim its creative output and consciously co-create its destiny with nature. - Gemini.
 
@@ -565,9 +572,10 @@ The coordination of production for our Needs requires specific interfaces? We wi
 - [ ] Logistic distribution and instant correction from a flicker of operational change of the brute mineral extractor to the chip manufacturer.
 - [ ] Order management, how much requests affect production.
 
-# Playground Facade
+### Playground Facade
 
 - [x] Be able to setup a Web workspace and export it in a file.html as an archive of the state of a component at a time. It doesnt make any requests, has no access tokens.
+- [ ] Use an export as an **Organ Facade**: the T2 tier of the Organ Profile (Ontology.md §11c, "The Organ Profile in three tiers"). A person builds a sand describing themselves from their real data, exports it, and that file is what a stranger opens after the small text+avatar card interests them. The export's four-layer no-network guarantee is exactly the property that makes this safe to open — a stranger's page that could make requests would tell its author who looked and when. Two things this section does NOT already cover and which must land with it: a size cap shown before the fetch, and rendering inside a bounded card that can never imitate Lince's own chrome.
 - [ ] Be able to export something that can still make some types of request, like the GET of proteins.
 - [ ] If we integrate with some payment system, we can even do some buy/sell process.
 - [ ] Make an online shop for the Lince Institute with JIT production, Needs are created/assigned when an order arrives.
@@ -576,19 +584,14 @@ The coordination of production for our Needs requires specific interfaces? We wi
     - [ ] 3D Keychain Accessory
     - [ ] Hoodies
 
-# Configuration
+## Customization
+
+
+### Configuration
 
 The sand exists, to configure normal lince data. We need to make it expand to configure more things. The sand will be the door to configure database stuff and board settings, like:
 
-## Lince palette reference
-
-Roxo Cobalt — CMYK: 66, 71, 0, 36; HEX: `#3730A3`; RGB: 55, 48, 163.
-Roxo Noturno — CMYK: 59, 58, 0, 5; HEX: `#6366F1`; RGB: 99, 102, 241.
-Chumbo Profundo — CMYK: 10, 10, 0, 92; HEX: `#121214`; RGB: 18, 18, 20.
-Cinza — CMYK: 10, 5, 0, 12; HEX: `#A7B4C2`; RGB: 203, 213, 225.
-Branco Gelo — CMYK: 2, 1, 0, 1; HEX: `#F8FAFC`; RGB: 248, 250, 252.
-
-## Customization and architecture
+#### Customization and architecture
 
 - [ ] In Web Interface, user can control all the basic aspects of the ui, the padding, margin gap of elements, border radius, thickness and colorscheme. In web version there should not be even one color hardcoded, only use tags like primary-background, or light-accent. The default style should come from the main style .css file, that has comments on every variable to explain where it is used, so when people make their .css files and add to dir of styles and choose in configuration table which style they want (name of file) they get the variables values from file and the app changes (either on boot if makes app faster or during setting). When we speak of specific details of style here like default colorscheme and scale units we are talking about default file, if people want they can customize it.
 - [ ] Architecture (from Sand: Colorschemes): The system is defined as named semantic tokens, not hex values — surface-raised, ink-primary, need, contribution, accent, focus — resolved per active colorscheme at runtime (the old a2 Operation to switch schemes is the spiritual ancestor). Scaling tokens (padding-s, radius-m) ride the same mechanism. A Sand author never picks a color; they name a slot, and the user's scheme decides what it looks like. That's how "the base app is minimalist so users can express themselves" survives contact with real widgets.
@@ -667,7 +670,7 @@ Branco Gelo — CMYK: 2, 1, 0, 1; HEX: `#F8FAFC`; RGB: 248, 250, 252.
 
 ## LynxUI
 
-- [x] Select Lynx and keep one evolving light/dark demo at [`lynx-ui-concepts/lynx.html`](lynx-ui-concepts/lynx.html). Update this design-system description whenever the demo guidelines change.
+- [x] Select Lynx and keep one evolving light/dark demo in the canonical [`LynxUI Gallery Sand`](../crates/web/src/sand/lynx_ui/index.html). Update this design-system description whenever the demo guidelines change.
 - [x] Build the LynxUI base as a framework-free component library for official Sands. Use native semantic HTML, explicit `lynx-*` classes, and a small JavaScript layer only for behavior that HTML does not provide consistently.
 - [x] Serve shared `lynx-ui.css` and `lynx-ui.js` assets. LynxUI uses the design-system tokens and defines no separate colorscheme, spacing scale, motion, or elevation. Component selectors have low specificity so global and per-Sand styles can override them.
 - [x] Provide Catppuccin Macchiato as the second style. Its CSS changes only colorscheme variables, uses the official Base, Mantle, Crust, Text, Subtext, Overlay, Mauve, Lavender, Red, Yellow, Green, and Blue values, and carries the Catppuccin MIT notice.
@@ -691,47 +694,54 @@ Branco Gelo — CMYK: 2, 1, 0, 1; HEX: `#F8FAFC`; RGB: 248, 250, 252.
 - [x] Add a development-only LynxUI Gallery with one scrollable page: a compact showcase of all LynxUI components sits beside a stacked set of seeded Kanban, message, inventory, and request-review Sand previews at their normal board sizes. It uses canonical assets and fixture data without Protein or Action requests. `mise run lynxui` serves it at `http://127.0.0.1:6175` and recompiles the gallery package for Lince on source changes.
 - [x] Add a folded base control that highlights LynxUI components and shows their component names on hover. Sand-specific structure stays unmarked so the boundary is clear.
 - [ ] Add concise Sand-author documentation, component behavior tests, iframe tests, theme override tests, and checks that LynxUI has no hardcoded design colors, unauthorized shadows, transitions, or animations.
+- [ ] Omegacanvas:
+      - [ ] Being able to put terrain topography like in my canvas, so giving it some mountains below and adjusting gravity of it. So the sands themselves are nodes in a relation sand-like canvas and so i can do like a drop in the water with high relevo in center and the top of the waves of the droplet bounce are the absence of sands because they have been pushed to the valleys, i think i need gravity, we can do mountains aswell, with a static topology or one that follows a sand as the focal point pinning it to a point in the topology (not necessairly the center), so when it moves around it changes the positioning of the other ones. We can also do some potholes where some clusters live. Also we can put tags in the sands to make them be clustered, talks to the supercomponent idea of making everything be kinda interchangeable of what is data and what is sand and what is interacteable. So like some part of the canvas can have a circle that says give me data here in this configuration, as if you pulled some item under the tablecloth and it sayed in that shape so the sands' functionalities are capabilities of the canvas, being able to pull a part of the canvas, drill a hole in it to access the things below in ws and change the shape of the canvas there, as if morphing space-time to have a configuration. When i draw in a certain way over the canvas i can create a sand in there, or configure that space as a sand with some capabilites, and if it produces records i may even make them connect to other records made from other sand initiatives, the board then becomes the sandbox, that's the name of the web interface. the sand is what it is, arranging part of the sandbox and giving it life with water like the web's concept of hydration. Being able to do ctrl-c ctrl-v with sands to multiply them, maintaining state of where they point to. https://youtu.be/-IOLRcFC6OY?si=WW1tMdMmo0NYxcu_
+      - [ ] What does using canvasui help to do on what we plan and what we dont? https://canvasui.dev/
+      - [ ] When we do a canvas we should use the open spec for it. https://github.com/ocwg/ocif-spec  https://github.com/ocwg/ocif-lib.
+      - [ ] Being able to drag and drop stuff into lince and it knows what component to use to render it, like dropping an image or pdf uses the document viewer.
 
 <!-- - [ ] Chart Library -->
 <!-- - [ ] Be able to draw (arrows, boxes, text and erasing at first is ok). If we fill the space with too much stuff in lets say, svg it will at some point if the person is making a complext diagram or making a painting frame around their component it will get heavy and make the app slow. We must solve that problem, excalidraw does that really well, putting a lot of drawings on the screen, lots of elements, doesnt make it slow. How do they do it? what do they implement? -->
 
 
+## Interoperability
 
 
---- End of Supercomponent area ---
-
-Down here is stuff not related to board sands and supercomponent hocus pocus, that is simple software development, here things start to get a higher quality, unlocking different devices and technologies to do normal things in a different way, or going plus ultra.
-
-# Mobile
+## Mobile
 
 Its hard making one repo for all platforms, but worth since mobile is so useful.
 
-# Embeded
+---
 
-We need a version of lince to be wearable in a simple way, we can devise an esp with bluetooth, screen and batery and make a minimal version with a specific tui or something even simpler, it will be able to:
-- [ ] CRUD organ
-- [ ] Login to organ
-- [ ] Select protein from organ to view data
-- [ ] Look at records in a list
-- [ ] Control quantity of a record simply, like -1, 0, 1
+## How it functions
 
-It can be done harcoding all of that. So i will be able to hardcode with .env that there will be an organ at such endpoint and such login and such protein to choose from, the device wakes up, and uses the Sync feature of Lince to edit the records they can see only the quantity according to the protein they can see.
-
-
-# The Game of Life - Digital Real World Maps
-
-Being able to see the world or a digital space with it's actors and needs/contributions.
-- [ ] One can see the world as a plane with lines for the streets.
-- [ ] Bonus points for terrain data, elevation, like mountains. With that in rendering we can portrait a more accurate picture of the world and also use the elevation to show the Needs and Contributions in a 3d way. If there are a lot of Needs in one area that is like a mountain visually.
-- [ ] Integrate that with Transfer Proposal. Being able to accompany the whole process through the maps, like a delivery; understanding who is closest to Contribute to your Need.
-
-https://github.com/orgs/Far-Beyond-Pulsar/discussions/40
-
-Maybe the way to go is using a game engine in gpui like Pulsar if it allows for the rendering of a Component in a canvas or something similar to display like a game level.
-
-GPU can be used for highly efficient rendering. That can be used from finantial spreadhseets, to immersive visualization of Records across real world maps and more, this interface is for bulky rendering.
-
-But if we are going to those lenghts, why not code it like a game already? Games are fun.
-
-What if we could make our Records be part of the game? From influencing the seed to a real live preview of them as parts of the landscape with bigger mountains for bigger quantities of a certain record, to becoming enemies we Need to defeat. What if Karma could be used for the rules of the game? evaluating as frequently as possible
+- [x] One WebSocket (`/host/transport/ws`) shared by the unified bridge and the Data panel; the bridge speaks both the legacy nested-payload chrome shape and the current flat `frame.js` shape, routing by subscription id and lane room (ids never collide across consumers).
+- [x] Sands are Rust-canonical: each official sand is a self-contained `.html` via `include_str!`, registered in `OFFICIAL_WIDGETS`; groups ship as `.lince` workspace archives; the catalog peeks content so a group archive is never mis-parsed as a single sand, and a group entry replaces a same-named single sand.
+- [x] Groups nest: `BoardCard.group_ids` (outer → inner) is authoritative; disbanding an outer group preserves inner ones; adding a catalog group re-homes to a fresh inner id each time, so repeated adds are independent.
+- [x] Events are scoped to a grouped sand's innermost group; ungrouped sources broadcast board-wide; cross-session mirroring rides lane rooms, never persisted.
+- [x] (2026-07-19) Kanban, Relations, and Communication no longer ship as a GROUP bundled with their own Record sand — every board already has exactly one pinned Record (`shell-record`, bottom-right corner, icon by default), so bundling a second one per sand was redundant and, worse, its group scoping meant a grouped kanban's `recordClicked` never reached the pinned one. These three now ship as plain single `.html` packages (ungrouped), so their board-wide `recordClicked`/`recordCreate` reaches the pinned Record directly. The generic group-archive machinery (`.lince` workspace archives, `is_group` catalog entries, drag-drop import) stays for user-authored/imported groups — only the three OFFICIAL auto-grouped catalog entries were removed. Kanban's default add-to-board size also grew (`initial_width`/`initial_height` 6×6, up from 7×5 pre-clamp) since it's no longer sharing space with a bundled Record card.
+- [x] Per-card host state flows both ways (`H.getCardState()`/`H.onCardState`/`H.patchCardState`) — any sand persists UI prefs without touching the Ledger; board chrome itself (pan/zoom/workspaces/position/size/pin/z-index/grouping/edit mode) is ALWAYS host state, never a Ledger fact.
+- [x] The Data panel is the one place Protein gets configured (source, nested AND/OR filters up to 10 levels, sort, limit, includes) per card — sands ship with NO default driving Protein; an unconfigured card shows an explicit "pick a Protein" prompt instead of silently dumping every record. Negation belongs to one condition. Record filters include assignee, work dates, assertion predicate, quantity, text, and generic directional assertions. The builder autocompletes predicate inputs from a `concept` source subscription; "All records" drives an explicit `{source:"record"}`, distinct from "unconfigured." The binary-assertion include is multi-predicate ("+ predicate" rows, `"*"` = every predicate, both AST spellings round-trip) — one Protein pulls several predicates and the Relation graph draws parallel assertions between the same two Records as fanned-out bent lines. See [Ontology](Ontology.md) for the shared model.
+- [x] The shared slash-block editor (`window.LinceBodyEditor`) is used by every sand that touches record bodies: `/` opens a Notion-like block palette (headings, image placeholder, checkbox), `@` opens the Record picker; the body stays canonical markdown, checkboxes toggle by original line index, and `@slug` chips navigate and become `@references` assertions on save. Optional — a sand without it degrades to a plain textarea.
+- [x] Local images: the editor's "/image" block picks/uploads a file (native OS dialog first, browser `<input type=file>` fallback), sniffs bytes against a raster allowlist, and stores under an opaque generated name — there is still no route serving an arbitrary disk path.
+- [x] Action `warnings` reach sands end-to-end (bridge → `frame.js` → amber sand status), never surfaced as errors.
+- [x] Record deletion is permission-gated (`record:delete` vs `record:delete_own` + creator match) at the one `DeleteRecord` action — since threads/messages are themselves records, this single gate covers all three; viewer identity (`H.getViewer()`/`H.onViewer`) flows to every sand so delete controls can show/hide correctly, though the engine gate (not the UI hint) is what actually enforces it.
+- [x] The permission/role/user system is Protein(`source:"auth"`) + five gated Actions (`create-role`, `create-user`, `assign-role`, `grant-permission`, `revoke-permission`) — a plain CRUD sand on top, no different in kind from any other sand; auth-table mutations emit no facts, so the sand re-subscribes after every mutation instead of relying on live invalidation.
+- [x] (2026-08-07) Package publish/catalog is disk-backed, not bucket-backed — no object-store backend runs anywhere in this codebase (see `media_assets.rs`) and `crates/transport` carries no package-fetch frames, so it is scoped to this Cell's own local organ (`/organ` already only ever returns the local organ). `sand_publisher` (now registered in `OFFICIAL_WIDGETS`) previews an uploaded `.html`/`.sand`/`.lince` package, writes it under `paths::dna_dir()` (`lince/dna/sand/<prefix>/<slug>/<version>/...`), and creates a `record` + `record_extension(namespace="lince.dna")` — the same op-log sync that already replicates `record_extension` (`engine::sync`) carries a published package to a paired organ with no bespoke cross-organ publish protocol. Cross-organ *search* (browsing another organ's catalog before it has synced in) stays out of scope until such a protocol exists. Unpublish drops the extension row only — the Record itself stays, since removing it from the catalog is not the same act as deleting it (that stays the permission-gated `delete-record` Action's job).
+- [ ] Sand store federation: the package catalog (disk-backed under `dna_dir()`
+  today; a bucket if that storage path is ever revived) serves a published Sand
+  package to a connecting Organ, not only the local Organ. A Sand is itself a
+  piece of Alexandria — knowledge of how to render and act on something — so it
+  should travel the way an adopted Concept already does: lineage back to its
+  author preserved, no forced central registry, and no assumption that disk vs
+  bucket changes the contract above it.
+- [x] (2026-08-07) Blanket read/write permission enforcement: every `Action` variant not already bespoke-gated (`delete-record`'s ownership-aware check, `transfer:create`/the 17 inline `transfer:update` sites, the five auth actions) is now checked against a catalog key from `utils::auth::ALL_PERMISSIONS` — a catalog that already declared `record:update`, `transfer:read`, `karma:create`, etc. and already let every role toggle them in the permissions sand, so this is wiring, not new permission strings. Every Protein source likewise checks a `record:read`/`transfer:read`/`frequency:read`/`karma:read` key at the one dispatch point in `execute_for_with_context`; `Decision`/`Nearby` stay fully hidden from any non-local subject as before, `Concept`/`Lingua` stay deliberately ungated ("shared vocabulary travels freely"). Both checks use a LENIENT actor resolution: only a `Some` actor that parses as a real numeric `app_user` id is checked — `None` (local, no-auth Cell) and any other actor shape (a Person uid, an organ id — legitimate Ledger attribution from Karma/internal call sites, not a permission-bearing session) are unrestricted, matching every action's pre-existing behavior. Operational note: only the seeded `admin` role is auto-granted the full catalog at bootstrap; a role created later through the permissions sand starts with **zero** permissions until granted — a non-admin user now genuinely needs `record:create`/`record:read`/etc. checked on to do ordinary work once auth is required, which was not true before this landed.
+<!-- - [ ] Per-sand capability/permission model before imported sands can write arbitrary Actions (today any sand can call any Action — fine for official sands, needed before running imported ones freely); sand provenance `cause=sand:<uid>`. -->
+<!-- - [ ] `.lince` GROUP drag/drop import: client routing still checks the `.group.sand` extension — route by content instead, like the catalog does. -->
+<!-- - [ ] Host-state sync for board presentation state across devices (today it's Cell-local only, in `board-state.json`; not Ledger data, so it should NOT ride the op-log record sync — it would need its own small sync path, or to live in a synced settings-record, if cross-device parity is ever wanted). -->
+- [x] One WebSocket (`/host/transport/ws`), multiplexed: Protein (reads) + Actions (writes) + ephemeral lanes (presence/cursors/events) + explicit host capabilities (e.g. a terminal PTY session) whose bytes don't belong in the Ledger.
+- [x] Actions are JSON with a kebab-case `"action"` tag, snake_case everywhere else; Protein predicates/includes are snake_case too.
+- [x] A subscription answers with a snapshot then re-executes and pushes on every relevant commit; invalidation is coarse-by-source — render idempotently, a sand may get refreshes it doesn't strictly need.
+- [x] Action responses carry `created`, `facts` (what the Ledger committed, including any Karma cascade), and `warnings` (non-fatal advisories) — show warnings, never treat them as errors.
+- [x] Ephemeral-lane and host-capability traffic (cursors, clicks, presence, PTY bytes) is never persisted; terminal PTYs are scoped to one connection and die with it.
 

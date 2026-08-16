@@ -59,6 +59,17 @@ quantity: -1
       deliberately so this would be free.
 
 - [ ] **Fiote is a client of that contract, not a privileged path.** Parse "I spent 42 reais on lunch", transcribe a note, read a receipt, rank existing Records — always returning field candidates, never a final mutation, and never silently creating an ambiguous Record. **A model score is not a grant.** Deferred, but the boundary is fixed now so it stays narrow. Be able to run an model to look at your DNA and change it to fit your needs:
+      - [ ] **Give Fiote and other runtime agents a live Lince tool boundary.**
+            Build it only when an agent must work against a running Lince
+            rather than a checked-out File Sync folder. MCP resources expose
+            the current `.lingua` capabilities and selected First Steps
+            Records; tools search Records, resolve Concepts, validate a
+            projection, preview its semantic diff, and submit field
+            candidates through Protein and ordinary authorized Actions. No
+            direct SQLite access, no schema duplicated in the skill, and no
+            Fiote-only mutation path. The shipped
+            `lince-lingua-crud` skill remains the reusable workflow around
+            those tools, so Codex, Pi, Hermes and Fiote use the same contract.
       - [ ] Creating components for the frontend.
       - [ ] Suggesting Karma, or more Lince ways of doing things.
       - [ ] Doing imperative changes like: change this, start a call with someone, i did this task...

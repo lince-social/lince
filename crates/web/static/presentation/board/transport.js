@@ -792,10 +792,59 @@ function createConnection(organId) {
 // a board with three sands on the same host shares one socket to it.
 const connections = new Map();
 
+// Our own Organ's uid, as the Cell reports it.
+//
+// The board's convention is that an EMPTY binding means our own Cell, but the
+// local Organ also has a perfectly real uid, and it appears in `/organ` as the
+// first profile. A card that ends up holding that uid — from an older build, a
+// default that reached for `serverProfiles[0].id`, or a board state saved
+// before this was understood — is then treated as REMOTE: every write is sent
+// to `/live/{uid}/connect`, which asks `store::organs::contact` for a Cell that
+// is not a contact of itself, and every write fails with "not a contact".
+//
+// Nothing about that is recoverable by the user: the host picker shows "Local
+// Lince" selected, because the local uid is not among the remotes it lists, so
+// the setting LOOKS right while the card is bound elsewhere.
+//
+// So the two names for the same Cell are collapsed HERE, at the one function
+// every caller goes through, rather than at each of the dozen call sites where
+// forgetting one would bring the bug back.
+// The same collapsing also has to catch a binding to an Organ this Cell has
+// never heard of. Wiping the data directory mints a NEW local Organ uid while
+// the board's saved cards still name the old one — and a uid that is neither
+// our own nor a contact is dialled as a contact, fails, and shows the picker
+// sitting innocently on "Local Lince". A binding nobody can resolve is not a
+// remote host; it is a stale note, and our own Cell is the only honest place
+// for it to point.
+//
+// Guarded on `hostsKnown` so this never fires before `/organ` has answered.
+// Downgrading an unknown id to local while the list is still empty would send
+// a genuinely remote sand's writes into THIS Cell, which is far worse than the
+// bug being fixed.
+let localOrganId = "";
+let remoteOrganIds = new Set();
+let hostsKnown = false;
+
+export function setLocalOrganId(organId, remoteIds) {
+  localOrganId = String(organId || "");
+  if (Array.isArray(remoteIds)) {
+    remoteOrganIds = new Set(remoteIds.map((id) => String(id || "")).filter(Boolean));
+    hostsKnown = true;
+  }
+}
+
+function hostKey(organId) {
+  const key = String(organId || "");
+  if (!key) return "";
+  if (key === localOrganId) return "";
+  if (hostsKnown && !remoteOrganIds.has(key)) return "";
+  return key;
+}
+
 // The connection for a host binding, opening one if this is the first sand to
 // ask for it.
 export function getTransportFor(organId) {
-  const key = String(organId || "");
+  const key = hostKey(organId);
   let connection = connections.get(key);
   if (!connection) {
     connection = createConnection(key);
@@ -818,8 +867,8 @@ export function listTransports() {
 
 // Called when a host is no longer bound by any sand.
 export function releaseTransport(organId) {
-  const key = String(organId || "");
-  if (!key) return; // our own Cell is never dropped
+  const key = hostKey(organId);
+  if (!key) return; // our own Cell is never dropped, under either of its names
   const connection = connections.get(key);
   if (!connection) return;
   connections.delete(key);

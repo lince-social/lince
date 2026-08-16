@@ -1,10 +1,14 @@
 # Tips
 
-- The docs are markdown files in docs/ directory. This is being undone: the
-  end state is `docs/` holding no Markdown at all, only `.lingua` Records, so
-  that the plan and the documentation are the same data Lince itself stores.
-  `docs/records/` is where that lives; read `docs/records/README-CONTRACT.txt`
-  before writing anything into it.
+- Lince documentation and its task plan are `.lingua` Records in
+  `docs/records/`; `docs/` contains no Markdown. Before reading, creating,
+  updating, renaming, or deleting `.lingua`, use the `lince-lingua-crud` skill
+  in `.agents/skills/lince-lingua-crud/`. It is the shared workflow for Fiote
+  and every other agent or harness.
+- For this repository's shipped documentation bundle, the live bundle contract
+  is `tools/instinct/CONTRACT.txt`; the parser and renderer in
+  `crates/engine/src/lingua_file.rs` remain the format authority. Do not copy a
+  changing `.lingua` schema into `AGENTS.md`.
 
 # Working alongside other agents
 

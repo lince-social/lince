@@ -63,6 +63,27 @@ impl Session {
         &self.joined_rooms
     }
 
+    /// May this connection's Person still act here (Ontology C3)?
+    ///
+    /// The socket resolves its subject ONCE, at the upgrade, and then keeps it
+    /// for the life of the connection — which is right for a long-lived
+    /// session and wrong for a deactivation. Every HTTP route re-reads standing
+    /// per request; this is the equivalent for the path that actually matters,
+    /// because the board and every sand act over this socket rather than over
+    /// `/host/board/state`. Without it, a deactivated person with an open tab
+    /// keeps working until they reload.
+    ///
+    /// `None` is the local Cell and is always active: there is no Person to
+    /// deactivate, and answering otherwise would close the owner's own board.
+    pub async fn subject_may_act(&self) -> bool {
+        let Some(subject) = self.subject.as_deref() else {
+            return true;
+        };
+        store::people::is_active(&self.engine.store.pool, subject)
+            .await
+            .unwrap_or(true)
+    }
+
     /// Initialize remote Action authentication and return the connection's
     /// first application frame. The mapped Person comes only from the engine's
     /// authenticated app_user lookup. Local Cell sessions remain an explicit

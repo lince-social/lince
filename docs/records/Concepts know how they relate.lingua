@@ -1,0 +1,24 @@
+---
+uid: r_JZMSG32WGEM670P56V2XSKEPGG
+@@idea
+@instinct
+@chapter [[Concepts|r_W2WAENRBQDM6G9FJHTN9GPT71Z]] 3
+quantity: 1
+---
+
+## Concepts know how they relate
+
+Concepts are not a fixed list handed to you. They are a vocabulary you grow, and they record how they widen into each other:
+
+```mermaid
+graph LR
+  A["@apple"] --> B["@fruit"]
+  B --> C["@food"]
+  D["@bread"] --> C
+```
+
+_An apple is a fruit; a fruit is food. Nobody had to say an apple is food._
+
+So a Protein filtered on **Concept** `food` returns your apples and your bread, because it walks that graph for you. Ask a broad question, get everything underneath it; ask a narrow one, get only that branch. You never maintain the "is also a" list by hand, and a concept may widen into more than one parent — `@food` can sit under both `@substance` and `@cost`.
+
+Widening applies to links too, because a link's kind is a concept. A statement naming a specific project still answers a query for the general kind — you do not need to add a redundant tag beside it.

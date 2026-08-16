@@ -173,6 +173,18 @@ async fn organ(verbs: &[&str]) -> Result<(), Error> {
                         "No user `{username}` on this Cell. `lince organ users` lists them."
                     ))
                 })?;
+            // Granting a login to someone who no longer uses this Organ would
+            // create a door that `wire.rs` then refuses on every use — a
+            // command that appears to work and never does.
+            if !store::people::is_active(&store.pool, &user.uid)
+                .await
+                .map_err(|error| oops(error.to_string()))?
+            {
+                return Err(oops(format!(
+                    "`{username}` is deactivated on this Cell. Reactivate them in \
+                     Roles & Permissions first."
+                )));
+            }
             store::logins::grant(&store.pool, &contact.record_uid, &user.uid)
                 .await
                 .map_err(|error| oops(error.to_string()))?;
@@ -198,8 +210,16 @@ async fn organ(verbs: &[&str]) -> Result<(), Error> {
                 println!("No users with a login on this Cell.");
                 return Ok(());
             }
-            for (_uid, username, name, role) in users {
-                println!("{username:<24}  {role:<16}  {name}");
+            for (uid, username, name, role) in users {
+                // Standing is shown here for the same reason the sand shows
+                // it: a list of who can log in that hides who cannot is a list
+                // that omits its most important column.
+                let standing = match store::people::is_active(&store.pool, &uid).await {
+                    Ok(true) => "",
+                    Ok(false) => "  (deactivated)",
+                    Err(_) => "  (standing unreadable)",
+                };
+                println!("{username:<24}  {role:<16}  {name}{standing}");
             }
             Ok(())
         }

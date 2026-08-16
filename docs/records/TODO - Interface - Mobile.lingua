@@ -1,0 +1,14 @@
+---
+uid: r_H9T8364JB183XNW544M9HEPMGW
+@@task
+@instinct
+@part-of [[Interface - Mobile|r_ZRKF8H7NH7E5GGR5XM782C0NP2]] 5
+quantity: -1
+---
+
+## [ ] Mobile
+
+- [ ] After Base, Sand, Customization, and Interoperability are complete on
+  desktop, define mobile navigation, touch manipulation, offline behavior,
+  accessibility, renderer limits, and which editing operations need an
+  adapted surface rather than a reduced desktop canvas.

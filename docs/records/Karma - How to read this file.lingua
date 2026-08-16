@@ -1,0 +1,23 @@
+---
+uid: r_9C74W94DFANGRSYJ3P7DY35V6S
+@@section
+@instinct
+@part-of [[Karma (document)|r_2AZ3RN0NPT1YCHDVCG66CNHRPF]] 1
+quantity: 1
+---
+
+## How to read this file
+
+Every feature is written the same way: **Purpose**, **How it works**,
+**Interacts**, **Implementation** — a sentence or two each, three paragraphs at
+the outside. Everything after that block is checkboxes.
+
+**Prose is what exists. A checkbox is what is left.** When a task lands, delete
+its box and fold the resulting behaviour into the prose above it — or keep it as
+an `[x]` when it is a decision or a sharp edge a future reader would otherwise
+fight. `[x]` is never an inventory of finished work.
+
+Sections are in build order and **§1 Rule is the current goal, the sand first.**
+Everything from §5 down is real intent, not yet due. §17 is demolition — the
+apparatus §1 replaces. §18 is the list of things this must eventually be able
+to do, and §19 is what "done" means.

@@ -1,0 +1,24 @@
+---
+uid: r_11P1ERESKQTKBS0YW4FF8YVKDM
+@@idea
+@instinct
+@chapter [[First Steps|r_YWPKA0Z1DJ8XCHTZRW4X2SDJ1N]] 7
+@see-also [[What you can put in a Protein|r_R9C43DQDADWXPGBWYDEZ7Y3QN4]]
+quantity: 1
+---
+
+## Protein: how a sand gets data
+
+**Protein** is Lince's query. It answers "which records should this card show?" — and it is a live subscription, not a one-off fetch: when the underlying records change, every card driven by that Protein redraws by itself.
+
+```mermaid
+graph LR
+  A["Records in your Cell"] --> B["Protein: filter, include, sort, limit"]
+  B --> C["A sand: kanban, table, graph..."]
+```
+
+_A sand never reaches for records directly. A Protein stands between them, and you own it._
+
+To set one, turn on edit mode, click the **gear** on a sand, and find the **Data** section. You get the list of saved Proteins, an explicit **All records** entry, and **+ New Protein** to build one with dropdowns. There is no query language to type.
+
+**A new sand shows nothing until you pick a Protein — that is deliberate.** Cards do not default to "everything". In an organ that has accumulated thousands of records, a card that defaulted to all of them would dump the entire database into a freshly-added board and be useless on arrival. So a brand-new card subscribes to **nothing** and renders a short prompt instead. _No data source configured_ and _All records_ are two different states: the second is a choice you make on purpose.

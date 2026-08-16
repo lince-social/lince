@@ -24,10 +24,14 @@ pub mod karma_control;
 pub mod karma_grants;
 pub mod karma_runtime;
 pub mod karma_timezone;
+pub mod instinct;
+pub mod lingua_file;
 pub mod pairing;
 pub mod peers;
 pub mod rebuild;
+pub mod mailbox;
 pub mod roster;
+pub mod seal;
 pub mod senses;
 pub mod signals;
 pub mod sync;
@@ -132,6 +136,14 @@ pub struct Engine {
     /// moved the root to offline media: the Cell keeps syncing and talking, it
     /// simply cannot enrol or revoke a device until the root comes back.
     pub(crate) root_key_path: std::sync::Mutex<Option<std::path::PathBuf>>,
+    /// Where this Cell keeps its SEALING keyring (`crate::seal`).
+    ///
+    /// Separate from the root key path and never optional in the way that one
+    /// is: the root is meant to be moved offline, while a sealing key is
+    /// useless anywhere but on the Cell that must open mail with it. A Cell
+    /// with no keyring path simply publishes no sealing key and cannot be
+    /// mailed — which `seal` reports rather than silently sending plaintext.
+    pub(crate) sealing_keyring_path: std::sync::Mutex<Option<std::path::PathBuf>>,
     /// The live LAN nearby list, when an endpoint is bound.
     ///
     /// Discovery results are transient and are neither Records nor Facts, so
@@ -139,6 +151,15 @@ pub struct Engine {
     /// context. Mirroring them into a synced extension would instead tell
     /// every contact who is on your local network.
     pub(crate) nearby: std::sync::Mutex<Option<wire::Nearby>>,
+    /// What the last File Sync tick per Organ refused to act on, and why.
+    ///
+    /// In memory and transient like the nearby list: a conflict is a fact
+    /// about a folder on THIS machine at this moment, not about the Organ, so
+    /// mirroring it into a synced extension would tell every contact about a
+    /// file on your disk. It also means a Cell that has not ticked yet
+    /// honestly reports nothing rather than something stale.
+    pub(crate) file_sync_conflicts:
+        std::sync::Mutex<std::collections::HashMap<String, Vec<file_sync::FileConflict>>>,
     /// Serializes op IMPORT, so the read-compare-append-materialise sequence
     /// cannot interleave with another peer's (Ontology §11, C0).
     ///
@@ -234,7 +255,9 @@ impl Engine {
             karma_runtime_config: RwLock::new(None),
             collab_docs: std::sync::Mutex::new(collab::DocRegistry::default()),
             root_key_path: std::sync::Mutex::new(None),
+            sealing_keyring_path: std::sync::Mutex::new(None),
             nearby: std::sync::Mutex::new(None),
+            file_sync_conflicts: std::sync::Mutex::new(std::collections::HashMap::new()),
             import_lock: tokio::sync::Mutex::new(()),
             directory: tokio::sync::OnceCell::new(),
             joining: std::sync::atomic::AtomicBool::new(false),

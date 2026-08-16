@@ -472,8 +472,8 @@ impl crate::Engine {
         // mark it folded when it is not, and lose it.
         //
         // WHOSE WINDOW IS THIS: the compaction decision is guarded by the op
-    // lock, taken by every entry point rather than here. This function does
-    // NOT take it, and must not: it is
+        // lock, taken by every entry point rather than here. This function does
+        // NOT take it, and must not: it is
         // reached from the import path
         // (`import_ops` → `materialise` → `apply_remote_crdt` → `maybe_compact`),
         // which already holds it, so locking here would deadlock on any

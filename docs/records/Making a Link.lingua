@@ -1,0 +1,13 @@
+---
+uid: r_EF07Q1QN5J77B30TF5BK6GSW81
+@@idea
+@instinct
+@chapter [[Links|r_RYHJ3CCKAZJ8R6THPSKS5ZDK3N]] 2
+quantity: 1
+---
+
+## Making one
+
+Open a record in the **Record** sand and use its **Links** section: type a kind, type a target, press **Link**. The **Relations** sand does the same thing graphically — shift-drag from one node to another to link them, and click an edge to select it, then press **Delete** (or the ✕ in its toolbar) to unlink. Ctrl+Z undoes either.
+
+Link kinds need no setup. The first time you use `tag`, the word is created for you. That is why the autocomplete in the Data panel only offers kinds you have already used at least once.

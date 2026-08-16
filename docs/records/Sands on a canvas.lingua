@@ -1,0 +1,11 @@
+---
+uid: r_SX17949GCMZ0Y1FDQM1FFRJ5HG
+@@idea
+@instinct
+@chapter [[First Steps|r_YWPKA0Z1DJ8XCHTZRW4X2SDJ1N]] 1
+quantity: 1
+---
+
+The frontend is the part of Lince you can touch: a large zoomable canvas and many small tools called **sands**. A sand can be a table, a kanban, a record editor, a terminal, a document viewer, a transfer panel, a relations graph, or anything else that fits in a widget.
+
+Nothing here is a fixed screen. You choose which sands exist, where they sit, how big they are, and — this is the important part — **what data each one is looking at**.

@@ -18,28 +18,55 @@ pub(crate) const FEATURE_FLAG: &str = "sand.instinct";
 // measures text to size nodes, so rendering one inside a `display:none`
 // chapter produces a mis-sized graph. Each chapter renders once, then caches.
 //
-// The document is split so a chapter can be edited on its own: `instinct.html`
-// is the shell (head, styles, nav, script) and each chapter is one fragment
-// under `chapters/`, spliced in at `<!--CHAPTERS-->` below. Chapter ORDER is
-// this array's order — the nav, the prev/next footer and the saved reading
-// position are all derived from the DOM at runtime, so adding a chapter means
-// adding a file and one line here, nothing else.
+// **The chapters are RECORDS now** (2026-08-16). `chapters/*.html` is deleted;
+// the source is `docs/records/*.lingua`, embedded once by `engine::instinct`
+// and read by both this sand and `Action::ImportInstinct`, so what a reader
+// sees and what the import button would put in their store cannot drift apart.
+// `instinct.html` is still the shell (head, styles, nav, script) and the
+// generated chapters are spliced in at `<!--CHAPTERS-->`. Chapter ORDER comes
+// from the assertions, not from an array here — the nav, the prev/next footer
+// and the saved reading position are all derived from the DOM at runtime, so
+// adding a chapter means adding a file to `docs/records/` and nothing else.
+mod render;
+
 const SHELL: &str = include_str!("instinct.html");
 
 const CHAPTERS_MARKER: &str = "<!--CHAPTERS-->";
 
-const CHAPTERS: [&str; 7] = [
-    include_str!("chapters/01-first-steps.html"),
-    include_str!("chapters/02-records.html"),
-    include_str!("chapters/03-links.html"),
-    include_str!("chapters/04-concepts.html"),
-    include_str!("chapters/05-cells-and-organs.html"),
-    include_str!("chapters/06-transfers.html"),
-    include_str!("chapters/07-karma.html"),
-];
+/// The chapters, built from the RECORDS rather than from seven HTML files.
+///
+/// The files are gone (2026-08-16). `docs/records/*.lingua` is the source, and
+/// `engine::instinct` is the one embedded copy that both this sand and
+/// `Action::ImportInstinct` read — so the chapter you are reading and the
+/// Record the button would put in your store cannot drift apart. Reading order
+/// is in the assertions (`@position` on a chapter, `@chapter … n` on an idea),
+/// never in a filename and never in an array here.
+///
+/// The shell script is untouched by this: it builds the nav, the prev/next
+/// footer and the saved reading position from `.chapter` elements in the DOM,
+/// so it neither knows nor cares that they are now generated.
+fn chapters() -> String {
+    let records = engine::instinct::records();
+    let mut out = String::new();
+    for chapter in records.iter().filter(|r| r.is_chapter()) {
+        out.push_str(&format!(
+            "<article class=\"chapter\" data-chapter=\"{}\">\n",
+            chapter.head.replace('"', "&quot;")
+        ));
+        out.push_str(&render::body_to_html(&chapter.body));
+        for idea in records
+            .iter()
+            .filter(|r| r.chapter_uid(&records) == Some(chapter.projection.uid.as_str()))
+        {
+            out.push_str(&render::body_to_html(&idea.body));
+        }
+        out.push_str("</article>\n");
+    }
+    out
+}
 
 fn document() -> String {
-    SHELL.replace(CHAPTERS_MARKER, &CHAPTERS.concat())
+    SHELL.replace(CHAPTERS_MARKER, &chapters())
 }
 
 pub(crate) fn manifest() -> PackageManifest {
@@ -55,7 +82,7 @@ pub(crate) fn manifest() -> PackageManifest {
         initial_width: 6,
         initial_height: 5,
         requires_server: false,
-        permissions: vec!["bridge_state".into()],
+        permissions: vec!["bridge_state".into(), "act".into()],
     }
 }
 
@@ -79,15 +106,37 @@ mod tests {
             !html.contains(CHAPTERS_MARKER),
             "the chapters marker survived into the output: nothing was spliced"
         );
-        for chapter in CHAPTERS {
-            let name = chapter
-                .split("data-chapter=\"")
-                .nth(1)
-                .and_then(|rest| rest.split('"').next())
-                .expect("each chapter fragment declares data-chapter");
+        let records = engine::instinct::records();
+        let chapters: Vec<_> = records.iter().filter(|r| r.is_chapter()).collect();
+        assert_eq!(
+            chapters.iter().filter(|r| r.identity() == "chapter").count(),
+            7,
+            "the seven tutorial chapters"
+        );
+        assert!(
+            chapters.iter().filter(|r| r.identity() == "document").count() >= 5,
+            "and the project's own documents, which used to be the Markdown in docs/"
+        );
+        for chapter in &chapters {
             assert!(
-                html.contains(&format!("data-chapter=\"{name}\"")),
-                "chapter {name} is missing from the assembled document"
+                html.contains(&format!("data-chapter=\"{}\"", chapter.head)),
+                "chapter {} is missing from the assembled document",
+                chapter.head
+            );
+        }
+        // And every IDEA landed in a chapter too. The nav is built from
+        // `.chapter` elements, so an idea whose chapter link went nowhere
+        // would vanish from the document without the nav looking wrong.
+        for idea in records.iter().filter(|r| !r.is_chapter()) {
+            let first = idea.body.lines().find(|l| !l.trim().is_empty()).unwrap_or_default();
+            let probe: String = first.trim_start_matches(['#', '>', '-', ' ']).chars().take(24).collect();
+            if probe.len() < 12 || probe.contains(['*', '_', '`', '<', '&', '[']) {
+                continue; // inline markup is rewritten; those are covered elsewhere
+            }
+            assert!(
+                html.contains(&probe),
+                "{} is in the bundle but not in the document",
+                idea.head
             );
         }
     }

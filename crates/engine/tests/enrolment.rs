@@ -71,6 +71,7 @@ async fn enroller(seed: u8) -> (Arc<Engine>, String, Signer, Wire) {
                 node_id: wire.node_id().to_string(),
                 label: "the first Cell".into(),
                 operational_key: "k-first".into(),
+                sealing_key: None,
                 front_door: false,
                 capabilities: full_capabilities(),
             }],
@@ -108,7 +109,11 @@ async fn a_new_device_joins_an_existing_organ() {
     let serving = tokio::spawn(async move { their_wire.serve().await });
     let roster = our_wire.enrol(&invite).await.expect("enrolment succeeds");
 
-    assert_eq!(roster.roster.cells.len(), 2, "the roster now names both Cells");
+    assert_eq!(
+        roster.roster.cells.len(),
+        2,
+        "the roster now names both Cells"
+    );
     assert!(
         roster
             .roster
@@ -246,7 +251,10 @@ async fn a_token_works_exactly_once() {
     let invite = invite_from(&them, &their_organ, &root, &their_wire).await;
 
     let serving = tokio::spawn(async move { their_wire.serve().await });
-    first_wire.enrol(&invite).await.expect("the first use works");
+    first_wire
+        .enrol(&invite)
+        .await
+        .expect("the first use works");
     let error = second_wire
         .enrol(&invite)
         .await
@@ -289,6 +297,7 @@ async fn a_roster_for_another_organ_is_refused() {
         root_key: elsewhere.public_key_b64(),
         version: 1,
         not_after: (chrono::Utc::now() + chrono::Duration::days(30)).to_rfc3339(),
+        pickup: Vec::new(),
         cells: vec![CellEntry {
             cell_uid: store::cells::local(&us.store.pool)
                 .await
@@ -298,13 +307,13 @@ async fn a_roster_for_another_organ_is_refused() {
             node_id: "n-whatever".into(),
             label: "us, apparently".into(),
             operational_key: "k".into(),
+            sealing_key: None,
             front_door: false,
             capabilities: full_capabilities(),
         }],
     };
-    let signature = elsewhere.sign_bytes(
-        &engine::roster::roster_signing_payload(&roster).expect("payload"),
-    );
+    let signature =
+        elsewhere.sign_bytes(&engine::roster::roster_signing_payload(&roster).expect("payload"));
     let signed = engine::roster::SignedRoster { roster, signature };
     let invite = EnrolmentInvite {
         node_id: "n-enroller".into(),
@@ -314,7 +323,10 @@ async fn a_roster_for_another_organ_is_refused() {
         addrs: Vec::new(),
     };
 
-    let operational = us.operational_key_for(&invite.organ_uid).await.expect("key");
+    let operational = us
+        .operational_key_for(&invite.organ_uid)
+        .await
+        .expect("key");
     let error = us
         .join_organ(&invite, &signed, operational)
         .await
@@ -356,6 +368,7 @@ async fn a_cell_with_a_published_identity_will_not_join() {
             node_id: "n-established".into(),
             label: "this one".into(),
             operational_key: "k".into(),
+            sealing_key: None,
             front_door: false,
             capabilities: full_capabilities(),
         }],
@@ -365,7 +378,9 @@ async fn a_cell_with_a_published_identity_will_not_join() {
 
     let error = us.may_enrol().await.expect_err("must refuse");
     assert!(
-        error.to_string().contains("already has a published identity"),
+        error
+            .to_string()
+            .contains("already has a published identity"),
         "got: {error}"
     );
 }
@@ -463,6 +478,7 @@ async fn a_cell_key_cannot_speak_for_the_identity() {
         root_key: operational.public_key_b64(),
         version: 99,
         not_after: (chrono::Utc::now() + chrono::Duration::days(30)).to_rfc3339(),
+        pickup: Vec::new(),
         cells: Vec::new(),
     };
     let signature =
@@ -553,6 +569,7 @@ async fn a_capability_less_sibling_is_not_a_writer() {
             node_id: relay_node.into(),
             label: "a carrier and nothing more".into(),
             operational_key: "k-relay".into(),
+            sealing_key: None,
             front_door: true,
             capabilities: engine::roster::relay_capabilities(),
         },
@@ -570,6 +587,7 @@ async fn a_capability_less_sibling_is_not_a_writer() {
             node_id: phone_node.into(),
             label: "the phone".into(),
             operational_key: "k-phone".into(),
+            sealing_key: None,
             front_door: false,
             capabilities: full_capabilities(),
         },
@@ -622,6 +640,7 @@ async fn a_front_door_holds_a_strangers_knock_for_the_owner() {
             node_id: door_wire.node_id().to_string(),
             label: "the always-on VPS".into(),
             operational_key: "k-door".into(),
+            sealing_key: None,
             front_door: true,
             // A carrier and nothing more.
             capabilities: engine::roster::relay_capabilities(),
@@ -727,6 +746,7 @@ async fn the_owner_collects_what_the_front_door_held() {
                     node_id: owner_wire.node_id().to_string(),
                     label: "the laptop".into(),
                     operational_key: "k-laptop".into(),
+                    sealing_key: None,
                     front_door: false,
                     capabilities: full_capabilities(),
                 },
@@ -735,6 +755,7 @@ async fn the_owner_collects_what_the_front_door_held() {
                     node_id: door_wire.node_id().to_string(),
                     label: "the VPS".into(),
                     operational_key: "k-vps".into(),
+                    sealing_key: None,
                     front_door: true,
                     capabilities: engine::roster::relay_capabilities(),
                 },
@@ -850,6 +871,7 @@ async fn a_sibling_answers_the_stable_hello_across_any_epoch() {
                     node_id: owner_wire.node_id().to_string(),
                     label: "the laptop".into(),
                     operational_key: "k-a".into(),
+                    sealing_key: None,
                     front_door: false,
                     capabilities: full_capabilities(),
                 },
@@ -858,6 +880,7 @@ async fn a_sibling_answers_the_stable_hello_across_any_epoch() {
                     node_id: other_wire.node_id().to_string(),
                     label: "the phone".into(),
                     operational_key: "k-b".into(),
+                    sealing_key: None,
                     front_door: false,
                     capabilities: full_capabilities(),
                 },
@@ -1018,6 +1041,7 @@ async fn a_relay_cell_cannot_author_anything() {
                 node_id: "n-relay".into(),
                 label: "the VPS".into(),
                 operational_key: "k-relay".into(),
+                sealing_key: None,
                 front_door: true,
                 capabilities: engine::roster::relay_capabilities(),
             }],
@@ -1069,6 +1093,7 @@ async fn a_relay_cell_cannot_author_anything() {
                 node_id: "n-relay".into(),
                 label: "the VPS".into(),
                 operational_key: "k-relay".into(),
+                sealing_key: None,
                 front_door: true,
                 capabilities: full_capabilities(),
             }],
@@ -1087,4 +1112,233 @@ async fn a_relay_cell_cannot_author_anything() {
     )
     .await
     .expect("the root can restore the capability");
+}
+
+/// An enrolled device can get its rotated mail key published, and can change
+/// NOTHING else about the roster while doing it.
+///
+/// The gap this closes: rotation is local — a keyring on the device's own disk
+/// — while publishing is not, because the roster carries a ROOT signature. So
+/// a Cell that joined by enrolment could rotate and then watch senders quietly
+/// stop being able to mail it, with nothing anywhere saying why.
+#[tokio::test]
+async fn an_enrolled_cell_gets_its_rotated_mail_key_published() {
+    let (them, their_organ, root, their_wire) = enroller(111).await;
+    let (us, _) = cell("http://sibling.test").await;
+    let our_wire = Wire::bind(us.clone(), secret(112), Reach::Local)
+        .await
+        .expect("binds");
+    let invite = invite_from(&them, &their_organ, &root, &their_wire).await;
+    our_wire.remember_addr(
+        iroh::EndpointAddr::new(their_wire.node_id()).with_ip_addr(SocketAddr::new(
+            IpAddr::V4(Ipv4Addr::LOCALHOST),
+            their_wire
+                .endpoint()
+                .bound_sockets()
+                .first()
+                .expect("bound")
+                .port(),
+        )),
+    );
+    let their_node = their_wire.node_id().to_string();
+    let serving = tokio::spawn(async move { their_wire.serve().await });
+    our_wire.enrol(&invite).await.expect("enrolment");
+
+    let our_cell = store::cells::local(&us.store.pool)
+        .await
+        .expect("cell")
+        .expect("a local Cell")
+        .uid;
+    let keyring = std::path::PathBuf::from(env!("CARGO_TARGET_TMPDIR"))
+        .join(format!("rotation-keyring-{}.json", uuid::Uuid::new_v4()));
+    us.set_sealing_keyring_path(keyring);
+    let ours = us
+        .published_sealing_key()
+        .await
+        .expect("keyring")
+        .expect("a fresh keyring generates one");
+
+    // Before asking, the device list says nothing about this device's mail
+    // key — which is exactly the state that made it unmailable in silence.
+    let published_key = |engine: Arc<Engine>, organ: String, cell_uid: String| async move {
+        engine
+            .roster_of(&organ)
+            .await
+            .expect("roster")
+            .expect("signed")
+            .roster
+            .cells
+            .iter()
+            .find(|entry| entry.cell_uid == cell_uid)
+            .and_then(|entry| entry.sealing_key.clone())
+    };
+    assert!(
+        published_key(them.clone(), their_organ.clone(), our_cell.clone())
+            .await
+            .is_none()
+    );
+
+    assert!(
+        our_wire
+            .publish_own_sealing_key()
+            .await
+            .expect("asks the Cell that holds the root"),
+        "an enrolled device cannot sign a roster, so it asks one that can"
+    );
+    assert_eq!(
+        published_key(them.clone(), their_organ.clone(), our_cell.clone()).await,
+        Some(ours.clone()),
+        "and the key it is actually using is the one senders are told about"
+    );
+
+    // Idempotent: asking again changes nothing, because burning a roster
+    // version on a no-op trains contacts to accept rosters that say nothing.
+    let version_before = them
+        .roster_of(&their_organ)
+        .await
+        .expect("roster")
+        .expect("signed")
+        .roster
+        .version;
+    assert!(our_wire.publish_own_sealing_key().await.expect("asks again"));
+    assert_eq!(
+        them.roster_of(&their_organ)
+            .await
+            .expect("roster")
+            .expect("signed")
+            .roster
+            .version,
+        version_before
+    );
+
+    // THE GUARD. The verb carries a key, never an entry, and it may only move
+    // the asker's OWN line. A device that could name another Cell would be
+    // able to rewrite the membership statement it is merely a member of.
+    let their_cell = them
+        .roster_of(&their_organ)
+        .await
+        .expect("roster")
+        .expect("signed")
+        .roster
+        .cells
+        .iter()
+        .find(|entry| entry.cell_uid != our_cell)
+        .expect("the first Cell")
+        .cell_uid
+        .clone();
+    let refused = our_wire
+        .request(
+            iroh::EndpointAddr::new(their_node.parse().expect("node id")),
+            engine::wire::ALPN_THREAD,
+            &engine::wire::WireRequest::PublishSealingKey {
+                cell_uid: their_cell.clone(),
+                sealing_key: ours.clone(),
+            },
+        )
+        .await
+        .expect("answered");
+    assert!(
+        matches!(refused, engine::wire::WireResponse::Refused { .. }),
+        "a Cell may only publish its own mail key: {refused:?}"
+    );
+    assert_ne!(
+        published_key(them.clone(), their_organ.clone(), their_cell).await,
+        Some(ours),
+        "and the other device's entry is untouched"
+    );
+
+    serving.abort();
+}
+
+
+/// A Cell with NO write capability — a front door, a relay — can still publish
+/// its own mail key.
+///
+/// The case that matters most, and the one that nearly did not work. A front
+/// door is the machine most likely to be always on, so it is the most useful
+/// place to leave mail for; `sibling_organ` requires `CAP_WRITE`, which a
+/// front door has none of by design. Served on the sync door, or gated on
+/// being a sibling, this verb would have been refused for exactly that Cell,
+/// which would then rotate into silence while its panel claimed it was asking.
+#[tokio::test]
+async fn a_capability_less_cell_can_still_publish_its_own_mail_key() {
+    let (them, their_organ, root, their_wire) = enroller(113).await;
+    let (door, _) = cell("http://front-door.test").await;
+    let door_wire = Wire::bind(door.clone(), secret(114), Reach::Local)
+        .await
+        .expect("binds");
+    let invite = invite_from(&them, &their_organ, &root, &their_wire).await;
+    door_wire.remember_addr(
+        iroh::EndpointAddr::new(their_wire.node_id()).with_ip_addr(SocketAddr::new(
+            IpAddr::V4(Ipv4Addr::LOCALHOST),
+            their_wire
+                .endpoint()
+                .bound_sockets()
+                .first()
+                .expect("bound")
+                .port(),
+        )),
+    );
+    let serving = tokio::spawn(async move { their_wire.serve().await });
+    door_wire.enrol(&invite).await.expect("enrolment");
+    let door_cell = store::cells::local(&door.store.pool)
+        .await
+        .expect("cell")
+        .expect("a local Cell")
+        .uid;
+
+    // Narrowed to what a front door actually is: listed, and permitted
+    // nothing. This is the state the verb has to survive.
+    them.enrol_cell(
+        &root,
+        CellEntry {
+            cell_uid: door_cell.clone(),
+            node_id: door_wire.node_id().to_string(),
+            label: "the always-on box".into(),
+            operational_key: "k-door".into(),
+            sealing_key: None,
+            front_door: true,
+            capabilities: engine::roster::relay_capabilities(),
+        },
+    )
+    .await
+    .expect("the front door is narrowed");
+    let narrowed = them
+        .roster_of(&their_organ)
+        .await
+        .expect("roster")
+        .expect("signed");
+    door.adopt_roster(&narrowed).await.expect("adopt");
+
+    let keyring = std::path::PathBuf::from(env!("CARGO_TARGET_TMPDIR"))
+        .join(format!("door-keyring-{}.json", uuid::Uuid::new_v4()));
+    door.set_sealing_keyring_path(keyring);
+    let its_key = door
+        .published_sealing_key()
+        .await
+        .expect("keyring")
+        .expect("a fresh keyring generates one");
+
+    assert!(
+        door_wire
+            .publish_own_sealing_key()
+            .await
+            .expect("asks the root holder"),
+        "a Cell that may not write ops may still name its own mail key"
+    );
+    assert_eq!(
+        them.roster_of(&their_organ)
+            .await
+            .expect("roster")
+            .expect("signed")
+            .roster
+            .cells
+            .iter()
+            .find(|entry| entry.cell_uid == door_cell)
+            .and_then(|entry| entry.sealing_key.clone()),
+        Some(its_key),
+        "and senders can mail the always-on box again"
+    );
+
+    serving.abort();
 }

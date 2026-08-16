@@ -1,0 +1,12 @@
+---
+uid: r_9RAFNMM0F8EPY7WHE1919PB33T
+@@section
+@instinct
+@part-of [[Transfer (document)|r_XF06Q5Z2MECBB8ZAWAX9KXJ184]] 4
+quantity: 1
+---
+
+## Cross-File Map
+
+- Product shape, core assumptions, agreement, events, messages, and the main checklist live in this file.
+- Remaining reversal/dispute settlement work lives in [Simulation And Settlement](transfer-simulation-settlement.md).

@@ -1,0 +1,40 @@
+---
+uid: r_PNBZYS3STR32ZR41TZJ82NE1QW
+@@section
+@instinct
+@part-of [[Karma (document)|r_2AZ3RN0NPT1YCHDVCG66CNHRPF]] 3
+quantity: 1
+---
+
+## 1.1 — The sand
+
+**Purpose:** Create a rule, read it, revise it, retire it, and see the Record it
+acts on drawn through its past, present and declared future. This is the first
+goal and everything else in the file waits on it.
+
+**How it works:** The side panel leads with the builder — condition input,
+threshold select, consequence picker — then Frequency CRUD, then a divider
+saying *slop down here* with every older surface beneath it. Typing `record(`,
+`freq(` or `@` autocompletes over every referenceable slug, and Tab inserts the
+full reading form: `freq(@daily)` for a Frequency, `@apple` for a Record.
+
+**The three parts show as three parts** — not a form of twelve equal fields.
+A Frequency is created in its own section and shown in words ("every 1 day");
+**a rule never defines one inline**, which is exactly what made them
+un-reusable before.
+
+**Interacts:** Protein for every read (`Source::Recurrence`, `Source::Frequency`,
+`Source::Record`, `Source::Timeline`), typed Actions for every write. It owns no
+primitive and must never cause a surface-named type in a backend crate.
+
+**Implementation:** `crates/web/src/sand/karma/` — `body.rs`, `app/blocks.js`
+(the pure completion grammar), `app/builder.js` (DOM and reuse banks),
+`app/frequency.js`. `karma_sand_js.mjs` covers the grammar; `mod.rs` asserts the
+panel ordering.
+
+- [x] **A record is findable by head or slug and inserts at the caret.** The
+      condition field is a plain `<input>`, not a contenteditable, because the
+      caret *is* the interaction and `selectionStart` answers it exactly.
+- [x] **Conditions and consequences are reusable across rules** with no new
+      table — the banks are derived from the distinct condition strings and
+      consequence shapes of existing rules, ranked by use count.

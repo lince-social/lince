@@ -340,6 +340,14 @@ pub struct Contact {
     /// locates and authenticates. `None` for contacts made before the iroh
     /// path, which must be re-paired.
     pub node_id: Option<String>,
+    /// When this contact first failed to answer, and still has not (Ontology
+    /// C4). `None` means "answered the last time we tried" — the fallback to
+    /// mail reads this, never an attempt count, because the window is
+    /// wall-clock and pass frequency is not.
+    pub unreachable_since: Option<String>,
+    /// When we last left mail for them, so a peer that stays down is sealed
+    /// and deposited once per window rather than once per pass.
+    pub mailed_at: Option<String>,
 }
 
 /// Register a remote organ contact: an organ record carrying the REMOTE
@@ -545,7 +553,80 @@ fn map_contact(r: sqlx::sqlite::SqliteRow) -> Contact {
         last_seen_addr: r.get("last_seen_addr"),
         node_id: r.get("node_id"),
         pending_introduction: r.get::<i64, _>("pending_introduction") != 0,
+        unreachable_since: r.get("unreachable_since"),
+        mailed_at: r.get("mailed_at"),
     }
+}
+
+/// Note that a contact did not answer this pass. Idempotent: the FIRST
+/// failure is the one that dates the window, so a peer down for an hour is
+/// not perpetually one pass old.
+pub async fn mark_unreachable(pool: &SqlitePool, organ_uid: &str) -> Result<(), StoreError> {
+    sqlx::query(
+        "UPDATE organ_contact SET unreachable_since = ?
+          WHERE record_uid = ? AND unreachable_since IS NULL",
+    )
+    .bind(Utc::now().to_rfc3339())
+    .bind(organ_uid)
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+/// Note that a contact answered. Clears the mail bookkeeping with it: once
+/// they are reachable, both "since when" and "when we last mailed" are stale.
+///
+/// Called from ANY successful exchange with the peer, not only a successful
+/// push — reachability is a property of the peer, and the catch-up pull dials
+/// the same contacts a moment later.
+pub async fn mark_reachable(pool: &SqlitePool, organ_uid: &str) -> Result<(), StoreError> {
+    sqlx::query(
+        "UPDATE organ_contact SET unreachable_since = NULL, mailed_at = NULL
+          WHERE record_uid = ? AND (unreachable_since IS NOT NULL OR mailed_at IS NOT NULL)",
+    )
+    .bind(organ_uid)
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+/// Record that mail was left for a contact just now.
+pub async fn mark_mailed(pool: &SqlitePool, organ_uid: &str) -> Result<(), StoreError> {
+    sqlx::query("UPDATE organ_contact SET mailed_at = ? WHERE record_uid = ?")
+        .bind(Utc::now().to_rfc3339())
+        .bind(organ_uid)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+/// Forget that mail was left, so the next pass may leave more. Used when a
+/// human asks for delivery now rather than at the end of the window.
+pub async fn mark_mailed_clear(pool: &SqlitePool, organ_uid: &str) -> Result<(), StoreError> {
+    sqlx::query("UPDATE organ_contact SET mailed_at = NULL WHERE record_uid = ?")
+        .bind(organ_uid)
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
+/// Move a contact's unreachability back in time.
+///
+/// A test seam, and deliberately a narrow one: proving "not on the first
+/// failed dial" needs a clock that has moved, and backdating one column is
+/// cheaper and less invasive than threading an injectable clock through the
+/// whole sync pass. It writes nothing a real pass does not also write.
+pub async fn backdate_unreachable(
+    pool: &SqlitePool,
+    organ_uid: &str,
+    when: &str,
+) -> Result<(), StoreError> {
+    sqlx::query("UPDATE organ_contact SET unreachable_since = ? WHERE record_uid = ?")
+        .bind(when)
+        .bind(organ_uid)
+        .execute(pool)
+        .await?;
+    Ok(())
 }
 
 /// Mark a contact as still owing an Introduction, or clear it once one has

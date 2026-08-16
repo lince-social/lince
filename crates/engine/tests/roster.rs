@@ -25,6 +25,7 @@ fn entry(label: &str, node_id: &str, key: &str) -> CellEntry {
         node_id: node_id.into(),
         label: label.into(),
         operational_key: key.into(),
+        sealing_key: None,
         front_door: false,
         capabilities: engine::roster::full_capabilities(),
     }
@@ -136,6 +137,7 @@ async fn a_roster_that_does_not_chain_is_refused_and_changes_nothing() {
         root_key: attacker.public_key_b64(),
         version: 99,
         not_after: (chrono::Utc::now() + chrono::Duration::days(30)).to_rfc3339(),
+        pickup: Vec::new(),
         cells: vec![entry("attacker", "node-evil", "opkey-evil")],
     };
     let payload = engine::roster::roster_signing_payload(&forged_roster).expect("payload");
@@ -308,6 +310,7 @@ async fn an_expired_roster_is_refused_but_leaves_the_old_one_dialable() {
         root_key: root.public_key_b64(),
         version: 50,
         not_after: (chrono::Utc::now() - chrono::Duration::days(1)).to_rfc3339(),
+        pickup: Vec::new(),
         cells: vec![entry("new", "node-new", "opkey-new")],
     };
     let payload = engine::roster::roster_signing_payload(&stale_roster).expect("payload");
@@ -336,6 +339,7 @@ fn a_reserved_separator_in_a_label_is_rejected_not_escaped() {
         root_key: "k".into(),
         version: 1,
         not_after: "2030-01-01T00:00:00Z".into(),
+        pickup: Vec::new(),
         cells: vec![entry("lap\u{1f}top", "node", "key")],
     };
     assert!(engine::roster::roster_signing_payload(&roster).is_err());
@@ -589,6 +593,7 @@ fn revoking_a_different_cell_still_needs_publishing() {
             root_key: "root".into(),
             version: 3,
             not_after: "2026-09-01T00:00:00+00:00".into(),
+            pickup: Vec::new(),
             cells: vec![
                 entry("laptop", "n-laptop", "k-laptop"),
                 entry("phone", "n-phone", "k-phone"),
@@ -621,7 +626,11 @@ fn revoking_a_different_cell_still_needs_publishing() {
         "reordering is not a change"
     );
     assert!(
-        needs_publishing(Some(&held), "root", &[entry("laptop", "n-laptop", "k-laptop")]),
+        needs_publishing(
+            Some(&held),
+            "root",
+            &[entry("laptop", "n-laptop", "k-laptop")]
+        ),
         "THE BUG: the phone was revoked and this Cell is still present, which \
          used to read as unchanged"
     );
@@ -669,6 +678,7 @@ fn a_capability_less_member_forces_a_republish() {
             root_key: "root".into(),
             version: 1,
             not_after: "2026-09-01T00:00:00+00:00".into(),
+            pickup: Vec::new(),
             cells: vec![stale.clone()],
         },
         signature: "sig".into(),
@@ -827,4 +837,98 @@ async fn a_revoked_key_cannot_endorse_a_successor() {
             .expect("chain"),
         "a revoked key must not be able to install a successor"
     );
+}
+
+#[tokio::test]
+async fn a_swapped_sealing_key_breaks_the_root_signature() {
+    // Mail is sealed to whatever the roster says. If the root signature did
+    // not cover the sealing key, anyone able to hand you a roster could put
+    // their own key in it and every bundle your contacts send would be sealed
+    // to them instead — while the roster still verified and named the right
+    // devices. This is that check.
+    let (them, their_organ) = cell("http://them.test").await;
+    let (us, _) = cell("http://us.test").await;
+    let root = Signer::generate(&their_organ, engine::roster::ROOT_KEY_ID);
+    them.publish_root_key(&root).await.expect("publish root key");
+
+    engine::trust::adopt_key(
+        &us.store,
+        &their_organ,
+        engine::roster::ROOT_KEY_ID,
+        &root.public_key_b64(),
+    )
+    .await
+    .expect("adopt at pairing");
+
+    let (_, published) = engine::seal::generate("c-laptop", 1, "2099-01-01T00:00:00Z");
+    let mut listed = entry("laptop", "node-1", "opkey-1");
+    listed.sealing_key = Some(published);
+    let signed = them
+        .publish_roster(&root, vec![listed])
+        .await
+        .expect("publish");
+
+    // Adopted as it stands, the key survives the round trip — otherwise a
+    // sender would have nothing to seal to and the rest of this proves nothing.
+    assert_eq!(
+        us.adopt_roster(&signed).await.expect("adopt"),
+        RosterOutcome::Accepted
+    );
+    let held = us.roster_of(&their_organ).await.expect("read").expect("held");
+    assert!(held.roster.cells[0].sealing_key.is_some());
+
+    // The substitution rides a GENUINE later roster, with only the sealing key
+    // altered. Forging a version bump instead would prove nothing: the version
+    // is signed, so such a roster is refused whether or not the sealing key is
+    // covered — which is exactly how an earlier draft of this test passed with
+    // the guard disabled.
+    let (_, rotated) = engine::seal::generate("c-laptop", 2, "2099-06-01T00:00:00Z");
+    let mut rotating = entry("laptop", "node-1", "opkey-1");
+    rotating.sealing_key = Some(rotated);
+    let later = them
+        .publish_roster(&root, vec![rotating])
+        .await
+        .expect("publish a rotation");
+    assert!(later.roster.version > signed.roster.version);
+
+    let (_, theirs) = engine::seal::generate("c-laptop", 2, "2099-06-01T00:00:00Z");
+    let mut forged: SignedRoster = later.clone();
+    forged.roster.cells[0].sealing_key = Some(theirs.clone());
+    assert_eq!(
+        us.adopt_roster(&forged).await.expect("refuses"),
+        RosterOutcome::Refused
+    );
+
+    // And the refusal left what we already held alone. A substitution that
+    // errors while corrupting stored state would still have redirected mail.
+    let after = us.roster_of(&their_organ).await.expect("read").expect("held");
+    assert_ne!(
+        after.roster.cells[0].sealing_key.as_ref().map(|k| &k.public),
+        Some(&theirs.public)
+    );
+}
+
+#[tokio::test]
+async fn the_mirrored_roster_carries_the_sealing_key_for_the_device_list() {
+    // The device list reads the `lince.roster` projection, not the signed
+    // blob, so a field dropped in the mirror turns every device into "no mail
+    // key yet" — an honest-looking empty state that is simply wrong. A rename
+    // or a forgotten field is exactly the kind of break this catches.
+    let (e, organ) = cell("http://mirror.test").await;
+    let root = Signer::generate(&organ, engine::roster::ROOT_KEY_ID);
+    e.publish_root_key(&root).await.expect("publish root key");
+
+    let (_, published) = engine::seal::generate("c-laptop", 1, "2099-01-01T00:00:00Z");
+    let mut listed = entry("laptop", "node-1", "opkey-1");
+    listed.sealing_key = Some(published.clone());
+    e.publish_roster(&root, vec![listed]).await.expect("publish");
+
+    let mirrored = store::records::get_extension(&e.store.pool, &organ, "lince.roster")
+        .await
+        .expect("read the projection")
+        .expect("the projection exists");
+    let shown = mirrored["cells"][0]["sealing_key"]["key_id"]
+        .as_str()
+        .expect("the device list can see the mail key");
+    assert_eq!(shown, published.key_id);
 }

@@ -1,0 +1,42 @@
+---
+uid: r_JHE2ZKQ8X8Y7AZ1CMRFW7S7448
+@@section
+@instinct
+@part-of [[Karma (document)|r_2AZ3RN0NPT1YCHDVCG66CNHRPF]] 7
+quantity: 1
+---
+
+## 1.5 — Frequency
+
+**Purpose:** Repeating time, as a named object a condition can reference. It is
+three things and no more: **you set it** ("every day"), **it fires** the
+conditions that read it when the time comes, and **it projects** — running it
+forward without firing anything is the calendar and the graph. Nothing further
+is needed for calendar or recurrence features.
+
+**How it works:** A Frequency is a slug and a step — `uid, slug, every,
+anchor_at`, where `every` is a `CadenceStep`. It is a block *inside* a
+condition, never a property of the Rule.
+
+**Interacts:** `nucleus::karma::Cadence` enumerates its beats purely —
+`between(anchor, from, to)`, `next_on_or_after`, `civil_at(anchor, index)` — with
+no database and no cursor. **Firing a rule and projecting it forward are the
+same call**; only running the consequences differs. That is why the calendar and
+the graph need no storage.
+
+**Implementation:** `0039_frequency.sql`, `store/src/frequency.rs`,
+`CreateFrequency`/`DeleteFrequency`, `Source::Frequency`, and `freq(@x)`
+resolving the table in `read_for_condition`. `Cadence` is untouched and stays
+that way.
+
+- [x] **A step is a sum of components** applied largest unit first — years and
+      months against the anchor's own day-of-month (a too-short month clamps or
+      skips per `invalid_day`), then weeks through milliseconds as an exact
+      duration, optionally rolled forward onto an allowed weekday. So `1 month +
+      1 day + 1 second + 10 milliseconds, then forward to Friday` is one step,
+      and every component is typeable in the sand.
+- [x] **The slug is the only way in.** Charset validated, zero step refused,
+      creation idempotent by `request_id`, deletion refused while a rule's
+      `condition_src` still names it.
+- [x] **`freq(@x)` reads the table with `(since, at]` edges**, falling back to
+      the old rule-carried rhythm so rules written before it keep working.

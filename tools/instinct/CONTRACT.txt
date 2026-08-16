@@ -1,0 +1,92 @@
+THE .lingua CONTRACT FOR docs/records/
+======================================
+
+Kept HERE rather than in that folder: the authority for those Records is the
+Records, and a file sitting among them explaining what they must be is a second
+authority. It also keeps the promise that `docs/records/` holds nothing but
+`.lingua`. The scripts beside this file are what enforce it.
+
+`docs/` holds NO Markdown as of 2026-08-16. Everything that was in
+`Ontology.md`, `Karma.md`, `Transfer.md`, `Interface.md`, `Lince.md` and
+`thoughts.md` is here as Records.
+
+TWO FAMILIES, ONE FOLDER
+------------------------
+
+The tutorial — what the Instinct sand reads, and what the "Put these in my
+Lince" button imports:
+
+    @@chapter   this Record IS a chapter.        @position 2
+    @@idea      one idea inside one.             @chapter [[Records|uid]] 3
+    @see-also   another Record worth reading next.
+
+The project's own documentation, converted from the Markdown that used to be
+in `docs/`:
+
+    @@document  one of the project's documents.  @position 2
+    @@section   one `## ` section of it.         @part-of [[Ontology (document)|uid]] 7
+    @@task      the open checkboxes of one section, clustered.
+
+Both families share a shape — a top-level thing with ordered children — which
+is why one code path reads both and the reference material shows up in the
+same reader as the tutorial.
+
+THE FILE
+--------
+
+    ---
+    uid: r_XXXXXXXXXXXXXXXXXXXXXXXXXX
+    @@idea
+    @chapter [[Records|r_5JKQH7BM9ZQ474YF869AFE4T2N]] 3
+    quantity: 1
+    ---
+
+    The body, in Markdown. Mermaid blocks in ```mermaid fences.
+
+RULES
+-----
+
+0. EVERY FILE CARRIES `@instinct`, on its own line under the identity.
+   This is what File Sync SELECTS on. Without it a file is not "wrong" — it
+   is silently not mirrored, which is worse, so `check_lingua.js` refuses a
+   file that lacks it. The Organ mirroring this folder should filter on
+   `concept_in: ["instinct"]` so that nothing else in the store can write
+   itself into `docs/`. Retracting it from a Record DELETES its file, which
+   is existing File Sync behaviour and not special to this folder.
+
+1. THE PREDICATE LIST IS FROZEN — the nine in `engine::instinct::VOCABULARY`.
+   A file naming any other predicate is refused in full, because a file must
+   never invent a meaning. Adding one means deciding to.
+
+2. A LINK IS `[[Title|uid]]` AND NEVER `[[Title]]`. Titles collide and get
+   renamed; the uid is what identifies the Record.
+
+3. UIDS ARE PRE-MINTED, never invented. Files here cross-link before any of
+   them exists as a Record, which only works because each file carries the uid
+   it is going to become. Shape: `r_` plus exactly 26 characters of
+   `0123456789ABCDEFGHJKMNPQRSTVWXYZ`. The generated ones are a HASH of what
+   the Record is, so re-running the converter produces the same uids — random
+   ones would read as 132 deletions and 132 creations every time.
+
+4. QUANTITY IS THE STATE, the same ladder the Kanban board reads:
+
+      1   stable — true today, ready to be read as documentation
+      0   not planned, or a future idea
+     -1   todo
+     -2   doing (pair it with the concept, `-2 @wip`)
+
+5. THE FILENAME IS THE HEAD, so no two Records may share one. `docs/Karma.md`
+   and the Instinct chapter on Karma both wanted `Karma.lingua`; the document
+   is `Karma (document)` for that reason, and the converter refuses to write
+   over a file it did not create. It once did, and silently destroyed a
+   chapter while leaving its six ideas pointing at a uid nothing claimed.
+
+6. NOTHING IS LOST. Checked, not asserted:
+
+     node tools/instinct/check_lingua.js docs/records
+     node tools/docs/check_docs_lossless.js docs docs/records
+
+   The Instinct half is checked against the original chapter HTML, which now
+   only exists in git history:
+
+     node tools/instinct/check_lossless.js <chapters-from-git> docs/records

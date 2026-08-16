@@ -58,10 +58,15 @@ async fn each_auth_action_denies_an_actor_without_its_permission() {
     let bystander = store::auth::ensure_role(&e.store.pool, "bystander-role")
         .await
         .unwrap();
-    let bystander =
-        store::auth::create_person_login(&e.store.pool, "Bystander", "bystander", "hash", bystander)
-            .await
-            .unwrap();
+    let bystander = store::auth::create_person_login(
+        &e.store.pool,
+        "Bystander",
+        "bystander",
+        "hash",
+        bystander,
+    )
+    .await
+    .unwrap();
     store::auth::ensure_role(&e.store.pool, "existing")
         .await
         .unwrap();
@@ -142,9 +147,10 @@ async fn create_role_then_create_user_wires_a_working_login() {
     store::auth::grant(&e.store.pool, role_id, perm_id)
         .await
         .unwrap();
-    let creator = store::auth::create_person_login(&e.store.pool, "Creator", "creator", "hash", role_id)
-        .await
-        .unwrap();
+    let creator =
+        store::auth::create_person_login(&e.store.pool, "Creator", "creator", "hash", role_id)
+            .await
+            .unwrap();
 
     let outcome = e
         .act(
@@ -276,4 +282,272 @@ async fn grant_and_revoke_permission_round_trip() {
         .await
         .unwrap();
     assert!(!keys.iter().any(|k| k == "record:delete_own"));
+}
+
+/// Deactivation through the Action, which is the path the admin panel takes —
+/// the store tests cover the flag, this covers who is allowed to set it and
+/// what they may set it on.
+#[tokio::test]
+async fn set_person_standing_deactivates_and_restores() {
+    let e = engine().await;
+    let role = store::auth::ensure_role(&e.store.pool, "staff")
+        .await
+        .unwrap();
+    let person = store::auth::create_person_login(&e.store.pool, "Maria", "maria", "hash", role)
+        .await
+        .unwrap();
+
+    e.act(
+        Action::SetPersonStanding {
+            person: person.clone(),
+            active: false,
+            note: Some("moved out".into()),
+        },
+        None,
+    )
+    .await
+    .expect("local mode may deactivate");
+    assert!(
+        !store::people::is_active(&e.store.pool, &person)
+            .await
+            .unwrap()
+    );
+
+    e.act(
+        Action::SetPersonStanding {
+            person: person.clone(),
+            active: true,
+            note: None,
+        },
+        None,
+    )
+    .await
+    .expect("and may restore");
+    assert!(
+        store::people::is_active(&e.store.pool, &person)
+            .await
+            .unwrap()
+    );
+}
+
+/// `user:update`, not `record:update`. Closing an account and editing a name
+/// are not the same authority, and a Person IS a Record — so without its own
+/// arm this would have ridden the generic record-write permission and handed
+/// deactivation to everyone who may fix a typo.
+#[tokio::test]
+async fn deactivating_needs_user_update_not_record_update() {
+    let e = engine().await;
+    let editor_role = store::auth::ensure_role(&e.store.pool, "editor")
+        .await
+        .unwrap();
+    let perm = store::auth::ensure_permission(&e.store.pool, "record", "update")
+        .await
+        .unwrap();
+    store::auth::grant(&e.store.pool, editor_role, perm)
+        .await
+        .unwrap();
+    let editor =
+        store::auth::create_person_login(&e.store.pool, "Editor", "editor", "hash", editor_role)
+            .await
+            .unwrap();
+    let target =
+        store::auth::create_person_login(&e.store.pool, "Maria", "maria", "hash", editor_role)
+            .await
+            .unwrap();
+
+    let err = e
+        .act(
+            Action::SetPersonStanding {
+                person: target.clone(),
+                active: false,
+                note: None,
+            },
+            Some(editor.clone()),
+        )
+        .await
+        .expect_err("record:update is not enough");
+    assert!(err.to_string().contains("forbidden"), "{err}");
+    assert!(
+        store::people::is_active(&e.store.pool, &target)
+            .await
+            .unwrap()
+    );
+
+    let admin_perm = store::auth::ensure_permission(&e.store.pool, "user", "update")
+        .await
+        .unwrap();
+    store::auth::grant(&e.store.pool, editor_role, admin_perm)
+        .await
+        .unwrap();
+    e.act(
+        Action::SetPersonStanding {
+            person: target.clone(),
+            active: false,
+            note: None,
+        },
+        Some(editor),
+    )
+    .await
+    .expect("user:update is");
+    assert!(
+        !store::people::is_active(&e.store.pool, &target)
+            .await
+            .unwrap()
+    );
+}
+
+/// The one move that can leave an Organ with nobody able to undo it: the
+/// permission to reactivate is held by the account you just closed. Refused
+/// rather than confirmed, because from a panel listing everybody it is never
+/// what someone means to do.
+#[tokio::test]
+async fn nobody_can_deactivate_themselves() {
+    let e = engine().await;
+    let role = store::auth::ensure_role(&e.store.pool, "admin-ish")
+        .await
+        .unwrap();
+    let perm = store::auth::ensure_permission(&e.store.pool, "user", "update")
+        .await
+        .unwrap();
+    store::auth::grant(&e.store.pool, role, perm).await.unwrap();
+    let admin = store::auth::create_person_login(&e.store.pool, "Admin", "admin", "hash", role)
+        .await
+        .unwrap();
+
+    let err = e
+        .act(
+            Action::SetPersonStanding {
+                person: admin.clone(),
+                active: false,
+                note: None,
+            },
+            Some(admin.clone()),
+        )
+        .await
+        .expect_err("self-deactivation is refused");
+    assert!(
+        err.to_string().contains("cannot deactivate yourself"),
+        "{err}"
+    );
+    assert!(
+        store::people::is_active(&e.store.pool, &admin)
+            .await
+            .unwrap()
+    );
+}
+
+/// Standing means "may this human act here", so it only fits over a Person.
+/// Written onto anything else it would be a field nothing reads — an owner
+/// believing they had turned something off when they had not.
+#[tokio::test]
+async fn standing_is_refused_over_a_record_that_is_not_a_person() {
+    let e = engine().await;
+    let record = e
+        .act(
+            Action::CreateRecord {
+                slug: Some("the-van".into()),
+                kind: nucleus::RecordKind::Plain,
+                head: "The van".into(),
+                body: String::new(),
+                quantity: 0.0,
+            },
+            None,
+        )
+        .await
+        .expect("record")
+        .created
+        .expect("uid");
+
+    let err = e
+        .act(
+            Action::SetPersonStanding {
+                person: record,
+                active: false,
+                note: None,
+            },
+            None,
+        )
+        .await
+        .expect_err("a thing has no standing");
+    assert!(err.to_string().contains("not a Person"), "{err}");
+}
+
+/// Refusing self-deactivation alone does not save an Organ. `user:update` is
+/// not the admin role, so someone holding only it can close every admin account
+/// without ever touching their own — and an admin can turn off every OTHER
+/// admin one at a time and then be turned off by one of them. The last ACTIVE
+/// admin stays.
+#[tokio::test]
+async fn the_last_active_admin_cannot_be_deactivated() {
+    let e = engine().await;
+    let admin_role = store::auth::ensure_role(&e.store.pool, store::auth::ADMIN_ROLE)
+        .await
+        .unwrap();
+    let first =
+        store::auth::create_person_login(&e.store.pool, "First", "first", "hash", admin_role)
+            .await
+            .unwrap();
+    let second =
+        store::auth::create_person_login(&e.store.pool, "Second", "second", "hash", admin_role)
+            .await
+            .unwrap();
+
+    // Two admins: turning one off is ordinary.
+    e.act(
+        Action::SetPersonStanding {
+            person: second.clone(),
+            active: false,
+            note: None,
+        },
+        None,
+    )
+    .await
+    .expect("one of two admins may go");
+
+    // One left: it is refused, however it is asked for.
+    let err = e
+        .act(
+            Action::SetPersonStanding {
+                person: first.clone(),
+                active: false,
+                note: None,
+            },
+            None,
+        )
+        .await
+        .expect_err("the last active admin stays");
+    assert!(err.to_string().contains("last active admin"), "{err}");
+    assert!(
+        store::people::is_active(&e.store.pool, &first)
+            .await
+            .unwrap()
+    );
+
+    // Bring the other back and the first may go after all — the guard is about
+    // the Organ keeping an admin, not about protecting one account.
+    e.act(
+        Action::SetPersonStanding {
+            person: second,
+            active: true,
+            note: None,
+        },
+        None,
+    )
+    .await
+    .expect("restore");
+    e.act(
+        Action::SetPersonStanding {
+            person: first.clone(),
+            active: false,
+            note: None,
+        },
+        None,
+    )
+    .await
+    .expect("with a second active admin, the first may go");
+    assert!(
+        !store::people::is_active(&e.store.pool, &first)
+            .await
+            .unwrap()
+    );
 }

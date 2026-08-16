@@ -3,6 +3,7 @@
 //! stamped by the Cell's HLC, with the local organ as actor. A Cell without a
 //! local organ has no sync identity and logs nothing.
 
+use engine::sync::Delivery;
 use engine::Engine;
 use engine::actions::Action;
 use engine::trust::Signer;
@@ -343,7 +344,9 @@ async fn no_contacts_means_no_floor_and_nothing_is_pruned() {
     assert!(before > 0, "the record wrote ops");
 
     assert_eq!(
-        sync_ops::retention_floor(&e.store.pool).await.expect("floor"),
+        sync_ops::retention_floor(&e.store.pool)
+            .await
+            .expect("floor"),
         None,
     );
     let report = e.prune_op_log(false).await.expect("prune");
@@ -371,7 +374,9 @@ async fn the_floor_is_the_least_advanced_contact() {
         .await
         .expect("advance");
     assert_eq!(
-        sync_ops::retention_floor(&e.store.pool).await.expect("floor"),
+        sync_ops::retention_floor(&e.store.pool)
+            .await
+            .expect("floor"),
         Some(0),
         "the slow contact holds the floor down",
     );
@@ -381,7 +386,9 @@ async fn the_floor_is_the_least_advanced_contact() {
         .await
         .expect("advance");
     assert_eq!(
-        sync_ops::retention_floor(&e.store.pool).await.expect("floor"),
+        sync_ops::retention_floor(&e.store.pool)
+            .await
+            .expect("floor"),
         Some(head),
     );
     let report = e.prune_op_log(false).await.expect("prune");
@@ -415,7 +422,9 @@ async fn a_blocked_contact_does_not_hold_the_floor() {
         .expect("block");
 
     assert_eq!(
-        sync_ops::retention_floor(&e.store.pool).await.expect("floor"),
+        sync_ops::retention_floor(&e.store.pool)
+            .await
+            .expect("floor"),
         Some(head),
     );
 }
@@ -436,7 +445,9 @@ async fn the_floor_never_goes_backwards() {
         .await
         .expect("advance");
     assert_eq!(
-        sync_ops::retention_floor(&e.store.pool).await.expect("floor"),
+        sync_ops::retention_floor(&e.store.pool)
+            .await
+            .expect("floor"),
         Some(head),
     );
 }
@@ -531,7 +542,9 @@ async fn a_grant_only_contact_cannot_raise_the_floor_alone() {
         .expect("advance");
 
     assert_eq!(
-        sync_ops::retention_floor(&e.store.pool).await.expect("floor"),
+        sync_ops::retention_floor(&e.store.pool)
+            .await
+            .expect("floor"),
         Some(0),
         "the feed contact still pins the floor at zero",
     );
@@ -584,19 +597,14 @@ async fn the_executor_designation_survives_the_wire() {
             Some(root) => target.import_grant_batch(&root, &batch).await,
             None => target.import_op_batch(&batch).await,
         }
-        .map(|_| ())
-        .map_err(|e| e.to_string())
+        .map_or_else(|e| Delivery::Failed(e.to_string()), |_| Delivery::Sent)
     })
     .await
     .expect("drain");
 
-    let landed = store::records::get_extension(
-        &b.store.pool,
-        &uid,
-        store::executor::NAMESPACE,
-    )
-    .await
-    .unwrap();
+    let landed = store::records::get_extension(&b.store.pool, &uid, store::executor::NAMESPACE)
+        .await
+        .unwrap();
     assert_eq!(
         landed
             .as_ref()

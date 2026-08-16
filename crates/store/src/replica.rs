@@ -194,6 +194,39 @@ pub async fn conversations_with(
 }
 
 /// The root governing a Record, or `None` when it rides the general feed.
+/// `root_for_op` inside a caller-owned transaction.
+///
+/// Exists because the in-memory pool has ONE connection, so a pool query while
+/// a transaction is open deadlocks — the same reason `log_local_tx` exists at
+/// all. Kept beside its pool twin so the two cannot drift: they must answer
+/// identically, or the same write lands on the general feed or off it
+/// depending only on which caller logged it.
+pub async fn root_for_op_tx(
+    tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
+    tbl: &str,
+    uid: &str,
+) -> Result<Option<String>, StoreError> {
+    Ok(match tbl {
+        "record" => sqlx::query_scalar::<_, Option<String>>(
+            "SELECT replica_root FROM record WHERE uid = ?",
+        )
+        .bind(uid)
+        .fetch_optional(&mut **tx)
+        .await?
+        .flatten(),
+        "record_assertion" => sqlx::query_scalar::<_, Option<String>>(
+            "SELECT r.replica_root FROM record_assertion a
+               JOIN record r ON r.uid = a.subject_uid
+              WHERE a.uid = ?",
+        )
+        .bind(uid)
+        .fetch_optional(&mut **tx)
+        .await?
+        .flatten(),
+        _ => None,
+    })
+}
+
 pub async fn root_of(pool: &SqlitePool, record_uid: &str) -> Result<Option<String>, StoreError> {
     Ok(
         sqlx::query_scalar::<_, Option<String>>("SELECT replica_root FROM record WHERE uid = ?")

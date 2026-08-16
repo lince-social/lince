@@ -114,3 +114,51 @@ fn two_unreachable_cells_converge_through_a_restarted_relay() {
 fn narrowing_mid_flight_leaves_nothing_outside_the_new_scope() {
     unimplemented!("scenario: narrow scope during an in-flight batch, reordered delivery");
 }
+
+/// C4 — an always-on Cell makes the mailbox unnecessary, and the retry window
+/// is what proves it.
+///
+/// **Setup:** three Cells of one Organ — a laptop, a phone, and one node that
+/// never sleeps — plus a fourth Organ as a contact. The laptop writes and then
+/// goes down before the phone wakes.
+///
+/// **Passes when:** the phone holds the change AND no bundle was ever left with
+/// a carrier. Mail being used here is the failure: it means the retry window
+/// fell back while a reachable Cell of the same Organ was sitting there, which
+/// is exactly the traffic the window exists to not generate. The run must
+/// report which node served the change, or a pass says nothing about why.
+#[test]
+#[ignore = "Resenha DST: needs three nodes with independent uptime"]
+fn an_always_on_cell_serves_the_change_and_no_mail_is_left() {
+    unimplemented!("scenario: laptop writes, laptop sleeps, phone wakes, always-on Cell serves");
+}
+
+/// C4 — mail crosses a partition that no simultaneous connection could.
+///
+/// **Setup:** two Organs whose uptimes never overlap, one carrier that is
+/// always up, and no path between the two Organs at any instant.
+///
+/// **Passes when:** the ops arrive, and arrive BY MAIL. Arriving by catch-up
+/// means the simulator failed to produce the condition — the scenario tests
+/// nothing unless the two were genuinely never awake together, so the run has
+/// to report which path delivered rather than only that convergence happened.
+#[test]
+#[ignore = "Resenha DST: needs driven uptime windows that never overlap"]
+fn mail_delivers_between_two_organs_that_are_never_awake_together() {
+    unimplemented!("scenario: disjoint uptime windows, one always-up carrier");
+}
+
+/// C4 — a hole punch that never lands still converges, and says so.
+///
+/// **Setup:** two Cells behind symmetric NAT, one relay. The punch is made to
+/// fail deterministically rather than by luck.
+///
+/// **Passes when:** both converge, and the run REPORTS that the connection
+/// stayed relayed for its whole life. "Relay-only mode costs nothing that
+/// matters" is a claim about this number; a run that only asserts convergence
+/// cannot tell a direct connection from a relayed one, and so cannot check it.
+#[test]
+#[ignore = "Resenha DST: needs a network that can refuse a hole punch"]
+fn a_connection_that_never_upgrades_to_direct_still_converges() {
+    unimplemented!("scenario: symmetric NAT on both sides, one relay, no upgrade");
+}

@@ -1,0 +1,47 @@
+---
+uid: r_V7M9AG4SF4JHHJ9Z36YGVX46M3
+@@idea
+@instinct
+@chapter [[First Steps|r_YWPKA0Z1DJ8XCHTZRW4X2SDJ1N]] 9
+@see-also [[How a sand gets data|r_11P1ERESKQTKBS0YW4FF8YVKDM]]
+quantity: 1
+---
+
+## One card for Project A, one for Project B
+
+This is the common case: your tasks all live in the same organ, but you want a board per project. It turns on one choice — whether a word stands alone, or points at a record.
+
+## A concept on its own
+
+A word applied to a record and nothing more: `@task`, `@urgent`. Good for qualities, bad for projects — one word per project means inventing `@project-a`, `@project-b`, and the projects themselves stay imaginary.
+
+## A concept naming a record
+
+The same word, plus the record it points at — a **link**. Project A becomes a real record you can open, count and rename, and a task can belong to several things at once.
+
+```mermaid
+graph LR
+  T1["Task: write the spec"] -- tag --> PA["Project A"]
+  T2["Task: fix the bug"] -- tag --> PA
+  T3["Task: call the client"] -- tag --> PB["Project B"]
+```
+
+_Same pile of tasks, two boards — the link kind `tag` is what tells them apart._
+
+Concretely, in order:
+
+- Make a plain record named **Project A** (with an Organ or Record sand). Note its slug — probably `project-a`. Do the same for **Project B**.
+
+- Open a task in the **Record** sand and go to its **Links** section. Type `tag` as the kind, `project-a` as the target, and press **Link**. Repeat for the other tasks — link kinds need no setup, the first link creates the vocabulary word.
+
+- Add a kanban (or table) card, turn on edit mode, open its gear → **Data** → **+ New Protein**. Name it "Project A tasks".
+
+- Add a filter **Kind is** → `task`, then a second filter **Relation** — kind `tag`, direction **outgoing**, value `project-a`. Save.
+
+- Add a second card and repeat with `project-b`. Two boards, same records underneath, no duplication.
+
+Two things trip people up here. The Record sand calls it a **link** and the Data panel calls it a **Relation** — same thing, two words. And the kind box autocompletes from vocabulary you already use, so `tag` only appears in the list _after_ the first link exists. Create the link first, then build the Protein.
+
+**Assignee** is the same filter with the ceremony removed: kind `assigned-to`, pre-filled, with a person picker. And because filters combine, "Project A but not archived", or "assigned to me across both projects", are just more filters on the same card.
+
+That is the whole frontend. The chapters that follow are about what is underneath it — starting with the one thing everything in Lince is made of.

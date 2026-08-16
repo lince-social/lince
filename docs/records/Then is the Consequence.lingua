@@ -1,0 +1,28 @@
+---
+uid: r_5QDWPNBP11MT529BEFBC9DB60K
+@@idea
+@instinct
+@chapter [[Karma|r_K7T3ZG08G5EBWRSTF8NBWMTZYV]] 4
+@see-also [[A Monthly Example|r_M06FEBR6Y31XZAJMDKRSWWAGAP]]
+quantity: 1
+---
+
+## "Then" is the Consequence
+
+```mermaid
+graph LR
+  A["Consequence"] --> B["Change a record's quantity"]
+  A --> C["Run a shell command"]
+  A --> D["Run SQL"]
+```
+
+The first one is the interesting one, because a changed quantity is itself something another rule can be watching. Rules chain without ever referring to each other:
+
+```mermaid
+graph TD
+  A["Condition: record reaches a value"] --> B["Consequence: another record changes"]
+  B --> C["Condition: that record changed"]
+  C --> D["Consequence: a command runs"]
+```
+
+_Nobody wired these two rules together. They meet in the data._

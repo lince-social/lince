@@ -1,0 +1,25 @@
+---
+uid: r_V49BM0Q6ZYFA6MF16PFMPNPNHG
+@@idea
+@instinct
+@chapter [[Karma|r_K7T3ZG08G5EBWRSTF8NBWMTZYV]] 6
+quantity: 1
+---
+
+## The whole picture
+
+```mermaid
+graph LR
+  A["Frequency"] --> B["Condition"]
+  C["Command"] --> B
+  D["SQL"] --> B
+  E["Record"] --> B
+  B --> F["Threshold"]
+  F --> G["Record"]
+  F --> H["Command"]
+  F --> I["SQL"]
+```
+
+_The same kinds of thing go in and come out — which is exactly why rules compose._
+
+Notice what is missing: there is no list of automations Lince supports. There is one shape — if, and, then — pointed at records you already have. A budget that refills, a habit that nags, a stock level that reorders, and a Transfer that settles itself are the same machine with different numbers in it.

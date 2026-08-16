@@ -1,0 +1,13 @@
+---
+uid: r_A7GZ4BWNBFJ2MXZDVNGGDM9TJV
+@@idea
+@instinct
+@chapter [[Concepts|r_W2WAENRBQDM6G9FJHTN9GPT71Z]] 7
+quantity: 1
+---
+
+## Where you set them
+
+The **Record** sand's Links section makes statements that name a second record. The **Ontology** sand is where you work with the vocabulary itself: apply a concept with no object (leave the object as "no object — tag"), set a record's identity, retract a statement, and connect concepts so one widens into another.
+
+One subtlety worth knowing before you write reporting queries. Filtering on **Concept** asks about the record a change happened _to_. There is a separate question — what the change itself was classified as — and the two are kept apart deliberately: "what did I spend on food" selects records by `@budget` but changes by `@food`. Collapsing them is how a query quietly answers something other than what you asked.

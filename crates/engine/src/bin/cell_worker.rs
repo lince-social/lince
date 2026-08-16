@@ -57,9 +57,11 @@ fn main() -> ExitCode {
 }
 
 fn usage() -> Result<(), String> {
-    Err("usage: cell_worker <db> <prefix> <writes> | host <db> <root-key> <code-out> \
+    Err(
+        "usage: cell_worker <db> <prefix> <writes> | host <db> <root-key> <code-out> \
          | join <db> <code-file>"
-        .into())
+            .into(),
+    )
 }
 
 async fn run(db: &str, prefix: &str, writes: usize) -> Result<(), String> {
@@ -136,6 +138,8 @@ async fn host(db: &str, root_key: &str, code_out: &str) -> Result<(), String> {
                 node_id: wire.node_id().to_string(),
                 label: "the host".into(),
                 operational_key: "k-host".into(),
+                // This worker exercises convergence, not mail.
+                sealing_key: None,
                 front_door: false,
                 capabilities: engine::roster::full_capabilities(),
             }],

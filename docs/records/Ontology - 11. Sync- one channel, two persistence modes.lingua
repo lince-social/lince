@@ -1,0 +1,68 @@
+---
+uid: r_QP3Q66MGQR4E1ZD2CKJEC3MZH3
+@@section
+@instinct
+@part-of [[Ontology (document)|r_S8PQ17MQ3WBWM53ZN700K89V9F]] 11
+quantity: 1
+---
+
+## 11. Sync: one channel, two persistence modes
+
+Sync and CRDT are one capability: an authenticated connection to another
+Organ carrying deltas over one channel. Per contact, the connection has a
+persistence mode. **Live**: data stays at the remote Organ; a sand accesses
+it in memory over a Protein WebSocket, and writes go through the *remote*
+Organ's change handler, fanning out to every connected peer — multiplayer
+editing falls out for free, nothing is stored locally. **Replica**: the
+syncable tables are copied locally and kept converged. Login authenticates
+both; live editing is on by default in both, because it *is* the delta
+channel applied to an open editor.
+
+Syncable tables: `record`, `record_extension`, `concept`,
+`record_assertion`, `record_fact`. `organ_contact` (trust/proximity) never
+leaves a Cell; promises travel only through discovery (§10 visibility).
+
+The unit of sync is the **op**, not the row. Every local write becomes a
+field-level operation — `(table, uid, field, value, hlc, actor)` — stamped
+with an HLC and appended to a local **op log** with a monotonic sequence
+number. Facts were already ops (append-only, idempotent, commuting); this
+makes every syncable table op-shaped, so one engine serves fact and
+non-fact tables alike. (An HLC — hybrid logical clock — is a timestamp that
+follows wall-clock time but is bumped past any remote timestamp it sees, so
+"latest wins" stays consistent across machines with skewed clocks and never
+goes backwards.)
+
+Two mechanisms keep replicas converged, and neither ever rescans a table:
+
+1. **Reactive deltas** — every write passes the one central change-handling
+   function, which fans out to whatever features are enabled; sync is one
+   such feature and immediately pushes the op to each synced Organ.
+2. **Catch-up reconciliation** — each pairing keeps a checkpoint (the last
+   op sequence the other side acknowledged). Every 30s and on reconnect, an
+   Organ asks "ops after my checkpoint"; the answer is one
+   indexed query. Converged means an empty answer — the cycle is O(1), and
+   after a gap the cost is O(missed ops), never O(table). Any delta the
+   reactive path dropped is, by definition, an op past the checkpoint, so
+   catch-up finds it without hashing anything.
+
+Merge intelligence is split along one line. **Record state** (head/body
+text, scalar columns, extension namespaces) lives in one
+**Loro doc per record** — vendored, MIT, pinned — where per-key LWW maps and
+text CRDTs make different-field edits and concurrent text
+merge correctly *by construction*; SQLite always
+holds the materialized current values, so queries never touch Loro and the
+data outlives the dependency. **The ledger** (facts, assertions, record
+tombstones) stays homebrew: signed, hash-chained, individually inspectable
+rows with HLC ordering — accountability semantics no CRDT register can
+give. Quantity is a fold of facts and must never become a CRDT value: LWW
+would silently drop one of two concurrent payments. Deletes are tombstone
+ops that replicate like any write, which is what makes catch-up unable to
+resurrect deleted data.
+
+**Current security posture, stated up front so nobody has to infer it:**
+encrypted, authenticated and FORWARD-SECRET in transit, via iroh's QUIC/TLS
+1.3 — and **PLAINTEXT AT REST** on both ends, including thread bodies. That
+second half is a deliberate decision (2026-08-03), not an oversight; the
+reasoning and the exact scope it would take to revive are in §11b.
+
+---

@@ -1,0 +1,21 @@
+---
+uid: r_44N64ARK0PZSM21YMJ3GCHEX06
+@@idea
+@instinct
+@chapter [[Transfers|r_DAPVC5V6MF3N8N2V7C84QBR96W]] 1
+@see-also [[What a Transfer actually is|r_Y7MMHVHRVZ0B18Q395MKHW3YX7]]
+quantity: 1
+---
+
+A Need in your Cell and a Contribution in someone else's do not meet by themselves. A **Transfer** is how the two sides agree to move something across the boundary.
+
+```mermaid
+graph LR
+  A["Person A"] --> C["1 unit of currency"]
+  B["Person B"] --> D["2 apples"]
+  C <--> D
+```
+
+_A trade: each side has what the other is short of._
+
+Nothing about that picture is special-cased for money. **Lince has no money in it.** A currency is an ordinary record used as a unit, and converting between currencies is a rule you write — exactly like converting hours to days. A trade of apples for hours needs no new machinery.

@@ -24,6 +24,22 @@ pub fn new_uid(prefix: &str) -> String {
     format!("{prefix}_{}", ulid_from(millis, entropy))
 }
 
+/// Whether `uid` is a well-formed uid of `prefix` — `r_` plus 26 Crockford
+/// base32 characters.
+///
+/// Exists because a uid may arrive from OUTSIDE this Cell: a `.lingua` file
+/// written by hand can carry the uid of the Record it is going to become, so
+/// that a folder of files can cross-link before any of them has been adopted.
+/// Nothing downstream parses a uid, so a malformed one would not fail loudly —
+/// it would simply be a Record whose identifier does not sort or compare like
+/// any other, found much later.
+pub fn valid_uid(uid: &str, prefix: &str) -> bool {
+    let Some(body) = uid.strip_prefix(prefix).and_then(|rest| rest.strip_prefix('_')) else {
+        return false;
+    };
+    body.len() == 26 && body.bytes().all(|byte| ALPHABET.contains(&byte))
+}
+
 /// Slug grammar: dot-separated segments of `[a-z0-9][a-z0-9-]*`.
 pub fn valid_slug(slug: &str) -> bool {
     if slug.is_empty() {

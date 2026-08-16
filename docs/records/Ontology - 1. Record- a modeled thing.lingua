@@ -1,0 +1,52 @@
+---
+uid: r_3QQ0WAHJCT3GNDSHFEV11F5FC9
+@@section
+@instinct
+@part-of [[Ontology (document)|r_S8PQ17MQ3WBWM53ZN700K89V9F]] 1
+quantity: 1
+---
+
+## 1. Record: a modeled thing
+
+A **Record** is one thing that matters to an Organ: a task, project, person,
+message, tool, place, transfer, rule, note, or saved Protein. Meaning comes
+from assertions, not from a fixed taxonomy.
+
+```text
+Record
+    uid                 stable global identity; never inferred from a title
+    slug?               optional local, human-friendly alias
+    kind                small operational shape; `plain` by default
+    head                short title
+    body                canonical Markdown content
+    quantity            exact cached current level
+    unit?               Concept naming the quantity's unit
+    place?              place reference
+    origin Organ?       where this Record originated
+    created_at, updated_at
+```
+
+- [x] Core fields above; `uid` is identity, slug is disposable local
+  convenience, `kind` is operational (create a new one only for a distinct
+  lifecycle or sidecar, never just to make a Record filterable).
+- [x] Direct operations, deliberately small — identity/tag/relationship
+  changes go through assertions (§3), not through Record columns:
+  `create_record`, `edit_record_text`, `set_slug`, `set_unit`, `set_place`,
+  `set_extension`, `set_quantity`/`add_quantity`, `deactivate`/`delete_record`.
+- [x] Quantity is an exact decimal fold of hash-chained Facts, never a float
+  column or SQL `SUM()`: negative is a Need, positive a Contribution, zero
+  neither. Facts are ground truth; a quantity change appends a signed-when-
+  possible delta.
+- [x] Deactivation (quantity zero) keeps the Record and history visible.
+  Deletion is a hard tombstone: hidden from normal reads, slug released, row
+  and Fact chain kept for verifiable history.
+- [x] Undo is compensation (append the inverse Fact, never erase one). Metadata
+  edits append a zero-delta annotation Fact. Replaying a known Fact UID is a
+  no-op.
+- [x] `record_extension`: namespaced JSON sidecar (`record_uid`, `namespace`,
+  `version`, `fds`), at most one per `(record, namespace)`. Escape hatch for a
+  new workflow, not a substitute for shared meaning — promote a widely-used
+  shape to a typed, versioned namespace that can refuse a version it doesn't
+  understand.
+  - example: task work data as `{ start, due, estimate_min, logs: [{start,
+    end}] }` — a property of the task, not a quantity Fact.

@@ -464,14 +464,9 @@ async fn a_version_vector_catch_up_survives_the_servers_prune() {
         .await
         .expect("vector");
     assert!(mine.is_empty(), "B starts with nothing of A's");
-    let missing = store::sync_ops::ops_missing_from_vector(
-        &a.store.pool,
-        &a_organ,
-        &mine,
-        2000,
-    )
-    .await
-    .expect("missing");
+    let missing = store::sync_ops::ops_missing_from_vector(&a.store.pool, &a_organ, &mine, 2000)
+        .await
+        .expect("missing");
     let wire = a.hydrate_ops(missing).await.expect("hydrate");
     b.import_op_batch(&OpBatch {
         from_organ: a_organ.clone(),
@@ -484,7 +479,9 @@ async fn a_version_vector_catch_up_survives_the_servers_prune() {
         store::records::get_extension(&b.store.pool, &uid, "test.state")
             .await
             .expect("extension")
-            .and_then(|fields| fields.get("step").and_then(|v| v.as_str().map(str::to_string))),
+            .and_then(|fields| fields
+                .get("step")
+                .and_then(|v| v.as_str().map(str::to_string))),
         Some("three".to_string()),
         "B has the surviving tip despite A having pruned the history"
     );
@@ -493,14 +490,10 @@ async fn a_version_vector_catch_up_survives_the_servers_prune() {
     let mine = store::sync_ops::version_vector_for_organ(&b.store.pool, &a_organ)
         .await
         .expect("vector");
-    let still_missing = store::sync_ops::ops_missing_from_vector(
-        &a.store.pool,
-        &a_organ,
-        &mine,
-        2000,
-    )
-    .await
-    .expect("missing");
+    let still_missing =
+        store::sync_ops::ops_missing_from_vector(&a.store.pool, &a_organ, &mine, 2000)
+            .await
+            .expect("missing");
     assert!(
         still_missing.is_empty(),
         "a second pass asks for nothing: {still_missing:?}"
@@ -541,7 +534,10 @@ async fn a_version_vector_never_mentions_a_third_organ() {
         .into_iter()
         .map(|entry| entry.actor_cell)
         .collect();
-    assert!(!c_cells.is_empty(), "and some of C's, or this proves nothing");
+    assert!(
+        !c_cells.is_empty(),
+        "and some of C's, or this proves nothing"
+    );
     for entry in &for_a {
         assert!(
             !c_cells.contains(&entry.actor_cell),

@@ -234,7 +234,10 @@ async fn renaming_a_contact_is_local_and_logs_no_op() {
         .expect("the contact record");
     assert_eq!(row.head, "Marcia", "trimmed, and it is the local label");
     let after = store::sync_ops::max_seq(&e.store.pool).await.unwrap();
-    assert_eq!(before, after, "renaming a contact must not enter the op log");
+    assert_eq!(
+        before, after,
+        "renaming a contact must not enter the op log"
+    );
 }
 
 /// The same action must not become a back door for editing this Cell's own
@@ -501,10 +504,7 @@ async fn the_two_directions_of_a_scope_are_independent() {
         .await
         .unwrap()
         .unwrap();
-    assert!(
-        row.scope_fields.is_none(),
-        "we still tell them everything…"
-    );
+    assert!(row.scope_fields.is_none(), "we still tell them everything…");
     assert_eq!(
         row.accept_fields.as_deref(),
         Some(&["quantity".to_string()][..]),
@@ -624,16 +624,36 @@ async fn sync_policy_refuses_the_local_organ() {
 #[tokio::test]
 async fn forgetting_a_paired_contact_with_keys_succeeds() {
     let (e, _local, contact) = cell_with_contact().await;
-    engine::trust::adopt_key(&e.store, &contact, "ed25519:root:v1", "AAAA").await.unwrap();
-    engine::trust::adopt_key(&e.store, &contact, "ed25519:organ:v1", "BBBB").await.unwrap();
-    store::organs::set_node_id(&e.store.pool, &contact, Some("beadbeef")).await.unwrap();
-    store::organs::set_trust(&e.store.pool, &contact, "known").await.unwrap();
-    store::records::set_text(&e.store.pool, &contact, Some("Known B"), None).await.unwrap();
-
-    e.act(Action::ForgetOrganContact { target: contact.clone() }, None)
+    engine::trust::adopt_key(&e.store, &contact, "ed25519:root:v1", "AAAA")
         .await
-        .expect("a paired contact must be forgettable");
-    assert!(store::records::get(&e.store.pool, &contact).await.unwrap().is_none());
+        .unwrap();
+    engine::trust::adopt_key(&e.store, &contact, "ed25519:organ:v1", "BBBB")
+        .await
+        .unwrap();
+    store::organs::set_node_id(&e.store.pool, &contact, Some("beadbeef"))
+        .await
+        .unwrap();
+    store::organs::set_trust(&e.store.pool, &contact, "known")
+        .await
+        .unwrap();
+    store::records::set_text(&e.store.pool, &contact, Some("Known B"), None)
+        .await
+        .unwrap();
+
+    e.act(
+        Action::ForgetOrganContact {
+            target: contact.clone(),
+        },
+        None,
+    )
+    .await
+    .expect("a paired contact must be forgettable");
+    assert!(
+        store::records::get(&e.store.pool, &contact)
+            .await
+            .unwrap()
+            .is_none()
+    );
 }
 
 /// Touching a contact's trust, proximity or feed direction commits a Fact

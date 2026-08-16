@@ -1,0 +1,17 @@
+---
+uid: r_V35BHHQT59B1HZ5QTQEGF65H9F
+@@idea
+@instinct
+@chapter [[Cells and Organs|r_N6KHA5VKVK81GS6SAHGZGD2BCT]] 2
+quantity: 1
+---
+
+Other people have their own. No Cell is inside any other, and none of them is the "main" one:
+
+```mermaid
+graph LR
+  A["Cell"]
+  B["Cell"]
+  C["Cell"]
+  D["Cell"]
+```

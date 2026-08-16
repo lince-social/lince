@@ -2,6 +2,7 @@
 //! text edits are cumulative `crdt` ops that converge character-wise across
 //! Cells; SQLite always holds the materialized current values.
 
+use engine::sync::Delivery;
 use engine::Engine;
 use engine::actions::Action;
 use engine::trust::Signer;
@@ -56,8 +57,7 @@ async fn wire_push(from: &Engine, to: &Engine) -> usize {
             Some(root) => to.import_grant_batch(&root, &batch).await,
             None => to.import_op_batch(&batch).await,
         }
-        .map(|_| ())
-        .map_err(|e| e.to_string())
+        .map_or_else(|e| Delivery::Failed(e.to_string()), |_| Delivery::Sent)
     })
     .await
     .expect("drain")
@@ -216,7 +216,7 @@ async fn deleted_record_freezes_its_doc() {
             value: crdt_op.value.clone(),
             hlc: nucleus::hlc::next(),
             actor_cell: a_organ.clone(),
-        organ_uid: a_organ.clone(),
+            organ_uid: a_organ.clone(),
             fact: None,
         }],
     })

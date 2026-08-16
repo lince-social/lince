@@ -211,7 +211,9 @@ impl Engine {
     /// Audit, and rebuild if it found anything. Returns what it found and
     /// whether a repair ran, so a caller can report "clean" honestly rather
     /// than rebuilding unconditionally and calling that health.
-    pub async fn audit_and_repair(&self) -> Result<(AuditReport, Option<RebuildReport>), EngineError> {
+    pub async fn audit_and_repair(
+        &self,
+    ) -> Result<(AuditReport, Option<RebuildReport>), EngineError> {
         let audit = self.audit_read_model().await?;
         if audit.is_clean() {
             return Ok((audit, None));

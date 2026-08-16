@@ -107,12 +107,7 @@ fn two_processes_sharing_one_database_lose_no_writes() {
     let writes = 40;
     let children: Vec<_> = ["alpha", "beta"]
         .into_iter()
-        .map(|prefix| {
-            (
-                prefix,
-                worker(db, prefix, writes).spawn().expect("spawn"),
-            )
-        })
+        .map(|prefix| (prefix, worker(db, prefix, writes).spawn().expect("spawn")))
         .collect();
     for (prefix, mut child) in children {
         let status = child.wait().expect("wait");
@@ -220,7 +215,10 @@ fn a_second_process_enrols_and_converges() {
         .expect("the joining process runs");
     let _ = host.kill();
     let _ = host.wait();
-    assert!(joined.success(), "the second process failed to join and sync");
+    assert!(
+        joined.success(),
+        "the second process failed to join and sync"
+    );
 
     // What the second process now holds, read from its own database.
     let runtime = tokio::runtime::Builder::new_current_thread()

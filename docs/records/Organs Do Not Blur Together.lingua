@@ -1,0 +1,18 @@
+---
+uid: r_VD47XVQ09YRK871QKGQRH11MHN
+@@idea
+@instinct
+@chapter [[Cells and Organs|r_N6KHA5VKVK81GS6SAHGZGD2BCT]] 4
+@see-also [[Lince Has No Centre|r_S4XQVQS2KSRWCDJW90S8JN9KQP]]
+quantity: 1
+---
+
+You belong to as many Organs as you have contexts, and they do not blur into each other. Work does not see your hobby; your family does not see your work backlog.
+
+```mermaid
+graph TD
+  B["Work"] --> A["Your Cell"]
+  C["Hobby"] --> A
+  D["Family"] --> A
+  E["Friends"] --> A
+```

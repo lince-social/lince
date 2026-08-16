@@ -1,0 +1,77 @@
+---
+uid: r_AY1B5PG2EN346HF57RA0PKDCZ6
+@@section
+@instinct
+@part-of [[Karma (document)|r_2AZ3RN0NPT1YCHDVCG66CNHRPF]] 2
+quantity: 1
+---
+
+## Standing rules — not checkable work
+
+- Work on `dev`, no worktrees. `cargo check` and narrowest per-crate tests,
+  never a full workspace build.
+- Nothing domain-specific in the backend or the database. No money type: a gain
+  is a positive delta, a currency is a Unit Record, "worth five of theirs" is a
+  rule someone wrote. Economy is a preset of the Karma sand, not a sand.
+- Sands read Protein and write typed Actions, nothing else. Board chrome is host
+  state, never a Ledger Fact.
+- Everything runs on `nucleus → store → engine → protein → transport`.
+- Modelling vocabulary is `docs/Ontology.md`'s: Records, Assertions, Concepts,
+  Lingua. Karma never invents a second one.
+- Migrations that have not shipped get edited in place; local databases are
+  expendable. Once one ships it is frozen.
+- `crates/web/tests/sand_boundary.rs` fails if `economy`, `money`, `currency` or
+  `finance` appears in backend code. Prose is exempt on purpose.
+- One word in the UI: **Rule**. Not recurrence, not program, not occurrence.
+  Karma is the pillar's name; a Rule is what you make.
+
+---
+
+# 0 — Exact numbers and frozen types
+
+**Purpose:** Fix the small vocabulary every other section spends, so a number
+means one thing everywhere and a wire format never drifts under a running Cell.
+
+**How it works:** One decimal type on every durable path and no binary floats in
+any decision. Probability and confidence are different types, because a
+likelihood that something recurs and a confidence in an estimate are different
+claims. Time atoms are signed integer milliseconds. There is no money type: a
+currency is a Unit Record, so `12.50 @brl` is a `Quantity`.
+
+**Interacts:** §1.2's arithmetic, §3's Ledger and §13's replay all depend on
+these being exact and canonical.
+
+**Implementation:** `nucleus::DecimalValue` stored as `(mantissa TEXT, scale
+INTEGER)`, summed in Rust as `i128` at a common scale and never in SQL.
+`fact.delta` and `record.quantity` are an exact pair with `REAL` removed. One
+named lossy inbound door, `NewFact::quantity_f64`. Canonical JSON sorts object
+keys and preserves array order; failures are a stable machine `FailureCode` plus
+a safe message.
+
+- [x] **Declared precision survives sync**, and the exact pair is inside the
+      hash preimage, so two Cells agree on the bytes and not merely the value.
+# 1 — Rule
+
+**Purpose:** A Rule is the whole of Karma's authoring surface. It is three parts
+and nothing else, and it is one object so a person never has to learn where the
+schedule went.
+
+**How it works:** The Condition computes a number from blocks referenced by
+slug. The Threshold decides whether that number means *fire*. The Consequence
+happens and receives the number the Condition carried.
+
+```
+-1 * freq(@daily) + @apple    →  !=0  →  add-quantity @pear
+└──────── Condition ────────┘    Thresh.   └── Consequence ──┘
+```
+
+**Interacts:** Reads Record quantities and Frequencies; writes through Actions,
+which append Facts, which wake other Rules — that chain is deliberate and is how
+one Rule's consequence feeds another's condition.
+
+**Implementation:** `nucleus::karma::{Condition, Gate, Carry, Consequence}` are
+the four types and are already right — `Gate` *is* the Threshold in the drawing,
+`Carry` *is* "the value carried over by the condition". Storage is
+`0038_recurrence.sql` + `store/src/recurrence.rs`; evaluation is
+`Engine::react_to` in `crates/engine/src/actions.rs`, with a
+`MAX_REACTIONS_PER_CHANGE` cascade guard.

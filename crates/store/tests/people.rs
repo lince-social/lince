@@ -1,0 +1,158 @@
+//! Person standing (C3): deactivating someone who has stopped using Lince.
+//!
+//! The store half — the flag itself, its failure direction, and that it is
+//! reversible. That it actually STOPS a login is `web/tests`, that it reaches
+//! the Organ's other Cells and no contact is `engine/tests/person_standing.rs`,
+//! and neither belongs here: this file must stay true even if every one of
+//! those callers is rewritten.
+
+use store::Store;
+
+async fn person(store: &Store, slug: &str) -> String {
+    let organ = store::organs::ensure_local(&store.pool, "me").await.unwrap();
+    let uid = nucleus::new_uid("r");
+    store::sqlx::query(
+        "INSERT INTO record (uid, slug, kind, head, body, quantity_mantissa, quantity_scale,
+                             organ_uid, created_at, updated_at)
+         VALUES (?, ?, 'person', ?, '', '0', 0, ?, '2026-08-15T00:00:00Z', '2026-08-15T00:00:00Z')",
+    )
+    .bind(&uid)
+    .bind(slug)
+    .bind(slug)
+    .bind(&organ.uid)
+    .execute(&store.pool)
+    .await
+    .unwrap();
+    uid
+}
+
+/// Absence means active. Every Person who existed before this mechanism did —
+/// which is all of them — keeps working, and a deactivation that fails to
+/// arrive leaves someone able to log in, which somebody can see and fix. The
+/// other direction locks an Organ out of itself over a missing row.
+#[tokio::test]
+async fn a_person_nobody_has_touched_is_active() {
+    let store = Store::open_memory().await.unwrap();
+    let uid = person(&store, "maria").await;
+
+    assert!(store::people::is_active(&store.pool, &uid).await.unwrap());
+    assert_eq!(
+        store::people::standing(&store.pool, &uid).await.unwrap(),
+        None
+    );
+}
+
+#[tokio::test]
+async fn deactivating_stops_them_and_records_when() {
+    let store = Store::open_memory().await.unwrap();
+    let uid = person(&store, "joao").await;
+
+    store::people::deactivate(&store.pool, &uid, "2026-08-15T12:00:00Z", Some("moved out"))
+        .await
+        .unwrap();
+
+    assert!(!store::people::is_active(&store.pool, &uid).await.unwrap());
+    let standing = store::people::standing(&store.pool, &uid)
+        .await
+        .unwrap()
+        .expect("standing was written");
+    assert_eq!(standing.at.as_deref(), Some("2026-08-15T12:00:00Z"));
+    assert_eq!(standing.note.as_deref(), Some("moved out"));
+}
+
+/// People come back, so this is a flag and not a deletion. Reactivating must
+/// return the Person to indistinguishably-untouched, not to a third state that
+/// some later reader has to know about.
+#[tokio::test]
+async fn reactivating_returns_them_to_untouched() {
+    let store = Store::open_memory().await.unwrap();
+    let uid = person(&store, "ana").await;
+
+    store::people::deactivate(&store.pool, &uid, "2026-08-15T12:00:00Z", None)
+        .await
+        .unwrap();
+    store::people::reactivate(&store.pool, &uid).await.unwrap();
+
+    assert!(store::people::is_active(&store.pool, &uid).await.unwrap());
+    assert_eq!(
+        store::people::standing(&store.pool, &uid).await.unwrap(),
+        None
+    );
+}
+
+/// Deactivation is not deletion, and this is the assertion that says so: the
+/// Record is whole, still named, still `kind = 'person'`. Everything pointing at
+/// it — Facts they signed, Assertions naming them, messages they sent — stays
+/// valid, because none of it stopped being true when they left.
+#[tokio::test]
+async fn a_deactivated_person_keeps_their_record_and_their_name() {
+    let store = Store::open_memory().await.unwrap();
+    let uid = person(&store, "carla").await;
+
+    store::people::deactivate(&store.pool, &uid, "2026-08-15T12:00:00Z", None)
+        .await
+        .unwrap();
+
+    let record = store::records::get(&store.pool, &uid)
+        .await
+        .unwrap()
+        .expect("the Person record is still there");
+    assert_eq!(record.head, "carla");
+    assert_eq!(record.kind, "person");
+}
+
+/// The owner's list: who is turned off right now. An empty result is the
+/// ordinary state and must be distinguishable from a broken read, which is why
+/// the surface says "nobody deactivated" rather than showing nothing.
+#[tokio::test]
+async fn the_deactivated_list_holds_only_the_deactivated() {
+    let store = Store::open_memory().await.unwrap();
+    let gone = person(&store, "gone").await;
+    let here = person(&store, "here").await;
+    let back = person(&store, "back").await;
+
+    store::people::deactivate(&store.pool, &gone, "2026-08-15T12:00:00Z", Some("left"))
+        .await
+        .unwrap();
+    store::people::deactivate(&store.pool, &back, "2026-08-14T12:00:00Z", None)
+        .await
+        .unwrap();
+    store::people::reactivate(&store.pool, &back).await.unwrap();
+
+    let listed = store::people::deactivated(&store.pool).await.unwrap();
+    assert_eq!(listed.len(), 1, "only `gone` is deactivated: {listed:?}");
+    assert_eq!(listed[0].0, gone);
+    assert!(store::people::is_active(&store.pool, &here).await.unwrap());
+    assert!(store::people::is_active(&store.pool, &back).await.unwrap());
+}
+
+/// A stored value we cannot parse fails toward ACTIVE, deliberately. Standing
+/// is written by us and read by us, so an unparseable one is our own bug — and
+/// a bug that locks the owner out of their Organ is worse than one that leaves
+/// an ex-member able to log in until somebody notices.
+#[tokio::test]
+async fn an_unreadable_standing_does_not_lock_anyone_out() {
+    let store = Store::open_memory().await.unwrap();
+    let uid = person(&store, "corrupt").await;
+
+    store::records::set_extension_raw(
+        &store.pool,
+        &uid,
+        store::people::NAMESPACE,
+        &serde_json::json!({ store::people::STANDING_KEY: "not an object" }),
+    )
+    .await
+    .unwrap();
+
+    assert!(store::people::is_active(&store.pool, &uid).await.unwrap());
+}
+
+/// The sync filter answers from the field name alone — it sees ops, not
+/// records — so the name it matches has to be pinned here rather than spelled
+/// out a second time where it is used.
+#[test]
+fn the_standing_field_is_the_one_the_sync_filter_looks_for() {
+    assert!(store::people::is_standing_field("lince.person.standing"));
+    assert!(!store::people::is_standing_field("lince.person"));
+    assert!(!store::people::is_standing_field("lince.schedule.executor.cell"));
+}

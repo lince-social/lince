@@ -1,0 +1,346 @@
+---
+uid: r_HJ0FS6PZGD9B3G2FTJ5ZSVEC76
+@@section
+@instinct
+@part-of [[Transfer (document)|r_XF06Q5Z2MECBB8ZAWAX9KXJ184]] 8
+quantity: 1
+---
+
+## Checklist
+
+### Product Shape
+
+- [x] Transfer is scoped to Lince data only for the first version.
+- [x] No payment integration is assumed.
+- [x] No delivery-provider integration is assumed.
+- [x] No external messaging integration is assumed.
+- [x] No calendar integration is assumed.
+- [x] No legal-contract language is required for MVP.
+- [x] The feature is described as a protocol for making Record changes socially valid.
+- [x] The feature supports both personal and shared Organ use.
+- [x] The feature supports one-off and grouped work.
+- [x] The feature supports large subjects split into smaller child Transfers.
+
+### Core Concepts
+
+- [x] A Transfer is a structured promise before execution.
+- [x] A Transfer can contain multiple interactions.
+- [x] A Transfer can contain multiple items.
+- [x] A Transfer item can represent a Need.
+- [x] A Transfer item can represent a Contribution.
+- [x] A Transfer item can represent support.
+- [x] A Transfer item can represent a task.
+- [x] A Transfer item can represent information.
+- [x] A Transfer item can represent a reservation.
+- [x] A parent Transfer can group child Transfers.
+- [x] A parent Transfer can expose aggregate state.
+- [x] Child Transfers can keep their own policies.
+- [x] Child Transfers can have dependencies.
+
+### Typed Options
+
+- [x] Agreement type is a Rust enum.
+- [x] Settlement mode is a Rust enum.
+- [x] Agreement level is a Rust enum.
+- [x] Transfer role is a Rust enum.
+- [x] Transfer direction is a Rust enum.
+- [x] Transfer interaction kind is a Rust enum.
+- [x] Participation kind is a Rust enum.
+- [x] Confirmation kind is a Rust enum.
+- [x] Event kind is a Rust enum.
+- [x] Storage strings are parsed into Rust types at the boundary.
+- [x] Storage strings are serialized from Rust types at the boundary.
+- [x] Raw `get("field")` access is avoided in the design.
+
+### Visibility
+
+- [x] Visibility is modeled with tables.
+- [x] Visibility applies to Records.
+- [x] Visibility applies to Transfers.
+- [x] Visibility applies to Transfer items.
+- [x] Visibility applies to Transfer events.
+- [x] Visibility applies to fields, not only whole rows.
+- [x] A subject can be a user.
+- [x] A subject can be an Organ.
+- [x] A subject can be public.
+- [/] A party can see only the Transfer fields allowed for it.
+- [/] A party can see a Transfer item title without seeing the source Record head.
+- [/] A party can see a Transfer item description without seeing the source Record body.
+- [/] Visibility can hide source Record identity.
+- [/] Visibility can hide other parties.
+- [/] Visibility can hide locations and quantities.
+
+Field-level visibility design (when implemented):
+
+Subjects: an Organ, a specific user within an Organ (by `actor_label`), a Transfer role (`contribution`, `need`, `support`), or `public`. Rules attach to a field path on a Transfer, item, or interaction row. If no rule exists, the field falls back to the whole-Transfer visibility policy.
+
+Fields that can be scoped independently:
+
+- `transfer.title`, `transfer.topic_text`
+- `item.title`, `item.description` (visible without exposing source Record)
+- `item.source_record_id` / `item.record_head_snapshot` (the Record identity)
+- `item.quantity`
+- `party.actor_label` / `party.public_key` (hide other parties from each other)
+- `interaction.quantity`
+- Locations and units carried in item metadata
+
+A rule says "field X is visible to subject Y". Subjects are checked in order: exact actor_label match → role match → Organ match → public. The most specific matching rule wins. A field is hidden unless a matching rule grants access.
+
+Package export applies field rules before serializing: hidden fields are omitted or replaced with a placeholder. The Transfer recipient cannot tell whether a field was intentionally hidden or simply absent.
+
+### Agreement And Editing
+
+- [x] Default agreement mode is individual.
+- [x] Full agreement exists as an option.
+- [x] Percentage agreement mode is stored as a fraction of parties (0–100).
+- [x] Agreement validation branches on the configured AgreementType.
+- [x] Agreement percentage threshold is stored per Transfer in `transfer_identity`.
+- [/] Dependency agreement mode is wired to interaction dependency satisfaction. (Agreement is complete when the depended-on Transfer itself is agreed/settled, not when local parties sign. Requires querying `transfer_interaction` rows with `depends_on` kind and checking the referenced Transfer state.)
+- [x] Agreement mode is displayed in the Transfer sand agreement section.
+- [x] Agreement progress (N of M parties agreed) is displayed.
+- [x] Editing a connected item invalidates earlier agreement.
+- [x] Agreement level 0 means no current agreement.
+- [x] Agreement level 1 means first review/align.
+- [x] Agreement level 2 means commitment/activation threshold.
+- [x] Agreement state is tracked per item or interaction.
+- [/] Agreement state can also be derived for a parent Transfer.
+
+### History And Events
+
+- [x] Transfer events are append-only.
+- [x] Event hashes can chain together.
+- [x] Signed events are implemented for local Transfer actions and imported packages.
+- [x] Event validation can be deterministic.
+- [x] Each EventKind has a typed payload struct in Rust.
+- [x] Event payload deserialization uses typed structs at the package import boundary.
+- [x] Invalid event payloads at import are rejected with a validation error.
+- [x] Messages are separate from generic comments.
+- [x] Messages belong to a Transfer.
+- [x] Messages can belong to a specific interaction.
+
+### Messages
+
+- [x] A unified `message` table replaces both `record_comment` and `transfer_message`.
+- [x] Messages can reference a Record (replacing Kanban comments).
+- [x] Messages can reference a Transfer.
+- [x] Messages can reference a specific Transfer interaction.
+- [x] Messages support threaded replies via `parent_message_id`.
+- [x] Messages are soft-deletable.
+- [x] Kanban uses the unified message table for Record comments.
+- [x] Transfer packages include messages from the unified table.
+- [x] Transfer package import writes messages into the unified table.
+- [x] The Transfer sand can display messages in threaded order.
+- [x] The Transfer sand can send new messages.
+- [x] The Transfer sand can reply to a message.
+- [x] The Transfer sand can delete own messages.
+
+### Karma
+
+- [x] Karma can turn a Transfer on by changing quantity.
+- [x] Karma can turn a Transfer off by changing quantity.
+- [x] Karma does not invent visibility.
+- [x] Karma does not invent parties.
+- [x] Karma does not silently settle a Transfer.
+- [x] Karma-generated actions are bounded.
+
+### Simulation
+
+- [x] Transfer influence is modeled with plus/minus facts.
+- [x] Actual quantity remains separate from projected quantity.
+- [x] Proposed outgoing can be projected.
+- [x] Proposed incoming can be projected.
+- [x] Reserved outgoing can be projected for active hard local contribution reservations.
+- [x] Reserved incoming can be projected.
+- [x] Available can be projected for active hard local contribution reservations.
+- [x] Planned can be projected with the simple formula.
+- [x] SQL views can explicitly join reservation availability.
+
+### Settlement
+
+- [x] Delivery confirmation is modeled.
+- [x] Receipt confirmation is modeled.
+- [x] Settlement is idempotent.
+- [x] Individual settlement exists.
+- [x] Full settlement exists for Transfers where both sides have local Records.
+- [x] Settlement readiness includes structured interaction dependency state.
+- [x] Settlement can apply Record quantity changes.
+- [x] Settlement can consume reserved influence facts for the local Transfer path.
+
+### Networking
+
+- [x] A Cell can act as a p2p node through Organ contacts, package endpoints, polling, and outbox retry.
+- [x] A node can publish visible Transfer summaries.
+- [x] A node can cache public/permitted Transfer packages.
+- [x] A node can keep discovery cache entries stale with source metadata.
+- [x] A participating Cell can mirror a Transfer event log.
+- [x] A participating Cell can track its last synced event.
+- [x] A coordinator orders writes while replicas sync eventually.
+- [x] A central or Organ server can introduce peers.
+- [x] Direct peer sync can happen after introduction.
+- [x] Peer discovery can be contact-list based.
+- [x] Known peers can be auto-polled hourly by default.
+- [x] Known peers can be manually polled when automatic polling is disabled.
+- [x] A node can expose discoverable contacts with pagination and text search.
+- [x] A discovered contact can be added locally as `unknown`.
+- [x] Peer trust supports `unknown`, `known`, and `blocked`.
+- [x] Blocked peers are rejected from receive, send, polling, and discovery surfaces.
+- [x] Transfer topics/categories can be manual text input.
+- [x] Public proposal ingress is integrated with unknown/known/blocked peer behavior.
+- [x] Topic/category labels can be used by future discovery.
+- [x] Structured package rows use stable UIDs for parties, items, and interactions.
+- [x] Structured package import updates existing party/item/interaction rows by UID.
+- [x] Structured package import preserves local-only rows when importing partial remote packages.
+- [x] Structured package import has service coverage for idempotent UID-based updates.
+- [x] Organ discovery is available through `/organs/discover`.
+- [x] Event logs can later become signed.
+
+### Visibility V1
+
+- [x] Transfer visibility defaults to hidden.
+- [x] Transfer visibility mode is exclusive: `hidden`, `public`, or `restricted`.
+- [x] Whole-Transfer package export is the v1 visibility boundary.
+- [x] Package export checks the requesting Organ before sending a Transfer package.
+- [x] Public visibility allows public package discovery/export.
+- [x] Restricted visibility supports explicit Organ allow rules.
+- [x] Restricted visibility supports `max_visible_proximity`.
+- [x] Blocked Organs cannot receive visible Transfer packages.
+- [x] Manual send to an Organ ensures that Organ can view the Transfer.
+- [x] Organ proximity is stored as a numeric Organ property.
+- [x] The Transfer sand can edit Organ proximity.
+- [x] The Transfer sand can edit whole-Transfer visibility.
+- [x] The Transfer sand can choose hidden/public/restricted visibility.
+- [x] The Transfer sand can choose restricted Organs and a max proximity threshold.
+- [x] Received package state is stored locally.
+- [x] Seen package state is stored locally when a user opens Transfer detail.
+- [x] Receipt configuration exists for received receipts, seen receipts, and anonymous package viewing.
+- [x] Anonymous package viewing avoids generating received/seen state.
+- [x] Received/seen package facts can become signed outbound Transfer events.
+- [x] Karma consequences can widen restricted visibility with `transfer-proximity-broadening-{transfer_id}`.
+- [x] Offer ordering sends eligible Transfers to closer Organs first without exposing local proximity externally.
+- [x] Visibility-aware projection sharing is default-off and gated by configuration.
+
+### Transfer Sand
+
+- [x] The Transfer sand uses server-backed widget actions while remaining an official local widget.
+- [x] The Transfer sand declares the permissions it needs.
+- [x] The Transfer sand has a dedicated runtime contract.
+- [x] The Transfer sand has typed backend actions.
+- [x] The Transfer sand can list Transfer summaries.
+- [x] The Transfer sand can load one Transfer detail.
+- [x] The Transfer sand can create a Transfer.
+- [x] The Transfer sand can create child Transfers.
+- [x] The Transfer sand can add and edit Transfer items.
+- [x] The Transfer sand can delete Transfer items.
+- [x] The Transfer sand can assert a relationship from a Transfer item to a source Record.
+- [x] The Transfer sand can show Transfer-specific item title and description separately from source Record fields.
+- [x] The Transfer sand can configure parties.
+- [/] The Transfer sand can configure field-level visibility.
+- [x] The Transfer sand can show item interactions.
+- [x] The Transfer sand can show dependencies.
+- [x] The Transfer sand can show agreement state.
+- [x] The Transfer sand can let permitted parties agree.
+- [x] The Transfer sand invalidates agreement through backend rules after connected edits.
+- [x] The Transfer sand can send and display Transfer messages.
+- [x] The Transfer sand can display messages in threaded order.
+- [x] The Transfer sand can show append-only Transfer history.
+- [x] The Transfer sand can show delivery confirmation state.
+- [x] The Transfer sand can show receipt confirmation state.
+- [x] The Transfer sand can request settlement.
+- [x] The Transfer sand can show quantity influence facts when they exist. (Per Transfer, shows which local Records will be affected and by how much — `proposed_incoming`, `proposed_outgoing`, `planned_quantity` from `record_transfer_availability` — before settlement actually runs.)
+- [x] The Transfer backend projection exposes Transfer-level work metadata when it exists.
+- [x] The Transfer sand can edit Transfer work metadata.
+- [x] The Transfer sand can show and edit item work metadata.
+- [x] The Transfer sand can show and edit interaction work metadata.
+- [x] The Transfer sand can configure whole-Transfer visibility.
+
+### Multi-Item And Interaction CRUD
+
+- [x] The Transfer sand can create new items with full fields (role, title, description, source Record assertion, quantity, unit).
+- [x] The Transfer sand can edit all fields of an existing item.
+- [x] The Transfer sand can delete items.
+- [x] The Transfer sand can create new interactions (from/to item, kind, direction, dependency kind, quantity).
+- [x] The Transfer sand can edit existing interactions.
+- [x] The Transfer sand can delete interactions.
+- [x] Backend actions exist for create/edit/delete of structured items.
+- [x] Backend actions exist for create/edit/delete of structured interactions.
+
+### Roadmap
+
+- [x] The doc is split into multiple files.
+- [x] The main file is a tracker.
+- [x] The main file has many checkboxes.
+- [x] The plan can grow without becoming one monolith.
+- [x] The schema and Rust models have a structured backend implementation.
+- [x] Generic Kanban work metadata can attach to Transfers.
+- [x] Generic Kanban work metadata can attach to structured Transfer items.
+- [x] Backend Transfer summary/list projection reads from structured parties/items/agreements.
+- [x] The local create/edit/agreement/inactivation action surface writes structured rows first.
+- [x] Transfer package import/export uses structured rows without the old `TransferItemPackage` fallback.
+- [x] Delivery, receipt, and settlement write/check structured confirmation and settlement rows.
+- [x] The legacy `transfer_item` table is removed from the Rust schema and dropped by migration.
+- [x] Work metadata owner kind for structured Transfer items no longer uses the legacy `transfer_item` name.
+- [x] The UI action surface has native multi-item and interaction creation/editing.
+- [x] Explicit reservation projection is available through `record_transfer_availability`.
+- [x] Visibility-aware package export filtering is implemented for whole-Transfer visibility.
+- [x] The networking protocol carries Transfer packages over structured Transfer data.
+
+### Multi-Party Settlement
+
+- [x] Schema supports N parties per role in `transfer_party` and `transfer_structured_item`.
+- [x] `settle-all-local` action settles all structured items owned by local parties in one call.
+- [x] Settlement delta uses interaction quantities when defined, falls back to item quantity.
+- [x] Many-to-many fulfillment: one contribution item can relate to multiple need items via interaction quantity routing.
+- [x] Settlement event payload records party_id, record_id, and delta per item.
+- [x] "Settle my parts" button in Transfer sand items section.
+
+### Transfer Chains (Karma Sequence)
+
+Transfer chains are private, Organ-local chain edges that connect the settlement of one Transfer to the contribution input of another. A receives from B (Transfer 1). B privately connects Transfer 1's settlement to their contribution in Transfer 2 (B→C). Neither A nor C sees that chain edge. No anonymous data inside Transfer events or packages.
+
+- [x] `transfer_chain_link` table stores cross-Transfer flow connections (organ-local, never in packages).
+- [x] Chain edges support `constant` or `percentage` amount formulas.
+- [x] `add-chain-edge` / `remove-chain-edge` backend actions.
+- [x] Settling a Transfer triggers pending chain edges: computes delta and marks downstream item as funded.
+- [x] Chain-edge state tracks: pending → triggered → canceled.
+- [x] Transfer sand shows a chain-edge section (upstream and downstream views, private to the local Organ).
+
+### Spectator Watching
+
+A spectator watches a **source Transfer** (by `source_transfer_uid`) and a **role** (contribution or need). When ANY Transfer derived from that source has the matching role settle, all active spectators are triggered.
+
+- [x] `transfer_spectator` table stores watches (organ-local, never in packages).
+- [x] Spectator watches a `watched_source_transfer_uid` + `watched_role`, not a specific Transfer instance.
+- [x] Triggering the wrong duplicate still satisfies spectators (watches point to source, not instance).
+- [x] Spectator can watch contribution role (supply materializes) or need role (need met).
+- [x] Spectator applies `constant` or `percentage` delta to a local Record when triggered.
+- [x] `add-spectator` / `remove-spectator` backend actions.
+- [x] Spectators are triggered after `settle-all-local` runs.
+- [x] Transfer sand shows "Watching" section (private to local organ).
+
+### Satiation Policy
+
+When a Transfer or spectator settles, a satiation policy can auto-cancel sibling Transfers from the same source.
+
+- [x] `transfer_satiation_policy` column on `configuration` for global default.
+- [x] `satiation_policy` column on `transfer_identity` for per-Transfer override (NULL = inherit).
+- [x] Policy `none`: all duplicates proceed independently.
+- [x] Policy `first_completes`: when any duplicate settles, inactivate non-settled siblings.
+- [x] Satiation runs after `settle-all-local` and after spectator trigger.
+- [x] `set-satiation-policy` backend action.
+- [x] Transfer sand shows satiation policy picker with inherit/none/first_completes options.
+
+### Backend Features Without Transfer Sand UI
+
+Backend actions and capabilities that exist but have no UI surface in the Transfer sand yet.
+
+- [x] `set-transfer-reservation-policy` action exists but the Transfer sand has no control for it. The five reservation policies (`none`, `soft`, `hard_on_proposal`, `hard_on_consume`, `hard_on_lock`) can be set per Transfer but only via direct API calls. → Added reservation policy dropdown in the Transfer tree section.
+- [x] Transfer tree sync mode (`live` vs `snapshot`) can be configured per tree node but the Transfer sand only shows one-time sync buttons, not the configured mode or a toggle. → Configured sync mode dropdown already shown alongside "Sync now" button.
+- [x] Transfer tree branch mode (`inherit`, `duplicated`, `greedy`) is displayed in the Transfer sand tree section but the `greedy` option is not explained and the effect of changing it mid-tree is not surfaced. → Added `title` attributes to branch mode options explaining what each does.
+- [x] Transfer dependency interactions (`depends_on` kind with `must_agree`, `must_activate`, `must_deliver`, `must_receive`, `must_settle` dependency kinds) are stored but the Transfer sand does not show whether the dependency is currently blocking progress or satisfied. → Interactions with unresolved dependency kinds now show a yellow "blocking" badge and a left border.
+- [x] The global Transfer satiation policy default in `configuration.transfer_satiation_policy` has no UI in the Transfer sand configuration section. → Added global satiation policy select in the Network drawer; populated from `snapshot.globalSatiationPolicy`.
+- [x] `surplus_quantity` (actual minus hard reserved) is not computed or surfaced anywhere in the UI. → `surplus_quantity = actual − reserved − proposed_outgoing` now computed in `load_influence_facts` and displayed per-Record in the Quantity influence section.
+
+Trust is important in workflows of Transfer, when we interact with other parties how do we know we can Trust them? Trust in Lince is done by verifyiable facts that happened when this party interacted with other parties. If you consider the parties they interacted with as Trustworthy, when both parties can agree something was done, you can maybe trust them a little more. For automation this is crucial, being able to trust will bring more agility to interactions.
+
+> Extracted from `docs/Karma.md` on 2026-07-29. Automation Trust scopes
+> (Karma phase K8) stay in that doc — they gate automation, not authorship.

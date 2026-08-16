@@ -1,0 +1,63 @@
+---
+uid: r_6BCZ7AETZ417WJFZBHAH19Y4Q8
+@@section
+@instinct
+@part-of [[Ontology (document)|r_S8PQ17MQ3WBWM53ZN700K89V9F]] 9
+quantity: 1
+---
+
+## 9. Federation and Blood: talking to other systems
+
+An Organ owns its local Records and structure; shared vocabulary makes
+interoperation possible without forcing matching Record structures. Keep
+transport, shape translation, and semantic translation as separate layers:
+
+```text
+external transport or document
+        ↓
+named adapter: identity, shape, provenance
+        ↓
+Lingua mapping: external meaning ↔ Lince Concept
+        ↓
+local Records, Facts, assertions, and extensions
+```
+
+Blood carries and validates the envelope; Ontology explains the Records/
+assertions it expresses; Lingua says which meanings are shared; policy
+decides what the Organ accepts, reveals, trusts, or acts upon.
+
+**Important — one outward layer, many formats.** The machinery that turns a
+Lince event into an integration event for another system is the *same*
+machinery that writes a file in somebody else's format. A protocol adapter and
+a file writer differ only in the transport at the end: both take a Record or a
+Fact, run it through a Lingua mapping, and emit it in a vocabulary that is not
+ours. So they must not be built as two unrelated features. Cadence and Karma
+firings become `.ics`; the Ledger and Transfer become `.csv`; a Record body
+becomes `.md`. **Markdown is one output format among many, not the special
+case it currently looks like.** File Sync is therefore an early, hard-coded
+instance of Blood, and should eventually be re-founded as one: *Blood is the
+integration organ, and syncing Markdown to a directory is a single Blood
+adapter whose transport happens to be the local filesystem.* The design test
+for any new export work is whether adding `.csv` next to `.md` means writing a
+mapping or rewriting a subsystem — if it means the latter, the seam is in the
+wrong place.
+
+**The adapters are not scheduled work** — they sit in the last group of the
+task list, kept as real intentions rather than as plans. The re-founding above
+is a direction recorded so that the next person to touch File Sync does not
+build a second hard-coded exporter beside the first. **The Lingua file format
+under "Lince's own documentation, as Records" is the first real test of it**:
+it adds a second format beside Markdown, and if that costs more than a mapping
+then the seam is in the wrong place, exactly as this paragraph predicts.
+
+The shape a full adapter would take when its time comes: an adapter names a selection (already Protein), a Lingua mapping,
+and a transport, where the filesystem is one transport among several; the
+second and third formats would be `.ics` from Cadence/Karma firings and `.csv`
+from the Ledger and Transfer, chosen because they are *not* text bodies and so
+would prove the seam holds where Markdown flatters it; and round-trip would be
+per-adapter and declared, since Markdown reads back while `.ics` and `.csv`
+plausibly do not.
+
+- [x] Adapter contract: preserve external identity, source version/context,
+  original payload where appropriate, and anything untranslatable.
+  Interpretation never silently becomes local authorship or authority.

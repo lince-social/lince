@@ -1,0 +1,34 @@
+---
+uid: r_EMQJ1ZVSMWE8EBKEQQZ4MZV1XT
+@@section
+@instinct
+@part-of [[Karma (document)|r_2AZ3RN0NPT1YCHDVCG66CNHRPF]] 6
+quantity: 1
+---
+
+## 1.4 — Consequence
+
+**Purpose:** The thing that actually happens, receiving the number the Condition
+carried.
+
+**How it works:** An ordered, non-empty list — capture an entry, set or add a
+quantity, assert or retract an ordinary Record assertion, or set an identity
+assertion. A list rather than one, because `@wip → @done` is one intention and
+must be one rule.
+
+**Interacts:** A consequence appends an ordinary signed Fact on the target
+Record, which is a Record moving, which wakes any rule reading it. Anything
+leaving the Cell goes through §5's grant and §6's intent instead of firing
+directly.
+
+**Implementation:** `nucleus::karma::Consequences`, stored as
+`consequences_json`, each entry dispatching to the typed Action that already
+existed. Assertion semantics are `docs/Ontology.md`'s.
+
+- [x] **`set-quantity` is not a delta.** Assigning `-1` is not a movement of
+      `-1`, and applying a beat writes one entry marking it done which never
+      carries the value as well — letting it would move an `add-quantity` rule's
+      figure twice.
+- [x] **Changing an assertion moves a card between Kanban columns**, since
+      columns bucket by value, range or assertion. Removing a Record's identity
+      assertion stays refused.

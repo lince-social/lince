@@ -1,0 +1,354 @@
+---
+uid: r_C477PK0XSKG1JSJQ6YNZY2D5PP
+@@section
+@instinct
+@part-of [[Ontology (document)|r_S8PQ17MQ3WBWM53ZN700K89V9F]] 15
+quantity: 1
+---
+
+## 12. Visibility: what a logged-in Organ may see
+
+Deliberately simple: login to an Organ plus `read record` permission grants
+full visibility of the sync feed; hiding is per-record (whole rows kept out
+of a contact's feed) **and per-field**. What §10 already excludes stays
+excluded — Decision Queue, concept-level promises, and proximity never
+leave a Cell. The visibility gate is the *single* filter applied when
+serving ops, snapshots, and audits; nothing else decides what travels.
+
+**"Never per-field" was wrong and is REVERSED, 2026-08-09.** That rule was
+written before the op log existed and was carried forward without being
+re-checked against it. `migrations/0040_sync_op.sql` gives `sync_op` a
+`field TEXT NOT NULL` column and indexes `(tbl, uid, field)` — ops have been
+field-level since the table was created. Withholding a column from a contact
+is therefore a predicate on the op stream at serve time: no op rewriting, no
+re-signing, no new table, nothing that could invalidate a signature or a
+checkpoint. The constraint that justified the rule does not exist.
+
+**Per-record hiding — built 2026-08-14, and NOT by reusing the existing gate.**
+This box said "the existing visibility gate, applied at feed-serve time, is the
+one mechanism", and that turned out to be the wrong mechanism. `visible_targets`
+answers "what may this logged-in Person READ here" and is DEFAULT-HIDDEN,
+because a Cell holds other people's Records. The sync feed defaults the other
+way, and §12 says so in its first line: pairing and switching `sync_out` on IS
+the grant. Pointing one at the other would have meant every contact seeing
+nothing until each Record was granted individually — not a policy anyone chose,
+and it would have read as sync being broken rather than as a rule.
+
+So hiding is the EXCEPTION list to a default-shared feed:
+`visibility_rule` rows with `subject_kind = 'organ'` and
+`grant_level = 'hidden'`, a level the column has carried since `0001_init.sql`.
+`hide-record-from-contact` takes a slug or a uid and resolves it — a uid naming
+no Record would store a rule that hides nothing while reading as applied.
+
+**An op belongs to a Record even when it names another table.** `record`,
+`fact` and `record_assertion` are the three logged tables, and hiding a Record
+that still shipped its facts would be no hiding at all — a quantity is most of
+what many Records are. `visibility::records_of_op` is the one mapping, shaped
+after `replica::root_for_op`, and an Assertion is withheld if EITHER endpoint is
+hidden: letting a link to a hidden Record through discloses its uid and its
+relation, which is most of what hiding was for. An unknown fourth table returns
+NO governing Record and is therefore withheld, so adding one is a visible change
+here rather than a silent leak.
+
+**There is no tombstone exemption here, and that is the difference from the
+scope.** A narrowed contact still holds the Record, so withholding its delete
+would strand it. A hidden Record is one they were never to have, and sending
+the delete would tell them it existed. §12's honest half applies instead:
+hiding stops what travels NEXT, and the surface says so in both directions —
+hiding does not retract what they hold, unhiding does not re-send what they
+missed.
+
+The cost is one indexed lookup per contact per pass, and nothing more when the
+list is empty, which is the normal case: `record` ops resolve without a query
+at all, and the other two are only asked about once something is actually
+hidden. The pull path fails CLOSED on an unreadable hide list — the one place
+in the serve path where guessing wide sends a Record somebody named as
+withheld.
+
+Surface: the contact panel's "Never send" field plus the named list, with its
+own save. Batching it into the scope button would let an accidental widening
+ride along with a deliberate hide. A rule whose Record was deleted since still
+appears, because a rule that filters while being invisible is one nobody can
+remove. The better surface — a "hide from…" control on the Record itself — is
+the editor's, and is not a reason to hold this one back.
+**Protein can select COLUMNS — built 2026-08-13, and it did not exist.** This
+box assumed it did: "Protein selection is already name-what-you-want". It was
+not, at the column level. `Include` names related things (facts, promises, an
+extension namespace); a Protein returned whole Records and there was no way to
+ask for `head` and not `body`. The one selector the whole thing hangs off had
+to be built before anything could hang off it.
+
+`Protein.fields: Option<Vec<String>>`. `None` means every column, which is what
+every existing caller means and gets, so the addition is invisible to all of
+them. `uid` and `kind` always survive: a row nobody can identify is not a
+narrower answer to the question, it is a useless one, and every surface and the
+sync path alike address rows by uid.
+
+**Name-what-you-want, never name-what-to-hide**, and the asymmetry is the
+security argument rather than a style preference: a column added six months
+from now stays home until some Protein names it. A deny-list would have leaked
+it by default and nobody would have noticed until it had. Pinned by a test that
+asks for a column which does not exist.
+
+**Per-contact narrowing applies at serve time** (built 2026-08-13).
+`organ_contact.scope_fields` is a JSON array in the same vocabulary
+`Protein.fields` uses, and `narrow_ops_to_scope` drops ops for columns it does
+not name. Applied when the feed is SERVED and nowhere else — no per-contact
+state on the write path, which is what lets one log serve every contact
+differently.
+
+**It covers BOTH delivery paths, and at first it covered one** (fixed
+2026-08-14). The narrowing went into `FetchOpsSince` — the path a peer takes
+when it asks us — and `drain_outbox`, the path we take to them and the one the
+sync runner actually drives, sent every column regardless. A narrowing that
+holds on one of two paths is not a narrowing, and the one it missed was the
+default. The predicate is now applied in both, and the push-path test drives
+the outbox rather than the fetch so it cannot pass on the strength of the other
+path working.
+
+The general feed has two ways out and they are not symmetric, which is what
+made this easy to miss: pull is per-request and reads the contact anyway, push
+is per-outbox-row and previously only asked the contact a yes/no question
+(`sync_out`). Withheld rows are DELETED from the outbox rather than left
+queued — an op this contact will never receive under this scope is not owed,
+and leaving it would retry forever and hold the retention floor down behind it.
+`Engine::ops_after` takes a checkpoint and no contact, so it cannot narrow at
+all; it has no production caller and must not acquire one.
+
+Replica-grant ops are exempt, the same exemption `sync_out` already makes: a
+grant is an explicit per-record permission the receiver accepted, and
+half-delivering a document somebody agreed to take is worse than not scoping
+it. The scope governs the broad feed.
+
+`NULL` is unnarrowed, and is deliberately NOT the same as the empty list. An
+empty list is a real and different answer — nothing but deletes — and
+conflating "not configured" with "configured to nothing" is how a migration
+silently stops someone's sync. Both are tested.
+
+**The head is taken BEFORE narrowing**, which reads like an ordering detail and
+is not: it is a position in our log, not a count of what was sent. If narrowing
+moved it backwards, a contact whose scope excludes the newest ops would re-ask
+for the same range forever.
+
+**The scope is set from the Organ sand, and it offers THREE states** (built
+2026-08-13). `set-contact-scope` carries `fields: Option<Vec<String>>`, and the
+sand picks between "everything they can already see", "only these columns", and
+"nothing but which record it is" from a mode selector rather than a text field
+that is empty or not. This is the surface rule doing real work: a single text
+box has two states for a setting that has three, and the collapse runs the
+unsafe way — someone asking to share NOTHING would be stored as sharing
+EVERYTHING. The column list is only reachable inside the middle mode, so a list
+typed under "everything" cannot look applied.
+
+`fields` is deliberately not `#[serde(default)]`: an omitted field would
+deserialise to `None`, which is the widest setting there is, so a caller that
+forgets it gets an error instead of silently unnarrowing someone. Blank column
+names are refused rather than stored — a trailing comma in a text field is the
+ordinary way one appears, and a blank matches nothing while looking configured.
+
+**Widening reaches back and narrowing does not**, and the sand says which is
+which on both the tooltip and the confirmation. `scope_version` still moves on
+every change so the two directions stay distinguishable locally; what it was
+originally added for — letting a serve path detect an un-repaired widening —
+is no longer needed, because the repair is queued at the moment the scope
+changes rather than discovered later.
+
+**A scope that will not parse reads as UNNARROWED, and now SAYS so** (built
+2026-08-14). The default is unchanged and the box was right that it should be:
+failing closed means a corrupt row silently stops a contact's sync with no
+error at all, and the visibility gate is still in front of it either way. What
+was missing is that "read as unnarrowed" was indistinguishable FROM unnarrowed
+— a wider setting than anyone asked for, displayed as though somebody had asked
+for it.
+
+So the raw text survives to the surface as `scope_unreadable` (and
+`accept_unreadable` — separate values, because the two directions are separate
+settings and a shared flag would report one as broken because the other is).
+The panel says the setting is being ignored, says what that MEANS — nothing is
+narrowed right now — and shows the text that could not be read, because a
+repair whose input nobody can see is a guess. Saving the panel is the repair.
+
+Two functions over one column rather than one returning a three-way answer:
+every caller wants the ordinary value, and making all of them unwrap a failure
+they cannot act on is how the failure ends up ignored at each of them.
+
+The same shape is now used for the File Sync filter below, deliberately — two
+settings that fail the same way should report the same way.
+**Collaborative text is ONE unit, and the first narrowing let it escape**
+(fixed 2026-08-13). The tombstone rule was written as "empty `field` rides",
+and `crdt`/`snapshot` share that empty field — so the Loro document went to
+every contact whose scope excluded it, INCLUDING the empty scope. The document
+holds exactly `head` and `body`, so a scope naming neither still shipped both.
+
+The rule was too coarse rather than wrong: a tombstone must ride because
+withholding a delete strands a Record forever, and that argument does not
+extend to text, which strands nothing.
+
+**And the fix was applied to one table out of five** (finished 2026-08-14).
+The general lesson was written down — "the empty field marks 'not a column',
+not 'always send'" — and then not applied to the other tables that use one.
+`fact`, `record_assertion` and `concept` all log under `field = ''`, so for
+another day a contact narrowed to `head` was still receiving every quantity
+change we made, every link between Records, and the whole vocabulary of this
+Cell. Writing the rule down is not the same as enforcing it, and a predicate
+that has leaked twice is one to make exhaustive rather than patch a third time.
+
+`op_in_scope` now takes the TABLE, and needed to: `kind` alone cannot tell a
+Record tombstone (which must always ride) from an Assertion tombstone (which
+must not), because both are spelled `tombstone`. The shape is an ALLOW-list
+over tables, matching its own name-what-you-want rule — a sixth
+logged table reaches nobody narrowed until someone decides which column it
+carries, which is a visible omission instead of a silent leak. Per table:
+
+* `record` — tombstone always rides (the stranding rule, and it belongs to
+  this table alone, because nothing else here can strand anything);
+  `crdt`/`snapshot` ride when the scope names `head` or `body`; `set` rides
+  when the scope names its column, and an EMPTY field is refused rather than
+  read as a wildcard, which is the bug twice over.
+* `fact` — answers for `quantity`. A fact logs under an empty field because
+  the fact's own uid is the identity, which is not the same as being
+  field-less.
+* `record_assertion` — a relationship BETWEEN Records, not a column of one, and
+  the column vocabulary cannot name it. A narrowed contact receives no links at
+  all, tombstones included (they strand nothing, because the Assertion never
+  arrived). Fail-closed rather than inventing a reserved word: letting links
+  through would disclose the shape of the graph to someone narrowed to one
+  column. Naming links in a scope is a vocabulary extension and is deferred.
+* `record_extension` — names a real `namespace.key`, so it follows the ordinary
+  column rule. In practice that withholds extensions from every narrowed
+  contact, because nobody types `lince.file_sync.enabled` into a scope. That is
+  the right default and is now the deliberate one.
+* `concept` — shared vocabulary rather than anyone's content, and a narrowed
+  contact gets none of it. The cost is honest and small: a column holding a
+  concept uid arrives opaque, exactly as a withheld column arrives absent.
+  Riding unconditionally told a contact narrowed to one column the whole
+  vocabulary of this Cell.
+
+Splitting head from body is still not expressible, and is now refused where
+the scope is SET rather than silently honoured at serve time — configuration
+is the only place with somebody to tell. Name both or neither.
+
+One consequence to read as intended rather than as stranding: a contact who
+already holds text and is then given a scope excluding it keeps the text they
+have, frozen, rather than receiving a delete. Narrowing stops sending; it does
+not reach back and retract, which is the same asymmetry widening has in the
+other direction. It is moot in practice — no scope could be set before today —
+but it is the semantics from here on.
+**An excluded field is ABSENT, never blank** (built 2026-08-13). `retain`
+removes the key rather than nulling it, so `undefined` means withheld and `""`
+means genuinely empty — the distinction needs no marker invented for it, and a
+test now puts an empty body next to a withheld one so it cannot quietly stop
+being true.
+
+What is left is a RENDERER rule, not a data-model gap: `row.body || ""`
+collapses the two, and a sand that draws a missing `assignee` as unassigned
+draws a permission boundary as data. It is not swept through every renderer
+today, deliberately — **no shipped sand narrows** (every `Protein.fields` is
+`None`), so there are zero live instances and a sweep would be a large diff
+against a hypothetical. The File Sync Protein filter below is the first real
+narrowing caller, and is where the rule first bites.
+
+**A tombstone is not a field, and rides with the Record** (built 2026-08-13,
+and it is the rule that makes narrowing safe to apply at all). Tombstones,
+`crdt` and `snapshot` ops all use `field = ''`, so an allowlist naming columns
+would exclude every DELETE by construction: a narrowed contact would never
+learn a Record was removed, and their copy would live forever — worse than the
+leak the narrowing was for. Empty-field is a real value and never a wildcard,
+the same rule the supersede predicate follows, now stated in both directions
+and pinned by its own test.
+**Widening reaches back — built 2026-08-14.** Adding `assignee` to a contact's
+scope leaves every op for that column below their version vector, so catch-up
+would never offer it again and the column would stay permanently blank for them
+while the panel read as shared. `widens_scope` compares the stored scope to the
+incoming one BEFORE the write, and a widening queues the general feed for that
+contact — the same replay-by-identity a re-grant uses, over the whole feed
+rather than one Record.
+
+**It queues the DIFFERENCE, and the difference is exact.** The first version
+replayed the whole feed and let the drain filter it back down — correct, but
+O(current state) of queue churn and bandwidth for a change that usually adds
+one column. The worry that stopped it being a diff was that a hand-written
+"which columns are new" rule could be wrong in the narrow direction and
+silently fail to repair. The answer is not to hand-write it: an op is queued
+iff `op_in_scope` says the NEW scope permits it and the OLD one did not. The
+repair asks the same predicate the drain will ask, so the two cannot disagree,
+and there is no second copy to drift.
+
+`widens_scope` decides only WHETHER to repair, and stays conservative: it may
+say "wider" for a change that is not, costing one redundant pass, and it must
+never say "not wider" for one that is. Nothing reaches this path except
+somebody widening a scope by hand.
+
+Narrowing has no counterpart and must not acquire one: it stops sending, it
+does not reach back and retract. A test pins that it queues nothing about the
+Records it narrows — checked against the Record rather than against the whole
+outbox, because every contact action annotates the contact's own Record and
+that is an ordinary logged write.
+
+The three predictions this box made are all now wrong in the same direction and
+worth keeping as a record of it: the cursor is not `last_synced_seq` (that is a
+diagnostic; catch-up is a version vector), the repair is not a re-snapshot, and
+the confirmation does NOT stop distinguishing the two cases — a widening
+re-sends and a narrowing does not, which is a real difference and one that
+costs a pass.
+
+Surface: the scope tooltip and the save confirmation both say which direction
+reaches back, and a selftest refuses the old "wider from now on" wording so the
+prose cannot outlive the mechanism it described.
+**Grant — built 2026-08-14, and NOT as the snapshot this box specified.** The
+box said "a record becoming visible enters the contact's feed as a snapshot
+generated at serve time from the read model", and the mechanism it describes was
+designed in full before being abandoned for a smaller one. Both halves of the
+reasoning are kept, because the discarded design is where the constraints came
+from.
+
+**Why the snapshot design was abandoned.** A synthesized op needs an identity,
+and the only identity available is the serving Cell's own `(actor_cell, hlc)` —
+which puts its stamp ABOVE every real op in our log. A peer folds whatever
+arrives into a `MAX(hlc) GROUP BY actor_cell` vector, so one synthesized op
+would hand them coverage of every real op of ours they had NOT yet received —
+a pass truncated by `limit`, a failed push — stranding those permanently. That
+is fixable (only re-snapshot once `ops_missing_from_vector` comes back empty,
+which makes the dominance harmless and the acknowledgement exact) but it costs
+a convergence gate, a progress column and a cursor.
+
+**What replaced it: replay by identity.** A contact who was never to have this
+Record holds NONE of its ops, so its own history is exactly what they are
+missing. Sending it under the original `(actor_cell, hlc)` invents nothing:
+no signature, roster or clock question arises, and the stamps sit BELOW the
+peer's high-water mark, so the replay moves their vector not at all. The whole
+dominance problem is an artefact of minting.
+
+Two guards had to be checked rather than assumed, and both already existed:
+`import_ops` compares `op.hlc <= prior` per FIELD before materialising, so a
+replayed op cannot overwrite something newer; and `import_fact_op` dedupes by
+op identity and then by fact uid, so a quantity cannot be added twice. The
+first reading of `sync_apply::set_record_field` — which is blind last-write-wins
+on its own — suggested replay was unsafe, and the guard is one layer up.
+
+This is also why a re-grant CANNOT be a snapshot of current state, quite apart
+from cost: `quantity` is added and never assigned (see the repair half), so an op carrying
+the current total would double it on arrival.
+
+Delivery reuses the outbox rather than adding a path, and the bounded outbox
+does the compaction for free: its conflict clause keeps the latest op per
+`(tbl, uid, field, kind)`, so a Record's history collapses to its current value
+per column while facts — each with its own uid — all survive. The enqueue is
+addressed to ONE contact, unlike the ordinary fan-out; the scope and the hide
+list are applied where the outbox drains, which both delivery paths already
+share.
+
+Grants still do not write history into the op log — that part of the box was
+right, and replay satisfies it more literally than a snapshot would have.
+
+Surface: unhiding now says the whole Record is sent including what changed
+while it was hidden, where it previously said "from the next change onwards".
+The two directions of hiding are asymmetric and the panel says which is which.
+**Mid-stream changes vs checkpoints — settled 2026-08-14, with its second
+sentence reversed.** Hiding a Record after some of its ops were served filters
+only SUBSEQUENT ops: no history rewriting, no checkpoint rollback. That half
+stands. The other half said "a re-grant later re-snapshots current state rather
+than replaying the hidden gap", and the built answer replays the gap precisely —
+for the reasons under Grant above. Replaying is what the op log is FOR, and the
+sentence was written when a snapshot looked like the only way to avoid
+clobbering newer values; the per-field guard in `import_ops` means it never was.

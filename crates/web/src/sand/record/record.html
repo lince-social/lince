@@ -201,6 +201,19 @@
       <div class="rowset">
         <span class="field"><span class="lbl">Slug</span><input id="c-slug" class="lynx-input" type="text" autocomplete="off" placeholder="optional.dot.case" /></span>
         <span class="field"><span class="lbl">Qty</span><input id="c-quantity" class="lynx-input" type="number" step="1" /></span>
+        <!-- An Agent is an Actor that is not a Person: same type, so it shows
+             up in the assignee picker like anyone else, but it says what it is
+             and who is answerable for it. Made visible here because an Agent
+             nobody can create is a convention, not a feature. -->
+        <span class="field"><span class="lbl">What</span>
+          <select id="c-what" class="lynx-select" data-lynx-tooltip="A record is anything. An agent is a non-human actor — a coding assistant, a bot — that can be assigned work like a person, and carries the person who is answerable for it. Both show up in the Assignees picker.">
+            <option value="record">Record</option>
+            <option value="agent">Agent</option>
+          </select>
+        </span>
+        <span class="field" id="c-operator-field" hidden><span class="lbl">Operated by</span>
+          <select id="c-operator" class="lynx-select"></select>
+        </span>
       </div>
       <textarea id="c-body" class="lynx-textarea" placeholder="Body…" aria-label="Body"></textarea>
     </div>
@@ -549,10 +562,39 @@
       $("c-slug").value = "";
       $("c-quantity").value = String(Number(seed?.quantity) || 0);
       $("c-body").value = "";
+      $("c-what").value = "agent" === seed?.what ? "agent" : "record";
+      renderWhat();
       $("create").classList.add("open");
       $("c-head").focus();
       $("create").dataset.kind = typeof seed?.kind === "string" && seed.kind ? seed.kind : "plain";
     }
+    // An Agent takes a name and an operator and nothing else — a slug, a
+    // quantity and a body on a non-human actor are fields with no answer, and
+    // showing them would imply this form creates something it does not.
+    function renderWhat() {
+      const agent = $("c-what").value === "agent";
+      $("c-operator-field").hidden = !agent;
+      $("c-slug").closest(".field").hidden = agent;
+      $("c-quantity").closest(".field").hidden = agent;
+      $("c-body").hidden = agent;
+      $("c-head").placeholder = agent ? "claude" : "New record";
+      if (!agent) return;
+      const pick = $("c-operator");
+      const previous = pick.value;
+      pick.innerHTML = "";
+      const none = document.createElement("option");
+      none.value = "";
+      none.textContent = "nobody in particular";
+      pick.appendChild(none);
+      for (const [uid, n] of Object.entries(names).filter(([, n]) => n.kind === "person")) {
+        const opt = document.createElement("option");
+        opt.value = uid;
+        opt.textContent = n.head || n.slug || uid;
+        pick.appendChild(opt);
+      }
+      if ([...pick.options].some((o) => o.value === previous)) pick.value = previous;
+    }
+    $("c-what").addEventListener("change", renderWhat);
     function closeCreate() {
       creating = false;
       createSeed = {};
@@ -571,6 +613,18 @@
         return;
       }
       try {
+        if ($("c-what").value === "agent") {
+          const operator = $("c-operator").value;
+          const made = await act({
+            action: "create-agent",
+            head,
+            operated_by: operator || null,
+          });
+          closeCreate();
+          if (made && made.created) focusRecord(String(made.created));
+          else goIdle();
+          return;
+        }
         const outcome = await act({
           action: "create-record",
           kind: $("create").dataset.kind || "plain",

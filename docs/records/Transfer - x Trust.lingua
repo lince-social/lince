@@ -1,0 +1,23 @@
+---
+uid: r_1TQR1KWKMDMAYBQM3SVPSCRR9P
+@@section
+@instinct
+@part-of [[Transfer (document)|r_XF06Q5Z2MECBB8ZAWAX9KXJ184]] 9
+quantity: 1
+---
+
+## [x] Trust
+
+- [x] Every locally-authored fact is signed on the write path; imported
+  facts keep their ORIGIN signature so downstream Cells can still verify the
+  original author — a two-layer tamper model (the hash chain guards
+  content, the signature guards authorship).
+- [x] Compaction archives stay verifiable file-side; the anchor fact makes
+  the file tamper-evident from inside the Ledger.
+- [x] No universal/global/public reputation score, ever. Kept/broken signed
+  history is the shareable raw material; Karma may derive a local,
+  purpose-specific estimate for one concept/role/window, but must show its
+  ingredients and must not publish it as a fact about a Person's character.
+- Field-level grants and most-specific-wins precedence are tracked in Transfer
+  Phase T3, with Transfer as the first consumer of this shared Trust behavior;
+  today grants remain whole-row only.

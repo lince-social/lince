@@ -1,0 +1,31 @@
+---
+uid: r_VANC7ZNG8WDCTRE648DXT23K23
+@@idea
+@instinct
+@chapter [[Records|r_5JKQH7BM9ZQ474YF869AFE4T2N]] 3
+quantity: 1
+---
+
+## What a Record actually holds
+
+```mermaid
+graph LR
+  A["Record"] --> B["Quantity (a number)"]
+  A --> C["Head (the title)"]
+  A --> D["Body (the description)"]
+  A --> E["...and more"]
+```
+
+The **head** and **body** are for you — they carry the human meaning. The **quantity** is for the machine: it is the state, and it is the part rules can read and change.
+
+```mermaid
+graph LR
+  A["Record"] --> B["Quantity: -1"]
+  A --> C["Head: Apple"]
+```
+
+_"I am one apple short." That is a complete, working record._
+
+A number is deliberately unopinionated. The same field can mean stock, debt, need, budget, progress, votes, hours, or responsibility. That is what lets one kind of record carry every workflow you have, instead of a new table per feature.
+
+Every change to a quantity is recorded as a **fact** — who changed it, when, and why. Nothing moves invisibly. Turn on "history (facts)" in a Protein and a sand can show you the whole trail.

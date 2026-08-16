@@ -13,8 +13,12 @@ nucleus = { workspace = true }
 store = { workspace = true }
 async-trait = { workspace = true }
 base64 = { workspace = true }
+chacha20poly1305 = { workspace = true }
 chrono = { workspace = true }
 ed25519-dalek = { workspace = true }
+getrandom = { workspace = true }
+hkdf = { workspace = true }
+x25519-dalek = { workspace = true }
 iroh = { workspace = true }
 iroh-mdns-address-lookup = { workspace = true }
 n0-future = "0.3"

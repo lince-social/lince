@@ -68,6 +68,10 @@
 
     .instinct__body{flex:1 1 auto;min-height:0;overflow:auto;padding:24px}
 
+    .instinct__import{
+      display:flex;align-items:center;gap:8px;
+      flex:0 0 auto;padding:8px;border-top:1px solid var(--border);
+    }
     .instinct__foot{
       display:flex;align-items:center;justify-content:space-between;gap:8px;
       flex:0 0 auto;padding:8px;border-top:1px solid var(--border);
@@ -146,6 +150,16 @@
 
       <!--CHAPTERS-->
 
+    </div>
+
+    <!-- The chapters above ARE Records, read from the same bundle this button
+         imports — so what you read and what you get cannot differ. Importing
+         is a normal consented import: it says what it will add before it adds
+         it, and it never overwrites a Record you already have, because the
+         point of them being Records is that you can edit them. -->
+    <div class="instinct__import" id="import-row">
+      <button class="instinct__step" id="import" type="button">Put these in my Lince</button>
+      <span class="instinct__where" id="import-said"></span>
     </div>
 
     <footer class="instinct__foot">
@@ -255,6 +269,33 @@
         });
       }
       if (!restored) show(0, { remember: false });
+
+      // ---- import ------------------------------------------------------
+      // Says what it will add BEFORE adding it. An empty state that just sat
+      // there would read as broken, so every outcome says which one it is:
+      // no host to act through, added, or already here.
+      const importButton = document.getElementById("import");
+      const importSaid = document.getElementById("import-said");
+      const chapterCount = chapters.length;
+      importSaid.textContent =
+        `${chapterCount} chapters, as records you can edit, link to and keep.`;
+      importButton.addEventListener("click", async () => {
+        const host = window.LinceWidgetHost;
+        if (typeof host?.act !== "function") {
+          importSaid.textContent = "This sand cannot write here — no host to act through.";
+          return;
+        }
+        importButton.disabled = true;
+        importSaid.textContent = "Adding…";
+        try {
+          await host.act({ action: "import-instinct" });
+          importSaid.textContent =
+            "In your Lince. Anything you had already is untouched — open Records to find them.";
+        } catch (err) {
+          importSaid.textContent = String(err && err.message ? err.message : err);
+          importButton.disabled = false;
+        }
+      });
     })();
   </script>
 </body>

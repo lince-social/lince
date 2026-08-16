@@ -102,6 +102,36 @@ pub async fn create(pool: &SqlitePool, new: NewRecord<'_>) -> Result<RecordRow, 
     create_in_root(pool, new, None).await
 }
 
+/// Create a Record under a uid decided OUTSIDE this Cell.
+///
+/// For a folder of `.lingua` files written before any of them is adopted: a
+/// link is `[[Title|uid]]` and a link without a uid is refused, so files that
+/// reference each other must agree on their uids in advance. Minting them into
+/// the files is what makes such a folder self-contained — the alternative is
+/// importing once with no links and adding them in a second pass, which means
+/// the folder is never valid on its own.
+///
+/// Refuses a uid that is malformed or already taken. A collision must never
+/// adopt or overwrite the existing Record: two different things claiming one
+/// identifier is the one failure that cannot be undone afterwards.
+pub async fn create_with_uid(
+    pool: &SqlitePool,
+    new: NewRecord<'_>,
+    uid: &str,
+) -> Result<RecordRow, StoreError> {
+    if !nucleus::valid_uid(uid, "r") {
+        return Err(sqlx::Error::Protocol(format!(
+            "`{uid}` is not a record uid (expected `r_` and 26 characters)"
+        )));
+    }
+    if get(pool, uid).await?.is_some() {
+        return Err(sqlx::Error::Protocol(format!(
+            "`{uid}` already names a Record here"
+        )));
+    }
+    create_inner(pool, new, None, Some(uid)).await
+}
+
 /// Create a Record inside an individual-replica root (Ontology §11 "Threads").
 ///
 /// `root` is written in the SAME INSERT as the row, deliberately: every
@@ -120,12 +150,24 @@ pub async fn create_in_root(
     new: NewRecord<'_>,
     root: Option<&str>,
 ) -> Result<RecordRow, StoreError> {
+    create_inner(pool, new, root, None).await
+}
+
+async fn create_inner(
+    pool: &SqlitePool,
+    new: NewRecord<'_>,
+    root: Option<&str>,
+    given_uid: Option<&str>,
+) -> Result<RecordRow, StoreError> {
     if let Some(slug) = new.slug {
         if !nucleus::valid_slug(slug) {
             return Err(sqlx::Error::Protocol(format!("invalid slug `{slug}`")));
         }
     }
-    let uid = nucleus::new_uid("r");
+    let uid = match given_uid {
+        Some(uid) => uid.to_string(),
+        None => nucleus::new_uid("r"),
+    };
     let now = Utc::now().to_rfc3339();
     // One stamp for the record, taken here rather than derived from its ops:
     // `log_local` mints an HLC per FIELD, so "the record's HLC" would otherwise
@@ -633,4 +675,31 @@ pub async fn bump_quantity(
         return Err(sqlx::Error::RowNotFound);
     }
     Ok(())
+}
+
+/// `uid -> head` for a set of Records, in one query.
+///
+/// Used to render a link as the title a person recognises while the uid stays
+/// in the file as the thing that actually identifies it.
+pub async fn heads_for(
+    pool: &SqlitePool,
+    uids: &[String],
+) -> Result<std::collections::HashMap<String, String>, StoreError> {
+    if uids.is_empty() {
+        return Ok(std::collections::HashMap::new());
+    }
+    let holes = std::iter::repeat_n("?", uids.len())
+        .collect::<Vec<_>>()
+        .join(",");
+    let sql = format!("SELECT uid, head FROM record WHERE uid IN ({holes})");
+    let mut query = sqlx::query(&sql);
+    for uid in uids {
+        query = query.bind(uid);
+    }
+    Ok(query
+        .fetch_all(pool)
+        .await?
+        .into_iter()
+        .map(|row| (row.get("uid"), row.get("head")))
+        .collect())
 }

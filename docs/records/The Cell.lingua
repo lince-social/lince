@@ -1,0 +1,15 @@
+---
+uid: r_TST3SPMGF4SQZ2XZAQGA5PQHC8
+@@idea
+@instinct
+@chapter [[Cells and Organs|r_N6KHA5VKVK81GS6SAHGZGD2BCT]] 1
+@see-also [[The Organ|r_QVEGGYZ2AA33SRSH2XS0C2FX64]]
+quantity: 1
+---
+
+Everything so far happened in one place: your **Cell**. A Cell is your own Lince — your records, on your machine, answering to you.
+
+```mermaid
+graph LR
+  A["Cell"]
+```

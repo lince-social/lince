@@ -1,0 +1,72 @@
+---
+uid: r_HMHQNMKFFNNM52D1D901WB8945
+@@task
+@instinct
+@part-of [[Karma - 14.1 — Which Cell executes|r_S6YTZ3HKWK329RWX1PR8QZK6HF]] 9
+quantity: -1
+---
+
+## 14.1 — Which Cell executes
+
+- [ ] **A percentage always includes numerator, denominator and cohort
+      definition.** A bare percentage is not a shareable product.
+- [ ] **Sharing a live rule means sharing a content-hashed definition**, not a
+      running process.
+- [ ] **Revocation stops future export and use and cancels eligible queued
+      work.**
+
+- [ ] **Enumerate every declared source port and every reachable outcome path**
+      before it happens.
+- [ ] **Make every "why" navigable in both directions** — changed Fact → the run
+      that changed it → the rule → the grant, and back down.
+- [ ] **Make data scope and authority visible on the graph** — taint paths and
+      ceilings drawn, not documented.
+- [ ] **Dry-run one node or a whole rule** against current or simulated inputs.
+- [ ] **Store canvas layout as host state**, never as a Ledger Fact.
+- [ ] **Large graphs** use server-projected dependency slices and stable ids.
+- [ ] **Installable templates are ordinary disabled rules**, not a second format.
+- [ ] **Every control is also a typed Action**, and Protein exposes capability
+      booleans with stable blocking reasons beside every one of them, so an
+      agent can do exactly what a person can do and nothing more.
+- [ ] **Keyboard and screen-reader reachable**, authoring and emergency controls
+      alike.
+
+- [ ] **Delete `fire_due_rules` from `heartbeat`** (`engine/src/lib.rs:460`).
+      This is the live 60-second sweep, running in production through
+      `web/src/lib.rs:726` (`HEARTBEAT_PERIOD_SECS = 60`). The heartbeat keeps
+      promise expiry, decisions and effects; it stops being how rules run.
+      `RECURRENCE_CATCH_UP_DAYS` goes with it.
+- [ ] **Delete the old Frequency apparatus.** `0027_karma_frequencies.sql` is
+      three tables — `karma_frequency`, `karma_frequency_revision`,
+      `karma_frequency_activation` — with revision hashes, activation epochs,
+      effective-parameter hashes and immutability triggers, for an object whose
+      content is "every 1 day". `0039_frequency.sql` already replaced it.
+- [ ] **Delete the occurrence machinery:** `0028_karma_schedule_cursors.sql`,
+      `0029_karma_occurrence_ingress.sql`, and the cursor, dispatcher, epoch,
+      deadline-fabric, dense-batching and admission code that serves them. §1.5
+      needs no cursor because `Cadence` is pure.
+- [ ] **Migrations `0026`–`0035` all fold away** into what §1 keeps.
+- [ ] **Delete the second schedule vocabulary.** `ElapsedSchedule`,
+      `CalendarSchedule` and the legacy `store::freqs` are three spellings of
+      `Cadence`.
+- [ ] **Reduce `nucleus/src/karma/` to six files:** `condition.rs`,
+      `consequence.rs`, `cadence.rs`, `exact.rs`, `value.rs`, `time.rs`.
+      Everything else there — `ast.rs`, `dispatcher.rs`, `dsl.rs`, `durable.rs`,
+      `evaluate.rs`, `execution.rs`, `occurrence.rs`, `proof.rs`, `replay.rs`,
+      `schedule.rs`, `state.rs`, `frequency.rs` and the rest — is unreachable
+      once §1 lands.
+- [ ] **Do not build a legacy import path.** The local database was deleted
+      deliberately so this would be free.
+
+- [ ] **Fiote is a client of that contract, not a privileged path.** Parse "I spent 42 reais on lunch", transcribe a note, read a receipt, rank existing Records — always returning field candidates, never a final mutation, and never silently creating an ambiguous Record. **A model score is not a grant.** Deferred, but the boundary is fixed now so it stays narrow. Be able to run an model to look at your DNA and change it to fit your needs:
+      - [ ] Creating components for the frontend.
+      - [ ] Suggesting Karma, or more Lince ways of doing things.
+      - [ ] Doing imperative changes like: change this, start a call with someone, i did this task...
+      - [ ] **Actual accessibility is Fiote's job, not a base-UI checklist item.**
+            A person who cannot use the standard visual/mouse Sand surface
+            should be able to reach the same field-candidate contract through
+            Fiote instead: describe what they want in speech or plain text,
+            hear or read back what a Sand would otherwise show them. This is
+            the same narrow client role as every other Fiote entry point —
+            field candidates, never a privileged mutation path — applied to
+            the surface itself rather than to one Record at a time.

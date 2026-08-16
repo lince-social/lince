@@ -161,6 +161,20 @@ pub async fn admin_exists(pool: &SqlitePool) -> Result<bool, StoreError> {
     Ok(count > 0)
 }
 
+/// Every Person holding the admin role, active or not.
+///
+/// The caller filters by standing — this stays a plain membership query so it
+/// cannot silently disagree with `admin_exists` about who an admin is.
+pub async fn admins(pool: &SqlitePool) -> Result<Vec<String>, StoreError> {
+    sqlx::query_scalar::<_, String>(
+        "SELECT person_uid FROM person_credential
+         WHERE role_id = (SELECT id FROM role WHERE name = ?)",
+    )
+    .bind(ADMIN_ROLE)
+    .fetch_all(pool)
+    .await
+}
+
 /// Create a Person AND their way to log in, returning the Person's uid.
 ///
 /// The common case, and the only one that used to be expressible as

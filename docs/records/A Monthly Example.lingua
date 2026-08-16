@@ -1,0 +1,17 @@
+---
+uid: r_M06FEBR6Y31XZAJMDKRSWWAGAP
+@@idea
+@instinct
+@chapter [[Karma|r_K7T3ZG08G5EBWRSTF8NBWMTZYV]] 5
+@see-also [[The Whole Picture|r_V49BM0Q6ZYFA6MF16PFMPNPNHG]]
+quantity: 1
+---
+
+## A monthly example
+
+```mermaid
+graph LR
+  A["-1 * (Frequency * record quantity)"] --> B["Threshold"] --> C["another record's quantity"]
+```
+
+For most of the month the Frequency is `0`, so the whole equation is `0`, so the threshold stops it and nothing happens. On the scheduled day the Frequency becomes `1`, the equation takes the value of the first record, and that amount moves into the second. A monthly bill, with no scheduler and no special "recurring" feature — just a number that is zero most of the time.

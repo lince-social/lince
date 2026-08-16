@@ -1,0 +1,22 @@
+---
+uid: r_SBJ1PMZDKQ87XHMN52GVN16GM1
+@@idea
+@instinct
+@chapter [[Links|r_RYHJ3CCKAZJ8R6THPSKS5ZDK3N]] 4
+@see-also [[Making a Link|r_EF07Q1QN5J77B30TF5BK6GSW81]]
+quantity: 1
+---
+
+## Order is a link too
+
+Some kinds describe sequence rather than membership — `needs`, `before`, `part-of`. Sort a Protein by **graph order** on such a kind and you get a dependency chain instead of a list:
+
+```mermaid
+graph LR
+  A["Buy flour"] -- needs --> B["Bake the bread"]
+  B -- needs --> C["Make the sandwich"]
+```
+
+_Read it as "bake needs buy". Graph order turns this into the sequence to actually work through._
+
+Because ordering kinds imply a direction, Lince checks them for loops. If you link things into a cycle — A needs B needs C needs A — the save still happens, but you get a warning naming the records in the loop. A cycle in an ordering kind is almost always a mistake in how you described the work, and you are the only one who can tell.

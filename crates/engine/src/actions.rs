@@ -57,6 +57,19 @@ pub enum Action {
         target: String,
         value: f64,
     },
+    /// `SetQuantity` without the float. `amount` is exact decimal TEXT
+    /// (`"12"`, `"3.50"`), parsed straight to a decimal so a level written by
+    /// a person — in a `.lingua` file, say — never passes through an f64 on
+    /// its way to a signed Fact.
+    ///
+    /// Still a FOLD, not an assignment: it appends the exact difference
+    /// between what was asked for and what the Ledger currently holds. The
+    /// number becomes true, and it becomes true the honest way, with a Fact
+    /// saying who moved it and by how much.
+    SetQuantityExact {
+        target: String,
+        amount: String,
+    },
     /// Atomically change ordinary unary state assertions and, optionally, a
     /// Record quantity. This is the Kanban move primitive: it never changes a
     /// Record identity, and its Fact plus assertion edits share one commit.
@@ -527,6 +540,120 @@ pub enum Action {
     /// it both are invisible, which for a queue of people waiting to reach you
     /// is the same as broken.
     RosterStatus,
+    /// What this Cell carries for others, and what is waiting for it
+    /// elsewhere (Ontology C4, the blind mailbox).
+    ///
+    /// Read-only, and it reports the two halves separately because they are
+    /// different roles: an Institute VPS is usually a carrier, a phone is
+    /// usually a recipient, and one Cell can be both without the panel
+    /// conflating them.
+    MailboxStatus,
+    /// Start carrying mail for an Organ.
+    ///
+    /// Volunteering is PER CONTACT, when they ask — not a switch that makes
+    /// you everyone's mailbox. The storage being donated stays legible because
+    /// the operator named who it is for, one at a time.
+    MailboxCarryFor {
+        organ_uid: String,
+        #[serde(default)]
+        label: String,
+        /// Bytes. Zero means the default.
+        #[serde(default)]
+        quota_bytes: i64,
+    },
+    /// Stop carrying for an Organ. Their held mail goes with the
+    /// registration — a mailbox that keeps mail for someone it no longer
+    /// serves is storing what nobody will collect.
+    MailboxStopCarrying {
+        organ_uid: String,
+    },
+    /// Where THIS Organ's mail may be left, and whether those boxes still say
+    /// they are carrying it (Ontology C4).
+    ///
+    /// Separate from `MailboxStatus` because they are opposite roles and one
+    /// panel showing both without saying which is which is how an operator
+    /// ends up believing their own mail is safe because somebody else's is.
+    MailboxPickupPoints,
+    /// Publish a pickup point: name a contact whose Cell holds our mail when
+    /// our own Cells cannot be reached.
+    ///
+    /// Probes before publishing. A box that never agreed to carry for us is a
+    /// hole every sender falls into silently, and the roster is signed — a
+    /// wrong entry costs a re-publish and a version.
+    MailboxAddPickup {
+        organ_uid: String,
+        /// The carrier Cell to dial. Empty means "their front door", resolved
+        /// from the contact row.
+        #[serde(default)]
+        node_id: String,
+        #[serde(default)]
+        label: String,
+    },
+    /// Stop publishing a pickup point. Senders stop using it as their rosters
+    /// refresh, and anything still waiting there stops being collected — so
+    /// this reports what is in the box at the moment it is dropped.
+    MailboxRemovePickup {
+        organ_uid: String,
+    },
+    /// Collect now, rather than at the next sync pass.
+    ///
+    /// The pass already does it; this exists because "is my mail arriving"
+    /// is a question people ask at the moment they are looking at the panel,
+    /// and an answer that comes minutes later answers nothing.
+    MailboxCollectNow,
+    /// Who we cannot reach right now, how long that has been true, and what
+    /// has been done about it (Ontology C4, the retry window).
+    ///
+    /// Its own listing rather than a column on the contact list, because the
+    /// question it answers is not "who do I know" but "is anything stuck" —
+    /// and the honest answer to that includes contacts whose mail CANNOT be
+    /// left anywhere, which a contact row has no room to explain.
+    MailboxOutbound,
+    /// What the last File Sync pass over this Organ's folder refused to act
+    /// on, and why. Read-only, and in-memory rather than stored — see
+    /// `Engine::file_sync_conflicts`.
+    FileSyncStatus {
+        organ: String,
+    },
+    /// The operator's inbox: who has asked to be carried here, and which
+    /// invite codes are outstanding (Ontology C4).
+    MailboxRequests,
+    /// Answer one ask. Accepting registers them on the terms given; declining
+    /// removes the row and tells them nothing — a decline that notified would
+    /// make refusing socially expensive, which is how people end up saying yes.
+    MailboxAnswerRequest {
+        organ_uid: String,
+        accept: bool,
+        /// Bytes. Zero means the default. Ignored when declining.
+        #[serde(default)]
+        quota_bytes: i64,
+    },
+    /// Issue a single-use code that lets its holder register themselves. The
+    /// plaintext comes back once, here, and is never stored.
+    MailboxIssueInvite {
+        #[serde(default)]
+        label: String,
+        #[serde(default)]
+        quota_bytes: i64,
+    },
+    /// Ask a contact to carry our mail. The other half of `MailboxCarryFor`,
+    /// and the direction that was missing: carrying is a favour, and a favour
+    /// starts with the asking.
+    MailboxAskCarry {
+        organ_uid: String,
+    },
+    /// Spend a mailbox invite somebody sent us.
+    MailboxUseInvite {
+        code: String,
+    },
+    /// Stop waiting for one contact: try them now, and leave their mail with
+    /// a carrier if they still do not answer.
+    ///
+    /// The window is a default, not a verdict. Somebody who knows the other
+    /// person is away for a week should not have to wait it out, and somebody
+    /// watching a batch not arrive wants to do something rather than read
+    /// about a timer.
+    MailboxMailNow { organ_uid: String },
     /// Write a LOCAL-ONLY config namespace on this Cell's own Record
     /// (Ontology §11, C4).
     ///
@@ -681,6 +808,31 @@ pub enum Action {
     },
     RetractAssertion {
         assertion: String,
+    },
+    /// Put Lince's own documentation into this store, as Records.
+    ///
+    /// The Instinct sand reads the same embedded bundle it imports, so what
+    /// you read and what you get are the same thing. Idempotent: a Record
+    /// whose uid is already here is left exactly as it is, because the point
+    /// of importing is to be able to EDIT them afterwards and a second import
+    /// must never undo that.
+    ImportInstinct,
+    /// Create an Agent — an Actor that is not a Person.
+    ///
+    /// An Actor is anything that can hold work: `actor` is a Concept with
+    /// `person` and `agent` beneath it, which is all the distinction needs,
+    /// because the Concept DAG already answers "is this an Actor" for both.
+    /// Renaming the Person type itself was considered and dropped: standing,
+    /// the four login doors and dormant absorption are written about people,
+    /// and widening the word would blur every one of them.
+    ///
+    /// `operated_by` is the Person answerable for it. The Organ half of "whose
+    /// agent is this" needs nothing new — every Record already carries the
+    /// Organ it originated at.
+    CreateAgent {
+        head: String,
+        #[serde(default)]
+        operated_by: Option<String>,
     },
     /// Atomically turn a unary assertion `A @task` into the binary `A @task
     /// [object]` under the same predicate — retract+assert as one step.
@@ -1290,6 +1442,24 @@ pub enum Action {
         user: String,
         role: String,
     },
+    /// Stop a Person acting here — they left, or simply stopped using Lince.
+    ///
+    /// Reversible by `SetPersonStanding { active: true }`, and NOT a delete:
+    /// their Record, their Facts and everything naming them stay exactly as
+    /// they are, because none of it stopped being true. Unlike the four
+    /// variants above this one DOES write to the Ledger's world — standing
+    /// lives on the Person Record as an extension, so it syncs to this Organ's
+    /// other Cells, which is the difference between deactivating someone and
+    /// deactivating them on one laptop.
+    SetPersonStanding {
+        /// The target Person's uid or slug.
+        person: String,
+        active: bool,
+        /// The owner's own note ("moved out, July"). Never shown to the person
+        /// refused: a login refusal says the same words whatever the cause.
+        #[serde(default)]
+        note: Option<String>,
+    },
     GrantPermission {
         role: String,
         /// `"subject:action"`, e.g. `"record:delete_own"`.
@@ -1881,6 +2051,13 @@ pub struct ActionOutcome {
     pub data: Option<serde_json::Value>,
 }
 
+/// Which Karma definition a mutation just changed.
+#[derive(Debug, Clone, Copy)]
+pub(crate) enum KarmaKind {
+    Program,
+    Frequency,
+}
+
 fn apply_program_mutation(
     commit: store::karma::programs::ProgramMutationCommit,
     outcome: &mut ActionOutcome,
@@ -2128,6 +2305,37 @@ impl Engine {
                     )
                     .await?;
                 outcome.created = Some(rec.uid);
+            }
+            Action::SetQuantityExact { target, amount } => {
+                let uid = self.resolve(&target).await?;
+                self.reject_direct_transfer_record_mutation(&uid).await?;
+                // Exact from the text: a level someone wrote in a file is
+                // parsed straight to a decimal, so `3.50` never becomes a
+                // float on its way to a signed Fact.
+                let target_value = nucleus::DecimalValue::parse_inferred(amount.trim()).map_err(
+                    |_| EngineError::Conflict {
+                        code: "quantity_invalid",
+                        message: format!("`{amount}` is not an exact decimal amount"),
+                    },
+                )?;
+                let current = store::records::quantity(&self.store.pool, &uid)
+                    .await?
+                    .unwrap_or_else(store::exact::zero);
+                if target_value != current {
+                    outcome.facts = self
+                        .append(
+                            NewFact {
+                                actor_uid: actor,
+                                ..NewFact::quantity(
+                                    uid,
+                                    store::exact::difference(target_value, current)?,
+                                    Cause::user_edit(),
+                                )
+                            },
+                            now,
+                        )
+                        .await?;
+                }
             }
             Action::SetQuantity { target, value } => {
                 let uid = self.resolve(&target).await?;
@@ -3038,10 +3246,12 @@ impl Engine {
                         "give this contact a name you will recognise".into(),
                     ));
                 }
-                if store::organs::contact(&self.store.pool, &uid).await?.is_none() {
+                if store::organs::contact(&self.store.pool, &uid)
+                    .await?
+                    .is_none()
+                {
                     return Err(EngineError::Consequence(
-                        "not a contact — this Cell's own Organ is renamed like any record"
-                            .into(),
+                        "not a contact — this Cell's own Organ is renamed like any record".into(),
                     ));
                 }
                 store::organs::rename_contact(&self.store.pool, &uid, name).await?;
@@ -3052,7 +3262,10 @@ impl Engine {
                 sync_in,
             } => {
                 let uid = self.resolve(&target).await?;
-                if store::organs::contact(&self.store.pool, &uid).await?.is_none() {
+                if store::organs::contact(&self.store.pool, &uid)
+                    .await?
+                    .is_none()
+                {
                     return Err(EngineError::Consequence(
                         "not a contact — there is no feed to open with this Cell's own Organ"
                             .into(),
@@ -3070,18 +3283,17 @@ impl Engine {
             }
             Action::SetContactAcceptScope { target, fields } => {
                 let uid = self.resolve(&target).await?;
-                if store::organs::contact(&self.store.pool, &uid).await?.is_none() {
+                if store::organs::contact(&self.store.pool, &uid)
+                    .await?
+                    .is_none()
+                {
                     return Err(EngineError::Consequence(
                         "not a contact — this Cell's own Organ sends us nothing to accept".into(),
                     ));
                 }
                 validate_scope(fields.as_deref())?;
-                store::organs::set_contact_accept_scope(
-                    &self.store.pool,
-                    &uid,
-                    fields.as_deref(),
-                )
-                .await?;
+                store::organs::set_contact_accept_scope(&self.store.pool, &uid, fields.as_deref())
+                    .await?;
                 outcome.facts = self
                     .annotate(
                         uid,
@@ -3102,8 +3314,7 @@ impl Engine {
                     .ok_or_else(|| {
                         EngineError::Consequence("that is not part of a conversation".into())
                     })?;
-                let removed =
-                    store::replica::delete_root_locally(&self.store.pool, &root).await?;
+                let removed = store::replica::delete_root_locally(&self.store.pool, &root).await?;
                 outcome.data = Some(serde_json::json!({ "removed": removed }));
             }
             Action::SendRecordCopy { thread, record } => {
@@ -3172,7 +3383,10 @@ impl Engine {
                 hidden,
             } => {
                 let uid = self.resolve(&target).await?;
-                if store::organs::contact(&self.store.pool, &uid).await?.is_none() {
+                if store::organs::contact(&self.store.pool, &uid)
+                    .await?
+                    .is_none()
+                {
                     return Err(EngineError::Consequence(
                         "not a contact — this Cell's own Organ has no feed to hide from".into(),
                     ));
@@ -3186,9 +3400,7 @@ impl Engine {
                     .await?
                     .is_none()
                 {
-                    return Err(EngineError::Consequence(
-                        "no such record to hide".into(),
-                    ));
+                    return Err(EngineError::Consequence("no such record to hide".into()));
                 }
                 store::visibility::set_hidden_from_organ(
                     &self.store.pool,
@@ -3240,12 +3452,7 @@ impl Engine {
                 // trailing comma in a surface's text field), so they are
                 // refused rather than stored.
                 validate_scope(fields.as_deref())?;
-                store::organs::set_contact_scope(
-                    &self.store.pool,
-                    &uid,
-                    fields.as_deref(),
-                )
-                .await?;
+                store::organs::set_contact_scope(&self.store.pool, &uid, fields.as_deref()).await?;
                 // A WIDENING has to reach back or it widens nothing: every op
                 // for a newly-named column is already below the contact's
                 // version vector, so catch-up will never offer it again and
@@ -3275,7 +3482,10 @@ impl Engine {
             }
             Action::ForgetOrganContact { target } => {
                 let uid = self.resolve(&target).await?;
-                if store::organs::contact(&self.store.pool, &uid).await?.is_none() {
+                if store::organs::contact(&self.store.pool, &uid)
+                    .await?
+                    .is_none()
+                {
                     return Err(EngineError::Consequence(
                         "not a contact — this Cell's own Organ cannot be forgotten".into(),
                     ));
@@ -3320,15 +3530,8 @@ impl Engine {
                     Some(contact) => contact.record_uid.clone(),
                     None => {
                         let organ_uid = format!("o-{}", &invite.node_id);
-                        store::organs::add_contact(
-                            &self.store.pool,
-                            &organ_uid,
-                            None,
-                            name,
-                            "",
-                            1,
-                        )
-                        .await?;
+                        store::organs::add_contact(&self.store.pool, &organ_uid, None, name, "", 1)
+                            .await?;
                         store::organs::set_node_id(
                             &self.store.pool,
                             &organ_uid,
@@ -3531,26 +3734,20 @@ impl Engine {
                 let organ = store::organs::local(&self.store.pool)
                     .await?
                     .ok_or_else(|| EngineError::Consequence("no local Organ".into()))?;
-                let root_key = crate::trust::key_of(
-                    &self.store,
-                    &organ.uid,
-                    crate::roster::ROOT_KEY_ID,
-                )
-                .await?
-                .unwrap_or_default();
-                let pairing = store::records::get_extension(
-                    &self.store.pool,
-                    &organ.uid,
-                    "lince.pairing",
-                )
-                .await?
-                .and_then(|fields| {
-                    fields
-                        .get("invite")
-                        .and_then(serde_json::Value::as_str)
-                        .map(str::to_string)
-                })
-                .and_then(|encoded| crate::pairing::PairingInvite::decode(&encoded).ok());
+                let root_key =
+                    crate::trust::key_of(&self.store, &organ.uid, crate::roster::ROOT_KEY_ID)
+                        .await?
+                        .unwrap_or_default();
+                let pairing =
+                    store::records::get_extension(&self.store.pool, &organ.uid, "lince.pairing")
+                        .await?
+                        .and_then(|fields| {
+                            fields
+                                .get("invite")
+                                .and_then(serde_json::Value::as_str)
+                                .map(str::to_string)
+                        })
+                        .and_then(|encoded| crate::pairing::PairingInvite::decode(&encoded).ok());
                 match pairing {
                     Some(pairing) => {
                         let invite = crate::pairing::EnrolmentInvite {
@@ -3579,6 +3776,519 @@ impl Engine {
                         ));
                     }
                 }
+            }
+            Action::MailboxStatus => {
+                // Swept on read. A carrier that only expired mail when
+                // somebody happened to run a timer would quietly hold it past
+                // the retention it promised, and the panel is exactly the
+                // moment the number had better be true.
+                let swept = self.sweep_mailbox().await?;
+                let mut carrying = Vec::new();
+                for registration in store::mailbox::registrations(&self.store.pool).await? {
+                    let held =
+                        store::mailbox::carried_for(&self.store.pool, &registration.organ_uid)
+                            .await?;
+                    // The contact's own name when we have one, so an operator
+                    // reads a person rather than a uid. Falls back to the
+                    // label they typed, then to the uid — never to nothing.
+                    let known_as = store::organs::contact(&self.store.pool, &registration.organ_uid)
+                        .await?
+                        .map(|contact| contact.head)
+                        .filter(|name| !name.is_empty())
+                        .unwrap_or_else(|| registration.label.clone());
+                    carrying.push(serde_json::json!({
+                        "organ_uid": registration.organ_uid,
+                        "known_as": known_as,
+                        "quota_bytes": registration.quota_bytes,
+                        "held_bundles": held.bundles,
+                        "held_bytes": held.bytes,
+                        "registered_at": registration.registered_at,
+                    }));
+                }
+                let pending = store::mailbox::pending_notices(&self.store.pool).await?;
+                outcome.data = Some(serde_json::json!({
+                    "carrying_for": carrying,
+                    "swept_just_now": swept,
+                    // Senders who need telling that their mail expired
+                    // uncollected. Surfaced now even though the DELIVERY of
+                    // that notice is a later box, because a queue nobody can
+                    // see is how a promise quietly stops being kept.
+                    "expiry_notices_pending": pending.len(),
+                    "retention_days": crate::seal::RETENTION_DAYS,
+                    "max_bundle_bytes": crate::mailbox::MAX_BUNDLE_BYTES,
+                }));
+            }
+            Action::MailboxCarryFor {
+                organ_uid,
+                label,
+                quota_bytes,
+            } => {
+                // The root key is what registration is FOR: it is how a
+                // recipient proves, later and from a device that may not exist
+                // yet, that the mail is theirs. Without one there is nothing
+                // to check a presented roster against, so this refuses rather
+                // than registering something uncollectable.
+                let root_key = crate::trust::key_of(
+                    &self.store,
+                    &organ_uid,
+                    crate::roster::ROOT_KEY_ID,
+                )
+                .await?
+                .ok_or_else(|| {
+                    EngineError::Consequence(
+                        "no root key is held for that Organ: pair with them before offering to \
+                         carry their mail"
+                            .into(),
+                    )
+                })?;
+                let quota = if quota_bytes > 0 {
+                    quota_bytes
+                } else {
+                    crate::mailbox::DEFAULT_QUOTA_BYTES
+                };
+                store::mailbox::register(
+                    &self.store.pool,
+                    &organ_uid,
+                    &root_key,
+                    &label,
+                    quota,
+                )
+                .await?;
+                outcome.data = Some(serde_json::json!({
+                    "organ_uid": organ_uid,
+                    "quota_bytes": quota,
+                }));
+            }
+            Action::MailboxStopCarrying { organ_uid } => {
+                let held = store::mailbox::carried_for(&self.store.pool, &organ_uid).await?;
+                store::mailbox::deregister(&self.store.pool, &organ_uid).await?;
+                // Reported, not hidden: the operator has just discarded mail
+                // somebody was expecting, and the number is the honest cost of
+                // the decision they made.
+                outcome.data = Some(serde_json::json!({
+                    "organ_uid": organ_uid,
+                    "discarded_bundles": held.bundles,
+                }));
+            }
+            Action::MailboxPickupPoints => {
+                let points = self.own_pickup_points().await?;
+                let mut published = Vec::new();
+                for point in &points {
+                    // Re-asked every time the panel opens, because the carrier
+                    // can stop carrying at any moment and nothing tells us: the
+                    // registration lives on THEIR disk. A published point that
+                    // has quietly stopped answering is the failure this panel
+                    // exists to make visible.
+                    let probe = self.carrier_probe(&point.node_id).await;
+                    let known_as = store::organs::contact(&self.store.pool, &point.organ_uid)
+                        .await?
+                        .map(|contact| contact.head)
+                        .filter(|name| !name.is_empty())
+                        .unwrap_or_else(|| point.label.clone());
+                    let (state, waiting) = match &probe {
+                        crate::wire::CarrierProbe::Carrying(waiting) => (
+                            "carrying",
+                            serde_json::json!({
+                                "bundles": waiting.bundles,
+                                "bytes": waiting.bytes,
+                                "oldest_expires_at": waiting.oldest_expires_at,
+                            }),
+                        ),
+                        crate::wire::CarrierProbe::Refused => {
+                            ("refused", serde_json::Value::Null)
+                        }
+                        crate::wire::CarrierProbe::Unreachable => {
+                            ("unreachable", serde_json::Value::Null)
+                        }
+                    };
+                    published.push(serde_json::json!({
+                        "organ_uid": point.organ_uid,
+                        "node_id": point.node_id,
+                        "label": point.label,
+                        "known_as": known_as,
+                        "state": state,
+                        "waiting": waiting,
+                    }));
+                }
+                // Who could be asked. Every known contact, because whether
+                // they carry for us is not something we hold — only they do,
+                // and the probe is what answers it.
+                let candidates: Vec<serde_json::Value> =
+                    store::organs::contacts(&self.store.pool)
+                        .await?
+                        .into_iter()
+                        .filter(|contact| contact.trust == "known")
+                        .filter(|contact| {
+                            !points.iter().any(|point| point.organ_uid == contact.record_uid)
+                        })
+                        .map(|contact| {
+                            serde_json::json!({
+                                "organ_uid": contact.record_uid,
+                                "known_as": contact.head,
+                                "node_id": contact.node_id,
+                            })
+                        })
+                        .collect();
+                outcome.data = Some(serde_json::json!({
+                    "pickup": published,
+                    "candidates": candidates,
+                    "retention_days": crate::seal::RETENTION_DAYS,
+                    // The root is what signs a roster, so this is exactly the
+                    // set of Cells that can change these at all.
+                    "may_change": self.root_signer().await?.is_some(),
+                }));
+            }
+            Action::MailboxAddPickup {
+                organ_uid,
+                node_id,
+                label,
+            } => {
+                let contact = store::organs::contact(&self.store.pool, &organ_uid).await?;
+                let node_id = if node_id.is_empty() {
+                    contact
+                        .as_ref()
+                        .and_then(|contact| contact.node_id.clone())
+                        .filter(|id| !id.is_empty())
+                        .ok_or_else(|| {
+                            EngineError::Consequence(
+                                "we have no address for that contact, so there is nothing to \
+                                 publish."
+                                    .into(),
+                            )
+                        })?
+                } else {
+                    node_id
+                };
+                match self.carrier_probe(&node_id).await {
+                    crate::wire::CarrierProbe::Carrying(_) => {}
+                    // A real answer, and the answer is no. It is deliberately
+                    // not said WHY — a carrier gives one wording for every
+                    // collection failure — so this says what we know and what
+                    // we do not.
+                    crate::wire::CarrierProbe::Refused => {
+                        return Err(EngineError::Consequence(
+                            "they are not carrying mail for you. They have to add you first, \
+                             and asking them from here is not built yet — nothing was \
+                             published."
+                                .into(),
+                        ));
+                    }
+                    // NOT a refusal. A closed laptop is the ordinary state of
+                    // most machines, and publishing on silence would be the
+                    // same error as falling back to a mailbox on the first
+                    // failed dial.
+                    crate::wire::CarrierProbe::Unreachable => {
+                        return Err(EngineError::Consequence(
+                            "they did not answer just now, so we cannot tell whether they \
+                             carry mail for you. Nothing was published — try again."
+                                .into(),
+                        ));
+                    }
+                }
+                let root = self.root_signer().await?.ok_or_else(|| {
+                    EngineError::Consequence(
+                        "publishing a pickup point re-signs the roster, which needs the root \
+                         key this Cell does not currently hold."
+                            .into(),
+                    )
+                })?;
+                let label = if label.is_empty() {
+                    contact
+                        .map(|contact| contact.head)
+                        .filter(|name| !name.is_empty())
+                        .unwrap_or_else(|| organ_uid.clone())
+                } else {
+                    label
+                };
+                let mut points = self.own_pickup_points().await?;
+                points.retain(|point| point.organ_uid != organ_uid);
+                points.push(crate::roster::PickupPoint {
+                    organ_uid: organ_uid.clone(),
+                    node_id,
+                    label,
+                });
+                let published = points.len();
+                self.set_pickup_points(&root, points).await?;
+                outcome.data = Some(serde_json::json!({
+                    "organ_uid": organ_uid,
+                    "pickup_points": published,
+                    // Two is advice, not a rule — refusing the first would make
+                    // the second unreachable. The panel says what one costs.
+                    "single_point_of_failure": published < 2,
+                }));
+            }
+            Action::MailboxRemovePickup { organ_uid } => {
+                let mut points = self.own_pickup_points().await?;
+                let Some(going) = points
+                    .iter()
+                    .find(|point| point.organ_uid == organ_uid)
+                    .cloned()
+                else {
+                    return Err(EngineError::Consequence(
+                        "that is not one of your pickup points".into(),
+                    ));
+                };
+                // Asked BEFORE it is dropped: once it is out of the roster
+                // nothing collects from it, so anything sitting there is
+                // stranded until it expires. The number is the honest cost.
+                let stranded = match self.carrier_probe(&going.node_id).await {
+                    crate::wire::CarrierProbe::Carrying(waiting) => Some(waiting.bundles),
+                    _ => None,
+                };
+                let root = self.root_signer().await?.ok_or_else(|| {
+                    EngineError::Consequence(
+                        "removing a pickup point re-signs the roster, which needs the root \
+                         key this Cell does not currently hold."
+                            .into(),
+                    )
+                })?;
+                points.retain(|point| point.organ_uid != organ_uid);
+                self.set_pickup_points(&root, points).await?;
+                outcome.data = Some(serde_json::json!({
+                    "organ_uid": organ_uid,
+                    "stranded_bundles": stranded,
+                }));
+            }
+            Action::MailboxCollectNow => {
+                let imported = self.collect_mail_now().await?;
+                outcome.data = Some(serde_json::json!({ "imported_ops": imported }));
+            }
+            Action::MailboxRequests => {
+                let pool = &self.store.pool;
+                let mut asks = Vec::new();
+                for row in store::mailbox::requests(pool).await? {
+                    // Their own label is shown BESIDE the uid, never instead
+                    // of it: a display name from a peer is an untrusted claim,
+                    // and this panel is where somebody decides to hold another
+                    // person's correspondence.
+                    let known_as = store::organs::contact(pool, &row.organ_uid)
+                        .await?
+                        .and_then(|contact| contact.slug);
+                    asks.push(serde_json::json!({
+                        "organ_uid": row.organ_uid,
+                        "known_as": known_as,
+                        "claims_to_be": row.label,
+                        "asked_at": row.asked_at,
+                        "already_carried": store::mailbox::registration(pool, &row.organ_uid)
+                            .await?
+                            .is_some(),
+                    }));
+                }
+                let invites: Vec<serde_json::Value> = store::mailbox::invites(pool)
+                    .await?
+                    .into_iter()
+                    .map(|row| {
+                        serde_json::json!({
+                            "label": row.label,
+                            "quota_bytes": row.quota_bytes,
+                            "expires_at": row.expires_at,
+                            "created_at": row.created_at,
+                            "used_at": row.used_at,
+                            "used_by": row.used_by,
+                        })
+                    })
+                    .collect();
+                outcome.data = Some(serde_json::json!({
+                    "requests": asks,
+                    "invites": invites,
+                    "invite_days": crate::mailbox::INVITE_TTL_DAYS,
+                    "default_quota_bytes": crate::mailbox::DEFAULT_QUOTA_BYTES,
+                }));
+            }
+            Action::MailboxAnswerRequest {
+                organ_uid,
+                accept,
+                quota_bytes,
+            } => {
+                let pool = &self.store.pool;
+                let ask = store::mailbox::request(pool, &organ_uid)
+                    .await?
+                    .ok_or_else(|| EngineError::Consequence("no such request".into()))?;
+                if accept {
+                    // The root key comes from the ask, not from a fresh
+                    // lookup: it is what they presented and what was checked
+                    // when the ask was taken, and re-deriving it days later
+                    // would quietly accept a different key than the one the
+                    // operator is looking at.
+                    let quota = if quota_bytes > 0 {
+                        quota_bytes
+                    } else {
+                        crate::mailbox::DEFAULT_QUOTA_BYTES
+                    };
+                    store::mailbox::register(
+                        pool,
+                        &ask.organ_uid,
+                        &ask.root_key,
+                        &ask.label,
+                        quota,
+                    )
+                    .await?;
+                }
+                // Only after the registration stuck. Accepting and failing to
+                // register must not also consume the ask, or the request is
+                // gone and nothing carries.
+                store::mailbox::answer_request(pool, &organ_uid).await?;
+                outcome.data = Some(serde_json::json!({
+                    "organ_uid": organ_uid,
+                    "accepted": accept,
+                }));
+            }
+            Action::MailboxIssueInvite { label, quota_bytes } => {
+                let token = self.issue_mailbox_invite(&label, quota_bytes).await?;
+                // The code needs somewhere to point. A Cell with no endpoint
+                // can issue nothing usable, and saying so beats handing over a
+                // string that fails silently on the other person's machine.
+                let node_id = self
+                    .own_node_id()
+                    .await?
+                    .ok_or_else(|| EngineError::Consequence(
+                        "this Cell has published no address, so an invite would have nowhere \
+                         to point. Publish a device list first."
+                            .into(),
+                    ))?;
+                let code = crate::pairing::MailboxInviteCode { node_id, token }.encode();
+                outcome.data = Some(serde_json::json!({
+                    "code": code,
+                    "expires_in_days": crate::mailbox::INVITE_TTL_DAYS,
+                }));
+            }
+            Action::MailboxAskCarry { organ_uid } => {
+                let contact = store::organs::contact(&self.store.pool, &organ_uid)
+                    .await?
+                    .ok_or_else(|| EngineError::Consequence("no such contact".into()))?;
+                let node_id = contact
+                    .node_id
+                    .clone()
+                    .or_else(|| None)
+                    .ok_or_else(|| {
+                        EngineError::Consequence(
+                            "we hold no address for them, so there is nobody to ask".into(),
+                        )
+                    })?;
+                self.ask_carrier(&node_id).await?;
+                outcome.data = Some(serde_json::json!({
+                    "organ_uid": organ_uid,
+                    // Said in these words on purpose: a wire round trip proves
+                    // the ask arrived and nothing else. Their operator decides.
+                    "asked": true,
+                }));
+            }
+            Action::MailboxUseInvite { code } => {
+                let (label, quota_bytes) = self.redeem_carry_code(&code).await?;
+                outcome.data = Some(serde_json::json!({
+                    "label": label,
+                    "quota_bytes": quota_bytes,
+                }));
+            }
+            Action::FileSyncStatus { organ } => {
+                let organ_uid = self.resolve(&organ).await?;
+                outcome.data = Some(serde_json::json!({
+                    // "nothing wrong" and "nothing known yet" look identical
+                    // in an empty list, and only one of them is an all-clear.
+                    "checked": self.file_sync_has_ticked(&organ_uid),
+                    "conflicts": self
+                        .file_sync_conflicts(&organ_uid)
+                        .into_iter()
+                        .map(|c| serde_json::json!({ "path": c.path, "reason": c.reason }))
+                        .collect::<Vec<_>>(),
+                }));
+            }
+            Action::MailboxOutbound => {
+                let pool = &self.store.pool;
+                let queued = store::sync_ops::outbox_due(pool).await?;
+                let now = chrono::Utc::now();
+                let minutes = |stamp: &Option<String>| -> Option<i64> {
+                    stamp
+                        .as_deref()
+                        .and_then(|when| chrono::DateTime::parse_from_rfc3339(when).ok())
+                        .map(|when| (now - when.with_timezone(&chrono::Utc)).num_minutes())
+                };
+                let mut rows = Vec::new();
+                for contact in store::organs::contacts(pool).await? {
+                    let Some(waiting) = minutes(&contact.unreachable_since) else {
+                        continue;
+                    };
+                    // Whether mail is even possible for them. Three states,
+                    // not two: a contact who published no box is not "not
+                    // mailed yet", they are unmailable until they choose
+                    // somebody — and only they can.
+                    let publishes = self
+                        .roster_of(&contact.record_uid)
+                        .await?
+                        .map(|signed| !signed.roster.pickup.is_empty())
+                        .unwrap_or(false);
+                    let ops = queued
+                        .iter()
+                        .filter(|row| row.contact_organ == contact.record_uid)
+                        .count();
+                    rows.push(serde_json::json!({
+                        "organ_uid": contact.record_uid,
+                        "known_as": contact.slug,
+                        "unreachable_minutes": waiting,
+                        "queued_ops": ops,
+                        "mailed_minutes_ago": minutes(&contact.mailed_at),
+                        "can_be_mailed": publishes,
+                    }));
+                }
+                // What a carrier reported dead. Believed already — these are
+                // rows this Cell wrote when it made the deposit — so the panel
+                // states them plainly rather than hedging.
+                let mut never_picked_up = Vec::new();
+                for gone in store::mail_left::expired(pool, 20).await? {
+                    let known_as = store::organs::contact(pool, &gone.to_organ)
+                        .await?
+                        .map(|contact| contact.head)
+                        .filter(|name| !name.is_empty())
+                        .unwrap_or_else(|| gone.to_organ.clone());
+                    never_picked_up.push(serde_json::json!({
+                        "organ_uid": gone.to_organ,
+                        "known_as": known_as,
+                        "carrier": gone.carrier_organ,
+                        "left_at": gone.left_at,
+                        "expired_at": gone.expired_at,
+                    }));
+                }
+                // Whether senders can still write to THIS device. An enrolled
+                // Cell rotates its own mail key but cannot publish one, so
+                // this is the state that used to be invisible: mail keeps
+                // working for the Organ, and stops working for the device.
+                let mail_key_published = self
+                    .own_sealing_key_is_published()
+                    .await
+                    .unwrap_or(true);
+                outcome.data = Some(serde_json::json!({
+                    "contacts": rows,
+                    "window_minutes": crate::wire::Wire::MAIL_AFTER.num_minutes(),
+                    "never_picked_up": never_picked_up,
+                    "outstanding_deposits": store::mail_left::outstanding(pool).await?,
+                    "mail_key_published": mail_key_published,
+                }));
+            }
+            Action::MailboxMailNow { organ_uid } => {
+                if store::organs::contact(&self.store.pool, organ_uid.as_str())
+                    .await?
+                    .is_none()
+                {
+                    return Err(EngineError::Consequence("no such contact".into()));
+                }
+                // Move the clock, then run the ORDINARY pass. Not a private
+                // path to the carrier: if they are in fact reachable this
+                // second, the pass reaches them and no mail is left at all,
+                // which is the outcome the button's owner actually wants.
+                let past = (chrono::Utc::now() - crate::wire::Wire::MAIL_AFTER).to_rfc3339();
+                store::organs::backdate_unreachable(&self.store.pool, organ_uid.as_str(), &past).await?;
+                store::organs::mark_mailed_clear(&self.store.pool, organ_uid.as_str()).await?;
+                let moved = self.sync_now().await?;
+                let after = store::organs::contact(&self.store.pool, organ_uid.as_str()).await?;
+                outcome.data = Some(serde_json::json!({
+                    "organ_uid": organ_uid,
+                    "batches": moved,
+                    "reached": after
+                        .as_ref()
+                        .map(|c| c.unreachable_since.is_none())
+                        .unwrap_or(false),
+                    "mailed": after.and_then(|c| c.mailed_at).is_some(),
+                }));
             }
             Action::RosterStatus => {
                 let held = store::door::held(&self.store.pool, 50).await?;
@@ -3981,6 +4691,158 @@ impl Engine {
                         now,
                     )
                     .await?;
+            }
+            Action::ImportInstinct => {
+                // The vocabulary FIRST. A file must never invent a meaning, so
+                // without these every record in the bundle refuses — which is
+                // the rule working, and also a useless import. The list is
+                // fixed in `instinct::VOCABULARY` rather than read off the
+                // files, so importing a bundle can never introduce a Concept
+                // nobody chose.
+                for name in crate::instinct::VOCABULARY {
+                    store::concepts::ensure(&self.store.pool, name).await?;
+                }
+                let bundle = crate::instinct::records();
+                // Two phases, for the reason the file-sync path found: the
+                // records cross-link by uid, and asserting a link needs its
+                // object to exist. Everything is created, then everything is
+                // described.
+                let mut fresh = Vec::new();
+                for record in &bundle {
+                    let uid = record.projection.uid.trim();
+                    if store::records::get(&self.store.pool, uid).await?.is_some() {
+                        continue;
+                    }
+                    store::records::create_with_uid(
+                        &self.store.pool,
+                        store::records::NewRecord {
+                            slug: None,
+                            kind: RecordKind::Plain,
+                            head: &record.head,
+                            body: &record.body,
+                            quantity: store::exact::zero(),
+                        },
+                        uid,
+                    )
+                    .await?;
+                    fresh.push(record);
+                }
+                for record in fresh {
+                    let uid = record.projection.uid.trim().to_string();
+                    for line in &record.projection.assertions {
+                        self.act(
+                            Action::AssertRecord {
+                                subject: uid.clone(),
+                                predicate: line.predicate.clone(),
+                                object: line.object.as_ref().map(|link| link.uid.clone()),
+                                quantity: line.quantity.clone(),
+                                unit: line.unit.clone(),
+                            },
+                            actor.clone(),
+                        )
+                        .await?;
+                        if line.identity {
+                            self.act(
+                                Action::SetIdentity {
+                                    subject: uid.clone(),
+                                    predicate: Some(line.predicate.clone()),
+                                },
+                                actor.clone(),
+                            )
+                            .await?;
+                        }
+                    }
+                    // Everything in the bundle is stable documentation, which
+                    // is quantity 1 on the same ladder the Kanban board reads.
+                    if let Some((amount, _)) = &record.projection.quantity {
+                        self.act(
+                            Action::SetQuantityExact {
+                                target: uid.clone(),
+                                amount: amount.clone(),
+                            },
+                            actor.clone(),
+                        )
+                        .await?;
+                    }
+                    outcome.created = Some(uid);
+                }
+            }
+            Action::CreateAgent { head, operated_by } => {
+                let head = head.trim();
+                if head.is_empty() {
+                    return Err(EngineError::Consequence(
+                        "give the Agent a name you will recognise in an assignee list".into(),
+                    ));
+                }
+                // Resolve the operator BEFORE creating anything: a named
+                // Person who is not one leaves an unowned Agent behind, and
+                // an Agent nobody is answerable for is the thing this field
+                // exists to prevent.
+                let operator = match &operated_by {
+                    Some(person) => {
+                        let uid = self.resolve(person).await?;
+                        let row = store::records::get(&self.store.pool, &uid)
+                            .await?
+                            .ok_or_else(|| EngineError::UnknownRecord(uid.clone()))?;
+                        if row.kind != RecordKind::Person.as_str() {
+                            return Err(EngineError::Consequence(
+                                "an Agent is operated by a Person".into(),
+                            ));
+                        }
+                        Some(uid)
+                    }
+                    None => None,
+                };
+                let actor_concept = store::concepts::ensure(&self.store.pool, "actor").await?;
+                for child in ["person", "agent"] {
+                    let uid = store::concepts::ensure(&self.store.pool, child).await?;
+                    store::concepts::add_parent(&self.store.pool, &uid, &actor_concept).await?;
+                }
+                let record = store::records::create(
+                    &self.store.pool,
+                    store::records::NewRecord {
+                        slug: None,
+                        kind: RecordKind::Person,
+                        head,
+                        body: "",
+                        quantity: store::exact::zero(),
+                    },
+                )
+                .await?;
+                self.act(
+                    Action::AssertRecord {
+                        subject: record.uid.clone(),
+                        predicate: "agent".into(),
+                        object: None,
+                        quantity: None,
+                        unit: None,
+                    },
+                    actor.clone(),
+                )
+                .await?;
+                self.act(
+                    Action::SetIdentity {
+                        subject: record.uid.clone(),
+                        predicate: Some("agent".into()),
+                    },
+                    actor.clone(),
+                )
+                .await?;
+                if let Some(operator) = operator {
+                    store::concepts::ensure(&self.store.pool, "operated-by").await?;
+                    self.act(
+                        Action::AssertRecord {
+                            subject: record.uid.clone(),
+                            predicate: "operated-by".into(),
+                            object: Some(operator),
+                            quantity: None,
+                            unit: None,
+                        },
+                        actor.clone(),
+                    )
+                    .await?;
+                }
+                outcome.created = Some(record.uid);
             }
             Action::RetractAssertion { assertion } => {
                 let row = store::assertions::get(&self.store.pool, &assertion)
@@ -7421,6 +8283,8 @@ impl Engine {
                     )
                     .await?;
                 apply_program_mutation(commit, &mut outcome)?;
+                self.publish_karma_definition(&outcome, KarmaKind::Program)
+                    .await?;
             }
             Action::ReviseKarmaProgram {
                 request_id,
@@ -7441,6 +8305,8 @@ impl Engine {
                     )
                     .await?;
                 apply_program_mutation(commit, &mut outcome)?;
+                self.publish_karma_definition(&outcome, KarmaKind::Program)
+                    .await?;
             }
             Action::ActivateKarmaProgram {
                 request_id,
@@ -7461,6 +8327,8 @@ impl Engine {
                     )
                     .await?;
                 apply_program_mutation(commit, &mut outcome)?;
+                self.publish_karma_definition(&outcome, KarmaKind::Program)
+                    .await?;
             }
             Action::PauseKarmaProgram {
                 request_id,
@@ -7479,6 +8347,8 @@ impl Engine {
                     )
                     .await?;
                 apply_program_mutation(commit, &mut outcome)?;
+                self.publish_karma_definition(&outcome, KarmaKind::Program)
+                    .await?;
             }
             Action::SetKarmaExecution {
                 program_uid,
@@ -7508,12 +8378,8 @@ impl Engine {
                 program_uid,
                 cell_uid,
             } => {
-                store::executor::designate(
-                    &self.store.pool,
-                    &program_uid,
-                    cell_uid.as_deref(),
-                )
-                .await?;
+                store::executor::designate(&self.store.pool, &program_uid, cell_uid.as_deref())
+                    .await?;
                 // The cost of a designation is stated when it is made. If the
                 // named Cell is off, the rule does not run — a visible silence,
                 // which is the trade taken deliberately over a heartbeat lease
@@ -7599,6 +8465,8 @@ impl Engine {
                     )
                     .await?;
                 apply_frequency_mutation(commit, &mut outcome)?;
+                self.publish_karma_definition(&outcome, KarmaKind::Frequency)
+                    .await?;
             }
             Action::ReviseKarmaFrequency {
                 request_id,
@@ -7619,6 +8487,8 @@ impl Engine {
                     )
                     .await?;
                 apply_frequency_mutation(commit, &mut outcome)?;
+                self.publish_karma_definition(&outcome, KarmaKind::Frequency)
+                    .await?;
             }
             Action::ActivateKarmaFrequency {
                 request_id,
@@ -7643,6 +8513,8 @@ impl Engine {
                     )
                     .await?;
                 apply_frequency_mutation(commit, &mut outcome)?;
+                self.publish_karma_definition(&outcome, KarmaKind::Frequency)
+                    .await?;
             }
             Action::SetKarmaFrequencyParameters {
                 request_id,
@@ -7667,6 +8539,8 @@ impl Engine {
                     )
                     .await?;
                 apply_frequency_mutation(commit, &mut outcome)?;
+                self.publish_karma_definition(&outcome, KarmaKind::Frequency)
+                    .await?;
             }
             Action::ResetKarmaFrequencyParameters {
                 request_id,
@@ -7689,6 +8563,8 @@ impl Engine {
                     )
                     .await?;
                 apply_frequency_mutation(commit, &mut outcome)?;
+                self.publish_karma_definition(&outcome, KarmaKind::Frequency)
+                    .await?;
             }
             Action::PauseKarmaFrequency {
                 request_id,
@@ -7707,6 +8583,8 @@ impl Engine {
                     )
                     .await?;
                 apply_frequency_mutation(commit, &mut outcome)?;
+                self.publish_karma_definition(&outcome, KarmaKind::Frequency)
+                    .await?;
             }
             Action::Decide { decision, answer } => {
                 store::misc::answer_decision(&self.store.pool, &decision, &answer).await?;
@@ -8516,6 +9394,76 @@ impl Engine {
                     )));
                 }
                 store::auth::set_user_role(&self.store.pool, &person, role_id).await?;
+            }
+            Action::SetPersonStanding {
+                person,
+                active,
+                note,
+            } => {
+                self.require_permission(actor.as_deref(), "user:update")
+                    .await?;
+                let person_uid = self.resolve(&person).await?;
+                let record = store::records::get(&self.store.pool, &person_uid)
+                    .await?
+                    .ok_or_else(|| {
+                        EngineError::Consequence(format!("no such Person `{person}`"))
+                    })?;
+                // Standing means "may this human act here", so it only makes
+                // sense over a Person. Written onto a Transfer or a Cell it
+                // would be a field nothing reads — an owner believing they had
+                // turned something off when they had not.
+                if record.kind != "person" {
+                    return Err(EngineError::Consequence(format!(
+                        "`{person}` is a {} record, not a Person",
+                        record.kind
+                    )));
+                }
+                // Deactivating yourself is refused rather than confirmed. It is
+                // the one move that can leave an Organ with nobody able to undo
+                // it — the permission to reactivate is held by the account you
+                // just closed — and it is never what someone means to do from
+                // an admin panel listing everybody. Leaving is done by someone
+                // else turning you off, which is also what makes it reversible.
+                if actor.as_deref() == Some(person_uid.as_str()) && !active {
+                    return Err(EngineError::Consequence(
+                        "you cannot deactivate yourself — ask another admin".into(),
+                    ));
+                }
+                // The other half of the lockout guard. Refusing self-
+                // deactivation alone does not save an Organ: an admin can turn
+                // off every OTHER admin one at a time and then be turned off by
+                // one of them, and `user:update` is not itself the admin role —
+                // someone holding only it can close every admin account without
+                // ever touching their own. So the last ACTIVE admin stays.
+                if !active {
+                    let admins = store::auth::admins(&self.store.pool).await?;
+                    if admins.iter().any(|admin| admin == &person_uid) {
+                        let mut others = 0;
+                        for admin in admins.iter().filter(|admin| *admin != &person_uid) {
+                            if store::people::is_active(&self.store.pool, admin).await? {
+                                others += 1;
+                            }
+                        }
+                        if others == 0 {
+                            return Err(EngineError::Consequence(
+                                "this is the last active admin — make someone else an admin first"
+                                    .into(),
+                            ));
+                        }
+                    }
+                }
+                if active {
+                    store::people::reactivate(&self.store.pool, &person_uid).await?;
+                } else {
+                    store::people::deactivate(
+                        &self.store.pool,
+                        &person_uid,
+                        &now.to_rfc3339(),
+                        note.as_deref(),
+                    )
+                    .await?;
+                }
+                outcome.created = Some(person_uid);
             }
             Action::GrantPermission { role, permission } => {
                 self.require_permission(actor.as_deref(), "permission:assign")
@@ -9913,8 +10861,11 @@ impl Engine {
     fn generic_write_permission(action: &Action) -> Option<&'static str> {
         Some(match action {
             // Record core
-            Action::CreateRecord { .. } => "record:create",
+            Action::CreateRecord { .. }
+            | Action::CreateAgent { .. }
+            | Action::ImportInstinct => "record:create",
             Action::SetQuantity { .. }
+            | Action::SetQuantityExact { .. }
             | Action::TransitionRecord { .. }
             | Action::AddQuantity { .. }
             | Action::CaptureEntry { .. }
@@ -10010,13 +10961,34 @@ impl Engine {
             | Action::SetCellConfig { .. }
             | Action::AuditContact { .. }
             | Action::RosterStatus
+            // Carrying mail is an ORGAN-scoped decision: it commits this
+            // Cell's disk and uptime on behalf of the identity, and the
+            // registration list is the carrier's most sensitive record.
+            | Action::MailboxStatus
+            | Action::MailboxCarryFor { .. }
+            // Publishing where your own mail may be left is organ-scoped for
+            // the stronger reason: it re-signs the roster every contact holds,
+            // and it decides who gets to hold your unread mail.
+            | Action::MailboxPickupPoints
+            | Action::MailboxAddPickup { .. }
+            | Action::MailboxRemovePickup { .. }
+            | Action::MailboxCollectNow
+            | Action::MailboxOutbound
+            | Action::FileSyncStatus { .. }
+            | Action::MailboxMailNow { .. }
+            | Action::MailboxRequests
+            | Action::MailboxAnswerRequest { .. }
+            | Action::MailboxIssueInvite { .. }
+            | Action::MailboxAskCarry { .. }
+            | Action::MailboxUseInvite { .. }
             // Joining REPLACES this Cell's identity, which is the largest
             // organ-scoped change there is — but it is still an organ-scoped
             // change, and the real gate is the enrolment token itself.
             | Action::RosterJoinOrgan { .. } => "organ:update",
-            Action::ForgetOrganContact { .. } | Action::RosterRevokeCell { .. } => {
-                "organ:delete"
-            }
+            Action::ForgetOrganContact { .. }
+            | Action::RosterRevokeCell { .. }
+            // Deleting: it discards mail somebody is expecting to collect.
+            | Action::MailboxStopCarrying { .. } => "organ:delete",
 
             // Transfer (the remainder not already gated inline above)
             Action::CreatePromise { .. }
@@ -10088,6 +11060,11 @@ impl Engine {
             | Action::CreateRole { .. }
             | Action::CreateUser { .. }
             | Action::AssignRole { .. }
+            // Gated on `user:update` in its own arm, not by the generic
+            // record-write permission: it writes to a Person Record, and
+            // `record:update` is held by people who may edit a name and must
+            // not be able to close an account.
+            | Action::SetPersonStanding { .. }
             | Action::GrantPermission { .. }
             | Action::RevokePermission { .. } => return None,
         })
@@ -10825,4 +11802,42 @@ fn inexact(value: f64) -> Result<nucleus::DecimalValue, EngineError> {
         code: "rule_condition_unreadable",
         message: "that reading is not a number a rule can use".into(),
     })
+}
+
+impl Engine {
+    /// Publish a Karma definition to this Organ's other Cells (Ontology C7,
+    /// axis 1).
+    ///
+    /// Called after every Program and Frequency mutation, and derived from the
+    /// STORE rather than from the action: create, revise, activate and pause all
+    /// publish the same thing — whatever is active now, or `null` — so the
+    /// published value cannot drift from what this Cell holds, and a pause
+    /// travels as surely as an activation. Without the pause travelling, turning
+    /// a rule off here would leave the always-on Cell running the last
+    /// definition it heard about.
+    ///
+    /// Both kinds, because either alone does nothing: every active Program is a
+    /// member of every frozen occurrence epoch, so a Cell holding a synced
+    /// Program with no Frequency has nothing to schedule it.
+    pub(crate) async fn publish_karma_definition(
+        &self,
+        outcome: &ActionOutcome,
+        kind: KarmaKind,
+    ) -> Result<(), EngineError> {
+        // `created` carries the mutated handle's uid for every one of these
+        // actions, including the replayed ones — a replay publishes the same
+        // value again, which is a redundant write and never a wrong one.
+        let Some(uid) = outcome.created.as_deref() else {
+            return Ok(());
+        };
+        match kind {
+            KarmaKind::Program => {
+                store::karma::sync::publish_program(&self.store.pool, uid).await?;
+            }
+            KarmaKind::Frequency => {
+                store::karma::sync::publish_frequency(&self.store.pool, uid).await?;
+            }
+        }
+        Ok(())
+    }
 }

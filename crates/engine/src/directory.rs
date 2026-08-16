@@ -55,8 +55,8 @@
 
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD as B64;
-use pkarr::dns::rdata::{RData, TXT};
 use pkarr::dns::Name;
+use pkarr::dns::rdata::{RData, TXT};
 use pkarr::{Keypair, PublicKey, SignedPacket};
 
 use crate::error::EngineError;
@@ -385,7 +385,8 @@ impl crate::Engine {
         // with the keyless Cell republishing the stored bytes — two packets
         // for one key, differing only in when they were signed. Same bytes for
         // the same content keeps the ordering trivial.
-        if let Some(stored) = store::roster::public_packet(&self.store.pool, &root.actor_uid).await?
+        if let Some(stored) =
+            store::roster::public_packet(&self.store.pool, &root.actor_uid).await?
         {
             if let Ok(previous) = decode_stored(&stored).and_then(|packet| decode(&packet)) {
                 if previous == record {

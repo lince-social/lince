@@ -3,15 +3,24 @@
 #   mode = "server"   `lince --server`: API only, no board, login forced on.
 #   mode = "board"    `lince`: the full board over HTTP, for a browser.
 #   mode = "desktop"  `lince-desktop`: the Tauri window, in your session.
-#   mode = "relay"    a Cell that CARRIES and authors nothing (Ontology C4).
+#   mode = "front-door"  a Cell of YOUR Organ that carries and authors nothing.
 #
-# A relay is a MODE and not a flag on server, because almost nothing about it
-# is a server with a switch flipped: it serves no board, needs no admin
-# password (the assertion demanding one for `server` must not extend to it, and
-# a matching one refuses a relay that is given one), and wants its own resource
-# limits. What makes it a relay is not this module at all — it is the Organ's
-# signed roster giving that Cell no capabilities, which the database enforces.
-# This module only shapes the unit around that fact.
+# **This mode was called "relay" until 2026-08-15, and the rename is a
+# correction, not a preference.** What it builds is your Organ's FRONT DOOR: a
+# Cell inside your own signed roster, holding your plaintext store, unable to
+# author anything. Lince uses "relay" for two other things — an `iroh-relay`,
+# which is not Lince at all, and the blind mailbox that holds sealed envelopes
+# for people who are not you (Ontology C4, unbuilt) — and an operator who read
+# "relay" and deployed this got a box holding their data in the clear. That is
+# precisely the blurring the design says must never happen.
+#
+# It is a MODE and not a flag on server, because almost nothing about it is a
+# server with a switch flipped: it serves no board, needs no admin password
+# (the assertion demanding one for `server` must not extend to it, and a
+# matching one refuses a front door that is given one), and wants its own
+# resource limits. What makes a Cell a front door is not this module at all —
+# it is the Organ's signed roster giving that Cell no capabilities, which the
+# database enforces. This module only shapes the unit around that fact.
 #
 # A server has no board, so the things the board configures are set from the
 # shell instead, as the unit's own user:
@@ -67,9 +76,9 @@ let
           "--listen-addr"
           cfg.listenAddr
         ]
-        # A relay serves no board either, so it takes the same flag. The
+        # A front door serves no board either, so it takes the same flag. The
         # difference between them is authority, not UI.
-        ++ lib.optional (cfg.mode == "server" || cfg.mode == "relay") "--server"
+        ++ lib.optional (cfg.mode == "server" || cfg.mode == "front-door") "--server"
         ++ lib.optionals (cfg.initialAdminPasswordFile != null) [
           "--initial-admin-password-file"
           (toString cfg.initialAdminPasswordFile)
@@ -111,13 +120,13 @@ let
       ProtectControlGroups = true;
       RestrictSUIDSGID = true;
     }
-    // lib.optionalAttrs (!isUserScope && cfg.mode == "relay") {
-      # A relay is a donation of somebody's bandwidth and RAM, and an
+    // lib.optionalAttrs (!isUserScope && cfg.mode == "front-door") {
+      # A front door is a donation of somebody's bandwidth and RAM, and an
       # unbounded donation takes down the operator's other services before it
       # takes down Lince. Conservative rather than tuned: raise them
       # deliberately, having watched the box.
-      MemoryMax = cfg.relay.memoryMax;
-      CPUQuota = cfg.relay.cpuQuota;
+      MemoryMax = cfg.frontDoor.memoryMax;
+      CPUQuota = cfg.frontDoor.cpuQuota;
       # It stores no conversations and hosts nobody's identity, so it needs far
       # less of the filesystem than a personal Cell.
       TasksMax = 512;
@@ -131,8 +140,7 @@ let
     # session's own XDG, which is the whole reason it can share one with your
     # shell. `cfg.environment` is last, so it wins either way.
     environment =
-      (lib.optionalAttrs (!isDesktop) { XDG_CONFIG_HOME = "${cfg.dataDir}/.config"; })
-      // cfg.environment;
+      (lib.optionalAttrs (!isDesktop) { XDG_CONFIG_HOME = "${cfg.dataDir}/.config"; }) // cfg.environment;
   };
 in
 {
@@ -144,17 +152,17 @@ in
         "server"
         "board"
         "desktop"
-        "relay"
+        "front-door"
       ];
       default = "server";
       description = ''
         "server" passes --server: no board UI, no sands, no static assets, and
         login is forced on. "board" serves the whole UI over HTTP — only bind
         that to loopback. "desktop" runs the Tauri app and requires
-        scope = "user". "relay" is a carrier: same binary as server, no admin
-        password, tighter limits. A relay holds no signing material because its
-        Organ's roster gives it no capabilities — enrol it, then remove every
-        capability from a device that holds your root key.
+        scope = "user". "front-door" is a carrier for YOUR OWN Organ: same binary
+        as server, no admin password, tighter limits. It holds no signing
+        material because your Organ's roster gives it no capabilities — enrol
+        it, then remove every capability from a device that holds your root key.
       '';
     };
 
@@ -187,12 +195,12 @@ in
       description = "Override the package for the chosen mode. Rarely needed.";
     };
 
-    relay = {
+    frontDoor = {
       memoryMax = lib.mkOption {
         type = lib.types.str;
         default = "512M";
         description = ''
-          systemd MemoryMax for a relay unit. A relay caches and forwards; it
+          systemd MemoryMax for a front-door unit. It carries and forwards; it
           holds no conversations, so this is generous rather than tight.
         '';
       };
@@ -201,7 +209,7 @@ in
         type = lib.types.str;
         default = "50%";
         description = ''
-          systemd CPUQuota for a relay unit. A ceiling so a busy relay cannot
+          systemd CPUQuota for a front-door unit. A ceiling so a busy one cannot
           starve whatever else the operator runs on the box.
         '';
       };
@@ -300,9 +308,7 @@ in
     assertions = [
       {
         assertion =
-          cfg.mode != "server"
-          || cfg.initialAdminPasswordFile != null
-          || cfg.initialAdminPassword != null;
+          cfg.mode != "server" || cfg.initialAdminPasswordFile != null || cfg.initialAdminPassword != null;
         message = ''
           services.lince.mode = "server" forces login on, so the first boot needs
           either services.lince.initialAdminPassword (inline; world-readable in
@@ -314,15 +320,15 @@ in
       }
       {
         assertion =
-          cfg.mode != "relay"
+          cfg.mode != "front-door"
           || (cfg.initialAdminPasswordFile == null && cfg.initialAdminPassword == null);
         message = ''
-          services.lince.mode = "relay" must NOT be given an admin password. A
-          relay has no board to log into and no authority to exercise — it
+          services.lince.mode = "front-door" must NOT be given an admin password.
+          A front door has no board to log into and no authority to exercise — it
           carries traffic and authors nothing — so a password on it is either a
-          misunderstanding of what a relay is, or a login wall on a machine that
-          should not have one. Use mode = "server" if you meant a Cell someone
-          logs into.
+          misunderstanding of what a front door is, or a login wall on a machine
+          that should not have one. Use mode = "server" if you meant a Cell
+          someone logs into.
         '';
       }
       {

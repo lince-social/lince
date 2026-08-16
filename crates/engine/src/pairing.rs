@@ -125,6 +125,53 @@ impl PairingInvite {
     }
 }
 
+/// Version tag for a MAILBOX invite. A third prefix, for the same reason there
+/// is a second: these three codes are shown in the same shape and scanned by
+/// the same camera, and they grant wildly different things — a contact, a
+/// device of your own identity, and the right to leave sealed bytes on
+/// somebody's disk. None may ever be read as another by accident.
+const MAILBOX_PREFIX: &str = "lincemail1";
+
+/// "You may leave your mail with me."
+///
+/// Two fields and no more: whom to ask, and the single-use token that says the
+/// operator meant it. No root key, unlike the enrolment code — the redeemer is
+/// not joining an identity and has nothing to verify about the carrier beyond
+/// its node id, which iroh authenticates by construction.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct MailboxInviteCode {
+    pub node_id: String,
+    pub token: String,
+}
+
+impl MailboxInviteCode {
+    pub fn encode(&self) -> String {
+        format!("{MAILBOX_PREFIX}{SEP}{}{SEP}{}", self.node_id, self.token)
+    }
+
+    pub fn decode(text: &str) -> Result<MailboxInviteCode, EngineError> {
+        let parts: Vec<&str> = text.trim().split(SEP).collect();
+        if parts.len() != 3 || parts[0] != MAILBOX_PREFIX {
+            return Err(EngineError::Consequence(
+                "not a Lince mailbox invite. It must be the whole line starting \
+                 `lincemail1|`, from someone offering to hold your mail — a pairing \
+                 code adds a contact and an enrolment code adds a device, and neither \
+                 can do this."
+                    .into(),
+            ));
+        }
+        if parts[1].is_empty() || parts[2].is_empty() {
+            return Err(EngineError::Consequence(
+                "that mailbox invite is missing part of itself".into(),
+            ));
+        }
+        Ok(MailboxInviteCode {
+            node_id: parts[1].to_string(),
+            token: parts[2].to_string(),
+        })
+    }
+}
+
 /// Version tag for an ENROLMENT code. A separate prefix from `lince1`, and
 /// that separation is the point: a pairing code adds a contact, an enrolment
 /// code adds a device to your own identity. They are shown in the same shape,

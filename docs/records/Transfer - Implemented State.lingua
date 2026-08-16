@@ -1,0 +1,71 @@
+---
+uid: r_8VY1TTA92N71HBCWAK6RQWRTGC
+@@section
+@instinct
+@part-of [[Transfer (document)|r_XF06Q5Z2MECBB8ZAWAX9KXJ184]] 6
+quantity: 1
+---
+
+## Implemented State
+
+The structured backend (parties, items, interactions, agreement, settlement, visibility, events, messages, work metadata) is live. The old single-row adapter is gone. The Transfer sand is a server-backed widget with typed actions.
+
+Key locations:
+
+- Schema: `20260614133000_structured_transfer_model.sql`, `20260617120000_generic_work_metadata.sql`
+- Domain enums: `crates/domain/src/clean/transfer.rs`
+- Widget backend: `crates/web/src/application/transfer_widget.rs`
+- Sand UI: `crates/web/src/sand/transfer/`
+
+### Agreement Levels
+
+| Level | Meaning                                             |
+| ----- | --------------------------------------------------- |
+| `0`   | No current agreement, or invalidated by an edit.    |
+| `1`   | First agreement: the party reviewed and is aligned. |
+| `2`   | Commitment threshold: the party accepts its part.   |
+
+### Agreement Modes
+
+| Mode         | Meaning                                                       |
+| ------------ | ------------------------------------------------------------- |
+| `individual` | Each party reaches level 2 independently (default).           |
+| `full`       | All parties must reach level 2.                               |
+| `percentage` | Ceil(n_parties × pct / 100) parties must reach level 2.       |
+| `dependency` | Agreement propagates through dependent interaction agreement. |
+
+### Reservation Policies
+
+| Policy             | Meaning                                                                               |
+| ------------------ | ------------------------------------------------------------------------------------- |
+| `none`             | Never stage Transfer quantity changes. Only final settlement changes Record quantity. |
+| `soft`             | Track proposal intent without reducing availability.                                  |
+| `hard_on_proposal` | Reserve outgoing quantity when a proposal is created.                                 |
+| `hard_on_consume`  | Reserve outgoing quantity when a proposal is duplicated/consumed.                     |
+| `hard_on_lock`     | Reserve outgoing quantity when both sides lock agreement terms.                       |
+
+Each Transfer can override the default in `transfer_tree_config.reservation_policy`.
+
+### Quantity Projections
+
+| Column                                                    | Meaning                                            |
+| --------------------------------------------------------- | -------------------------------------------------- |
+| `record.quantity`                                         | Actual settled Record quantity.                    |
+| `record_transfer_availability.proposed_outgoing_quantity` | Planned negative Transfer influence.               |
+| `record_transfer_availability.proposed_incoming_quantity` | Planned positive Transfer influence.               |
+| `record_transfer_availability.reserved_quantity`          | Active hard outgoing reservation.                  |
+| `record_transfer_availability.reserved_incoming_quantity` | Active positive Transfer influence, informational. |
+| `record_transfer_availability.available_quantity`         | Actual minus active hard outgoing reservation.     |
+| `record_transfer_availability.planned_quantity`           | Simple projection: actual + incoming − outgoing.   |
+
+```sql
+SELECT record.*, availability.*
+FROM record
+LEFT JOIN record_transfer_availability availability ON availability.record_id = record.id;
+```
+
+### Karma
+
+Transfer quantity is exposed to Karma with two equivalent token forms: `tq{id}` and `transfer-quantity-{id}`.
+
+In a condition the token is replaced with the current Transfer quantity (0 if Transfer does not exist). In a consequence the token identifies which Transfer quantity receives the evaluated value. The `transfer-proximity-broadening-{transfer_id}` consequence widens restricted visibility by setting `max_visible_proximity`.

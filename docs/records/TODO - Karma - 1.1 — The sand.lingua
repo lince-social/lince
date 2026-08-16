@@ -1,0 +1,23 @@
+---
+uid: r_GENEWRPYMATNDG4FBZCN3RWR4M
+@@task
+@instinct
+@part-of [[Karma - 1.1 — The sand|r_PNBZYS3STR32ZR41TZJ82NE1QW]] 3
+quantity: -1
+---
+
+## 1.1 — The sand
+
+- [ ] **Clicking a record opens the record sand** as well as inserting it.
+      Blocked: `handleShellAction` gates on `card.system && card.pinned`
+      (`web/static/presentation/board/main.js:1576`) and karma is neither. Needs
+      a narrowly-scoped open-record command rather than widening that gate.
+- [ ] **Live parse feedback.** Parse on every keystroke, show `ConditionError`'s
+      `Display` under the input, refuse save while it does not parse.
+- [ ] **Calendar and graph from §1.5's projection** — beats ahead on a calendar,
+      projected quantity on a line, both from the pure function, no new storage.
+- [ ] **The sand resizes.** It is pinned to a maximum size today; it should grow
+      and shrink.
+- [ ] **A command palette** as operational sugar that never bypasses an Action.
+- [ ] Still open from the older surface: monthly dashboards, source profiles,
+      capture review.

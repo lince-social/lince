@@ -157,7 +157,8 @@ pub enum Source {
     /// The permission/role/user system (`store::auth` — native SQL state,
     /// not Ledger records, per blueprint's split). Rows are heterogeneous,
     /// distinguished by `kind`: `"role"` (id, name, permissions), `"user"`
-    /// (id, username, name, role — never a password hash), and one
+    /// (id, username, name, role, `active` and why — never a password hash),
+    /// and one
     /// `"permission_catalog"` row (the full static key list, for building a
     /// grant UI). No filter/include support — it's a small, fixed listing.
     /// Gated at the session boundary (`execute_for`): a remote/authenticated
@@ -883,8 +884,17 @@ async fn execute_auth(store: &Store) -> Result<Vec<Value>, ProteinError> {
         // `id` and `person` are the same value now and both are kept: sands
         // read one or the other, and they were never allowed to disagree.
         let person_record = store::records::get(&store.pool, &uid).await?;
+        // Standing rides along with the user row rather than as its own source:
+        // the admin table is where someone decides to turn a person off, and a
+        // list that shows who can log in without showing who cannot is a list
+        // that hides its own most important column. `note` is the owner's, and
+        // stays behind `user:read` with the rest of this source.
+        let standing = store::people::standing(&store.pool, &uid).await?;
         out.push(json!({
             "kind": "user",
+            "active": standing.as_ref().is_none_or(|standing| standing.active),
+            "deactivated_at": standing.as_ref().and_then(|s| s.at.clone()),
+            "standing_note": standing.as_ref().and_then(|s| s.note.clone()),
             "id": uid,
             "username": username,
             "name": name,

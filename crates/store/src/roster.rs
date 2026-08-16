@@ -69,6 +69,47 @@ pub async fn put(pool: &SqlitePool, roster: &StoredRoster) -> Result<(), StoreEr
     Ok(())
 }
 
+/// Which Organ, of those whose signed roster we hold, names this Cell —
+/// `None` when no roster we hold mentions it.
+///
+/// The reverse of the membership question, and it exists because the dedup key
+/// on the op log is `(actor_cell, hlc)`: an op claiming a Cell that belongs to
+/// somebody ELSE can pre-occupy that key and make the real op arrive later and
+/// be dropped as an already-seen duplicate. Knowing who a Cell belongs to is
+/// what turns that into a refusal.
+///
+/// Scanned in Rust rather than with SQLite's JSON functions: the rosters we
+/// hold number one per contact, the payload is the SIGNED blob and must stay
+/// exactly as signed, and an unparseable one is skipped rather than failing
+/// the whole question — a roster we cannot read tells us nothing about who
+/// owns a Cell, which is the same position as holding no roster at all.
+pub async fn organ_holding_cell(
+    pool: &SqlitePool,
+    cell_uid: &str,
+) -> Result<Option<String>, StoreError> {
+    let rows = sqlx::query("SELECT organ_uid, payload FROM organ_roster")
+        .fetch_all(pool)
+        .await?;
+    for row in rows {
+        let payload: String = row.get("payload");
+        let Ok(parsed) = serde_json::from_str::<serde_json::Value>(&payload) else {
+            continue;
+        };
+        let named = parsed
+            .get("cells")
+            .and_then(|cells| cells.as_array())
+            .is_some_and(|cells| {
+                cells.iter().any(|cell| {
+                    cell.get("cell_uid").and_then(|uid| uid.as_str()) == Some(cell_uid)
+                })
+            });
+        if named {
+            return Ok(Some(row.get("organ_uid")));
+        }
+    }
+    Ok(None)
+}
+
 /// Flatten THIS Cell's capabilities out of a roster, so the database can
 /// enforce them (Ontology §11, C4).
 ///

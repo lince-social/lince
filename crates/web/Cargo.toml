@@ -49,3 +49,10 @@ urlencoding = { workspace = true }
 utils = { workspace = true }
 uuid = { workspace = true, features = ["v4"] }
 zip = { workspace = true, default-features = false, features = ["deflate"] }
+
+[dev-dependencies]
+# The WebSocket door: `person_standing_login.rs` has to open a real board
+# socket, because that is where a signed-in person acts. Both are already in
+# the lock file (axum's `ws` feature pulls the first, `futures` the second), so
+# this adds a test client rather than a dependency.
+tokio-tungstenite = "0.28"

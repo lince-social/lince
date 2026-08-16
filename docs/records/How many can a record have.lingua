@@ -1,0 +1,24 @@
+---
+uid: r_0RK32R4D67H1RK0A8DPEBZMG2M
+@@idea
+@instinct
+@chapter [[Concepts|r_W2WAENRBQDM6G9FJHTN9GPT71Z]] 2
+quantity: 1
+---
+
+## How many can a record have?
+
+As many as are true. A record can be `@urgent` and `@billable` and `@health` at once — these are ordinary statements and they do not compete.
+
+One statement is special. A record may have at most one **identity** — the constrained answer to "what kind of thing is this?", used where something needs exactly one answer to work with. Setting a new identity replaces the old one. Everything else accumulates.
+
+```mermaid
+graph LR
+  T["Toothbrush"] -- identity --> A["@toothbrush"]
+  T -- ordinary --> B["@health"]
+  T -- ordinary --> C["@cost"]
+```
+
+_One identity, any number of ordinary statements. Having an identity does not stop a record being other things too._
+
+Records without an identity are perfectly valid. Reach for one when some feature needs a single stable answer, not as a habit.

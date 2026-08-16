@@ -3,6 +3,7 @@
 //! hardened fact import, per-field LWW convergence, tombstones that cannot
 //! resurrect, and the discovery feed closing the loop into the Decision Queue.
 
+use engine::sync::Delivery;
 use engine::Engine;
 use engine::actions::{Action, ConceptSeed};
 use engine::sync::OpBatch;
@@ -77,8 +78,7 @@ async fn wire_push(from: &Engine, to: &Engine) -> usize {
             Some(root) => to.import_grant_batch(&root, &batch).await,
             None => to.import_op_batch(&batch).await,
         }
-        .map(|_| ())
-        .map_err(|e| e.to_string())
+        .map_or_else(|e| Delivery::Failed(e.to_string()), |_| Delivery::Sent)
     })
     .await
     .expect("drain")
@@ -95,14 +95,13 @@ async fn wire_push_to(from: &Engine, to: &Engine, to_organ: &str) -> usize {
         let addressed = contact.record_uid == to_organ;
         async move {
             if !addressed {
-                return Err("not this contact".to_string());
+                return Delivery::Failed("not this contact".into());
             }
             match root {
                 Some(root) => to.import_grant_batch(&root, &batch).await,
                 None => to.import_op_batch(&batch).await,
             }
-            .map(|_| ())
-            .map_err(|e| e.to_string())
+            .map_or_else(|e| Delivery::Failed(e.to_string()), |_| Delivery::Sent)
         }
     })
     .await
@@ -1065,7 +1064,10 @@ async fn widening_a_scope_replays_the_columns_it_adds() {
         .await
         .unwrap()
         .expect("record");
-    assert_eq!(landed.head, "the headline", "the newly-named column arrives");
+    assert_eq!(
+        landed.head, "the headline",
+        "the newly-named column arrives"
+    );
     assert_eq!(landed.body, "the body");
     // The replay walks the whole feed, so the column that was ALREADY shared
     // rides again — and must not be counted twice.

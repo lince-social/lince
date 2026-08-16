@@ -273,6 +273,108 @@
               <span class="status">Nobody is waiting.</span>
             </div>
           </div>
+          <!-- Mail this device carries FOR OTHER PEOPLE. Volunteering is per
+               contact, when they ask — never a switch that makes you
+               everyone's mailbox — so the donated storage stays legible: one
+               named recipient per row, with what they are actually using.
+               Shown even when empty, because "you carry for nobody" and "this
+               is not switched on" would otherwise look the same. -->
+          <div class="panel" id="mailbox-panel">
+            <div class="group-head">
+              <span>Mail you carry for others</span>
+              <button class="lynx-button lynx-icon-button info" id="mailbox-info" type="button" aria-label="About carrying mail" data-lynx-tooltip-align="right" data-lynx-tooltip="When someone cannot be reached directly, their contacts can leave mail with a device they nominated. You can be that device for people you have paired with. What you hold is sealed to their devices and you cannot read any of it — but you do see who wrote to them, when, and how much, which is why THEY choose their mailbox rather than a sender choosing it for them. Mail is held 30 days, then deleted and the sender told."></button>
+            </div>
+            <ul id="mb-list" class="list"></ul>
+            <div class="row" id="mb-empty">
+              <span class="status">You are not carrying mail for anyone.</span>
+            </div>
+            <!-- People who ASKED. This is the ordinary way somebody ends up in
+                 the list above: the operator naming an Organ by hand is the
+                 fallback, not the path. -->
+            <ul id="mb-asks" class="list"></ul>
+            <div class="row">
+              <input id="mb-organ" class="lynx-input" placeholder="Organ id of the contact who asked" />
+              <button class="lynx-button lynx-button--primary primary" id="mb-add" type="button">Carry their mail</button>
+            </div>
+            <div class="row">
+              <button class="lynx-button" id="mb-invite" type="button">Invite someone to use this box</button>
+              <span class="status" id="mb-invite-out"></span>
+            </div>
+            <div class="row">
+              <span class="status" id="mb-status"></span>
+            </div>
+          </div>
+          <!-- Where YOUR OWN mail may be left. The opposite role to the panel
+               above, and separate from it on purpose: one panel showing both
+               without saying which is which is how someone ends up believing
+               their own mail is safe because somebody else's is.
+               The state per row is re-asked every time this opens, because the
+               registration lives on the CARRIER's disk and they can stop at any
+               moment without telling us. -->
+          <div class="panel" id="pickup-panel">
+            <div class="group-head">
+              <span>Where your mail is left</span>
+              <button class="lynx-button lynx-icon-button info" id="pickup-info" type="button" aria-label="About pickup points" data-lynx-tooltip-align="right" data-lynx-tooltip="When none of your devices can be reached, a contact writing to you leaves the message sealed with one of these boxes instead, and you collect it the next time you are online. YOU choose them — a sender never picks the box — because whoever holds your mail sees who writes to you, when, and how much, even though they can never read a word of it. With a stranger's relay that cost is abstract; with a friend it is socially real. Held 30 days, then deleted."></button>
+            </div>
+            <ul id="pickup-list" class="list"></ul>
+            <div class="row" id="pickup-empty">
+              <span class="status">No one holds mail for you yet. Ask a contact below, or paste a code somebody sent you.</span>
+            </div>
+            <div class="row" id="pickup-add-row">
+              <select id="pickup-organ" class="lynx-input"></select>
+              <button class="lynx-button" id="pickup-ask" type="button">Ask them to carry</button>
+              <button class="lynx-button lynx-button--primary primary" id="pickup-add" type="button">Publish as a pickup point</button>
+              <button class="lynx-button" id="pickup-collect" type="button">Collect now</button>
+            </div>
+            <div class="row" id="pickup-code-row">
+              <input id="pickup-code" class="lynx-input" placeholder="lincemail1|… a code someone sent you" />
+              <button class="lynx-button" id="pickup-redeem" type="button">Use this code</button>
+            </div>
+            <div class="row">
+              <span class="status" id="pickup-status"></span>
+            </div>
+          </div>
+          <!-- The OUTBOUND half, deliberately its own panel: the one above is
+               about boxes you chose for yourself, this is about people you
+               cannot reach right now. Merging them is how somebody ends up
+               reading "carrying" and believing their own message went. -->
+          <div class="panel" id="outbound-panel" hidden>
+            <div class="group-head">
+              <span>Waiting to reach someone</span>
+              <button class="lynx-button lynx-icon-button info" id="outbound-info" type="button" aria-label="About unreachable contacts" data-lynx-tooltip-align="right" data-lynx-tooltip="A device that does not answer is usually just not answering YET — a network that has not opened a path, a laptop shut for a meeting. So Lince keeps trying for a while before it leaves anything with a carrier. Nothing is lost while it waits: what you wrote stays queued here, and goes the moment either of you gets through."></button>
+            </div>
+            <ul id="outbound-list" class="list"></ul>
+            <div class="row">
+              <span class="status" id="outbound-status"></span>
+            </div>
+          </div>
+          <!-- The failure a messaging system may not have in silence: mail
+               left with a carrier that the person never came to collect. The
+               carrier deletes it after the retention window and keeps only who
+               to tell; this is where being told happens. -->
+          <div class="panel" id="expired-panel" hidden>
+            <div class="group-head">
+              <span>Never picked up</span>
+              <button class="lynx-button lynx-icon-button info" id="expired-info" type="button" aria-label="About uncollected mail" data-lynx-tooltip-align="right" data-lynx-tooltip="When you cannot reach someone, Lince seals what you wrote and leaves it with a carrier they chose. A carrier holds it for 30 days and then deletes it. If they never came for it in that time, you are told here — the carrier could never read it, and could only ever say that it expired."></button>
+            </div>
+            <ul id="expired-list" class="list"></ul>
+            <div class="row">
+              <span class="status">These changes are not lost: they are still in your log, and reach them the next time your devices actually talk.</span>
+            </div>
+          </div>
+          <!-- An enrolled device rotates its own mail key but cannot publish
+               one — publishing means re-signing the device list, which takes
+               the root key. It asks the device holding the root on every sync;
+               this says so while that is still pending. -->
+          <div class="panel" id="mail-key-panel" hidden>
+            <div class="group-head">
+              <span>This device's mail key</span>
+              <button class="lynx-button lynx-icon-button info" id="mail-key-info" type="button" aria-label="About the mail key" data-lynx-tooltip-align="right" data-lynx-tooltip="Each device has its own key for mail left with a carrier, and it is replaced periodically so that old mail cannot be opened later. A replacement has to be announced in your signed device list, which only the device holding your root key can sign. Until it does, mail still reaches your other devices — just not this one."></button>
+            </div>
+            <div class="row">
+              <span class="status" id="mail-key-status"></span>
+            </div>
+          </div>
           <!-- Devices of YOUR identity running a different build. An epoch cut
                happens at the TLS layer, so from here a stale device and a
                powered-off device look identical — this panel is the difference,
@@ -506,6 +608,19 @@
             <div class="row">
               <input id="fs-path" class="lynx-input" placeholder="/path/on/disk" />
             </div>
+            <!-- One format per folder. Two writable files for one record are
+                 two answers to "what is the body", and the disk half has no
+                 way to pick — so wanting both shapes means two folders. -->
+            <div class="row">
+              <label for="fs-format">File format</label>
+              <select id="fs-format" class="lynx-input">
+                <option value="markdown">Markdown — just the text</option>
+                <option value="lingua">Lingua — text with its concepts, links and quantity</option>
+                <option value="lingua,markdown">Both — Lingua decides when they disagree</option>
+                <option value="markdown,lingua">Both — Markdown decides when they disagree</option>
+              </select>
+              <button class="lynx-button lynx-icon-button info" id="fs-format-info" type="button" aria-label="About the file format" data-lynx-tooltip-align="right" data-lynx-tooltip="Markdown writes 'My Record.md' holding the body and nothing else. Lingua writes 'My Record.lingua', which puts what the record IS (@@task), what is true of it (@chapter 1), what it links to ([[Title|uid]]) and its quantity in a block above the body. Editing that block is a real change: a line you add is asserted, a line you delete is retracted, a number you change is applied, and the quantity becomes true in the database. It applies in full or not at all — if one line names a concept or a record that does not exist here, the whole block is refused and listed below, because a file must never invent a meaning. Pick both formats and a record gets both files: each changes only what it can express, so a markdown edit can only ever mean a body edit. When both were edited between two passes and disagree about the body, the one you picked to decide wins. Deleting one of the files does not delete the record — it comes back; deleting all of them does. Changing this setting never deletes files written in a format you drop."></button>
+            </div>
             <!-- The selection filter. Same selector language as everywhere
                  else in this cluster, which is the whole point of there being
                  one — so the common shapes get a picker, and anything else
@@ -528,6 +643,13 @@
             </div>
             <div class="row" id="fs-filter-broken-row" hidden>
               <span class="status err" id="fs-filter-broken"></span>
+            </div>
+            <!-- Files the last pass deliberately did not act on. A sync loop
+                 that silently skips things teaches its owner that the folder
+                 is authoritative when it is not. -->
+            <div class="row" id="fs-conflicts-row" hidden>
+              <div class="sectionLabel">Files not synced</div>
+              <div id="fs-conflicts" class="hidden-records"></div>
             </div>
             <div class="row">
               <button class="lynx-button lynx-button--primary primary" id="fs-save" type="button">Save</button>
@@ -579,8 +701,486 @@
       $("organ-mode").hidden = next !== "organ";
       $("register-mode").hidden = next !== "register";
       $("devices-mode").hidden = next !== "devices";
-      if (next === "devices") renderDevices(rosters[(localOrgan() || {}).uid] || {});
+      if (next === "devices") {
+        renderDevices(rosters[(localOrgan() || {}).uid] || {});
+        refreshMailbox();
+        refreshAsks();
+        refreshPickup();
+        refreshOutbound();
+      }
     }
+
+    // What this device carries for other people.
+    //
+    // Read through an Action rather than a Record because none of it IS a
+    // Record: a carrier's registration list is the correspondence pattern of
+    // everyone it serves, and putting that on a synced table would hand it to
+    // every contact.
+    function refreshMailbox() {
+      H.act({ action: "mailbox-status" })
+        .then((out) => {
+          const data = (out && out.data) || {};
+          const rows = Array.isArray(data.carrying_for) ? data.carrying_for : [];
+          const list = $("mb-list");
+          list.innerHTML = "";
+          $("mb-empty").hidden = rows.length > 0;
+          for (const row of rows) {
+            const li = document.createElement("li");
+            const name = document.createElement("span");
+            name.className = "name";
+            name.textContent = row.known_as || row.organ_uid;
+            name.title = row.organ_uid;
+            li.appendChild(name);
+
+            const held = document.createElement("span");
+            held.className = "badge";
+            // Bundles AND bytes: one says whether anything is waiting, the
+            // other says what it is costing the operator, and an operator
+            // sizing a disk needs the second.
+            held.textContent = row.held_bundles
+              ? `${row.held_bundles} sealed · ${formatBytes(row.held_bytes)}`
+              : "nothing waiting";
+            li.appendChild(held);
+
+            const quota = document.createElement("span");
+            quota.className = "badge";
+            quota.textContent = "limit " + formatBytes(row.quota_bytes);
+            quota.title = "A deposit is charged to the recipient, so abuse costs the person who chose this mailbox rather than you.";
+            li.appendChild(quota);
+
+            const stop = document.createElement("button");
+            stop.className = "lynx-button";
+            stop.type = "button";
+            stop.textContent = "Stop";
+            stop.onclick = () => ask(li, {
+              // The honest sentence. Stopping is not neutral: mail somebody
+              // is expecting is discarded, and they are not told by this act.
+              question: row.held_bundles
+                ? `Stop carrying for ${row.known_as || row.organ_uid}? ${row.held_bundles} sealed message(s) you are holding will be deleted, and whoever sent them will not learn that from here.`
+                : `Stop carrying for ${row.known_as || row.organ_uid}? They will need another mailbox before they can be reached while offline.`,
+              confirm: "Stop",
+              run: () => {
+                H.act({ action: "mailbox-stop-carrying", organ_uid: row.organ_uid })
+                  .then(() => { $("mb-status").className = "status"; $("mb-status").textContent = "Stopped."; refreshMailbox(); })
+                  .catch((error) => { $("mb-status").className = "status err"; $("mb-status").textContent = String(error); });
+              },
+            });
+            li.appendChild(stop);
+            list.appendChild(li);
+          }
+          // A queue nobody can see is how a promise quietly stops being kept.
+          if (data.expiry_notices_pending) {
+            $("mb-status").className = "status";
+            $("mb-status").textContent =
+              `${data.expiry_notices_pending} message(s) expired uncollected; their senders are still to be told.`;
+          }
+        })
+        .catch(() => {
+          // The honest empty case: this is "we could not ask", which is not
+          // the same as "you carry for nobody".
+          $("mb-empty").hidden = false;
+          $("mb-empty").firstElementChild.textContent =
+            "Could not read what this device is carrying.";
+        });
+    }
+
+    // Who has asked to be carried here, and what codes are outstanding.
+    //
+    // A decline tells the asker nothing, deliberately, and the confirmation
+    // says so: a refusal that notified would make saying no socially
+    // expensive, which is exactly how people end up saying yes to holding
+    // somebody's correspondence.
+    function refreshAsks() {
+      H.act({ action: "mailbox-requests" })
+        .then((out) => {
+          const data = (out && out.data) || {};
+          const rows = Array.isArray(data.requests) ? data.requests : [];
+          const list = $("mb-asks");
+          list.innerHTML = "";
+          for (const row of rows) {
+            const li = document.createElement("li");
+            const name = document.createElement("span");
+            name.className = "name";
+            // The uid is the identity; what they call themselves is a claim,
+            // and it is shown BESIDE it and never instead of it.
+            name.textContent = row.known_as || row.organ_uid;
+            name.title = row.organ_uid;
+            li.appendChild(name);
+
+            const what = document.createElement("span");
+            what.className = "badge";
+            what.textContent = row.already_carried ? "asked again — already carried" : "asked to be carried";
+            li.appendChild(what);
+
+            const yes = document.createElement("button");
+            yes.className = "lynx-button lynx-button--primary";
+            yes.type = "button";
+            yes.textContent = "Carry for them";
+            yes.onclick = () => ask(li, {
+              question: `Hold mail for ${row.known_as || row.organ_uid}? You will never be able to read any of it, but you will see who writes to them, when, and how much. It is held 30 days.`,
+              confirm: "Carry for them",
+              run: () => answer(row, true),
+            });
+            li.appendChild(yes);
+
+            const no = document.createElement("button");
+            no.className = "lynx-button";
+            no.type = "button";
+            no.textContent = "Decline";
+            no.onclick = () => ask(li, {
+              question: `Decline ${row.known_as || row.organ_uid}? They are not told — the request just stops standing, and they can ask again.`,
+              confirm: "Decline",
+              run: () => answer(row, false),
+            });
+            li.appendChild(no);
+            list.appendChild(li);
+          }
+
+          const spent = (Array.isArray(data.invites) ? data.invites : []).filter((row) => !row.used_at);
+          if (spent.length) {
+            $("mb-invite-out").className = "status";
+            $("mb-invite-out").textContent = `${spent.length} invite(s) outstanding.`;
+          }
+        })
+        .catch(() => {});
+
+      function answer(row, accept) {
+        H.act({ action: "mailbox-answer-request", organ_uid: row.organ_uid, accept })
+          .then(() => {
+            $("mb-status").className = "status";
+            $("mb-status").textContent = accept ? "Carrying for them." : "Declined.";
+            refreshAsks();
+            refreshMailbox();
+          })
+          .catch((error) => { $("mb-status").className = "status err"; $("mb-status").textContent = String(error); });
+      }
+    }
+
+    $("mb-invite").addEventListener("click", () => {
+      H.act({ action: "mailbox-issue-invite" })
+        .then((out) => {
+          const data = (out && out.data) || {};
+          $("mb-invite-out").className = "status";
+          // Shown once. The database holds a hash, so there is no second
+          // chance to read it — the surface has to say that out loud.
+          $("mb-invite-out").textContent =
+            `${data.code}  — send this to one person. It works once, expires in ${data.expires_in_days} days, and is not shown again.`;
+          refreshAsks();
+        })
+        .catch((error) => { $("mb-invite-out").className = "status err"; $("mb-invite-out").textContent = String(error); });
+    });
+
+    // Where OUR mail may be left, and whether those boxes still say so.
+    //
+    // Every row carries a live state rather than a stored one: a carrier can
+    // stop carrying at any time, and a pickup point that quietly stopped
+    // answering is exactly the failure this panel exists to make visible.
+    function refreshPickup() {
+      H.act({ action: "mailbox-pickup-points" })
+        .then((out) => {
+          const data = (out && out.data) || {};
+          const rows = Array.isArray(data.pickup) ? data.pickup : [];
+          const list = $("pickup-list");
+          list.innerHTML = "";
+          $("pickup-empty").hidden = rows.length > 0;
+          $("pickup-collect").hidden = rows.length === 0;
+          for (const row of rows) {
+            const li = document.createElement("li");
+            const name = document.createElement("span");
+            name.className = "name";
+            name.textContent = row.known_as || row.organ_uid;
+            name.title = row.node_id;
+            li.appendChild(name);
+
+            const state = document.createElement("span");
+            state.className = "badge";
+            if (row.state === "carrying") {
+              const waiting = row.waiting || {};
+              state.textContent = waiting.bundles
+                ? `${waiting.bundles} waiting · ${formatBytes(waiting.bytes)}`
+                : "carrying · nothing waiting";
+            } else if (row.state === "refused") {
+              // We are told no, and never told why: a carrier answers every
+              // collection failure with one wording so nobody can probe it.
+              // The surface must not invent a reason it was not given.
+              state.textContent = "no longer carrying for you";
+              state.title = "They answered, but not why. A carrier gives one refusal for every cause on purpose.";
+            } else {
+              state.textContent = "did not answer";
+              state.title = "Silence is not a refusal — most machines are asleep most of the time.";
+            }
+            li.appendChild(state);
+
+            const drop = document.createElement("button");
+            drop.className = "lynx-button";
+            drop.type = "button";
+            drop.textContent = "Remove";
+            drop.onclick = () => ask(li, {
+              question: `Stop publishing ${row.known_as || row.organ_uid} as a pickup point? Anything still waiting there stops being collected, and contacts keep using it until their copy of your device list refreshes.`,
+              confirm: "Remove",
+              run: () => {
+                H.act({ action: "mailbox-remove-pickup", organ_uid: row.organ_uid })
+                  .then((res) => {
+                    const stranded = ((res || {}).data || {}).stranded_bundles;
+                    $("pickup-status").className = "status";
+                    $("pickup-status").textContent = stranded
+                      ? `Removed. ${stranded} sealed message(s) were still waiting there and will not be collected.`
+                      : "Removed.";
+                    refreshPickup();
+                  })
+                  .catch((error) => { $("pickup-status").className = "status err"; $("pickup-status").textContent = String(error); });
+              },
+            });
+            li.appendChild(drop);
+            list.appendChild(li);
+          }
+
+          const picker = $("pickup-organ");
+          const candidates = Array.isArray(data.candidates) ? data.candidates : [];
+          picker.innerHTML = "";
+          for (const candidate of candidates) {
+            const option = document.createElement("option");
+            option.value = candidate.organ_uid;
+            option.textContent = candidate.known_as || candidate.organ_uid;
+            picker.appendChild(option);
+          }
+          // Three different nothings, and they mean different things to do.
+          $("pickup-add-row").hidden = !data.may_change;
+          if (!data.may_change) {
+            $("pickup-status").className = "status";
+            $("pickup-status").textContent =
+              "This device cannot change your pickup points: publishing one re-signs your device list, which needs your root key.";
+          } else if (!candidates.length && !rows.length) {
+            $("pickup-status").className = "status";
+            $("pickup-status").textContent = "You have no contacts to ask yet.";
+          } else if (rows.length === 1) {
+            // Two is advice, not a rule — refusing the first would make the
+            // second unreachable. So it is said here instead of enforced.
+            $("pickup-status").className = "status";
+            $("pickup-status").textContent =
+              "One box is a single point of failure. A second costs nothing and needs no coordination — senders use whichever answers.";
+          }
+        })
+        .catch(() => {
+          $("pickup-empty").hidden = false;
+          $("pickup-empty").firstElementChild.textContent =
+            "Could not read where your mail is left.";
+        });
+    }
+
+    // Who is not answering, and what is being done about it.
+    //
+    // The panel hides itself when everyone is reachable: an empty "nobody is
+    // unreachable" row is noise on the ordinary day, and the ordinary day is
+    // most of them.
+    function refreshOutbound() {
+      H.act({ action: "mailbox-outbound" })
+        .then((out) => {
+          const data = (out && out.data) || {};
+          const rows = Array.isArray(data.contacts) ? data.contacts : [];
+          const windowMinutes = data.window_minutes || 0;
+          $("outbound-panel").hidden = rows.length === 0;
+          const list = $("outbound-list");
+          list.innerHTML = "";
+          for (const row of rows) {
+            const li = document.createElement("li");
+            const name = document.createElement("span");
+            name.className = "name";
+            name.textContent = row.known_as || row.organ_uid;
+            li.appendChild(name);
+
+            const state = document.createElement("span");
+            state.className = "badge";
+            const waited = row.unreachable_minutes || 0;
+            if (row.mailed_minutes_ago !== null && row.mailed_minutes_ago !== undefined) {
+              // Left with a carrier is NOT delivered. It is sealed and sitting
+              // on somebody else's disk until they come and take it.
+              state.textContent = `left with a carrier ${row.mailed_minutes_ago}m ago`;
+              state.title = "Sealed and waiting for them to collect it. Nobody in between can read it.";
+            } else if (!row.can_be_mailed) {
+              state.textContent = "nowhere to leave it";
+              state.title = "They have not published anywhere their mail may be left, and only they can.";
+            } else if (waited < windowMinutes) {
+              state.textContent = `not answering for ${waited}m · still trying`;
+              state.title = `Lince keeps trying for ${windowMinutes} minutes before leaving anything with a carrier.`;
+            } else {
+              state.textContent = `not answering for ${waited}m`;
+            }
+            li.appendChild(state);
+
+            const queued = document.createElement("span");
+            queued.className = "status";
+            queued.textContent = row.queued_ops
+              ? `${row.queued_ops} change(s) queued`
+              : "nothing queued for them";
+            li.appendChild(queued);
+
+            if (row.queued_ops) {
+              const now = document.createElement("button");
+              now.className = "lynx-button";
+              now.type = "button";
+              now.textContent = "Send now";
+              now.onclick = () => {
+                $("outbound-status").className = "status";
+                $("outbound-status").textContent = "Trying…";
+                H.act({ action: "mailbox-mail-now", organ_uid: row.organ_uid })
+                  .then((res) => {
+                    const done = (res || {}).data || {};
+                    $("outbound-status").className = "status";
+                    // Three outcomes, and the difference matters to the person
+                    // reading it: reached them, left it somewhere, or neither.
+                    $("outbound-status").textContent = done.reached
+                      ? "They answered — it went straight to them."
+                      : done.mailed
+                        ? "They still did not answer, so it was sealed and left with a carrier they published."
+                        : "They did not answer, and there was nowhere to leave it. It stays queued.";
+                    refreshOutbound();
+                  })
+                  .catch((error) => { $("outbound-status").className = "status err"; $("outbound-status").textContent = String(error); });
+              };
+              li.appendChild(now);
+            }
+            list.appendChild(li);
+          }
+
+          // Mail that died on a carrier's disk. Its own panel, because it is
+          // not about a contact being unreachable now — it is about something
+          // that already failed, weeks ago, and may concern somebody you can
+          // reach perfectly well today.
+          const gone = Array.isArray(data.never_picked_up) ? data.never_picked_up : [];
+          $("expired-panel").hidden = gone.length === 0;
+          const expiredList = $("expired-list");
+          expiredList.innerHTML = "";
+          for (const one of gone) {
+            const li = document.createElement("li");
+            const name = document.createElement("span");
+            name.className = "name";
+            name.textContent = one.known_as || one.organ_uid;
+            li.appendChild(name);
+            const when = document.createElement("span");
+            when.className = "status";
+            const left = (one.left_at || "").slice(0, 10);
+            when.textContent = `left ${left} · never collected`;
+            li.appendChild(when);
+            expiredList.appendChild(li);
+          }
+
+          // Healthy is silent. A line saying "your mail key is fine" on every
+          // device every day teaches people to stop reading this pane.
+          const keyOk = data.mail_key_published !== false;
+          $("mail-key-panel").hidden = keyOk;
+          if (!keyOk) {
+            $("mail-key-status").textContent =
+              "This device has a new mail key that is not in your device list yet. " +
+              "It is asking the device that holds your root key on every sync. " +
+              "Until then, mail left with a carrier reaches your other devices but not this one.";
+          }
+        })
+        .catch(() => {
+          $("outbound-panel").hidden = true;
+          $("expired-panel").hidden = true;
+          $("mail-key-panel").hidden = true;
+        });
+    }
+
+    // ASKING is not arranging. The wire round trip proves the request arrived
+    // and nothing else — a person on the other end decides, possibly tomorrow
+    // — so this says "asked" and never "added", and publishing the pickup
+    // point stays a separate act taken once they have actually agreed.
+    $("pickup-ask").addEventListener("click", () => {
+      const organ = $("pickup-organ").value;
+      if (!organ) return;
+      $("pickup-status").className = "status";
+      $("pickup-status").textContent = "Asking…";
+      H.act({ action: "mailbox-ask-carry", organ_uid: organ })
+        .then(() => {
+          $("pickup-status").className = "status";
+          $("pickup-status").textContent =
+            "Asked. They decide, and nothing here changes until they do — check back, then publish them as a pickup point.";
+        })
+        .catch((error) => { $("pickup-status").className = "status err"; $("pickup-status").textContent = String(error); });
+    });
+
+    $("pickup-redeem").addEventListener("click", () => {
+      const code = $("pickup-code").value.trim();
+      if (!code) return;
+      $("pickup-status").className = "status";
+      $("pickup-status").textContent = "Using the code…";
+      H.act({ action: "mailbox-use-invite", code })
+        .then((out) => {
+          const data = (out || {}).data || {};
+          $("pickup-code").value = "";
+          $("pickup-status").className = "status";
+          // Settled, unlike an ask: whoever issued the code consented when
+          // they issued it. What is still needed is publishing them, which is
+          // the separate act below.
+          $("pickup-status").textContent =
+            `Done — they are holding ${Math.round((data.quota_bytes || 0) / 1048576)}MB for you. Now publish them as a pickup point so senders can find the box.`;
+          refreshPickup();
+        })
+        .catch((error) => { $("pickup-status").className = "status err"; $("pickup-status").textContent = String(error); });
+    });
+
+    $("pickup-add").addEventListener("click", () => {
+      const organ = $("pickup-organ").value;
+      if (!organ) return;
+      $("pickup-status").className = "status";
+      $("pickup-status").textContent = "Asking them…";
+      H.act({ action: "mailbox-add-pickup", organ_uid: organ })
+        .then((res) => {
+          const data = (res || {}).data || {};
+          $("pickup-status").className = "status";
+          $("pickup-status").textContent = data.single_point_of_failure
+            ? "Published. Publish a second one too — one box is a single point of failure, and the sender uses whichever answers."
+            : "Published.";
+          refreshPickup();
+        })
+        .catch((error) => {
+          $("pickup-status").className = "status err";
+          $("pickup-status").textContent = String(error);
+        });
+    });
+
+    $("pickup-collect").addEventListener("click", () => {
+      $("pickup-status").className = "status";
+      $("pickup-status").textContent = "Collecting…";
+      H.act({ action: "mailbox-collect-now" })
+        .then((res) => {
+          const imported = (((res || {}).data) || {}).imported_ops || 0;
+          $("pickup-status").className = "status";
+          $("pickup-status").textContent = imported
+            ? `Collected — ${imported} change(s) arrived.`
+            : "Nothing was waiting.";
+          refreshPickup();
+        })
+        .catch((error) => {
+          $("pickup-status").className = "status err";
+          $("pickup-status").textContent = String(error);
+        });
+    });
+
+    function formatBytes(value) {
+      const bytes = Number(value) || 0;
+      if (bytes < 1024) return bytes + " B";
+      if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + " KB";
+      return Math.round(bytes / (1024 * 1024)) + " MB";
+    }
+
+    $("mb-add").addEventListener("click", () => {
+      const organ = $("mb-organ").value.trim();
+      if (!organ) return;
+      H.act({ action: "mailbox-carry-for", organ_uid: organ })
+        .then(() => {
+          $("mb-organ").value = "";
+          $("mb-status").className = "status";
+          $("mb-status").textContent = "Carrying their mail. Tell them to advertise this device as a pickup point.";
+          refreshMailbox();
+        })
+        .catch((error) => {
+          $("mb-status").className = "status err";
+          $("mb-status").textContent = String(error);
+        });
+    });
 
     $("register-open").addEventListener("click", () => setMode("register"));
     $("register-close").addEventListener("click", () => setMode("organ"));
@@ -944,6 +1544,31 @@
         fp.className = "badge";
         fp.textContent = fingerprintOf(cell.node_id);
         li.appendChild(fp);
+        // The mail key. Shown per device because it IS per device: mail left
+        // with a carrier is sealed to every device on this list, and one
+        // without a key simply cannot be handed that mail.
+        //
+        // The empty case says which emptiness it is. "No mail key" on a device
+        // that has never generated one is normal and temporary; reading it as
+        // breakage is the mistake the nearby list already made once.
+        const mail = document.createElement("span");
+        const key = cell.sealing_key;
+        if (key) {
+          const stale = key.not_after ? new Date(key.not_after) <= new Date() : false;
+          mail.className = stale ? "badge" : "badge on";
+          const generation = String(key.key_id || "").split(":").pop();
+          mail.textContent = stale
+            ? "mail key expired"
+            : "mail key #" + generation;
+          mail.title = stale
+            ? "This key is past its date, so contacts will not seal new mail to it. It rotates on this device's next start."
+            : "Contacts seal mail to this key when they cannot reach you directly. It rotates by itself; the old key is kept just long enough that nothing already sent is lost, and then deleted — after which nobody, including you, can open mail sealed to it.";
+        } else {
+          mail.className = "badge";
+          mail.textContent = "no mail key yet";
+          mail.title = "This device has not published a key for sealed mail, so nothing can be left for it with a carrier. It generates one the next time it starts.";
+        }
+        li.appendChild(mail);
         if (cells.length > 1) {
           const remove = document.createElement("button");
           remove.className = "lynx-button";
@@ -1209,6 +1834,16 @@
       const cfg = row.extension || {};
       $("fs-enabled").checked = !!cfg.enabled;
       $("fs-path").value = cfg.path || "";
+      // An unreadable or absent format means markdown — the shape every
+      // existing folder already has, so a typo can never silently rewrite a
+      // whole notes directory into another format. Several may be listed, in
+      // precedence order, and the picker shows that order rather than
+      // flattening it to "both".
+      const knownFormats = ["lingua", "markdown"];
+      const chosen = (Array.isArray(cfg.formats) ? cfg.formats : [cfg.format])
+        .filter((f) => knownFormats.includes(f));
+      $("fs-format").value = chosen.length ? chosen.join(",") : "markdown";
+      refreshFileSyncConflicts(row.uid);
       showFileSyncFilter(cfg.filter);
       $("fs-status").textContent = "";
       $("fs-status").className = "status";
@@ -1834,6 +2469,32 @@
       return raw;
     }
 
+    // What the last pass would not touch. An empty list is NOT automatically
+    // an all-clear: a Cell that has never ticked this folder knows nothing,
+    // and saying "no problems" there would be an invented reassurance.
+    function refreshFileSyncConflicts(uid) {
+      const row = $("fs-conflicts-row");
+      const list = $("fs-conflicts");
+      list.textContent = "";
+      row.hidden = true;
+      if (!uid) return;
+      H.act({ action: "file-sync-status", organ: uid }).then((res) => {
+        const data = (res && res.data) || {};
+        const conflicts = Array.isArray(data.conflicts) ? data.conflicts : [];
+        if (!data.checked || conflicts.length === 0) return;
+        for (const c of conflicts) {
+          const line = document.createElement("div");
+          const name = document.createElement("strong");
+          name.textContent = String(c.path || "").split("/").pop();
+          const why = document.createElement("span");
+          why.textContent = " — " + (c.reason || "");
+          line.append(name, why);
+          list.appendChild(line);
+        }
+        row.hidden = false;
+      }).catch(() => {});
+    }
+
     $("fs-filter-mode").addEventListener("change", showFileSyncFilterMode);
 
     // The refusal ring. The reason is the readable part and goes first; the
@@ -1963,6 +2624,9 @@
       const fds = {
         enabled: $("fs-enabled").checked,
         path: $("fs-path").value.trim(),
+        // Always the list form. One entry is just a list of one, and writing
+        // both keys would let them disagree.
+        formats: $("fs-format").value.split(","),
         filter,
       };
       status.textContent = "Saving…";

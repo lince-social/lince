@@ -349,3 +349,88 @@ fn duration(milliseconds: i64) -> DurationBinding {
         value: DurationMs::new(milliseconds),
     }
 }
+
+/// C7 axis 1 — the publish fires on the path a HUMAN takes, not only when the
+/// store is called directly.
+///
+/// Worth its own test because the failure would be invisible: publishing hangs
+/// off `outcome.created`, so if any mutation arm left that `None` the definition
+/// would simply never be written, every store-level test would still pass, and
+/// the rule would stay on the Cell it was authored on. `karma_sync.rs` proves
+/// the definition crosses and materialises; this proves something produces one.
+#[tokio::test]
+async fn acting_on_a_program_publishes_it_to_the_organs_other_cells() {
+    let engine = Engine::open_memory().await.unwrap();
+    let now = Utc
+        .timestamp_millis_opt(
+            TimestampMs::parse_canonical("2026-07-22T12:00:00.000Z")
+                .unwrap()
+                .as_millis(),
+        )
+        .single()
+        .unwrap();
+    let created = engine
+        .act_at(
+            Action::CreateKarmaProgram {
+                request_id: "publish-create".to_string(),
+                program: program("publish.program", "Published Action Program"),
+                owner_person_uid: Some(PERSON_UID.to_string()),
+            },
+            Some(PERSON_UID.to_string()),
+            now,
+        )
+        .await
+        .unwrap();
+    let program_uid = created.created.unwrap();
+
+    // Created but not active: there is no rule running, so there is nothing to
+    // tell another Cell to run. `null` is the honest published value.
+    let before = store::records::get_extension(
+        &engine.store.pool,
+        &program_uid,
+        store::karma::sync::NAMESPACE,
+    )
+    .await
+    .unwrap();
+    assert_eq!(
+        before.as_ref().and_then(|fds| fds.get("program")),
+        Some(&serde_json::Value::Null),
+        "an inactive Program publishes as null rather than not publishing at all"
+    );
+
+    let handle = store::karma::programs::get_handle(&engine.store.pool, &program_uid)
+        .await
+        .unwrap()
+        .unwrap();
+    engine
+        .act_at(
+            Action::ActivateKarmaProgram {
+                request_id: "publish-activate".to_string(),
+                program_uid: program_uid.clone(),
+                expected_handle_revision: handle.handle_revision,
+                revision_hash: handle.head_revision_hash.clone(),
+            },
+            Some(PERSON_UID.to_string()),
+            now,
+        )
+        .await
+        .unwrap();
+
+    let published = store::records::get_extension(
+        &engine.store.pool,
+        &program_uid,
+        store::karma::sync::NAMESPACE,
+    )
+    .await
+    .unwrap()
+    .expect("activating publishes the definition");
+    assert_eq!(
+        published["program"]["hash"].as_str(),
+        Some(handle.head_revision_hash.as_str()),
+        "what is published must be the revision that is actually active"
+    );
+    assert!(
+        published["program"]["ast"].is_object(),
+        "the rule itself must travel, not merely its hash"
+    );
+}

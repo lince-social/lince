@@ -315,13 +315,9 @@ async fn an_accept_scope_drops_the_columns_it_does_not_name() {
     store::organs::add_contact(&e.store.pool, sender, None, "Sender", "", 1)
         .await
         .expect("contact");
-    store::organs::set_contact_accept_scope(
-        &e.store.pool,
-        sender,
-        Some(&["quantity".to_string()]),
-    )
-    .await
-    .expect("accept scope");
+    store::organs::set_contact_accept_scope(&e.store.pool, sender, Some(&["quantity".to_string()]))
+        .await
+        .expect("accept scope");
 
     let op = |field: &str, kind: &str, value: &str| WireOp {
         tbl: "record".into(),
@@ -394,4 +390,253 @@ async fn a_delete_arrives_under_the_narrowest_acceptance() {
         .await
         .expect("import");
     assert_eq!(applied, 1, "the delete is applied even accepting nothing");
+}
+
+/// Store a roster for `organ` naming `cells`, without signing it.
+///
+/// The lookup this exercises reads the payload and nothing else — signature
+/// checking lives in `engine::roster` and has its own tests — so putting one
+/// here keeps the test about the admissibility gate rather than about key
+/// handling, and lets it stand up a third Organ we have never talked to.
+async fn hold_roster(e: &Engine, organ: &str, cells: &[&str]) {
+    let payload = serde_json::json!({
+        "organ_uid": organ,
+        "root_key": "k-root",
+        "version": 1,
+        "not_after": "2099-01-01T00:00:00Z",
+        // Every field, not only the uid the ownership check reads: this
+        // payload is also parsed as a whole roster on the import path, and a
+        // partial one fails there for a reason that has nothing to do with
+        // what the test is about.
+        "cells": cells
+            .iter()
+            .map(|uid| serde_json::json!({
+                "cell_uid": uid,
+                "node_id": format!("node-{uid}"),
+                "label": uid,
+                "operational_key": format!("opkey-{uid}"),
+                "front_door": false,
+                "capabilities": engine::roster::full_capabilities(),
+            }))
+            .collect::<Vec<_>>(),
+    })
+    .to_string();
+    store::roster::put(
+        &e.store.pool,
+        &store::roster::StoredRoster {
+            organ_uid: organ.into(),
+            root_key: "k-root".into(),
+            version: 1,
+            not_after: "2099-01-01T00:00:00Z".into(),
+            payload,
+            signature: "unchecked-here".into(),
+        },
+    )
+    .await
+    .expect("hold a roster");
+}
+
+/// Dedup poisoning, and the case the roster check alone cannot reach.
+///
+/// The op log is idempotent by `(actor_cell, hlc)`. A contact that may name
+/// any Cell it likes can therefore pre-occupy a Cell uid belonging to somebody
+/// ELSE with a stamp slightly in the future; when that Organ's real op arrives
+/// later it is dropped as an already-seen duplicate, silently and permanently.
+///
+/// The positive check — is this Cell in the SENDER's roster — needs a roster
+/// we may not hold, and refusing every rosterless sender is not available: a
+/// refusal is quarantined, the ring is bounded and nothing replays it, so it
+/// would permanently drop an Organ that legitimately has not published one.
+/// So the question is asked the other way round, against what we already hold.
+#[tokio::test]
+async fn an_op_claiming_a_cell_we_know_belongs_to_someone_else_is_refused() {
+    let (e, _organ, _cell) = cell("http://receiver.test").await;
+    let sender = "r-sender-organ";
+    let victim = "r-victim-organ";
+    let victim_cell = "r-victim-cell";
+    store::organs::add_contact(&e.store.pool, sender, None, "Sender", "", 1)
+        .await
+        .expect("contact");
+    // We hold the victim's roster — we know that Cell is theirs — but none for
+    // the sender, which is the state this branch exists for.
+    hold_roster(&e, victim, &[victim_cell]).await;
+
+    let applied = e
+        .import_op_batch(&OpBatch {
+            from_organ: sender.to_string(),
+            ops: vec![WireOp {
+                tbl: "record".into(),
+                uid: "r-poisoned".into(),
+                field: "head".into(),
+                kind: "set".into(),
+                value: Some("\"pre-occupying the dedup key\"".into()),
+                // Everything else about this op is admissible: the Organ it
+                // claims IS the sending one, and the stamp is inside the drift
+                // window. Only the authorship is a lie — which is what makes
+                // this test fail when the branch is deleted rather than being
+                // caught by one of the other refusals.
+                hlc: nucleus::hlc::next(),
+                actor_cell: victim_cell.into(),
+                organ_uid: sender.into(),
+                fact: None,
+            }],
+        })
+        .await
+        .expect("import");
+
+    assert_eq!(applied, 0, "an op authored by a Cell that is not theirs");
+    assert!(
+        store::records::get(&e.store.pool, "r-poisoned")
+            .await
+            .expect("get")
+            .is_none(),
+        "and nothing of it reached the read model"
+    );
+    let held = store::organs::quarantined_for(&e.store.pool, sender, 10)
+        .await
+        .expect("quarantine");
+    assert!(
+        held.iter()
+            .any(|(reason, _, _)| reason.contains("belongs to another Organ")),
+        "the refusal is a REPORT, not a silent drop — it is the only trace a \
+         person diagnosing this would have: {held:?}"
+    );
+}
+
+/// The same attack aimed at us, which is the form the plan describes: a
+/// contact pre-occupying OUR Cell's dedup key so our next real op is dropped
+/// as a duplicate everywhere it lands.
+///
+/// Checked by name rather than only through the lookup above, because a Cell
+/// on a first boot that has not published a roster yet would not be found by
+/// it — and being unable to protect our own identity until we have published
+/// is the wrong order of dependency.
+#[tokio::test]
+async fn an_op_claiming_this_cell_as_its_author_is_refused() {
+    let (e, _organ, this_cell) = cell("http://receiver.test").await;
+    let sender = "r-sender-organ";
+    store::organs::add_contact(&e.store.pool, sender, None, "Sender", "", 1)
+        .await
+        .expect("contact");
+
+    let applied = e
+        .import_op_batch(&OpBatch {
+            from_organ: sender.to_string(),
+            ops: vec![WireOp {
+                tbl: "record".into(),
+                uid: "r-ours".into(),
+                field: "head".into(),
+                kind: "set".into(),
+                value: Some("\"claiming to be your own laptop\"".into()),
+                hlc: nucleus::hlc::next(),
+                actor_cell: this_cell.clone(),
+                organ_uid: sender.into(),
+                fact: None,
+            }],
+        })
+        .await
+        .expect("import");
+
+    assert_eq!(applied, 0, "nobody else authors ops as this Cell");
+    let held = store::organs::quarantined_for(&e.store.pool, sender, 10)
+        .await
+        .expect("quarantine");
+    assert!(
+        held.iter()
+            .any(|(reason, _, _)| reason.contains("claims this Cell")),
+        "refused by name: {held:?}"
+    );
+}
+
+/// The control, and the reason the two above are not simply "refuse anything
+/// from a sender with no roster": an ordinary contact who has published
+/// nothing still syncs. Rosterless is a LEGITIMATE state — a Cell that has
+/// never had an endpoint, or whose root key is deliberately offline — and the
+/// migration that enforces write capability says so in its own comment.
+#[tokio::test]
+async fn a_rosterless_sender_naming_a_cell_nobody_claims_still_syncs() {
+    let (e, _organ, _cell) = cell("http://receiver.test").await;
+    let sender = "r-sender-organ";
+    store::organs::add_contact(&e.store.pool, sender, None, "Sender", "", 1)
+        .await
+        .expect("contact");
+
+    let applied = e
+        .import_op_batch(&OpBatch {
+            from_organ: sender.to_string(),
+            ops: vec![WireOp {
+                tbl: "record".into(),
+                uid: "r-ordinary".into(),
+                field: "head".into(),
+                kind: "set".into(),
+                value: Some("\"an ordinary update\"".into()),
+                hlc: nucleus::hlc::next(),
+                actor_cell: "r-their-own-cell".into(),
+                organ_uid: sender.into(),
+                fact: None,
+            }],
+        })
+        .await
+        .expect("import");
+    assert_eq!(applied, 1, "a contact with no published roster still syncs");
+}
+
+/// The other half of "the anchor moves rather than disappearing" (C4).
+///
+/// Over a connection, `from_organ` is tied to a real peer by the authenticated
+/// stream. Out of a mailbox there is no stream, so the tie has to be made
+/// again from the bundle signature — which names a CELL — against the signed
+/// roster that says who owns that Cell. Without this, a mailed batch would be
+/// checked by comparing two fields the same sender wrote.
+#[tokio::test]
+async fn a_mailed_batch_must_be_signed_by_a_cell_the_claimed_organ_owns() {
+    let (e, _organ, _cell) = cell("http://receiver.test").await;
+    hold_roster(&e, "organ-friend", &["cell-friend"]).await;
+    hold_roster(&e, "organ-stranger", &["cell-stranger"]).await;
+    store::organs::add_contact(&e.store.pool, "organ-friend", None, "Friend", "", 1)
+        .await
+        .expect("contact");
+
+    let opened = |from_cell: &str, from_organ: &str| engine::seal::OpenedBundle {
+        from_cell: from_cell.into(),
+        from_organ: from_organ.into(),
+        root: None,
+        batch: engine::sync::OpBatch {
+            from_organ: from_organ.into(),
+            ops: vec![WireOp {
+                tbl: "record".into(),
+                uid: "r-mailed".into(),
+                field: "head".into(),
+                kind: "set".into(),
+                value: Some("\"mailed\"".into()),
+                hlc: nucleus::hlc::next(),
+                actor_cell: "cell-friend".into(),
+                organ_uid: from_organ.to_string(),
+                fact: None,
+            }],
+        },
+    };
+
+    // The honest case: signed by a Cell the claimed Organ actually owns.
+    let honest = e.import_mailed_batch(&opened("cell-friend", "organ-friend")).await;
+    assert!(honest.is_ok(), "mail from a contact whose roster we hold must apply: {honest:?}");
+
+    // Signed by someone else's Cell while claiming to be your friend. This is
+    // the whole reason the bundle is signed at all.
+    let wrong = e
+        .import_mailed_batch(&opened("cell-stranger", "organ-friend"))
+        .await;
+    assert!(
+        wrong.is_err(),
+        "a batch claiming an Organ that does not own the signing Cell must refuse"
+    );
+
+    // Signed by a Cell no roster we hold names. REFUSED here, unlike on the
+    // connection path where an unplaceable Cell is admitted — mail is only
+    // ever sealed to a roster we already hold, so an unknown signer is not a
+    // relationship starting, it is a stranger using a carrier.
+    let unknown = e
+        .import_mailed_batch(&opened("cell-nobody", "organ-friend"))
+        .await;
+    assert!(unknown.is_err(), "an unplaceable signer must refuse");
 }

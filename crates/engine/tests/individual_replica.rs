@@ -348,7 +348,7 @@ async fn a_grant_channel_cannot_touch_a_record_outside_its_root() {
             value: Some("\"overwritten\"".into()),
             hlc: nucleus::hlc::next(),
             actor_cell: a_organ.clone(),
-        organ_uid: a_organ.clone(),
+            organ_uid: a_organ.clone(),
             fact: None,
         }],
     };
@@ -400,7 +400,7 @@ async fn revoking_a_grant_stops_further_ops() {
             value: Some("\"still talking\"".into()),
             hlc: nucleus::hlc::next(),
             actor_cell: a_organ.clone(),
-        organ_uid: a_organ,
+            organ_uid: a_organ,
             fact: None,
         }],
     };
@@ -914,7 +914,10 @@ async fn a_reference_read_goes_through_the_visibility_gate() {
         .expect("fetch");
     match response {
         WireResponse::Reference { row } => {
-            assert_eq!(row["head"], "The plan", "the pointer resolves to the record");
+            assert_eq!(
+                row["head"], "The plan",
+                "the pointer resolves to the record"
+            );
         }
         other => panic!("expected the referenced record, got {other:?}"),
     }
@@ -977,9 +980,13 @@ async fn a_reference_read_is_narrowed_by_the_contacts_scope() {
         .expect("b binds");
     full_contact(&a, &b_organ, &b_wire.node_id().to_string()).await;
     full_contact(&b, &a_organ, &a_wire.node_id().to_string()).await;
-    store::organs::set_contact_scope(&a.store.pool, &b_organ, Some(&["head".to_string(), "body".to_string()]))
-        .await
-        .expect("scope");
+    store::organs::set_contact_scope(
+        &a.store.pool,
+        &b_organ,
+        Some(&["head".to_string(), "body".to_string()]),
+    )
+    .await
+    .expect("scope");
 
     let (conversation, thread) = a
         .start_conversation(&b_organ, "Narrowed")
@@ -1298,8 +1305,14 @@ async fn reading_a_reference_leaves_a_receipt_but_a_refusal_does_not() {
         .await
         .expect("reads");
     assert_eq!(reads.len(), 1, "one row per reader, not one per read");
-    assert_eq!(reads[0].0, b_organ, "and it names the Organ, never the Cell");
-    assert_eq!(reads[0].1, 2, "counted, so an open tab is not a surveillance log");
+    assert_eq!(
+        reads[0].0, b_organ,
+        "and it names the Organ, never the Cell"
+    );
+    assert_eq!(
+        reads[0].1, 2,
+        "counted, so an open tab is not a surveillance log"
+    );
 
     // A REFUSAL is not a read. Recording one would turn this into a record of
     // who attempted what, which is a different and nastier table.
@@ -1540,4 +1553,106 @@ async fn deleting_a_conversation_is_local_and_emits_no_tombstone() {
         "but only one pending at a time, or deletion buys nothing"
     );
     let _ = b;
+}
+
+/// Enforcement point one, from the OTHER logger.
+///
+/// `log_local` resolved the replica root and branched the outbox on it;
+/// `log_local_tx` hardcoded `None`. Ordinary asserts take the pool path and
+/// were always correct, which is why this went unnoticed — but four verbs own
+/// a transaction and take the other one: `set_identity`, `refine`,
+/// `concepts::delete`, and `transition_unary`, which is the KANBAN MOVE.
+///
+/// So moving a card that lives inside a conversation stamped its state change
+/// general-feed and queued it to every `sync_out` contact. They could not read
+/// the message bodies, but the uid, the concept it moved to and the fact that
+/// something was happening in there all travelled to people holding no grant.
+///
+/// The two loggers must answer identically, or whether a private write stays
+/// private depends on which one a caller happened to reach for.
+#[tokio::test]
+async fn a_move_inside_a_conversation_never_reaches_the_general_feed() {
+    let (a, a_organ) = cell("http://a.test").await;
+    full_contact(&a, "o-watcher", "node-watcher").await;
+
+    // Something ordinary, so an empty feed cannot pass this test by accident.
+    store::records::create(
+        &a.store.pool,
+        NewRecord {
+            slug: Some("public-note"),
+            kind: RecordKind::Plain,
+            head: "Public",
+            body: "ordinary feed",
+            quantity: store::exact::zero(),
+        },
+    )
+    .await
+    .expect("record");
+
+    let (conversation, thread) = a
+        .start_conversation("o-someone-else", "Private")
+        .await
+        .expect("conversation");
+    let message = a
+        .send_message(&thread, "me", "this must never reach the feed")
+        .await
+        .expect("message");
+
+    // The kanban move, on a Record that lives inside the conversation. This is
+    // the verb that owns a transaction and therefore takes the other logger.
+    store::concepts::ensure(&a.store.pool, "done")
+        .await
+        .expect("concept");
+    a.act(
+        engine::actions::Action::TransitionRecord {
+            subject: message.clone(),
+            retract: Vec::new(),
+            assert: vec!["done".to_string()],
+            quantity: None,
+        },
+        None,
+    )
+    .await
+    .expect("move");
+
+    let inside: Vec<String> = vec![conversation.clone(), thread.clone(), message.clone()];
+    let assertions = store::assertions::for_subjects(&a.store.pool, &inside)
+        .await
+        .expect("assertions");
+    assert!(
+        !assertions.is_empty(),
+        "a conversation is made of assertions — without any, this test proves nothing"
+    );
+
+    let feed = store::sync_ops::after(&a.store.pool, &a_organ, 0, 1000)
+        .await
+        .expect("feed");
+    assert!(
+        feed.iter().any(|op| op.tbl == "record"),
+        "the ordinary record still rides the general feed"
+    );
+    for op in &feed {
+        assert!(
+            !inside.contains(&op.uid),
+            "a conversation Record reached the general feed: {op:?}"
+        );
+        assert!(
+            !assertions.iter().any(|a| a.uid == op.uid),
+            "a conversation Assertion reached the general feed: {op:?}"
+        );
+    }
+
+    // And the same op must not be queued to a contact holding no grant.
+    let queued = store::sync_ops::outbox_due(&a.store.pool)
+        .await
+        .expect("outbox");
+    for row in &queued {
+        if row.contact_organ != "o-watcher" {
+            continue;
+        }
+        assert!(
+            !inside.contains(&row.uid) && !assertions.iter().any(|a| a.uid == row.uid),
+            "queued to an ungranted contact: {row:?}"
+        );
+    }
 }

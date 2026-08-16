@@ -1,0 +1,18 @@
+---
+uid: r_H81VPS2WG6B09V3886Z0G30HYM
+@@idea
+@instinct
+@chapter [[First Steps|r_YWPKA0Z1DJ8XCHTZRW4X2SDJ1N]] 4
+@see-also [[Edit mode|r_5GG730ZN1SE7PHDXQC42TFQCMV]]
+quantity: 1
+---
+
+## What edit mode turns on
+
+- A floating **+ Add card** button and a **Grid** density slider appear over the canvas.
+
+- Every sand grows drag-and-resize handles on its edges and corners.
+
+- Every sand grows a small toolbar: configure (the gear), pin, layer order, download HTML, and delete.
+
+- Ctrl-drag (⌘ on a Mac) draws a selection box, so you can move or group several sands at once.

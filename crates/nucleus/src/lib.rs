@@ -29,7 +29,7 @@ pub mod transfer_delivery;
 pub use error::NucleusError;
 pub use expr::{Expr, MapResolver, Resolver, TokenKey, Value};
 pub use fact::{Cause, CauseKind, Fact, NewFact};
-pub use id::{new_uid, ulid_from, valid_slug};
+pub use id::{new_uid, ulid_from, valid_slug, valid_uid};
 // The Ledger's exact quantity type is the kernel's exact quantity type — one
 // representation from Karma evaluation through to the Fact chain (E0.0).
 pub use expr::parse_duration;

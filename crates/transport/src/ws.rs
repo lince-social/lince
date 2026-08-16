@@ -105,6 +105,15 @@ pub async fn serve(
                     Message::Close(_) => break,
                     _ => continue,
                 };
+                // Standing (Ontology C3), re-read per frame rather than at the
+                // upgrade. This socket is where a signed-in person actually
+                // does things, so a deactivation that did not reach it would
+                // leave an open board tab working indefinitely — and the tab
+                // already open is exactly the session someone means to end.
+                // Dropping the connection rather than answering each frame with
+                // an error: there is nothing left for it to do, and a board
+                // that reconnects lands on the login screen.
+                if !session.subject_may_act().await { break; }
                 match serde_json::from_str::<ClientMessage>(&text) {
                     Ok(ClientMessage::LaneJoin { room }) => {
                         session.handle(ClientMessage::LaneJoin { room: room.clone() }).await;
@@ -169,6 +178,10 @@ pub async fn serve(
             // a committed fact: push live updates for affected subscriptions
             fact = bus.recv() => {
                 let Ok(fact) = fact else { continue };
+                // The same check on the PUSH side: a deactivated person who
+                // touches nothing would otherwise keep receiving live updates
+                // from an idle tab, which is a read they no longer hold.
+                if !session.subject_may_act().await { break; }
                 for update in session.on_fact(&fact).await {
                     if out_tx.send(update).await.is_err() { break; }
                 }
@@ -176,6 +189,7 @@ pub async fn serve(
             // Guarded rather than always-armed: a session with no ephemeral
             // subscription must not run a timer at all.
             _ = ephemeral.tick(), if session.has_ephemeral_subscriptions() => {
+                if !session.subject_may_act().await { break; }
                 for update in session.tick_ephemeral().await {
                     if out_tx.send(update).await.is_err() { break; }
                 }

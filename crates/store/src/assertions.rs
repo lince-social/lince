@@ -874,3 +874,72 @@ pub async fn object_uids_from_subject(
     .fetch_all(pool)
     .await?)
 }
+
+/// Every active assertion whose subject is one of `subject_uids`, with the
+/// predicate's canonical name already resolved.
+///
+/// One query for the whole set on purpose. The caller is File Sync's tick,
+/// which runs on an interval over every selected Record — a per-Record query
+/// there turns a projection into an N+1 walk of the whole store.
+///
+/// Ordered so a projection built from it is DETERMINISTIC. That is not about
+/// tidy files: a render that reorders between two ticks rewrites the file,
+/// which the disk half then reads back as an edit and turns into an op that
+/// travels to every peer. Stable order is what stops a no-op tick from
+/// producing sync traffic.
+pub async fn for_subjects(
+    pool: &SqlitePool,
+    subject_uids: &[String],
+) -> Result<Vec<ProjectedAssertion>, StoreError> {
+    if subject_uids.is_empty() {
+        return Ok(Vec::new());
+    }
+    let holes = std::iter::repeat_n("?", subject_uids.len())
+        .collect::<Vec<_>>()
+        .join(",");
+    let sql = format!(
+        "SELECT a.uid, a.subject_uid, a.object_uid, a.predicate_uid,
+                c.canonical_name AS predicate, a.quantity_mantissa,
+                a.quantity_scale, a.unit_uid
+           FROM record_assertion a JOIN concept c ON c.uid = a.predicate_uid
+          WHERE a.retracted_at IS NULL AND a.subject_uid IN ({holes})
+          ORDER BY a.subject_uid, c.canonical_name, a.object_uid, a.uid"
+    );
+    let mut query = sqlx::query(&sql);
+    for uid in subject_uids {
+        query = query.bind(uid);
+    }
+    query
+        .fetch_all(pool)
+        .await?
+        .into_iter()
+        .map(|row| {
+            let quantity = if row.get::<Option<String>, _>("quantity_mantissa").is_some() {
+                Some(crate::exact::read_decimal(&row, "quantity")?)
+            } else {
+                None
+            };
+            Ok(ProjectedAssertion {
+                uid: row.get("uid"),
+                subject_uid: row.get("subject_uid"),
+                predicate_uid: row.get("predicate_uid"),
+                predicate: row.get("predicate"),
+                object_uid: row.get("object_uid"),
+                quantity,
+                unit_uid: row.get("unit_uid"),
+            })
+        })
+        .collect()
+}
+
+/// One active assertion, flattened for projection into a file.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ProjectedAssertion {
+    pub uid: String,
+    pub subject_uid: String,
+    pub predicate_uid: String,
+    pub predicate: String,
+    pub object_uid: Option<String>,
+    pub quantity: Option<DecimalValue>,
+    pub unit_uid: Option<String>,
+}

@@ -21,6 +21,7 @@ fn cell_entry(label: &str, front_door: bool) -> CellEntry {
             .collect(),
         label: label.to_string(),
         operational_key: "A".repeat(44),
+        sealing_key: None,
         front_door,
         capabilities: full_capabilities(),
     }
@@ -33,6 +34,7 @@ fn signed_roster(cells: Vec<CellEntry>) -> SignedRoster {
             root_key: "R".repeat(44),
             version: 7,
             not_after: "2026-09-10T12:00:00+00:00".into(),
+            pickup: Vec::new(),
             cells,
         },
         signature: "S".repeat(88),
@@ -277,7 +279,10 @@ async fn an_unchanged_roster_re_signs_nothing() {
         .expect("query")
         .expect("stored");
 
-    assert_eq!(first, second, "the same content must sign to the same bytes");
+    assert_eq!(
+        first, second,
+        "the same content must sign to the same bytes"
+    );
 }
 
 /// Turning the front door off must STOP the broadcast, not leave the republish

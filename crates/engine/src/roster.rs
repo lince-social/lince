@@ -107,6 +107,22 @@ pub struct CellEntry {
     pub node_id: String,
     pub label: String,
     pub operational_key: String,
+    /// This Cell's current X25519 SEALING key, for mail left with a carrier
+    /// that must not read it (Ontology C4, `crate::seal`).
+    ///
+    /// Here rather than anywhere else because the roster is already the signed,
+    /// versioned, expiring statement of who an Organ's Cells are, and it is
+    /// refreshed at the top of every catch-up — so a rotation reaches senders
+    /// through a channel that exists, with a root signature over it, and
+    /// nothing new has to be published or trusted.
+    ///
+    /// Optional because a Cell that has never generated one is a normal state
+    /// (it simply cannot be mailed, and `seal` refuses rather than falling
+    /// back to plaintext), and because the sealing key is deliberately NOT the
+    /// identity key: one key doing both jobs forecloses rotation and ties
+    /// uncollected mail to identity-key replacement.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub sealing_key: Option<crate::seal::SealingKey>,
     /// Whether this Cell belongs to the PUBLIC tier — the resolution of "I
     /// want an add-me-in-Lince key without exposing my devices".
     ///
@@ -168,6 +184,29 @@ impl CellEntry {
     }
 }
 
+/// One place this Organ's mail may be left when its own Cells cannot be
+/// reached (Ontology C4).
+///
+/// The RECIPIENT publishes these, never the sender. A sender-chosen mailbox
+/// lets anyone drop data on any mutual contact, at a box the recipient may
+/// never think to look in; published here, the only boxes anyone may use are
+/// the ones the recipient named and therefore watches.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PickupPoint {
+    /// The carrier's Organ. What the recipient consented to, in the terms they
+    /// consented in: "this friend of mine holds my mail".
+    pub organ_uid: String,
+    /// The carrier Cell to dial. A snapshot, and knowingly so: this is the
+    /// mirror of the failure the carrier side fixed by registering ROOT KEYS
+    /// instead of addresses, but a sender holds only the RECIPIENT's roster —
+    /// it has no way to look the carrier's own roster up. The staleness is
+    /// bounded by the roster's own validity, and a carrier that changes node
+    /// id costs the recipient one re-publish.
+    pub node_id: String,
+    /// What the recipient calls this box. Their own note, for their own panel.
+    pub label: String,
+}
+
 /// The published identity: one Organ, one root key, its member Cells.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Roster {
@@ -176,6 +215,16 @@ pub struct Roster {
     pub version: i64,
     pub not_after: String,
     pub cells: Vec<CellEntry>,
+    /// Where mail may be left for this Organ. Organ-level rather than
+    /// per-Cell: a sealed bundle is addressed to the Organ and any of its
+    /// Cells opens it, so which device collects is nobody else's business.
+    ///
+    /// In the roster for the same reason the sealing keys are — it is the
+    /// signed, expiring, already-refreshed statement of how to reach this
+    /// Organ — and inside the signature for the same reason too: an unsigned
+    /// pickup point is a redirection that costs an attacker nothing.
+    #[serde(default)]
+    pub pickup: Vec<PickupPoint>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -208,6 +257,27 @@ pub enum RosterOutcome {
 /// by serializing a struct: field order from `serde` is not a signing
 /// guarantee, and a reordered struct would silently change what a signature
 /// means.
+/// Whether a roster is internally consistent: signed by the root key it
+/// names, and not expired.
+///
+/// This is HALF of `adopt_roster`'s check and must never be mistaken for all
+/// of it — it says nothing about whether that root key is one we have any
+/// reason to trust, which is what `key_chains` decides. Split out because a
+/// mailbox needs exactly this half: it verifies a presented roster's integrity
+/// itself, then asks whether the key chains from the one registration
+/// recorded, rather than from anything this Cell happens to have paired with.
+pub fn roster_signature_is_valid(signed: &SignedRoster) -> bool {
+    let Ok(payload) = roster_signing_payload(&signed.roster) else {
+        return false;
+    };
+    if !verify_with(&signed.roster.root_key, &payload, &signed.signature) {
+        return false;
+    }
+    DateTime::parse_from_rfc3339(&signed.roster.not_after)
+        .map(|when| when.with_timezone(&Utc) > Utc::now())
+        .unwrap_or(false)
+}
+
 pub fn roster_signing_payload(roster: &Roster) -> Result<Vec<u8>, EngineError> {
     fn push(out: &mut String, value: &str) -> Result<(), EngineError> {
         if value.contains(FIELD_SEP) || value.contains(RECORD_SEP) {
@@ -230,11 +300,34 @@ pub fn roster_signing_payload(roster: &Roster) -> Result<Vec<u8>, EngineError> {
         push(&mut out, &cell.label)?;
         push(&mut out, &cell.operational_key)?;
         push(&mut out, if cell.front_door { "1" } else { "0" })?;
+        // Inside the signature for the same reason the capabilities are.
+        // Mail is sealed to whatever the roster says, so a sealing key the
+        // root did not endorse is a redirection: substitute your own and every
+        // bundle a contact sends is sealed to you, while the roster still
+        // verifies and still names the right devices. The expiry is signed
+        // too — otherwise it could be pushed out to keep a retired key
+        // collecting mail long after its private half was meant to be gone.
+        if let Some(key) = &cell.sealing_key {
+            push(&mut out, &key.key_id)?;
+            push(&mut out, &key.public)?;
+            push(&mut out, &key.not_after)?;
+        }
         // Inside the signature, or a Cell could widen its own grant in transit
         // and the root's endorsement would still verify.
         for capability in &cell.capabilities {
             push(&mut out, capability)?;
         }
+        out.push(RECORD_SEP);
+    }
+    // Inside the signature, or naming a pickup point would be free: substitute
+    // a box you run for one the recipient chose and every contact who falls
+    // back leaves their mail with you. It stays sealed — the sealing keys are
+    // signed too — but you learn who writes to them, how often and how much,
+    // which is the whole metadata cost this design makes a person consent to.
+    for point in &roster.pickup {
+        push(&mut out, &point.organ_uid)?;
+        push(&mut out, &point.node_id)?;
+        push(&mut out, &point.label)?;
         out.push(RECORD_SEP);
     }
     Ok(out.into_bytes())
@@ -352,12 +445,24 @@ impl Engine {
     ) -> Result<SignedRoster, EngineError> {
         let organ_uid = root.actor_uid.clone();
         let previous = store::roster::get(&self.store.pool, &organ_uid).await?;
+        // The pickup points are carried forward rather than passed in, because
+        // every caller of this function is assembling a MEMBER LIST and none of
+        // them knows anything about mailboxes. Passing them in would mean the
+        // boot path — which republishes whenever a device or a sealing key
+        // changed — silently unpublishing every pickup point the owner chose.
+        // Changing them goes through `set_pickup_points`.
+        let pickup = self
+            .roster_of(&organ_uid)
+            .await?
+            .map(|signed| signed.roster.pickup)
+            .unwrap_or_default();
         let roster = Roster {
             organ_uid: organ_uid.clone(),
             root_key: root.public_key_b64(),
             version: previous.map(|row| row.version).unwrap_or(0) + 1,
             not_after: (Utc::now() + Duration::days(ROSTER_VALIDITY_DAYS)).to_rfc3339(),
             cells,
+            pickup,
         };
         let payload = roster_signing_payload(&roster)?;
         let signed = SignedRoster {
@@ -367,6 +472,62 @@ impl Engine {
         self.store_roster(&signed).await?;
         self.mirror_roster(&signed).await?;
         Ok(signed)
+    }
+
+    /// Re-sign our own roster with a sibling Cell's rotated sealing key, on
+    /// that Cell's request.
+    ///
+    /// `from_node` is the node id the transport proved for the caller, and it
+    /// must be the one the roster already records for `cell_uid`: a Cell may
+    /// move its OWN mail key and nobody else's. Everything but the key is
+    /// copied from the held entry — label, node id, operational key,
+    /// capabilities, front-door status — so this verb cannot widen anything.
+    ///
+    /// Honored automatically rather than queued for the owner to approve, and
+    /// that is deliberate. A device asking to rotate already holds the private
+    /// half of the key it is replacing, so refusing changes nothing an
+    /// attacker could not already do; the remedy for a stolen device is
+    /// revocation, which removes it from this list entirely. Requiring a
+    /// person to press something would instead leave a device unable to
+    /// receive mail for as long as its owner happened to be away.
+    pub async fn republish_sealing_key(
+        &self,
+        from_node: &str,
+        cell_uid: &str,
+        sealing_key: crate::seal::SealingKey,
+    ) -> Result<(), EngineError> {
+        let Some(root) = self.root_signer().await? else {
+            // The ordinary answer from every Cell that is not the one holding
+            // the root, which is most of them.
+            return Err(EngineError::Consequence(
+                "this Cell does not hold the root key, so it cannot publish a roster".into(),
+            ));
+        };
+        let organ_uid = root.actor_uid.clone();
+        let Some(held) = self.roster_of(&organ_uid).await? else {
+            return Err(EngineError::Consequence("there is no roster to change".into()));
+        };
+        let mut cells = held.roster.cells.clone();
+        let Some(entry) = cells.iter_mut().find(|cell| cell.cell_uid == cell_uid) else {
+            return Err(EngineError::Consequence(
+                "that Cell is not a member of this roster".into(),
+            ));
+        };
+        if entry.node_id != from_node {
+            return Err(EngineError::Consequence(
+                "a Cell may only publish its own mail key".into(),
+            ));
+        }
+        if entry.sealing_key.as_ref() == Some(&sealing_key) {
+            // Already published. The asking side re-asks on every pass until
+            // it sees its key in the roster, so this is the common case and
+            // not a failure — burning a roster version on it would train
+            // contacts to accept a stream of rosters that change nothing.
+            return Ok(());
+        }
+        entry.sealing_key = Some(sealing_key);
+        self.publish_roster(&root, cells).await?;
+        Ok(())
     }
 
     async fn store_roster(&self, signed: &SignedRoster) -> Result<(), EngineError> {
@@ -584,6 +745,12 @@ impl Engine {
                     "label": cell.label,
                     "front_door": cell.front_door,
                     "capabilities": cell.capabilities,
+                    // Carried so the device list can show whether this device
+                    // can be sent sealed mail at all. It is a PUBLIC key with
+                    // an expiry on it — the same thing every contact reads out
+                    // of the signed roster — so mirroring it discloses nothing
+                    // the contact tier does not already have.
+                    "sealing_key": cell.sealing_key,
                 })
             })
             .collect();
@@ -600,6 +767,10 @@ impl Engine {
                 "not_after": signed.roster.not_after,
                 "root_key": signed.roster.root_key,
                 "cells": cells,
+                // Mirrored for the same reason and with the same reasoning: a
+                // pickup point is published to every contact by definition,
+                // since a sender who could not read it could not use it.
+                "pickup": signed.roster.pickup,
             }),
         )
         .await?;
@@ -610,6 +781,70 @@ impl Engine {
     /// revocation can load it on demand instead of holding it in memory.
     pub fn set_root_key_path(&self, path: std::path::PathBuf) {
         *self.root_key_path.lock().expect("root key path") = Some(path);
+    }
+
+    /// Remember where this Cell keeps its sealing keyring.
+    pub fn set_sealing_keyring_path(&self, path: std::path::PathBuf) {
+        *self.sealing_keyring_path.lock().expect("sealing keyring") = Some(path);
+    }
+
+    /// This Cell's sealing keyring, rotated and pruned as a side effect.
+    ///
+    /// Rotation happens HERE, on read, rather than on a timer: a Cell that was
+    /// switched off across its own rotation point must rotate when it comes
+    /// back, and a timer in a process that was not running fires never. Every
+    /// caller either publishes the current key or opens mail with the retained
+    /// ones, so both are exactly the moments the keyring should be fresh.
+    pub async fn sealing_keyring(&self) -> Result<Option<crate::seal::Keyring>, EngineError> {
+        let path = self.sealing_keyring_path.lock().expect("sealing keyring").clone();
+        let (Some(path), Some(cell)) = (path, store::cells::local(&self.store.pool).await?) else {
+            return Ok(None);
+        };
+        Ok(Some(crate::seal::load_keyring(&path, &cell.uid)?))
+    }
+
+    /// The sealing key to publish in this Cell's roster entry, if it has one.
+    pub async fn published_sealing_key(
+        &self,
+    ) -> Result<Option<crate::seal::SealingKey>, EngineError> {
+        Ok(self
+            .sealing_keyring()
+            .await?
+            .and_then(|keyring| keyring.current()))
+    }
+
+    /// Whether the roster names the mail key this Cell is actually using.
+    ///
+    /// A read, with no rotation and no dialing: the panel asks it, and the
+    /// sync pass is what fixes it. `true` when there is nothing to compare —
+    /// a Cell with no keyring and no roster is not broken, it simply has no
+    /// mail key, and `seal` already refuses honestly for that case.
+    pub async fn own_sealing_key_is_published(&self) -> Result<bool, EngineError> {
+        let (Some(organ), Some(cell)) = (
+            store::organs::local(&self.store.pool).await?,
+            store::cells::local(&self.store.pool).await?,
+        ) else {
+            return Ok(true);
+        };
+        let Some(current) = self
+            .sealing_keyring()
+            .await?
+            .and_then(|keyring| keyring.current())
+        else {
+            return Ok(true);
+        };
+        Ok(self
+            .roster_of(&organ.uid)
+            .await?
+            .and_then(|held| {
+                held.roster
+                    .cells
+                    .iter()
+                    .find(|entry| entry.cell_uid == cell.uid)
+                    .and_then(|entry| entry.sealing_key.clone())
+            })
+            .as_ref()
+            == Some(&current))
     }
 
     /// Load the root key IF it is on this Cell. `None` is the healthy state
@@ -691,6 +926,82 @@ impl Engine {
         cells.retain(|existing| existing.cell_uid != cell.cell_uid);
         cells.push(cell);
         self.publish_roster(root, cells).await
+    }
+
+    /// Publish where this Organ's mail may be left (Ontology C4).
+    ///
+    /// Needs the root for the same reason enrolment does, and it is the same
+    /// class of act: a pickup point decides who gets to hold your unread mail,
+    /// so a compromised ordinary device must not be able to add one. It also
+    /// cannot be a per-Cell decision — the roster is one document and every
+    /// Cell of the Organ collects from the same boxes.
+    ///
+    /// Publishing ONE is allowed. Two is the advice, not the rule: refusing the
+    /// first would make the second unreachable, and the panel says plainly
+    /// what a single box costs.
+    pub async fn set_pickup_points(
+        &self,
+        root: &Signer,
+        pickup: Vec<PickupPoint>,
+    ) -> Result<SignedRoster, EngineError> {
+        let cells = self
+            .roster_of(&root.actor_uid)
+            .await?
+            .map(|signed| signed.roster.cells)
+            .unwrap_or_default();
+        let organ_uid = root.actor_uid.clone();
+        let previous = store::roster::get(&self.store.pool, &organ_uid).await?;
+        let roster = Roster {
+            organ_uid: organ_uid.clone(),
+            root_key: root.public_key_b64(),
+            version: previous.map(|row| row.version).unwrap_or(0) + 1,
+            not_after: (Utc::now() + Duration::days(ROSTER_VALIDITY_DAYS)).to_rfc3339(),
+            cells,
+            pickup,
+        };
+        let payload = roster_signing_payload(&roster)?;
+        let signed = SignedRoster {
+            signature: root.sign_bytes(&payload),
+            roster,
+        };
+        self.store_roster(&signed).await?;
+        self.mirror_roster(&signed).await?;
+        Ok(signed)
+    }
+
+    /// Where OUR mail may be left, as this Cell last published it.
+    pub async fn own_pickup_points(&self) -> Result<Vec<PickupPoint>, EngineError> {
+        let Some(local) = store::organs::local(&self.store.pool).await? else {
+            return Ok(Vec::new());
+        };
+        Ok(self
+            .roster_of(&local.uid)
+            .await?
+            .map(|signed| signed.roster.pickup)
+            .unwrap_or_default())
+    }
+
+    /// This Cell's own node id, as its Organ's roster publishes it.
+    ///
+    /// Read from the published roster rather than from the endpoint, because
+    /// what goes into a code somebody else will dial has to be what this Organ
+    /// has told the world — an address only this process knows is one nobody
+    /// can resolve.
+    pub async fn own_node_id(&self) -> Result<Option<String>, EngineError> {
+        let Some(local) = store::organs::local(&self.store.pool).await? else {
+            return Ok(None);
+        };
+        let Some(cell) = store::cells::local(&self.store.pool).await? else {
+            return Ok(None);
+        };
+        Ok(self.roster_of(&local.uid).await?.and_then(|signed| {
+            signed
+                .roster
+                .cells
+                .into_iter()
+                .find(|entry| entry.cell_uid == cell.uid)
+                .map(|entry| entry.node_id)
+        }))
     }
 
     /// Remove a Cell. This IS revocation: the roster is the membership list,
@@ -813,7 +1124,7 @@ impl Engine {
     }
 }
 
-fn hash_token(token: &str) -> String {
+pub fn hash_token(token: &str) -> String {
     use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();
     hasher.update(token.as_bytes());

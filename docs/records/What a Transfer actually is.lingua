@@ -1,0 +1,20 @@
+---
+uid: r_Y7MMHVHRVZ0B18Q395MKHW3YX7
+@@idea
+@instinct
+@chapter [[Transfers|r_DAPVC5V6MF3N8N2V7C84QBR96W]] 3
+@see-also [[What a Transfer is|r_44N64ARK0PZSM21YMJ3GCHEX06]]
+quantity: 1
+---
+
+## What a Transfer actually is
+
+A Transfer bundles **promises** — each one saying who owes what to whom, in which unit, by when. Its status is derived from the states of those promises rather than set by hand, which is why the Transfer sand can tell you what stage a deal is at without anyone maintaining a status field.
+
+- Terms are versioned: a Transfer's signed revision is part of what everyone agreed to.
+
+- Participants have roles — creator, participant, invitee, observer — and a Protein can filter by yours.
+
+- Settlement moves the quantities on both sides at once, leaving facts behind on each.
+
+The same shape covers a marketplace purchase, splitting a bill, planning a party, or a project where four people each bring something different. It is one mechanism because it was one idea all along: a Need on one side, a Contribution on the other.

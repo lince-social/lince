@@ -175,6 +175,18 @@ pub async fn serve_cell_api_only(
                     "User from token no longer exists".into(),
                 )
             })?;
+        // Re-read on every request, which is what closes an OPEN session. A
+        // deactivation that only blocked new logins would leave whoever was
+        // already signed in acting indefinitely — and the session that matters
+        // most is exactly the one already running when you decided to end it.
+        // The JWT stays valid by its own terms; standing is checked against the
+        // store, so this is not something a held token can outlive.
+        if !store::people::is_active(&state.store.pool, &user.uid)
+            .await
+            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?
+        {
+            return Err((StatusCode::UNAUTHORIZED, "Token auth data is stale".into()));
+        }
         let current_permissions =
             utils::auth::normalized_permission_strings(user.permissions.clone());
         let claim_permissions =
@@ -207,6 +219,16 @@ pub async fn serve_cell_api_only(
             .await
             .ok()
             .flatten()?;
+        // Same answer as an expired token: no viewer. Rendering the page as
+        // them would show a name and a role that no longer authorise anything,
+        // and every request behind it would fail — a chrome that lies about who
+        // you are is worse than a logged-out one.
+        if !store::people::is_active(&state.store.pool, &user.uid)
+            .await
+            .ok()?
+        {
+            return None;
+        }
         Some(ViewerBootstrap {
             id: user.uid.clone(),
             username: user.username,
@@ -344,7 +366,16 @@ pub async fn serve_cell_api_only(
             })?;
         let password_valid = utils::auth::verify_password(&request.password, &user.password_hash)
             .map_err(|error| (StatusCode::UNAUTHORIZED, error.to_string()))?;
-        if !password_valid {
+        // Standing is checked AFTER the password and answered with the SAME
+        // sentence, word for word. "This account is deactivated" would be
+        // username enumeration wearing a helpful tone: it tells anyone with a
+        // guessed name that the name is real. The person who was deactivated
+        // already knows why, from whoever deactivated them; the login screen is
+        // not where that conversation happens.
+        let active = store::people::is_active(&state.store.pool, &user.uid)
+            .await
+            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+        if !password_valid || !active {
             return Err((
                 StatusCode::UNAUTHORIZED,
                 "Invalid username or password".into(),
@@ -1987,6 +2018,11 @@ async fn publish_local_roster(
     // WITH a roster means the root is deliberately elsewhere, and this Cell
     // simply cannot sign until it comes back.
     engine.set_root_key_path(root_path.clone());
+    // Beside the other key material, and unlike the root it is meant to STAY
+    // here: a sealing private key is useless anywhere but on the Cell that has
+    // to open mail with it, and a copy of it kept elsewhere would undo the
+    // forward secrecy that made it a separate key in the first place.
+    engine.set_sealing_keyring_path(key_dir.join("keys").join("cell-x25519-keyring-v1.json"));
     let creating = !root_path.exists();
     if creating {
         if held.is_some() {
@@ -2068,11 +2104,20 @@ async fn publish_local_roster(
         // one row was both — which is exactly the confusion the split ends.
         .filter(|held_cell| held_cell.cell_uid != cell.uid)
         .collect();
+    // Rotates and prunes as a side effect of being read, so a Cell that was
+    // off across its own rotation point catches up on the boot that follows.
+    // A rotation changes this entry, which is what makes `needs_publishing`
+    // re-sign the roster — rotation never has to know about publishing.
+    let sealing_key = engine
+        .published_sealing_key()
+        .await
+        .map_err(IoError::other)?;
     cells.push(engine::roster::CellEntry {
         cell_uid: cell.uid.clone(),
         node_id,
         label: cell.label.clone(),
         operational_key,
+        sealing_key,
         // The Cell that holds the root and serves the owner is an ordinary
         // full member. Relay Cells get `relay_capabilities()`.
         capabilities: engine::roster::full_capabilities(),

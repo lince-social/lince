@@ -170,6 +170,59 @@ impl Engine {
         self.import_ops(batch, None).await
     }
 
+    /// Apply a batch that arrived through a CARRIER rather than over a
+    /// connection (Ontology C4, `crate::seal`).
+    ///
+    /// Every check in `inadmissible` rests on one thing: the authenticated
+    /// connection says who the sender is, so a field the sender filled in can
+    /// be compared against something they did not choose. Out of a mailbox
+    /// there is no connection, and `import_op_batch` on its own would be
+    /// comparing `op.organ_uid` against `batch.from_organ` — two fields inside
+    /// the same payload, both written by the same sender, which is no check at
+    /// all.
+    ///
+    /// What replaces the connection is the bundle signature. It names a CELL,
+    /// and the signed roster says which Organ owns that Cell, so the tie is
+    /// re-established outside the payload before any op is looked at. This is
+    /// the OTHER half of "the anchor moves rather than disappearing"; without
+    /// it the seal authenticates a sender nothing then consults.
+    pub async fn import_mailed_batch(
+        &self,
+        opened: &crate::seal::OpenedBundle,
+    ) -> Result<usize, EngineError> {
+        match store::roster::organ_holding_cell(&self.store.pool, &opened.from_cell).await? {
+            Some(holder) if holder == opened.batch.from_organ => {}
+            Some(_) => {
+                return Err(EngineError::Consequence(
+                    "mailed batch claims an Organ that does not own the Cell that signed it".into(),
+                ));
+            }
+            // Unlike the connection path, an unknown Cell REFUSES here instead
+            // of being admitted. The reasoning that forced admission there —
+            // a refusal is quarantined, the ring is bounded, nothing replays
+            // it, so refusing would strand an Organ that legitimately has no
+            // roster yet — does not apply: mail is only sealed to a roster we
+            // already hold, so a signer we cannot place is not an Organ we are
+            // starting a relationship with. It is a stranger using a carrier.
+            None => {
+                return Err(EngineError::Consequence(
+                    "mailed batch was signed by a Cell no roster we hold names".into(),
+                ));
+            }
+        }
+        // The channel the sender sealed on, not one guessed from the ops. A
+        // conversation batch that arrived as general feed would be quarantined
+        // op by op ("general feed targeted an individually-replicated
+        // record"), which is the correct refusal for a connection that used
+        // the wrong verb and a silent black hole for mail. `import_grant_batch`
+        // does its own authorization against our accepted grants, so believing
+        // the root out of the payload grants nothing.
+        match &opened.root {
+            Some(root) => self.import_grant_batch(root, &opened.batch).await,
+            None => self.import_ops(&opened.batch, None).await,
+        }
+    }
+
     /// Whether an op may be believed at all, before anything looks at what it
     /// says. `Some(reason)` refuses it into quarantine; `None` admits it.
     ///
@@ -195,10 +248,13 @@ impl Engine {
     ///    the signed roster, which is the only thing that says which Cells an
     ///    Organ has.
     ///
-    ///    **Known gap**: when we hold NO roster for that Organ the op is
-    ///    admitted, because refusing would drop every contact paired before
-    ///    rosters travelled. It closes when roster exchange is part of
-    ///    pairing.
+    ///    When we hold NO roster for that Organ the question is asked the
+    ///    other way round — is this Cell somebody ELSE's — because refusing
+    ///    outright is not available: a refusal is quarantined, the ring is
+    ///    bounded and nothing replays it, so it would permanently drop the
+    ///    traffic of an Organ that legitimately has no roster yet.
+    ///    **Residual gap**: a sender with no roster claiming a Cell we have
+    ///    never heard of is still admitted.
     ///
     /// 3. **The stamp must be close to now.** See `hlc::within_drift`.
     async fn inadmissible(
@@ -212,6 +268,23 @@ impl Engine {
         if !nucleus::hlc::within_drift(op.hlc) {
             return Ok(Some("op is stamped too far in the future"));
         }
+        // Person standing (C3) decides who may log in HERE, so only this
+        // Organ's own Cells may write it. Refused at the admissibility gate
+        // rather than filtered later, because unlike a Karma definition — which
+        // a contact may hold inertly, doing nothing — a standing op that
+        // materialised would be a contact locking us out of our own Cell.
+        // The identity checked is the AUTHENTICATED sender, never
+        // `record.organ_uid`, which is a column the sender fills in.
+        if op.tbl == "record_extension" && store::people::is_standing_field(&op.field) {
+            let ours = store::organs::local(&self.store.pool)
+                .await?
+                .is_some_and(|organ| organ.uid == batch.from_organ);
+            if !ours {
+                return Ok(Some(
+                    "only this Organ's own Cells may set a Person's standing",
+                ));
+            }
+        }
         if let Some(signed) = self.roster_of(&batch.from_organ).await? {
             if !signed
                 .roster
@@ -220,6 +293,32 @@ impl Engine {
                 .any(|cell| cell.cell_uid == op.actor_cell)
             {
                 return Ok(Some("op claims a Cell that is not in the sender's roster"));
+            }
+        } else {
+            // The floor for when we hold no roster for the sender, where the
+            // check above cannot run. It asks the question the other way round:
+            // not "is this Cell theirs" — which needs their roster — but "is
+            // this Cell somebody ELSE's", which needs only what we already
+            // hold. Cheap, no false positives, and it closes the poisoning
+            // attack in exactly the cases that can hurt: a Cell we know of is
+            // one whose ops we expect to receive.
+            if let Some(holder) =
+                store::roster::organ_holding_cell(&self.store.pool, &op.actor_cell).await?
+            {
+                if holder != batch.from_organ {
+                    return Ok(Some("op claims a Cell that belongs to another Organ"));
+                }
+            }
+            // And our OWN Cell by name, which the lookup above misses on a
+            // first boot that has not published a roster yet. This is the
+            // literal form of the attack — a contact pre-occupying our own
+            // (cell, hlc) so our next real op is dropped everywhere as a
+            // duplicate — so it is worth not depending on our own publishing
+            // having happened.
+            if let Some(ours) = store::cells::local(&self.store.pool).await? {
+                if ours.uid == op.actor_cell {
+                    return Ok(Some("op claims this Cell as its author"));
+                }
             }
         }
         Ok(None)
@@ -283,6 +382,9 @@ impl Engine {
         let from = Some(batch.from_organ.as_str());
         let mut applied = 0usize;
         let mut touched: Vec<String> = Vec::new();
+        // Records whose Karma definition changed in this batch, materialised
+        // after the loop so one Record edited twice is imported once.
+        let mut karma_definitions: Vec<String> = Vec::new();
         for op in &batch.ops {
             // What we are willing to TAKE from them, which is a different
             // question from what they were willing to send. Dropped silently
@@ -431,6 +533,15 @@ impl Engine {
                     let outcome = outcome.unwrap_or_default();
                     applied += outcome.applied;
                     touched.extend(outcome.touched);
+                    // Noted, not materialised here: the definition is
+                    // re-derived once after the batch, so a Program revised and
+                    // then activated in the same batch is built once, from the
+                    // value that won LWW rather than from each op in turn.
+                    if op.tbl == "record_extension"
+                        && store::karma::sync::is_definition_field(&op.field)
+                    {
+                        karma_definitions.push(op.uid.clone());
+                    }
                 }
                 // Both carry a base64 Loro blob and Loro imports the two
                 // identically, so one arm serves both. A `snapshot` is a peer
@@ -501,6 +612,47 @@ impl Engine {
                         &serde_json::to_string(op).unwrap_or_default(),
                     )
                     .await?;
+                }
+            }
+        }
+        // Karma definitions become RUNNABLE rows only when they came from one
+        // of our own Cells (Ontology C7, axis 1).
+        //
+        // The gate is the batch's authenticated origin, not anything the
+        // payload says about itself. `inadmissible` has already refused any op
+        // whose `organ_uid` disagrees with the Organ on the other end of the
+        // connection, so `from_organ` is the one identity here that was not
+        // filled in by the sender — and a Record column claiming to be ours
+        // would be exactly what an attacker would write.
+        //
+        // A contact's Karma still arrives and is still stored: it sits in
+        // `record_extension` like any other field, visible and inert. What it
+        // never becomes is a row `freeze_next_epoch` can join, because a rule
+        // that arrives over a socket and runs on receipt is the failure this
+        // gate exists for.
+        if !karma_definitions.is_empty() {
+            let ours = store::organs::local(pool)
+                .await?
+                .is_some_and(|organ| organ.uid == batch.from_organ);
+            if ours {
+                karma_definitions.sort();
+                karma_definitions.dedup();
+                for record_uid in karma_definitions {
+                    // A definition we cannot verify refuses itself and must not
+                    // take the rest of the batch down with it: the ops are
+                    // already logged and applied, and failing here would make
+                    // one bad rule look like a broken sync.
+                    if let Err(error) =
+                        store::karma::sync::import_definition(pool, &record_uid).await
+                    {
+                        store::organs::quarantine(
+                            pool,
+                            &batch.from_organ,
+                            "published Karma definition refused",
+                            &format!("{record_uid}: {error}"),
+                        )
+                        .await?;
+                    }
                 }
             }
         }
@@ -710,6 +862,26 @@ pub struct OpenPromiseExport {
     pub confidence: f64,
 }
 
+/// What became of one batch handed to the sender.
+///
+/// Three outcomes rather than `Result`, because leaving mail is neither. A
+/// deposited bundle means the queue rows may go — re-sealing the same ops
+/// every pass would fill a carrier's quota with duplicates of something
+/// already sitting there — but it must NOT move the retention floor: the
+/// floor says "this peer holds these ops", and a bundle on a stranger's disk
+/// says only "somebody agreed to hold it". Nothing has been applied by
+/// anyone. Collapsing the two into `Ok(())` would let pruning drop ops whose
+/// only remaining copy expires uncollected in thirty days.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Delivery {
+    /// The peer answered and applied it.
+    Sent,
+    /// Sealed and left with a carrier the recipient published.
+    Mailed,
+    /// Neither. Everything stays queued.
+    Failed(String),
+}
+
 impl Engine {
     /// Drain the bounded outbox through a sender (the HTTP boundary in
     /// production, an in-memory wire in tests): one op batch per contact,
@@ -720,7 +892,7 @@ impl Engine {
     pub async fn drain_outbox<F, Fut>(&self, mut send: F) -> Result<usize, EngineError>
     where
         F: FnMut(store::organs::Contact, Option<String>, OpBatch) -> Fut,
-        Fut: std::future::Future<Output = Result<(), String>>,
+        Fut: std::future::Future<Output = Delivery>,
     {
         let pool = &self.store.pool;
         let Some(from_organ) = store::organs::local(pool).await?.map(|o| o.uid) else {
@@ -758,6 +930,42 @@ impl Engine {
                     Some(op) if !contact.sync_out && op.replica_root.is_none() => {
                         sync_ops::outbox_delete(pool, &row).await?;
                     }
+                    // Karma definitions go to YOUR OWN CELLS and nowhere else
+                    // (Ontology C7, axis 1). They ride the ordinary extension
+                    // op path, and `op_in_scope` returns true for an
+                    // un-narrowed contact before it ever looks at the field —
+                    // so without this arm, publishing a rule would hand every
+                    // sync contact the full text of every rule you run. That is
+                    // not what "the axes are independent" meant, and it would
+                    // be a privacy regression introduced by a sync feature.
+                    //
+                    // Own Cells are recognised by the contact BEING this Organ:
+                    // a second Cell of yours syncs under your own Organ uid,
+                    // which is the same identity the import gate checks on the
+                    // other side. Deleted rather than left queued, like the
+                    // scope arm below and for the same reason — it will never
+                    // be owed to this contact.
+                    Some(op)
+                        if contact_uid != from_organ
+                            && op.tbl == "record_extension"
+                            && store::karma::sync::is_definition_field(&op.field) =>
+                    {
+                        sync_ops::outbox_delete(pool, &row).await?;
+                    }
+                    // Person standing is the same shape and the same rule
+                    // (C3): our own Cells must agree on who may log in, and
+                    // nobody else is owed our membership admin. It rides the
+                    // same un-narrowed-contact hole, so it needs the same arm —
+                    // and the leak here would be worse than a rule's text,
+                    // because "who did this Organ turn off, and when" is a
+                    // statement about a person rather than about a schedule.
+                    Some(op)
+                        if contact_uid != from_organ
+                            && op.tbl == "record_extension"
+                            && store::people::is_standing_field(&op.field) =>
+                    {
+                        sync_ops::outbox_delete(pool, &row).await?;
+                    }
                     // The per-contact scope, applied to the PUSH path as well
                     // as the pull one (Ontology §12, C5). It was built into
                     // `FetchOpsSince` alone at first, which narrowed only the
@@ -792,10 +1000,8 @@ impl Engine {
                         // Async, so it cannot be a match guard like the two
                         // above; the guard-shaped ones stay guards.
                         if op.replica_root.is_none()
-                            && store::visibility::op_hidden_from(
-                                pool, &hidden, &op.tbl, &op.uid,
-                            )
-                            .await?
+                            && store::visibility::op_hidden_from(pool, &hidden, &op.tbl, &op.uid)
+                                .await?
                         {
                             sync_ops::outbox_delete(pool, &row).await?;
                             continue;
@@ -822,7 +1028,13 @@ impl Engine {
                     roots.push(op.replica_root.clone());
                 }
             }
-            let mut all_ok = true;
+            // The worst outcome across this contact's roots wins, and a real
+            // failure stops the loop. Mailing does NOT stop it: each root is
+            // its own channel and its own batch, so a contact that has to be
+            // mailed is mailed once per root — the recipient needs all of
+            // them, and stopping after the first would silently hold back
+            // every conversation but one.
+            let mut outcome = Delivery::Sent;
             for root in roots {
                 let slice: Vec<_> = log_rows
                     .iter()
@@ -833,13 +1045,21 @@ impl Engine {
                     from_organ: from_organ.clone(),
                     ops: self.hydrate_ops(slice).await?,
                 };
-                if send(contact.clone(), root, batch).await.is_err() {
-                    all_ok = false;
-                    break;
+                match send(contact.clone(), root, batch).await {
+                    Delivery::Sent => {}
+                    Delivery::Mailed => {
+                        if outcome == Delivery::Sent {
+                            outcome = Delivery::Mailed;
+                        }
+                    }
+                    failed @ Delivery::Failed(_) => {
+                        outcome = failed;
+                        break;
+                    }
                 }
             }
-            match if all_ok { Ok(()) } else { Err(String::new()) } {
-                Ok(()) => {
+            match outcome {
+                Delivery::Sent => {
                     // The peer accepted every batch, so everything we intended
                     // to send them at or below this seq is now on their side.
                     // That is the retention floor: pruning removes ops nobody
@@ -854,7 +1074,21 @@ impl Engine {
                     }
                     sent += 1;
                 }
-                Err(_) => {
+                // Left with a carrier. The rows go, so the next pass does not
+                // seal the same ops again; the retention floor stays exactly
+                // where it was, so nothing gets pruned on the strength of a
+                // bundle nobody has opened. If it expires uncollected, the
+                // peer's own catch-up pull still finds these ops in our log —
+                // that pull covers the general feed AND every root they hold
+                // a grant on, which is what makes dropping the rows safe.
+                Delivery::Mailed => {
+                    for row in &kept {
+                        sync_ops::outbox_delete(pool, row).await?;
+                    }
+                    store::organs::mark_mailed(pool, &contact_uid).await?;
+                    sent += 1;
+                }
+                Delivery::Failed(_) => {
                     sync_ops::outbox_bump_attempts(pool, &contact_uid).await?;
                 }
             }
@@ -870,10 +1104,7 @@ impl Engine {
     /// recoverability for disk and a human should be the one making the trade.
     /// Call with `dry_run` first: the report is computed from the same
     /// predicate the delete uses, so it cannot disagree with the real thing.
-    pub async fn prune_op_log(
-        &self,
-        dry_run: bool,
-    ) -> Result<sync_ops::PruneReport, EngineError> {
+    pub async fn prune_op_log(&self, dry_run: bool) -> Result<sync_ops::PruneReport, EngineError> {
         Ok(sync_ops::prune(&self.store.pool, dry_run).await?)
     }
 

@@ -28,7 +28,6 @@ use crate::pairing::EnrolmentInvite;
 use crate::roster::{ROOT_KEY_ID, RosterOutcome, SignedRoster};
 use crate::trust::Signer;
 
-
 /// Marks the identity as in flux for as long as it is held, INCLUDING on the
 /// error paths — a `?` in the middle of the swap must not leave the Cell
 /// permanently unable to answer for itself.
@@ -71,6 +70,26 @@ pub trait CellTransport: Send + Sync {
         &self,
         contact_organ: &str,
     ) -> Result<Option<crate::wire::AuditAgreement>, EngineError>;
+    /// Ask a Cell whether it is carrying mail for US, at `node_id`.
+    ///
+    /// Three answers rather than a `Result`, because publishing a pickup point
+    /// turns on the difference: a REFUSAL is a real answer and means do not
+    /// publish, while no answer at all means "not right now", which is the
+    /// ordinary state of most machines and no reason to conclude anything.
+    async fn carrier_probe(&self, node_id: &str) -> crate::wire::CarrierProbe;
+    /// Collect from every pickup point we published, right now.
+    async fn collect_mail_now(&self) -> Result<usize, EngineError>;
+    /// Run one whole sync pass now, rather than at the next tick.
+    async fn sync_now(&self) -> Result<usize, EngineError>;
+    /// Ask the Cell at `node_id` to carry our mail. Their operator answers
+    /// later; this only delivers the ask.
+    async fn ask_to_be_carried(&self, node_id: &str) -> Result<(), EngineError>;
+    /// Spend an invite code with the box that issued it.
+    async fn redeem_mailbox_invite(
+        &self,
+        node_id: &str,
+        token: &str,
+    ) -> Result<(String, i64), EngineError>;
 }
 
 impl crate::Engine {
@@ -117,6 +136,94 @@ impl crate::Engine {
                 )
             })?;
         transport.audit_against(contact_organ).await
+    }
+
+    /// Ask a Cell whether it carries mail for us. `Unreachable` when this Cell
+    /// has no endpoint at all, which is the same answer from the caller's side.
+    pub async fn carrier_probe(&self, node_id: &str) -> crate::wire::CarrierProbe {
+        // Bound to a local BEFORE the await: holding the guard across it would
+        // make every caller's future non-Send.
+        let transport = self
+            .enroller
+            .lock()
+            .expect("enroller")
+            .clone()
+            .and_then(|weak| weak.upgrade());
+        match transport {
+            Some(transport) => transport.carrier_probe(node_id).await,
+            None => crate::wire::CarrierProbe::Unreachable,
+        }
+    }
+
+    /// Collect our mail from every published pickup point immediately.
+    pub async fn collect_mail_now(&self) -> Result<usize, EngineError> {
+        let transport = self
+            .enroller
+            .lock()
+            .expect("enroller")
+            .clone()
+            .and_then(|weak| weak.upgrade())
+            .ok_or_else(|| {
+                EngineError::Consequence(
+                    "this Cell has no network endpoint, so it cannot reach a mailbox.".into(),
+                )
+            })?;
+        transport.collect_mail_now().await
+    }
+
+    /// Run one whole sync pass now.
+    ///
+    /// The pass, not a special path: whatever it does for a contact when it
+    /// runs on its own timer is exactly what a button labelled "now" should
+    /// do, and anything that bypassed it would be a second implementation of
+    /// delivery that nothing else exercises.
+    pub async fn sync_now(&self) -> Result<usize, EngineError> {
+        let transport = self
+            .enroller
+            .lock()
+            .expect("enroller")
+            .clone()
+            .and_then(|weak| weak.upgrade())
+            .ok_or_else(|| {
+                EngineError::Consequence(
+                    "this Cell has no network endpoint, so it cannot sync with anyone.".into(),
+                )
+            })?;
+        transport.sync_now().await
+    }
+
+    /// Ask a Cell to carry our mail. Delivers the ask and nothing more —
+    /// whether they will is their operator's answer, given later.
+    pub async fn ask_carrier(&self, node_id: &str) -> Result<(), EngineError> {
+        self.transport_for("ask anyone to carry your mail")?
+            .ask_to_be_carried(node_id)
+            .await
+    }
+
+    /// Spend a mailbox invite code. Returns the label and quota it carried.
+    pub async fn redeem_carry_code(&self, code: &str) -> Result<(String, i64), EngineError> {
+        let invite = crate::pairing::MailboxInviteCode::decode(code)?;
+        self.transport_for("reach the box that issued that code")?
+            .redeem_mailbox_invite(&invite.node_id, &invite.token)
+            .await
+    }
+
+    /// The installed transport, or a refusal that says what could not be done
+    /// rather than that a pointer was missing.
+    fn transport_for(
+        &self,
+        what: &str,
+    ) -> Result<std::sync::Arc<dyn CellTransport>, EngineError> {
+        self.enroller
+            .lock()
+            .expect("enroller")
+            .clone()
+            .and_then(|weak| weak.upgrade())
+            .ok_or_else(|| {
+                EngineError::Consequence(format!(
+                    "this Cell has no network endpoint, so it cannot {what}."
+                ))
+            })
     }
 
     /// Whether this Cell's identity is being rewritten right now.
@@ -213,8 +320,13 @@ impl crate::Engine {
         // uses. Adopted BEFORE the roster, because `adopt_roster` checks that
         // the signing key chains from one we already hold — and this is the
         // key it must chain from.
-        crate::trust::adopt_key(&self.store, &invite.organ_uid, ROOT_KEY_ID, &invite.root_key)
-            .await?;
+        crate::trust::adopt_key(
+            &self.store,
+            &invite.organ_uid,
+            ROOT_KEY_ID,
+            &invite.root_key,
+        )
+        .await?;
         match self.adopt_roster(signed).await? {
             RosterOutcome::Accepted | RosterOutcome::NotNewer => {}
             RosterOutcome::Expired => {

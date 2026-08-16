@@ -30,7 +30,7 @@ use crate::Engine;
 use crate::error::EngineError;
 use crate::pairing::EnrolmentInvite;
 use crate::roster::SignedRoster;
-use crate::sync::{Introduction, OpBatch, WireOp};
+use crate::sync::{Delivery, Introduction, OpBatch, WireOp};
 
 /// Re-exported so callers can name a peer without depending on iroh directly —
 /// the version is pinned here, in one place, and stays that way.
@@ -93,6 +93,104 @@ pub const ALPN_LIVE: &[u8] = b"lince/live/2";
 /// version do you run" is a fingerprint, and a stranger has no business
 /// collecting it.
 pub const ALPN_HELLO: &[u8] = b"lince/hello/1";
+
+/// The blind mailbox (Ontology C4): leaving sealed mail, and collecting it.
+///
+/// Its OWN door, not a widening of an existing one, and the reason is the
+/// admission policy. A depositor is a stranger by design — "accepts from
+/// anyone, but only for a registered recipient" is the point, since being
+/// reachable while offline matters most for people outside the carrier's own
+/// circle. The thread door cannot express that: it closes on an unidentified
+/// peer unless an enrolment is open or the owner switched on accepting unknown
+/// Organs, and borrowing that switch would conflate two unrelated decisions
+/// exactly as the enrolment window was written to avoid.
+///
+/// Keeping it separate also keeps the carrier's defining promise structural
+/// rather than careful: the sync verbs are not reachable here at all, so a
+/// mailbox converges nothing because there is no door through which it could.
+pub const ALPN_MAILBOX: &[u8] = b"lince/mailbox/1";
+
+/// The one refusal every failed collection gets, whatever went wrong.
+///
+/// Identical wording for "no such registration", "that roster does not chain"
+/// and "your node is not in it", for the same reason the login refusals are
+/// word-for-word identical regardless of cause: three distinguishable answers
+/// would let anyone holding a public roster — which every contact does — probe
+/// a carrier for who it serves. A carrier's registration list is exactly the
+/// correspondence pattern it is trusted not to publish.
+fn not_your_mailbox() -> WireResponse {
+    WireResponse::Refused {
+        code: "mailbox_not_yours".into(),
+        message: "this mailbox holds nothing you may collect".into(),
+    }
+}
+
+/// One held bundle as it travels back to its recipient.
+///
+/// `body` is the sealed bundle verbatim; everything beside it is what the
+/// carrier could already see. Carried separately rather than re-derived from
+/// the body so the recipient can acknowledge and discard without parsing
+/// anything it turns out not to want.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MailboxBundle {
+    pub uid: String,
+    pub from_organ: String,
+    pub from_cell: String,
+    pub body: String,
+    pub received_at: String,
+    pub expires_at: String,
+}
+
+/// One bundle a carrier held for the retention window and then deleted.
+///
+/// No body, and there never can be one: expiry drops the ciphertext, which is
+/// what makes keeping the notice acceptable at all.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct ExpiredMail {
+    pub uid: String,
+    pub to_organ: String,
+    pub bytes: i64,
+    pub received_at: String,
+    pub expired_at: String,
+}
+
+/// What came of trying to leave mail for an Organ.
+///
+/// Four outcomes rather than a bool, because they ask different things of the
+/// caller: nothing to do, tell the owner their contact publishes no box, try
+/// again later, or stop trying. Collapsing them would put "they cannot be
+/// mailed at all" and "every box was momentarily down" in the same bucket,
+/// which is exactly the distinction the retry rule turns on.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MailLeft {
+    /// Accepted by this carrier, under this uid.
+    Left { carrier: String, uid: String },
+    /// We hold no roster for them, so we do not know where their mail goes.
+    NoRoster,
+    /// They publish none. Not a fault — most Organs will not, and the honest
+    /// answer to the owner is "they have nowhere for mail to wait".
+    NoPickupPoints,
+    /// Every published box was tried and none took it, with what each said.
+    NoneAccepted { refusals: Vec<(String, String)> },
+}
+
+/// What a Cell said when asked whether it carries mail for us.
+///
+/// `Refused` is deliberately opaque: a carrier answers every collection
+/// failure with ONE wording, so "they do not carry for you", "your roster did
+/// not verify" and "that is not your device" are indistinguishable here by
+/// design. The surface must not invent a reason it was not told.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CarrierProbe {
+    /// They carry for us, and this is what is waiting.
+    Carrying(store::mailbox::Waiting),
+    /// They answered, and the answer was no.
+    Refused,
+    /// No answer. Says nothing at all — most machines are asleep most of the
+    /// time, and treating silence as refusal would be the same mistake as
+    /// falling back to a mailbox on the first failed dial.
+    Unreachable,
+}
 
 /// The epoch this build speaks, reported over [`ALPN_HELLO`]. Bumped with the
 /// ALPNs above, together, as one numbered release train.
@@ -295,6 +393,110 @@ pub enum WireRequest {
     PushOps {
         batch: OpBatch,
     },
+    /// Leave a sealed bundle with a carrier (Ontology C4). Served only on
+    /// [`ALPN_MAILBOX`], and admitted from anyone: the recipient decided who
+    /// carries their mail, and the carrier's only question is whether it
+    /// serves that recipient.
+    ///
+    /// The body travels as an opaque string rather than a typed
+    /// [`crate::seal::SealedBundle`] on purpose. A carrier parses it once, to
+    /// read the routing fields on the outside, and stores exactly the bytes it
+    /// was given — re-serializing a typed value would let a field the carrier
+    /// does not understand be silently dropped from mail it cannot read.
+    MailboxDeposit {
+        body: String,
+    },
+    /// "Is anything waiting for me?" — the cheap check, so a Cell coming
+    /// online does not have to pull mail to find out there is none.
+    ///
+    /// Authenticated the same way collection is, because the answer is about
+    /// somebody's correspondence: how much mail an Organ has waiting is not a
+    /// thing a stranger may ask.
+    MailboxWaiting {
+        organ_uid: String,
+        roster: SignedRoster,
+    },
+    /// Collect what is held. The roster proves the caller is a Cell of the
+    /// recipient — see `Engine::may_collect` for why a roster rather than a
+    /// remembered address.
+    MailboxCollect {
+        organ_uid: String,
+        roster: SignedRoster,
+        limit: i64,
+    },
+    /// Confirm bundles landed, so the carrier may drop them.
+    ///
+    /// Separate from collection because a bundle deleted when it was SENT but
+    /// never received is gone for good, and surviving the recipient being
+    /// unreachable is the entire purpose of the thing.
+    MailboxCollected {
+        organ_uid: String,
+        roster: SignedRoster,
+        uids: Vec<String>,
+    },
+    /// "Would you carry my mail?" — the ASK, which is the direction this was
+    /// missing (Ontology C4).
+    ///
+    /// Carrying is a favour between people who know each other, and a favour
+    /// starts with asking. Without this verb the only way to get a pickup point
+    /// was for the operator to think of you first, which is not how anybody
+    /// ends up with one.
+    ///
+    /// The roster identifies the asker and is checked against a key this Cell
+    /// already holds — so the request table is bounded by the contact list, and
+    /// a stranger cannot make a row in it at all.
+    MailboxAskToCarry {
+        roster: SignedRoster,
+    },
+    /// Spend an invite code and register. The path for somebody the operator
+    /// has no relationship with yet: the code IS the consent, given in advance
+    /// over a channel the operator chose.
+    MailboxRedeemInvite {
+        token: String,
+        roster: SignedRoster,
+    },
+    /// "Publish my new mail key" — an enrolled Cell asking the Cell that holds
+    /// the root to re-sign the roster with its rotated sealing key.
+    ///
+    /// The gap this closes: rotation is local (a keyring on disk), publishing
+    /// is not (the roster carries a ROOT signature). A Cell that enrolled can
+    /// do the first and not the second, so before this verb its published key
+    /// simply expired and senders stopped being able to mail that device —
+    /// silently, since nothing in the roster says why.
+    ///
+    /// Carries a KEY and not a `CellEntry`. Sent as an entry, "rotation" would
+    /// be a verb an enrolled device could use to grant itself capabilities,
+    /// claim front-door status, or point its Cell at another node — the roster
+    /// is the membership statement, and letting a member rewrite its own line
+    /// in it is privilege escalation with a friendly name.
+    PublishSealingKey {
+        cell_uid: String,
+        sealing_key: crate::seal::SealingKey,
+    },
+    /// "Did anything I left here expire uncollected?" — the sender coming back
+    /// to be told about the one failure a messaging system may not have in
+    /// silence.
+    ///
+    /// It carries NO arguments, and that is the security property rather than
+    /// an omission. The answer is scoped to the node id this connection
+    /// proved, so there is no field to point at somebody else's mail: a caller
+    /// can only ever be told about deposits they themselves made.
+    ///
+    /// A pull rather than a push, because the carrier is the always-on side
+    /// and the sender is the one that comes and goes — and because an
+    /// unsolicited "your mail expired" from a stranger is a claim that would
+    /// have to be authenticated, while an answer to your own question is not.
+    MailboxExpiries,
+    /// Acknowledge expiry notices, so the carrier may forget them.
+    ///
+    /// Every uid received is acknowledged, including ones the sender did not
+    /// recognise: this says "I heard you", not "I believed you". Belief is
+    /// decided locally against `mail_left`, and a carrier left holding a
+    /// notice nobody will ever claim would keep a who-wrote-to-whom row alive
+    /// forever.
+    MailboxExpiriesHeard {
+        uids: Vec<String>,
+    },
     /// Catch-up by VERSION VECTOR: "here is what I already hold of YOUR ops,
     /// keyed by the Cell that wrote each — send me the rest."
     ///
@@ -407,6 +609,14 @@ pub enum WireRequest {
         node_id: String,
         label: String,
         operational_key: String,
+        /// The enrolling device's own SEALING key (Ontology C4).
+        ///
+        /// Carried here because this is the one moment a new Cell gets into
+        /// the signed roster at all, and a Cell absent from it cannot be
+        /// mailed. The PRIVATE half stays on the device; what travels is the
+        /// same public point every contact will read out of the roster.
+        #[serde(default)]
+        sealing_key: Option<crate::seal::SealingKey>,
     },
     /// The peer's version vector for OUR Organ's ops — what they hold of what
     /// we wrote (Ontology §11, C2b, the cross-Organ audit).
@@ -420,18 +630,24 @@ pub enum WireRequest {
     /// A separate verb rather than a field on the ops response, because an
     /// audit is a question a PERSON asks occasionally, not something every
     /// sync pass should pay for.
-    FetchVector { organ_uid: String },
+    FetchVector {
+        organ_uid: String,
+    },
     /// What a front door is holding for its owner (Ontology §11, C3).
     ///
     /// Served ONLY to a sibling Cell of the same Organ. A front door cannot
     /// decide about a stranger — it holds no `CAP_REPRESENT` — so this is how
     /// a Cell that can decide comes and looks.
-    FetchDoorRequests { limit: i64 },
+    FetchDoorRequests {
+        limit: i64,
+    },
     /// Release requests a deciding Cell has taken.
     ///
     /// Separate from the fetch, so a Cell that dies between reading and
     /// deciding finds them still waiting rather than silently dropped.
-    ReleaseDoorRequests { uids: Vec<String> },
+    ReleaseDoorRequests {
+        uids: Vec<String>,
+    },
 }
 
 /// Which Transfer exchange a `TransferPost` is. A closed enum rather than the
@@ -513,6 +729,47 @@ pub enum WireResponse {
         from_organ: String,
         ops: Vec<WireOp>,
         head: i64,
+    },
+    /// A bundle was taken. The uid is the carrier's handle for it, which the
+    /// recipient later quotes back to confirm collection.
+    MailboxAccepted {
+        uid: String,
+    },
+    /// What is held for the caller: the bundles themselves, each with the uid
+    /// to acknowledge.
+    MailboxBundles {
+        bundles: Vec<MailboxBundle>,
+    },
+    /// The cheap answer: how much is waiting, and when the oldest expires.
+    ///
+    /// Never WHO it is from. The carrier knows — that metadata is on the
+    /// outside and is the stated cost of using one — but answering it here
+    /// would make the leak a routine part of the product, and the recipient
+    /// learns every sender anyway the moment they collect.
+    MailboxWaiting {
+        bundles: i64,
+        bytes: i64,
+        oldest_expires_at: Option<String>,
+    },
+    /// The ask was taken. Deliberately NOT an answer to it: a carrier that
+    /// replied "yes" here would be committing its operator before they had
+    /// been asked, and one that replied "no" would be answering on their
+    /// behalf. It is noted, and a person decides.
+    MailboxAsked,
+    /// What the caller left here and never got picked up.
+    ///
+    /// Each entry names a bundle the CALLER deposited, and nothing else. The
+    /// recipient is in there because the sender wrote it in the first place —
+    /// "your message to Ana was never picked up" is the whole point, and
+    /// "something expired" would be noise nobody could act on.
+    MailboxExpired {
+        expired: Vec<ExpiredMail>,
+    },
+    /// An invite was spent and the presenter is now registered, with the terms
+    /// the code carried.
+    MailboxCarrying {
+        label: String,
+        quota_bytes: i64,
     },
     /// A refusal the peer may act on. Never leaks whether a contact row exists
     /// beyond what the ALPN gate already revealed by accepting the connection.
@@ -666,6 +923,12 @@ impl Wire {
             // Stable across epochs, so a Cell one release behind can still be
             // TOLD that it is one release behind.
             ALPN_HELLO.to_vec(),
+            // Offered by every Cell, answered only by one carrying mail. A
+            // Cell that serves nobody refuses each verb on its merits, which
+            // is a smaller surface than deciding at bind time whether to
+            // advertise: the registration list is the switch, and it can
+            // change while the endpoint is up.
+            ALPN_MAILBOX.to_vec(),
         ];
         let endpoint = match reach {
             Reach::Internet => Endpoint::builder(presets::N0),
@@ -862,10 +1125,9 @@ impl Wire {
         let cell = store::cells::local(&self.engine.store.pool)
             .await?
             .ok_or_else(|| EngineError::Consequence("this Cell has no Cell Record".into()))?;
-        let node_id: EndpointId = invite
-            .node_id
-            .parse()
-            .map_err(|_| EngineError::Consequence("the code carries an unreadable node id".into()))?;
+        let node_id: EndpointId = invite.node_id.parse().map_err(|_| {
+            EngineError::Consequence("the code carries an unreadable node id".into())
+        })?;
         let mut addr = EndpointAddr::new(node_id);
         for text in &invite.addrs {
             if let Ok(socket) = text.parse::<SocketAddr>() {
@@ -879,6 +1141,9 @@ impl Wire {
         }
         let operational = self.engine.operational_key_for(&invite.organ_uid).await?;
         let operational_key = operational.public_key_b64();
+        // Generated on this device, now: enrolling is the only chance to get
+        // into the roster without a second round trip to the root holder.
+        let sealing_key = self.engine.published_sealing_key().await?;
         let response = self
             .request(
                 addr,
@@ -889,6 +1154,7 @@ impl Wire {
                     node_id: self.node_id().to_string(),
                     label: cell.label.clone(),
                     operational_key,
+                    sealing_key,
                 },
             )
             // A closed connection is the SHAPE a spent code takes, not a
@@ -907,7 +1173,9 @@ impl Wire {
                 ))
             })?;
         let signed = match response {
-            WireResponse::Roster { roster: Some(signed) } => signed,
+            WireResponse::Roster {
+                roster: Some(signed),
+            } => signed,
             WireResponse::Roster { roster: None } => {
                 return Err(EngineError::Consequence(
                     "the other Cell accepted the code but returned no roster".into(),
@@ -995,7 +1263,11 @@ impl Wire {
         // shut on a pair that looked like it succeeded.
         let ours = self.engine.introduction().await?;
         let response = self
-            .request(addr, ALPN_THREAD, &WireRequest::Introduce { intro: ours })
+            .request(
+                addr.clone(),
+                ALPN_THREAD,
+                &WireRequest::Introduce { intro: ours },
+            )
             .await?;
         let intro = match response {
             WireResponse::Introduction { intro } => intro,
@@ -1006,6 +1278,25 @@ impl Wire {
             }
         };
         self.engine.adopt_introduction(&intro, 1).await?;
+
+        // Their roster, in the same breath as the introduction and in this
+        // order: the introduction carries the ROOT public key, and a roster
+        // arriving before it would have nothing to be checked against
+        // (`enrolment.rs` sequences the same two for the same reason).
+        //
+        // Pairing is where this belongs because a brand-new contact is the
+        // one case where "we hold no roster for them" is guaranteed, and the
+        // admissibility gate cannot check an op's author without one. Failure
+        // never fails the pair: a peer mid-first-boot has no roster to give,
+        // and the sync pass asks again every time.
+        if let Ok(WireResponse::Roster {
+            roster: Some(roster),
+        }) = self
+            .request(addr, ALPN_THREAD, &WireRequest::FetchRoster)
+            .await
+        {
+            self.adopt_fetched_roster(&roster, &intro.organ_uid).await;
+        }
 
         let pool = &self.engine.store.pool;
         // The name the local user typed wins over anything they claimed.
@@ -1450,6 +1741,26 @@ impl Wire {
     /// therefore propagates at the speed of roster DISTRIBUTION, not at the
     /// speed of expiry, and the honest statement is that a revoked Cell keeps
     /// sibling access until the Cells that remain learn the new roster.
+    /// Whether our own roster lists this node at all, capability or not.
+    ///
+    /// Deliberately weaker than [`Self::sibling_organ`] and never a substitute
+    /// for it: this says "the root signed this device into our list", which is
+    /// enough to be IDENTIFIED and nowhere near enough to write ops in the
+    /// Organ's name.
+    pub async fn roster_names_node(&self, node_id: &str) -> bool {
+        let Ok(Some(organ)) = store::organs::local(&self.engine.store.pool).await else {
+            return false;
+        };
+        let Ok(Some(signed)) = self.engine.roster_of(&organ.uid).await else {
+            return false;
+        };
+        signed
+            .roster
+            .cells
+            .iter()
+            .any(|member| member.node_id == node_id)
+    }
+
     pub async fn sibling_organ(&self, node_id: &str) -> Option<String> {
         let organ = store::organs::local(&self.engine.store.pool).await.ok()??;
         let signed = self.engine.roster_of(&organ.uid).await.ok()??;
@@ -1482,9 +1793,10 @@ impl Wire {
     /// constrain it with.
     async fn may_represent(&self) -> bool {
         let pool = &self.engine.store.pool;
-        let (Ok(Some(organ)), Ok(Some(cell))) =
-            (store::organs::local(pool).await, store::cells::local(pool).await)
-        else {
+        let (Ok(Some(organ)), Ok(Some(cell))) = (
+            store::organs::local(pool).await,
+            store::cells::local(pool).await,
+        ) else {
             return false;
         };
         // Mid-enrolment the local Organ is already the joined one and its
@@ -1554,7 +1866,17 @@ impl Wire {
         // with `trust='unknown'` is someone added but not yet vetted, and the
         // policy is explicit that they get the thread door and nothing else.
         let known = sibling.is_some() || contact.as_ref().is_some_and(|c| c.trust == "known");
-        let identified = sibling.is_some() || contact.is_some();
+        // Membership WITHOUT a capability. `sibling_organ` requires
+        // `CAP_WRITE`, so a front door or a relay Cell of our own Organ — a
+        // device the root signed into the list — arrives here looking exactly
+        // like a stranger. That is right for syncing and wrong for being
+        // identified: it is the one machine in the roster most likely to be
+        // always on, and the verbs it needs (publishing its own rotated mail
+        // key) authorize themselves against the roster entry it already has.
+        // It opens nothing on its own — the arm below still admits a listed
+        // verb and nothing else.
+        let listed = self.roster_names_node(&peer.to_string()).await;
+        let identified = sibling.is_some() || contact.is_some() || listed;
 
         match (alpn.as_slice(), known) {
             (ALPN_SYNC, true) => {}
@@ -1588,6 +1910,20 @@ impl Wire {
             // "Which epoch do you speak", and nothing else. Answered only to a
             // Cell of our own Organ or a known contact — a version string is a
             // fingerprint, and a stranger has no business collecting one.
+            // THE MAILBOX DOOR. Open to anyone, which is the policy this ALPN
+            // exists to express: a sender leaving mail for one of our
+            // registered recipients is a stranger by design, because being
+            // reachable while offline matters most for people outside the
+            // carrier's own circle.
+            //
+            // What keeps it safe is not who may knock but what may be asked.
+            // The verb gate below admits the four mailbox verbs and nothing
+            // else — no sync, no introduction, no enrolment — and three of the
+            // four prove the caller is the recipient by presenting a roster
+            // that chains from the key registration recorded. A Cell carrying
+            // for nobody refuses every one of them, so this door being open
+            // costs an unused Cell exactly one refusal per knock.
+            (ALPN_MAILBOX, _) => {}
             (ALPN_HELLO, _) => {
                 if !identified {
                     connection.close(0u32.into(), b"not known");
@@ -1611,6 +1947,21 @@ impl Wire {
                     store::logins::person_for_organ(&self.engine.store.pool, &organ).await?
                 } else {
                     None
+                };
+                // A granted Organ login names one of OUR Persons and skips the
+                // password entirely, so it is a second door onto the same
+                // identity and standing has to hold it shut too. Falling back
+                // to `None` rather than refusing outright is deliberate: the
+                // contact is still a contact, and they land wherever an
+                // ungranted one lands instead of being told which of our
+                // people we turned off.
+                let granted = match granted {
+                    Some(person)
+                        if store::people::is_active(&self.engine.store.pool, &person).await? =>
+                    {
+                        Some(person)
+                    }
+                    _ => None,
                 };
                 if granted.is_none() && !self.accept_logins().await {
                     connection.close(0u32.into(), b"this Cell does not accept live logins");
@@ -1689,14 +2040,52 @@ impl Wire {
                 .await
                 .map_err(|error| EngineError::Consequence(format!("peer frame: {error}")))?;
             let response = match serde_json::from_slice::<WireRequest>(&raw) {
+                // THE MAILBOX DOOR SERVES MAILBOX VERBS AND NOTHING ELSE, and
+                // no other door serves them.
+                //
+                // Both halves matter. Without the first, a door deliberately
+                // open to strangers would reach the sync verbs, and a carrier
+                // that converges nothing would converge whatever it was sent.
+                // Without the second, the mailbox verbs would be reachable
+                // from a door with a different admission policy, so the
+                // reasoning about who may collect would depend on which ALPN
+                // the caller happened to pick.
+                Ok(request)
+                    if (alpn.as_slice() == ALPN_MAILBOX)
+                        != matches!(
+                            request,
+                            WireRequest::MailboxDeposit { .. }
+                                | WireRequest::MailboxWaiting { .. }
+                                | WireRequest::MailboxCollect { .. }
+                                | WireRequest::MailboxCollected { .. }
+                                | WireRequest::MailboxAskToCarry { .. }
+                                | WireRequest::MailboxRedeemInvite { .. }
+                                | WireRequest::MailboxExpiries
+                                | WireRequest::MailboxExpiriesHeard { .. }
+                        ) =>
+                {
+                    WireResponse::Refused {
+                        code: "wrong_door".into(),
+                        message: "that verb is not served on this door".into(),
+                    }
+                }
                 // On the thread door an unknown peer gets `Introduction` and
                 // nothing else — the gate above let them in to be PAIRED with,
                 // not to sync.
                 // On the thread door an unknown peer gets Introduction (to be
                 // paired with) and Enrol (a new device of YOUR OWN identity,
                 // which proves itself with a single-use token) — nothing else.
+                // The mailbox door is exempt, and only it. Every verb it
+                // serves is admitted from an unknown peer BY DESIGN — a sender
+                // leaving mail is a stranger, and three of the four verbs
+                // prove the caller is the recipient by presenting a roster
+                // rather than by being a contact. Without this exemption the
+                // gate below would refuse the one door whose policy is
+                // deliberately open, and it would do so with `not_known`,
+                // which is also the wrong thing to tell a depositor.
                 Ok(request)
                     if !known
+                        && alpn.as_slice() != ALPN_MAILBOX
                         && !matches!(
                             request,
                             WireRequest::Introduction
@@ -1716,6 +2105,19 @@ impl Wire {
                                 // can reach had to be mentioned in that same
                                 // conversation first.
                                 | WireRequest::FetchReference { .. }
+                                // A Cell of our own Organ that holds NO write
+                                // capability — a front door, a relay — is
+                                // still a Cell whose mail key is its own, and
+                                // it is the machine most likely to be always
+                                // on. `known` is capability-gated, so without
+                                // this the one device that most needs to stay
+                                // mailable is refused at the door and rotates
+                                // into silence. It admits nothing: the verb
+                                // authorizes itself against the roster, by
+                                // requiring the connection's proven node id to
+                                // be the entry it is moving, and it can move
+                                // nothing but a sealing key.
+                                | WireRequest::PublishSealingKey { .. }
                         ) =>
                 {
                     WireResponse::Refused {
@@ -1749,19 +2151,19 @@ impl Wire {
                     | WireRequest::OfferGrant { intro, .. } = &request
                     {
                         if from_organ.is_empty() && !self.may_represent().await {
-                            let response = match self.hold_at_the_door(&peer.to_string(), intro).await
-                            {
-                                Ok(()) => WireResponse::Refused {
-                                    code: "held_for_owner".into(),
-                                    message: "this is a front door and cannot accept for its \
+                            let response =
+                                match self.hold_at_the_door(&peer.to_string(), intro).await {
+                                    Ok(()) => WireResponse::Refused {
+                                        code: "held_for_owner".into(),
+                                        message: "this is a front door and cannot accept for its \
                                               owner. Your request is waiting for one of their \
                                               devices to see it."
-                                        .into(),
-                                },
-                                Err(error) => WireResponse::Error {
-                                    message: error.to_string(),
-                                },
-                            };
+                                            .into(),
+                                    },
+                                    Err(error) => WireResponse::Error {
+                                        message: error.to_string(),
+                                    },
+                                };
                             let bytes = serde_json::to_vec(&response)
                                 .map_err(|error| EngineError::Consequence(error.to_string()))?;
                             send.write_all(&bytes).await.map_err(|error| {
@@ -1800,7 +2202,7 @@ impl Wire {
                         }
                         _ => from_organ.clone(),
                     };
-                    self.handle(&authenticated, request).await
+                    self.handle(&authenticated, &peer.to_string(), request).await
                 }
                 // Fail closed on the unknown: a request shape this build does
                 // not recognise is refused, never guessed at.
@@ -1824,7 +2226,16 @@ impl Wire {
 
     /// Serve one request. `authenticated` is the contact uid iroh proved on
     /// this connection — never a value read out of the request body.
-    async fn handle(&self, authenticated: &str, request: WireRequest) -> WireResponse {
+    /// `peer` is the node id Iroh authenticated for this connection. Passed
+    /// alongside the Organ uid because the mailbox verbs are answered to a
+    /// caller who may be no contact of ours at all: their claim to an Organ
+    /// is proven by a roster naming THIS node id, not by a contact row.
+    async fn handle(
+        &self,
+        authenticated: &str,
+        peer: &str,
+        request: WireRequest,
+    ) -> WireResponse {
         match request {
             // Both answer with ours. `Introduce` additionally bound THEIRS
             // above, in `serve_connection`, where the NodeId iroh proved is
@@ -1944,6 +2355,7 @@ impl Wire {
                 node_id,
                 label,
                 operational_key,
+                sealing_key,
             } => {
                 // Enrolling requires the ROOT, which is the point: adding a
                 // device to your identity is a deliberate, occasional act, and
@@ -1973,6 +2385,7 @@ impl Wire {
                             node_id,
                             label,
                             operational_key,
+                            sealing_key,
                             front_door: false,
                             // An enrolled device is an ordinary personal Cell.
                             // Narrowing one (a relay, a phone you no longer
@@ -2343,11 +2756,8 @@ impl Wire {
                     .await
                     .ok()
                     .flatten();
-                match store::visibility::hidden_from_organ(
-                    &self.engine.store.pool,
-                    authenticated,
-                )
-                .await
+                match store::visibility::hidden_from_organ(&self.engine.store.pool, authenticated)
+                    .await
                 {
                     Ok(hidden) if hidden.contains(&record) => return reference_gone(),
                     Ok(_) => {}
@@ -2423,11 +2833,8 @@ impl Wire {
                         message: "a vector is served only for your Organ or ours".into(),
                     };
                 }
-                match store::sync_ops::version_vector_for_organ(
-                    &self.engine.store.pool,
-                    &organ_uid,
-                )
-                .await
+                match store::sync_ops::version_vector_for_organ(&self.engine.store.pool, &organ_uid)
+                    .await
                 {
                     Ok(vector) => WireResponse::Vector { vector },
                     Err(error) => WireResponse::Error {
@@ -2489,6 +2896,190 @@ impl Wire {
                     },
                 }
             }
+            // --- the mailbox (Ontology C4) ---------------------------------
+            //
+            // Reached only over `ALPN_MAILBOX`; the gate above guarantees it.
+            WireRequest::MailboxDeposit { body } => {
+                match self.engine.accept_bundle(&body, peer).await {
+                    Ok(uid) => WireResponse::MailboxAccepted { uid },
+                    // A refusal, never an error: each of these is an ANSWER a
+                    // sender can act on — stop trying, try the other pickup
+                    // point, come back later — and telling them apart is the
+                    // difference between a queue that drains and one that
+                    // spins.
+                    Err(refusal) => WireResponse::Refused {
+                        code: refusal.code().into(),
+                        message: refusal.to_string(),
+                    },
+                }
+            }
+            WireRequest::MailboxWaiting { organ_uid, roster } => {
+                match self
+                    .engine
+                    .may_collect(&organ_uid, peer, &roster)
+                    .await
+                {
+                    Ok(true) => match store::mailbox::waiting(&self.engine.store.pool, &organ_uid)
+                        .await
+                    {
+                        Ok(waiting) => WireResponse::MailboxWaiting {
+                            bundles: waiting.bundles,
+                            bytes: waiting.bytes,
+                            oldest_expires_at: waiting.oldest_expires_at,
+                        },
+                        Err(error) => WireResponse::Error {
+                            message: error.to_string(),
+                        },
+                    },
+                    Ok(false) => not_your_mailbox(),
+                    Err(error) => WireResponse::Error {
+                        message: error.to_string(),
+                    },
+                }
+            }
+            WireRequest::MailboxCollect {
+                organ_uid,
+                roster,
+                limit,
+            } => match self
+                .engine
+                .may_collect(&organ_uid, peer, &roster)
+                .await
+            {
+                Ok(true) => {
+                    match self
+                        .engine
+                        .bundles_for(&organ_uid, limit.clamp(1, 256))
+                        .await
+                    {
+                        Ok(held) => WireResponse::MailboxBundles {
+                            bundles: held
+                                .into_iter()
+                                .map(|bundle| MailboxBundle {
+                                    uid: bundle.uid,
+                                    from_organ: bundle.from_organ,
+                                    from_cell: bundle.from_cell,
+                                    body: bundle.body,
+                                    received_at: bundle.received_at,
+                                    expires_at: bundle.expires_at,
+                                })
+                                .collect(),
+                        },
+                        Err(error) => WireResponse::Error {
+                            message: error.to_string(),
+                        },
+                    }
+                }
+                Ok(false) => not_your_mailbox(),
+                Err(error) => WireResponse::Error {
+                    message: error.to_string(),
+                },
+            },
+            WireRequest::MailboxCollected {
+                organ_uid,
+                roster,
+                uids,
+            } => match self
+                .engine
+                .may_collect(&organ_uid, peer, &roster)
+                .await
+            {
+                Ok(true) => match self.engine.confirm_collected(&organ_uid, &uids).await {
+                    Ok(dropped) => WireResponse::Applied {
+                        applied: dropped as usize,
+                    },
+                    Err(error) => WireResponse::Error {
+                        message: error.to_string(),
+                    },
+                },
+                Ok(false) => not_your_mailbox(),
+                Err(error) => WireResponse::Error {
+                    message: error.to_string(),
+                },
+            },
+            // The ask. A refusal here is about the ASKER and says nothing
+            // about anybody else this box serves, so unlike the collection
+            // refusals it is allowed to be specific — "I do not know you" is
+            // information the asker already has and can act on.
+            WireRequest::MailboxAskToCarry { roster } => {
+                match self.engine.note_carry_request(&roster).await {
+                    Ok(()) => WireResponse::MailboxAsked,
+                    Err(error) => WireResponse::Refused {
+                        code: "mailbox_ask_refused".into(),
+                        message: error.to_string(),
+                    },
+                }
+            }
+            WireRequest::MailboxRedeemInvite { token, roster } => {
+                match self.engine.redeem_mailbox_invite(&token, &roster).await {
+                    Ok(registration) => WireResponse::MailboxCarrying {
+                        label: registration.label,
+                        quota_bytes: registration.quota_bytes,
+                    },
+                    Err(error) => WireResponse::Refused {
+                        code: "mailbox_invite_refused".into(),
+                        message: error.to_string(),
+                    },
+                }
+            }
+            // A sibling verb: served only to a Cell of our OWN Organ, because
+            // it changes the roster. `is_sibling` is set from the identity
+            // iroh proved, never from anything in the body.
+            WireRequest::PublishSealingKey {
+                cell_uid,
+                sealing_key,
+            } => {
+                // Authorized by the ROSTER and by nothing else: the entry
+                // named must be a member of our own roster AND must record
+                // the node id this connection proved. Deliberately not gated
+                // on `is_sibling`, which requires a write capability — a front
+                // door has none by design and is exactly the Cell that must
+                // stay mailable.
+                match self
+                    .engine
+                    .republish_sealing_key(peer, &cell_uid, sealing_key)
+                    .await
+                {
+                    Ok(()) => WireResponse::Applied { applied: 1 },
+                    Err(error) => WireResponse::Refused {
+                        code: "sealing_key_refused".into(),
+                        message: error.to_string(),
+                    },
+                }
+            }
+            // Answered to the NODE, never to a name in the body — there is no
+            // name in the body. A sender learns what became of its own
+            // deposits and cannot phrase a question about anybody else's.
+            WireRequest::MailboxExpiries => match self.engine.expiries_for(peer).await {
+                Ok(notices) => WireResponse::MailboxExpired {
+                    expired: notices
+                        .into_iter()
+                        .map(|notice| ExpiredMail {
+                            uid: notice.uid,
+                            to_organ: notice.to_organ,
+                            bytes: notice.bytes,
+                            received_at: notice.received_at,
+                            // `pending_notices` and `expiries_for_node` both
+                            // read the expiry stamp out as `expires_at`, the
+                            // shared bundle shape's field.
+                            expired_at: notice.expires_at,
+                        })
+                        .collect(),
+                },
+                Err(error) => WireResponse::Error {
+                    message: error.to_string(),
+                },
+            },
+            WireRequest::MailboxExpiriesHeard { uids } => {
+                match self.engine.forget_expiries(peer, &uids).await {
+                    Ok(dropped) => WireResponse::Applied {
+                        applied: dropped as usize,
+                    },
+                    Err(error) => WireResponse::Error {
+                        message: error.to_string(),
+                    },
+                }
+            }
         }
     }
 
@@ -2524,7 +3115,33 @@ impl Wire {
             tracing::debug!(%error, "pending introductions not reconciled this pass");
         }
         let pushed = self.push_outbox().await?;
-        let pulled = self.pull_catch_up().await? + self.pull_siblings().await?;
+        let mut pulled = self.pull_catch_up().await? + self.pull_siblings().await?;
+        // Then the boxes we published. Best-effort like everything else in the
+        // pass: a carrier being down is not a sync failure.
+        match self.collect_own_mail().await {
+            Ok(count) => pulled += count,
+            Err(error) => tracing::debug!(%error, "mail not collected this pass"),
+        }
+        // And what became of the mail we left elsewhere. Same pass, same
+        // best-effort rule: this is the direction that reports a FAILURE, and
+        // a failure nobody is ever told about is the thing the retention rule
+        // exists to prevent.
+        // Before asking anybody about mail: make sure senders can still write
+        // to THIS device. A rotated key that never reaches the roster makes a
+        // Cell quietly unmailable, and the pass is where it is noticed.
+        if let Err(error) = self.publish_own_sealing_key().await {
+            tracing::debug!(%error, "this Cell's mail key was not published this pass");
+        }
+        if let Err(error) = self.hear_about_expired_mail().await {
+            tracing::debug!(%error, "carriers not asked about expired mail this pass");
+        }
+        // A carrier does its own sweeping on the same beat. Nothing else runs
+        // it: without this an unattended box would hold expired bundles until
+        // an operator happened to open the panel, which is exactly the machine
+        // — headless, always on — that a mailbox usually is.
+        if let Err(error) = self.engine.sweep_mailbox().await {
+            tracing::debug!(%error, "the mailbox was not swept this pass");
+        }
         // The idle moment, after every peer has been served: fold long tails
         // into snapshots, then drop what every contact already has.
         //
@@ -2655,6 +3272,26 @@ impl Wire {
     /// first. `None` means every candidate failed and the directory had
     /// nothing newer — the ordinary state of a contact who is simply offline.
     pub async fn dial(&self, contact: &store::organs::Contact) -> Option<Connection> {
+        let connection = self.dial_candidates(contact).await;
+        // Reachability is recorded HERE, at the one place every caller goes
+        // through, rather than in the push path that consumes it. It is a
+        // property of the PEER: the catch-up pull dials the same contacts a
+        // moment later, and a contact that answered there has plainly not been
+        // unreachable since whenever the push happened to fail. Recording it
+        // only on push would leave a stale window ticking towards a fallback
+        // nobody needs.
+        let pool = &self.engine.store.pool;
+        let noted = match connection {
+            Some(_) => store::organs::mark_reachable(pool, &contact.record_uid).await,
+            None => store::organs::mark_unreachable(pool, &contact.record_uid).await,
+        };
+        if let Err(error) = noted {
+            tracing::debug!(%error, contact = %contact.record_uid, "reachability not recorded");
+        }
+        connection
+    }
+
+    async fn dial_candidates(&self, contact: &store::organs::Contact) -> Option<Connection> {
         // `organ_contact.node_id` is the authoritative target; roster Cells are
         // ADDITIONAL candidates. A missing or expired roster therefore cannot
         // make a known contact unreachable.
@@ -2819,20 +3456,102 @@ impl Wire {
                         }
                     };
                     let Some(connection) = entry else {
-                        return Err(format!("{} unreachable", contact.record_uid));
+                        drop(open);
+                        return wire.mail_if_due(&contact, root.as_deref(), &batch).await;
                     };
                     let request = match root {
                         Some(root) => WireRequest::PushGrantOps { root, batch },
                         None => WireRequest::PushOps { batch },
                     };
                     match wire.exchange(&connection, &request).await {
-                        Ok(WireResponse::Applied { .. }) => Ok(()),
-                        Ok(other) => Err(format!("{other:?}")),
-                        Err(error) => Err(error.to_string()),
+                        Ok(WireResponse::Applied { .. }) => Delivery::Sent,
+                        // A peer that ANSWERED and refused is not unreachable,
+                        // and mail would not change its mind. Only a failed
+                        // dial reaches the fallback above.
+                        Ok(other) => Delivery::Failed(format!("{other:?}")),
+                        Err(error) => Delivery::Failed(error.to_string()),
                     }
                 }
             })
             .await
+    }
+
+    /// How long a contact must have been unreachable before we start leaving
+    /// their mail with somebody else.
+    ///
+    /// Ten minutes: long enough that a NAT that has not opened, a relay
+    /// hiccup, a lid closed for a meeting or a laptop between wifi networks
+    /// all resolve themselves inside it, and short enough that a genuinely
+    /// offline contact gets their ops the same working session. A tunable,
+    /// not a rule — what is load-bearing is that it is NOT zero.
+    pub const MAIL_AFTER: chrono::Duration = chrono::Duration::minutes(10);
+
+/// How long a deposit stays on our books past the point where the carrier
+/// cannot still be holding it — the window in which an expiry report can
+/// arrive and be believed, and be read by a person afterwards.
+///
+/// Fifteen days rather than a number tuned to anything: mail expires at the
+/// retention window, and a person who opens Lince a fortnight later should
+/// still find out their message never landed.
+pub const NOTICE_LINGER_DAYS: i64 = 15;
+
+    /// Leave a batch with one of the recipient's published carriers, but only
+    /// once the retry window has passed (Ontology C4).
+    ///
+    /// The window is the whole point. A failed dial almost always means "not
+    /// right now" rather than "offline", and falling back on the first one
+    /// routes every batch through somebody else's disk — which stops the
+    /// direct path being tried in earnest, hands a carrier the timing pattern
+    /// of a correspondence that never needed one, and spends their quota on
+    /// traffic that would have connected a moment later.
+    async fn mail_if_due(
+        &self,
+        contact: &store::organs::Contact,
+        root: Option<&str>,
+        batch: &OpBatch,
+    ) -> Delivery {
+        let unreachable = format!("{} unreachable", contact.record_uid);
+        // `dial` set this a moment ago, so the row we were handed at the top
+        // of the drain is already stale — read it fresh.
+        let now = chrono::Utc::now();
+        let since = match store::organs::contact(&self.engine.store.pool, &contact.record_uid).await
+        {
+            Ok(Some(fresh)) => fresh,
+            _ => return Delivery::Failed(unreachable),
+        };
+        let waited = |stamp: &Option<String>| {
+            stamp
+                .as_deref()
+                .and_then(|when| chrono::DateTime::parse_from_rfc3339(when).ok())
+                .map(|when| now - when.with_timezone(&chrono::Utc))
+        };
+        match waited(&since.unreachable_since) {
+            Some(elapsed) if elapsed >= Self::MAIL_AFTER => {}
+            // Either they have only just stopped answering, or the column is
+            // unreadable. Both wait.
+            _ => return Delivery::Failed(unreachable),
+        }
+        // And not again for another window. A contact that stays down would
+        // otherwise be re-sealed and re-deposited on every pass, filling their
+        // own quota at their own carrier with copies of ops already sitting
+        // there.
+        if let Some(elapsed) = waited(&since.mailed_at) {
+            if elapsed < Self::MAIL_AFTER {
+                return Delivery::Failed(unreachable);
+            }
+        }
+        match self.leave_mail(&contact.record_uid, root, batch).await {
+            Ok(MailLeft::Left { carrier, uid }) => {
+                tracing::info!(
+                    contact = %contact.record_uid, %carrier, %uid,
+                    "peer unreachable past the retry window; batch left as mail"
+                );
+                Delivery::Mailed
+            }
+            // Every other answer is an ordinary failure: nothing was left, so
+            // the rows stay queued and the next pass tries the peer again.
+            Ok(_) | Err(_) => Delivery::Failed(unreachable),
+        }
     }
 
     /// Converge with the other Cells of THIS Organ (Ontology §11, C3).
@@ -2927,13 +3646,11 @@ impl Wire {
     /// Ask a peer which wire epoch it speaks, over the ALPN that never
     /// changes. `None` means it did not answer at all.
     pub async fn hello(&self, addr: EndpointAddr) -> Option<u32> {
-        let connection = tokio::time::timeout(
-            DIAL_TIMEOUT,
-            self.endpoint.connect(addr, ALPN_HELLO),
-        )
-        .await
-        .ok()?
-        .ok()?;
+        let connection =
+            tokio::time::timeout(DIAL_TIMEOUT, self.endpoint.connect(addr, ALPN_HELLO))
+                .await
+                .ok()?
+                .ok()?;
         let mut recv = tokio::time::timeout(DIAL_TIMEOUT, connection.accept_uni())
             .await
             .ok()?
@@ -3005,7 +3722,11 @@ impl Wire {
     /// pass. In memory and transient, like the nearby list and for the same
     /// reason: it is an observation about right now, not a fact about anyone.
     pub fn stale_siblings(&self) -> Vec<StaleSibling> {
-        self.engine.stale_siblings.lock().expect("stale siblings").clone()
+        self.engine
+            .stale_siblings
+            .lock()
+            .expect("stale siblings")
+            .clone()
     }
 
     /// Ask a contact what they hold of OUR ops, and say whether the two logs
@@ -3068,7 +3789,11 @@ impl Wire {
         // "you enrolled a device and this contact never learned about it".
         let unknown_cells = ours
             .iter()
-            .filter(|entry| !theirs.iter().any(|held| held.actor_cell == entry.actor_cell))
+            .filter(|entry| {
+                !theirs
+                    .iter()
+                    .any(|held| held.actor_cell == entry.actor_cell)
+            })
             .count();
         Ok(Some(AuditAgreement {
             contact_organ: contact_organ.to_string(),
@@ -3148,6 +3873,43 @@ impl Wire {
         Ok(())
     }
 
+    /// Ask a peer for their signed Cell roster over an open connection and
+    /// adopt it. Best effort by design: a peer that has not published one yet
+    /// answers `None`, which is a legitimate state (a Cell that has never had
+    /// an endpoint, or whose root key is deliberately offline), not a failure.
+    async fn refresh_roster(&self, connection: &Connection, organ_uid: &str) {
+        if let Ok(WireResponse::Roster {
+            roster: Some(roster),
+        }) = self.exchange(connection, &WireRequest::FetchRoster).await
+        {
+            self.adopt_fetched_roster(&roster, organ_uid).await;
+        }
+    }
+
+    /// The half both roster paths share: check the roster is the one we asked
+    /// for, then adopt it, turning a refusal into an alarm rather than a
+    /// silent skip.
+    async fn adopt_fetched_roster(&self, roster: &crate::roster::SignedRoster, organ_uid: &str) {
+        // A peer does not get to hand us a third Organ's roster. Same rule as
+        // the succession check above it: what arrives on a connection may only
+        // speak for the Organ that connection authenticated.
+        if roster.roster.organ_uid != organ_uid {
+            return;
+        }
+        match self.engine.adopt_roster(roster).await {
+            Ok(crate::roster::RosterOutcome::Refused) => {
+                // The alarm. A roster that does not chain is a possible
+                // takeover, never a silent update.
+                tracing::warn!(
+                    organ = %organ_uid,
+                    "REFUSED a roster that does not chain from a held key"
+                );
+            }
+            Ok(_) => {}
+            Err(error) => tracing::debug!(%error, "roster refresh failed"),
+        }
+    }
+
     async fn pull_catch_up(&self) -> Result<usize, EngineError> {
         let pool = &self.engine.store.pool;
         let mut pulled = 0usize;
@@ -3158,6 +3920,24 @@ impl Wire {
             let Some(connection) = self.dial(&contact).await else {
                 continue;
             };
+            // Their roster FIRST, before a single op is imported, and for every
+            // tier rather than only `known`. Two reasons, and the ordering is
+            // the load-bearing one:
+            //
+            //  * it is how a device they enrolled becomes reachable without
+            //    re-pairing — the original reason this call exists; and
+            //  * the admissibility gate can only check an op's `actor_cell`
+            //    against a roster it already holds. Fetching afterwards meant
+            //    the FIRST pass with a new contact was always unchecked, and
+            //    the first pass is where a full backlog arrives.
+            //
+            // Unknown-tier contacts are included because they push too: a
+            // conversation grant carries ops, and an unknown peer that never
+            // had its roster fetched would stay permanently unverifiable. The
+            // roster is only information — `adopt_roster` still refuses one
+            // that does not chain from a key we hold — so fetching it grants
+            // nothing the tier does not already allow.
+            self.refresh_roster(&connection, &contact.record_uid).await;
             // Only known contacts receive the general Organ feed. An unknown
             // peer can still synchronize roots both parties explicitly
             // accepted below.
@@ -3168,15 +3948,9 @@ impl Wire {
                 // they enrolled last week, and a partially-applied previous
                 // batch all resolve to the same question — "what am I
                 // missing" — instead of three separate failure modes.
-                let vector = store::sync_ops::version_vector_for_organ(
-                    pool,
-                    &contact.record_uid,
-                )
-                .await?;
-                let request = WireRequest::FetchOpsSince {
-                    vector,
-                    limit: 500,
-                };
+                let vector =
+                    store::sync_ops::version_vector_for_organ(pool, &contact.record_uid).await?;
+                let request = WireRequest::FetchOpsSince { vector, limit: 500 };
                 if let Ok(WireResponse::Ops { ops, head, .. }) =
                     self.exchange(&connection, &request).await
                 {
@@ -3294,27 +4068,6 @@ impl Wire {
                     }
                 }
             }
-            // And refresh their roster, which is how a device they enrolled
-            // becomes reachable without re-pairing.
-            if let Ok(WireResponse::Roster {
-                roster: Some(roster),
-            }) = self.exchange(&connection, &WireRequest::FetchRoster).await
-            {
-                if roster.roster.organ_uid == contact.record_uid {
-                    match self.engine.adopt_roster(&roster).await {
-                        Ok(crate::roster::RosterOutcome::Refused) => {
-                            // The alarm. A roster that does not chain is a
-                            // possible takeover, never a silent update.
-                            tracing::warn!(
-                                organ = %contact.record_uid,
-                                "REFUSED a roster that does not chain from a held key"
-                            );
-                        }
-                        Ok(_) => {}
-                        Err(error) => tracing::debug!(%error, "roster refresh failed"),
-                    }
-                }
-            }
             connection.close(0u32.into(), b"done");
         }
         Ok(pulled)
@@ -3326,6 +4079,519 @@ impl Wire {
     /// already proved the answering endpoint holds the private half of the
     /// NodeId we dialed. Reaching that NodeId reaches that keypair or nothing,
     /// so there is no wire left to substitute on.
+    /// Leave a sealed bundle with a carrier.
+    ///
+    /// The caller has already sealed it, so nothing here can see what it is
+    /// carrying — which is the property being preserved: the code that dials a
+    /// carrier and the code that can read the mail are deliberately not the
+    /// same code.
+    pub async fn deposit_bundle(
+        &self,
+        addr: impl Into<EndpointAddr>,
+        body: &str,
+    ) -> Result<Result<String, String>, EngineError> {
+        match self
+            .request(
+                addr,
+                ALPN_MAILBOX,
+                &WireRequest::MailboxDeposit {
+                    body: body.to_string(),
+                },
+            )
+            .await?
+        {
+            WireResponse::MailboxAccepted { uid } => Ok(Ok(uid)),
+            // The refusal CODE is returned rather than swallowed: a sender
+            // that cannot tell "not registered" from "full" cannot decide
+            // between giving up, retrying, and using the other pickup point.
+            WireResponse::Refused { code, .. } => Ok(Err(code)),
+            WireResponse::Error { message } => Err(EngineError::Consequence(message)),
+            _ => Err(EngineError::Consequence(
+                "carrier answered a deposit with something else".into(),
+            )),
+        }
+    }
+
+    /// Collect mail held for us, and confirm it so the carrier may drop it.
+    ///
+    /// The confirmation is a SECOND round trip on purpose. Deleting on send
+    /// would lose any bundle whose reply never arrived, and surviving exactly
+    /// that — the recipient being unreachable — is the entire point.
+    ///
+    /// Bundles are returned unopened. Opening is `seal::open`, which needs the
+    /// sender's roster to verify the signature, and that is a decision for the
+    /// import path rather than for the code that fetched the bytes.
+    pub async fn collect_mail(
+        &self,
+        addr: impl Into<EndpointAddr>,
+        organ_uid: &str,
+        roster: &SignedRoster,
+        limit: i64,
+    ) -> Result<Vec<MailboxBundle>, EngineError> {
+        let addr = addr.into();
+        let response = self
+            .request(
+                addr.clone(),
+                ALPN_MAILBOX,
+                &WireRequest::MailboxCollect {
+                    organ_uid: organ_uid.to_string(),
+                    roster: roster.clone(),
+                    limit,
+                },
+            )
+            .await?;
+        let bundles = match response {
+            WireResponse::MailboxBundles { bundles } => bundles,
+            WireResponse::Refused { message, .. } => {
+                return Err(EngineError::Consequence(message));
+            }
+            WireResponse::Error { message } => return Err(EngineError::Consequence(message)),
+            _ => {
+                return Err(EngineError::Consequence(
+                    "carrier answered a collection with something else".into(),
+                ));
+            }
+        };
+        if !bundles.is_empty() {
+            let uids = bundles.iter().map(|b| b.uid.clone()).collect::<Vec<_>>();
+            // Best effort. A confirmation that fails leaves the mail on the
+            // carrier and it arrives again next time — duplicate delivery,
+            // which the op log already absorbs by identity, and far better
+            // than the alternative failure of losing it.
+            let _ = self
+                .request(
+                    addr,
+                    ALPN_MAILBOX,
+                    &WireRequest::MailboxCollected {
+                        organ_uid: organ_uid.to_string(),
+                        roster: roster.clone(),
+                        uids,
+                    },
+                )
+                .await;
+        }
+        Ok(bundles)
+    }
+
+    /// Seal a batch for `to_organ` and leave it at one of THEIR pickup points.
+    ///
+    /// Tries them in the order the recipient published, and stops at the first
+    /// acceptance — a bundle left twice is a bundle imported twice, which the
+    /// op log absorbs but the recipient's quota does not.
+    ///
+    /// This is the primitive, not the policy. Nothing here decides WHEN mail
+    /// is the right move; the fallback rule (retry the peer first, mail only
+    /// after a window) attaches to `push_outbox`, and deliberately does not
+    /// live in the code that seals and dials.
+    pub async fn leave_mail(
+        &self,
+        to_organ: &str,
+        root: Option<&str>,
+        batch: &OpBatch,
+    ) -> Result<MailLeft, EngineError> {
+        let Some(their_roster) = self.engine.roster_of(to_organ).await? else {
+            return Ok(MailLeft::NoRoster);
+        };
+        if their_roster.roster.pickup.is_empty() {
+            return Ok(MailLeft::NoPickupPoints);
+        }
+        let bundle = self.engine.seal_batch_for(to_organ, root, batch).await?;
+        let body =
+            serde_json::to_string(&bundle).map_err(|e| EngineError::Consequence(e.to_string()))?;
+        let mut refusals = Vec::new();
+        for point in &their_roster.roster.pickup {
+            let Ok(id) = point.node_id.parse::<EndpointId>() else {
+                refusals.push((point.organ_uid.clone(), "unusable_node_id".to_string()));
+                continue;
+            };
+            match self.deposit_bundle(EndpointAddr::new(id), &body).await {
+                Ok(Ok(uid)) => {
+                    // Remembered here and nowhere else, because this is the
+                    // only moment both halves are in hand: the carrier's uid
+                    // for the bundle, and who we meant it for. Without the
+                    // row, the expiry report that may arrive weeks later is
+                    // an unverifiable claim about mail we cannot name.
+                    store::mail_left::record(
+                        &self.engine.store.pool,
+                        &uid,
+                        &point.organ_uid,
+                        &point.node_id,
+                        to_organ,
+                    )
+                    .await?;
+                    return Ok(MailLeft::Left {
+                        carrier: point.organ_uid.clone(),
+                        uid,
+                    });
+                }
+                Ok(Err(code)) => refusals.push((point.organ_uid.clone(), code)),
+                // A carrier that will not answer is the ordinary case this
+                // whole design exists for — try the next box rather than
+                // failing the send.
+                Err(_) => refusals.push((point.organ_uid.clone(), "unreachable".to_string())),
+            }
+        }
+        Ok(MailLeft::NoneAccepted { refusals })
+    }
+
+    /// Collect this Organ's own mail from every box it published, open it, and
+    /// import what was inside.
+    ///
+    /// Runs on the ordinary catch-up pass rather than on its own schedule: mail
+    /// is the path for when peers could not reach each other directly, so the
+    /// moment to look is the moment this Cell is awake and syncing anyway.
+    ///
+    /// Every failure is per-box and swallowed. A carrier that is down, or that
+    /// stopped carrying for us, must not stop the other box being checked or
+    /// the rest of the pass running.
+    pub async fn collect_own_mail(&self) -> Result<usize, EngineError> {
+        let points = self.engine.own_pickup_points().await?;
+        if points.is_empty() {
+            return Ok(0);
+        }
+        let Some(local) = store::organs::local(&self.engine.store.pool).await? else {
+            return Ok(0);
+        };
+        let Some(ours) = self.engine.roster_of(&local.uid).await? else {
+            return Ok(0);
+        };
+        let mut imported = 0usize;
+        for point in points {
+            let Ok(id) = point.node_id.parse::<EndpointId>() else {
+                continue;
+            };
+            let Ok(bundles) = self
+                .collect_mail(EndpointAddr::new(id), &local.uid, &ours, 50)
+                .await
+            else {
+                continue;
+            };
+            for held in bundles {
+                let Ok(bundle) = serde_json::from_str::<crate::seal::SealedBundle>(&held.body)
+                else {
+                    tracing::warn!(carrier = %point.organ_uid, "a collected bundle would not parse");
+                    continue;
+                };
+                match self.engine.open_mailed(&bundle).await {
+                    Ok(opened) => match self.engine.import_mailed_batch(&opened).await {
+                        Ok(count) => imported += count,
+                        Err(error) => tracing::warn!(%error, "a mailed batch was refused"),
+                    },
+                    // Loud, because a bundle we cannot open is either a forged
+                    // sender or a key we rotated past — both worth seeing.
+                    Err(error) => tracing::warn!(%error, "a collected bundle could not be opened"),
+                }
+            }
+        }
+        Ok(imported)
+    }
+
+    /// Get this Cell's current mail key into the roster, whatever it takes.
+    ///
+    /// One call covers both kinds of Cell, because the difference is only who
+    /// can sign: the Cell holding the root re-signs on the spot, and an
+    /// enrolled one asks a sibling that can. Runs on the ordinary pass and
+    /// compares the keyring against the published entry, so it is self-healing
+    /// — a device that rotated while the root Cell was off simply asks again
+    /// next pass, and a device already published does nothing at all.
+    ///
+    /// Returns whether the roster now names our current key.
+    pub async fn publish_own_sealing_key(&self) -> Result<bool, EngineError> {
+        let pool = &self.engine.store.pool;
+        let (Some(local_organ), Some(local_cell)) = (
+            store::organs::local(pool).await?,
+            store::cells::local(pool).await?,
+        ) else {
+            return Ok(false);
+        };
+        // Rotates and prunes as a side effect of being read, which is where
+        // rotation happens for every Cell — enrolled or not.
+        let Some(current) = self.engine.published_sealing_key().await? else {
+            return Ok(false);
+        };
+        let Some(held) = self.engine.roster_of(&local_organ.uid).await? else {
+            return Ok(false);
+        };
+        let published = held
+            .roster
+            .cells
+            .iter()
+            .find(|cell| cell.cell_uid == local_cell.uid)
+            .and_then(|cell| cell.sealing_key.clone());
+        if published.as_ref() == Some(&current) {
+            return Ok(true);
+        }
+        let ours = self.node_id().to_string();
+        // The Cell that holds the root does it itself. No connection, no
+        // request, and no second code path — the same function the verb calls.
+        if self
+            .engine
+            .republish_sealing_key(&ours, &local_cell.uid, current.clone())
+            .await
+            .is_ok()
+        {
+            return Ok(true);
+        }
+        for sibling in &held.roster.cells {
+            if sibling.cell_uid == local_cell.uid {
+                continue;
+            }
+            let Ok(id) = sibling.node_id.parse::<EndpointId>() else {
+                continue;
+            };
+            let asked = self
+                .request(
+                    EndpointAddr::new(id),
+                    // The THREAD door, not the sync door. A Cell with no
+                    // write capability never reaches the sync door at all,
+                    // and that is the Cell whose key most needs publishing.
+                    ALPN_THREAD,
+                    &WireRequest::PublishSealingKey {
+                        cell_uid: local_cell.uid.clone(),
+                        sealing_key: current.clone(),
+                    },
+                )
+                .await;
+            // A sibling that does not hold the root refuses, which is the
+            // ordinary answer from most of them and no reason to stop asking
+            // the rest.
+            if matches!(asked, Ok(WireResponse::Applied { .. })) {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
+    /// Ask every carrier holding something of ours whether any of it expired,
+    /// and record what we believe. Returns how many of our deposits were
+    /// reported dead.
+    ///
+    /// Runs beside `collect_own_mail` on the catch-up pass, for the same
+    /// reason: the moment this Cell is awake and talking to boxes is the
+    /// moment to find out. Every failure is per-carrier and swallowed — a box
+    /// that is down owes us an answer, not the rest of the pass.
+    ///
+    /// Prunes as it goes. A deposit that was collected normally produces no
+    /// message at all, so rows past the window are the ordinary success case
+    /// and keeping them would make this a permanent log of who we wrote to.
+    pub async fn hear_about_expired_mail(&self) -> Result<usize, EngineError> {
+        let pool = &self.engine.store.pool;
+        let _ = store::mail_left::prune(
+            pool,
+            crate::seal::RETENTION_DAYS + crate::seal::GRACE_DAYS + Self::NOTICE_LINGER_DAYS,
+        )
+        .await;
+        let carriers = store::mail_left::carriers_to_ask(pool).await?;
+        let mut believed = 0usize;
+        for node in carriers {
+            let Ok(id) = node.parse::<EndpointId>() else {
+                continue;
+            };
+            let Ok(expired) = self.ask_expiries(EndpointAddr::new(id)).await else {
+                continue;
+            };
+            if expired.is_empty() {
+                continue;
+            }
+            let reports: Vec<(String, String)> = expired
+                .iter()
+                .map(|one| (one.uid.clone(), one.expired_at.clone()))
+                .collect();
+            match self.engine.note_expired_mail(&node, &reports).await {
+                Ok(ours) => believed += ours.len(),
+                Err(error) => tracing::warn!(%error, "an expiry report could not be recorded"),
+            }
+            // Acknowledge EVERYTHING we were told, not only what we believed.
+            // This says "I heard you": a uid we do not recognise is still a
+            // row on somebody's disk naming who wrote to whom, and leaving it
+            // there forever because we did not recognise it is the opposite
+            // of what the carrier's own schema promises.
+            let uids: Vec<String> = expired.into_iter().map(|one| one.uid).collect();
+            let _ = self
+                .request(
+                    EndpointAddr::new(id),
+                    ALPN_MAILBOX,
+                    &WireRequest::MailboxExpiriesHeard { uids },
+                )
+                .await;
+        }
+        Ok(believed)
+    }
+
+    /// The one round trip: what of ours died in this box.
+    async fn ask_expiries(
+        &self,
+        addr: impl Into<EndpointAddr>,
+    ) -> Result<Vec<ExpiredMail>, EngineError> {
+        match self
+            .request(addr, ALPN_MAILBOX, &WireRequest::MailboxExpiries)
+            .await?
+        {
+            WireResponse::MailboxExpired { expired } => Ok(expired),
+            // A box that stopped carrying for us refuses, and that is not an
+            // error worth surfacing: it answers the question with "nothing".
+            WireResponse::Refused { .. } => Ok(Vec::new()),
+            WireResponse::Error { message } => Err(EngineError::Consequence(message)),
+            _ => Err(EngineError::Consequence(
+                "carrier answered an expiry question with something else".into(),
+            )),
+        }
+    }
+
+    /// Ask the Cell at `node_id` whether it carries mail for THIS Organ.
+    ///
+    /// What a person needs before publishing a pickup point — a box that never
+    /// agreed to carry for you is a hole every sender falls into — and what
+    /// the panel re-asks afterwards, because the operator on the other end can
+    /// stop carrying at any time and nothing tells us when they do.
+    pub async fn carrier_probe(&self, node_id: &str) -> CarrierProbe {
+        let Ok(id) = node_id.parse::<EndpointId>() else {
+            return CarrierProbe::Unreachable;
+        };
+        let pool = &self.engine.store.pool;
+        let Ok(Some(local)) = store::organs::local(pool).await else {
+            return CarrierProbe::Unreachable;
+        };
+        let Ok(Some(ours)) = self.engine.roster_of(&local.uid).await else {
+            // No roster means nothing to present, and a carrier cannot check
+            // us without one. Reported as unreachable rather than refused: the
+            // failure is on this side and is fixed by publishing a roster.
+            return CarrierProbe::Unreachable;
+        };
+        match self
+            .request(
+                EndpointAddr::new(id),
+                ALPN_MAILBOX,
+                &WireRequest::MailboxWaiting {
+                    organ_uid: local.uid.clone(),
+                    roster: ours,
+                },
+            )
+            .await
+        {
+            Ok(WireResponse::MailboxWaiting {
+                bundles,
+                bytes,
+                oldest_expires_at,
+            }) => CarrierProbe::Carrying(store::mailbox::Waiting {
+                bundles,
+                bytes,
+                oldest_expires_at,
+            }),
+            Ok(WireResponse::Refused { .. }) => CarrierProbe::Refused,
+            _ => CarrierProbe::Unreachable,
+        }
+    }
+
+    /// Ask a Cell to carry our mail. Their operator answers, not their Cell.
+    ///
+    /// Returns whether the ask was TAKEN, which is all a wire round trip can
+    /// tell us: nothing here means yes. The panel says so in those words,
+    /// because "asked" that reads as "arranged" is how somebody ends up
+    /// publishing a pickup point nobody agreed to.
+    pub async fn ask_to_be_carried(&self, node_id: &str) -> Result<(), EngineError> {
+        let id = node_id
+            .parse::<EndpointId>()
+            .map_err(|_| EngineError::Consequence("that is not a usable device address".into()))?;
+        let pool = &self.engine.store.pool;
+        let local = store::organs::local(pool)
+            .await?
+            .ok_or_else(|| EngineError::Consequence("this Cell has no Organ".into()))?;
+        let ours = self.engine.roster_of(&local.uid).await?.ok_or_else(|| {
+            EngineError::Consequence(
+                "this Organ has published no device list, so a carrier would have no way to \
+                 check who is collecting later."
+                    .into(),
+            )
+        })?;
+        match self
+            .request(
+                EndpointAddr::new(id),
+                ALPN_MAILBOX,
+                &WireRequest::MailboxAskToCarry { roster: ours },
+            )
+            .await?
+        {
+            WireResponse::MailboxAsked => Ok(()),
+            WireResponse::Refused { message, .. } => Err(EngineError::Consequence(message)),
+            other => Err(EngineError::Consequence(format!("{other:?}"))),
+        }
+    }
+
+    /// Spend an invite code: register with the box that issued it.
+    ///
+    /// Unlike the ask, this returns a settled answer — the operator consented
+    /// when they issued the code, so there is nobody left to wait for.
+    pub async fn redeem_mailbox_invite(
+        &self,
+        node_id: &str,
+        token: &str,
+    ) -> Result<(String, i64), EngineError> {
+        let id = node_id
+            .parse::<EndpointId>()
+            .map_err(|_| EngineError::Consequence("that is not a usable device address".into()))?;
+        let pool = &self.engine.store.pool;
+        let local = store::organs::local(pool)
+            .await?
+            .ok_or_else(|| EngineError::Consequence("this Cell has no Organ".into()))?;
+        let ours = self.engine.roster_of(&local.uid).await?.ok_or_else(|| {
+            EngineError::Consequence(
+                "this Organ has published no device list, so there is nothing to register."
+                    .into(),
+            )
+        })?;
+        match self
+            .request(
+                EndpointAddr::new(id),
+                ALPN_MAILBOX,
+                &WireRequest::MailboxRedeemInvite {
+                    token: token.to_string(),
+                    roster: ours,
+                },
+            )
+            .await?
+        {
+            WireResponse::MailboxCarrying { label, quota_bytes } => Ok((label, quota_bytes)),
+            WireResponse::Refused { message, .. } => Err(EngineError::Consequence(message)),
+            other => Err(EngineError::Consequence(format!("{other:?}"))),
+        }
+    }
+
+    /// Ask a carrier whether anything is waiting, without pulling it.
+    pub async fn mail_waiting(
+        &self,
+        addr: impl Into<EndpointAddr>,
+        organ_uid: &str,
+        roster: &SignedRoster,
+    ) -> Result<store::mailbox::Waiting, EngineError> {
+        match self
+            .request(
+                addr,
+                ALPN_MAILBOX,
+                &WireRequest::MailboxWaiting {
+                    organ_uid: organ_uid.to_string(),
+                    roster: roster.clone(),
+                },
+            )
+            .await?
+        {
+            WireResponse::MailboxWaiting {
+                bundles,
+                bytes,
+                oldest_expires_at,
+            } => Ok(store::mailbox::Waiting {
+                bundles,
+                bytes,
+                oldest_expires_at,
+            }),
+            WireResponse::Refused { message, .. } => Err(EngineError::Consequence(message)),
+            WireResponse::Error { message } => Err(EngineError::Consequence(message)),
+            _ => Err(EngineError::Consequence(
+                "carrier answered with something else".into(),
+            )),
+        }
+    }
+
     pub async fn request(
         &self,
         addr: impl Into<EndpointAddr>,
@@ -3377,6 +4643,30 @@ impl crate::enrolment::CellTransport for Wire {
         contact_organ: &str,
     ) -> Result<Option<AuditAgreement>, EngineError> {
         Wire::audit_against(self, contact_organ).await
+    }
+
+    async fn carrier_probe(&self, node_id: &str) -> CarrierProbe {
+        Wire::carrier_probe(self, node_id).await
+    }
+
+    async fn collect_mail_now(&self) -> Result<usize, EngineError> {
+        Wire::collect_own_mail(self).await
+    }
+
+    async fn sync_now(&self) -> Result<usize, EngineError> {
+        Wire::sync_once(self).await
+    }
+
+    async fn ask_to_be_carried(&self, node_id: &str) -> Result<(), EngineError> {
+        Wire::ask_to_be_carried(self, node_id).await
+    }
+
+    async fn redeem_mailbox_invite(
+        &self,
+        node_id: &str,
+        token: &str,
+    ) -> Result<(String, i64), EngineError> {
+        Wire::redeem_mailbox_invite(self, node_id, token).await
     }
 }
 

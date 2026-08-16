@@ -416,12 +416,23 @@ async fn a_pending_invite_wakes_watchers_and_answering_wakes_them_again() {
         .expect("invite lands");
     us.notify_notifications_changed();
 
-    assert!(watch.has_changed().expect("watch alive"), "the board must be woken");
+    assert!(
+        watch.has_changed().expect("watch alive"),
+        "the board must be woken"
+    );
     watch.mark_unchanged();
     let pending = us.notifications().await.expect("read");
     assert_eq!(pending.len(), 1, "and told exactly what is waiting");
-    assert_eq!(pending[0]["recordId"], root.as_str(), "pointing at the conversation");
-    assert_eq!(pending[0]["organId"], their_organ.as_str(), "and at who is asking");
+    assert_eq!(
+        pending[0]["recordId"],
+        root.as_str(),
+        "pointing at the conversation"
+    );
+    assert_eq!(
+        pending[0]["organId"],
+        their_organ.as_str(),
+        "and at who is asking"
+    );
     let invite_uid = pending[0]["id"].as_str().expect("invite uid").to_string();
 
     us.decline_invite(&invite_uid).await.expect("decline");

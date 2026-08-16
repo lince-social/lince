@@ -1,0 +1,17 @@
+---
+uid: r_FK65TMWR04KPS4JETR79CJPGPY
+@@idea
+@instinct
+@chapter [[First Steps|r_YWPKA0Z1DJ8XCHTZRW4X2SDJ1N]] 6
+quantity: 1
+---
+
+## Putting sands on the canvas
+
+Turn on edit mode, then use **+ Add card**. It offers two routes:
+
+- **Add card** — pick from the sand catalog: the official sands shipped with Lince plus anything you have installed.
+
+- **Importar** — load a widget from disk (`.html`, `.sand` or `.lince`). You can also just drag the file onto the canvas; it is read by the backend and shown in preview before it becomes a card.
+
+A new sand lands on the canvas where there is room. Drag it, resize it from any edge or corner, and use the Grid slider if you want it to snap to a coarser or finer grid.

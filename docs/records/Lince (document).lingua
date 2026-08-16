@@ -1,0 +1,29 @@
+---
+uid: r_YJQ36ETAKE8J7F8Y65DG7V43MB
+@@document
+@instinct
+@position 1
+quantity: 1
+---
+
+# Lince, the philosophy
+
+It is possible to find many different philosophies to divide life. The Lince tool separates it into Needs and Contributions to Needs. The Lince philosophy is to meet your Needs and Contribute to the Needs of those you care about; using the Lince tool or not. The maximum point of the Lince philosophy is all Needs deemed fair being met, and in the void of unmet Needs... We don't know yet.
+
+# Lince, the tool
+
+> **Everything is a Record. Every change is a Fact. Every intended change is a Promise.**
+
+Lince models everything with a Record, it has head and body as text columns and a quantity, the quantity is thought to be the most changed field, representing state that can participate in math by automations and transfers. Lince thinks by default that when a quantity of a record is negative, it means the person needs that much of the record in question, so '-1 Apple' is the need of 1 apple, if it is positive it's a possible contribution, to oneself or others, if it's zero, its neither a resource we can use nor a need.
+
+Records can also have a generic field to store data in different shapes for any workflow. These records can have concepts like @apple, and the @apple concept can be linked to @food, so selecting all @food records returns the apple one. One can also connect two records, like A @needs B. The Lingua is what keeps these concepts, the name of them, synced across people, if we use a common Lingua, we know that when i attatch the @apple concept to my Radarada record and you do the same for your Blabla record we mean the same thing, we call it different names, but sharing a concept makes it equivalent in possible trades.
+
+When something changes, we save a Fact, saying the change to a Record was to gain +1, made by this part of Lince or this person. We have work metadata like assignees, dates, work log for hours, etc.
+
+A Lince app/node is called an Organ, it can have many users inside or not. People can have users in various Organs, a personal one, family, work, project... And access them all through any one of them with login.
+
+You can make Transfers with other people/nodes, by agreeing to levels of resources both parties will get in return, or not, for donations. They are all promises, and they unlock all types of economic activites and several types of organization. You can use for donations, organize buying lists for parties saying people will bring certain items. One person may receive a raw material and promise to give to next person a final product, modeling transparently for all the network a public supply chain, or make it private. Or you can buy products and services like delivery apps and ride sharing, or use as a big purchase platform.
+
+You can create automations and recurrent tasks in lince with Karma rules, there will be a value as the condition, that pulls information from your data if you want to, if it is a certain value it passes to bring a consequence. This and other points, to receive and create computer terminal commands and interact with other systems. Mechanisms to learn from your data, and make suggestions and even automations and transfers with no finger lifted. All locally, all activated with consent on the user, no data leaking to servers.
+
+With this philosophy we can automate the remembering part of habits, creating a need for them everyday, we can assign work tasks, buy, borrow and donate items, create roadmaps for others to follow, in the areas of production and education, and do much more.

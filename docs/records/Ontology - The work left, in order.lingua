@@ -1,0 +1,458 @@
+---
+uid: r_AKZ1T950YH2389CNM44S04RKR2
+@@section
+@instinct
+@part-of [[Ontology (document)|r_S8PQ17MQ3WBWM53ZN700K89V9F]] 18
+quantity: 1
+---
+
+## The work left, in order
+
+One list. Each entry is a task with its reasoning attached, because the *why*
+is the part that cannot be recovered from the code later. The prose sections
+above are what is already built and already decided; nothing here repeats them
+except where the task needs the context to be legible on its own.
+
+**How to read the order.** Top to bottom. A task sits after everything it
+needs and before everything that needs it — several were moved down from where
+they were first written because the thing they depend on turned out to be
+later work, and where that happened the entry says so. Groups are named by
+subject only. There are no group numbers and no codes: a numbered scheme
+outlives its usefulness the moment one group closes, and then the list is a
+map of its own history rather than of the work.
+
+**The rules that govern landing one of these.** They were learned expensively
+and are repeated in `AGENTS.md` for whoever is building rather than planning:
+
+- **A task is not done until a HUMAN CAN USE IT.** Every entry that adds a
+  capability carries its surface — a sand panel, a button, a screen. Tests
+  prove a mechanism is correct; they do not let the owner try it, and a
+  feature reachable only from `cargo test` cannot be human-tested at all.
+  Two standing riders: "obvious from the API" is not a surface, and a panel
+  showing nothing must say WHICH nothing it means ("none yet" / "not switched
+  on" / "cannot reach anyone"), because an empty state otherwise reads as a
+  broken feature.
+- **A bug found while building is fixed where it BELONGS**, not worked around
+  from where it was found. A workaround makes the earlier work look finished
+  while leaving the defect for whoever trusts the list.
+- **Finish before advancing.** Anything split out or deferred gets written
+  down with its reason, because an entry that quietly means "mostly" is what
+  this rule exists to prevent.
+- **Landing a task DELETES its entry**, and what was learned goes into the
+  prose above. A stale entry for work already built is worse than no entry:
+  seven of them had accumulated here by 2026-08-16 and were deleted in the
+  same pass that produced this list.
+- **Expand freely** when finishing something honestly demands work nobody
+  listed. This is a plan, not a contract.
+
+### Lince's own documentation, as Records
+
+New 2026-08-16, and the reason this list was flattened in the first place: the
+plan you are reading should be editable inside Lince, as the Records of an
+institute's actual work, instead of in a file only a text editor can reach.
+Once that round trip exists, the same machinery ships Lince's documentation as
+DATA rather than as pages — a First Steps sand that hands you Records you can
+put in your own store, so a tutorial about Karma can populate Karma and let you
+watch it run.
+
+**Why it sits here rather than last with the other unscheduled subjects.** It
+is new work and not part of any earlier plan, so by the ordering rule it would
+go at the end — but its real dependency is the editor group directly above
+(the canvas, the record editor), and everything else it needs is already
+built. Placing it by dependency is the rule that wins.
+
+**The authority is the Records, and `docs/` is a projection of them.** Three
+things could claim to be the source — the store, the files, the sand's shipped
+bundle — and exactly one may. File Sync already mirrors Records into a folder
+and reads edits back, so the round trip is not new machinery; what is new is a
+second format alongside Markdown that can carry the parts of a Record that are
+not body text. "Changing the sand" therefore means exporting a new bundle, not
+writing into shipped HTML.
+
+**A bundle of Records that travels as one unit is a Trail** (see "Trail: the
+DNA of doing something", renamed from Recipe 2026-08-16 by the owner). First
+Steps is a Trail, not a new import path: the mechanism is Trail plus tree
+sync, both already described. The name collides with the relations sand's
+shipped Trail view mode and that is unresolved — see the tree sync entry.
+
+**BUILT 2026-08-16: the `.lingua` format itself** (`engine::lingua_file`,
+`lince.file_sync.format`, a picker and a "Files not synced" list in the Organ
+sand). `My Record.lingua` holds a delimited block above its body carrying
+what the Record IS, what is true of it, what it links to and its level, and
+the body below. Four things the build settled:
+
+- **`@@` is the identity concept, `@` an ordinary assertion.** A Record names
+  which of its assertions says what it IS. Rendering both the same way makes
+  the format silently lossy — a round trip demotes an identity to a tag and
+  nobody notices for months.
+- **A link is `[[Title|uid]]`, and a link with no uid is REFUSED.** The title
+  is for the reader; the uid is what identifies the Record. Titles collide and
+  get renamed, so resolving by title would retarget a link the day two Records
+  share a name.
+- **The block is generated, and a hand edit to it is reported rather than
+  applied OR overwritten.** Writing it back means retracting and asserting on
+  somebody's behalf from a text file — the next task. Until then neither side
+  is touched, because regenerating over what a person typed is the one outcome
+  an unattended loop must never produce. Proven by disabling: without the
+  check the edit is silently discarded and the file rewritten. A file written
+  by hand IS read in full, because at creation there is nothing to clobber —
+  and it is validated BEFORE the Record exists, so an unknown Concept refuses
+  the whole file instead of leaving a bare Record behind.
+- **Several formats at once, in PRECEDENCE order** — corrected 2026-08-16 the
+  same day it was written the other way. The first cut said one format per
+  folder, on the grounds that two writable files are two answers to "what is
+  the body". The owner's answer is better and is what is built: **each format
+  owns what it can EXPRESS.** A Markdown file holds only a body, so a Markdown
+  edit can only mean a body edit; `.lingua` carries the body plus everything
+  Markdown cannot say. The ambiguity only exists when both changed between two
+  passes AND disagree about the body, and an ordered list settles exactly that
+  case — which is why the setting is a list rather than a set.
+- **A Record dies only when ALL of its files are gone.** Falls out of the same
+  change and is not a detail: with one format, a missing file meant a deleted
+  Record. With two, deleting the `.md` while the `.lingua` stays is one
+  projection removed, not a deletion, and the mirror puts it back. Treating any
+  single missing file as a deletion would make tidying a folder destroy data.
+  Proven by disabling.
+- **A refused file contributes NOTHING, its body included.** Found by test: the
+  first version took the body from the highest-precedence changed file before
+  checking whether its metadata block was applicable, so a refused file still
+  pushed its body through. Half of one edit is the shape of change nobody can
+  reason about afterwards.
+
+**The `quantity:` line IS written back, and it becomes true in the database.**
+Asked for directly by the owner, and the first cut had it wrong: it rendered
+the level and refused to read it, on the grounds that a level is a fold of
+Ledger Facts rather than a column. That reasoning was right and the conclusion
+was not. The level does not need to stop being a fold for a file to set it —
+`Action::SetQuantityExact` appends the exact DIFFERENCE between what the file
+says and what the fold currently holds, as an ordinary user-caused Fact. You
+write 12, it is 12; the Ledger still explains how it got there, and nothing was
+assigned. Exact all the way through: the text is parsed straight to a decimal,
+so `3.50` never passes through an f64 on its way to a signed Fact. A unit
+travels with it when the Concept exists; an unreadable number is reported and
+the level is left alone.
+
+That is also what makes a hand edit to the block partly applicable now: the
+block is compared with its level lines removed, so touching only the number is
+applied, while touching a concept or a link is still reported and applied to
+neither side. And switching format never deletes files written in a format you
+dropped: they are a person's text, and changing a setting is not consent to
+remove it.
+
+
+**Three things this work needs turned out to already exist**, checked
+2026-08-16 before planning any of it, and each one removes a design decision
+rather than adding a task:
+
+- **Workflow position is an ordinary Concept, not an enum.**
+  `Action::TransitionRecord` — the Kanban move — retracts and asserts ordinary
+  unary concept assertions and optionally sets a quantity. There is no state
+  column and no fixed column set, so `@wip` in a `.lingua` file is already the
+  same thing the board writes. No `state:` line, and no format change.
+- **The Kanban sand already matches a column by a quantity, by concepts, or by
+  both**, and ships `-2 @wip` as its own worked example with "Done is quantity
+  1" as its default. So the owner's ladder — `1` stable, `0` unplanned, `-1`
+  todo, `-2` doing — is not a new overload of quantity; it is the convention
+  the board already reads. It also sits correctly on what Instinct chapter 2
+  teaches, that a negative quantity is a Need and a positive one a
+  Contribution: an open task is something missing, a finished one something
+  available, and `0` is free because done is `1` rather than `0`.
+  **Pair the number with a concept rather than relying on the number alone** —
+  `-2 @wip` — because a bare `-2` is indistinguishable from a Record that
+  genuinely needs two of something, and the board supports both halves today.
+- **Assignment already exists** as `assigned-to` assertions, with an Assignees
+  section in the Record sand. Assigning a task to an agent needs no new
+  field — only the write-back below, so that editing the line in a file is a
+  real assignment instead of a refused edit.
+
+**What the agent orchestration is actually for.** Several agents work in this
+codebase at once. A task Record carrying an assignee and `@wip` lets one agent
+see that another holds a piece of work and leave it alone, without a lock, a
+branch protocol or a conversation. That only works if editing the file IS the
+assignment, which is why write-back leads this list. Two rules ride with it:
+an agent assigns ITSELF when given work, and never removes or reassigns
+somebody else's line. The second is a guard, not a convention — the refusal
+path for hand-edited blocks already exists and reassignment away from another
+holder belongs in it.
+
+**BUILT 2026-08-16: the metadata block is written back from disk.** The half
+deliberately left out when the format was built, and the gate on everything
+below — until it landed, an agent could not assign itself anything, because
+editing an existing file's block was reported rather than applied. Three
+things the build settled:
+
+- **The diff is against WHAT LINCE LAST WROTE, not against the Record as it
+  now stands.** That is what makes it a diff of intent: lines a person added
+  become asserts, lines they deleted become retracts, and lines they left
+  alone are not touched — so a change made in the app between two ticks is not
+  silently reverted by a file that never mentioned it.
+- **A changed number is a retract AND an assert.** `assertions::assert` is
+  idempotent on `(subject, predicate, object)` and returns the existing row
+  untouched, so asserting `@chapter 3` over `@chapter 1` would otherwise keep
+  the 1 and report success. Found by writing the test that reads the file back
+  a tick later rather than the one that checks the tick reported no conflict.
+- **It applies in full or not at all**, by the same never-invent check the
+  creation path runs, and the refusal names what failed. Proven by disabling:
+  without it, a block naming one unknown Concept applies its other lines and
+  leaves a Record half-way through somebody's edit. An identity that moves
+  is cleared before the retracts and set after the asserts, because an
+  identity assertion must be unary and unquantified and must not point at a
+  retracted row in between.
+
+**BUILT 2026-08-16: an Agent is an Actor beside a Person.** `Action::CreateAgent`,
+and a "What" picker in the Record sand's creation form offering Record or
+Agent. The distinction lives in the Concept DAG — `actor` with `person` and
+`agent` beneath it — so asking "is this an Actor" is answered by machinery
+that already exists, at the cost of no migration and no Rust rename. Four
+things it settled:
+
+- **An Agent is a Record of the SAME type as a Person.** It has to be: what an
+  Agent is for is holding work, and the assignee picker lists `kind ===
+  "person"`. Giving it its own type would have meant teaching every assignee
+  surface about a second one. What it IS — `@agent` as its identity — is what
+  distinguishes it, which is exactly what identity assertions are for.
+- **The operator is resolved BEFORE anything is created.** Proven by
+  disabling: with the check moved after the Record exists, naming a non-Person
+  refuses AND leaves an unowned Agent behind — the precise thing the field is
+  there to prevent.
+- **The Organ half needed nothing.** "Which Person, at which Organ" is
+  `@operated-by` plus the origin Organ every Record already carries. Adding a
+  column for the second half would have duplicated a fact the store already
+  holds.
+- **Assignee theft is GOOD PRACTICE, not a guard** (owner's call). An agent
+  assigns itself what it is given and does not take what another holds. It was
+  designed as a refusal in the write-back path and deliberately dropped: the
+  cost of the guard is that a legitimate hand-off becomes a two-step dance,
+  and the thing it prevents is an agent misbehaving in a repository its owner
+  is watching anyway.
+
+**BUILT 2026-08-16: a hand-written file may carry the uid it is going to
+become** (`store::records::create_with_uid`, `nucleus::valid_uid`). Found by
+trying to write the seed: a link is `[[Title|uid]]` and a link without a uid is
+refused, so files that reference each other have to agree on their uids BEFORE
+any of them is adopted — otherwise the folder is only valid after a second
+pass, and a folder that is never valid on its own cannot be shipped as a
+bundle. Three consequences, all of them from tests:
+
+- **Creation inside one tick is two-phase.** Every Record in the batch is made
+  first, and only then are the assertions applied, because asserting a link
+  needs its object to exist. The validation pass was widened to match: a link
+  may point at a uid another file in the SAME batch claims, and still may not
+  point at nothing.
+- **A malformed uid is refused at the door**, and this is the guard worth
+  having — nothing downstream parses a uid, so `uid: not-a-uid` INSERTs
+  perfectly happily and shows up months later as a Record that does not sort
+  or compare like the others. Proven by disabling.
+- **A collision refuses, and the check is honestly only a better message** —
+  the primary key already refuses, and the test still passes with the explicit
+  check removed. Written down because a future reader would otherwise assume
+  it was load-bearing.
+
+**BUILT 2026-08-16: the Instinct chapters ARE Records** — `docs/records/`, 44
+`.lingua` files, one idea per file, with the seven chapter Records they hang
+off. Adopted by a real tick in `the_shipped_documentation_folder_is_adoptable_as_records`.
+Reading order is in the assertions (`@chapter [[Records|uid]] 3` says both which
+chapter and where inside it) and never in a filename or a hand-kept index.
+
+How it was done matters more than that it was done, because it will be done
+again for the rest of `docs/`:
+
+- **Mechanically first, judgement second.** `tools/instinct/chapters_to_md.js`
+  turns the HTML into Markdown deterministically; only the SPLIT into ideas was
+  handed to a model. "Without losing a bit" is checkable for a conversion and a
+  matter of opinion for a rewrite, and handing raw HTML to a model asking for
+  fidelity is unverifiable by construction.
+- **Two checks, because they catch different failures.**
+  `tools/instinct/check_lossless.js` asks whether the CONTENT survived — every
+  sentence in exactly one body, every mermaid block verbatim, per-chapter counts
+  matching (35 diagrams, 280 sentences, 0 missing). `tools/instinct/check_lingua.js`
+  asks whether the folder is ADOPTABLE — frozen predicate list, no duplicate or
+  malformed uids, every link pointing at a uid some file in the folder claims,
+  every link title matching its target. A folder can pass the first and be
+  refused in full by a tick, which is why the second exists and why there is
+  also a test that ticks the real folder.
+- **The predicate list is FROZEN and written down** in
+  `tools/instinct/CONTRACT.txt`: `@@idea`, `@@chapter`, `@chapter`,
+  `@position`, `@see-also`. Every addition is another refusal somebody has to
+  clear by hand in the Ontology sand, so the list is short on purpose.
+- **Both checks are run by hand at each re-split.** Nothing calls them, and
+  they will rot if that is forgotten — said here rather than assumed.
+
+**The Person → Actor rename was proposed and then dropped, same day.** Kept
+here because the reasoning is the kind that gets re-litigated. It is 371 Rust
+identifiers and 99 SQL lines, and `store::people::NAMESPACE = "lince.person"`
+is a STORED string with `lince.person.standing` already shipped — so it is a
+data migration, not a rename. It also buys none of what prompted it:
+assignment is `@assigned-to [[Claude|uid]]` whatever the type is called, and
+`actor_uid` on a Fact already means "the Person who acted". What the owner
+actually wanted was the DISTINCTION, and a Concept parent gives that for
+nothing: `actor` over `person` and `agent`. Standing, the four login doors and
+dormant absorption are all written about people, and an agent is not one —
+which is an argument for keeping the word Person precise, not for spending it.
+
+### Scoping: what a contact may see of you, and what you accept back
+
+The largest single piece of work left, and the one most other things wait on.
+Inbound acceptance is built and per-record hiding is built; what is missing is
+outbound narrowing per FIELD, in the same one predicate language, so that
+"what they see of me" is as expressible as "what I take from them". Detail in
+§12 Visibility and in "Inbound Protein".
+
+**A contact cannot tell "withheld by their scope" from "empty", and that is
+where it stays.** The absence rule is LOCAL — the sand issued the Protein and
+knows what it asked for. A peer does not know our scope, so a narrowed column
+arrives indistinguishable from one nobody filled in. Telling them would mean
+putting our scope on the wire, which discloses the shape of what we are
+hiding. A known limitation, written down so it is not rediscovered as a bug —
+never a task, because there is nothing anybody is meant to do about it.
+
+**A Protein selecting on MUTABLE state, firing grants and revokes, is NOT
+scheduled.** Deferred 2026-08-14 with its reason. The mid-stream half IS built
+— hiding filters only subsequent ops, unhiding replays — and what is missing
+is the capability underneath: **nothing in the sync path evaluates a Protein
+predicate at all.** Row selection for a contact is an explicit hide LIST, not
+a query, so there is no predicate for a Record to cross.
+
+Closing it honestly means three things nothing currently asks for: a
+per-contact predicate on the feed, evaluating it per Record per op on the
+serve path, and a served-set table so a Record CROSSING the predicate can be
+told from one that always matched — crossing detection is the whole point, and
+without stored state a serve pass cannot know whether a match is new. That
+table is legitimate (written at serve time, not on the write path) but it is
+real machinery, and the concrete need it would serve — "keep these Records
+from this contact" — is already met by the hide list. Not blocked and not hard
+for the wrong reasons: speculative. Live references and scheduled rules both
+put predicates near the serve path, and either will say what shape this
+actually wants.
+
+**FIXED 2026-08-16: `log_local_tx` resolves `replica_root`, and the leak it
+left was wider than the entry said.** The transaction-path logger hardcoded
+`replica_root = NULL` while its pool twin resolved it and branched the outbox
+on it. The entry blamed "a write made through that path"; what it did not say
+is WHICH writes, and that turned out to be the interesting part.
+
+Ordinary assertions take the pool path and were always correct, which is why
+this went unnoticed for so long. Four verbs own a transaction and therefore
+took the broken one: `set_identity`, `refine`, `concepts::delete` — and
+`transition_unary`, **which is the kanban move**. So moving a card that lives
+inside a conversation stamped its state change as general-feed and queued it
+to every `sync_out` contact. They could not read the message bodies, but the
+uid, the concept it moved to, and the fact that something was happening in
+there all reached people holding no grant. Proven by reverting: the test names
+the op that arrives on the feed.
+
+The fix is `replica::root_for_op_tx`, deliberately kept beside its pool twin
+rather than shared: the in-memory pool has one connection, so a pool query
+inside an open transaction deadlocks — the same reason `log_local_tx` exists
+at all. The two must answer identically, or whether a private write stays
+private depends on which logger a caller happened to reach for. No surface:
+this removes a defect rather than adding a capability, and the conversation
+and board views that were leaking are the ones that stop.
+
+### Your public face
+
+Waits on the scoping above and on nothing else. Decided 2026-08-15 while
+building the mailbox: the public read-only face is a separate ORGAN you share a
+subset with, never a fully-synced Cell of your own — so a break-in there leaks
+only the published subset, and the generator that produces the public page runs
+on a box that never held the rest. Detail in "The user's own infrastructure".
+
+### Devices you can narrow instead of only revoking
+
+Small, independent of everything around it, and the humane half of a mechanism
+that is already built.
+
+### Scheduling across Cells, Karma included
+
+An Organ with several Cells must decide which of them does recurring work, or
+every device does it and the outward consequences are duplicated. One lease
+mechanism serves all of it — the Karma rules and the three schedulers that are
+not rules — and building it twice is the only way to get it wrong. The prose
+spec is `Karma.md` §14.1; the tasks are here, because that file is the
+specification and this list is the plan. Detail in "Who does the recurring
+work when an Organ has several Cells".
+
+Asked and answered 2026-08-15: the pruning schedule and the Organ polling
+scheduler do NOT borrow the designation — both are per-Cell work on this
+Cell's own disk and own inbox, and designating either would starve the other
+Cells — while transfer delivery retries DO, being the only one that reaches
+outward.
+
+### Tree sync: taking a Record and everything under it
+
+Copy first and Copy alone; Move is Copy plus a separate manual deletion a
+human presses. Detail in "Tree sync". Three parts of it unify with Transfer
+rather than duplicating it: the consent handshake, the retry scheduler and the
+delivery-status surface.
+
+### Profile and discovery: the three tiers and the Facade
+
+The largest group by count, and the one whose whole risk is people publishing
+more than they meant to. Three tiers — a 245-byte announcement, a card of a
+few KB that is the only tier that gossips, and a Facade page fetched on demand
+— with the security defaults stated as tasks because a default chosen late is
+a default chosen wrong. Needs identity (built) and somewhere to run (the
+infrastructure work, built). Detail in "The Organ Profile in three tiers".
+
+**Surface, for the group as a whole:** a profile editor per tier that shows
+what each tier reveals, and to whom, BEFORE anything is published.
+
+### Relay Cells, gossip, and asking around
+
+Reaching somebody you have no address for, through the people between you.
+Everything here is unbuilt, and two constraints that were written while
+building the mailbox live here rather than there, because the thing they
+constrain is the relay Cell. Detail in "Multi-hop discovery".
+
+### Storage budgets
+
+Moved down from where it was first planned. Snapshot-plus-truncate is most of
+the answer and is built — the log is O(live state) for text as it already was
+for scalars. What is left is per-area ceilings, and two of the three areas
+they would bound (the Facade cache, quarantine eviction) only exist after the
+groups above. Building a budget for absent consumers would be guessing.
+
+### Collab and the editor
+
+No dependents — safe to build in parallel with anything from here on. This
+group is almost entirely surface, which is part of why.
+
+### Transport cleanup
+
+Removes things rather than adding them, which is why it is late and why it has
+no surface of its own. What it must not do is remove something a surface still
+shows — the Organ sand's contact rows read `base_url` today. Both wire-visible
+parts ride one epoch rather than each spending a hard cut of every peer.
+
+### Resenha, and the scenarios that need it
+
+Resenha is the manager for running several Linces at once and the simulator
+that makes distributed behaviour testable. It sits here because the scenarios
+below cannot be written until it exists, and because the rule this project
+works by is that nothing is ever labelled "blocked on hardware" — work whose
+harness is missing becomes a named scenario that says what it must reproduce
+and what it must REPORT, not merely that it converged. Three of the five are
+already `#[ignore]`d tests in `crates/engine/tests/dst_deferred.rs`. Detail in
+the Resenha section at the end of this document.
+
+The scenarios waiting on it — each must report WHICH path delivered, not just
+that state converged:
+
+### Other subjects — listed, not scheduled
+
+Not part of the main line of work, and nothing here is waiting for the work
+above to finish: these are parked or optional. They are written as tasks so
+the list is a complete inventory, with the parking said plainly underneath.
+
+These are LISTED, not scheduled — §13 Proximity is parked outright (2026-08-09,
+the owner's call: Lince should not tell people who is physically close) and the
+federation adapters are an optional direction, never a default. They are here
+so the list is the whole inventory and nobody re-plans them from scratch; if
+the parking is ever lifted, the entries are already written.
+
+# Alexandria
+Was a library inside a temple, well maintained and kept, in a city with a port, many travelers where asked to hand their books and manuscripts and receive a copy instead. While there is the common imagination that it was burned, the details are a little conflicting. What remains from the story is the idea of a great body of knowledge, that worked because it was cared for, and the fact that it can suddenly catch fire and be lost. Great care can be put into maintaining and expanding knowledge. It will most likely provide itself useful if used for the meeting of our Needs.
+
+In Lince, the Alexandria vibe means sharing Records as knowledge of what things are, how they work, their consequences, and how to implement them.
+
+That in turn means possibly caring for the building of interfaces and components to access knowledge, learn it and help use it while also helping with the management of knowledge: writing it and sharing it.

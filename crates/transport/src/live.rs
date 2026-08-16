@@ -132,7 +132,15 @@ async fn authenticate(
         .await
         .map_err(|error| error.to_string())?;
     let ok = match &user {
-        Some(user) => utils::auth::verify_password(&password, &user.password_hash).unwrap_or(false),
+        // Password AND standing, and the refusal below says neither which
+        // failed nor that the name exists — the same sentence for a wrong
+        // password, an unknown name and someone who no longer uses this Organ.
+        Some(user) => {
+            utils::auth::verify_password(&password, &user.password_hash).unwrap_or(false)
+                && store::people::is_active(&engine.store.pool, &user.uid)
+                    .await
+                    .map_err(|error| error.to_string())?
+        }
         // No fake verify on a missing user, and not pretended otherwise:
         // timing here is observable to anyone who already reached the
         // endpoint. What is guaranteed is that the ANSWER carries nothing.

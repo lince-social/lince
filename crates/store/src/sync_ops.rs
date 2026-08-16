@@ -441,6 +441,18 @@ pub async fn log_local_tx(
     let Some((actor_cell, organ_uid)) = local_identity_tx(tx).await? else {
         return Ok(());
     };
+    // Which feed this write belongs to, resolved the same way `log_local`
+    // resolves it.
+    //
+    // This used to be an unconditional `None`, and it was a LEAK rather than a
+    // simplification: every write that happens to go through the transaction
+    // path — assertions above all, which is what a conversation is made of —
+    // was stamped as general-feed and queued to every `sync_out` contact,
+    // regardless of whether its Record sat inside an individually replicated
+    // root that only grant holders may see. The two loggers must answer
+    // identically, or whether a private write stays private depends on which
+    // one the caller happened to reach for.
+    let root = crate::replica::root_for_op_tx(tx, tbl, uid).await?;
     // Same identity-collision retry as `insert_local`, inlined because this
     // path owns a transaction and cannot hand the pool to a helper. A local
     // write that finds its identity taken has met ANOTHER PROCESS writing as
@@ -456,7 +468,7 @@ pub async fn log_local_tx(
             .bind(nucleus::hlc::next())
             .bind(&actor_cell)
             .bind(&organ_uid)
-            .bind(None::<String>)
+            .bind(root.as_deref())
             .execute(&mut **tx)
             .await?;
         if res.rows_affected() > 0 {
@@ -478,17 +490,36 @@ pub async fn log_local_tx(
             "could not mint a free op identity for cell {actor_cell}"
         )));
     };
-    {
-        sqlx::query(ENQUEUE)
-            .bind(tbl)
-            .bind(uid)
-            .bind(field)
-            .bind(kind.as_str())
-            .bind(seq)
-            .bind(chrono::Utc::now().to_rfc3339())
-            .bind("")
-            .execute(&mut **tx)
-            .await?;
+    let now = chrono::Utc::now().to_rfc3339();
+    match &root {
+        // Individually replicated: grant holders only, and NOT the general
+        // feed. Riding both would be the leak the whole axis exists to
+        // prevent.
+        Some(root) => {
+            sqlx::query(ENQUEUE_GRANT)
+                .bind(tbl)
+                .bind(uid)
+                .bind(field)
+                .bind(kind.as_str())
+                .bind(seq)
+                .bind(&now)
+                .bind(root)
+                .bind("")
+                .execute(&mut **tx)
+                .await?;
+        }
+        None => {
+            sqlx::query(ENQUEUE)
+                .bind(tbl)
+                .bind(uid)
+                .bind(field)
+                .bind(kind.as_str())
+                .bind(seq)
+                .bind(&now)
+                .bind("")
+                .execute(&mut **tx)
+                .await?;
+        }
     }
     Ok(())
 }

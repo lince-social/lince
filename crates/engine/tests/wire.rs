@@ -1208,6 +1208,7 @@ async fn a_dead_cell_does_not_delay_the_live_one() {
                 node_id: dead.to_string(),
                 label: "the shut laptop".into(),
                 operational_key: "k-dead".into(),
+                sealing_key: None,
                 front_door: false,
                 capabilities: engine::roster::full_capabilities(),
             },
@@ -1216,6 +1217,7 @@ async fn a_dead_cell_does_not_delay_the_live_one() {
                 node_id: unreachable.to_string(),
                 label: "a Cell nothing can resolve".into(),
                 operational_key: "k-unreachable".into(),
+                sealing_key: None,
                 front_door: false,
                 capabilities: engine::roster::full_capabilities(),
             },
@@ -1224,6 +1226,7 @@ async fn a_dead_cell_does_not_delay_the_live_one() {
                 node_id: b_wire.node_id().to_string(),
                 label: "the one that is on".into(),
                 operational_key: "k-live".into(),
+                sealing_key: None,
                 front_door: false,
                 capabilities: engine::roster::full_capabilities(),
             },
@@ -1306,11 +1309,8 @@ async fn one_peer_cannot_hold_unlimited_connections() {
     )
     .await;
     if let Ok(Ok(connection)) = extra {
-        let closed = tokio::time::timeout(
-            std::time::Duration::from_secs(5),
-            connection.closed(),
-        )
-        .await;
+        let closed =
+            tokio::time::timeout(std::time::Duration::from_secs(5), connection.closed()).await;
         assert!(
             closed.is_ok(),
             "a connection past the cap must be closed rather than served"

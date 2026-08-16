@@ -1,0 +1,29 @@
+---
+uid: r_6FBCGNZVGD5T09X3EQHPP5MKAY
+@@idea
+@instinct
+@chapter [[Karma|r_K7T3ZG08G5EBWRSTF8NBWMTZYV]] 1
+@see-also [[If is the Condition|r_EVER1TP43DS5BQ887CS3FH6ERQ]]
+quantity: 1
+---
+
+Everything up to here you do by hand. **Karma** is how Lince does things without you. And it is one sentence long:
+
+```mermaid
+graph LR
+  A["If: Condition"] --> B["And: Threshold"] --> C["Then: Consequence"]
+```
+
+In ordinary language:
+
+```mermaid
+graph LR
+  A["If: tomorrow is cold"] --> B["And: cold enough to matter"] --> C["Then: need to pack a sweater"]
+```
+
+And when the world says otherwise, the same rule simply does nothing:
+
+```mermaid
+graph LR
+  A["If: tomorrow is mild"] --> B["And: not cold enough"] --> C["Then: nothing happens"]
+```

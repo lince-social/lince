@@ -1,0 +1,21 @@
+---
+uid: r_QVEGGYZ2AA33SRSH2XS0C2FX64
+@@idea
+@instinct
+@chapter [[Cells and Organs|r_N6KHA5VKVK81GS6SAHGZGD2BCT]] 3
+@see-also [[The Cell|r_TST3SPMGF4SQZ2XZAQGA5PQHC8]]
+quantity: 1
+---
+
+When several Cells want to hold something in common — a household budget, a team backlog, a shared shopping list — they form an **Organ**.
+
+```mermaid
+graph TD
+  O["Organ"]
+  A["Cell"] --> O
+  B["Cell"] --> O
+  C["Cell"] --> O
+  D["Cell"] --> O
+```
+
+_An Organ is a shared context, not a server that owns the members._

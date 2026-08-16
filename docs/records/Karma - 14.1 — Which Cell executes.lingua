@@ -168,7 +168,32 @@ bar each section's own boxes have to clear.
 
 
 
-# 20 - Fiote: Agent:
-If harness builders like Pi are just a bunch of markdowns, or if markdowns are really used for agents we could use the file sync feature to make what the agent writes to organize his thoughts to be a markdown file somewhere, and that will be then synced into a lince record because we are listening in that dir for file sync. 
+# 20 - Fiote: Agent
+
+Fiote is the home of Lince's agent harness, but shared agent capabilities do
+not carry Fiote's name or require another harness to understand it. The first
+one is `.agents/skills/lince-lingua-crud/`: a portable Agent Skills workflow
+for Codex, Pi, Hermes and later Fiote. It teaches an agent how to discover the
+CURRENT `.lingua` contract, find Lince context through Concepts and Record
+links, perform a minimal CRUD edit, and submit the result to deterministic
+validation. It deliberately does not copy the changing file schema or the
+Lince ontology. The parser owns syntax; the `.lingua` Records in First Steps
+and the project documents own Lince's evolving explanation.
+
+That makes the bootstrap finite: the skill is the small decoder, then Records
+teach the model what Record, Concept, Assertion and Quantity mean and route it
+to `@interface`, `@karma`, `@transfer`, `@sync` and later topic Concepts. The
+same File Sync projection can hold agent-authored working Records without
+making Markdown, a model prompt, or the agent harness into another database.
+
+Repository agents already have filesystem search, patches and Rust commands,
+so an MCP wrapper would add no authority today. The future runtime boundary is
+different: when Fiote works against a live Lince rather than a checked-out
+folder, an MCP server may expose the current `.lingua` capabilities and
+selected First Steps Records as resources, and expose guarded Record search,
+Concept resolution, validation, semantic preview and candidate application as
+tools. Those tools must call Protein and ordinary authorized Actions, never
+SQLite or a Fiote-only mutation path. The skill remains the workflow around
+the tools; Lince remains the authority that can refuse them.
 
 ---

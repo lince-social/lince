@@ -15,6 +15,7 @@ import {
   getSharedTransport,
   listTransports,
   releaseTransport,
+  setLocalOrganId,
 } from "./transport.js";
 
 const PACKAGE_EXTENSION = ".html";
@@ -1505,6 +1506,15 @@ function normalizeServerProfile(rawServer) {
         ? Number(rawServer?.connectedAtUnix ?? rawServer?.connected_at_unix)
         : null,
     lastError: String(rawServer?.lastError || rawServer?.last_error || ""),
+    // Whether this row IS our own Cell. Dropped here until 2026-08-16, and
+    // everything downstream reads it: without it `localServerProfile()` finds
+    // nothing, so the host picker fell back to a generic "Esta Lince" for its
+    // own-Cell option AND listed the local Organ again among the remotes —
+    // the same Cell twice, the second one carrying its real uid. Choosing that
+    // one bound the card to an Organ the transport then dialled as a contact,
+    // and a Cell is not a contact of itself, so every write came back "not a
+    // contact" from a picker that looked correctly set.
+    local: Boolean(rawServer?.local),
   };
 }
 
@@ -1512,6 +1522,13 @@ function syncServerProfiles(nextProfiles) {
   serverProfiles = Array.isArray(nextProfiles)
     ? nextProfiles.map(normalizeServerProfile)
     : [];
+  // Tell the transport which uid is our own, so a card bound to the local
+  // Organ BY UID is treated as local rather than dialled as a contact. See the
+  // note on `setLocalOrganId`.
+  setLocalOrganId(
+    localServerProfile()?.id || "",
+    serverProfiles.filter((server) => !server.local).map((server) => server.id),
+  );
 }
 
 function getServerProfile(serverId) {
@@ -5617,7 +5634,13 @@ function defaultServerIdForPreview(preview) {
     return "";
   }
 
-  return serverProfiles[0]?.id || "";
+  // Our own Cell, which the board spells as the EMPTY string. This used to
+  // return `serverProfiles[0].id` — the local Organ's real uid, and the first
+  // profile `/organ` sends — which bound the card to a Cell the transport then
+  // dialled as a contact. It is not a contact of itself, so every write from
+  // such a card failed with "not a contact" while the host picker showed
+  // "Local Lince" selected.
+  return "";
 }
 
 // Sands that ship with a default ABI listen configuration.

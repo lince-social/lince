@@ -1,0 +1,42 @@
+---
+uid: r_03Q8KYPK6R6EXV0BE9AHFWV0R9
+@@task
+@instinct
+@todo
+@part-of [[Frequency|r_M06FEBR6Y31XZAJMDKRSWWAGAP]] 1
+quantity: -1
+---
+
+## 1.5 — Frequency
+
+- [ ] **One tokio task per distinct Frequency read by an active rule.** Not one
+      loop over all frequencies, and not one task per frequency that merely
+      exists. Each task: `next_on_or_after(now)`, `sleep_until` it, wake,
+      evaluate every rule whose condition reads it, repeat. A `1s` and a `1d`
+      frequency then cost one wake each per their own period, which is the
+      entire point.
+- [ ] **Lifecycle.** Spawn when a rule reading it becomes active; abort when the
+      last one stops or the step changes, then respawn. `JoinHandle`s in a map
+      keyed by frequency uid on the Engine.
+- [ ] **Missed beats on boot.** `between(anchor, last_fired, now)` gives them;
+      fire those, then enter the sleep loop. Safe every boot because firing is
+      keyed `<rule_uid>:<frequency_uid>:<beat_at>` on `entry_revision`'s
+      existing `UNIQUE(request_id)`.
+- [ ] **`freq(@x)` becomes a beat indicator** — 1 on the beat, 0 otherwise —
+      once the timer tasks land, and the `since` plumbing goes with it.
+- [ ] **Civil resolution at fire time.** Wire the read path to a timezone
+      provider so a rule that must land on a local Friday does.
+- [ ] **Projection is bounded.** Five years of a monthly Frequency is sixty
+      evaluations; a `1s` Frequency over the same span is not a query. Refuse
+      with the count rather than hanging.
+- [ ] **The missed policy is declared, not assumed** — fire every missed beat,
+      coalesce them into one, take only the latest, or skip to the next anchor.
+      A Cell asleep three weeks owes three Mondays only if it said so.
+- [ ] **Changing a step declares its rephase policy** — keep the anchor, or
+      re-anchor from now. Silently doing either is a bug in one direction or the
+      other.
+- [ ] **Admission: a Frequency the Cell cannot serve is refused at activation,
+      not discovered at runtime.** A `1ms` beat is a real request and a real
+      cost; say no with the arithmetic, and offer a shadow run.
+- [ ] **Reuse is the point** — ten rules reading one Frequency wake from one
+      timer, not ten.

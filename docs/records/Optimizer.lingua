@@ -1,0 +1,20 @@
+---
+uid: r_ZEGJ3N1F7Y8HZBCFNQKTWDME5Q
+@@idea
+@instinct
+@backlog
+@part-of [[Nutrition|r_27C9F893QCC8EZAV11K2HFAT95]] 1
+quantity: 0
+---
+
+## Optimizer
+
+The optimizer minimizes total generic-currency price over food gram variables. It uses a two-phase simplex tableau with these constraints:
+
+- per-food min, max, and forced grams
+- total marmita volume from pot count and pot volume
+- minimum calories from Mifflin-St Jeor estimated expenditure
+- minimum daily protein
+- minimum daily fiber
+
+If the LP is infeasible, the UI reports the violated class of constraint and keeps a generated fallback rather than silently producing a broken plan.

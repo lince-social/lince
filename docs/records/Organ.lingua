@@ -1,0 +1,54 @@
+---
+uid: r_VAX3HA21RXF9AENHMCJTSEF1AT
+@@chapter
+@instinct
+@stable
+@part-of [[Ontology|r_S8PQ17MQ3WBWM53ZN700K89V9F]] 2
+quantity: 1
+---
+
+# Organ
+
+Every Record so far lived alone on one machine. This is about what happens when
+people show up: your own Cell, other people’s Cells, and the Organs that let
+several Cells hold something in common.
+
+## Organ: the sovereign Record holder
+
+A **Cell** is one running Lince instance and its local data. An **Organ** is
+the social/network boundary a Cell represents (personal, family, company,
+project, community); other reachable Lince nodes are Organs regardless of
+their internal arrangement. An Organ is a `kind = organ` Record; it owns its
+Records, structure, policy, credentials, and private Lingua. Every Record
+carries its origin Organ, preserved through relaying.
+
+All of the following is built; §11 holds the mechanics.
+
+Contacts live in `organ_contact`: `trust` (unknown/known/blocked), numeric
+`proximity` (local-only, never exported), and independent `sync_out`/`sync_in`
+policy. `blocked` is terminal everywhere — import, discovery, export and
+delivery all reject. Introduction exchanges identity + public keys, and
+adopting stores the remote Organ under its own uid; Organ identity is
+transport/trust, not permission for one Person to act or sign for another.
+Sync carries visibility-gated op batches through a durable outbox with retry;
+imports verify hash-chain + signature, rejects go to quarantine verbatim while
+valid items still apply, import is idempotent by op identity and uid, and
+quantity deltas commute. Protein selects Records by origin Organ
+(`organ_eq`/`organ_in`).
+
+File Sync mirrors selected Records to Markdown files through the
+`lince.file_sync` extension (`enabled`, `path`); disk edits return through the
+normal `EditRecordText` action. Disk wins on a same-tick conflict, and a
+missing file deletes its Record only after two consecutive misses — a debounce
+against atomic editor saves. A live config supervisor
+(`engine::file_sync::spawn_supervisor`) starts and stops watchers when config
+toggles, reacting to `SetExtension` facts on the bus rather than requiring a
+reboot; boot seeds via the same reconcile pass.
+
+The Organ interface lists `kind = organ` Records, edits File Sync config, and
+— folded into the same sand as a friends-list panel — edits contact trust and
+proximity, with block/unblock as `trust: "blocked"`/`"known"`
+(`set-contact-trust`/`set-contact-proximity` Actions, `contact` Protein
+include on `organ_contact`). Its scope is trust/proximity; sync policy
+(`sync_out`/`sync_in`) and quarantine inspection stay out of that component.
+It has since grown Profile, Devices and Discovery panels — §11.

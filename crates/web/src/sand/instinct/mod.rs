@@ -3,10 +3,10 @@ use crate::domain::lince_package::{LincePackage, PackageManifest};
 pub(crate) const FEATURE_FLAG: &str = "sand.instinct";
 
 // Instinct: the sand you read to learn Lince. Replaces the old flat "Tutorial"
-// sand (shell::tutorial_source, removed) with a chaptered document — the intro
-// chapter "First Steps" is the practical frontend walkthrough, and the rest go
-// concept by concept in dependency order (Records -> Links -> Concepts ->
-// Cells & Organs -> Transfers -> Karma).
+// sand (shell::tutorial_source, removed) with one tree rooted at "First Steps"
+// — the practical frontend walkthrough — which branches into why Lince exists,
+// then the model underneath it, then Links, Concepts, Cells & Organs,
+// Transfers and Karma.
 //
 // Diagrams come from `docs/Sand: First Steps.md`, whose typst `visual-text`
 // blocks were already mermaid-shaped. They are NOT copy-pasted: that source
@@ -38,9 +38,13 @@ const CHAPTERS_MARKER: &str = "<!--CHAPTERS-->";
 /// The files are gone (2026-08-16). `docs/records/*.lingua` is the source, and
 /// `engine::instinct` is the one embedded copy that both this sand and
 /// `Action::ImportInstinct` read — so the chapter you are reading and the
-/// Record the button would put in your store cannot drift apart. Reading order
-/// is in the assertions (`@position` on a chapter, `@chapter … n` on an idea),
-/// never in a filename and never in an array here.
+/// Record the button would put in your store cannot drift apart.
+///
+/// **The Records are one tree now.** Everything hangs off `First Steps` by
+/// `@part-of [[Idea|uid]] n`, at any depth, and the number on that link is the
+/// order among siblings. So reading order is a depth-first walk that the
+/// engine has already done — this only has to decide where one entry in the
+/// navigation ends and the next begins, which is what `is_entry` answers.
 ///
 /// The shell script is untouched by this: it builds the nav, the prev/next
 /// footer and the saved reading position from `.chapter` elements in the DOM,
@@ -48,17 +52,22 @@ const CHAPTERS_MARKER: &str = "<!--CHAPTERS-->";
 fn chapters() -> String {
     let records = engine::instinct::records();
     let mut out = String::new();
-    for chapter in records.iter().filter(|r| r.is_chapter()) {
+    for entry in records.iter().filter(|r| r.is_entry()) {
+        // Depth travels with the entry so the navigation can show the TREE.
+        // Without it the nav is a flat list of every chapter at every level,
+        // which reads as thirty-odd peers and hides the one structure the
+        // Records exist to carry.
         out.push_str(&format!(
-            "<article class=\"chapter\" data-chapter=\"{}\">\n",
-            chapter.head.replace('"', "&quot;")
+            "<article class=\"chapter\" data-chapter=\"{}\" data-depth=\"{}\">\n",
+            entry.head.replace('"', "&quot;"),
+            entry.path(&records).len().saturating_sub(1)
         ));
-        out.push_str(&render::body_to_html(&chapter.body));
-        for idea in records
-            .iter()
-            .filter(|r| r.chapter_uid(&records) == Some(chapter.projection.uid.as_str()))
-        {
-            out.push_str(&render::body_to_html(&idea.body));
+        // The records already arrive depth-first, so everything that reads
+        // under this entry is simply everything that names it — in order,
+        // however deep it sits. The entry's own body comes first because a
+        // Record's path is a prefix of its children's.
+        for record in records.iter().filter(|r| r.entry_uid(&records) == entry.projection.uid) {
+            out.push_str(&render::body_to_html(&record.body));
         }
         out.push_str("</article>\n");
     }
@@ -77,7 +86,7 @@ pub(crate) fn manifest() -> PackageManifest {
         version: "1.0.0".into(),
         description: "Chaptered introduction to Lince, from the canvas to Karma.".into(),
         details:
-            "Start at First Steps for the frontend itself — the corner triangle, edit mode, adding sands and pointing them at data with Protein — then read the chapters on Records, Links, Concepts, Cells & Organs, Transfers and Karma."
+            "Start at First Steps for the frontend itself — the corner triangle, edit mode, adding sands and pointing them at data with Protein — then follow the tree out through why Lince exists, the model underneath it, Links, Concepts, Cells & Organs, Transfers and Karma."
                 .into(),
         initial_width: 6,
         initial_height: 5,
@@ -107,16 +116,9 @@ mod tests {
             "the chapters marker survived into the output: nothing was spliced"
         );
         let records = engine::instinct::records();
-        let chapters: Vec<_> = records.iter().filter(|r| r.is_chapter()).collect();
-        assert_eq!(
-            chapters.iter().filter(|r| r.identity() == "chapter").count(),
-            7,
-            "the seven tutorial chapters"
-        );
-        assert!(
-            chapters.iter().filter(|r| r.identity() == "document").count() >= 5,
-            "and the project's own documents, which used to be the Markdown in docs/"
-        );
+        let chapters: Vec<_> = records.iter().filter(|r| r.is_entry()).collect();
+        assert!(chapters.len() >= 7, "the root and its branches: {}", chapters.len());
+        assert_eq!(chapters[0].head, "First Steps", "the reader opens on the root");
         for chapter in &chapters {
             assert!(
                 html.contains(&format!("data-chapter=\"{}\"", chapter.head)),
@@ -127,7 +129,7 @@ mod tests {
         // And every IDEA landed in a chapter too. The nav is built from
         // `.chapter` elements, so an idea whose chapter link went nowhere
         // would vanish from the document without the nav looking wrong.
-        for idea in records.iter().filter(|r| !r.is_chapter()) {
+        for idea in records.iter().filter(|r| !r.is_entry()) {
             let first = idea.body.lines().find(|l| !l.trim().is_empty()).unwrap_or_default();
             let probe: String = first.trim_start_matches(['#', '>', '-', ' ']).chars().take(24).collect();
             if probe.len() < 12 || probe.contains(['*', '_', '`', '<', '&', '[']) {

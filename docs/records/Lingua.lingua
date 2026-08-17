@@ -1,0 +1,32 @@
+---
+uid: r_CRGXD1W7FA6T1DSVG5YYCZ6M8H
+@@chapter
+@instinct
+@stable
+@part-of [[Ontology|r_S8PQ17MQ3WBWM53ZN700K89V9F]] 5
+quantity: 1
+---
+
+## Lingua: shared vocabulary, not a global ruler
+
+A **Lingua** is an identifiable collection of Concepts an Organ uses
+privately, shares with peers, publishes, or adopts from elsewhere — common
+ground between ontologies, not a required global schema.
+
+```text
+lingua
+    uid, name, owner Organ?
+    visibility          private | shared | public
+    Concepts            adopted by membership
+```
+
+- [x] Adopting a foreign Concept preserves its uid and lineage; re-adoption is
+  a no-op. Unknown precise Concepts may fall back to the nearest known
+  ancestor while the original is retained.
+- [x] Usage spans: a private personal Lingua, a small shared Lingua between
+  peers, Institute-published defaults (non-ruling), an adopted/mapped famous
+  external vocabulary, or genuinely unknown meaning left unknown rather than
+  falsely normalized.
+- [x] Concepts needed to interpret synchronized assertions travel with the
+  data. Sync currently carries ordinary assertions when subject and (if
+  present) object are both included; identity travels with the Record seed.

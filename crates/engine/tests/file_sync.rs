@@ -896,8 +896,8 @@ async fn the_shipped_documentation_folder_is_adoptable_as_records() {
     let chapters = store::records::resolve(&e.store.pool, "r_5JKQH7BM9ZQ474YF869AFE4T2N")
         .await
         .unwrap()
-        .expect("chapter 2 took the uid its file gave it");
-    assert_eq!(chapters.head, "Records");
+        .expect("the Record chapter took the uid its file gave it");
+    assert_eq!(chapters.head, "Record");
     let all = store::records::list_all(&e.store.pool).await.unwrap();
     let uids: Vec<String> = all.iter().map(|r| r.uid.clone()).collect();
     let assertions = store::assertions::for_subjects(&e.store.pool, &uids)
@@ -906,18 +906,18 @@ async fn the_shipped_documentation_folder_is_adoptable_as_records() {
     let into_chapter_two = assertions
         .iter()
         .filter(|a| {
-            a.predicate == "chapter" && a.object_uid.as_deref() == Some(chapters.uid.as_str())
+            a.predicate == "part-of" && a.object_uid.as_deref() == Some(chapters.uid.as_str())
         })
         .count();
     assert!(into_chapter_two >= 3, "its ideas link to it: {into_chapter_two}");
 
-    // Tick again and the folder must come back UNCHANGED. `@position 2` is a
-    // unary assertion carrying a quantity, and a quantity silently dropped on
-    // the way out would reorder the chapters — a failure that shows up as a
+    // Tick again and the folder must come back UNCHANGED. The number on a
+    // `@part-of` link is a quantity on an assertion, and one silently dropped
+    // on the way out would reorder the tree — a failure that shows up as a
     // reader being taught Karma before Records, long after the change.
     e.file_sync_tick(&dir, &organ, &mut state).await.unwrap();
-    let rendered = std::fs::read_to_string(dir.join("Records.lingua")).unwrap();
-    assert!(rendered.contains("@position 2"), "the number survived: {rendered}");
+    let rendered = std::fs::read_to_string(dir.join("Record.lingua")).unwrap();
+    assert!(rendered.contains("]] 1"), "the sibling order survived: {rendered}");
     assert!(rendered.contains("@@chapter"), "and it is still an identity");
 }
 

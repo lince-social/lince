@@ -2,7 +2,8 @@
 uid: r_VANC7ZNG8WDCTRE648DXT23K23
 @@idea
 @instinct
-@chapter [[Records|r_5JKQH7BM9ZQ474YF869AFE4T2N]] 3
+@stable
+@part-of [[Record|r_5JKQH7BM9ZQ474YF869AFE4T2N]] 3
 quantity: 1
 ---
 
@@ -16,7 +17,9 @@ graph LR
   A --> E["...and more"]
 ```
 
-The **head** and **body** are for you — they carry the human meaning. The **quantity** is for the machine: it is the state, and it is the part rules can read and change.
+The **head** and **body** are for you — they carry the human meaning. The
+**quantity** is for the machine: it is the state, and it is the part rules can
+read and change.
 
 ```mermaid
 graph LR
@@ -26,6 +29,67 @@ graph LR
 
 _"I am one apple short." That is a complete, working record._
 
-A number is deliberately unopinionated. The same field can mean stock, debt, need, budget, progress, votes, hours, or responsibility. That is what lets one kind of record carry every workflow you have, instead of a new table per feature.
+A number is deliberately unopinionated. The same field can mean stock, debt,
+need, budget, progress, votes, hours, or responsibility. That is what lets one
+kind of record carry every workflow you have, instead of a new table per
+feature.
 
-Every change to a quantity is recorded as a **fact** — who changed it, when, and why. Nothing moves invisibly. Turn on "history (facts)" in a Protein and a sand can show you the whole trail.
+Every change to a quantity is recorded as a **fact** — who changed it, when,
+and why. Nothing moves invisibly. Turn on "history (facts)" in a Protein and a
+sand can show you the whole trail.
+
+### The whole of it
+
+The three fields above are the ones you handle. This is everything a Record
+carries:
+
+```text
+Record
+    uid                 stable global identity; never inferred from a title
+    slug?               optional local, human-friendly alias
+    kind                small operational shape; `plain` by default
+    head                short title
+    body                canonical Markdown content
+    quantity            exact cached current level
+    unit?               Concept naming the quantity's unit
+    place?              place reference
+    origin Organ?       where this Record originated
+    created_at, updated_at
+```
+
+The **uid** is the identity and nothing else is. A slug is a local convenience
+you can rename or drop without consequence, and a title is not identity at all
+— two people will name the same thing differently and one person will rename it
+twice. **Kind** is operational only: a new one earns its existence by having a
+distinct lifecycle or sidecar, never by making a Record easier to filter, which
+is what Concepts are already for.
+
+The operations that touch a Record directly are deliberately few — create it,
+edit its text, set its slug, unit or place, set or add to its quantity, attach
+an extension, deactivate or delete it. Everything about what a Record *means*
+— its identity, its tags, its relationships — happens through assertions
+instead, so meaning never becomes a column somebody has to migrate.
+
+**Facts are the ground truth and the quantity is their fold.** It is an exact
+decimal sum of a hash-chained series of signed deltas, not a float and not a
+SQL `SUM()` computed on demand, so two Organs replaying the same history reach
+the same number to the last digit. Undo is therefore never an erasure: it
+appends the inverse Fact and lets both movements stand in the record. Editing
+metadata appends a zero-delta annotation so the trail still shows a hand
+passing through, and replaying a Fact that has already been seen does nothing
+at all — which is what lets sync be careless about delivering something twice.
+
+Deactivating a Record sets its quantity to zero and leaves everything visible:
+it is finished, not hidden. Deleting is a hard tombstone — gone from ordinary
+reads, its slug released for reuse — but the row and its chain of Facts stay,
+because a history with a hole in it cannot be verified by anyone who was not
+there.
+
+When a workflow needs a shape Lince has no word for, a Record can carry a
+**namespaced extension**: a small JSON sidecar, one per namespace, versioned so
+a reader can refuse a version it does not understand. Task work data lives here
+— `{ start, due, estimate_min, logs: [...] }` — because those are properties of
+the task rather than movements of its quantity. It is an escape hatch and it is
+meant to be temporary: a shape that many people end up using is a shape that
+should be promoted into something shared, and an extension that never gets
+promoted is a private vocabulary nobody else can read.

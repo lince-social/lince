@@ -1,0 +1,14 @@
+---
+uid: r_QEPK852QKHNCEEZDW1T2NHNWCG
+@@task
+@instinct
+@todo
+@part-of [[Building Transfer|r_00ECACY50NWQQ3S0YH37V8KMK6]] 1
+quantity: -1
+---
+
+## Checklist
+
+- [ ] Surplus can be projected. (Surplus = quantity you have beyond what is already committed to hard reservations — the "safe to give away" figure. Formula: `record.quantity - reserved_quantity`. Distinct from `available_quantity` in that surplus could also account for confirmed incoming deliveries not yet settled.)
+- [ ] Gossip cache is available as a long-term discovery helper.
+- [ ] Delegated ask-around search is available with hop/TTL limits.

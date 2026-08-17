@@ -1,0 +1,21 @@
+---
+uid: r_1J5E55566HFFCJA8R0B2M5RS4S
+@@chapter
+@instinct
+@backlog
+@part-of [[First Steps|r_YWPKA0Z1DJ8XCHTZRW4X2SDJ1N]] 16
+quantity: 0
+---
+
+Thanks for the work so far and the helping me think about it. Lets leave the calendar feature unplanned in the future for now, it is changing protein and areas of influence, but it needs more thinking before we implement it. Lets organize what we plan to implement, your descriptions seem to disorganized in a level that i dont trust you understood my intention aswell, let me summary it better, my fault: Protein areas give us data, with selection on what arrives. Lets focus on deferring the more complicated parts, like pulling a record with karma associated with it, lets focus on current protein capabilites, what we spoke before was us elevating it to the utmost expression, lets defer what is more complex and focus on these things: Creating areas to spawn data with Protein, create areas to pull or push records based on Protein filters, being able to sort records inside an area into a direction 
+
+if you select some record properties and some karma in the same protein, the records without wil appear, the records with karma will appear together, aggregated and the karma without records asso
+
+
+-------
+
+Make a deep pass thorough the interfaces ideas, how could we inovate even more. We are doing atomic sands with composition and behaviors in groups that can be affected by physics of areas of influence with visual grid pattern and/or terrain patterns editing with math... Be surgical, what more features could we have and what primitives then could cover them? Also search for cases where we are not the first to implement things like this, where we might be reinventing the wheel, where people may have gone further and we are scratching the surface. I'm talking about making sure we have the primitives to if not embed cool stuff being able to manifest inside the SandBox. Feel free to dream here. What would you love to see being authored by you? A revolution in interface and interaction and ui? From practical ideas to pie-in-the-sky, that make us be able to build great things without loosing on being able to access such great features to use them daily. One example was understanding that showing more or less of a record like in kanban body compactness controls was part of a sand composition feature, if i could add behavior to query with protein more data about a record i'd be showing more or less of that body (cached or not). I created a sand+behavior+protein primitive that allows me to spread out the record body compactness control to much more parts of data in lince and be used by any other sand. I want to discover how many more primitives like that can be discovered as even more basic blocks that still allows us to be productive interacting with it's abstractions but now in a more powerful, performant, customizeable and reusable way.
+
+----
+
+areas of changing of information, if something falls in it, it changes, quantity or concepts, gains or looses, so you start programming your lince with overlaps of areas, repulsion, sending records around as like in a production line.

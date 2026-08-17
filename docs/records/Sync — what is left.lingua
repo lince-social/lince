@@ -1,0 +1,94 @@
+---
+uid: r_4M4GJB393SWJPZJ9GD5E8DYP5J
+@@task
+@instinct
+@todo
+@part-of [[Sync|r_QP3Q66MGQR4E1ZD2CKJEC3MZH3]] 90
+quantity: -1
+---
+
+## Sync — what is left
+
+### Storage budgets
+
+- [ ] **A stated total budget per Cell**, with the media store, the Facade
+  cache and quarantine each holding a share and each evicting within it. A
+  single global cap lets whichever grows fastest evict everything else.
+
+- [ ] **The budget is visible and answerable**: "how big is this Lince, and
+  what is using it" is a question a phone owner will ask on day one.
+
+- [ ] **The Facade cache needs a PER-SOURCE quota, not only a global cap.** A
+  global cap alone means one hostile publisher fills the cache and evicts
+  everyone else's pages at no cost to itself.
+
+- [ ] **Compaction = Loro SHALLOW snapshot.** Everything around this landed in
+  the log work — compaction is triggered by update count or byte threshold, stores one
+  snapshot, logs it as an op, prunes the `crdt` ops below it under the normal
+  checkpoint-gated retention, and a doc load is snapshot + tail rather than a
+  history replay. What is still deferred is the SHALLOW part: `compact_doc`
+  exports a FULL snapshot, because a peer compacting at a divergent frontier
+  could produce unimportable tails and that needed more thought than the log work had
+  room for. Cost is already O(current state) rather than O(edit history);
+  shallow makes the constant smaller. Materialized text must be identical before and after. This
+  matters only for genuinely long-lived collab documents, where human
+  authorship bounds the size anyway — a thread is rows, not a document, so
+  chat no longer creates the urgency it once did.
+
+### Transport cleanup
+
+- [ ] **Retire `base_url` as a way to reach anyone** — settled 2026-08-05
+  while simplifying the Organ sand. Registering an Organ by hostname is gone
+  from the surface, because a URL matches nothing the transport does: pairing
+  parses a NodeId, the outbox dials a NodeId, and inbound authorises by
+  `contact_by_node_id`. What is left of `base_url` is a display string plus
+  these callers, each of which must move to a NodeId dial before the column
+  can go:
+  - ~~`web::presentation::http::transfer_delivery`~~ — DONE 2026-08-08.
+    Transfer rides `lince/sync/1` as `TransferPost { verb, body }`, served
+    through a `TransferPeer` handler installed from `web` (the same seam as
+    `LiveSessions`). The six `/organ/transfers/*` peer routes are deleted and
+    the delivery worker holds no HTTP client. Nothing about the payloads
+    changed — they were already signed and verified with `sign_organ_request` /
+    `verify_wire`, so the transport is a pipe — and the old paths survive as
+    the SIGNING DOMAINS those signatures cover. Two addresses stopped
+    travelling as values: `hosted_url` on a remote reference, and the
+    `origin_base_url` threaded into a receipt. Riding the sync ALPN inherits
+    its gate, which is a deliberate tightening: delivery now requires a
+    `known` contact, where the HTTP path served any contact that was not
+    blocked.
+  - `engine::sync::Introduction.base_url` — carried in the introduction and
+    written onto the contact by `adopt_introduction`. Harmless as a label,
+    misleading as an address: it is the peer's view of itself, routinely a
+    loopback URL.
+  - `store::organs::Contact.base_url` (the `record.body` column) and
+    `organ_contact.last_seen_addr`, which the retired HTTP runner ranked
+    candidates from —
+    keep it as a debugging breadcrumb or drop it; resolution is iroh's job.
+  Until then the rule the sand already follows: a URL is something to show,
+  never something to dial.
+
+- [ ] **Transport reuse for reactive deltas**: when a live Protein WS to the
+  contact is already open, reactive deltas ride it; the outbox drain is the
+  fallback, not a second channel — the one-WS rule stays intact.
+  **A WS delivery must delete the outbox row by `seq`**, with the same guard
+  `outbox_delete` uses, or a delta sent over the socket stays queued and
+  re-sends on every drain forever. The seq guard is what keeps an op that was
+  superseded while in flight from being dropped.
+
+- [ ] **Retiring `base_url` changes `Introduction`, which is a wire break.**
+  Fine under the no-legacy rule, but batch it with other wire changes rather
+  than spending an ALPN bump — and therefore a hard cut of every peer — on a
+  cleanup that delivers no capability.
+
+- [ ] **IPv6: prefer it wherever available.** NAT exists only because IPv4 ran
+  out; with IPv6 every device can have a globally routable address, so there
+  is no translation layer to defeat and direct connections succeed far more
+  often. iroh already binds dual-stack and races v4/v6 paths, so the Lince-side
+  work is only to not get in the way — bind both, publish v6 addresses in
+  discovery, hardcode no v4 assumptions. The remaining gate is outside Lince
+  entirely: the ISP must hand out IPv6 and the home router must have it
+  enabled. Even then most routers keep a stateful inbound firewall, so hole
+  punching is still needed — but punching a firewall pinhole is far more
+  reliable than traversing address translation. IPv6 shrinks the relay's job;
+  it does not remove it.

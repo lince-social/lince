@@ -180,14 +180,16 @@ async fn importing_instinct_puts_the_documentation_in_the_store() {
         assert_eq!(row.head, record.head);
     }
 
-    // The reading order survived as assertions, not as an import order.
-    let chapter = bundle.iter().find(|r| r.head == "Records").expect("chapter 2");
+    // The tree survived as assertions, not as an import order. `Record` sits
+    // two levels down — under Ontology, under the root — so this also proves
+    // the import carries a link the old one-hop reader could not have made.
+    let chapter = bundle.iter().find(|r| r.head == "Record").expect("the Record chapter");
     let uids: Vec<String> = bundle.iter().map(|r| r.projection.uid.clone()).collect();
     let assertions = store::assertions::for_subjects(&e.store.pool, &uids).await.unwrap();
     assert!(
-        assertions.iter().any(|a| a.predicate == "chapter"
+        assertions.iter().any(|a| a.predicate == "part-of"
             && a.object_uid.as_deref() == Some(chapter.projection.uid.as_str())),
-        "ideas point at their chapter"
+        "ideas point at the chapter they are part of"
     );
     // Stable documentation is quantity 1 — the same ladder the board reads.
     let level = store::records::quantity(&e.store.pool, chapter.projection.uid.trim())

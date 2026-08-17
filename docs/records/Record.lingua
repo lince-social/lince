@@ -1,0 +1,35 @@
+---
+uid: r_5JKQH7BM9ZQ474YF869AFE4T2N
+@@chapter
+@instinct
+@stable
+@part-of [[Ontology|r_S8PQ17MQ3WBWM53ZN700K89V9F]] 1
+quantity: 1
+---
+
+# Record
+
+A **Record** is one thing that matters to you: a task, a project, a person, a
+message, a tool, a place, a transfer, a rule, a note, a saved query. Lince has
+no table for tasks and another for invoices and a third for contacts. It has
+this. What makes one Record a task and another an invoice is what has been said
+about it — never a column, and never a schema you had to choose correctly
+before you knew what you were doing.
+
+Giving up the schema sounds like giving up too much, and it is the opposite. A
+fixed shape is precisely what makes software refuse the thing you actually want
+to track. Once every thing is the same kind of thing, a rule that watches your
+pantry and a rule that watches your workload are one rule pointed at two
+subjects; a board of chores and a board of purchases are one board pointed
+somewhere else. The variety moves out of the database and into your hands,
+which is where it was always going to end up anyway.
+
+A Record carries a **head** and a **body** for you to read, and a **quantity**
+for the machine to work with. The quantity is the part that moves — the part
+rules read, transfers change, and history remembers — and its sign is meaning
+rather than bookkeeping: negative is a Need, positive is a Contribution, zero
+is neither.
+
+The parts below take those in turn: why a Need is where the model starts, why a
+Need and a Contribution are the same number, and what a Record is actually made
+of underneath.

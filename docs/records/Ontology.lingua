@@ -1,0 +1,34 @@
+---
+uid: r_S8PQ17MQ3WBWM53ZN700K89V9F
+@@chapter
+@instinct
+@stable
+@part-of [[First Steps|r_YWPKA0Z1DJ8XCHTZRW4X2SDJ1N]] 11
+quantity: 1
+---
+
+# Ontology
+
+This branch began as **Lingua**, and Lingua began as one question: how can two
+people who have never met use the same word and be sure they mean the same
+thing. It turned out to be the smaller half of a larger question. Before you
+can share a meaning you have to be able to hold one, and holding one is the
+whole problem — what a thing is, what has been said about it, who said it, and
+what any of that is worth to the person reading it later.
+
+So Ontology stopped being a vocabulary and became the floor. It is the small
+set of shapes everything above is made from, and the reason Lince does not grow
+a new table every time it grows a feature. Four shapes carry nearly all of it:
+
+> **Records model things. Assertions model what is said about them. Concepts
+> name those assertions. Lingua lets different Organs share or translate their
+> meanings.**
+
+Everything else is a projection of those four, a constraint on them, or a
+convenience over them. Protein is a way of reading them. Sync is a way of
+moving them between Organs. A Transfer is a promise about them; a Karma rule is
+arithmetic over them. When something new is proposed here the first question is
+which of the four it already is — and a genuinely fifth shape has not been
+needed yet.
+
+The parts below take one shape each, with the room to explain themselves.

@@ -1,0 +1,17 @@
+---
+uid: r_QSYS0R8GSGGA50W137BFJJEDDH
+@@chapter
+@instinct
+@backlog
+@part-of [[How we work|r_AY1B5PG2EN346HF57RA0PKDCZ6]] 3
+quantity: 0
+---
+
+## 📂 How It Is Structured
+
+Turso's simulator code is organized inside their repository under their testing directories (such as testing/simulator/). It is broken into four distinct architectural layers: [2, 7, 8]
+
+1.  Simulator (main.rs): The entry point. It generates random configuration setups and interaction plans, executing them sequentially or concurrently inside the runtime loop. [2, 7]
+2.  Model (model.rs): A highly simplified, memory-resident representation of what the database should contain. It tracks atomic actions like insertions and selections to acts as a "source of truth". [2, 7]
+3.  Generation (generation.rs): The code responsible for pseudo-randomly generating interaction plans, mock database tables, and schema workloads based on a configured workload distribution. [2, 7]
+4.  Properties (properties.rs): Defines invariants and core database properties (like transaction atomicity, linearizability, or isolation levels). The engine checks these assertions at every step of the simulation loop. [2, 7, 9]

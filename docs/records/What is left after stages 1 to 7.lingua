@@ -1,0 +1,85 @@
+---
+uid: r_ZHDN5TQ3T4B9TYHNAZ9TE3Y6NP
+@@idea
+@instinct
+@stable
+@part-of [[Sync|r_QP3Q66MGQR4E1ZD2CKJEC3MZH3]] 4
+quantity: 1
+---
+
+## What is left after stages 1–7 (2026-08-04)
+
+Stages 1–7 are closed and the workflow they exist for runs end to end: discover
+an Organ, add them by QR/paste/nearby, invite and talk in threads, grant a
+login, and edit a Record together with live cursors — all over iroh, so
+changing network does not break any of it. What follows is everything
+deliberately NOT done, with enough of the reasoning to pick it up cold.
+
+**Replica bootstrap.** A new contact receives ops from the moment you connect;
+they do not receive what already existed. This is the initial catch-up, and it
+bites when someone adds a second device or accepts a conversation with months
+behind it. Left undone because it needs decisions rather than typing: snapshot
+versus replaying the op log, how to page it so a large replica does not hold a
+connection open, and how a half-transferred replica presents itself (a partial
+copy that looks complete is worse than an obvious gap). Nothing in the current
+workflow reaches it, because both Cells were present from the start.
+
+**A contradiction to resolve before anyone relies on either sentence.** Item 5b
+DROPPED at-rest encryption as "not free". The Threads section still says
+"local at-rest encryption of message bodies is an EARLY item, not a someday
+box", and reasons elsewhere as though it exists. Both cannot be true. Today
+thread bodies sit in plaintext SQLite on both ends, which is a real regression
+against the original "encrypt it" intent, and the honest sentence is
+"encrypted in transit, forward secret, plaintext at rest". Decide which
+statement survives and delete the other.
+
+**Live sessions do not resume.** QUIC migrates a path under a connection that
+stays open, which is what makes roaming work — but if the connection is
+actually lost (laptop asleep, peer restarts) there is no reconnect or resume.
+The browser socket simply ends. A resume needs a session id and a decision
+about what a client may replay.
+
+**`contact.mode` is unused.** The column distinguishes `replica` from `live`,
+and nothing reads it: live sessions are opened explicitly rather than chosen
+per contact. Either wire the setting or drop the column — a field that lies
+about being a setting is worse than no field.
+
+**Collab embeds are partial by design and by accident.**
+- Relations has NO embed, deliberately: it has no text surface, because its
+  record sidepanels were removed by an earlier decision recorded in that
+  sand's own header. Reversing that is a design call, not a task.
+- Kanban and table embeds are best-effort — they degrade to a plain input if
+  the shared document cannot be reached, which is correct, but means a silent
+  loss of liveness that nothing surfaces.
+- Only the record editor renders CURSORS. The embeds sync text but show no
+  presence.
+
+**The wasm is unproven in an iframe.** `crates/web/tests/collab_wasm.rs` runs
+the shipped bundle and the shipped editor module in real node, including
+concurrent edits through a relay that echoes like the engine. What no test
+here can prove is that a sand IFRAME may load it — that needs a browser. The
+live board serves no CSP header today and sands are same-origin `srcdoc`
+frames, so it should work; "should" is doing real work in that sentence.
+
+**Off-LAN camera scanning.** `getUserMedia` needs a secure context, so scanning
+a QR code does not work over plain HTTP to a LAN hostname — which is how a
+second device reaches this Cell. The chrome says so specifically rather than
+failing as "no camera". Fixed by the hostname/TLS item, not before.
+
+**The ordinary HTTPS login path** (hostname, certificate, reverse proxy) is
+still unbuilt. It is no longer on the critical path — live-over-iroh replaced
+it for the workflow that motivated it — but it remains the only way a browser
+reaches a Cell that is not its own.
+
+**Audit and retention/pruning** were never started. The op log grows without
+bound and nothing summarizes who did what.
+
+**Fiote** remains deferred, as it has been since the persistence cutover.
+
+# Nutrition Information Base
+
+The built-in nutrition knowledge base is package data. It is compiled into the official Home Manager sand and is never written to Lince persistence. This keeps researched base values deterministic, reviewable, and portable with the widget.
+
+Custom foods are the only nutrition records created by this pass. They are stored as `record` rows with a single `record_extension` payload in the `nutrition.alimentum.v1` namespace. The frontend reads those records through dedicated Home Manager widget actions and merges them with the built-in catalog at render time.
+
+Marmita plans are operational state, not records. Profile settings, food selection, min/max/forced grams, prices, generated allocations, optimizer output, and shopping lists are saved in widget/card state through the bridge, with localStorage only as a preview fallback.

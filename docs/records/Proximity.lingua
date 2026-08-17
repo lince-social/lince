@@ -1,0 +1,54 @@
+---
+uid: r_JQST1BN65RZ5163F9193XX8S6V
+@@chapter
+@instinct
+@stable
+@part-of [[Ontology|r_S8PQ17MQ3WBWM53ZN700K89V9F]] 12
+quantity: 1
+---
+
+## Proximity: physical nearness as a local signal (post-sync)
+
+`organ_contact.proximity` is a numeric, LOCAL-ONLY score of how physically
+near a contact tends to be — it never travels outward (§2) and nothing in
+sync depends on it. This section is future work, layered after sync ships;
+it exists so the signals below land in one place instead of leaking into
+discovery (§11), which only *finds* peers and never scores nearness.
+
+How a device can know something is physically near, from weakest to
+strongest signal:
+
+1. **Same network.** Seeing a contact's challenge-verified LAN announce
+   means "same router as me" — usually the same building, but a large
+   office or a VPN can stretch that. Free (discovery already produces it),
+   works on desktop, and is the only signal that needs no extra radio.
+2. **BLE — Bluetooth Low Energy.** Radios take two roles: *advertising*
+   (broadcasting a small beacon, ≤31 bytes legacy / ~250 extended, a few
+   times per second at negligible battery cost) and *scanning* (listening
+   for beacons). Hearing a beacon at all bounds distance to roughly a
+   room–building (~10–100m); the received signal strength (RSSI) gives a
+   coarse near/far estimate — walls and bodies make it noisy, so treat it
+   as buckets (immediate/near/far), never meters. Platform reality:
+   phones have BLE and OSes gate it behind explicit permissions (Android:
+   BLUETOOTH_ADVERTISE/SCAN; iOS: CoreBluetooth, with background
+   advertising heavily restricted — reliable beacons mean the app is
+   foregrounded or using OS-specific rendezvous services); most desktops
+   can scan but advertise poorly. So BLE proximity is mobile-first by
+   nature, and that's fine.
+3. **UWB — ultra-wideband.** Time-of-flight ranging (Apple U1/U2,
+   Android UWB API on some devices): actual distance in centimeters. The
+   precise-but-rare option; design must treat it as a bonus, never a
+   requirement.
+
+**PARKED 2026-08-09 — nothing here gets built, and the reason is not
+technical.** The owner's position is that Lince should not tell people who is
+physically close, for now. The section stays because the analysis above is
+worth keeping and because parking it in one place is what stops proximity
+signals from leaking into discovery piecemeal. Two notes for whenever it is
+revisited: this was only ever for contacts you ALREADY know — matching needs
+a fingerprint you hold, unknown beacons are ignored outright, and BLE never
+introduces anyone to anyone — and the score never leaves the Cell. "Buckets,
+not metres" means radio signal strength is a bad ruler: a wall, a body or a
+phone in a pocket moves RSSI more than five metres of actual distance does,
+so immediate/near/far is the honest resolution and any number in metres would
+be invented.

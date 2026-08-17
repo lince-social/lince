@@ -1,0 +1,181 @@
+---
+uid: r_C4WYZ1CK8CZQJAJRQY1V9Q7P3A
+@@task
+@instinct
+@todo
+@part-of [[Later, still Rule|r_K99HSKDH25E128SY5JFMB0F73Y]] 1
+quantity: -1
+---
+
+## 1.6 — Later, still Rule
+
+- [ ] **Rules take named parameters** with declared types and ranges, so tuning
+      one number is not a revision of the whole rule and a rule can be installed
+      as a template and then adjusted.
+- [ ] **A rule is reusable inside another rule** through explicit typed inputs
+      and outputs, so a shared piece of arithmetic is written once.
+- [ ] **A text form of a rule**, round-tripping rule → text → rule without
+      semantic loss, so a rule is diffable, shareable and reviewable outside the
+      sand. The visual builder stays the primary surface.
+- [ ] **A rule may keep durable state across firings** — a counter, a last
+      value, a cooldown's clock. It is an immutable event chain with one
+      projection, not a mutable field, and §1.3's temporal controls depend on it.
+- [ ] **A rule declares what happens when it is triggered while still running**
+      — queue, drop, or restart. Deterministic, declared, never emergent.
+- [ ] **Simultaneous rules run in a deterministic order** — dependency order
+      first, a stable tiebreak after — and conflicting writes resolve by a
+      declared policy rather than by whichever landed first.
+
+- [ ] **Add `RecordKind::Command`** and the ingress Action that appends its Fact.
+- [ ] **Commands declare** executable identity and hash, typed arguments (no
+      string interpolation), working directory, environment allow-list, timeout
+      and captured output.
+- [ ] **An inbound HTTP request maps to one Command Fact**, authenticated,
+      idempotent by request id, and refused rather than queued when unauthorized.
+
+- [ ] **Crash atomicity is not met, and this is known.** The engine appends the
+      Fact and its classification in separate statements; a crash between them
+      leaves an unclassified Fact.
+- [ ] **Archive instead of delete.** Pre-checkpoint Facts move to
+      `fact_archive` carrying the classification and unit in force at the time.
+      The checkpoint is the past/present boundary — no `is_history` column.
+- [ ] **Compaction refuses rather than truncating a window a live rule reads.**
+- [ ] **Exact deltas on `promise.delta` and `link.quantity`**, deliberately not
+      done yet.
+- [ ] **A shorthand capture language**, deterministic and readable, never an
+      executable shell: `lose 68.40 @brl on record:@cash from merchant:@market
+      on 2026-07-22 #household`. The unit is an ordinary Record reference, which
+      is why `@brl` and `@kg` are the same kind of token. A missing target,
+      unit or magnitude, or an ambiguous date, yields a question — never a
+      guessed Fact.
+- [ ] **Retention is keyed on meaning with DAG inheritance**, not on
+      `record.kind`, and is purpose- and sensitivity-aware.
+
+- [ ] **Projection writes nothing** — no Fact, no intent, no candidate, no
+      cursor advance. Prove it with a test that counts rows before and after.
+- [ ] **Return exact points, not floats**, carrying decimals and units end to
+      end.
+- [ ] **Exclusions are reported, never silent.** A rule that could not be
+      projected says so on the timeline.
+- [ ] **Fold classified promises alongside rule beats**, so "in three weeks"
+      includes what was promised as well as what is scheduled.
+
+- [ ] **Build the effect worker.** Lease an intent, record a typed attempt,
+      apply the change, land a signed Fact, release the lease. Retries driven by
+      the frozen idempotency key.
+- [ ] **Three distinct targets, three distinct capabilities** — a Record's plain
+      quantity, a Transfer stage, an external effect. Never one
+      `transfer:automatic` boolean.
+- [ ] **Reserve on authorization, reconcile on receipt, release on failure.** A
+      compensated intent keeps its budget consumed.
+- [ ] **Compensation is real, not nominal.** Reversing an applied intent appends
+      the reversing Fact; it does not delete the original.
+- [ ] **Attribute every automatic Action to both the real principal and the
+      rule**, and enforce at the engine and Action boundary, never in a sand.
+- [ ] **Freeze the effective grant at proposal time** for explanation, and
+      recheck it at apply time.
+- [ ] **Role/permission grants themselves become Karma-drivable.** Assigning a
+      role to a Person, or granting/revoking a permission, is today only a
+      direct auth-table mutation (Interface.md's permissions sand). Once the
+      effect worker exists, a Rule's Consequence should be able to do the same
+      thing a person does by hand today — grant, revoke, or reassign a role —
+      under the same signed-grant/Authority discipline as any other
+      Consequence, never a bypass of it. Not started; the direct auth-table
+      mutation path stays the only one until this lands.
+
+- [ ] **HTTP connectors declare** method, host and path policy, request and
+      response schema, retry policy, and reference secrets by opaque
+      capability-bound handle — never by value in a rule.
+- [ ] **Device controllers expose** typed commands and state plus physical
+      safety limits that a rule cannot argue past.
+- [ ] **Distinguish durable desired interface state from a one-off command.**
+- [ ] **Every adapter has a simulation double** built at the same time, not
+      after.
+
+- [ ] **One observation envelope:** `source_uid, source_revision, observed_at,
+      received_at, payload, signature`.
+- [ ] **Deactivating a Signal stops new acquisition and downstream triggers**
+      without deleting what it already produced.
+- [ ] **Source health is data, not logs:** last scheduled, attempted and
+      successful acquisition, adapter version, next retry — readable through
+      Protein, and usable in a rule.
+- [ ] **Event-time nodes declare a late-data watermark and a correction policy.**
+- [ ] **Recognition has one capture lifecycle:** `captured → extracted →
+      needs_review | ready → applied | rejected`. Every inferred field records
+      its recognizer and version, input hash, candidate value, confidence,
+      source span and alternatives. A person may edit any field; that edit never
+      rewrites the captured model output. Raw audio and photos can be discarded
+      after review while keeping the hash and the structured evidence.
+
+- [ ] **Split the name.** Recurrence probability, estimate confidence,
+      counterparty evidence, expected utility and authority eligibility are five
+      different claims and `confidence()` currently blurs them.
+- [ ] **Refine counterparty evidence by meaning, role and window**, and show
+      kept, broken and outstanding counts beside the number.
+
+- [ ] **A deterministic decayed Beta/cadence model** as the first and only
+      learner, stored as typed policy rather than frontend state: prior,
+      evidence window, decay, update rule.
+- [ ] **Separate opportunity and exposure from positive, negative and censored
+      outcomes.** An absent Fact is not a negative one.
+- [ ] **Persist each update** with the prior checkpoint hash and the admitted
+      and rejected evidence, so any number can be explained backwards.
+- [ ] **Model lifecycle:** `cold → learning → calibrated → drifting → retired`,
+      with a deterministic train/validation split and declared candidate
+      features — no combinatorial context mining.
+- [ ] **Recommendation states:** `open, accepted, accepted-edited, dismissed,
+      snoozed, muted, expired`, with typed contextual feedback.
+- [ ] **Detect action/recommendation loops** — if accepting a suggestion creates
+      the evidence that regenerates it, stop and say so.
+- [ ] **Explanations at several depths:** one sentence, substituted values, full
+      evidence.
+
+- [ ] **Idempotent whisper uid with per-channel delivery state**, so a retry is
+      not a second interruption.
+- [ ] **Explicit escalation:** retry a channel, change channel, notify another
+      person — each a declared step, never an emergent one.
+- [ ] **Attention policy reserves capacity** for safety and expiring decisions,
+      and persists quiet hours, recipients and per-channel thresholds as durable
+      policy rather than as a device setting.
+- [ ] **No coercive ranking, synthetic urgency, dark patterns, or hiding the
+      "do nothing" option.** This is a build constraint, not a sentiment.
+
+- [ ] **Persist as a Record** (`kind=automation_trust_scope`, quantity is the
+      tier) with an immutable revision chain, and extend `source:"karma"` with
+      `object_kind="trust_scope"`.
+- [ ] **Policy evaluation returns a structured proof, never just `false`** —
+      which clause matched, and what would have to change.
+- [ ] **Never use locally inferred counterparty probability as their consent.**
+- [ ] **Autonomy is chosen per step** — "always ask before publishing" is a
+      different setting from "always ask before settling".
+- [ ] **Keep payment execution separate from Transfer settlement.**
+
+- [ ] **Workflow nodes:** state machine, sequence, parallel, wait-until,
+      timeout, compensate.
+- [ ] **Deterministic solver adapters** — linear, mixed-integer, constraint —
+      translating Records, Facts, assertions, Promises, availability and time
+      windows into decision variables.
+- [ ] **Distinguish forecast from plan from schedule.** A forecast estimates
+      what will happen; a plan chooses; a schedule commits.
+- [ ] **Reoptimization preserves stability** through explicit change penalties,
+      so a small input change does not reshuffle a person's week.
+
+- [ ] **Put clock, scheduling, entropy, uid generation, filesystem, network and
+      model access behind injected ports.** Nothing else makes replay possible.
+- [ ] **Canonicalize maps, sets, strings, units, timestamps and serialization**,
+      and give every stochastic algorithm a recorded seed.
+- [ ] **Nondeterministic model output is an observation** with model id, request
+      and response recorded — never a decision.
+- [ ] **Upgrades never reinterpret an old run silently.**
+- [ ] **Deterministic fault injection and shrinking** for time jumps, crashes,
+      duplicate delivery and clock skew, preserving the violated invariant.
+- [ ] **Shadow mode** runs a candidate revision beside the active one without
+      effects.
+
+- [ ] **Publish engine health through Protein:** mode, active schema, task
+      liveness, queue depth, oldest unclaimed work.
+- [ ] **Type failures** as invalid definition, missing or stale or denied data,
+      adapter error, budget exhausted, timeout.
+- [ ] **Cell modes:** `normal`, `stage-effects`, `observe-only`,
+      `emergency-stop` — each surviving reboot.
+- [ ] **Enforce CPU, memory, storage, I/O and notification limits** per rule.

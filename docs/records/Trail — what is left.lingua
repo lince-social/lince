@@ -1,0 +1,91 @@
+---
+uid: r_A3TGM8V10ADEW80QWRXDJQQR3E
+@@task
+@instinct
+@todo
+@part-of [[Trail|r_Q46Z5FZHZFACPNSNPJP2GEDC1D]] 90
+quantity: -1
+---
+
+## Trail — what is left
+
+### Tree sync: taking a Record and everything under it
+
+- [ ] **The walk needs a visited set and a depth bound.** Records link to
+  Records, so a tree from a root over a link graph can cycle.
+
+- [ ] **A uid already present in the receiver's store MERGES, it does not
+  duplicate.** Same uid means same Record, reconciled by op identity like any
+  other sync. There is no "copy as new" and the interface must not imply one.
+
+- [ ] **Move's manual delete emits tombstones that propagate.** Moving a tree
+  to Organ B therefore also announces the deletion to contacts C and D. That
+  is correct behaviour AND a surprise, so it is said before the button is
+  pressed rather than discovered after.
+
+- [ ] **Copy first, and Copy alone, in the first version.** It reuses the
+  walk, the ops and the consent handshake that already exist.
+
+- [ ] **Move is Copy plus a SEPARATE manual deletion**, pressed by a human
+  after seeing the data arrive. Never automatic, never on an acknowledgement.
+  Delete-after-confirmed across two machines is a distributed transaction:
+  lose the ack and you either destroy something that never landed or keep
+  something you promised to drop. The cheap correct answer is a person
+  looking at the screen, and it is the chosen one.
+
+- [ ] **Taking a tree requires the receiver's consent**, like every other
+  incoming sync. A DNA published as free to use is the same act with the
+  consent pre-granted by the publisher — it enters your store AND stays in
+  theirs, which makes it a Copy in both directions of the word.
+
+- [ ] **The mechanism here stays "tree sync", and that is all it is called.**
+  Overridden in part 2026-08-16: the word **Trail** is now the name of the
+  BUNDLE — what was called a Recipe, see "Trail: the DNA of doing something" —
+  by the owner's decision. What survives of the original entry is the half
+  that was about this section: the walk itself gains nothing from a name, and
+  calling tree sync "Trail" would make one word mean the transport and the
+  cargo at once.
+  **The collision the original entry warned about is real and is NOT
+  resolved.** `Trail` is shipped, in code, in `crates/web/src/sand/relations`
+  — a view mode over a predicate's forward assertion graph, with
+  `activeTrailRule`, `computeTrailTree` and a user-visible label. Two
+  different things now share one word in one product. Deliberately left
+  standing rather than renamed on my own initiative: the relations view's own
+  option value is already `focus`, so "Focus" is the cheap way out if the
+  bundle keeps the word — but which one moves is the owner's call, and doing
+  it silently would be worse than the collision.
+
+### Other subjects — listed, not scheduled
+
+- [ ] **An optional origin stamp, display-only.** Not lineage, not a package, not tracked for dedup or re-import: a small "came from Organ X's DNA of Y, at this time" note a Record may carry, purely informational, the way a photo carries EXIF. Worth doing only once a good place for it is found (a `record_extension` namespace is the obvious candidate) — deferred until then rather than guessed at now.
+
+- [ ] Schema.org mapping to a Lingua — no adapter built yet.
+
+- [ ] Nostr protocol adapter (identity, addressing, signatures, relay
+  delivery) — respected optional future integration, not the default. A
+  normal Organ stays native Organ-to-Organ without a relay or Nostr identity.
+
+- [ ] ActivityPub protocol adapter (delivery, addressing, signatures) — same
+  status as Nostr: optional, not started.
+
+- [ ] Same-LAN sighting bumps proximity: a verified discovery announce
+  from a known contact raises the score with time-decay (nearness fades if
+  never seen again); the bump uses the *verified* fingerprint, never the
+  announce alone.
+
+- [ ] BLE beacon (mobile): advertise the same transport-agnostic payload
+  as the LAN announce (`organ_uid`, fingerprint — it already fits a beacon
+  by design, §11); scanning devices match fingerprints against known
+  contacts and bump proximity by RSSI bucket. Unknown fingerprints are
+  ignored — BLE never drives introduction, because there is no channel for
+  the challenge handshake until a network exists.
+
+- [ ] Decay + buckets, not meters: proximity is a slowly-decaying score
+  fed by discrete events (LAN sighting, BLE bucket, UWB range when
+  present); the UI never shows raw RSSI or claims precision the radio
+  cannot give.
+
+- [ ] Privacy stance: beacons broadcast only what the LAN announce already
+  broadcasts (uid + public fingerprint, no names, no secrets); scanning
+  stores sightings of KNOWN contacts only, locally, decayed — Lince never
+  builds a log of strangers' devices.

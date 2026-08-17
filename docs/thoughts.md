@@ -2,6 +2,8 @@ Thanks for the work so far and the helping me think about it. Lets leave the cal
 
 if you select some record properties and some karma in the same protein, the records without wil appear, the records with karma will appear together, aggregated and the karma without records asso
 
+areas of changing of information, if something falls in it, it changes, quantity or concepts, gains or looses, so you start programming your lince with overlaps of areas, repulsion, sending records around as like in a production line.
+
 
 -------
 

@@ -1,0 +1,125 @@
+---
+uid: r_ZA2F1A7HG65A8DGJTEPH304YHP
+@@task
+@instinct
+@part-of [[Lince (document)|r_YJQ36ETAKE8J7F8Y65DG7V43MB]] 13
+quantity: -2
+---
+
+## One Tree
+
+The 132 Records in this folder are two disconnected forests: a tutorial of
+chapters and ideas, and the project's own documents, sections and tasks. They
+describe the same subjects twice, under two different link names, with no root.
+This is the work of making them one tree — a single parent link from a single
+root, branching out into named ideas, each idea surrounded by its own tasks.
+
+**The tree is the reading order and the plan at once.** Walk it from the root
+and you get the introduction, then the reason Lince exists, then each idea in
+turn. Walk further down any branch and you reach the tasks that are left in it.
+When a task lands, its text folds up into the prose of the idea it belonged to
+and the task Record is deleted — so an idea's description thickens with what
+was actually built, and what remains below it is always exactly what is left.
+
+**Names are ideas, not coordinates.** A Record is called `Organ`, `Sync`,
+`Karma`, `Condition` — never `TODO - Karma - 1.2`, never `(document)`, never a
+chapter number. A name is what you link to; a coordinate is what you have to
+look up.
+
+**This folder is layered, not flat, and the layers disagree.** Transfer grew a
+large set of features, then almost all of Lince was rewritten, then Transfer
+grew again — so two passages about one subject can both be careful, considered
+writing and still contradict each other, with nothing on the page saying which
+one is later. Age is read from the history, never from where a passage sits in
+a file: `Transfer - OLD STUFF DOWN HERE` is at position 1 and is among the
+oldest text here.
+
+**Nothing is discarded by the merge.** Every passage lands in exactly one of
+four places, and only the first two are the merge's decision to make. Text that
+is **stable** becomes the idea's prose. Text that is **superseded** — the same
+need met another way since — is deleted, and the entry that deletes it names
+what replaced it. Text that is merely **different** — not superseded, not
+contradicted, just a stray idea whose vibe does not match the body of work
+around it, like an observer on a Transfer, or "if this one resolves, mine
+resolves too" — is not blended in and not dropped: it becomes its own backlog
+Record hanging off the subject it belongs to. Text that **contradicts** what is
+built is deleted if it is small, and kept as backlog with the contradiction
+stated plainly if it is large or important enough to be worth reopening.
+
+**The point of the fourth pile is that vibe is information.** Two things at the
+same state that feel nothing alike should not sit in one list, because the list
+stops being readable and the odd one gets skimmed past. Backlog is cheap and
+individual cards are easy to throw away later; a good idea quietly absorbed
+into a paragraph it does not belong in is not recoverable. When in doubt, it
+becomes a card.
+
+- [ ] **Two links, not five.** `@part-of [[Idea|uid]] n` for composition, with
+      the number carrying sibling order, and `@reference` for everything
+      sideways. `@chapter` stops being a parent predicate — the engine's
+      "which predicate is this kind's parent" question disappears with it.
+      Order is the number: decimals mean an insertion never renumbers siblings,
+      and a depth-first walk from the root is the whole reading order.
+- [ ] **State is the quantity and a Concept, kept in agreement.** The number is
+      what sorts — the ladder is `1` stable, `0` backlog, `-1` todo, `-2`
+      doing. The Concept is what the sand filters and colours. The Concept is
+      derived from the number and never set against it; the checker refuses a
+      file where the two disagree.
+- [ ] **Add the state Concepts to the frozen list.** `@wip` is written in
+      `tools/instinct/CONTRACT.txt` as the pair for `-2`, but it is not in
+      `engine::instinct::VOCABULARY`, so `check_lingua.js` refuses it and no
+      file here can say it. The contract documents something the folder cannot
+      express. Decide the words, add them, then this task can carry its own.
+- [ ] **A lossless gate before anything moves.** `check_lingua.js` checks
+      structure only. `check_docs_lossless.js` compares against `docs/*.md`
+      that no longer exists — five lines checked, one already missing. Snapshot
+      every body at HEAD; after each step assert that every paragraph either
+      still appears somewhere, or is listed with the pile it was triaged into
+      and the reason. A deletion with no entry is a bug, not a judgement call.
+- [ ] **Sort every Record by who wrote it, before anything is nested.** Prose
+      that is Eduardo's is never rewritten, summarised or blended — it moves up
+      to the head of its idea and the explanatory material attaches below it.
+      Authorship does not follow depth: the tutorial ideas are written prose,
+      while `Interfaceless - The Death of Lince` and the theory buried in
+      `Transfer - OLD STUFF DOWN HERE` are his and sit at the bottom of
+      documents.
+- [ ] **Date the strata before merging a subject.** For each subject, establish
+      from the git history which passages are later, and write the finding down
+      where the merge can be checked against it. Transfer and Lince are the two
+      that need this most: both were reworked more than once, and position in a
+      file says nothing about age.
+- [ ] **Triage every passage into one of four piles, and record which.**
+      Stable, superseded, different, contradicting. A passage marked superseded
+      names what replaced it. A passage marked different or contradicting
+      becomes a backlog Record — `quantity: 0`, `@part-of` the subject it
+      belongs to — never a paragraph folded into prose it does not fit. The
+      lossless gate then checks the weaker promise that the merge can actually
+      keep: every passage is either still present, or listed with its pile and
+      its reason.
+- [ ] **Split backlog cards by vibe, not by subject alone.** Two ideas at the
+      same state that read nothing alike do not share a list. Prefer more small
+      cards over one list that has to be skimmed — discarding a card later is
+      one edit, and recovering an idea absorbed into the wrong paragraph is
+      not possible.
+- [ ] **Dissolve the documents into named ideas.** `Ontology` becomes `Record`,
+      `Organ`, `Assertion`, `Concept`, `Lingua`, `Protein`, `Sync`, `Trail`,
+      `Visibility`, `Proximity` — each one a noun worth linking to. `Karma`
+      becomes `Condition`, `Threshold`, `Consequence`, `Frequency`. The
+      singular/plural collisions (`Record`/`Records`, `Concept`/`Concepts`,
+      `Transfer`/`Transfers`) resolve by merging, since the filename is the
+      head and two Records cannot share one.
+- [ ] **Retire the duplicate top-level Records** — `Karma (document)` into
+      `Karma`, `Transfer (document)` into `Transfers` — keeping the surviving
+      uid and rewriting every inbound link in place. Never by re-running the
+      converter: its uids are hashes of the title, so a rename reads as 132
+      deletions and 132 creations.
+- [ ] **Promote a task to its own Record when it needs children.** A short list
+      lives as checkboxes in the body of the idea it belongs to. A task that
+      has to be broken down becomes a Record with a name of its own and its own
+      children below it. Both shapes are the same tree.
+- [ ] **Root the tree.** `First Steps` is the root and the only Record without
+      a parent: the canvas, the sands, and a first taste of what Lince is for.
+      Under it, first, the Death of Lince — why any of this exists. Then the
+      ideas, each its own branch.
+- [ ] **Rename the files last, in their own pass.** Merging and renaming in one
+      commit is how a chapter was once destroyed while its six ideas kept
+      pointing at a uid nothing claimed.

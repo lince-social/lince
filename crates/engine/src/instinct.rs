@@ -196,28 +196,111 @@ impl BundledRecord {
     }
 }
 
+/// Where a file that arrived without a metadata block is filed among the
+/// root's children: after everything somebody placed on purpose.
+const UNFILED_ORDER: &str = "999";
+
+/// The uid a file gets when it carries none — derived from its head, so the
+/// same file is the same Record on every machine and across every build.
+///
+/// The bundle cross-links by uid and the import writes Records under these
+/// uids, so a fresh random one per boot would make a new Record every time the
+/// binary was rebuilt. Deriving it from the head instead means writing the
+/// file IS adopting it: rename the file and it becomes a different Record,
+/// which is the same rule the rest of the folder already follows.
+fn derived_uid(head: &str) -> String {
+    use sha2::{Digest, Sha256};
+    let digest = Sha256::digest(head.as_bytes());
+    let mut millis = [0u8; 8];
+    millis[2..8].copy_from_slice(&digest[0..6]);
+    let mut entropy = [0u8; 16];
+    entropy.copy_from_slice(&digest[6..22]);
+    format!(
+        "r_{}",
+        nucleus::id::ulid_from(u64::from_be_bytes(millis), u128::from_be_bytes(entropy)),
+    )
+}
+
+/// What a hand-written file with no metadata block becomes.
+///
+/// Refusing it was a panic that took the whole Cell down with it, which made
+/// dropping a plain file into `docs/records/` an act nobody could recover from
+/// through the UI. So a bare file is ADOPTED instead: it is an `@@idea`, it
+/// hangs off the root at the end, and it carries a uid derived from its head.
+/// Nothing about it is a guess at meaning — that is a decision for whoever
+/// writes the block, in the file or in the sand.
+///
+/// It hangs off the root rather than floating free because a Record with no
+/// parent IS a root here, and a second root is a second documentation nobody
+/// asked for. Filed last under the root, it is in the tree and visibly
+/// unplaced, which is what a file waiting to be sorted should look like.
+fn adopted_projection(head: &str, root: Option<&(String, String)>) -> Projection {
+    let mut assertions = vec![crate::lingua_file::Line {
+        predicate: "idea".to_string(),
+        identity: true,
+        object: None,
+        quantity: None,
+        unit: None,
+    }];
+    if let Some((title, uid)) = root {
+        assertions.push(crate::lingua_file::Line {
+            predicate: "part-of".to_string(),
+            identity: false,
+            object: Some(crate::lingua_file::Link {
+                title: title.clone(),
+                uid: uid.clone(),
+            }),
+            quantity: Some(UNFILED_ORDER.to_string()),
+            unit: None,
+        });
+    }
+    Projection {
+        uid: derived_uid(head),
+        assertions,
+        quantity: None,
+    }
+}
+
 /// Every Record in the bundle, parsed.
 ///
-/// Panics on a malformed file, deliberately: this is data compiled INTO the
-/// binary, so a bad file is a build-time mistake by whoever edited
-/// `docs/records/`, not a runtime condition to degrade around. Failing at the
-/// first read is how they find out.
+/// Panics on a file whose metadata block cannot be READ, deliberately: this is
+/// data compiled INTO the binary, so a block naming a concept that is not
+/// Lingua is a build-time mistake by whoever edited `docs/records/`. A file
+/// with no block at all is a different thing entirely and is adopted — see
+/// `adopted_projection`.
 pub fn records() -> Vec<BundledRecord> {
-    let mut out: Vec<BundledRecord> = BUNDLE
+    let parsed: Vec<(String, Option<Projection>, String)> = BUNDLE
         .iter()
         .map(|(head, text)| {
             let (projection, body) = parse_file(text)
                 .unwrap_or_else(|err| panic!("docs/records/{head}.lingua is malformed: {err}"));
-            let projection = projection.unwrap_or_else(|| {
-                panic!("docs/records/{head}.lingua has no metadata block")
-            });
-            assert!(
-                !projection.uid.trim().is_empty(),
-                "docs/records/{head}.lingua has no uid — the bundle cross-links by uid, so \
-                 every file has to carry the one it will become"
-            );
+            // A block that lost its uid is as unadopted as a file with no
+            // block: the uid is what the rest of the folder links to.
+            let projection = projection.filter(|p| !p.uid.trim().is_empty());
+            ((*head).to_string(), projection, body)
+        })
+        .collect();
+    // Read from the files that carry their own metadata, before any adoption:
+    // an adopted file hangs off the root, so it must not be able to become the
+    // root by being read first.
+    let root: Option<(String, String)> = parsed
+        .iter()
+        .filter_map(|(head, projection, _)| {
+            projection.clone().map(|projection| BundledRecord {
+                head: head.clone(),
+                projection,
+                body: String::new(),
+            })
+        })
+        .find(BundledRecord::is_root)
+        .map(|record| (record.head, record.projection.uid));
+    let mut out: Vec<BundledRecord> = parsed
+        .into_iter()
+        .map(|(head, projection, body)| {
+            let projection =
+                projection.unwrap_or_else(|| adopted_projection(&head, root.as_ref()));
             BundledRecord {
-                head: (*head).to_string(),
+                head,
                 projection,
                 body,
             }
@@ -252,6 +335,37 @@ pub fn records() -> Vec<BundledRecord> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Writing a plain file into `docs/records/` is how a thought gets in.
+    /// It used to be how the Cell stopped booting: no metadata block was a
+    /// panic, in a bundle compiled into the binary, so the only way out was to
+    /// edit the file by hand — never through the UI the file was written for.
+    #[test]
+    fn a_file_with_no_metadata_block_is_adopted_rather_than_refused() {
+        let root = ("First Steps".to_string(), "r_S8PQ17MQ3WBWM53ZN700K89V9F".to_string());
+        let projection = adopted_projection("Thoughts", Some(&root));
+        assert!(
+            nucleus::id::valid_uid(&projection.uid, "r"),
+            "adoption hands out a real uid, not a placeholder: {}",
+            projection.uid
+        );
+        // The same file is the same Record on the next build, and on another
+        // machine — otherwise every rebuild would import it again as new.
+        assert_eq!(projection.uid, adopted_projection("Thoughts", None).uid);
+        assert_ne!(projection.uid, adopted_projection("Other", Some(&root)).uid);
+
+        let record = BundledRecord {
+            head: "Thoughts".to_string(),
+            projection,
+            body: String::new(),
+        };
+        assert_eq!(record.identity(), "idea");
+        assert_eq!(record.parent_uid(), Some(root.1.as_str()));
+        assert!(
+            !record.is_root(),
+            "an unplaced file joins the tree — a second root would be a second documentation"
+        );
+    }
 
     /// The bundle is data compiled into the binary; a file that cannot be
     /// parsed, or that lost its uid, breaks both the sand and the import at

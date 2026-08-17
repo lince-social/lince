@@ -199,7 +199,7 @@ async fn import_program(
         ));
     }
 
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     ensure_definition_record(
         &mut tx,
         program_uid,
@@ -313,7 +313,7 @@ async fn import_frequency(
     }
     let activation_hash = activation.activation_hash().map_err(boundary)?;
 
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     ensure_definition_record(
         &mut tx,
         frequency_uid,

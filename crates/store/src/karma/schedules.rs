@@ -637,7 +637,7 @@ pub async fn materialize_elapsed_cursor(
         cursor: cursor.clone(),
     };
     let at = canonical_timestamp(now)?;
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     let active: bool = sqlx::query_scalar(
         "SELECT EXISTS(
             SELECT 1 FROM karma_frequency
@@ -754,7 +754,7 @@ pub async fn materialize_calendar_cursor(
         ),
     };
     let at = canonical_timestamp(now)?;
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     let active: bool = sqlx::query_scalar(
         "SELECT EXISTS(
             SELECT 1 FROM karma_frequency
@@ -1022,7 +1022,7 @@ pub async fn claim_due(
     let expires_at = observed_at
         .checked_add(lease_duration)
         .ok_or_else(|| protocol("Karma schedule lease expiry overflows"))?;
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     let current = get_cursor_tx(&mut tx, activation_hash)
         .await?
         .ok_or(sqlx::Error::RowNotFound)?;
@@ -1250,7 +1250,7 @@ pub async fn complete_elapsed(
         })
         .transpose()?;
 
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     let active: bool = sqlx::query_scalar(
         "SELECT EXISTS(
             SELECT 1 FROM karma_frequency
@@ -1441,7 +1441,7 @@ pub async fn complete_calendar(
         }
     };
 
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     let active: bool = sqlx::query_scalar(
         "SELECT EXISTS(
             SELECT 1 FROM karma_frequency

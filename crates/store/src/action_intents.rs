@@ -78,7 +78,7 @@ pub async fn mark_committed(
     fact_uids: &[String],
     now: DateTime<Utc>,
 ) -> Result<(), StoreError> {
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     let intent =
         sqlx::query("SELECT actor_person_uid, status FROM signed_action_intent WHERE uid = ?")
             .bind(intent_uid)

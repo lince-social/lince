@@ -2393,7 +2393,7 @@ impl Engine {
                 retract_uids.retain(|uid| !assert_uids.contains(uid));
 
                 let signer = self.signer.lock().await.clone();
-                let mut tx = self.store.pool.begin().await?;
+                let mut tx = store::write_tx(&self.store.pool).await?;
                 store::assertions::transition_unary(
                     &mut tx,
                     &subject_uid,

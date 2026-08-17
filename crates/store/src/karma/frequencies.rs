@@ -152,7 +152,7 @@ where
     })?;
     let now = canonical_time(now)?;
     let at = now.to_rfc3339();
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     if let Some(commit) = replay_request(&mut tx, &input.request_id, &fingerprint).await? {
         tx.rollback().await?;
         return Ok(commit);
@@ -273,7 +273,7 @@ where
     })?;
     let now = canonical_time(now)?;
     let at = now.to_rfc3339();
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     if let Some(commit) = replay_request(&mut tx, &input.request_id, &fingerprint).await? {
         tx.rollback().await?;
         return Ok(commit);
@@ -604,7 +604,7 @@ where
     })?;
     let now = canonical_time(now)?;
     let at = now.to_rfc3339();
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     if let Some(commit) = replay_request(&mut tx, &input.request_id, &fingerprint).await? {
         tx.rollback().await?;
         return Ok(commit);
@@ -811,7 +811,7 @@ where
     let now = canonical_time(now)?;
     let at = now.to_rfc3339();
     let activated_at = TimestampMs::from_millis(now.timestamp_millis()).map_err(boundary)?;
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     if let Some(commit) = replay_request(&mut tx, request_id, &fingerprint).await? {
         tx.rollback().await?;
         return Ok(commit);

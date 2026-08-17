@@ -1,54 +1,52 @@
 # Lince `.lingua` bootstrap
 
-Use this reference to find the live authorities. It is a route, not a second
-copy of the format schema.
+This file locates current authorities. It is not a second schema.
 
-## Format authority
+## Format and File Sync
 
-- `crates/engine/src/lingua_file.rs`: current parser, renderer, data shape,
-  stable semantics, and focused round-trip tests.
-- `crates/engine/src/file_sync.rs`: how disk edits become Record changes,
-  precedence between formats, refusal, and deletion behavior.
-- `crates/engine/tests/file_sync.rs`: executable File Sync and `.lingua`
-  behavior.
+- `crates/engine/src/lingua_file.rs`: parser, renderer, and round-trip rules.
+- `crates/engine/src/file_sync.rs`: write-back, refusal, precedence, and
+  deletion behavior.
+- `crates/engine/tests/file_sync.rs`: executable behavior, including task
+  assignment.
 
-Read the applicable source rather than assuming every property exists in
-every revision.
+Read the applicable source. A property may not exist in every revision.
 
-## Shipped documentation bundle
+## `docs/records` bundle
 
-- `tools/instinct/CONTRACT.txt`: current `docs/records` bundle rules.
-- `tools/instinct/check_lingua.js`: deterministic adoptability check.
-- `crates/engine/src/instinct.rs`: vocabulary, hierarchy, ordering, and import
-  behavior shared by Instinct and First Steps.
-- `crates/engine/build.rs`: embedding and the `@instinct` selection invariant.
+- `tools/instinct/CONTRACT.txt`: bundle rules.
+- `tools/instinct/check_lingua.js`: adoptability check.
+- `crates/engine/src/instinct.rs`: vocabulary, hierarchy, ordering, and import.
+- `crates/engine/build.rs`: embedding and the `@instinct` invariant.
 
-Run after changing `docs/records`:
+The shipped bundle freezes its vocabulary and requires internal links to
+resolve. A live `@assigned-to` link may therefore be valid in File Sync but
+invalid in the source bundle when its Agent Record is outside the bundle. Run
+the checker before writing coordination state. If the bundle cannot represent
+it, record the assignment in live Lince or the current harness; do not weaken
+the bundle or fabricate an Agent inside it.
+
+After changing `docs/records`, run:
 
 ```sh
 node tools/instinct/check_lingua.js docs/records
 cargo check -p engine
 ```
 
-Run the focused tests when format, import, or File Sync behavior changes:
+When format, import, or File Sync behavior changes, also run:
 
 ```sh
 cargo test -p engine --test file_sync --test agents
 ```
 
-## Progressive Lince context
+## Context order
 
-Start with the least context that answers the task:
+Load only what the task needs:
 
-1. `docs/records/First Steps.lingua` and its `@chapter` children for the human
-   introduction.
-2. `docs/records/Ontology - 14. Lince today, in one read.lingua` for a compact
-   implementation map.
-3. Exact topic Concepts when present, then `@part-of`, `@chapter`, and
-   `@see-also` links.
-4. The topic's `@@document`/`@@section` Records for architecture.
-5. Its `@@task` Record for open work and ordering.
+1. Relevant `@@chapter` and `@@idea` Instinct Records for Lince fundamentals.
+2. `Ontology - 14. Lince today, in one read.lingua` for the implementation map.
+3. Exact topic Concepts and their structural links.
+4. The relevant `@@document` or `@@section` Records.
+5. The relevant `@@task` Record.
 
-Do not load the entire bundle by default. Do not duplicate these Records into
-the skill; they are the evolving Lince understanding the skill exists to
-unlock.
+The Records contain Lince's evolving explanation; do not duplicate it here.

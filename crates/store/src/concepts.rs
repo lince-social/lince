@@ -140,7 +140,7 @@ pub async fn remove_parent(
 }
 
 pub async fn delete(pool: &SqlitePool, concept_uid: &str) -> Result<bool, StoreError> {
-    let mut transaction = pool.begin().await?;
+    let mut transaction = crate::write_tx(pool).await?;
     sqlx::query("DELETE FROM concept_name WHERE concept_uid = ?")
         .bind(concept_uid)
         .execute(&mut *transaction)

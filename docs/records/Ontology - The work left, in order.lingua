@@ -51,7 +51,7 @@ New 2026-08-16, and the reason this list was flattened in the first place: the
 plan you are reading should be editable inside Lince, as the Records of an
 institute's actual work, instead of in a file only a text editor can reach.
 Once that round trip exists, the same machinery ships Lince's documentation as
-DATA rather than as pages — a First Steps sand that hands you Records you can
+DATA rather than as pages — the Instinct sand hands you Records you can
 put in your own store, so a tutorial about Karma can populate Karma and let you
 watch it run.
 

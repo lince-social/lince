@@ -16,7 +16,7 @@ pub async fn append_one(
     now: DateTime<Utc>,
     signer: Option<&Signer>,
 ) -> Result<Option<Fact>, EngineError> {
-    let mut tx = store.pool.begin().await?;
+    let mut tx = store::write_tx(&store.pool).await?;
     let fact = append_one_in_transaction(&mut tx, new, now, signer).await?;
     tx.commit().await?;
     Ok(fact)
@@ -67,7 +67,7 @@ pub async fn append_all(
     now: DateTime<Utc>,
     signer: Option<&Signer>,
 ) -> Result<Vec<Fact>, EngineError> {
-    let mut tx = store.pool.begin().await?;
+    let mut tx = store::write_tx(&store.pool).await?;
     let mut out: Vec<Fact> = Vec::with_capacity(news.len());
     for new in news {
         if let Some(uid) = &new.uid {

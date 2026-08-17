@@ -134,7 +134,7 @@ where
     )
     .map_err(boundary)?;
     let at = now.to_rfc3339();
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     if let Some(row) = sqlx::query(
         "SELECT request.payload_hash AS global_payload_hash,
                 review.payload_hash, review.result_json, review.fact_uid

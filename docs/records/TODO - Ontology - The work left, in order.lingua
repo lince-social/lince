@@ -14,7 +14,7 @@ quantity: -1
   FIRST** — `idea`, `chapter`, `position`, `see-also`, created in the Ontology
   sand — or every one of the 44 files is refused, because a file must never
   invent a meaning. The test creates them itself, so green there does NOT mean
-  a fresh Cell will take the folder. Whether the First Steps bundle should
+  a fresh Cell will take the folder. Whether the Instinct bundle should
   carry its own vocabulary is the honest fix, and it belongs with the build
   step below rather than here. **Never point File Sync at `docs/` itself** — the disk half runs FIRST
   and turns every file of the configured extension into a Record, so a folder
@@ -59,7 +59,7 @@ quantity: -1
   a cosmetic change. "Once per file, first mention" is a rule for whoever
   generates the text, never for the parser.
 
-- [ ] **A build step turns `docs/records/` into a First Steps Trail.** It reads
+- [ ] **A build step turns `docs/records/` into an Instinct Trail.** It reads
   the Lingua folder and emits the bundle the sand ships. Ordering comes from
   the assertions.
 
@@ -70,7 +70,7 @@ quantity: -1
   the reader can take the subject matter into their own store, which is what
   lets a later Karma chapter populate Karma and let them watch it run.
 
-- [ ] **Full CRUD over First Steps Records once imported**, including replacing
+- [ ] **Full CRUD over Instinct Records once imported**, including replacing
   the body of a shipped one. A built-in Record you cannot edit is a page with
   extra steps.
 

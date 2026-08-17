@@ -416,7 +416,7 @@ pub async fn archivable_before(
 /// Delete archived facts by uid, in one transaction. The quantity cache is
 /// untouched on purpose: the deltas live on, folded into the checkpoint level.
 pub async fn delete_by_uids(pool: &SqlitePool, uids: &[String]) -> Result<u64, StoreError> {
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     let mut deleted = 0;
     for uid in uids {
         deleted += sqlx::query("DELETE FROM fact WHERE uid = ?")

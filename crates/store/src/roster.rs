@@ -124,7 +124,7 @@ pub async fn project_local_capabilities(
     pool: &SqlitePool,
     capabilities: &[String],
 ) -> Result<(), StoreError> {
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     sqlx::query("DELETE FROM local_capability")
         .execute(&mut *tx)
         .await?;

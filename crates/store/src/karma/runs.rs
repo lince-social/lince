@@ -164,7 +164,7 @@ async fn freeze_next_epoch(
     now: DateTime<Utc>,
 ) -> Result<Option<(KarmaOccurrenceRow, OccurrenceProgramEpochRow)>, StoreError> {
     let at = now.to_rfc3339();
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     let next_sequence = rust_u64(
         sqlx::query_scalar::<_, i64>(
             "SELECT next_cell_sequence FROM karma_occurrence_processing_state
@@ -725,7 +725,7 @@ async fn persist_run(
     let run_hash = run.run_hash().map_err(boundary)?;
     let run_json = canonical_string(&run)?;
     let at = now.to_rfc3339();
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     let current = get_epoch_tx(&mut tx, &run.occurrence_hash)
         .await?
         .ok_or_else(|| protocol("Karma run Program epoch is missing"))?;

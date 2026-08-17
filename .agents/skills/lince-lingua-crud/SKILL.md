@@ -1,106 +1,98 @@
 ---
 name: lince-lingua-crud
-description: Read, create, update, rename, or delete Lince .lingua Record projections safely. Use whenever working with .lingua files, docs/records, Instinct or First Steps documentation, or File Sync-backed Records.
+description: Read and change Lince .lingua Record projections and coordinate Lince task Records safely. Use for .lingua files, docs/records, Instinct content, File Sync-backed Records, and task assignment or state changes.
 ---
 
-# Lince Lingua CRUD
+# Lince `.lingua` CRUD
 
-Treat `.lingua` as a projection of Lince data, not as YAML, generic front
-matter, or a second database. Discover the current contract before editing;
-do not preserve a copied schema in this skill.
+Treat `.lingua` as a projection of Lince data, not YAML, generic front matter,
+or a second database. Lince owns the data; the current parser and validator own
+the file shape.
 
-## Establish the current contract
+## Read the current contract
 
 1. Read [references/bootstrap.md](references/bootstrap.md).
-2. Locate the current parser, renderer, tests, and repository-specific bundle
-   contract. Read the relevant sources completely before changing a file.
-3. Prefer a current deterministic `lingua describe`, `check`, `inspect`, or
-   equivalent command when the repository provides one. Treat its result and
-   the parser as authoritative over examples in prose.
-4. Separate stable semantics from the current syntax:
-   - the fenced prelude is the machine-readable Lingua projection;
-   - the remainder is the Record body;
-   - `@@` identifies what the Record IS and `@` states an assertion;
-   - links identify Records by uid, never by title alone;
-   - quantities are exact decimal text, never floats.
-5. Preserve any existing expression that the current implementation supports
-   but this skill does not describe. Never delete an unfamiliar line merely
-   because it is unfamiliar.
+2. Read the current parser and the contract for the target folder before
+   editing. Do not rely on a schema copied into this skill.
+3. Use the current validation interface available to the agent or harness.
+   Prefer deterministic parsing over visual inspection.
 
-## Gather only the needed Lince context
+Keep these stable meanings in mind:
 
-1. Search prelude lines before searching prose. Use exact Concept searches
-   such as `rg '^@interface(?: |$)'`, `rg '^@karma(?: |$)'`, or the Concept
-   named by the task when those Concepts exist.
-2. Follow structural assertions such as `@part-of`, `@chapter`, and
-   `@see-also`; do not infer hierarchy from filenames or directory order.
-3. For unfamiliar Lince fundamentals, read the smallest applicable First
-   Steps Records about Record, Concept, Assertion, Quantity, Organ, Cell, and
-   Protein. For implementation work, also read the relevant project-document
-   Record and its task Record.
-4. Treat filenames and bodies as discoverable content, not identity. A uid is
-   identity; a title is decoration.
+- The fenced prelude is machine-readable Lingua; everything below it is the
+  Record body.
+- `uid` is identity. A filename or title is not.
+- `@@concept` says what the Record IS. `@concept` states an assertion.
+- `[[Title|uid]]` links by uid; the title is only for readers.
+- Quantities are exact decimal text, never floats.
+- A prelude edit is a real mutation. Invalid input must fail as a whole.
+- Preserve supported syntax you do not understand. Never simplify it into an
+  older shape.
 
-## Choose the operation
+## Find the needed context
 
-### Read
+- Search exact prelude Concepts first, then body text. Follow `@part-of`,
+  `@chapter`, and `@see-also`; do not infer structure from filenames or
+  directory order.
+- Read only the relevant Records. Use the relevant Instinct Records for
+  unfamiliar Lince fundamentals. Use the matching project document for
+  architecture and its task Record for open work.
+- Report ambiguity. Do not invent a Concept, uid, link target, unit, or field.
 
-- Parse the prelude and body as separate regions.
-- Explain assertions as Lince meaning, not as arbitrary key-value metadata.
-- Report ambiguity instead of guessing what an unknown Concept or expression
-  means.
+## Coordinate task Records
+
+Before coding, find the relevant `@@task` Records and inspect their quantity,
+`@wip`, and `@assigned-to` state.
+
+- `1` means done or stable; `0` unplanned; `-1` todo; `-2` plus `@wip` in
+  progress. Treat any quantity below `-1` as active work.
+- Claim a task when the user assigns it to you or asks you to take the next
+  open task. Confirm your Agent name and uid from current Lince or harness
+  state; never guess them. A matching Agent assignment does not prove this
+  chat owns the task. If the harness exposes active chats or runs, find the run
+  doing the work; leave the task alone when another run is active.
+- Where the current contract permits it, claiming means adding
+  `@assigned-to [[Agent name|agent uid]]`, adding `@wip`, and setting the exact
+  quantity to `-2` through the available agent interface.
+- Never remove or replace another assignee unless the user explicitly hands
+  the task over. If another agent holds it, leave it and choose other work.
+- A new user assignment is another task claim, not permission to erase an
+  earlier one. Finish or explicitly hand off earlier work before removing your
+  assignment.
+- Land work completely. Delete its open task entry and move durable knowledge
+  into the explanatory Record; do not leave a checked box that means “mostly.”
+
+## Change a Record
 
 ### Create
 
-- Determine whether the target is an ordinary File Sync folder or a shipped
-  bundle. An ordinary hand-written file may be adoptable without a uid; a
-  cross-linked bundle may require pre-minted deterministic uids.
-- Use the repository's current uid minting or conversion mechanism. Never copy
-  a neighbouring uid, make up a plausible one, or address a link by title.
-- Use only Concepts that the target Cell or bundle deliberately provides.
-  A file must not invent vocabulary as a side effect of import.
-- Include every local invariant required by the target bundle, such as its
-  selection Concept, identity, parent relationship, and quantity state.
+- Determine whether this is an ordinary File Sync folder or a shipped,
+  cross-linked bundle. A hand-written File Sync file may omit a uid; a bundle
+  may require a deterministic pre-minted uid.
+- Use the current uid mechanism and vocabulary. Never copy or fabricate a uid,
+  resolve a link by title, or create a Concept as an import side effect.
+- Include the target folder's required identity, selection Concept, parent,
+  and quantity state.
 
-### Update
+### Update or rename
 
-- Keep the uid unchanged.
-- Make the smallest semantic edit. Preserve unrelated assertions, quantities,
-  body text, and syntax introduced by newer format revisions.
-- Resolve the target Record before adding or changing a link. Preserve its uid
-  even when its displayed title changes.
-- Treat changes to identity, assertions, links, units, and quantity as real
-  Lince mutations. Do not call the prelude decorative metadata.
-- Never partially salvage a refused edit. Unknown Concepts, malformed links,
-  or invalid exact quantities must fail closed.
-
-### Rename
-
-- Preserve the Record uid.
-- Follow the target folder's current head/filename and link-title rules.
-- Update decorative link titles only where the current validator or renderer
-  requires it; never retarget a link and never rewrite body prose merely to
-  chase a rename.
+- Keep the uid unchanged and make the smallest semantic edit.
+- Preserve unrelated assertions, quantities, body text, and newer syntax.
+- Resolve every link target before editing it. A title change must not retarget
+  the uid or trigger unrelated body rewrites.
 
 ### Delete
 
-- Establish what deletion means for the target before removing anything. In a
-  multi-format File Sync folder, removing one projection may not delete the
-  Record; removing all projections may.
-- Check incoming links, parent/child assertions, selection filters, and bundle
-  validation. Do not silently orphan Records.
-- Ask before proceeding when the requested scope does not clearly authorize a
-  Record deletion rather than removal of one file projection.
+- Confirm whether the request removes one file projection or the Record. With
+  multiple formats, a Record may remain until every projection is gone.
+- Check incoming links, children, filters, and bundle rules. Do not orphan data
+  or infer broader deletion authority.
 
 ## Validate
 
-1. Run the narrowest current parser or bundle validator covering every changed
-   file.
-2. For `docs/records`, run the repository commands listed in
-   [references/bootstrap.md](references/bootstrap.md).
-3. Run relevant Rust tests when projection semantics changed; use `cargo
-   check`, never `cargo build`, for compilation verification in Lince.
-4. Inspect the diff. Confirm that uids, unrelated prelude expressions, and
-   unrelated body text did not move or disappear.
-5. Report refusals as refusals. Do not rewrite a file into a guessed older
-   shape to make it pass.
+1. Run the narrowest current parser or validator covering every changed file.
+2. Run the repository checks in
+   [references/bootstrap.md](references/bootstrap.md) for `docs/records`.
+3. Inspect the diff for lost uids, prelude expressions, links, or body text.
+4. If validation refuses the edit, report the refusal; do not weaken the
+   contract or guess a fallback representation.

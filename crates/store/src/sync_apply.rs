@@ -454,7 +454,7 @@ pub async fn upsert_concept(
 /// Apply a concept tombstone: the same cascade as `concepts::delete`, without
 /// local op logging.
 pub async fn delete_concept(pool: &SqlitePool, uid: &str) -> Result<(), StoreError> {
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     for sql in [
         "DELETE FROM concept_name WHERE concept_uid = ?",
         "DELETE FROM lingua_concept WHERE concept_uid = ?",

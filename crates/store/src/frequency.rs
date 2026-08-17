@@ -126,7 +126,7 @@ pub async fn create(
         new.head.trim()
     };
 
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     sqlx::query(
         "INSERT INTO frequency (uid, slug, head, every_json, anchor_at, actor_uid, created_at, updated_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
@@ -226,7 +226,7 @@ pub async fn delete(pool: &SqlitePool, uid: &str) -> Result<(), StoreError> {
     if readers > 0 {
         return Err(protocol("a rule still reads that frequency"));
     }
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     sqlx::query("DELETE FROM frequency_revision WHERE frequency_uid = ?")
         .bind(uid)
         .execute(&mut *tx)

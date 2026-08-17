@@ -63,8 +63,10 @@
     .instinct__tab.is-active{
       border-color:var(--border-strong);background:var(--surface-raised);color:var(--text-strong);
     }
-    .instinct__tab-index{margin-right:6px;color:var(--text-muted);font-variant-numeric:tabular-nums}
-    .instinct__tab.is-active .instinct__tab-index{color:var(--accent)}
+    .instinct__tab-twig{margin-right:5px;color:var(--text-muted);font-size:11px}
+    .instinct__tab.is-active .instinct__tab-twig{color:var(--accent)}
+    .instinct__tab[data-depth="1"]{font-weight:500}
+    .instinct__tab[data-depth="2"],.instinct__tab[data-depth="3"]{font-weight:400;opacity:.85}
 
     .instinct__body{flex:1 1 auto;min-height:0;overflow:auto;padding:24px}
 
@@ -191,10 +193,18 @@
         const tab = document.createElement("button");
         tab.type = "button";
         tab.className = "instinct__tab";
-        const number = document.createElement("span");
-        number.className = "instinct__tab-index";
-        number.textContent = String(index + 1);
-        tab.append(number, document.createTextNode(chapter.dataset.chapter || `Chapter ${index + 1}`));
+        // The nav is the TREE, not a numbered list: depth comes from the
+        // article, and a numbered tab would be a coordinate competing with
+        // the name for the same job.
+        const depth = Number(chapter.dataset.depth || 0);
+        tab.dataset.depth = String(Math.min(depth, 3));
+        if (depth > 0) {
+          const twig = document.createElement("span");
+          twig.className = "instinct__tab-twig";
+          twig.textContent = "\u2937";
+          tab.append(twig);
+        }
+        tab.append(document.createTextNode(chapter.dataset.chapter || `Chapter ${index + 1}`));
         tab.addEventListener("click", () => show(index));
         nav.append(tab);
         return tab;

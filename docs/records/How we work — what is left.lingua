@@ -1,0 +1,90 @@
+---
+uid: r_W798W11XR8VAWG63R8XXX58X3N
+@@task
+@instinct
+@todo
+@part-of [[How we work|r_AY1B5PG2EN346HF57RA0PKDCZ6]] 90
+quantity: -1
+---
+
+## How we work — what is left
+
+- [ ] **Every new public wire type extends the golden fixture in the same
+      commit.** A type that ships without one is how the format drifts.
+- [ ] **Exact multiply and divide.** Multiplication states its result scale,
+      division states its rounding, scale overflow is a publish-time refusal and
+      a zero divisor a runtime one. Unit algebra is explicit, never inferred.
+
+- [ ] **Rename `recurrence` → `rule` everywhere.** Table, `recurrence_revision`
+      → `rule_revision`, `recurrence_skip` → `rule_skip`,
+      `store/src/recurrence.rs` → `store/src/rule.rs`, every Action name. Edit
+      `0038_recurrence.sql` in place. `rule_skip` keys on
+      `(rule_uid, frequency_uid, beat_at)` — a skip is per-beat, like a firing.
+- [ ] **Drop `cadence_json` and `anchor_at` from the rule.** They belong to the
+      Frequency now. A rule's schedule is whatever `freq(@x)` it reads; a rule
+      reading none has no schedule at all.
+- [ ] **Two triggers, one evaluator.** A condition holding a Frequency is
+      evaluated *only* on its beat. A condition holding none is evaluated *only*
+      when a Record or Command it reads changes — extend `Engine::react_to` to
+      skip rules carrying a `freq` token, keeping the cascade guard. Both paths
+      call one `evaluate_rule(rule, now, cause)` so a beat and a change cannot
+      drift.
+- [ ] **One target Record per rule** (`record_uid`); consequences apply to it.
+      Apple/Pear is already expressible — target `@pear`, condition reads
+      `@apple`.
+
+
+### Resenha, and the scenarios that need it
+
+- [ ] **The node list and normal mode**: name, port, data directory, running
+  state, start/stop, and a log pane per node. Ratatui.
+
+- [ ] **The simulated environment**: clock, network and disk behind traits the
+  engine already has to go through, so a node cannot accidentally read the host
+  clock. This is the load-bearing item — the modes above it are a menu without
+  it, and every place the engine calls `Utc::now()` directly is a hole in it.
+
+- [ ] **Scripted mode**: named scenarios, per-node pass/fail, and the deferred
+  suite as the first source of scenarios.
+
+- [ ] **Random mode**: explore from a seed, record failures AS seeds, and keep a
+  corpus of seeds that once failed so a fixed bug stays fixed.
+
+- [ ] **Fault injection worth the name**: partition, one-way partition, delay,
+  reorder, duplicate, and a Cell that stops and comes back with an old clock.
+  A partition that is only "both nodes paused" tests nothing — the asymmetric
+  cases are where every one of this document's sync decisions actually lives.
+
+- [ ] **The always-on Cell** (from the infrastructure work). A third node that never sleeps, and two
+  that alternate: a change made on the laptop reaches the phone while the
+  laptop is off. Reports which node served it and whether the mailbox was
+  involved at all — if the always-on Cell is up, mail should never be used, and
+  a run where it is means the retry window or the dial preference is wrong.
+
+- [ ] **Relay, NAT and the upgrade to direct** (from the infrastructure work). The relay is a node
+  like any other; the interesting cases are the ones a laptop cannot produce —
+  symmetric NAT where the hole punch never lands and traffic stays on the relay
+  for the life of the connection, and the asymmetric case where one side can
+  reach the other but not the reverse. Reports whether each connection ended up
+  direct or relayed, which is the number "relay-only mode costs nothing that
+  matters" is a claim about.
+
+- [ ] **Relay-only mode, measured** (from the infrastructure work). Run the same scenario with
+  `internet` at relay-only and at direct address publication, and report what
+  differs: connection setup time, whether anything failed to connect at all,
+  and what each Cell published about itself. The claim to check is that with
+  your OWN relay the answer is "nothing that matters".
+
+- [ ] **A real host, last** (from the infrastructure work). One item genuinely needs a machine on
+  the internet rather than a simulator: `iroh-relay` behind a public IP, a DNS
+  name and TLS, with a Cell beside it as a roster member. Resenha's normal mode
+  is what drives it — a node list where one node is remote — and it comes after
+  the simulated scenarios, because everything they can catch is cheaper to
+  catch there. Reports reachability from outside, and nothing else, because
+  that is the only question a real host answers that a simulator cannot.
+
+- [ ] **Mail across a partition** (from the infrastructure work). The mailbox exists for the case
+  where two Cells are never awake and reachable at the same moment. That is a
+  scheduling property: A writes, A sleeps, B wakes, B collects. Reports whether
+  the ops arrived by mail or by catch-up, since arriving by catch-up means the
+  scenario failed to produce the condition it was testing.

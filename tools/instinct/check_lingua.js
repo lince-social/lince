@@ -8,15 +8,27 @@ const fs = require("fs");
 const path = require("path");
 
 const dir = process.argv[2];
-// Two families, one folder. `idea`/`chapter` is the tutorial; `document`/
-// `section`/`task`/`part-of` is the project's own documentation, which used to
-// be the Markdown in `docs/`. The list stays frozen for both: every addition
-// is another Concept somebody has to create before the folder can be adopted.
+// One tree, one parent link: `@part-of [[Idea|uid]] n`, where n orders the
+// siblings and may be a decimal so an insertion renumbers nothing.
+// `@reference` is the only other link and it points sideways, never down.
+// `@chapter` and `@see-also` are still accepted while the corpus is converted
+// a subject at a time. The list stays frozen: every addition is another
+// Concept somebody has to create before the folder can be adopted.
 const ALLOWED = new Set([
-  "idea", "chapter", "position", "see-also",
+  "idea", "chapter", "position", "see-also", "reference",
   "document", "section", "task", "part-of",
   "instinct",
+  "stable", "backlog", "todo", "wip",
 ]);
+
+// State is the quantity AND a Concept, which is two projections of one fact
+// rather than two authorities. The number is what sorts — "active work" is
+// `quantity < -1`, a comparison no set of unordered words can express — and
+// the Concept is what a sand filters and colours. So the word is checked
+// against the number rather than trusted: a file saying `@wip` at quantity 1
+// would show up as doing on a board and as finished in a query.
+const STATE = new Map([["1", "stable"], ["0", "backlog"], ["-1", "todo"], ["-2", "wip"]]);
+const STATES = new Set(STATE.values());
 
 // `@instinct` is what File Sync selects on, so a file without it silently
 // stops being mirrored — it does not fail, it just quietly leaves the folder.
@@ -43,6 +55,7 @@ for (const file of files) {
     if (!line.startsWith("@")) { bad(file, `not a Lingua line: ${line}`); continue; }
     const predicate = line.replace(/^@@?/, "").split(/\s/)[0];
     if (predicate === REQUIRED) rec.marked = true;
+    if (STATES.has(predicate)) rec.state = predicate;
     if (!ALLOWED.has(predicate)) bad(file, `predicate @${predicate} is not in the frozen list`);
     for (const link of line.matchAll(/\[\[([^\]|]*)\|([^\]]*)\]\]/g)) {
       rec.links.push({ title: link[1], uid: link[2] });
@@ -54,6 +67,14 @@ for (const file of files) {
   else if (byUid.has(rec.uid)) bad(file, `uid collides with ${byUid.get(rec.uid)}`);
   else byUid.set(rec.uid, file);
   if (rec.quantity === null) bad(file, "no quantity — state is the quantity");
+  else if (rec.state && STATE.get(rec.quantity) !== rec.state) {
+    const expected = STATE.get(rec.quantity);
+    bad(
+      file,
+      `says @${rec.state} but quantity ${rec.quantity} means ` +
+        (expected ? `@${expected}` : "no state word at all"),
+    );
+  }
   if (!rec.marked) {
     bad(file, `no @${REQUIRED} — File Sync selects on it, so this file would stop being mirrored`);
   }

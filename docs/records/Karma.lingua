@@ -2,12 +2,30 @@
 uid: r_K7T3ZG08G5EBWRSTF8NBWMTZYV
 @@chapter
 @instinct
-@position 7
+@stable
+@part-of [[First Steps|r_YWPKA0Z1DJ8XCHTZRW4X2SDJ1N]] 14
 quantity: 1
 ---
 
-> Chapter 7 — Automation
-
 # Karma
 
-Rules that watch your records and act on them. Read the ideas below in order: a rule is one sentence, and the rest of the chapter takes that sentence apart.
+Everything up to here you do by hand. **Karma** is the part of Lince that does
+things without you — it watches Records, does arithmetic on them, and changes
+them, on a beat or when something moves, with your permission and a readable
+trail. Records model the world and Transfer coordinates change between people;
+Karma turns evidence into action.
+
+Karma is the part of Lince that watches Records, does math on them, and changes
+them — on a beat, or when something moves — with a person's permission and a
+readable trail. Records model the world, Transfer coordinates change between
+people, **Karma turns evidence into action.**
+
+It is useful without an LLM. People author exact rules visually, use transparent
+statistics and deterministic algorithms, and plan over their own goals. A model
+may be attached as an explicit Signal or author an inert candidate; **model
+access is optional and grants no special authority.** "Always on" means a
+supervised runtime keeps draining durable work — never always interrupting,
+always connected, or always authorized to act.
+
+A rule is one sentence long, and the parts below take that sentence apart: what
+it watches, when it counts as true, and what it does about it.

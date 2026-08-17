@@ -1,0 +1,62 @@
+---
+uid: r_27C9F893QCC8EZAV11K2HFAT95
+@@chapter
+@instinct
+@backlog
+@part-of [[Trail|r_Q46Z5FZHZFACPNSNPJP2GEDC1D]] 2
+quantity: 0
+---
+
+## Data Shape
+
+Built-in and custom foods share this object shape:
+
+```json
+{
+  "id": "builtin:arroz-integral",
+  "name": "Arroz integral cozido",
+  "category": "cereals",
+  "nova": "minimally_processed",
+  "densityGPerMl": 0.78,
+  "pricePerKg": 7.5,
+  "portionG": 100,
+  "nutrients": {
+    "kcal": 124,
+    "proteinG": 2.6,
+    "carbG": 25.8,
+    "fatG": 1.0,
+    "fiberG": 2.7,
+    "calciumMg": 5,
+    "ironMg": 0.3,
+    "magnesiumMg": 43,
+      "potassiumMg": 86,
+      "zincMg": 0.6,
+      "sodiumMg": 1,
+      "phosphorusMg": 83,
+      "seleniumMcg": 5.1,
+      "copperMg": 0.1,
+      "manganeseMg": 0.7,
+      "vitaminCMg": 0,
+      "vitaminAMcg": 0,
+      "vitaminDMcg": 0,
+      "vitaminEMg": 0.2,
+      "vitaminKMcg": 1,
+      "thiaminMg": 0.1,
+      "riboflavinMg": 0,
+      "niacinMg": 1.3,
+      "vitaminB6Mg": 0.1,
+      "folateMcg": 4,
+      "b12Mcg": 0
+  },
+  "source": "Brazil food-guide category and TBCA-compatible planning value per 100g"
+}
+```
+
+Custom records store the same object, without the `builtin:` identity, in:
+
+```json
+{
+  "schema": "nutrition.alimentum.v1",
+  "food": { "...": "same shape" }
+}
+```

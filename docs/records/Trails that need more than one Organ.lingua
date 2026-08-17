@@ -1,0 +1,45 @@
+---
+uid: r_Y2CDT2G71KYCB2W5RZ6R9A1DPF
+@@idea
+@instinct
+@stable
+@part-of [[Trail|r_Q46Z5FZHZFACPNSNPJP2GEDC1D]] 1
+quantity: 1
+---
+
+## Trails that need more than one Organ
+
+Some Trails cannot be enacted by one Organ alone. Ride-sharing is the clean example: the DNA of "a ride happened" needs a Record in the driver's Organ and a Record in the rider's Organ, because the Transfer that is the actual ride is a condition/need match between the two — each side brings their own half. Today, making that happen requires a person to manually recreate the right Records in each Organ by hand before the Transfer that connects them can exist.
+
+**This is tree sync, and it is no longer specified here.** Resolved
+2026-08-09: the primitive this section asked for — taking a selection of
+one's data and placing it, by copy or by move, in a chosen Organ — is §11
+"Tree sync: syncing from a root Record, and the Move verb". A Trail naming
+its cross-Organ half names a root Record and a Protein; the placing is an
+ordinary consented sync of that tree. Nothing Trail-specific is needed, and
+specifying it twice is how the two definitions drift apart. What remains true
+and belongs here is only the line below.
+- This stays a thin, explicit act — a Person choosing to place specific data in a specific Organ — never an automatic replication triggered by adopting a Trail alone; adoption is data at rest, placement is a deliberate step on top of it.
+
+Below are earlier open cases for the Alexandria abstraction generally, kept for the questions they still ask rather than answers already found: knowledge can be inbued into components, when it is activated it creates Records with that content. Or maybe knowledge can be data in one specific server, but then you would need to contact such server to access it, if it's gated you loose access. Would it be best if it where inside a binary, inside a sand, in seed? We must find out which one is best, and support ourselves with past work, that made available to all a vast amount of knowledge in the internet, free, maybe we can import it, integrate with it, to jumpstart Alexandria.
+
+# Nutrition - Home Manager.
+
+Implementation checklist for the Home Manager nutrition tab.
+
+- [x] Replace the old Home Manager surface with thin top tabs: Nutrition and Bills.
+- [x] Keep Bills as a thin placeholder tab for this pass.
+- [x] Base nutrition rules on Brazil's current Ministry of Health food guide: prefer in natura and minimally processed foods, use culinary ingredients in small amounts, limit processed foods, avoid ultraprocessed foods.
+- [x] Use TBCA-style per-100g food-composition fields for built-in frontend data.
+- [x] Embed the initial food knowledge base in the Home Manager sand as JavaScript objects, not Lince tables.
+- [x] Include roughly 100 common food objects across fruit, vegetables, legumes, grains, roots, meat, eggs, dairy, nuts, seeds, oils, and Brazilian staples.
+- [x] Include calories, macros, fiber, common vitamin fields, common mineral fields, category, NOVA group, density, and generic-currency price fields where known.
+- [x] Store unknown custom-food micronutrients as `null`, never silently converting an empty edit field to zero.
+- [x] Add a custom alimentum record workflow using `record` plus `record_extension`.
+- [x] Use `record_extension.namespace = "nutrition.alimentum.v1"` for custom alimenta.
+- [x] Merge built-in foods and custom alimentum records in the frontend catalog.
+- [x] Keep marmita plans, optimizer inputs, allocations, prices, and shopping lists as widget/card state.
+- [x] Let the user configure weight, height, sex, age, activity factor, days, pot count, pot volume, meals per day, food min/max, and forced grams.
+- [x] Generate marmita allocation, nutrient totals, shopping list, total price, and price per marmita.
+- [x] Add a lowest-price optimizer using a frontend two-phase simplex linear optimizer with infeasibility reporting.
+- [x] Add visual workflow coverage for tab switching, custom alimentum creation, price editing, plan generation, optimizer run, and shopping-list display.

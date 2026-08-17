@@ -1,0 +1,22 @@
+---
+uid: r_4VYR2XYECG74F459RFD6JK391G
+@@idea
+@instinct
+@stable
+@part-of [[How we work|r_AY1B5PG2EN346HF57RA0PKDCZ6]] 1
+quantity: 1
+---
+
+## Design checklist: constraints belong above the core
+
+Not every predicate fits every Record pair. A Lingua, Sand, or protocol may
+constrain expected subject/object identity, direction, cardinality, units,
+permissions, or cycle behavior — those are constraints over assertions, never
+new per-feature link tables. Before adding a field, sidecar, relation, or
+transport message, ask:
+
+1. What things are Records?
+2. What standing or relational statements are assertions?
+3. Which Concepts name them, and which Lingua owns or shares them?
+4. Is this universal Record state, a typed extension, a Fact, or an assertion?
+5. Which constraints belong to the feature/protocol rather than the core?

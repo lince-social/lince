@@ -20,11 +20,39 @@ use crate::lingua_file::{Projection, parse_file};
 /// discovered from the files on purpose: the vocabulary is a decision, and a
 /// bundle that could introduce arbitrary Concepts by being imported would be a
 /// way around the rule rather than an application of it.
-/// Two families share it: `chapter`/`idea`/`see-also` is the tutorial, and
-/// `document`/`section`/`task`/`part-of` is the project's own documentation,
-/// which used to be the Markdown files in `docs/`.
-pub const VOCABULARY: [&str; 9] = [
-    "idea", "chapter", "position", "see-also", "instinct", "document", "section", "task", "part-of",
+///
+/// **One tree, one parent link.** `@part-of [[Idea|uid]] n` is how everything
+/// hangs off everything: a chapter off the root, an idea off a chapter, a task
+/// off the idea it belongs to. The number on the link is the order among
+/// siblings, and it is a decimal, so inserting between 7 and 8 is `7.5` and
+/// renumbers nothing. `@reference` is the only other link, and it points
+/// sideways rather than down — it never makes a parent.
+///
+/// `@chapter` survives as the identity of a branch worth its own entry in the
+/// reader. It is also still accepted as a PARENT link while the corpus is
+/// converted file by file; `@see-also` likewise, until the last one is renamed
+/// to `@reference`.
+///
+/// The state words mirror the quantity ladder — `1` stable, `0` backlog, `-1`
+/// todo, `-2` wip — so a sand can colour and filter on a Concept while the
+/// number stays the thing that sorts. They are two projections of one fact,
+/// never two authorities: `check_lingua.js` refuses a file whose word and
+/// number disagree.
+pub const VOCABULARY: [&str; 14] = [
+    "idea",
+    "chapter",
+    "position",
+    "see-also",
+    "reference",
+    "instinct",
+    "document",
+    "section",
+    "task",
+    "part-of",
+    "stable",
+    "backlog",
+    "todo",
+    "wip",
 ];
 
 #[derive(Debug, Clone)]
@@ -38,12 +66,12 @@ pub struct BundledRecord {
 impl BundledRecord {
     /// What this Record IS, from its identity assertion.
     ///
-    /// Two families live in one folder on purpose. The tutorial is
-    /// `chapter` + `idea`; the project's own documentation, which used to be
-    /// the Markdown in `docs/`, is `document` + `section` + `task`. They share
-    /// a shape — a top-level thing with ordered children — so the sand reads
-    /// both with one code path and the reader gets the reference material in
-    /// the same place as the tutorial.
+    /// The folder used to hold two families that never touched — `chapter` +
+    /// `idea` for the tutorial, `document` + `section` + `task` for the
+    /// project's own documentation — describing the same subjects twice under
+    /// two different link names. They are being merged into one tree; identity
+    /// now says how a Record is READ (`chapter` earns its own entry) rather
+    /// than which of two documentations it belonged to.
     pub fn identity(&self) -> &str {
         self.projection
             .assertions
@@ -53,54 +81,118 @@ impl BundledRecord {
             .unwrap_or("")
     }
 
-    /// Whether this Record is a top-level entry in the reader: a tutorial
-    /// chapter or one of the project's documents.
-    pub fn is_chapter(&self) -> bool {
-        matches!(self.identity(), "chapter" | "document")
+    /// The one line that makes this Record a child of another.
+    ///
+    /// `@chapter` is still read here because the corpus is being converted a
+    /// subject at a time and a half-converted folder must still render. When
+    /// the last `@chapter` link is gone this is a single `find`.
+    ///
+    /// A parent link is a line with an OBJECT, which is what separates
+    /// `@chapter [[Karma|uid]] 2` — an idea saying which branch it belongs to
+    /// — from `@@chapter`, the identity line saying what the Record itself is.
+    /// The two spell the same word and mean opposite things, which is one more
+    /// reason `@part-of` is the name worth converging on.
+    fn parent_line(&self) -> Option<&crate::lingua_file::Line> {
+        let link = |name: &str| {
+            self.projection
+                .assertions
+                .iter()
+                .find(|line| line.predicate == name && !line.identity && line.object.is_some())
+        };
+        link("part-of").or_else(|| link("chapter"))
     }
 
-    /// A top-level entry's own position, or a child's position inside its
-    /// parent.
+    /// Whether this Record is the root — the one thing nothing contains.
+    ///
+    /// Being the root is a fact about links, not about identity: a Record is
+    /// the root because nothing above it claims it, which is checkable, rather
+    /// than because it calls itself a chapter, which is a label anyone can
+    /// write on anything.
+    pub fn is_root(&self) -> bool {
+        self.parent_line().is_none()
+    }
+
+    /// Where this Record sits among its siblings — the number on its parent
+    /// link. The root has no parent, so it falls back to `@position`.
+    ///
+    /// A decimal on purpose. Order is the thing most often revised, and an
+    /// integer scheme makes inserting one idea into the middle of nine a
+    /// nine-file edit; `7.5` is a one-file edit that reads exactly as clearly.
     pub fn position(&self) -> f64 {
-        let predicate = if self.is_chapter() { "position" } else { self.parent_predicate() };
-        self.projection
-            .assertions
-            .iter()
-            .find(|line| line.predicate == predicate)
+        let predicate = if self.is_root() { "position" } else { "" };
+        self.parent_line()
+            .or_else(|| self.projection.assertions.iter().find(|l| l.predicate == predicate))
             .and_then(|line| line.quantity.as_deref())
             .and_then(|value| value.parse().ok())
             .unwrap_or(f64::MAX)
     }
 
-    fn parent_predicate(&self) -> &'static str {
-        if self.identity() == "idea" { "chapter" } else { "part-of" }
-    }
-
-    /// The uid of what this Record hangs off — the chapter of an idea, the
-    /// document of a section, the section of a task.
+    /// The uid of whatever this Record hangs off.
     pub fn parent_uid(&self) -> Option<&str> {
-        if self.is_chapter() {
-            return None;
-        }
-        let predicate = self.parent_predicate();
-        self.projection
-            .assertions
-            .iter()
-            .find(|line| line.predicate == predicate)
-            .and_then(|line| line.object.as_ref())
-            .map(|link| link.uid.as_str())
+        self.parent_line()?.object.as_ref().map(|link| link.uid.as_str())
     }
 
-    /// The top-level entry this Record ultimately sits under, resolving one
-    /// hop for a task (task -> section -> document).
-    pub fn chapter_uid<'a>(&'a self, all: &'a [BundledRecord]) -> Option<&'a str> {
-        let parent = self.parent_uid()?;
-        let owner = all.iter().find(|r| r.projection.uid == parent)?;
-        if owner.is_chapter() {
-            Some(parent)
-        } else {
-            owner.parent_uid()
+    /// This Record's position, and its parent's, and its parent's, from the
+    /// root down: `[0, 11, 2, 4]`.
+    ///
+    /// **This is what puts the whole folder in one order.** Comparing two of
+    /// these compares the branches first and only then the leaves, so a
+    /// depth-first reading falls out of an ordinary sort at any depth — which
+    /// the old fixed `(family, chapter, position)` key could not do, because
+    /// it could only see one hop above a Record.
+    ///
+    /// A missing or circular parent stops the walk rather than looping; the
+    /// Record sorts as if it hung off wherever the walk stopped, which puts a
+    /// broken link somewhere visible instead of hanging the build.
+    pub fn path(&self, all: &[BundledRecord]) -> Vec<f64> {
+        let mut out = vec![self.position()];
+        let mut seen = vec![self.projection.uid.as_str()];
+        let mut current = self;
+        while let Some(parent) = current.parent_uid() {
+            if seen.contains(&parent) {
+                break;
+            }
+            let Some(owner) = all.iter().find(|r| r.projection.uid == parent) else {
+                break;
+            };
+            out.push(owner.position());
+            seen.push(parent);
+            current = owner;
         }
+        out.reverse();
+        out
+    }
+
+    /// Whether this Record opens an entry in the reader's navigation.
+    ///
+    /// **This is the whole job `@@chapter` has left.** The reader needs a flat
+    /// list of entries while the data is a tree of any depth, and depth alone
+    /// cannot decide where to cut: `Record` sits two levels down and deserves
+    /// its own entry, while the nine ideas of `First Steps` sit one level down
+    /// and belong inside it. So it is a judgement, written on the Record —
+    /// this subject is big enough to be arrived at directly — and everything
+    /// else is read within the nearest chapter above it.
+    pub fn is_entry(&self) -> bool {
+        self.is_root() || self.identity() == "chapter"
+    }
+
+    /// The entry this Record is read under: itself, or the nearest chapter
+    /// above it.
+    pub fn entry_uid<'a>(&'a self, all: &'a [BundledRecord]) -> &'a str {
+        let mut current = self;
+        let mut seen = vec![current.projection.uid.as_str()];
+        while !current.is_entry() {
+            let Some(parent) = current.parent_uid() else { break };
+            if seen.contains(&parent) {
+                break;
+            }
+            let Some(owner) = all.iter().find(|r| r.projection.uid == parent) else {
+                break;
+            };
+            seen.push(parent);
+            current = owner;
+        }
+        current.projection.uid.as_str()
     }
 }
 
@@ -131,40 +223,27 @@ pub fn records() -> Vec<BundledRecord> {
             }
         })
         .collect();
-    // Top-level entries in order, then their children in order. Reading order
-    // lives in the assertions, never in the filenames. The tutorial comes
-    // before the reference material: `document` sorts after `chapter` at the
-    // same position, which is what the leading 0 vs 1 does.
+    // Depth-first from the root, which is what reading the tree out loud is.
+    // A parent sorts before its children because its path is a prefix of
+    // theirs and a shorter vector compares as less; siblings sort by the
+    // number on their own parent link. Nothing here knows how deep the tree
+    // goes, which is the point — the old key could only see one hop.
     let snapshot = out.clone();
-    let top_order: std::collections::HashMap<String, (f64, f64)> = out
+    let paths: std::collections::HashMap<String, Vec<f64>> = snapshot
         .iter()
-        .filter(|r| r.is_chapter())
-        .map(|r| {
-            let family = if r.identity() == "chapter" { 0.0 } else { 1.0 };
-            (r.projection.uid.clone(), (family, r.position()))
-        })
+        .map(|r| (r.projection.uid.clone(), r.path(&snapshot)))
         .collect();
     out.sort_by(|a, b| {
-        let key = |r: &BundledRecord| {
-            let top = if r.is_chapter() {
-                top_order.get(&r.projection.uid).copied().unwrap_or((2.0, f64::MAX))
-            } else {
-                r.chapter_uid(&snapshot)
-                    .and_then(|uid| top_order.get(uid).copied())
-                    .unwrap_or((2.0, f64::MAX))
-            };
-            // A section sorts by its own position; a task sorts immediately
-            // after the section it belongs to rather than at the end.
-            let within = if r.is_chapter() { -1.0 } else { r.position() };
-            let last: f64 = if r.identity() == "task" { 1.0 } else { 0.0 };
-            (top.0, top.1, within, last)
-        };
-        let (af, ap, aw, al) = key(a);
-        let (bf, bp, bw, bl) = key(b);
-        af.total_cmp(&bf)
-            .then(ap.total_cmp(&bp))
-            .then(aw.total_cmp(&bw))
-            .then(al.total_cmp(&bl))
+        let empty = Vec::new();
+        let left = paths.get(&a.projection.uid).unwrap_or(&empty);
+        let right = paths.get(&b.projection.uid).unwrap_or(&empty);
+        left.iter()
+            .zip(right.iter())
+            .find_map(|(x, y)| match x.total_cmp(y) {
+                std::cmp::Ordering::Equal => None,
+                other => Some(other),
+            })
+            .unwrap_or_else(|| left.len().cmp(&right.len()))
             .then(a.head.cmp(&b.head))
     });
     out
@@ -181,54 +260,62 @@ mod tests {
     fn every_bundled_file_parses_and_carries_its_uid() {
         let records = records();
         assert!(records.len() > 20, "the bundle has content: {}", records.len());
-        let chapters = records.iter().filter(|r| r.identity() == "chapter").count();
-        assert_eq!(chapters, 7, "seven tutorial chapters");
-        assert!(
-            records.iter().any(|r| r.identity() == "document"),
-            "and the project documents, which used to be the Markdown in docs/"
-        );
+    }
+
+    /// **One tree, one root.** Two roots is two documentations that happen to
+    /// share a folder, which is the state this replaced; nothing above the
+    /// data would say which one a reader starts at.
+    #[test]
+    fn the_folder_is_one_tree_rooted_at_first_steps() {
+        let records = records();
+        let roots: Vec<&str> = records.iter().filter(|r| r.is_root()).map(|r| r.head.as_str()).collect();
+        assert_eq!(roots, vec!["First Steps"], "exactly one Record has no parent");
     }
 
     /// Reading order comes from the assertions. If it did not, the first
     /// Record would be whatever sorted first alphabetically.
     #[test]
-    fn chapters_come_back_in_reading_order() {
+    fn the_reader_starts_at_the_root_and_the_branches_follow_it() {
         let records = records();
-        let order: Vec<String> = records
-            .iter()
-            .filter(|r| r.identity() == "chapter")
-            .map(|r| r.head.clone())
-            .collect();
-        assert_eq!(
-            order,
-            vec![
-                "First Steps",
-                "Records",
-                "Links",
-                "Concepts",
-                "Cells and Organs",
-                "Transfers",
-                "Karma"
-            ]
-        );
+        let entries: Vec<String> =
+            records.iter().filter(|r| r.is_entry()).map(|r| r.head.clone()).collect();
+        assert_eq!(entries[0], "First Steps", "the root is read first");
+        assert_eq!(entries[1], "Lince", "then why any of this exists");
+        assert!(entries.contains(&"Ontology".to_string()), "then the branches");
     }
 
-    /// Every idea belongs to a chapter that is actually in the bundle. A link
-    /// to a uid nothing claims would put a chapter's worth of reading
-    /// somewhere nobody navigates to.
+    /// A parent is read before its children, at any depth. The old key could
+    /// only see one hop above a Record, so this is the property that had to be
+    /// proven again once the tree could be deeper than three.
     #[test]
-    fn every_child_reaches_a_top_level_entry_in_the_bundle() {
+    fn a_parent_is_always_read_before_its_children() {
         let records = records();
-        let tops: Vec<&str> = records
+        let at = |uid: &str| records.iter().position(|r| r.projection.uid == uid);
+        for (index, record) in records.iter().enumerate() {
+            let Some(parent) = record.parent_uid() else { continue };
+            let owner = at(parent)
+                .unwrap_or_else(|| panic!("{} hangs off a uid no file claims", record.head));
+            assert!(owner < index, "{} is read before its parent", record.head);
+        }
+    }
+
+    /// Every Record reaches an entry the reader actually navigates to. A link
+    /// to a uid nothing claims would put a branch's worth of reading somewhere
+    /// nobody can get to.
+    #[test]
+    fn every_record_reaches_an_entry_in_the_bundle() {
+        let records = records();
+        let entries: Vec<&str> = records
             .iter()
-            .filter(|r| r.is_chapter())
+            .filter(|r| r.is_entry())
             .map(|r| r.projection.uid.as_str())
             .collect();
-        for record in records.iter().filter(|r| !r.is_chapter()) {
-            let uid = record
-                .chapter_uid(&records)
-                .unwrap_or_else(|| panic!("{} reaches no chapter or document", record.head));
-            assert!(tops.contains(&uid), "{} points outside the bundle", record.head);
+        for record in &records {
+            let uid = record.entry_uid(&records);
+            assert!(entries.contains(&uid), "{} points outside the bundle", record.head);
         }
     }
 }
+
+
+

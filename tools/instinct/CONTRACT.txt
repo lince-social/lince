@@ -10,26 +10,48 @@ authority. It also keeps the promise that `docs/records/` holds nothing but
 `Ontology.md`, `Karma.md`, `Transfer.md`, `Interface.md`, `Lince.md` and
 `thoughts.md` is here as Records.
 
-TWO FAMILIES, ONE FOLDER
-------------------------
+ONE TREE
+--------
 
-The tutorial — what the Instinct sand reads, and what the "Put these in my
-Lince" button imports:
+It used to be two families that never touched — a tutorial of chapters and
+ideas, and the project's documentation of documents, sections and tasks —
+describing the same subjects twice under two different link names, with no
+root. They are being merged. See the `One Tree` Record for the plan and for
+what is left.
 
-    @@chapter   this Record IS a chapter.        @position 2
-    @@idea      one idea inside one.             @chapter [[Records|uid]] 3
-    @see-also   another Record worth reading next.
+ONE PARENT LINK, and the number on it is the order among siblings:
 
-The project's own documentation, converted from the Markdown that used to be
-in `docs/`:
+    @part-of [[Idea|uid]] 7      7.5 inserts between 7 and 8, renumbering
+                                 nothing. Decimals are the whole point.
 
-    @@document  one of the project's documents.  @position 2
-    @@section   one `## ` section of it.         @part-of [[Ontology (document)|uid]] 7
-    @@task      the open checkboxes of one section, clustered.
+ONE SIDEWAYS LINK, which never makes a parent:
 
-Both families share a shape — a top-level thing with ordered children — which
-is why one code path reads both and the reference material shows up in the
-same reader as the tutorial.
+    @reference [[Idea|uid]]
+
+`@chapter` and `@see-also` are still ACCEPTED as the older spellings of those
+two, and the engine still reads them, but no file uses either any more. They
+stay until somebody decides to shrink the frozen list. Do not write new ones.
+
+THE ROOT is `First Steps` — the one Record with no parent. That is a fact
+about links, not a label: nothing above it claims it. A second root fails a
+test in `engine::instinct`.
+
+IDENTITY says how a Record is READ, not which documentation it came from:
+
+    @@chapter   big enough to be arrived at directly; earns its own entry in
+                the reader's navigation, at any depth.
+    @@idea      read inside the nearest chapter above it.
+    @@task      work that is left. Promote one to its own Record when it needs
+                children; a short list can stay as checkboxes in a body.
+
+`@@section` and `@@document` were the documentation half's words for those
+first two. Nothing carries them now.
+
+A NAME IS AN IDEA, NOT A COORDINATE. A Record is called `Organ`, `Sync`,
+`Condition` — never `TODO - Karma - 1.2`, never `(document)`, never a section
+number. The name is what other Records link to and what a reader arrives at;
+the tree already carries the order, so a number in a title is a second,
+weaker copy of it that goes stale on the first insertion.
 
 THE FILE
 --------
@@ -54,9 +76,10 @@ RULES
    itself into `docs/`. Retracting it from a Record DELETES its file, which
    is existing File Sync behaviour and not special to this folder.
 
-1. THE PREDICATE LIST IS FROZEN — the nine in `engine::instinct::VOCABULARY`.
-   A file naming any other predicate is refused in full, because a file must
-   never invent a meaning. Adding one means deciding to.
+1. THE PREDICATE LIST IS FROZEN — the fourteen in
+   `engine::instinct::VOCABULARY`. A file naming any other predicate is
+   refused in full, because a file must never invent a meaning. Adding one
+   means deciding to.
 
 2. A LINK IS `[[Title|uid]]` AND NEVER `[[Title]]`. Titles collide and get
    renamed; the uid is what identifies the Record.
@@ -68,12 +91,20 @@ RULES
    the Record is, so re-running the converter produces the same uids — random
    ones would read as 132 deletions and 132 creations every time.
 
-4. QUANTITY IS THE STATE, the same ladder the Kanban board reads:
+4. QUANTITY IS THE STATE, the same ladder the Kanban board reads, and the
+   Concept beside it says the same thing in a word:
 
-      1   stable — true today, ready to be read as documentation
-      0   not planned, or a future idea
-     -1   todo
-     -2   doing (pair it with the concept, `-2 @wip`)
+      1   @stable    true today, ready to be read as documentation
+      0   @backlog   not planned, or a future idea
+     -1   @todo      todo
+     -2   @wip       doing
+
+   Two projections of ONE fact, never two authorities. The number is what
+   sorts — "active work" is `quantity < -1`, a comparison no set of unordered
+   words can express — and the word is what a sand filters and colours.
+   `check_lingua.js` refuses a file whose word and number disagree, so the
+   word is checked rather than trusted. The word is optional; a wrong one is
+   not.
 
 5. THE FILENAME IS THE HEAD, so no two Records may share one. `docs/Karma.md`
    and the Instinct chapter on Karma both wanted `Karma.lingua`; the document
@@ -81,12 +112,22 @@ RULES
    over a file it did not create. It once did, and silently destroyed a
    chapter while leaving its six ideas pointing at a uid nothing claimed.
 
-6. NOTHING IS LOST. Checked, not asserted:
+6. NOTHING IS LOST SILENTLY. Checked, not asserted:
 
      node tools/instinct/check_lingua.js docs/records
-     node tools/docs/check_docs_lossless.js docs docs/records
+     node tools/instinct/check_nothing_lost.js e67f494
 
-   The Instinct half is checked against the original chapter HTML, which now
-   only exists in git history:
+   The first is adoptability: uids, links, the frozen list, and the state word
+   against the quantity. The second is the merge's own promise — it walks
+   every passage in a git revision and fails on any that is gone without an
+   entry saying which pile it went to and why. `e67f494` is the revision the
+   One Tree merge started from; keep comparing against it until the merge is
+   finished, because comparing against HEAD only proves the last step was
+   safe.
 
-     node tools/instinct/check_lossless.js <chapters-from-git> docs/records
+   Deleting text is allowed and is most of the point. Deleting it without an
+   entry is a bug.
+
+   `tools/docs/check_docs_lossless.js` compared against Markdown in `docs/`
+   that no longer exists, and `check_lossless.js` needs chapter HTML that only
+   survives in git history. Neither is a gate any more.

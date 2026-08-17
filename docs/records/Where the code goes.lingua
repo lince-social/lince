@@ -1,0 +1,16 @@
+---
+uid: r_D7AC55ZGJAE1DK3R3TMA7KSEHM
+@@idea
+@instinct
+@stable
+@part-of [[How we work|r_AY1B5PG2EN346HF57RA0PKDCZ6]] 2
+quantity: 1
+---
+
+## Appendix A — where the code goes
+
+`nucleus` holds pure types and arithmetic. `store` holds tables and queries and
+nothing that decides. `engine` holds evaluation, reaction, timers and Actions.
+`protein` holds reads. `transport` and `web` hold surfaces. The supervisor owns
+an injected `RuntimePorts` bundle — clock, scheduler, entropy, uid, network — so
+§13's replay is possible at all.

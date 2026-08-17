@@ -2,17 +2,39 @@
 uid: r_ZA2F1A7HG65A8DGJTEPH304YHP
 @@task
 @instinct
-@part-of [[Lince (document)|r_YJQ36ETAKE8J7F8Y65DG7V43MB]] 13
+@wip
+@part-of [[Lince|r_YJQ36ETAKE8J7F8Y65DG7V43MB]] 13
 quantity: -2
 ---
 
 ## One Tree
 
-The 132 Records in this folder are two disconnected forests: a tutorial of
+The Records in this folder were two disconnected forests: a tutorial of
 chapters and ideas, and the project's own documents, sections and tasks. They
-describe the same subjects twice, under two different link names, with no root.
-This is the work of making them one tree — a single parent link from a single
-root, branching out into named ideas, each idea surrounded by its own tasks.
+described the same subjects twice, under two different link names, with no
+root. This is the work of making them one tree — a single parent link from a
+single root, branching out into named ideas, each idea surrounded by its own
+tasks.
+
+**The shape is built.** One root, one parent link, `@reference` for anything
+sideways, and every Record reachable from `First Steps` by walking down. The
+documents are gone as a family: `Ontology` became `Record`, `Organ`,
+`Assertion`, `Concept`, `Lingua`, `Query`, `Ledger Facts`, `Federation`,
+`Protein`, `Sync`, `Visibility`, `Proximity` and `Trail`; `Karma` became
+`Condition`, `Threshold`, `Consequence` and `Frequency`; the tutorial chapters
+that taught the same nouns were folded into them, teaching on top and
+specification below. What is left is the reading, not the wiring.
+
+
+**A depth-first walk is the development order.** Siblings are ordered, so
+reading the tree top to bottom gives Ontology, then Interface, then Transfer,
+then Karma — and the work Records you pass on the way are the queue. That only
+works because the tasks live beside their subject: the 113 open items that
+were one ordered list under Ontology are now `Lingua`, `Visibility`,
+`Federation`, `Karma`, `Trail`, `Sync`, `Interface` and
+`How we work` — each branch carrying its own. A task Record sorts at 90,
+after everything there is to read about the subject and before the next
+subject begins.
 
 **The tree is the reading order and the plan at once.** Walk it from the root
 and you get the introduction, then the reason Lince exists, then each idea in
@@ -20,6 +42,23 @@ turn. Walk further down any branch and you reach the tasks that are left in it.
 When a task lands, its text folds up into the prose of the idea it belonged to
 and the task Record is deleted — so an idea's description thickens with what
 was actually built, and what remains below it is always exactly what is left.
+
+**The root is `First Steps` and it is the only Record without a parent** — the
+canvas, the sands, and a first taste of what Lince is for. Under it, first, the
+Death of Lince: why any of this exists at all. Then each subject as its own
+branch, at whatever depth it needs. Being the root is a fact about links rather
+than a label: nothing above it claims it, which is checkable, and a test
+refuses a second one. Order is the number on the parent link, and it is a
+decimal — inserting between 7 and 8 is `7.5`, which is how the Death of Lince
+came to sit at `0.5`, ahead of a statute numbered from 1.
+
+**State is the quantity and a Concept, and they are checked against each
+other.** The number is what sorts, because "active work" is `quantity < -1` and
+no set of unordered words can express a comparison. The Concept — `@stable`,
+`@backlog`, `@todo`, `@wip` — is what a sand filters and colours. They are two
+projections of one fact rather than two authorities: `check_lingua.js` refuses
+a file whose word and number disagree, so the `-2 @wip` pairing the contract
+always described is now something the folder can actually say.
 
 **Names are ideas, not coordinates.** A Record is called `Organ`, `Sync`,
 `Karma`, `Condition` — never `TODO - Karma - 1.2`, never `(document)`, never a
@@ -53,73 +92,56 @@ individual cards are easy to throw away later; a good idea quietly absorbed
 into a paragraph it does not belong in is not recoverable. When in doubt, it
 becomes a card.
 
-- [ ] **Two links, not five.** `@part-of [[Idea|uid]] n` for composition, with
-      the number carrying sibling order, and `@reference` for everything
-      sideways. `@chapter` stops being a parent predicate — the engine's
-      "which predicate is this kind's parent" question disappears with it.
-      Order is the number: decimals mean an insertion never renumbers siblings,
-      and a depth-first walk from the root is the whole reading order.
-- [ ] **State is the quantity and a Concept, kept in agreement.** The number is
-      what sorts — the ladder is `1` stable, `0` backlog, `-1` todo, `-2`
-      doing. The Concept is what the sand filters and colours. The Concept is
-      derived from the number and never set against it; the checker refuses a
-      file where the two disagree.
-- [ ] **Add the state Concepts to the frozen list.** `@wip` is written in
-      `tools/instinct/CONTRACT.txt` as the pair for `-2`, but it is not in
-      `engine::instinct::VOCABULARY`, so `check_lingua.js` refuses it and no
-      file here can say it. The contract documents something the folder cannot
-      express. Decide the words, add them, then this task can carry its own.
-- [ ] **A lossless gate before anything moves.** `check_lingua.js` checks
-      structure only. `check_docs_lossless.js` compares against `docs/*.md`
-      that no longer exists — five lines checked, one already missing. Snapshot
-      every body at HEAD; after each step assert that every paragraph either
-      still appears somewhere, or is listed with the pile it was triaged into
-      and the reason. A deletion with no entry is a bug, not a judgement call.
-- [ ] **Sort every Record by who wrote it, before anything is nested.** Prose
-      that is Eduardo's is never rewritten, summarised or blended — it moves up
-      to the head of its idea and the explanatory material attaches below it.
-      Authorship does not follow depth: the tutorial ideas are written prose,
-      while `Interfaceless - The Death of Lince` and the theory buried in
-      `Transfer - OLD STUFF DOWN HERE` are his and sit at the bottom of
-      documents.
-- [ ] **Date the strata before merging a subject.** For each subject, establish
-      from the git history which passages are later, and write the finding down
-      where the merge can be checked against it. Transfer and Lince are the two
-      that need this most: both were reworked more than once, and position in a
-      file says nothing about age.
-- [ ] **Triage every passage into one of four piles, and record which.**
-      Stable, superseded, different, contradicting. A passage marked superseded
-      names what replaced it. A passage marked different or contradicting
-      becomes a backlog Record — `quantity: 0`, `@part-of` the subject it
-      belongs to — never a paragraph folded into prose it does not fit. The
-      lossless gate then checks the weaker promise that the merge can actually
-      keep: every passage is either still present, or listed with its pile and
-      its reason.
-- [ ] **Split backlog cards by vibe, not by subject alone.** Two ideas at the
-      same state that read nothing alike do not share a list. Prefer more small
-      cards over one list that has to be skimmed — discarding a card later is
-      one edit, and recovering an idea absorbed into the wrong paragraph is
-      not possible.
-- [ ] **Dissolve the documents into named ideas.** `Ontology` becomes `Record`,
-      `Organ`, `Assertion`, `Concept`, `Lingua`, `Protein`, `Sync`, `Trail`,
-      `Visibility`, `Proximity` — each one a noun worth linking to. `Karma`
-      becomes `Condition`, `Threshold`, `Consequence`, `Frequency`. The
-      singular/plural collisions (`Record`/`Records`, `Concept`/`Concepts`,
-      `Transfer`/`Transfers`) resolve by merging, since the filename is the
-      head and two Records cannot share one.
-- [ ] **Retire the duplicate top-level Records** — `Karma (document)` into
-      `Karma`, `Transfer (document)` into `Transfers` — keeping the surviving
-      uid and rewriting every inbound link in place. Never by re-running the
-      converter: its uids are hashes of the title, so a rename reads as 132
-      deletions and 132 creations.
-- [ ] **Promote a task to its own Record when it needs children.** A short list
-      lives as checkboxes in the body of the idea it belongs to. A task that
-      has to be broken down becomes a Record with a name of its own and its own
-      children below it. Both shapes are the same tree.
-- [ ] **Root the tree.** `First Steps` is the root and the only Record without
-      a parent: the canvas, the sands, and a first taste of what Lince is for.
-      Under it, first, the Death of Lince — why any of this exists. Then the
-      ideas, each its own branch.
-- [ ] **Rename the files last, in their own pass.** Merging and renaming in one
-      commit is how a chapter was once destroyed while its six ideas kept
-      pointing at a uid nothing claimed.
+- [ ] **Bring the nine First Steps ideas up to date.** The root now describes
+      workspaces, the seeded Edit sand and the corner toolbar as they are, but
+      its children still describe the frontend as it was: the toolbar contents,
+      what edit mode turns on, and the sand catalog have all moved since. Read
+      them against `app.rs`, `sand/shell.rs` and `domain/board.rs` rather
+      than against each other.
+- [ ] **Date the strata, subject by subject, and triage what disagrees.** The
+      structure is one tree now; the PROSE inside it has not been read against
+      itself. Transfer is the sharp case — its theory, its build order and its
+      implemented state were written at three different times and `Building
+      Transfer` now holds all three in one body without anything saying which
+      is later. Same for `Sync`, which carries four generations of
+      `What is built` / `Decided against` / `What is left`. Establish the
+      order from git, then triage: stable into the prose, superseded deleted
+      with its replacement named, different and contradicting promoted to
+      their own backlog Records.
+- [ ] **Read `Unsorted thoughts` and empty it.** A pasted conversation, kept
+      at backlog so nothing in it is lost. Mine it into Protein and Interface
+      Records, then delete it.
+- [ ] **Give the remaining ontology nouns an opening.** `Record`, `Organ`,
+      `Assertion` and `Concept` were met by a reader before being specified.
+      `Lingua`, `Query`, `Ledger Facts`, `Federation`, `Protein`,
+      `Sync`, `Visibility`, `Proximity` and `Trail` still open with their
+      specification, which is the wrong altitude for someone arriving.
+- [ ] **Promote the checkbox piles that deserve their own Records.** Several
+      `— what is left` Records still hold a dozen unrelated items in one body.
+      A task that needs breaking down should become a Record with a name.
+- [ ] **Split `Later, still Rule` into Records.** One body carries fifteen
+      numbered subjects — Command, Entries, Timeline, Authority, Effects,
+      Signals, Senses, Learning, Attention, Automation Trust, Workflows,
+      Imagination, Runtime operations — each of which is a subject somebody
+      would want to link to and none of which is findable inside a single
+      Record called "later". Same for `Building Transfer`, which is six
+      former sections concatenated into one body.
+- [ ] **Confirm the quantities I re-triaged.** Six Records moved from stable
+      to backlog on my judgement rather than yours: `AniccaDB`, whose own
+      title says proposal; `Nutrition` with `Optimizer` and `Sources`, a food
+      optimizer that had been filed under Ontology; `Deterministic
+      Simulation` with `How the simulation logic works`, which are notes on
+      Turso's simulator; and `Unsorted thoughts`. Each reads as an idea
+      rather than as something true today, but stable-to-backlog is a
+      demotion and the call should be yours.
+- [ ] **Move the reasoning to where the work went.** `The order of the work`
+      still holds the *why* for the 113 items that moved out to their
+      branches — thirteen groups of it, plus the BUILT notes. Each group
+      belongs in the prose of the Record that now owns its tasks. Until then
+      a reason and its task are one hop apart instead of together.
+- [ ] **Check where I filed each group.** The 113 items were one flat list and
+      their group boundaries were lost before this merge, so I recovered them
+      from where the subject changes and filed each group under the Record
+      that owns it now. The splits worth a second look: the public face and
+      the three tiers both went to `Federation` rather than `Visibility`, and
+      tree sync went to `Trail` rather than `Sync`.

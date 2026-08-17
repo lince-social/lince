@@ -1,0 +1,66 @@
+---
+uid: r_ZKE1WSJ0KH3SA6N99KMR8BN0QR
+@@chapter
+@instinct
+@stable
+@part-of [[Ontology|r_S8PQ17MQ3WBWM53ZN700K89V9F]] 3
+quantity: 1
+---
+
+# Assertion
+
+Records get useful when they point at each other, and an **Assertion** is the
+arrow between them — the same shape whether it reads as a tag, a link, or a
+fact somebody stated.
+
+## Assertion: a statement about Records
+
+An **Assertion** applies one Concept to a subject Record and optionally names
+an object Record:
+
+```text
+assertion
+    subject: Record
+    predicate: Concept
+    object: Record?       optional
+```
+
+```text
+Brush teeth @task
+Brush teeth @task [Morning routine]     ← binary: subject → object
+Brush teeth @health
+```
+
+Tag and link are useful interface words for unary/binary assertions; neither
+is a separate storage model. Canonical table:
+
+```text
+record_assertion
+    uid, subject_uid, predicate_uid, object_uid?
+    role                ordinary | identity
+    quantity?, unit_uid?
+    asserted_by?, created_at, retracted_at?, retracted_by?
+```
+
+- [x] Retraction, not in-place edit: a replacement is a new statement with a
+  new uid, preserving the old one's provenance.
+- [x] Identity assertion: at most one per Record, unary, unquantified —
+  the constrained answer to "what kind of thing is this?" when specialized
+  behavior needs one. A Record with no identity is valid when its domain
+  permits it.
+  - example: `Toothbrush @toothbrush` (identity), `Toothbrush @health` and
+    `Toothbrush @cost` (both ordinary, coexisting).
+- [x] Invariants: subject/predicate always exist; identity is unary and
+  unquantified with at most one active per Record; an active unary
+  `(subject, predicate)` or binary `(subject, predicate, object)` occurs at
+  most once; direction is always subject→object (incoming is a query view);
+  missing object means genuinely unary; missing unit means unspecified, not a
+  wildcard.
+- [x] Operations: `assert(subject, predicate, object?, quantity?, unit?,
+  role?)` (idempotent for an existing active tuple), `retract(assertion_uid)`,
+  `set_identity(subject, predicate?)` (atomically replaces old identity,
+  promotes a matching unary assertion instead of duplicating it).
+- [x] `refine` helper: atomically turn `A @task` into `A @task [Project K]`
+  under the same predicate (`store::assertions::refine`, `RefineAssertion`
+  Action) — a transactional wrapper over retract+assert, not a new operation;
+  idempotent if the binary tuple already exists.

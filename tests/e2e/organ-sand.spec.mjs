@@ -161,3 +161,46 @@ test("adding an Organ is by pairing code only", async ({ browser }, testInfo) =>
     await it.close();
   }
 });
+
+// The panel redraws on every Protein push, and a push happens whenever ANY
+// Fact is committed anywhere in the Cell — including the heartbeat's. While
+// the redraw rewrote the File Sync controls unconditionally, a path was wiped
+// mid-typing and the format picker snapped back to markdown before Save could
+// be pressed, so File Sync could not be turned on at all.
+test("a redraw does not throw away File Sync settings being typed", async ({ browser }, testInfo) => {
+  const it = await startSingle(browser, testInfo);
+  try {
+    const frame = it.frame;
+    await frame.locator("#organs li").first().click();
+    // The panel's own first reads (roster, file-sync status) are still in
+    // flight right after a selection, and a click sent into that gap is lost —
+    // a flake in the test, not the defect under test.
+    await expect(frame.locator("#d-head")).toContainText("this Cell");
+
+    await frame.locator("#fs-enabled").check();
+    await frame.locator("#fs-path").fill("/tmp/lince-file-sync");
+    await frame.locator("#fs-format").selectOption("lingua");
+
+    // A Fact from elsewhere in the panel — the same push the heartbeat causes,
+    // asked for on demand so the test does not wait for one.
+    await frame.locator("#o-name").fill("Renamed Cell");
+    await frame.locator("#o-save").click();
+    // The heading changing is the redraw itself, so what follows is asserted
+    // against a panel that has already been redrawn at least once.
+    await expect(frame.locator("#d-head")).toContainText("Renamed Cell");
+
+    await expect(frame.locator("#fs-path")).toHaveValue("/tmp/lince-file-sync");
+    await expect(frame.locator("#fs-format")).toHaveValue("lingua");
+    await expect(frame.locator("#fs-enabled")).toBeChecked();
+
+    await frame.locator("#fs-save").click();
+    await expect(frame.locator("#fs-status")).toHaveText("Saved.");
+    // And the save survives the push it causes: the settled panel shows what
+    // was stored, not the defaults.
+    await expect(frame.locator("#fs-path")).toHaveValue("/tmp/lince-file-sync");
+    await expect(frame.locator("#fs-format")).toHaveValue("lingua");
+    await expect(frame.locator("#fs-enabled")).toBeChecked();
+  } finally {
+    await it.close();
+  }
+});

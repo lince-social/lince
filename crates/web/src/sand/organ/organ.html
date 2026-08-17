@@ -675,6 +675,13 @@
     const $ = (id) => document.getElementById(id);
     let organs = [];
     let selectedUid = null;
+    // `[uid, stored lince.file_sync]` as last WRITTEN into the File Sync form,
+    // so a redraw that carries the same config leaves what is being typed
+    // alone. See `renderDetail`.
+    let renderedFileSync = null;
+    // The Organ whose File Sync status line is on screen — the line survives
+    // every redraw and is cleared only by selecting a different Organ.
+    let fileSyncStatusUid = null;
     // "organ" (read the selected one) | "register" | "devices". Adding an
     // Organ and managing this identity's devices are errands, not properties
     // of whichever row is selected, so they take the pane rather than sitting
@@ -1832,21 +1839,41 @@
       $("o-status").className = "status";
 
       const cfg = row.extension || {};
-      $("fs-enabled").checked = !!cfg.enabled;
-      $("fs-path").value = cfg.path || "";
-      // An unreadable or absent format means markdown — the shape every
-      // existing folder already has, so a typo can never silently rewrite a
-      // whole notes directory into another format. Several may be listed, in
-      // precedence order, and the picker shows that order rather than
-      // flattening it to "both".
-      const knownFormats = ["lingua", "markdown"];
-      const chosen = (Array.isArray(cfg.formats) ? cfg.formats : [cfg.format])
-        .filter((f) => knownFormats.includes(f));
-      $("fs-format").value = chosen.length ? chosen.join(",") : "markdown";
-      refreshFileSyncConflicts(row.uid);
-      showFileSyncFilter(cfg.filter);
-      $("fs-status").textContent = "";
-      $("fs-status").className = "status";
+      // These are typed into and only then saved, and this function re-runs on
+      // every Protein push — which is every committed Fact anywhere in the
+      // Cell, including the heartbeat's. Rewriting the fields unconditionally
+      // erased a path halfway through being typed and put the format picker
+      // back to markdown before Save could be pressed, so File Sync could
+      // never be turned on at all. Keyed on the STORED value, not on a "user
+      // touched it" flag: an unrelated push is then a no-op, while a config
+      // that really changed (saved here, or arrived from another device) still
+      // lands in the form.
+      const storedFileSync = fileSyncKey(row.uid, cfg);
+      if (storedFileSync !== renderedFileSync) {
+        renderedFileSync = storedFileSync;
+        $("fs-enabled").checked = !!cfg.enabled;
+        $("fs-path").value = cfg.path || "";
+        // An unreadable or absent format means markdown — the shape every
+        // existing folder already has, so a typo can never silently rewrite a
+        // whole notes directory into another format. Several may be listed, in
+        // precedence order, and the picker shows that order rather than
+        // flattening it to "both".
+        const knownFormats = ["lingua", "markdown"];
+        const chosen = (Array.isArray(cfg.formats) ? cfg.formats : [cfg.format])
+          .filter((f) => knownFormats.includes(f));
+        $("fs-format").value = chosen.length ? chosen.join(",") : "markdown";
+        refreshFileSyncConflicts(row.uid);
+        showFileSyncFilter(cfg.filter);
+      }
+      // The status line reports the last thing the PERSON did here, so it is
+      // cleared by moving to another Organ and by nothing else. Clearing it on
+      // every push wiped "Saved." — and the reason a save was refused — within
+      // a heartbeat of it appearing.
+      if (fileSyncStatusUid !== row.uid) {
+        fileSyncStatusUid = row.uid;
+        $("fs-status").textContent = "";
+        $("fs-status").className = "status";
+      }
       // Direction is a property of a FEED, so it exists only where there is
       // a peer at the other end.
       $("sync-direction-row").hidden = !row.contact;
@@ -2384,6 +2411,19 @@
     // enough.
     const FS_SIMPLE = { concept: "concept_in", kind: "kind_eq", text: "text_contains" };
 
+    // What the File Sync form is showing, in a shape that does not depend on
+    // key order or on which of `formats`/`format` the extension happens to
+    // carry — the value comes back through the store as JSON and comparing the
+    // raw text would report every redraw as a change.
+    function fileSyncKey(uid, cfg) {
+      const formats = (Array.isArray(cfg.formats) ? cfg.formats : [cfg.format])
+        .filter((f) => typeof f === "string" && f);
+      const filter = typeof cfg.filter === "string"
+        ? cfg.filter
+        : (cfg.filter ? JSON.stringify(cfg.filter) : "");
+      return JSON.stringify([uid, !!cfg.enabled, cfg.path || "", formats, filter]);
+    }
+
     function showFileSyncFilterMode() {
       const mode = $("fs-filter-mode").value;
       $("fs-filter-value-row").hidden = !FS_SIMPLE[mode];
@@ -2631,7 +2671,13 @@
       };
       status.textContent = "Saving…";
       H.act({ action: "set-extension", target: row.uid, namespace: "lince.file_sync", fds })
-        .then(() => { status.textContent = "Saved."; })
+        .then(() => {
+          // The push this write causes carries exactly what was just sent, so
+          // marking it as already rendered keeps "Saved." on screen instead of
+          // having the redraw clear it a moment later.
+          renderedFileSync = fileSyncKey(row.uid, fds);
+          status.textContent = "Saved.";
+        })
         .catch((err) => {
           status.className = "status err";
           status.textContent = "Error: " + (err && err.message ? err.message : err);

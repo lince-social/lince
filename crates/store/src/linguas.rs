@@ -110,7 +110,7 @@ pub async fn rename(pool: &SqlitePool, uid: &str, name: &str) -> Result<bool, St
 }
 
 pub async fn delete(pool: &SqlitePool, uid: &str) -> Result<bool, StoreError> {
-    let mut transaction = pool.begin().await?;
+    let mut transaction = crate::write_tx(pool).await?;
     sqlx::query("DELETE FROM lingua_concept WHERE lingua_uid = ?")
         .bind(uid)
         .execute(&mut *transaction)

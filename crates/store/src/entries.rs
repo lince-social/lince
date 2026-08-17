@@ -211,7 +211,7 @@ pub async fn create(
     let occurred_at = instant(input.occurred_at);
     let (mantissa, scale) = decimal_columns(input.amount);
 
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     sqlx::query(
         "INSERT INTO entry
            (uid, record_uid, amount_mantissa, amount_scale, note, occurred_at,
@@ -305,7 +305,7 @@ pub async fn revise(
         .map(str::to_string)
         .or_else(|| current.fact_uid.clone());
 
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     sqlx::query(
         "UPDATE entry
             SET amount_mantissa = ?, amount_scale = ?, note = ?, occurred_at = ?,
@@ -384,7 +384,7 @@ pub async fn void(
     let at = instant(now);
     let (mantissa, scale) = decimal_columns(current.amount);
 
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     // `fact_uid` deliberately keeps pointing at the compensated Fact: that is
     // still the change this entry describes, and the compensation is a
     // separate Ledger entry rather than a replacement for it.

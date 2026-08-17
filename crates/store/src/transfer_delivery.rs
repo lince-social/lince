@@ -123,7 +123,7 @@ pub async fn create_policy(
     ] {
         required(label, value)?;
     }
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     if let Some(row) = sqlx::query(
         "SELECT p.*, e.kind AS event_kind, e.actor_person_uid AS event_actor,
                 e.fact_uid AS event_fact
@@ -244,7 +244,7 @@ async fn transition_policy(
     revoke: bool,
     now: DateTime<Utc>,
 ) -> Result<PolicyCommit, StoreError> {
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     if let Some(row) = sqlx::query(
         "SELECT p.*, e.delivery_uid AS event_delivery_uid, e.revision AS event_revision,
                 e.kind AS event_kind, e.from_mode AS event_from_mode, e.to_mode AS event_to_mode,
@@ -392,7 +392,7 @@ pub async fn enqueue(
 ) -> Result<EnqueueCommit, StoreError> {
     envelope.validate_shape().map_err(protocol)?;
     let payload = serde_json::to_string(envelope).map_err(|error| protocol(error.to_string()))?;
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     if let Some(row) = sqlx::query("SELECT * FROM transfer_delivery_outbox WHERE envelope_uid = ?")
         .bind(&envelope.envelope_uid)
         .fetch_optional(&mut *tx)
@@ -579,7 +579,7 @@ pub async fn retry_outbox(
     request_id: &str,
     now: DateTime<Utc>,
 ) -> Result<DeliveryOutboxRow, StoreError> {
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     if let Some(row) = sqlx::query(
         "SELECT o.* FROM transfer_delivery_retry_event e
          JOIN transfer_delivery_outbox o ON o.uid = e.outbox_uid WHERE e.request_id = ?",
@@ -712,7 +712,7 @@ pub async fn create_remote_reference(
     let at = now.to_rfc3339();
     let signed_payload = serde_json::to_string(input.signed_policy_payload)
         .map_err(|error| protocol(error.to_string()))?;
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     sqlx::query(
         "INSERT INTO transfer_remote_reference
          (uid, origin_organ_uid, transfer_uid, delivery_policy_uid, recipient_person_uid, recipient_organ_uid,
@@ -1010,7 +1010,7 @@ pub async fn apply_remote_policy(
     let next = expected_revision + 1;
     let payload =
         serde_json::to_string(signed_payload).map_err(|error| protocol(error.to_string()))?;
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     if let Some(row) = sqlx::query(
         "SELECT mode, state, envelope_uid, payload_hash, signed_payload FROM transfer_remote_policy_event
          WHERE reference_uid = ? AND policy_revision = ?",
@@ -1098,7 +1098,7 @@ pub async fn accept_replica_envelope(
         serde_json::to_string(&envelope.projection).map_err(|error| protocol(error.to_string()))?;
     let disclosure =
         serde_json::to_string(&envelope.disclosure).map_err(|error| protocol(error.to_string()))?;
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     let reference = sqlx::query("SELECT * FROM transfer_remote_reference WHERE uid = ?")
         .bind(reference_uid)
         .fetch_optional(&mut *tx)
@@ -1199,7 +1199,7 @@ pub async fn accept_hosted_snapshot(
         serde_json::to_string(&envelope.projection).map_err(|error| protocol(error.to_string()))?;
     let disclosure =
         serde_json::to_string(&envelope.disclosure).map_err(|error| protocol(error.to_string()))?;
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     let reference = sqlx::query("SELECT * FROM transfer_remote_reference WHERE uid = ?")
         .bind(reference_uid)
         .fetch_optional(&mut *tx)
@@ -1889,7 +1889,7 @@ pub async fn create_application_handoff(
     ensure_existing_transfer_request_unused(pool, input.request_id).await?;
     let uid = nucleus::new_uid("tah");
     let at = now.to_rfc3339();
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     sqlx::query(
         "INSERT INTO transfer_application_handoff
          (uid, origin_organ_uid, participant_organ_uid, participant_person_uid, transfer_uid,
@@ -2016,7 +2016,7 @@ pub async fn transition_application_handoff(
     {
         return Err(protocol("invalid application handoff transition"));
     }
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     if let Some(row) = sqlx::query(
         "SELECT h.*, e.kind AS event_kind, e.from_state AS event_from_state,
                 e.to_state AS event_to_state, e.attestation_uid AS event_attestation_uid,
@@ -2419,7 +2419,7 @@ where
         });
     }
 
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     let handoff = sqlx::query("SELECT * FROM transfer_remote_application_handoff WHERE uid = ?")
         .bind(&input.handoff_uid)
         .fetch_optional(&mut *tx)

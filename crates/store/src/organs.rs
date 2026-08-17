@@ -155,7 +155,7 @@ pub async fn adopt_identity(
         ));
     }
 
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     // Order matters: the extension references the Record.
     sqlx::query("DELETE FROM sync_op")
         .execute(&mut *tx)

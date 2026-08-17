@@ -289,7 +289,7 @@ pub async fn create(
         .map_err(|_| protocol("consequences could not be written"))?;
     let (condition_src, gate, carry) = condition_columns(input.condition.as_ref());
 
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     sqlx::query(
         "INSERT INTO recurrence
            (uid, record_uid, consequences_json, condition_src, gate, carry, note,
@@ -389,7 +389,7 @@ pub async fn revise(
         .map_err(|_| protocol("consequences could not be written"))?;
     let (condition_src, gate, carry) = condition_columns(input.condition.as_ref());
 
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     sqlx::query(
         "UPDATE recurrence
             SET consequences_json = ?, note = ?,
@@ -477,7 +477,7 @@ pub async fn set_state(
     // that lost its condition on the day it was paused.
     let (condition_src, gate, carry) = condition_columns(current.condition.as_ref());
 
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     sqlx::query(
         "UPDATE recurrence SET state = ?, revision = ?, updated_at = ?
           WHERE uid = ? AND revision = ?",
@@ -778,7 +778,7 @@ async fn insert_revision(
 /// The revision log and the skips go with it, because both are statements about
 /// a rule that no longer exists.
 pub async fn delete(pool: &SqlitePool, uid: &str) -> Result<bool, StoreError> {
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     // Children first: both name the rule by foreign key.
     sqlx::query("DELETE FROM recurrence_skip WHERE recurrence_uid = ?")
         .bind(uid)

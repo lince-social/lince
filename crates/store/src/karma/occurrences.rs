@@ -28,7 +28,7 @@ pub async fn ingest(
     envelope: &KarmaOccurrenceEnvelope,
     received_at: DateTime<Utc>,
 ) -> Result<KarmaOccurrenceCommit, StoreError> {
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     let commit = ingest_tx(&mut tx, envelope, received_at).await?;
     tx.commit().await?;
     Ok(commit)

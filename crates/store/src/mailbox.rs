@@ -237,7 +237,7 @@ pub async fn waiting(pool: &SqlitePool, organ_uid: &str) -> Result<Waiting, Stor
 /// retention rule exists to avoid.
 pub async fn sweep_expired(pool: &SqlitePool) -> Result<u64, StoreError> {
     let now = Utc::now().to_rfc3339();
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     sqlx::query(
         "INSERT OR IGNORE INTO mailbox_expiry_notice
            (uid, to_organ, from_organ, from_cell, from_node, bytes, received_at,

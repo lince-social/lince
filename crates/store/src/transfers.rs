@@ -403,7 +403,7 @@ where
     // These collision checks use the pool, so complete them before holding the
     // single connection used by in-memory Stores.
     ensure_request_not_used_by_invitation_event(pool, request_key).await?;
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
 
     if let Some(row) = sqlx::query(
         "SELECT transfer_uid, revision, fact_uid FROM transfer_revision
@@ -1871,7 +1871,7 @@ where
     // used by in-memory Stores.
     ensure_request_not_used_by_invitation_event(pool, request_key).await?;
     let now_string = now.to_rfc3339();
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     if let Some(row) = sqlx::query(
         "SELECT transfer_uid, revision, fact_uid FROM transfer_revision
          WHERE idempotency_key = ?",
@@ -2278,7 +2278,7 @@ where
     }
     let expected_revision = i64::try_from(input.expected_revision)
         .map_err(|_| sqlx::Error::Protocol("transfer revision exceeds SQLite range".into()))?;
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
 
     if let Some(row) = sqlx::query(
         "SELECT transfer_uid, revision, fact_uid FROM transfer_revision
@@ -3299,7 +3299,7 @@ where
         return Ok(InvitationCommit::Replayed(outcome));
     }
     ensure_request_not_used_by_transfer_revision(pool, request_id).await?;
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     for (role, person_uid) in [
         ("addressed", input.addressed_person_uid.as_str()),
         ("inviting", input.invited_by_person_uid.as_str()),
@@ -3437,7 +3437,7 @@ where
     let actor_uid = input.actor_person_uid.as_deref().ok_or_else(|| {
         sqlx::Error::Protocol("accepting an invitation requires a Person actor".into())
     })?;
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     let pending =
         sqlx::query("SELECT * FROM transfer_invitation WHERE uid = ? AND status = 'pending'")
             .bind(&input.invitation_uid)
@@ -3570,7 +3570,7 @@ where
     let actor_uid = input.actor_person_uid.as_deref().ok_or_else(|| {
         sqlx::Error::Protocol("withdrawing an invitation requires a Person actor".into())
     })?;
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     let pending =
         sqlx::query("SELECT * FROM transfer_invitation WHERE uid = ? AND status = 'pending'")
             .bind(&input.invitation_uid)
@@ -3679,7 +3679,7 @@ where
     let actor_uid = input.actor_person_uid.as_deref().ok_or_else(|| {
         sqlx::Error::Protocol("reopening an invitation requires a Person actor".into())
     })?;
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     let closed = sqlx::query(
         "SELECT * FROM transfer_invitation
          WHERE uid = ? AND status IN ('rejected', 'withdrawn', 'expired')",
@@ -3815,7 +3815,7 @@ where
         return Ok(InvitationCommit::Replayed(outcome));
     }
     ensure_request_not_used_by_transfer_revision(pool, request_id).await?;
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     let pending =
         sqlx::query("SELECT * FROM transfer_invitation WHERE uid = ? AND status = 'pending'")
             .bind(&input.invitation_uid)
@@ -4060,7 +4060,7 @@ where
         ));
     }
     validate_location(input.location.as_ref())?;
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     let is_person: bool =
         sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM record WHERE uid = ? AND kind = 'person')")
             .bind(&input.claimant_person_uid)
@@ -4360,7 +4360,7 @@ pub async fn create_invitation(
     new: NewTransferInvitation<'_>,
     now: DateTime<Utc>,
 ) -> Result<TransferInvitationRow, StoreError> {
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     for (role, person_uid) in [
         ("addressed", new.addressed_person_uid),
         ("inviting", new.invited_by_person_uid),
@@ -4429,7 +4429,7 @@ pub async fn accept_invitation(
     uid: &str,
     now: DateTime<Utc>,
 ) -> Result<Option<AcceptedTransferInvitation>, StoreError> {
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     let Some(pending) =
         sqlx::query("SELECT * FROM transfer_invitation WHERE uid = ? AND status = 'pending'")
             .bind(uid)
@@ -4679,7 +4679,7 @@ where
 
     let expected_revision = i64::try_from(input.expected_revision)
         .map_err(|_| sqlx::Error::Protocol("transfer revision exceeds SQLite range".into()))?;
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     let transfer = sqlx::query(
         "SELECT revision, agreement_type, agreement_pct FROM transfer WHERE record_uid = ?",
     )
@@ -5479,7 +5479,7 @@ where
     ensure_phase4_request_unused(pool, request_id).await?;
     let expected_revision = i64::try_from(input.expected_revision)
         .map_err(|_| sqlx::Error::Protocol("transfer revision exceeds SQLite range".into()))?;
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     let transfer =
         sqlx::query("SELECT revision, agreement_type FROM transfer WHERE record_uid = ?")
             .bind(&input.transfer_uid)
@@ -5951,7 +5951,7 @@ where
         return Ok(OccurrenceClaimCommit::Replayed(outcome));
     }
     ensure_phase4_request_unused(pool, request_id).await?;
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     let occurrence = sqlx::query(
         "SELECT transfer_uid, giver_person_uid, receiver_person_uid
          FROM transfer_occurrence WHERE uid = ?",
@@ -6180,7 +6180,7 @@ where
 
     let mut failures = Vec::new();
     let mut seen = HashSet::new();
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     for item in &input.items {
         if !seen.insert((item.occurrence_uid.as_str(), item.role)) {
             failures.push(BulkOccurrenceClaimFailure {
@@ -6529,7 +6529,7 @@ where
         return Ok(OccurrenceApplicationFormulaCommit::Replayed(outcome));
     }
     ensure_phase4_request_unused(pool, request_id).await?;
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     let occurrence = sqlx::query(
         "SELECT transfer_uid, receiver_person_uid FROM transfer_occurrence WHERE uid = ?",
     )
@@ -7169,7 +7169,7 @@ where
     ensure_phase4_request_unused(pool, request_id).await?;
 
     let local_organ_uid = crate::organs::local(pool).await?.map(|organ| organ.uid);
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     let occurrence = sqlx::query(
         "SELECT occurrence.transfer_uid, occurrence.promise_uid,
                 occurrence.quantity, occurrence.unit_uid, occurrence.record_uid,
@@ -7576,7 +7576,7 @@ where
     }
     ensure_phase4_request_unused(pool, request_id).await?;
 
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     let slice = sqlx::query("SELECT * FROM transfer_occurrence_settlement_slice WHERE uid = ?")
         .bind(&input.settlement_uid)
         .fetch_optional(&mut *tx)
@@ -7778,7 +7778,7 @@ where
     }
     ensure_phase4_request_unused(pool, request_id).await?;
 
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     let occurrence = sqlx::query(
         "SELECT transfer_uid, giver_person_uid, receiver_person_uid
          FROM transfer_occurrence WHERE uid = ?",

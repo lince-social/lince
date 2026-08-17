@@ -140,7 +140,7 @@ pub async fn expand_schedule_occurrence(
         .ok_or(sqlx::Error::RowNotFound)?;
     let spec = expansion_spec(&source)?;
     let at = canonical_time(received_at)?.to_rfc3339();
-    let mut tx = pool.begin().await?;
+    let mut tx = crate::write_tx(pool).await?;
     sqlx::query(
         "INSERT OR IGNORE INTO karma_schedule_occurrence_expansion
             (schedule_occurrence_hash, cadence_kind, emission_kind,

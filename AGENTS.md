@@ -3,8 +3,8 @@
 - Lince documentation and its task plan are `.lingua` Records in
   `docs/records/`; `docs/` contains no Markdown. Before reading, creating,
   updating, renaming, or deleting `.lingua`, use the `lince-lingua-crud` skill
-  in `.agents/skills/lince-lingua-crud/`. It is the shared workflow for Fiote
-  and every other agent or harness.
+  in `.agents/skills/lince-lingua-crud/`. It is the shared workflow for agents
+  and harnesses now, including Fiote later.
 - For this repository's shipped documentation bundle, the live bundle contract
   is `tools/instinct/CONTRACT.txt`; the parser and renderer in
   `crates/engine/src/lingua_file.rs` remain the format authority. Do not copy a
@@ -12,20 +12,10 @@
 
 # Working alongside other agents
 
-Several agents work in this codebase at once. Nothing coordinates them except
-the task Records, so:
-
-- **A task you are given, you assign to yourself** — add
-  `@assigned-to [[<your name>|<uid>]]` and `@wip` to its `.lingua` file. That
-  edit is a real assignment: File Sync writes the block back to the database.
-- **Never remove or reassign somebody else's assignee.** Not enforced by code,
-  on purpose — treat it as absolute anyway. If a task is held by another agent
-  and you were not told to take it, leave it alone.
-- **Before starting, read the folder.** A task with an assignee and `@wip`, or
-  a quantity below `-1`, is being worked on by someone else. Note it, skip it,
-  and keep to your own part; the tests you run are yours to keep green.
-- Quantity is the state, the same ladder the Kanban board reads: `1` done or
-  stable, `0` unplanned, `-1` todo, `-2 @wip` in progress.
+Agents and harness sessions coordinate through Lince task Records. Before
+coding, use `lince-lingua-crud` to inspect task state, confirm assignment, and
+claim work without replacing another assignee. That skill is the canonical
+workflow; do not restate it here.
 
 # Programming Rules
 

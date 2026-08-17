@@ -771,7 +771,7 @@ impl Engine {
         };
         let mut news = imported;
         let signer = self.signer.lock().await.clone();
-        let mut tx = self.store.pool.begin().await?;
+        let mut tx = store::write_tx(&self.store.pool).await?;
         if store::facts::exists(&mut tx, news.uid.as_ref().unwrap()).await? {
             tx.rollback().await?;
             return Ok(false);

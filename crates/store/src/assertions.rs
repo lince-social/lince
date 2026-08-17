@@ -291,7 +291,7 @@ pub async fn set_identity(
     predicate_uid: Option<&str>,
     actor_uid: Option<&str>,
 ) -> Result<Option<String>, StoreError> {
-    let mut transaction = pool.begin().await?;
+    let mut transaction = crate::write_tx(pool).await?;
     let now = Utc::now().to_rfc3339();
     let displaced: Vec<String> = sqlx::query(
         "SELECT uid FROM record_assertion
@@ -659,7 +659,7 @@ pub async fn refine(
     object_uid: &str,
     actor_uid: Option<&str>,
 ) -> Result<String, StoreError> {
-    let mut transaction = pool.begin().await?;
+    let mut transaction = crate::write_tx(pool).await?;
     let now = Utc::now().to_rfc3339();
     if let Some(row) = sqlx::query(
         "SELECT uid FROM record_assertion

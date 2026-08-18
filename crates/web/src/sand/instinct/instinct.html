@@ -17,6 +17,11 @@
     single-dash `->` edges and unquoted `()` in labels, both of which the
     mermaid parser rejects, so nothing there is copy-pasteable as-is.
 
+    The chapter list is a SIDEBAR, dragged wide or narrow on the divider beside
+    it and remembered per card. It is a tree — thirty-odd chapters at four
+    depths — and a tree reads down a column, not sideways along a strip where
+    the branch a chapter is on can only be guessed from its font weight.
+
     RENDER LAZILY. mermaid measures rendered text to size its nodes, so a graph
     inside a `display:none` chapter comes out mis-sized. Each chapter's graphs
     render the first time that chapter is shown, then are left alone.
@@ -48,27 +53,45 @@
       overflow-wrap:anywhere;
     }
 
-    /* ---- chapter nav: scrolls sideways instead of squeezing on narrow cards */
+    /* ---- the reading row: table of contents beside the chapter, not above it */
+    .instinct__main{display:flex;flex:1 1 auto;min-height:0;min-width:0}
+
+    /* The chapters are a TREE, and a tree reads down, not across. The width is
+       the reader's: dragged on the divider, remembered per card. */
     .instinct__nav{
-      display:flex;gap:4px;flex:0 0 auto;padding:8px;
-      border-bottom:1px solid var(--border);
-      overflow-x:auto;scrollbar-width:thin;
+      display:flex;flex-direction:column;align-items:stretch;gap:2px;
+      flex:0 0 auto;width:220px;min-width:0;padding:8px;
+      border-right:1px solid var(--border);
+      overflow:auto;scrollbar-width:thin;
     }
     .instinct__tab{
-      flex:0 0 auto;padding:5px 10px;border:1px solid transparent;border-radius:3px;
+      flex:0 0 auto;display:flex;align-items:center;min-width:0;
+      padding:5px 8px;border:1px solid transparent;border-radius:3px;
       background:transparent;color:var(--text-muted);
-      font-size:12px;font-weight:600;white-space:nowrap;
+      font-size:12px;font-weight:600;text-align:left;
+      white-space:nowrap;overflow:hidden;
     }
     .instinct__tab:hover{color:var(--text-strong);background:rgba(255,255,255,.04)}
     .instinct__tab.is-active{
       border-color:var(--border-strong);background:var(--surface-raised);color:var(--text-strong);
     }
-    .instinct__tab-twig{margin-right:5px;color:var(--text-muted);font-size:11px}
+    /* Depth is indent. Weight alone cannot show which branch a chapter is on. */
+    .instinct__tab[data-depth="1"]{padding-left:18px;font-weight:500}
+    .instinct__tab[data-depth="2"]{padding-left:30px;font-weight:400;opacity:.85}
+    .instinct__tab[data-depth="3"]{padding-left:42px;font-weight:400;opacity:.85}
+    .instinct__tab-twig{flex:0 0 auto;margin-right:5px;color:var(--text-muted);font-size:11px}
     .instinct__tab.is-active .instinct__tab-twig{color:var(--accent)}
-    .instinct__tab[data-depth="1"]{font-weight:500}
-    .instinct__tab[data-depth="2"],.instinct__tab[data-depth="3"]{font-weight:400;opacity:.85}
+    .instinct__tab-name{min-width:0;overflow:hidden;text-overflow:ellipsis}
 
-    .instinct__body{flex:1 1 auto;min-height:0;overflow:auto;padding:24px}
+    /* Wider than it looks: the border is 1px, the grab area is not. */
+    .instinct__grip{
+      flex:0 0 auto;width:7px;margin-left:-4px;
+      cursor:col-resize;background:transparent;touch-action:none;
+    }
+    .instinct__grip:hover,.instinct__grip.is-dragging{background:rgba(255,255,255,.06)}
+    .instinct.is-resizing{user-select:none;cursor:col-resize}
+
+    .instinct__body{flex:1 1 auto;min-width:0;min-height:0;overflow:auto;padding:24px}
 
     .instinct__import{
       display:flex;align-items:center;gap:8px;
@@ -145,13 +168,17 @@
   </style>
 </head>
 <body>
-  <section class="instinct">
-    <nav class="instinct__nav" id="nav" aria-label="Chapters"></nav>
+  <section class="instinct" id="shell">
+    <div class="instinct__main">
+      <nav class="instinct__nav" id="nav" aria-label="Chapters"></nav>
+      <div class="instinct__grip" id="grip" role="separator" aria-orientation="vertical"
+           aria-label="Resize the chapter list" tabindex="0"></div>
 
-    <div class="instinct__body" id="body">
+      <div class="instinct__body" id="body">
 
-      <!--CHAPTERS-->
+        <!--CHAPTERS-->
 
+      </div>
     </div>
 
     <!-- The chapters above ARE Records, read from the same bundle this button
@@ -179,7 +206,18 @@
       const prev = document.getElementById("prev");
       const next = document.getElementById("next");
       const where = document.getElementById("where");
+      const shell = document.getElementById("shell");
+      const grip = document.getElementById("grip");
       let current = -1;
+
+      // One object, sent whole. patchCardState is a merge patch, but keeping
+      // the reading position and the sidebar width together means neither can
+      // be written from a stale read of the other.
+      const NAV_MIN = 120, NAV_MAX = 520;
+      const remembered = { chapter: 0, width: nav.offsetWidth || 220 };
+      function rememberState() {
+        try { window.LinceWidgetHost?.patchCardState?.({ instinct: { ...remembered } }); } catch {}
+      }
 
       mermaid.initialize({
         startOnLoad: false,
@@ -204,7 +242,11 @@
           twig.textContent = "\u2937";
           tab.append(twig);
         }
-        tab.append(document.createTextNode(chapter.dataset.chapter || `Chapter ${index + 1}`));
+        const name = document.createElement("span");
+        name.className = "instinct__tab-name";
+        name.textContent = chapter.dataset.chapter || `Chapter ${index + 1}`;
+        tab.append(name);
+        tab.title = name.textContent;
         tab.addEventListener("click", () => show(index));
         nav.append(tab);
         return tab;
@@ -260,20 +302,59 @@
         void renderDiagrams(chapters[next_]);
         // Remember the chapter per card, so reopening the board lands you back
         // where you were reading. Falls back silently outside a board.
-        if (remember) {
-          try { window.LinceWidgetHost?.patchCardState?.({ instinct: { chapter: next_ } }); } catch {}
-        }
+        remembered.chapter = next_;
+        if (remember) rememberState();
       }
 
       prev.addEventListener("click", () => show(current - 1));
       next.addEventListener("click", () => show(current + 1));
 
-      // Restore the reading position if the host has one; otherwise chapter 1.
+      // ---- resizable sidebar --------------------------------------------
+      // Pointer capture, because this runs in an iframe: an uncaptured drag
+      // that leaves the frame never hears pointerup and the sidebar sticks to
+      // the cursor forever.
+      function setNavWidth(px, { remember: keep = true } = {}) {
+        const width = Math.round(Math.max(NAV_MIN, Math.min(NAV_MAX, px)));
+        nav.style.width = `${width}px`;
+        remembered.width = width;
+        if (keep) rememberState();
+      }
+      grip.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        grip.setPointerCapture(event.pointerId);
+        grip.classList.add("is-dragging");
+        shell.classList.add("is-resizing");
+        const startX = event.clientX;
+        const startWidth = nav.offsetWidth;
+        const move = (moved) => setNavWidth(startWidth + (moved.clientX - startX), { remember: false });
+        const done = () => {
+          grip.removeEventListener("pointermove", move);
+          grip.removeEventListener("pointerup", done);
+          grip.removeEventListener("pointercancel", done);
+          grip.classList.remove("is-dragging");
+          shell.classList.remove("is-resizing");
+          rememberState();
+        };
+        grip.addEventListener("pointermove", move);
+        grip.addEventListener("pointerup", done);
+        grip.addEventListener("pointercancel", done);
+      });
+      // Keyboard, so the divider is not mouse-only.
+      grip.addEventListener("keydown", (event) => {
+        const step = event.key === "ArrowLeft" ? -16 : event.key === "ArrowRight" ? 16 : 0;
+        if (!step) return;
+        event.preventDefault();
+        setNavWidth(nav.offsetWidth + step);
+      });
+
+      // Restore the reading position and the width if the host has them.
       let restored = false;
       if (typeof window.LinceWidgetHost?.onCardState === "function") {
         window.LinceWidgetHost.onCardState((state) => {
           if (restored) return;
           restored = true;
+          const width = Number(state?.instinct?.width);
+          if (Number.isFinite(width) && width > 0) setNavWidth(width, { remember: false });
           const saved = Number(state?.instinct?.chapter);
           show(Number.isFinite(saved) ? saved : 0, { remember: false });
         });

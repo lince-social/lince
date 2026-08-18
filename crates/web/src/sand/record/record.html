@@ -43,7 +43,7 @@
     @keyframes pulse { 50% { opacity: .35; } }
     /* `overflow: hidden` here used to clip the panel instead of letting the
        scroller above take it. */
-    .rec { margin-bottom: 4px; }
+    .rec { margin-bottom: 4px; border: 1px solid var(--control-border); }
     /* Flex, so the sections below can be reordered by `order` alone — moving
        the nodes themselves on every protein push would jump the scroll
        position and fight each `details`' open state. */
@@ -72,12 +72,17 @@
                         font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
     details > summary::before { content: "▸ "; }
     details[open] > summary::before { content: "▾ "; }
-    .property-fold { order: 5; display: grid; grid-template-columns: 1fr 1fr;
-                     min-height: 24px; border-block: var(--hairline) solid var(--muted); }
-    .property-fold button { border: 0; border-radius: 0; padding: 2px 0;
+    .property-fold { order: 5; display: grid; grid-template-columns: 1fr 1fr; align-items: center; }
+    .property-fold button { display: flex; align-items: center; gap: 6px; border: 0;
+                            border-radius: 0; padding: 2px 0; background: transparent;
                             color: var(--muted); font-size: .72rem; }
+    .property-fold button::before, .property-fold button::after {
+      content: ""; flex: 1; height: var(--hairline); background: currentColor;
+    }
     .property-fold button + button { border-left: var(--hairline) solid var(--muted); }
-    .property-fold button[aria-pressed="true"] { color: var(--text); background: var(--surface-hover); }
+    .property-fold button:hover, .property-fold button[aria-pressed="true"] {
+      color: var(--text); background: transparent;
+    }
     .sec { padding: 0 5px 5px; display: grid; gap: 4px; }
     .chips { display: flex; flex-wrap: wrap; gap: 4px; }
     .chip { display: inline-flex; align-items: center; gap: 3px; border: var(--hairline) solid currentColor;
@@ -195,8 +200,7 @@
     .bodymode button { font-size: .7rem; padding: 2px 6px; color: var(--muted); }
     .bodymode button[aria-pressed="true"] { color: var(--text); border-color: var(--accent); }
     .preview { white-space: pre-wrap; word-break: break-word; min-height: 70px;
-               border: 1px solid var(--control-border); border-radius: 2px;
-               padding: 4px 5px; font-size: .78rem; color: var(--text); }
+               border: 0; padding: 4px 5px; font-size: .78rem; color: var(--text); }
     .preview .md-line { display: block; min-height: 1.3em; }
     .preview .md-todo { margin: 2px 0; white-space: normal; }
     .preview .md-todo input { width: auto; align-self: start; margin-top: .18em !important; }
@@ -204,7 +208,10 @@
                          white-space: pre; border: var(--hairline) solid var(--muted); }
     .preview.is-pragmatic [data-md-line] { cursor: text; }
     .pragmatic-source { display: block; width: 100%; min-height: 1.8em; resize: none;
-                        overflow: hidden; font-family: var(--font-mono); line-height: 1.35; }
+                        overflow: hidden; border: 0; border-radius: 0; outline: 0;
+                        background: transparent; padding: 0; box-shadow: none;
+                        font-family: var(--font-mono); line-height: 1.35; }
+    .preview.is-resting { caret-color: currentColor; outline: 0; }
   </style>
 </head>
 <body class="lynx-ui">
@@ -450,6 +457,7 @@
     let propertyFold = "filled"; // filled | all | hidden
     let bodyMode = "pragmatic"; // raw | pragmatic | pretty
     let pragmaticActive = null; // { start, count }
+    let pragmaticResting = null; // { line, column }: pretty text with a live caret
     let pragmaticIdleTimer = null;
     // Which Lince the focused record lives on, taken from the event that named
     // it. This sand has no host of its own worth speaking of: it sits idle
@@ -557,6 +565,7 @@
       sectionFilled = {}; // a different record: let its own content decide what is open
       propertyFold = "filled";
       pragmaticActive = null;
+      pragmaticResting = null;
       clearTimeout(pragmaticIdleTimer);
       $("sec-facts").open = false;
       activeThreadUid = null; // a different record's threads are unrelated
@@ -1044,6 +1053,8 @@
       const raw = bodyMode === "raw" || !Editor;
       $("f-body").hidden = !raw;
       holder.hidden = raw;
+      holder.contentEditable = "false";
+      holder.classList.remove("is-resting");
       holder.classList.toggle("is-pragmatic", bodyMode === "pragmatic");
       for (const mode of ["raw", "pragmatic", "pretty"]) {
         $("body-" + mode).setAttribute("aria-pressed", String(bodyMode === mode));
@@ -1052,7 +1063,8 @@
       const lines = source.split("\n");
       if (bodyMode !== "pragmatic" || !pragmaticActive) {
         holder.appendChild(Editor.renderMarkdown(source, markdownOptions(bodyMode === "pragmatic")));
-        void renderMermaids(holder);
+        focusPragmaticRestingCaret(holder, source);
+        void renderMermaids(holder).finally(() => focusPragmaticRestingCaret(holder, source));
         return;
       }
       const start = Math.min(pragmaticActive.start, Math.max(0, lines.length - 1));
@@ -1066,23 +1078,42 @@
       area.addEventListener("input", () => updatePragmaticSource(area));
       area.addEventListener("keydown", (event) => movePragmaticLine(event, area));
       for (const event of ["keyup", "click", "select"]) {
-        area.addEventListener(event, schedulePragmaticPretty);
+        area.addEventListener(event, () => schedulePragmaticPretty(area));
       }
       holder.appendChild(area);
       appendMarkdown(holder, source, start + count, lines.length, true);
       resizePragmaticSource(area);
       area.focus();
-      area.setSelectionRange(area.value.length, area.value.length);
-      schedulePragmaticPretty();
+      const caret = pragmaticActive.caret;
+      let caretAt = area.value.length;
+      if (caret) {
+        const localLine = Math.max(0, Math.min(caret.line - start, area.value.split("\n").length - 1));
+        const activeLines = area.value.split("\n");
+        const lineStart = activeLines.slice(0, localLine).reduce((sum, value) => sum + value.length + 1, 0);
+        caretAt = lineStart + Math.min(caret.column, activeLines[localLine].length);
+      }
+      area.setSelectionRange(caretAt, caretAt);
+      schedulePragmaticPretty(area);
       void renderMermaids(holder);
     }
     function resizePragmaticSource(area) {
-      area.style.height = "auto";
-      area.style.height = `${Math.max(28, area.scrollHeight + 2)}px`;
+      const fit = () => {
+        if (!area.isConnected) return;
+        area.style.height = "1px";
+        area.style.height = `${Math.max(28, area.scrollHeight)}px`;
+      };
+      fit();
+      requestAnimationFrame(fit);
     }
-    function schedulePragmaticPretty() {
+    function schedulePragmaticPretty(area) {
       clearTimeout(pragmaticIdleTimer);
       pragmaticIdleTimer = setTimeout(() => {
+        const editor = area?.isConnected ? area : $("f-preview").querySelector(".pragmatic-source");
+        if (!editor || !pragmaticActive) return;
+        const before = editor.value.slice(0, editor.selectionStart);
+        const localLine = before.split("\n").length - 1;
+        const column = before.length - (before.lastIndexOf("\n") + 1);
+        pragmaticResting = { line: pragmaticActive.start + localLine, column };
         pragmaticActive = null;
         renderBodyPreview();
       }, 5000);
@@ -1099,7 +1130,7 @@
       $("f-save").disabled = false;
       if (collab && collab.editor) collab.editor.localEdit();
       resizePragmaticSource(area);
-      schedulePragmaticPretty();
+      schedulePragmaticPretty(area);
     }
     function movePragmaticLine(event, area) {
       if (event.shiftKey || area.selectionStart !== area.selectionEnd) return;
@@ -1124,7 +1155,81 @@
       const lineStart = next.value.split("\n").slice(0, line).reduce((sum, value) => sum + value.length + 1, 0);
       const lineLength = next.value.split("\n")[line].length;
       next.setSelectionRange(lineStart + Math.min(column, lineLength), lineStart + Math.min(column, lineLength));
-      schedulePragmaticPretty();
+      schedulePragmaticPretty(next);
+    }
+    function focusPragmaticRestingCaret(holder, source) {
+      if (bodyMode !== "pragmatic" || !pragmaticResting || !holder.isConnected) return;
+      const lines = source.split("\n");
+      pragmaticResting.line = Math.max(0, Math.min(pragmaticResting.line, lines.length - 1));
+      const target = holder.querySelector(`[data-md-line="${pragmaticResting.line}"]`)
+        || [...holder.querySelectorAll("[data-md-line-end]")].find((node) => {
+          const start = Number(node.dataset.mdLine);
+          const end = Number(node.dataset.mdLineEnd);
+          return pragmaticResting.line >= start && pragmaticResting.line < end;
+        });
+      if (!target) return;
+      holder.contentEditable = "true";
+      holder.classList.add("is-resting");
+      holder.focus({ preventScroll: true });
+      const range = document.createRange();
+      if (target.classList.contains("md-block")) {
+        range.selectNodeContents(target);
+        range.collapse(false);
+      } else {
+        const walker = document.createTreeWalker(target, NodeFilter.SHOW_TEXT);
+        let remaining = Math.max(0, pragmaticResting.column);
+        let placed = false;
+        for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+          if (remaining <= node.data.length) {
+            range.setStart(node, remaining);
+            placed = true;
+            break;
+          }
+          remaining -= node.data.length;
+        }
+        if (!placed) {
+          range.selectNodeContents(target);
+          range.collapse(false);
+        }
+      }
+      range.collapse(true);
+      const selection = window.getSelection();
+      selection.removeAllRanges();
+      selection.addRange(range);
+    }
+    function moveRestingPragmaticCaret(event) {
+      if (!pragmaticResting || event.metaKey || event.ctrlKey || event.altKey) return;
+      const lines = $("f-body").value.split("\n");
+      let line = pragmaticResting.line;
+      let column = pragmaticResting.column;
+      if (event.key === "ArrowUp") line--;
+      else if (event.key === "ArrowDown") line++;
+      else if (event.key === "ArrowLeft") column--;
+      else if (event.key === "ArrowRight") column++;
+      else if (event.key === "Home") column = 0;
+      else if (event.key === "End") column = (lines[line] || "").length;
+      else if (event.key.length !== 1 && !["Backspace", "Delete", "Enter"].includes(event.key)) return;
+      event.preventDefault();
+      line = Math.max(0, Math.min(line, lines.length - 1));
+      column = Math.max(0, Math.min(column, (lines[line] || "").length));
+      pragmaticActive = { ...rawBlockForLine($("f-body").value, line), caret: { line, column } };
+      pragmaticResting = null;
+      renderBodyPreview();
+      const area = $("f-preview").querySelector(".pragmatic-source");
+      if (!area) return;
+      if (event.key.length === 1) {
+        area.setRangeText(event.key, area.selectionStart, area.selectionEnd, "end");
+        area.dispatchEvent(new Event("input", { bubbles: true }));
+      } else if (event.key === "Enter") {
+        area.setRangeText("\n", area.selectionStart, area.selectionEnd, "end");
+        area.dispatchEvent(new Event("input", { bubbles: true }));
+      } else if (event.key === "Backspace" && area.selectionStart > 0) {
+        area.setRangeText("", area.selectionStart - 1, area.selectionStart, "end");
+        area.dispatchEvent(new Event("input", { bubbles: true }));
+      } else if (event.key === "Delete" && area.selectionStart < area.value.length) {
+        area.setRangeText("", area.selectionStart, area.selectionStart + 1, "end");
+        area.dispatchEvent(new Event("input", { bubbles: true }));
+      }
     }
     function rawBlockForLine(source, lineAt) {
       const lines = source.split("\n");
@@ -1143,17 +1248,20 @@
       }
       return { start: Math.max(0, Math.min(lineAt, lines.length - 1)), count: 1 };
     }
+    $("f-preview").addEventListener("keydown", moveRestingPragmaticCaret);
     $("f-preview").addEventListener("click", (event) => {
       if (bodyMode !== "pragmatic" || event.target.closest("button, input, textarea, a")) return;
       const line = event.target.closest("[data-md-line]");
       const lineAt = line ? Number(line.dataset.mdLine) : 0;
       pragmaticActive = rawBlockForLine($("f-body").value, Number.isFinite(lineAt) ? lineAt : 0);
+      pragmaticResting = null;
       renderBodyPreview();
     });
     for (const mode of ["raw", "pragmatic", "pretty"]) {
       $("body-" + mode).addEventListener("click", () => {
         bodyMode = mode;
         pragmaticActive = null;
+        pragmaticResting = null;
         clearTimeout(pragmaticIdleTimer);
         renderBodyPreview();
         if (mode === "raw") $("f-body").focus();

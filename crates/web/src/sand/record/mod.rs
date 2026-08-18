@@ -127,6 +127,10 @@ mod tests {
         assert!(HTML.contains("function rawBlockForLine("));
         assert!(HTML.contains("}, 5000);"));
         assert!(HTML.contains("pragmatic-source"));
+        assert!(HTML.contains("function focusPragmaticRestingCaret("));
+        assert!(HTML.contains("function moveRestingPragmaticCaret("));
+        assert!(HTML.contains("border: 0; border-radius: 0; outline: 0;"));
+        assert!(HTML.contains("holder.contentEditable = \"true\""));
     }
 
     #[test]
@@ -136,6 +140,7 @@ mod tests {
         assert!(HTML.contains("id=\"properties-hide\""));
         assert!(HTML.contains("let propertyFold = \"filled\""));
         assert!(HTML.contains("$(\"sec-facts\").open = false"));
+        assert!(HTML.contains(".property-fold button::before, .property-fold button::after"));
     }
     /// A reference is a POINTER read live, not a copy, and the interface has
     /// to say so — the whole property it buys is that the owner can still take

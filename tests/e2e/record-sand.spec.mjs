@@ -134,6 +134,17 @@ test("sections sort by whether this record has anything in them", async ({ brows
     // The left half reveals every property; the right half hides every one.
     await it.sand.locator("#properties-more").click();
     expect((await read())["sec-worklog"].hidden).toBe(false);
+    const foldShape = await it.frame.evaluate(() => {
+      const fold = document.getElementById("property-fold");
+      const button = document.getElementById("properties-more");
+      return {
+        top: getComputedStyle(fold).borderTopWidth,
+        bottom: getComputedStyle(fold).borderBottomWidth,
+        before: getComputedStyle(button, "::before").content,
+        after: getComputedStyle(button, "::after").content,
+      };
+    });
+    expect(foldShape).toEqual({ top: "0px", bottom: "0px", before: '""', after: '""' });
     await it.sand.locator("#properties-hide").click();
     expect((await read())["sec-facts"].hidden).toBe(true);
     await it.sand.locator("#properties-hide").click();
@@ -160,17 +171,30 @@ test("sections sort by whether this record has anything in them", async ({ brows
 });
 
 test("body modes replace the split textarea and preview", async ({ browser }, testInfo) => {
-  const source = "## Plan\n- [ ] one\nplain\n```mermaid\ngraph LR\nA --> B\n```";
+  const wrapped = "one real Markdown line that is deliberately long enough to wrap visually across several rows inside the narrow Record sand without containing any newline at all";
+  const source = `## Plan\n- [ ] one\n${wrapped}\n\`\`\`mermaid\ngraph LR\nA --> B\n\`\`\``;
   const it = await openRecord(browser, testInfo, { body: source });
   try {
     await expect(it.sand.locator("#f-body")).toBeHidden();
     await expect(it.sand.locator("#f-preview .md-h2")).toBeVisible();
 
-    await it.sand.locator('#f-preview [data-md-line="2"]').click();
+    const wrappedLine = it.sand.locator('#f-preview [data-md-line="2"]');
+    const wrappedBox = await wrappedLine.boundingBox();
+    expect(wrappedBox.height).toBeGreaterThan(24);
+    // Clicking the lower VISUAL row still opens the one REAL Markdown line.
+    await wrappedLine.click({ position: { x: 10, y: wrappedBox.height - 2 } });
     const active = it.sand.locator(".pragmatic-source");
-    await expect(active).toHaveValue("plain");
+    await expect(active).toHaveValue(wrapped);
     await active.fill("changed");
     await expect(it.sand.locator("#f-save")).toBeEnabled();
+    await expect(active).toHaveCount(0, { timeout: 7000 });
+    await expect(it.sand.locator("#f-preview")).toBeFocused();
+    expect(await it.frame.evaluate(() => ({
+      editable: document.getElementById("f-preview").contentEditable,
+      ranges: getSelection().rangeCount,
+    }))).toEqual({ editable: "true", ranges: 1 });
+    await it.sand.locator("#f-preview").press("ArrowUp");
+    await expect(active).toHaveValue("- [ ] one");
 
     await it.sand.locator("#body-pretty").click();
     await expect(it.sand.locator(".pragmatic-source")).toHaveCount(0);
@@ -182,10 +206,22 @@ test("body modes replace the split textarea and preview", async ({ browser }, te
     await it.sand.locator("#f-preview .md-mermaid").click();
     await expect(active).toHaveValue("```mermaid\ngraph LR\nA --> B\n```");
     await expect(active).toHaveCount(0, { timeout: 7000 });
+    await expect(it.sand.locator("#f-preview")).toBeFocused();
+    await it.sand.locator("#f-preview").press("ArrowUp");
+    await expect(active).toHaveValue("```mermaid\ngraph LR\nA --> B\n```");
+
+    const activeStyle = await active.evaluate((element) => ({
+      border: getComputedStyle(element).borderTopWidth,
+      background: getComputedStyle(element).backgroundColor,
+    }));
+    expect(activeStyle.border).toBe("0px");
+    expect(activeStyle.background).toBe("rgba(0, 0, 0, 0)");
+    expect(await it.sand.locator("#f-preview").evaluate((element) => getComputedStyle(element).borderTopWidth)).toBe("0px");
+    expect(await it.sand.locator("#focus").evaluate((element) => getComputedStyle(element).borderTopWidth)).toBe("1px");
 
     await it.sand.locator("#body-raw").click();
     await expect(it.sand.locator("#f-body")).toBeVisible();
-    await expect(it.sand.locator("#f-body")).toHaveValue(source.replace("plain", "changed"));
+    await expect(it.sand.locator("#f-body")).toHaveValue(source.replace(wrapped, "changed"));
   } finally {
     await it.close();
   }

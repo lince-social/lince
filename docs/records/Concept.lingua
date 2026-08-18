@@ -2,10 +2,11 @@
 uid: r_Y5J0YQN2V309GD84HQXYX3EX81
 @@chapter
 @instinct
-@stable
 @part-of [[Ontology|r_S8PQ17MQ3WBWM53ZN700K89V9F]] 4
+@stable
 quantity: 1
 ---
+
 
 # Concept
 
@@ -34,3 +35,75 @@ many-parent DAG.
   a shared ancestor dimension: one authoritative rational factor per
   unordered pair, reverse by inversion. Lince never silently converts to make
   an expression type-check.
+
+## Applying a Concept
+
+A **concept** is a word with a stable meaning, written with an `@`: `@task`, `@apple`, `@expense`. On its own a concept says nothing. It becomes information when you **apply** it to a record — and that single act is the one mechanism underneath everything in this chapter and the last one.
+
+```mermaid
+graph LR
+  S["Record: write the spec"] -- "@task" --> N["(nothing else)"]
+  S2["Record: write the spec"] -- "@part-of" --> O["Record: Project A"]
+```
+
+_Apply a concept and stop: a tag. Apply it and name a second record: a link. Same statement, one optional half._
+
+That is the whole model. A statement about a record always has a concept; whether it also names a _second_ record is what makes people call it a tag in one breath and a link in the next. Lince does not store them differently.
+
+## How many can a record have?
+
+As many as are true. A record can be `@urgent` and `@billable` and `@health` at once — these are ordinary statements and they do not compete.
+
+One statement is special. A record may have at most one **identity** — the constrained answer to "what kind of thing is this?", used where something needs exactly one answer to work with. Setting a new identity replaces the old one. Everything else accumulates.
+
+```mermaid
+graph LR
+  T["Toothbrush"] -- identity --> A["@toothbrush"]
+  T -- ordinary --> B["@health"]
+  T -- ordinary --> C["@cost"]
+```
+
+_One identity, any number of ordinary statements. Having an identity does not stop a record being other things too._
+
+Records without an identity are perfectly valid. Reach for one when some feature needs a single stable answer, not as a habit.
+
+## Concepts know how they relate
+
+Concepts are not a fixed list handed to you. They are a vocabulary you grow, and they record how they widen into each other:
+
+```mermaid
+graph LR
+  A["@apple"] --> B["@fruit"]
+  B --> C["@food"]
+  D["@bread"] --> C
+```
+
+_An apple is a fruit; a fruit is food. Nobody had to say an apple is food._
+
+So a Protein filtered on **Concept** `food` returns your apples and your bread, because it walks that graph for you. Ask a broad question, get everything underneath it; ask a narrow one, get only that branch. You never maintain the "is also a" list by hand, and a concept may widen into more than one parent — `@food` can sit under both `@substance` and `@cost`.
+
+Widening applies to links too, because a link's kind is a concept. A statement naming a specific project still answers a query for the general kind — you do not need to add a redundant tag beside it.
+
+## Tag or link?
+
+Since both are the same statement, the question is only ever: _is there a second record worth naming?_
+
+## Leave it unary
+
+- The word alone is the whole point: `@urgent`, `@billable`.
+
+- There is nothing on the other end you would ever open.
+
+## Name the object
+
+- The other end is a real thing: a project, a person, another task.
+
+- You want to open it, count what points at it, or ask it what it owns.
+
+If you find yourself creating `@project-a`, `@project-b`, `@project-c` as separate words, that is the signal to make Project A a record and link to it instead. Vocabulary that grows one word per _thing_ is a sign the thing wanted to be a record.
+
+## Where you set them
+
+The **Record** sand's Links section makes statements that name a second record. The **Ontology** sand is where you work with the vocabulary itself: apply a concept with no object (leave the object as "no object — tag"), set a record's identity, retract a statement, and connect concepts so one widens into another.
+
+One subtlety worth knowing before you write reporting queries. Filtering on **Concept** asks about the record a change happened _to_. There is a separate question — what the change itself was classified as — and the two are kept apart deliberately: "what did I spend on food" selects records by `@budget` but changes by `@food`. Collapsing them is how a query quietly answers something other than what you asked.

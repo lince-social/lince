@@ -287,18 +287,29 @@
     const lines = String(body || "").split("\n");
     const start = opts.lines ? opts.lines[0] : 0;
     const end = opts.lines ? Math.min(opts.lines[1], lines.length) : lines.length;
-    const appendText = (parent, value) => {
-      const prev = parent.lastChild;
-      const prefix = prev && prev.nodeType === Node.TEXT_NODE ? "\n" : "";
-      parent.appendChild(document.createTextNode(prefix + value));
-    };
     for (let at = start; at < end; at++) {
       const line = lines[at];
+      const fence = line.match(/^\s*```\s*([^\s`]*)/);
+      if (fence) {
+        let close = at + 1;
+        while (close < end && !/^\s*```\s*$/.test(lines[close])) close++;
+        const el = document.createElement("pre");
+        el.className = fence[1].toLowerCase() === "mermaid"
+          ? "md-block md-mermaid"
+          : "md-block md-code";
+        el.dataset.mdLine = String(at);
+        el.dataset.mdLineEnd = String(Math.min(close + 1, end));
+        el.textContent = lines.slice(at + 1, close).join("\n");
+        fragment.appendChild(el);
+        at = Math.min(close, end - 1);
+        continue;
+      }
       const heading = line.match(HEADING_RE);
       if (heading) {
         const level = heading[1].length;
         const el = document.createElement("div");
-        el.className = `md-h md-h${level}`;
+        el.className = `md-line md-h md-h${level}`;
+        el.dataset.mdLine = String(at);
         el.style.cssText = `font-weight:700;font-size:${Math.max(1.02, 1.5 - 0.08 * (level - 1))}em;margin:.25em 0 .1em`;
         renderInline(el, heading[2], opts);
         fragment.appendChild(el);
@@ -308,8 +319,9 @@
       if (checkbox) {
         const el = document.createElement("div");
         const done = checkbox[2] !== " ";
-        el.className = done ? "md-todo done" : "md-todo";
-        el.style.cssText = "display:flex;gap:6px;align-items:baseline";
+        el.className = done ? "md-line md-todo done" : "md-line md-todo";
+        el.dataset.mdLine = String(at);
+        el.style.cssText = "display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px;align-items:start";
         const box = document.createElement("input");
         box.type = "checkbox";
         box.checked = done;
@@ -328,14 +340,12 @@
         continue;
       }
       // plain line: inline images pulled out as block <img>, @refs as chips
-      const holder = document.createElement("span");
+      const holder = document.createElement("div");
+      holder.className = "md-line";
+      holder.dataset.mdLine = String(at);
       renderInline(holder, line, opts);
-      if (holder.childNodes.length === 1 && holder.firstChild.nodeType === Node.TEXT_NODE) {
-        appendText(fragment, holder.textContent);
-      } else {
-        fragment.appendChild(holder);
-        fragment.appendChild(document.createTextNode("\n"));
-      }
+      if (!holder.hasChildNodes()) holder.appendChild(document.createElement("br"));
+      fragment.appendChild(holder);
     }
     return fragment;
   }

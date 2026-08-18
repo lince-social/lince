@@ -2,10 +2,11 @@
 uid: r_S8PQ17MQ3WBWM53ZN700K89V9F
 @@chapter
 @instinct
-@stable
 @part-of [[First Steps|r_YWPKA0Z1DJ8XCHTZRW4X2SDJ1N]] 11
+@stable
 quantity: 1
 ---
+
 
 # Ontology
 
@@ -32,3 +33,57 @@ which of the four it already is — and a genuinely fifth shape has not been
 needed yet.
 
 The parts below take one shape each, with the room to explain themselves.
+
+## Lince today, in one read
+
+Everything above is the model and the record of how each piece was decided.
+This is the short version: what Lince is, how it works, and what it is for.
+It exists so the task list below can be read without holding six hundred
+lines of reasoning in your head.
+
+**What it is.** Lince is a program a person or a group runs on their own
+machines to keep the things they care about — what they have, what they need,
+what they owe each other, what they know — and to share those things directly
+with the people they choose. There is no server in the middle that owns the
+data. An **Organ** is one of those sovereign holders: a person, a household,
+a collective, an institute. Everything an Organ holds is a **Record**, and
+everything said about a Record is an **Assertion** — a subject, a predicate, an
+optional object, and an optional exact quantity with a unit. **Concepts** name
+the meanings the predicates use, and a **Lingua** is a shared vocabulary that
+several Organs agree on without anyone ruling over it. Five tables carry
+everything; a "tag", a "link", a "task" and a "chapter" are conventions over
+those tables, not new machinery.
+
+**How it works.** An Organ runs on one or more **Cells** — devices. A Cell
+holds a key it uses online; the Organ's **root key** stays offline and signs a
+**roster** naming the Cells, what each may do, and where its mail may be left.
+That signed roster is the whole membership statement, so nothing has to be
+asked of an authority: you verify a peer by chaining to a key you already
+hold. Cells reach each other over QUIC with iroh — identity is a key, never an
+address — through four doors: ordinary sync, a live door for reading someone's
+Record through to their machine, a thread door for reaching somebody before
+you fully trust them, and a mailbox door for leaving sealed batches with a
+carrier when the recipient is switched off.
+
+Every local change writes an **op** into a log, stamped with the writing
+Cell and a hybrid logical clock, and the log is what travels. Peers catch up
+by exchanging a version vector — "here is what I already hold from each of
+your devices" — so nothing depends on a shared cursor or a shared clock.
+Scalar fields merge by last-writer-wins on that clock; collaborative text is a
+Loro CRDT and merges character by character. What a contact may see of you,
+and what you accept from them, is a **Protein** — one predicate language used
+in both directions — and anything that arrives outside what you accepted is
+quarantined rather than applied, so a bad op never fails a whole batch.
+
+**What it is for.** The point is that useful shared life — a stock of food, a
+rota, a set of promises, an accounting of who did what — can be run by the
+people living it, on hardware they control, without a company between them
+and each other. Around the core sit the things that make that concrete:
+**Transfers** (things moving between Organs, with custody and receipts),
+**Karma** (rules that fire on a schedule or a change, in the Organ's name),
+**File Sync** (Records projected into a folder of files, edited either side),
+**sands** (the small applications a person actually opens), and **threads**
+(conversations that carry references, read live, rather than copies).
+
+The whole system is offline-first by construction: nothing waits on a server,
+and two Cells that never meet still converge when they eventually do.

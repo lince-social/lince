@@ -2,10 +2,11 @@
 uid: r_1TQR1KWKMDMAYBQM3SVPSCRR9P
 @@chapter
 @instinct
-@stable
 @part-of [[Transfer|r_DAPVC5V6MF3N8N2V7C84QBR96W]] 6
+@stable
 quantity: 1
 ---
+
 
 ## Trust
 
@@ -22,3 +23,13 @@ quantity: 1
 - Field-level grants and most-specific-wins precedence are tracked in Transfer
   Phase T3, with Transfer as the first consumer of this shared Trust behavior;
   today grants remain whole-row only.
+
+## What is left
+
+### Trust
+
+- [ ] Karma phase K8 adds local Automation Trust scopes above coarse
+  `known|blocked`: exact concept/direction and stage ceilings, Person/origin-
+  Organ/via-Organ/proximity selectors, probability/confidence thresholds,
+  limits, expiry, and deny-first Proof. This policy gates automation only; it
+  is not reputation, visibility, consent, or a Program grant.

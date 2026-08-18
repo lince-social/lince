@@ -19,9 +19,12 @@
 //! pre-refactor version matched a changed file back to a record by searching
 //! for a record whose `head` equalled the file stem — broken by head
 //! collisions and by sanitization changing the stem. `FileSyncState` instead
-//! remembers path -> uid in memory, seeded by this Cell's own writes. A
-//! renamed file is NOT identity-preserving (matches history): it reads as one
-//! record disappearing and a new one appearing.
+//! remembers path -> uid in memory, seeded by this Cell's own writes and, on a
+//! fresh process, from the files its Records already have on disk. A `.lingua`
+//! file carries the uid, so RENAMING one renames the Record rather than reading
+//! as one Record disappearing and another appearing — with the Cell running or
+//! while it was closed. A rename is only a rename while the Record's own file
+//! is gone; a second file claiming a live uid is still refused.
 //!
 //! **Deletion is debounced.** A path must be missing for
 //! `MISSING_TICKS_BEFORE_DELETE` consecutive ticks before its record is HARD
@@ -154,6 +157,19 @@ impl Engine {
         for format in &formats {
             disk.extend(scan_disk(dir, format.extension())?);
         }
+        // Every file this Organ's Records already have on disk, ignoring the
+        // filter. Two jobs, and both are about not destroying text: it is what
+        // lets a file written by an earlier run be recognised instead of read
+        // as new (`reattach_written_files`), and it is how the sweep below
+        // tells a Record that is GONE from one that is merely not selected.
+        let mut written_before: HashMap<PathBuf, DesiredFile> = HashMap::new();
+        {
+            let all = self.selected_records(organ_uid, None).await?;
+            for format in &formats {
+                written_before.extend(self.desired_files(dir, &all, *format).await?);
+            }
+        }
+        self.reattach_written_files(&written_before, &disk, state);
         // Paths whose metadata block a person edited in a way this Cell cannot
         // apply. Skipped by the mirror half below so the edit survives.
         let mut conflicted: HashSet<PathBuf> = HashSet::new();
@@ -335,6 +351,69 @@ impl Engine {
                 .as_ref()
                 .map(|p| p.uid.trim())
                 .filter(|uid| !uid.is_empty());
+            // **A file that carries a uid we already have is that Record under
+            // a new filename**, never a second Record asking for a taken
+            // identifier. The uid is the identity; the filename is a
+            // projection of the head. Without this, renaming a file — or
+            // renaming it while the Cell was closed — read as one Record
+            // appearing and another going missing: a refused adoption, then a
+            // debounced delete of the Record the file was still describing.
+            let existing = match given_uid {
+                Some(given) => store::records::get(&self.store.pool, given).await?,
+                None => None,
+            };
+            // Only when the Record's OWN file is gone. If it is still sitting
+            // there, a second file claiming its uid is a collision, not a
+            // rename — two files cannot both be one Record, and adopting
+            // either way round is the one mistake that cannot be undone.
+            let still_on_disk = |uid: &str| {
+                written_before
+                    .iter()
+                    .any(|(path, desired)| desired.uid == uid && disk.contains_key(path))
+            };
+            if let Some(row) = existing.filter(|row| {
+                row.organ_uid.as_deref() == Some(organ_uid) && !still_on_disk(&row.uid)
+            }) {
+                if row.head != *stem {
+                    self.act(
+                        Action::EditRecordText {
+                            target: row.uid.clone(),
+                            head: Some(stem.clone()),
+                            body: None,
+                        },
+                        None,
+                    )
+                    .await?;
+                    report.updated_from_disk.push(row.uid.clone());
+                }
+                // The path it used to live at is not a deletion — it is the
+                // same file, moved. Dropping it here stops the debounce that
+                // would otherwise delete the Record two ticks from now.
+                let remembered = written_before
+                    .values()
+                    .find(|desired| desired.uid == row.uid)
+                    .cloned();
+                state.known.retain(|_, known| known.uid != row.uid);
+                for path in &paths {
+                    state.known.insert(
+                        path.clone(),
+                        KnownFile {
+                            uid: row.uid.clone(),
+                            // What the RECORD says, not what the file says: any
+                            // edit made in the same breath as the rename is
+                            // then an ordinary disk change, applied by the next
+                            // tick under the same disk-wins rule.
+                            body: remembered
+                                .as_ref()
+                                .map(|d| d.text.clone())
+                                .unwrap_or_default(),
+                            prelude: remembered.as_ref().and_then(|d| d.prelude.clone()),
+                            missing_ticks: 0,
+                        },
+                    );
+                }
+                continue;
+            }
             let uid = if let Some(given) = given_uid {
                 match store::records::create_with_uid(
                     &self.store.pool,
@@ -418,38 +497,18 @@ impl Engine {
         }
 
         // --- 2) Ledger -> disk (mirror) -----------------------------------
-        // Selection is `organ_uid` AND whatever else the owner configured.
-        //
-        // Origin is not negotiable and is not part of the configurable half:
-        // mirroring a Record whose origin is somebody else's Organ would put
-        // their writing in this owner's folder, where editing the file edits
-        // THEIR Record. So the extra filter can only narrow.
-        let mut filter = vec![protein::Predicate::OrganEq(organ_uid.to_string())];
-        if let Some(extra) = configured_filter(config.as_ref()) {
-            filter.push(extra);
-        }
-        let protein = protein::Protein {
-            source: protein::Source::Record,
-            filter,
-            fields: None,
-            include: Default::default(),
-            aggregate: None,
-            order: vec![],
-            limit: None,
+        let matched = self.selected_records(organ_uid, config.as_ref()).await?;
+        // Re-read AFTER the disk half: a file adopted a moment ago is a Record
+        // this Organ owns, and the sweep below has to see it as one. Read
+        // before, it would sweep the very file it had just adopted.
+        let owned: HashSet<PathBuf> = {
+            let all = self.selected_records(organ_uid, None).await?;
+            let mut paths = HashSet::new();
+            for format in &formats {
+                paths.extend(desired_paths(dir, &all, format.extension()).into_keys());
+            }
+            paths
         };
-        let mut matched = protein::matching_records(&self.store, &protein, None).await?;
-        // Identity is not content. The Organ and Cell Records became visible
-        // here the moment origins were stamped on every row (the Organ's
-        // origin is itself, the Cell's is its Organ), and mirroring them to
-        // disk would put "Local Lince.md" and "this cell.md" in the owner's
-        // notes folder — where renaming or deleting the file would edit the
-        // identity. Excluded by slug, which is fixed for both.
-        matched.retain(|row| {
-            !matches!(
-                row.slug.as_deref(),
-                Some(store::organs::LOCAL_ORGAN_SLUG) | Some(store::cells::LOCAL_CELL_SLUG)
-            )
-        });
         let mut desired = HashMap::new();
         for format in &formats {
             desired.extend(self.desired_files(dir, &matched, *format).await?);
@@ -474,7 +533,20 @@ impl Engine {
                 continue;
             }
             let configured = formats.iter().any(|f| ext == Some(f.extension()));
-            if configured && !desired.contains_key(&path) {
+            if configured && !desired.contains_key(&path) && owned.contains(&path) {
+                // The Record is still here — the FILTER is what excludes it,
+                // and a filter is a choice about what to mirror, never consent
+                // to delete what somebody wrote. This is how a new note used
+                // to disappear: dropping a plain file in adopted it as a
+                // Record with no concepts, the filter did not select it, and
+                // the same tick swept the file it had just read.
+                report.conflicts.push(FileConflict {
+                    path: path.display().to_string(),
+                    reason: "this Record is not selected by this folder's filter — kept rather \
+                             than deleted"
+                        .to_string(),
+                });
+            } else if configured && !desired.contains_key(&path) {
                 std::fs::remove_file(&path).map_err(EngineError::Io)?;
             } else if !configured
                 && path.is_file()
@@ -494,9 +566,12 @@ impl Engine {
         // Drop stale tracked paths that no longer correspond to a selected
         // record (head-rename moved it to a new path, or it fell out of
         // selection) — unless we're mid-debounce on it.
-        state
-            .known
-            .retain(|path, _| desired.contains_key(path) || pending_delete.contains(path));
+        // A file kept because the filter excludes its Record stays REMEMBERED,
+        // or the next tick would read it as new and adopt the same text as a
+        // second Record — one duplicate per tick, forever.
+        state.known.retain(|path, _| {
+            desired.contains_key(path) || pending_delete.contains(path) || owned.contains(path)
+        });
 
         for (path, desired) in &desired {
             if pending_delete.contains(path) {
@@ -884,6 +959,7 @@ fn strip_level(prelude: &str) -> String {
 }
 
 /// What one Record wants on disk.
+#[derive(Clone)]
 struct DesiredFile {
     uid: String,
     /// The whole file, prelude included.
@@ -894,6 +970,85 @@ struct DesiredFile {
 }
 
 impl Engine {
+    /// The Records this folder mirrors: `organ_uid` AND whatever else the
+    /// owner configured.
+    ///
+    /// Origin is not negotiable and is not part of the configurable half:
+    /// mirroring a Record whose origin is somebody else's Organ would put
+    /// their writing in this owner's folder, where editing the file edits
+    /// THEIR Record. So the extra filter can only narrow.
+    async fn selected_records(
+        &self,
+        organ_uid: &str,
+        config: Option<&serde_json::Value>,
+    ) -> Result<Vec<store::records::RecordRow>, EngineError> {
+        let mut filter = vec![protein::Predicate::OrganEq(organ_uid.to_string())];
+        if let Some(extra) = configured_filter(config) {
+            filter.push(extra);
+        }
+        let protein = protein::Protein {
+            source: protein::Source::Record,
+            filter,
+            fields: None,
+            include: Default::default(),
+            aggregate: None,
+            order: vec![],
+            limit: None,
+        };
+        let mut matched = protein::matching_records(&self.store, &protein, None).await?;
+        // Identity is not content. The Organ and Cell Records became visible
+        // here the moment origins were stamped on every row (the Organ's
+        // origin is itself, the Cell's is its Organ), and mirroring them to
+        // disk would put "Local Lince.md" and "this cell.md" in the owner's
+        // notes folder — where renaming or deleting the file would edit the
+        // identity. Excluded by slug, which is fixed for both.
+        matched.retain(|row| {
+            !matches!(
+                row.slug.as_deref(),
+                Some(store::organs::LOCAL_ORGAN_SLUG) | Some(store::cells::LOCAL_CELL_SLUG)
+            )
+        });
+        Ok(matched)
+    }
+
+    /// Recognise files this Cell wrote in an EARLIER RUN.
+    ///
+    /// The path<->uid memory lives in `FileSyncState`, which is per-process,
+    /// while the folder is on disk and outlives it. Without this, every file
+    /// is unknown after a restart and the disk half reads the whole folder as
+    /// new: each file asks to create a Record under a uid that already exists,
+    /// is refused, and — because a refused path is left alone by the mirror
+    /// too — the folder sits in a loop of one conflict per file per tick with
+    /// nothing syncing in either direction. Editing a note while the Cell was
+    /// closed did nothing at all.
+    ///
+    /// Seeded with what the RECORD currently says, so the ordinary changed-
+    /// check that follows sees exactly the edits made while nothing was
+    /// watching, and applies them under the same disk-wins rule as any edit
+    /// made with the Cell running. A file that matches no selected Record's
+    /// path is untouched here and still becomes a new Record below.
+    fn reattach_written_files(
+        &self,
+        owned: &HashMap<PathBuf, DesiredFile>,
+        disk: &HashMap<PathBuf, String>,
+        state: &mut FileSyncState,
+    ) {
+        for (path, desired) in owned {
+            if !disk.contains_key(path) || state.known.contains_key(path) {
+                continue;
+            }
+            state.known.insert(
+                path.clone(),
+                KnownFile {
+                    uid: desired.uid.clone(),
+                    body: desired.text.clone(),
+                    prelude: desired.prelude.clone(),
+                    missing_ticks: 0,
+                },
+            );
+        }
+    }
+
     /// The file every selected Record wants, keyed by path.
     ///
     /// Batched on purpose: this runs on an interval over every selected

@@ -2,10 +2,11 @@
 uid: r_ZKE1WSJ0KH3SA6N99KMR8BN0QR
 @@chapter
 @instinct
-@stable
 @part-of [[Ontology|r_S8PQ17MQ3WBWM53ZN700K89V9F]] 3
+@stable
 quantity: 1
 ---
+
 
 # Assertion
 
@@ -64,3 +65,54 @@ record_assertion
   under the same predicate (`store::assertions::refine`, `RefineAssertion`
   Action) — a transactional wrapper over retract+assert, not a new operation;
   idempotent if the binary tuple already exists.
+
+## Link
+
+One record is a fact about the world. Records get useful when they point at each other. A **link** is a labelled arrow from one record to another, and the label — the **kind** — is what carries the meaning.
+
+```mermaid
+graph LR
+  A["Task: write the spec"] -- assigned-to --> B["Person: Ana"]
+  A -- part-of --> C["Project A"]
+  A -- references --> D["Note: last meeting"]
+```
+
+_Three links out of one record, each meaning something different._
+
+A record can have **as many links as you like**, which makes them the right tool for membership, ownership, dependency and grouping. Nothing about a link is special storage: it is one _statement_ about a record, of the same sort you will meet in the next chapter. Here the statement happens to name a second record.
+
+The kind is not a loose string — **a link kind is a concept**, the same kind of word as `@task` or `@apple`. That is why one autocomplete can offer them together, and why this chapter and the next are really about one mechanism rather than two.
+
+## Making one
+
+Open a record in the **Record** sand and use its **Links** section: type a kind, type a target, press **Link**. The **Relations** sand does the same thing graphically — shift-drag from one node to another to link them, and click an edge to select it, then press **Delete** (or the ✕ in its toolbar) to unlink. Ctrl+Z undoes either.
+
+Link kinds need no setup. The first time you use `tag`, the word is created for you. That is why the autocomplete in the Data panel only offers kinds you have already used at least once.
+
+## Reading them back
+
+In a Protein the filter is called **Relation** — the Data panel's word for the same thing the Record sand calls a link. It takes a **kind**, a **direction** and a target.
+
+- **outgoing** — this record points at the target. "Tasks tagged Project A".
+
+- **incoming** — the target points at this record. Ask _Project A_ which tasks name it.
+
+- **either direction** — you care that they are connected, not who pointed first.
+
+Direction matters because a link is always stored one way, subject → object. Incoming is not a second link you have to maintain; it is the same arrow read from the other end.
+
+**Assignee** is the same filter with the kind `assigned-to` filled in for you, and a person picker instead of a free-text box. Turning on the **links** include makes the links themselves travel with the rows, which is how a kanban card can show who a task belongs to without a second query.
+
+## Order is a link too
+
+Some kinds describe sequence rather than membership — `needs`, `before`, `part-of`. Sort a Protein by **graph order** on such a kind and you get a dependency chain instead of a list:
+
+```mermaid
+graph LR
+  A["Buy flour"] -- needs --> B["Bake the bread"]
+  B -- needs --> C["Make the sandwich"]
+```
+
+_Read it as "bake needs buy". Graph order turns this into the sequence to actually work through._
+
+Because ordering kinds imply a direction, Lince checks them for loops. If you link things into a cycle — A needs B needs C needs A — the save still happens, but you get a warning naming the records in the loop. A cycle in an ordering kind is almost always a mistake in how you described the work, and you are the only one who can tell.

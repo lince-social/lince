@@ -118,33 +118,74 @@ test("sections sort by whether this record has anything in them", async ({ brows
       const out = {};
       for (const id of ["sec-worklog", "sec-estimate", "sec-people", "sec-links", "sec-comments", "sec-facts"]) {
         const element = document.getElementById(id);
-        out[id] = { order: Number(getComputedStyle(element).order), open: element.open };
+        out[id] = { order: Number(getComputedStyle(element).order), open: element.open, hidden: element.hidden };
       }
       return out;
     });
 
-    // A brand new record has none of the five: they sink below the filled
-    // band, closed, in their canonical order, and History stays last.
+    // A brand new record has none of the five, so the default accordion view
+    // hides them. History remains available but starts closed.
     const empty = await read();
     for (const [at, id] of ["sec-worklog", "sec-estimate", "sec-people", "sec-links", "sec-comments"].entries()) {
-      expect(empty[id]).toEqual({ order: 50 + at, open: false });
+      expect(empty[id]).toEqual({ order: 10 + at, open: false, hidden: true });
     }
-    expect(empty["sec-facts"].order).toBe(90);
+    expect(empty["sec-facts"]).toEqual({ order: 70, open: false, hidden: false });
+
+    // The left half reveals every property; the right half hides every one.
+    await it.sand.locator("#properties-more").click();
+    expect((await read())["sec-worklog"].hidden).toBe(false);
+    await it.sand.locator("#properties-hide").click();
+    expect((await read())["sec-facts"].hidden).toBe(true);
+    await it.sand.locator("#properties-hide").click();
 
     // Start a thread and Threads rises into the filled band and opens itself.
+    await it.sand.locator("#properties-more").click();
     await it.frame.evaluate(() => { document.getElementById("sec-comments").open = true; });
     await it.sand.locator("#cm-body").fill("first message");
     await it.sand.locator("#cm-post").click();
     await expect(it.sand.locator("#comments-list")).toContainText("first message");
+    await it.sand.locator("#properties-more").click();
 
     const filled = await read();
-    expect(filled["sec-comments"]).toEqual({ order: 14, open: true });
-    expect(filled["sec-worklog"].order).toBe(50);
-    expect(filled["sec-estimate"].order).toBe(51);
-    expect(filled["sec-people"].order).toBe(52);
+    expect(filled["sec-comments"]).toEqual({ order: 14, open: true, hidden: false });
+    expect(filled["sec-worklog"].hidden).toBe(true);
+    expect(filled["sec-estimate"].hidden).toBe(true);
+    expect(filled["sec-people"].hidden).toBe(true);
     // The thread is a real link off this record, so Links fills with it — and
     // it still sorts above Threads, which is the order that was asked for.
     expect(filled["sec-links"].order).toBeLessThan(filled["sec-comments"].order);
+  } finally {
+    await it.close();
+  }
+});
+
+test("body modes replace the split textarea and preview", async ({ browser }, testInfo) => {
+  const source = "## Plan\n- [ ] one\nplain\n```mermaid\ngraph LR\nA --> B\n```";
+  const it = await openRecord(browser, testInfo, { body: source });
+  try {
+    await expect(it.sand.locator("#f-body")).toBeHidden();
+    await expect(it.sand.locator("#f-preview .md-h2")).toBeVisible();
+
+    await it.sand.locator('#f-preview [data-md-line="2"]').click();
+    const active = it.sand.locator(".pragmatic-source");
+    await expect(active).toHaveValue("plain");
+    await active.fill("changed");
+    await expect(it.sand.locator("#f-save")).toBeEnabled();
+
+    await it.sand.locator("#body-pretty").click();
+    await expect(it.sand.locator(".pragmatic-source")).toHaveCount(0);
+    await expect(it.sand.locator('#f-preview input[data-md-line="1"]')).toBeDisabled();
+
+    // Any line in a fenced block reveals that complete block as source, then
+    // returns to pretty after five seconds without caret activity.
+    await it.sand.locator("#body-pragmatic").click();
+    await it.sand.locator("#f-preview .md-mermaid").click();
+    await expect(active).toHaveValue("```mermaid\ngraph LR\nA --> B\n```");
+    await expect(active).toHaveCount(0, { timeout: 7000 });
+
+    await it.sand.locator("#body-raw").click();
+    await expect(it.sand.locator("#f-body")).toBeVisible();
+    await expect(it.sand.locator("#f-body")).toHaveValue(source.replace("plain", "changed"));
   } finally {
     await it.close();
   }

@@ -2,10 +2,11 @@
 uid: r_DAPVC5V6MF3N8N2V7C84QBR96W
 @@chapter
 @instinct
-@stable
 @part-of [[First Steps|r_YWPKA0Z1DJ8XCHTZRW4X2SDJ1N]] 13
+@stable
 quantity: 1
 ---
+
 
 # Transfer
 
@@ -1230,3 +1231,122 @@ at the Organ level, upstream of `transfer_invitation`.
 
 The theory below is where this started, and the parts after it are what it
 became.
+
+### Transfer, in theory
+
+_Introduction_
+A Transfer is a well structured process for Contributing to other's Needs and having yours met. It might be a way of exchanging physical resources, buying services, exchanging information, proposing the assignment of tasks... It has a few steps: a proposal, an agreement and an action. It is designed to work best with Record's quantities between different Lince Cells.
+
+_Ideas_
+I start with information, I say what I can Contribute to or Need, another party confirms that it wants to be part of this Transfer, make it real. We then agree on the specifics and do our part. A Transfer can start out only with the Contribution part, used as a brainstorming mechanism, a way to generate consensus: if we model a Need and all involved agree on one specific Contribution, the following actions and automation are an agreed upon plan. If I post a Need (make a Record public as a Need), anyone that wants to Contribute will give a different solution, suggesting to break it down into other Needs and helping with some of them.
+
+_Automation_
+We want to be able to automate the Transfers with built-in mechanisms Karma. To not have to think of a frequent purchase, to commit to it, to show first our Needs and Contributions to a certain Organ/Cells, then if they are not interacted with expand the visibility of them to other parties.
+
+_POV_
+I can create a Transfer for a Record as either a Need or a Contribution, might depend on how you see it, use it: let's say I want to play the Guitar live in front of an audience, that can be a Need to perform, or a Contribution as a service, paid or not. Your framing of it as either in the Need part or in the Contribution part will tell people in advance what is your goal. If nobody believes they Need to hear you play they wouldn't hire you, but if you say that you want to be heard playing they wouldn't mind letting you play at an event of theirs, contributing to your Need.
+
+_Conditions_
+We might only make a Transfer when we reach a certain state: if Record less than 7 then we buy Apples until we have 14 with a certain specific Lince Cell (known farmer). If we know that our 'Apple' Record's 'quantity' property diminishes by one every day, and we have 8, the day after tomorrow we will have 6, hitting the state to activate a Transfer proposal to buy more Apples. The farmer that wants to buy a new tool to produce more will see that they can't make a Transfer with a tool maker to buy that tool because they dont have the money yet. But because they see only the predictability that the transfer will happen after two days they can plan their business better, knowing that the chain of Transfers will happen 2 days from now.
+
+That can extend to several different Transfers, many people agreeing to many things happening so they all happen. You might need 7 previous Transfers to meet Needs of your customers so they can Contribute to other Needs and buy your Apples. Knowing this you can take part in Contributing to those previous Needs so the flow of Contributions can continue flowing, unclogging the Transfers. You may call it Investing In Your Customers, or Just Helping.
+
+The feature of Simulation is key for this. We might have a Karma to activate a Transfer proposal of donating all extra apples if we hit 20. So if we have 30 we activate that Transfer proposal and wait for someone to collect it. Until then, we see two numbers, the real number (30) and the number that exists in our Lince for our own use (20), the extra 10 will be donated so they are like free Contribution Apples, if we eat one, now there are 9 Contributions we can make, because our donations are on the surplus. Or we make a rule that the eating of the Apple will remove a number from our non donation apples, and the donation stays the same with the 10 Apples.
+
+## Data Structure
+
+The data structure is still being developed, dont mind it.
+
+| Columns               | Data Type | User Input | Data Created |
+| --------------------- | --------- | ---------- | ------------ |
+| Id                    |           |            |              |
+| Records Received      |           |            |              |
+| Records Contributed   |           |            |              |
+| Agreement             |           |            |              |
+| Agreement Time        |           |            |              |
+| Transfer Confirmation |           |            |              |
+| Transfer Time         |           |            |              |
+
+## Transfer
+
+Main tracker for the Transfer feature.
+
+## What a Transfer is
+
+A Need in your Cell and a Contribution in someone else's do not meet by themselves. A **Transfer** is how the two sides agree to move something across the boundary.
+
+```mermaid
+graph LR
+  A["Person A"] --> C["1 unit of currency"]
+  B["Person B"] --> D["2 apples"]
+  C <--> D
+```
+
+_A trade: each side has what the other is short of._
+
+Nothing about that picture is special-cased for money. **Lince has no money in it.** A currency is an ordinary record used as a unit, and converting between currencies is a rule you write — exactly like converting hours to days. A trade of apples for hours needs no new machinery.
+
+## It does not have to be even
+
+A Transfer where only one side moves is a donation. A Transfer whose other side is enormous, or vague, or far away, is a request:
+
+```mermaid
+graph LR
+  A["Person A: 1 unit"] --> B["Person B: a brazillion apples"]
+```
+
+_Wildly lopsided, and still a perfectly valid Transfer to record._
+
+And it does not have to be two-sided at all:
+
+```mermaid
+graph LR
+  A["A"] --> B["B"]
+  B --> C["C"]
+  C --> A
+```
+
+_A three-party loop: nobody trades with one partner, everyone is settled._
+
+## What a Transfer actually is
+
+A Transfer bundles **promises** — each one saying who owes what to whom, in which unit, by when. Its status is derived from the states of those promises rather than set by hand, which is why the Transfer sand can tell you what stage a deal is at without anyone maintaining a status field.
+
+- Terms are versioned: a Transfer's signed revision is part of what everyone agreed to.
+
+- Participants have roles — creator, participant, invitee, observer — and a Protein can filter by yours.
+
+- Settlement moves the quantities on both sides at once, leaving facts behind on each.
+
+The same shape covers a marketplace purchase, splitting a bill, planning a party, or a project where four people each bring something different. It is one mechanism because it was one idea all along: a Need on one side, a Contribution on the other.
+
+#### In detail
+
+Transfer is a protocol for making Lince Record quantity changes and Record relationships socially valid before they become final database changes.
+
+Principles:
+
+- Transfer deals only with Lince data for now.
+- Quantity stays central and generic. Specialized units can be represented by metadata/extensions later.
+- A Transfer is a structured promise before execution, and may group smaller item-level interactions.
+- Records do not permanently become Needs or Contributions. Need, Contribution, support, task, information, and reservation are Transfer item roles.
+- A Transfer item carries Transfer-specific title/description and may hide the private source Record fields.
+- Parent Transfers group child Transfers without forcing one agreement or settlement policy on every child.
+- Counteroffers are edits. Agreement returns only when the relevant parties accept the edited state again.
+- Discovery must not mutate Records. It can suggest candidate assertions or create/edit Transfer proposals, but final Record quantity changes happen only through settlement.
+- Transfer status should be derived from item, interaction, agreement, delivery, receipt, settlement, quantity influence, and event facts instead of maintained as a separate source of truth.
+- Expiration is not hardcoded in Transfer for the first version; Karma can activate or neutralize Transfers by quantity.
+- Role-based agreement, legal-contract language, external payments, delivery integrations, calendars, and external messaging are out of MVP scope.
+
+Intended flow:
+
+1. Someone creates a Transfer from one or more Records.
+2. Transfer items describe what those Records mean in this Transfer.
+3. Visibility decides which party or Organ can see which fields.
+4. Parties edit the parts they are allowed to edit.
+5. Connected edits invalidate earlier agreement for affected items/interactions.
+6. Parties raise agreement levels when they accept the current visible state.
+7. Satisfied agreement policy activates the relevant item, interaction, or group.
+8. Transfer influence appears in simulation as plus/minus quantity.
+9. Parties confirm delivery and receipt.
+10. Settlement applies the actual Lince data changes.

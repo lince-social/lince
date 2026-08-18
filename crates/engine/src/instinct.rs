@@ -235,13 +235,27 @@ fn derived_uid(head: &str) -> String {
 /// asked for. Filed last under the root, it is in the tree and visibly
 /// unplaced, which is what a file waiting to be sorted should look like.
 fn adopted_projection(head: &str, root: Option<&(String, String)>) -> Projection {
-    let mut assertions = vec![crate::lingua_file::Line {
-        predicate: "idea".to_string(),
-        identity: true,
-        object: None,
-        quantity: None,
-        unit: None,
-    }];
+    let mut assertions = vec![
+        crate::lingua_file::Line {
+            predicate: "idea".to_string(),
+            identity: true,
+            object: None,
+            quantity: None,
+            unit: None,
+        },
+        // **What makes it one of these Records rather than a loose file.**
+        // Every other file in the folder carries `@instinct`, and File Sync
+        // selects on it: without this line the adopted Record fell outside the
+        // folder's own filter, so the mirror did not want its file and the
+        // sweep deleted the note that had just been read.
+        crate::lingua_file::Line {
+            predicate: "instinct".to_string(),
+            identity: false,
+            object: None,
+            quantity: None,
+            unit: None,
+        },
+    ];
     if let Some((title, uid)) = root {
         assertions.push(crate::lingua_file::Line {
             predicate: "part-of".to_string(),

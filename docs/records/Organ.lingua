@@ -2,10 +2,11 @@
 uid: r_VAX3HA21RXF9AENHMCJTSEF1AT
 @@chapter
 @instinct
-@stable
 @part-of [[Ontology|r_S8PQ17MQ3WBWM53ZN700K89V9F]] 2
+@stable
 quantity: 1
 ---
+
 
 # Organ
 
@@ -52,3 +53,65 @@ proximity, with block/unblock as `trust: "blocked"`/`"known"`
 include on `organ_contact`). Its scope is trust/proximity; sync policy
 (`sync_out`/`sync_in`) and quarantine inspection stay out of that component.
 It has since grown Profile, Devices and Discovery panels — §11.
+
+## The Cell
+
+Everything so far happened in one place: your **Cell**. A Cell is your own Lince — your records, on your machine, answering to you.
+
+```mermaid
+graph LR
+  A["Cell"]
+```
+
+## Cells Have No Main One
+
+Other people have their own. No Cell is inside any other, and none of them is the "main" one:
+
+```mermaid
+graph LR
+  A["Cell"]
+  B["Cell"]
+  C["Cell"]
+  D["Cell"]
+```
+
+## The Organ
+
+When several Cells want to hold something in common — a household budget, a team backlog, a shared shopping list — they form an **Organ**.
+
+```mermaid
+graph TD
+  O["Organ"]
+  A["Cell"] --> O
+  B["Cell"] --> O
+  C["Cell"] --> O
+  D["Cell"] --> O
+```
+
+_An Organ is a shared context, not a server that owns the members._
+
+## Organs Do Not Blur Together
+
+You belong to as many Organs as you have contexts, and they do not blur into each other. Work does not see your hobby; your family does not see your work backlog.
+
+```mermaid
+graph TD
+  B["Work"] --> A["Your Cell"]
+  C["Hobby"] --> A
+  D["Family"] --> A
+  E["Friends"] --> A
+```
+
+## Lince Has No Centre
+
+Lince as a whole is just all of it — Cells and Organs, with no centre:
+
+```mermaid
+graph TD
+  A["Organ"] --> O["Lince"]
+  B["Cell"] --> O
+  C["Organ"] --> O
+  D["Cell"] --> O
+```
+
+This is why the frontend keeps **areas** (in the workspace menu) separate from each other, and why a Protein can filter by organ. The boundary is real, and it is the same boundary the next chapter has to cross.

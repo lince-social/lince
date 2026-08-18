@@ -891,25 +891,33 @@ async fn the_shipped_documentation_folder_is_adoptable_as_records() {
     assert!(report.conflicts.is_empty(), "every file adopted: {:?}", report.conflicts);
     assert_eq!(report.created.len(), expected, "one Record per file");
 
-    // The chapter Records are real, and the ideas point at them — the reading
-    // order is in the assertions rather than in a filename or an index.
-    let chapters = store::records::resolve(&e.store.pool, "r_5JKQH7BM9ZQ474YF869AFE4T2N")
+    // The chapter Records are real, and their branches point at them — the
+    // reading order is in the assertions rather than in a filename or an index.
+    // Counted on a BRANCH rather than on a leaf: a subject is written as one
+    // Record with headings inside it, so how many Records a topic is broken
+    // into is an editorial choice that changes, while a branch having branches
+    // is what the tree means.
+    let chapter = store::records::resolve(&e.store.pool, "r_5JKQH7BM9ZQ474YF869AFE4T2N")
         .await
         .unwrap()
         .expect("the Record chapter took the uid its file gave it");
-    assert_eq!(chapters.head, "Record");
+    assert_eq!(chapter.head, "Record");
+    let ontology = store::records::resolve(&e.store.pool, "r_S8PQ17MQ3WBWM53ZN700K89V9F")
+        .await
+        .unwrap()
+        .expect("the Ontology chapter took the uid its file gave it");
     let all = store::records::list_all(&e.store.pool).await.unwrap();
     let uids: Vec<String> = all.iter().map(|r| r.uid.clone()).collect();
     let assertions = store::assertions::for_subjects(&e.store.pool, &uids)
         .await
         .unwrap();
-    let into_chapter_two = assertions
+    let into_ontology = assertions
         .iter()
         .filter(|a| {
-            a.predicate == "part-of" && a.object_uid.as_deref() == Some(chapters.uid.as_str())
+            a.predicate == "part-of" && a.object_uid.as_deref() == Some(ontology.uid.as_str())
         })
         .count();
-    assert!(into_chapter_two >= 3, "its ideas link to it: {into_chapter_two}");
+    assert!(into_ontology >= 5, "its chapters link to it: {into_ontology}");
 
     // Tick again and the folder must come back UNCHANGED. The number on a
     // `@part-of` link is a quantity on an assertion, and one silently dropped
@@ -1245,4 +1253,145 @@ async fn an_unreadable_quantity_is_reported_and_changes_nothing() {
     assert_eq!(report.conflicts.len(), 1, "reported: {report:?}");
     let row = store::records::get(&e.store.pool, &uid).await.unwrap().unwrap();
     assert_eq!(row.quantity.to_string(), "5", "and the level is untouched");
+}
+
+/// **A folder outlives the process that wrote it.**
+///
+/// The path<->uid memory lives in `FileSyncState`, which starts empty on every
+/// boot, so after a restart every file in the folder is a path this Cell has
+/// never seen — while the Records they belong to are still right there. Read
+/// as new, each one asked to create a Record under a uid that already exists
+/// and was refused, which left the folder stuck in a loop nobody could see:
+/// one conflict per file per tick, no edit imported, and the mirror half
+/// skipping the very files it had written. Editing a note while the Cell was
+/// closed then did nothing at all — the symptom that found this.
+#[tokio::test]
+async fn a_restart_picks_the_folder_back_up_instead_of_refusing_every_file() {
+    let (e, organ) = cell_with_local_organ().await;
+    use_lingua(&e, &organ).await;
+    let uid = plain(&e, "Proximity", "the original body").await;
+    let dir = tmp_dir();
+
+    let mut state = FileSyncState::new();
+    e.file_sync_tick(&dir, &organ, &mut state).await.unwrap();
+    let path = dir.join("Proximity.lingua");
+    let written = std::fs::read_to_string(&path).unwrap();
+    assert!(written.contains("the original body"));
+
+    // The Cell stops, someone edits the note in their editor, the Cell comes
+    // back: a new process, a new state, the same folder.
+    std::fs::write(&path, written.replace("the original body", "edited while closed")).unwrap();
+    let mut after_restart = FileSyncState::new();
+    let report = e.file_sync_tick(&dir, &organ, &mut after_restart).await.unwrap();
+
+    assert!(report.conflicts.is_empty(), "the folder is picked back up: {:?}", report.conflicts);
+    assert!(report.created.is_empty(), "a file already adopted is not adopted twice");
+    let row = store::records::get(&e.store.pool, &uid).await.unwrap().unwrap();
+    assert_eq!(row.body, "edited while closed", "disk wins, as it does while running");
+    assert_eq!(
+        store::records::list_all(&e.store.pool).await.unwrap().len(),
+        // The Organ and the Cell are Records too, and neither is mirrored.
+        3,
+        "no duplicate Record was created for a file that already had one",
+    );
+}
+
+/// **A filter says what to mirror. It never says what to delete.**
+///
+/// With a narrowing filter configured, dropping a plain file into the folder
+/// adopted it as a Record carrying no concepts — which the filter did not
+/// select, so the mirror did not want its file and the sweep deleted it on the
+/// same tick that had just read it. A note written by hand disappeared, and
+/// the Record left behind had no file to find it by. Now the file is kept and
+/// the reason is reported.
+#[tokio::test]
+async fn a_file_the_filter_excludes_is_kept_and_reported_never_swept() {
+    let (e, organ) = cell_with_local_organ().await;
+    concept(&e, "instinct").await;
+    let dir = tmp_dir();
+    e.act(
+        Action::SetExtension {
+            target: organ.clone(),
+            namespace: "lince.file_sync".into(),
+            fds: serde_json::json!({
+                "enabled": true,
+                "path": dir.display().to_string(),
+                "formats": ["lingua"],
+                "filter": "{\"concept_in\":\"instinct\"}",
+            }),
+        },
+        None,
+    )
+    .await
+    .expect("configure");
+
+    let path = dir.join("Thoughts.lingua");
+    std::fs::write(&path, "a thought nobody has filed yet").unwrap();
+    let mut state = FileSyncState::new();
+    let report = e.file_sync_tick(&dir, &organ, &mut state).await.unwrap();
+
+    assert!(path.exists(), "the note somebody wrote is still on disk");
+    assert_eq!(report.created.len(), 1, "and it was adopted as a Record");
+    assert!(
+        report.conflicts.iter().any(|c| c.reason.contains("not selected by this folder's filter")),
+        "the folder says why it is not syncing: {:?}",
+        report.conflicts,
+    );
+
+    // And again: a second tick must not read the kept file as new and adopt
+    // the same text a second time.
+    let report = e.file_sync_tick(&dir, &organ, &mut state).await.unwrap();
+    assert!(path.exists());
+    assert!(report.created.is_empty(), "no duplicate Record on the next tick");
+    let thoughts: Vec<_> = store::records::list_all(&e.store.pool)
+        .await
+        .unwrap()
+        .into_iter()
+        .filter(|r| r.head == "Thoughts")
+        .collect();
+    assert_eq!(thoughts.len(), 1, "one file, one Record");
+}
+
+/// **The uid is the identity; the filename is a projection of the head.**
+///
+/// Renaming a file therefore renames the Record. It used to read as one Record
+/// going missing and another asking for a uid already taken — a refused
+/// adoption, and then a debounced delete of the Record the renamed file was
+/// still describing. Whether the rename happened with the Cell running or while
+/// it was closed makes no difference to what the folder means.
+#[tokio::test]
+async fn renaming_a_file_renames_the_record_it_carries_the_uid_of() {
+    let (e, organ) = cell_with_local_organ().await;
+    use_lingua(&e, &organ).await;
+    let uid = plain(&e, "Later, still Rule", "what a rule will grow into").await;
+    let dir = tmp_dir();
+    let mut state = FileSyncState::new();
+    e.file_sync_tick(&dir, &organ, &mut state).await.unwrap();
+
+    let old = dir.join("Later, still Rule.lingua");
+    let text = std::fs::read_to_string(&old).unwrap();
+    std::fs::rename(&old, dir.join("Rule.lingua")).unwrap();
+
+    // Closed at the time, so nothing is remembered — the hard case.
+    let mut after_restart = FileSyncState::new();
+    let report = e.file_sync_tick(&dir, &organ, &mut after_restart).await.unwrap();
+    assert!(report.conflicts.is_empty(), "{:?}", report.conflicts);
+    assert!(report.created.is_empty(), "a rename creates nothing");
+    let row = store::records::get(&e.store.pool, &uid).await.unwrap().unwrap();
+    assert_eq!(row.head, "Rule", "the Record took the new name");
+    assert_eq!(row.body, "what a rule will grow into", "and kept everything else");
+
+    // Two more ticks: the debounce that used to fire on the vanished path must
+    // not delete the Record, and the file keeps its new name.
+    for _ in 0..2 {
+        e.file_sync_tick(&dir, &organ, &mut after_restart).await.unwrap();
+    }
+    assert!(dir.join("Rule.lingua").exists(), "the renamed file stays");
+    assert!(!old.exists(), "and the old name is not resurrected");
+    let row = store::records::get(&e.store.pool, &uid)
+        .await
+        .unwrap()
+        .expect("the Record survived the rename");
+    assert_eq!(row.head, "Rule");
+    assert_eq!(std::fs::read_to_string(dir.join("Rule.lingua")).unwrap(), text);
 }

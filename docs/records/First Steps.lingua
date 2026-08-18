@@ -7,42 +7,17 @@ uid: r_YWPKA0Z1DJ8XCHTZRW4X2SDJ1N
 quantity: 1
 ---
 
-
 # First Steps
 
-Open Lince and there is no menu bar, no sidebar, no home screen waiting to be
-navigated. There is a canvas — a large surface you pan and zoom — and on it,
-small tools called **sands**: a table, a kanban, a record editor, a terminal, a
-graph of relations, a transfer panel, a rule builder, a reader for this very
-document. You choose which ones exist, where they sit, how big they are, and —
-the part that matters most — what data each one is looking at. Nothing here is
-a fixed screen, because nobody's work is a fixed screen.
+Open Lince and there is no menu bar, no sidebar, no home screen waiting to be navigated. There is a canvas — a large surface you pan and zoom — and on it, small tools called **sands**: a table, a kanban, a record editor, a terminal, a graph of relations, a transfer panel, a rule builder, a reader for this very document. You choose which ones exist, where they sit, how big they are, and — the part that matters most — what data each one is looking at. Nothing here is a fixed screen, because nobody's work is a fixed screen.
 
-The frame around the canvas is turning into sands as well. Some of it already
-is: every new workspace comes with an **Edit** panel pinned to the side, which
-is a sand like any other and can be moved, resized or thrown away. The rest —
-the small toolbar in the corner with the pencil and the notification bell, the
-zoom controls beside it — is still drawn by the host. The direction is one
-Lince rather than an application with a canvas inside it, so that the parts you
-would normally call "the program" end up the same kind of thing as the parts
-you build for yourself.
+The frame around the canvas is turning into sands as well. Some of it already is: every new workspace comes with an **Edit** panel pinned to the side, which is a sand like any other and can be moved, resized or thrown away. The rest — the small toolbar in the corner with the pencil and the notification bell, the zoom controls beside it — is still drawn by the host. The direction is one Lince rather than an application with a canvas inside it, so that the parts you would normally call "the program" end up the same kind of thing as the parts you build for yourself.
 
-A **workspace** is one canvas with its arrangement of sands. Keep several, name
-them, switch between them, throw one away when it has served its purpose —
-nothing underneath is lost, because a sand is a window onto your records, never
-a box holding them. The same record can appear on four boards at once and it is
-still one record.
+A **workspace** is one canvas with its arrangement of sands. Keep several, name them, switch between them, throw one away when it has served its purpose — nothing underneath is lost, because a sand is a window onto your records, never a box holding them. The same record can appear on four boards at once and it is still one record.
 
-The ideas below walk through the frontend in order: the toolbar in the corner,
-what edit mode turns on, the two layers a sand can live in, how to add one, and
-then **Protein** — the thing that decides which records a sand is looking at,
-which is where the frontend stops being about windows and starts being about
-your data.
+The ideas below walk through the frontend in order: the toolbar in the corner, what edit mode turns on, the two layers a sand can live in, how to add one, and then **Protein** — the thing that decides which records a sand is looking at, which is where the frontend stops being about windows and starts being about your data.
 
-Everything after this branch is what sits underneath. First why Lince exists at
-all, then the model everything is made from, then the boundary between one
-Lince and another, the transfers that cross it, and the rules that keep working
-while you are not looking.
+Everything after this branch is what sits underneath. First why Lince exists at all, then the model everything is made from, then the boundary between one Lince and another, the transfers that cross it, and the rules that keep working while you are not looking.
 
 ## Sands on a canvas
 

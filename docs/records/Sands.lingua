@@ -213,12 +213,19 @@ The Record sand presents that one canonical body in three modes: **Raw** is a
 plain editable Markdown textarea, **Pretty** is a read-only rendering, and
 **Pragmatic** is the default rendered editor. In Pragmatic mode the line under
 the caret becomes source; fenced structures such as Mermaid become source as
-a complete block, and return to their rendering after five seconds without
-caret activity. Its property accordion normally shows only filled sections,
-can reveal every section or hide them all, and always opens a new Record with
-History closed. Head, slug, quantity, the accordion control, and body remain
-visible in that order. Rendered checkboxes use their own block row so their
-control cannot collapse surrounding text into one inline run.
+a complete block. A line means source text ending at a real newline, never one
+visual row produced by wrapping inside a narrow Sand. After five seconds
+without caret activity it renders again and uses the browser's native caret in
+that one rendered surface; moving or typing turns the line or block reached by
+the caret back into borderless raw source. There is no synthetic caret or
+hidden input to disturb the Sand's layout or scroll position. The body itself
+has no border; the border belongs to the complete Record surface. Its
+property accordion is a divided horizontal rule, not a box: the down-triangle
+half reveals every section and the up-triangle half hides them all. It normally
+shows only filled sections and always opens a new Record with History closed.
+Head, slug, quantity, the accordion control, and body remain visible in that
+order. Rendered checkboxes use their own block row so their control cannot
+collapse surrounding text into one inline run.
 
 - [x] **Record** (formerly "record_info" — the sole markdown editor, viewer, and creator for a record, and the home for every other per-record concern) — the get view IS the edit view (head/slug/quantity/ body writable, Save writes only what changed, a dirty form is never clobbered by live updates); Zero (`deactivate`) and Delete (`delete-record`, permission-gated) are separate buttons; creation mode shows the same fields empty, Create + focuses the new record; carries the shared slash-block editor (headings/images/checkboxes/`@slug`, the same palette everywhere in a body); collapsible sections for **Work** (start/due dates, estimate, worklogs with play/pause, on the `work` record extension, offline-queued writes), **Assignees** (`assigned-to` assertions), **Relations** (every hop-1 binary assertion in either direction, predicate+object inputs, both autocompleted — a document/URL is an asserted relationship or inline media in the body, with no separate resource/attachment model), and **Threads** (a real multi-thread system — a tab per thread, search filters which tabs list without hiding messages; chat-style runs (2026-08-07) show the sender name — `user@organ` when the message's origin-organ name differs from the sender's, just `user` when they match (the common single-user-organ case) — only on the first message of an unbroken run from the same `created_by`, every message keeps its own bottom-right timestamp and edit/delete controls, and editing an existing message now uses the same shared slash-block editor as composing one; `@slug` in a post becomes a Record reference, delete controls per permission). Reusable — any sand drives it via a scoped `recordClicked`/`recordCreate`; no sand keeps a private record sidepanel. Full real-time collaborative editing is blocked on the CRDT text relay in [Synchronization](Ontology.md#11-sync-one-channel-two-persistence-modes).
 

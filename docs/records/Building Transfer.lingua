@@ -2,10 +2,11 @@
 uid: r_00ECACY50NWQQ3S0YH37V8KMK6
 @@chapter
 @instinct
-@stable
 @part-of [[Transfer|r_DAPVC5V6MF3N8N2V7C84QBR96W]] 5
+@stable
 quantity: 1
 ---
+
 
 # Building Transfer
 
@@ -478,3 +479,11 @@ Trust is important in workflows of Transfer, when we interact with other parties
 
 > Extracted from `docs/Karma.md` on 2026-07-29. Automation Trust scopes
 > (Karma phase K8) stay in that doc — they gate automation, not authorship.
+
+## What is left
+
+### Checklist
+
+- [ ] Surplus can be projected. (Surplus = quantity you have beyond what is already committed to hard reservations — the "safe to give away" figure. Formula: `record.quantity - reserved_quantity`. Distinct from `available_quantity` in that surplus could also account for confirmed incoming deliveries not yet settled.)
+- [ ] Gossip cache is available as a long-term discovery helper.
+- [ ] Delegated ask-around search is available with hop/TTL limits.

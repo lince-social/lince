@@ -1,0 +1,37 @@
+---
+uid: r_137BM4Q7GV2707HBTRQ3GTJ9E5
+@@chapter
+@instinct
+@part-of [[Karma|r_K7T3ZG08G5EBWRSTF8NBWMTZYV]] 9.5
+@backlog
+quantity: 0
+---
+
+# 20 - Fiote: Agent
+
+Fiote is the home of Lince's agent harness, but shared agent capabilities do
+not carry Fiote's name or require another harness to understand it. The first
+one is `.agents/skills/lince-lingua-crud/`: a portable Agent Skills workflow
+for agents and harnesses now, including Fiote later. It teaches an agent how to
+discover the CURRENT `.lingua` contract, find Lince context through Concepts
+and Record links, perform a minimal CRUD edit, and submit the result to
+deterministic validation. It deliberately does not copy the changing file
+schema or the Lince ontology. The parser owns syntax; the Instinct and project
+document Records own Lince's evolving explanation.
+
+That makes the bootstrap finite: the skill is the small decoder, then Records
+teach the model what Record, Concept, Assertion and Quantity mean and route it
+to `@interface`, `@karma`, `@transfer`, `@sync` and later topic Concepts. The
+same File Sync projection can hold agent-authored working Records without
+making Markdown, a model prompt, or the agent harness into another database.
+
+Agents can use the same workflow now through whatever interface they have:
+filesystem access, a CLI, a native harness adapter, or a live Lince connection.
+The interface should expose current `.lingua` capabilities, selected Instinct
+Records, Record search, Concept resolution, validation, semantic preview,
+and candidate application. MCP may be one adapter; it is not the contract.
+Every adapter calls Protein and ordinary authorized Actions, never SQLite or a
+private mutation path. Harnesses and later Fiote remain equal clients; Lince
+remains the authority that can refuse them.
+
+---

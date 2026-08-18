@@ -2,10 +2,11 @@
 uid: r_YWPKA0Z1DJ8XCHTZRW4X2SDJ1N
 @@chapter
 @instinct
-@stable
 @position 1
+@stable
 quantity: 1
 ---
+
 
 # First Steps
 
@@ -42,3 +43,128 @@ Everything after this branch is what sits underneath. First why Lince exists at
 all, then the model everything is made from, then the boundary between one
 Lince and another, the transfers that cross it, and the rules that keep working
 while you are not looking.
+
+## Sands on a canvas
+
+The frontend is the part of Lince you can touch: a large zoomable canvas and many small tools called **sands**. A sand can be a table, a kanban, a record editor, a terminal, a document viewer, a transfer panel, a relations graph, or anything else that fits in a widget.
+
+Nothing here is a fixed screen. You choose which sands exist, where they sit, how big they are, and — this is the important part — **what data each one is looking at**.
+
+## The triangle in the corner
+
+Look at the bottom-right corner of the canvas. That small grey triangle is the board's own toolbar, collapsed. Hover it (or reach it with the keyboard) and it opens into a row of controls:
+
+- **− / % / +** — zoom out, current zoom, zoom in. Clicking the percentage snaps you back to 100%.
+
+- **⌖ Recenter** — brings the viewport back over your sands when you have wandered off into empty canvas.
+
+- **◎ Reorganize** — gathers the loose sands back toward the centre.
+
+- **The pencil** — toggles **edit mode**. This is the switch everything else depends on.
+
+The triangle stays out of your way on purpose: in normal use the canvas should be the workspace, not a cockpit. If you would rather have those controls always visible, the catalog also ships them as sands ("Lince Zoom" and "Lince Edit") that you can add and pin.
+
+## Edit mode
+
+With the pencil off you are in **Dashboard** mode: sands are live and you interact with their contents. With it on you are in **Edit mode**, and you arrange the workspace itself instead of using it.
+
+## What edit mode turns on
+
+- A floating **+ Add card** button and a **Grid** density slider appear over the canvas.
+
+- Every sand grows drag-and-resize handles on its edges and corners.
+
+- Every sand grows a small toolbar: configure (the gear), pin, layer order, download HTML, and delete.
+
+- Ctrl-drag (⌘ on a Mac) draws a selection box, so you can move or group several sands at once.
+
+## Pinned vs. canvas
+
+- **Canvas sands** live in the zoomable world. They move and scale with the board.
+
+- **Pinned sands** are stuck to the screen and ignore zoom — that is where navigation, status and always-on tools belong.
+
+- The pin button on a sand's toolbar moves it between the two layers.
+
+- Turn edit mode off when you are done. Handles and toolbars disappear and the sands become usable again.
+
+## Putting sands on the canvas
+
+Turn on edit mode, then use **+ Add card**. It offers two routes:
+
+- **Add card** — pick from the sand catalog: the official sands shipped with Lince plus anything you have installed.
+
+- **Importar** — load a widget from disk (`.html`, `.sand` or `.lince`). You can also just drag the file onto the canvas; it is read by the backend and shown in preview before it becomes a card.
+
+A new sand lands on the canvas where there is room. Drag it, resize it from any edge or corner, and use the Grid slider if you want it to snap to a coarser or finer grid.
+
+## Protein: how a sand gets data
+
+**Protein** is Lince's query. It answers "which records should this card show?" — and it is a live subscription, not a one-off fetch: when the underlying records change, every card driven by that Protein redraws by itself.
+
+```mermaid
+graph LR
+  A["Records in your Cell"] --> B["Protein: filter, include, sort, limit"]
+  B --> C["A sand: kanban, table, graph..."]
+```
+
+_A sand never reaches for records directly. A Protein stands between them, and you own it._
+
+To set one, turn on edit mode, click the **gear** on a sand, and find the **Data** section. You get the list of saved Proteins, an explicit **All records** entry, and **+ New Protein** to build one with dropdowns. There is no query language to type.
+
+**A new sand shows nothing until you pick a Protein — that is deliberate.** Cards do not default to "everything". In an organ that has accumulated thousands of records, a card that defaulted to all of them would dump the entire database into a freshly-added board and be useless on arrival. So a brand-new card subscribes to **nothing** and renders a short prompt instead. _No data source configured_ and _All records_ are two different states: the second is a choice you make on purpose.
+
+## What you can put in a Protein
+
+- **Show** — records, promises, or decisions.
+
+- **Filters** — kind, slug, uid, concept, organ, quantity comparisons, state, links, assignee. Add as many as you need; they combine.
+
+- **Include extra info** — history (facts), promises, availability, and links of one or more kinds. Sands ignore what they do not use, so including more is safe.
+
+- **Aggregate** — sum or count, grouped by concept or kind, when you want totals instead of rows.
+
+- **Sort** — high → low, low → high, or graph order following a link kind.
+
+- **Limit** — cap the number of rows.
+
+Give it a name and save it. Saved Proteins are records themselves, so the same query can drive several cards, and editing it updates all of them at once.
+
+## One card for Project A, one for Project B
+
+This is the common case: your tasks all live in the same organ, but you want a board per project. It turns on one choice — whether a word stands alone, or points at a record.
+
+## A concept on its own
+
+A word applied to a record and nothing more: `@task`, `@urgent`. Good for qualities, bad for projects — one word per project means inventing `@project-a`, `@project-b`, and the projects themselves stay imaginary.
+
+## A concept naming a record
+
+The same word, plus the record it points at — a **link**. Project A becomes a real record you can open, count and rename, and a task can belong to several things at once.
+
+```mermaid
+graph LR
+  T1["Task: write the spec"] -- tag --> PA["Project A"]
+  T2["Task: fix the bug"] -- tag --> PA
+  T3["Task: call the client"] -- tag --> PB["Project B"]
+```
+
+_Same pile of tasks, two boards — the link kind `tag` is what tells them apart._
+
+Concretely, in order:
+
+- Make a plain record named **Project A** (with an Organ or Record sand). Note its slug — probably `project-a`. Do the same for **Project B**.
+
+- Open a task in the **Record** sand and go to its **Links** section. Type `tag` as the kind, `project-a` as the target, and press **Link**. Repeat for the other tasks — link kinds need no setup, the first link creates the vocabulary word.
+
+- Add a kanban (or table) card, turn on edit mode, open its gear → **Data** → **+ New Protein**. Name it "Project A tasks".
+
+- Add a filter **Kind is** → `task`, then a second filter **Relation** — kind `tag`, direction **outgoing**, value `project-a`. Save.
+
+- Add a second card and repeat with `project-b`. Two boards, same records underneath, no duplication.
+
+Two things trip people up here. The Record sand calls it a **link** and the Data panel calls it a **Relation** — same thing, two words. And the kind box autocompletes from vocabulary you already use, so `tag` only appears in the list _after_ the first link exists. Create the link first, then build the Protein.
+
+**Assignee** is the same filter with the ceremony removed: kind `assigned-to`, pre-filled, with a person picker. And because filters combine, "Project A but not archived", or "assigned to me across both projects", are just more filters on the same card.
+
+That is the whole frontend. The chapters that follow are about what is underneath it — starting with the one thing everything in Lince is made of.

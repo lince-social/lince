@@ -2,10 +2,11 @@
 uid: r_99NWECF19VKV94HQQ3G3ASMC4M
 @@chapter
 @instinct
-@stable
 @part-of [[First Steps|r_YWPKA0Z1DJ8XCHTZRW4X2SDJ1N]] 12
+@stable
 quantity: 1
 ---
+
 
 # Interface
 
@@ -388,3 +389,192 @@ must carry its license and credits with the owning Sand.
 The terrain direction remains inspired in part by
 [this topographic-canvas demonstration](https://youtu.be/-IOLRcFC6OY?si=WW1tMdMmo0NYxcu_),
 without requiring Lince to reproduce that particular effect.
+
+## What is left
+
+### Interface — what is left
+
+- [ ] Build a representative benchmark on the owner's Vostro 3150, 11th-gen
+  Intel Core i7, Iris Xe integrated graphics, 16 GB RAM, and NixOS. At the
+  machine's native display resolution it must sustain 60 FPS pan/zoom with 200
+  visible interactive Sands, thousands of lightweight nodes/connections,
+  offscreen suspension, and no frame-by-frame rerender of unchanged DOM. Record
+  the exact CPU, resolution, browser/WebView, and power mode with the result.
+  Test a small number of composition roots rather than 200 independent
+  WebViews/iframes.
+- [ ] Benchmark Website Sands separately at 0, 1, 4, and 12 simultaneously
+  visible sites, including video playback, suspension, storage, and memory.
+  The 200-Sand target does not mean 200 live Websites; offscreen Websites are
+  frozen or unloaded under an explicit session policy.
+- [ ] Compare the HTML/Tauri host with a front-end WebGPU/WebGL world layer and
+  record frame time, memory, startup, text-input quality, and accessibility.
+  Back-end GPU work cannot accelerate browser compositing; the GPU layer must
+  live in the front end or be a separately composited native renderer. WebGPU
+  is an enhancement rather than the only path while it remains unavailable in
+  some supported browsers.
+- [ ] Treat the benchmark as validation of the chosen hybrid and a guide for
+  its budgets. Replace the renderer only if evidence shows it cannot meet the
+  contract; prefer the smallest repair before reconsidering a native rewrite.
+
+- [ ] Replace the fixed 10,000×10,000 world with unbounded logical coordinates,
+  viewport culling, and recoverable navigation.
+- [ ] Add recenter, bring-selection-here, locate-by-name, and minimap surfaces
+  with honest empty cases.
+- [ ] Keep Box chrome minimal and outside the user composition. The base Web
+  surface uses the folded top-right corner for system controls; Sand controls
+  belong to the focused Sand's bottom-right page corner.
+
+- [ ] Define the Protein-area model: source item identity/hash, query, renderer
+  definition, spawn point, confinement shape, result identity, refresh,
+  removal, empty state, and locate-source interaction.
+- [ ] Add exact and bounded-regex slug and Concept selection to Record Protein,
+  with a safe expression engine, visible syntax errors, limits, and tests.
+- [ ] Let a configured Protein area materialize, update, and retire projection
+  instances without duplicating or deleting their underlying Records.
+- [ ] Show each projection's Protein provenance in Sand metadata and let a
+  person jump to or highlight its source area.
+
+- [ ] Prove Calendar as a composed preset of paginated day Protein areas,
+  ordered date projections, and recurrence appearances before considering a
+  calendar-specific data or runtime primitive.
+
+- [ ] Define Protein, force, property/Action, and ordering zones as separate
+  composable capabilities, including selection, overlap, nesting, evaluation
+  order, collision, fixed bounds, overflow scrolling, and persistence.
+- [ ] Define the weak workspace-centering force and per-zone attraction and
+  repulsion controls. Physics must settle, remain interruptible, and respect
+  reduced-motion preferences.
+- [ ] Implement group-level force aggregation so an influenced child moves its
+  complete group without breaking membership.
+- [ ] Implement Protein-area external-force immunity, with inside zones still
+  effective and a visible indication of what is protected.
+- [ ] Make property/Action zones distinguish Box presentation changes from
+  attached-data writes and declare every compatible binding and typed Action;
+  moving an incompatible Sand into one cannot silently change Ledger data.
+- [ ] Preserve Protein result ordering through projection and let an ordering
+  zone lay results in a line inside a fixed, scrollable boundary.
+- [ ] Add edit tools for drawing, resizing, copying, stacking, styling, and
+  grouping areas and zones.
+
+- [ ] Render the recursive dot-to-plus-to-mesh pattern in the shared world
+  layer with stable zoom thresholds and without shimmer or pattern drift.
+- [ ] Add the 0–100% arm-length control plus pattern scale, color, opacity, and
+  level-of-detail controls.
+- [ ] Add content-addressed raster and sanitized inert SVG wallpapers with
+  fit/repeat, scale, position, opacity, inspect, replace, and remove surfaces.
+
+- [ ] Specify keyboard focus traversal, a command palette, remapping, visible
+  shortcut discovery, and conflict handling with text editors and embedded Web
+  pages.
+- [ ] Dragging a supported file or URL asks the renderer registry which Sand
+  can display it; an image or PDF can choose Document Viewer. A drop never
+  silently creates Ledger data.
+- [ ] Add performant drawing as compact Box data rather than bitmap snapshots.
+  Its operation shape must remain suitable for later merging and workspace
+  sync without making that deferred work part of the current implementation.
+  Benchmark complex diagrams and painting-like frames against the interaction
+  and culling behavior people expect from tools such as Excalidraw.
+
+- [ ] Define ordering, portal coordinates, input routing, focus, event scope,
+  and what a saved portal means before implementing stacked workspaces.
+
+- [ ] Replace copied Sand HTML in instances with content-addressed definition
+  references plus small override patches.
+- [ ] Keep a readable compact snapshot, but journal or batch high-frequency
+  Box mutations and compact them atomically so a small preference change does
+  not rewrite megabytes.
+- [ ] Measure actual write volume, recovery after interruption, compaction,
+  state growth per Sand, and the cost of unbounded workspaces.
+- [ ] Separate reusable workspace composition from personal view state now so
+  future synchronization does not need to unpick them. Sand placement, size,
+  configuration, definitions, groups, connections, zones, and drawings are
+  composition; camera, focus, selection, open panels, and temporary portals are
+  personal view state.
+
+
+#### Collab and the editor
+
+- [ ] **`record.<column>` as a bindable path.** `attachField` covers text and
+  `<namespace>.<key>` (§11a); a scalar COLUMN — `slug`, `place_uid` — has no
+  single-field action to drive, so it is the one path still unbound. It wants
+  the same treatment as an extension key (per-field LWW through an ordinary
+  action), not a Loro container — see §11b. The contract stays: fact-backed
+  values (quantity) are structurally excluded; quantity displays update live
+  because fact ops arrive on the same channel, not because the number is a
+  CRDT.
+  **`slug` is a hazard as a freely-bindable LWW column**: slugs are
+  identifiers, and last-write-wins across two Cells silently breaks every link
+  that used the old one. Either exclude it from binding or route it through a
+  uniqueness check.
+  **What this is FOR, confirmed 2026-08-09**: one binding serving every place
+  a field is edited — the record body in a kanban card and the same body in
+  the Record sand are the same live document, and any other field in any other
+  sand joins by naming a path rather than by growing its own editor. Three
+  editors that happen to agree is the failure this replaces.
+
+- [ ] **`record_editor` sand** — the rich UI on top of the binding, standalone
+  and embedded modes. Rich editing lives HERE, above the CRDT: the doc stores
+  plain markdown text; slash commands are input affordances that insert
+  markdown/block syntax at the caret (and `/slash` blocks stay a record_info
+  product, K-plan unchanged); images are markdown links rendered at display
+  time through the local `/host/media` pipeline; preview/rendering never
+  writes. Because rich features are a layer over plain text, they need zero
+  CRDT awareness and remote edits can never corrupt a block — worst case is
+  concurrent text inside one block, which Loro text merges character-wise.
+  - Inputs: `record_id`, `owner_organ_id`, `mode` (standalone/embedded),
+    `field_policy` (`head_body`/`body_only`/future), inherited auth/session.
+  - Rules: embedded mode never creates records or shows the record picker,
+    edits only the concrete record it's given; ALL writes go through the
+    binding; parents subscribe to editor events.
+
+- [ ] **`Note` sand** (rename of the current markdown editor):
+  - solo mode: a title-empty note is frontend-only (no `record` row); entering
+    a title creates the record (title→`head`, markdown→`body`) and hands off
+    editing to `record_editor`; a green status-ball picker (top right, like
+    the document-reader pattern) lets the user bind to an existing record
+    instead.
+  - embedded mode: no status ball, no creation, no search — parent passes
+    record context, Note renders `record_editor` for it.
+  - naming: user-facing name stays `Note`; `record_editor` and the binding are
+    internal; never say "CRDT" or "Loro" in normal UI labels.
+
+- [ ] **Embed into existing sands**:
+  - Relation: side panel embeds `record_editor` for the selected graph node;
+    switching node rebinds/destroys the instance; Relation keeps its
+    binary-assertion projection independent of editor state.
+  - Kanban: focus-card body embeds `record_editor`; quick-card previews are
+    read-only materialized text from SQLite (no doc load for closed cards — a
+    200-card board costs zero Loro memory until a card opens).
+  - Table: scalar cells may use the bare binding on `record.<column>` /
+    `<namespace>.<key>`; `head`/`body` prefer embedding `record_editor`.
+
+- [ ] **Delete/lifecycle rules**: a record tombstone freezes its doc — new
+  `crdt` ops against it are rejected; undelete must land as a newer lifecycle
+  op before edits resume; a title-less Note draft has no doc; a new record's
+  doc initializes from its materialized columns. Today deletion is a hard
+  tombstone with no `Undelete`/`Restore` action — that part is future work.
+
+- [ ] **Test coverage** once the above exists: Note draft creates no record
+  before a title; title creates the record and its doc; Note binds to an
+  existing record via the picker; embedded editor cannot create/switch
+  records; two bindings on the same record (record sand + kanban card)
+  converge both ways; concurrent edits to different fields/keys both survive;
+  local edits append
+  `crdt` ops; applying a remote op materializes SQLite and never re-enqueues a
+  loop; duplicate op identity is a no-op; a deleted record rejects `crdt` ops;
+  shallow-snapshot compaction preserves materialized text and doc load never
+  replays full history; slash-command insertion and image rendering survive a
+  concurrent remote edit; socket subscribers receive local updates; the
+  vendored `loro-wasm` asset ships its LICENSE/notice files and both pins are
+  the same version.
+
+- [ ] **A visible recent-changes diff, not just correct merges.** The CRDT/op
+  machinery above resolves concurrent edits correctly by construction, but
+  correctness is not the same thing as legibility to the person it happened
+  to. Someone whose field-level edit lost a last-write-wins race today has no
+  way to know it happened. A short-lived, per-Record log of recent field
+  changes — this field changed because of a local edit, this one because an
+  incoming op from Organ X arrived at a later HLC and won — turns a silent
+  merge into something a person can actually see, without needing full
+  history/blame UI. Scope: recent and local only, an aid to noticing, not a
+  permanent audit trail (the Ledger/Facts already are that for quantity).

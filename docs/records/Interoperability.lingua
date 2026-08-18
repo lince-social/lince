@@ -2,10 +2,11 @@
 uid: r_7NJYRJYKVFGVG3DT27WRQFRCWF
 @@chapter
 @instinct
-@stable
 @part-of [[Interface|r_99NWECF19VKV94HQQ3G3ASMC4M]] 3
+@stable
 quantity: 1
 ---
+
 
 ## Interoperability
 
@@ -78,3 +79,20 @@ flow. One proposed Lince Institute shop creates and assigns production Needs
 just in time when an order arrives, initially for T-shirts, stickers, 3D
 keychain accessories, and hoodies. This is preserved as future exploration,
 not part of the current Interface completion contract.
+
+## What is left
+
+### Interoperability
+
+- [ ] Reconcile Ontology's current T2 no-network wording with the two explicit
+  modes above before implementing dynamic Facades.
+- [ ] Define the public projection manifest, query ceilings, caching,
+  publisher-push protocol, content signatures, generation/freshness policy,
+  withdrawal behavior, safe renderer set, and abuse limits. Cache misses and a
+  malicious flood must not be forwarded into a publishing Cell.
+- [ ] Define privacy-preserving retrieval and a no-tracking cache policy. Test
+  that the publisher cannot correlate a viewer or view time, that Facade code
+  cannot add tracking requests, and that the delivery layer exposes no stable
+  application identity.
+- [ ] Add export and preview surfaces that state whether a Facade is static or
+  dynamic and prove that neither can escape its bounded chrome.

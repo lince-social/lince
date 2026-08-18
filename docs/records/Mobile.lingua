@@ -2,10 +2,11 @@
 uid: r_ZRKF8H7NH7E5GGR5XM782C0NP2
 @@chapter
 @instinct
-@stable
 @part-of [[Interface|r_99NWECF19VKV94HQQ3G3ASMC4M]] 4
+@stable
 quantity: 1
 ---
+
 
 ## Mobile
 
@@ -38,3 +39,12 @@ Sandbox rather than allowed to narrow it prematurely.
 - [x] A subscription answers with a snapshot then re-executes and pushes on every relevant commit; invalidation is coarse-by-source — render idempotently, a sand may get refreshes it doesn't strictly need.
 - [x] Action responses carry `created`, `facts` (what the Ledger committed, including any Karma cascade), and `warnings` (non-fatal advisories) — show warnings, never treat them as errors.
 - [x] Ephemeral-lane and host-capability traffic (cursors, clicks, presence, PTY bytes) is never persisted; terminal PTYs are scoped to one connection and die with it.
+
+## What is left
+
+### Mobile
+
+- [ ] After Base, Sand, Customization, and Interoperability are complete on
+  desktop, define mobile navigation, touch manipulation, offline behavior,
+  accessibility, renderer limits, and which editing operations need an
+  adapted surface rather than a reduced desktop canvas.

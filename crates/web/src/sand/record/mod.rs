@@ -106,10 +106,7 @@ mod tests {
         assert!(HTML.contains(
             "const SECTIONS = [\"sec-worklog\", \"sec-estimate\", \"sec-people\", \"sec-links\", \"sec-comments\"];"
         ));
-        assert!(
-            HTML.contains("section.style.order = String((filled ? 10 : 50) + at);"),
-            "order is a style, never an appendChild — a protein push must not move the scroll"
-        );
+        assert!(HTML.contains("section.hidden = propertyFold === \"hidden\""));
         assert!(
             HTML.contains("if (sectionFilled[id] !== filled) {"),
             "and `open` is written only on a change, or an empty section a user just \
@@ -120,6 +117,25 @@ mod tests {
             "assignees have their own section; counting them as links marks Links \
              filled for every assigned record"
         );
+    }
+
+    #[test]
+    fn body_is_one_surface_with_raw_pragmatic_and_pretty_modes() {
+        for id in ["body-raw", "body-pragmatic", "body-pretty"] {
+            assert!(HTML.contains(&format!("id=\"{id}\"")));
+        }
+        assert!(HTML.contains("function rawBlockForLine("));
+        assert!(HTML.contains("}, 5000);"));
+        assert!(HTML.contains("pragmatic-source"));
+    }
+
+    #[test]
+    fn properties_fold_between_filled_all_and_hidden() {
+        assert!(HTML.contains("id=\"property-fold\""));
+        assert!(HTML.contains("id=\"properties-more\""));
+        assert!(HTML.contains("id=\"properties-hide\""));
+        assert!(HTML.contains("let propertyFold = \"filled\""));
+        assert!(HTML.contains("$(\"sec-facts\").open = false"));
     }
     /// A reference is a POINTER read live, not a copy, and the interface has
     /// to say so — the whole property it buys is that the owner can still take

@@ -2,10 +2,11 @@
 uid: r_6BCZ7AETZ417WJFZBHAH19Y4Q8
 @@chapter
 @instinct
-@stable
 @part-of [[Ontology|r_S8PQ17MQ3WBWM53ZN700K89V9F]] 8
+@stable
 quantity: 1
 ---
+
 
 ## Federation and Blood: talking to other systems
 
@@ -62,3 +63,368 @@ plausibly do not.
 - [x] Adapter contract: preserve external identity, source version/context,
   original payload where appropriate, and anything untranslatable.
   Interpretation never silently becomes local authorship or authority.
+
+## What is left
+
+### Federation — what is left
+
+#### Your public face
+
+- [ ] **Branch on the `mode` column.** It exists and DEFAULTs to `'replica'`
+  but no code reads it yet. Until then `sync_out=1` is mode-independent: the
+  outbox drains to every non-blocked contact with the flag set, fact-bus-woken
+  (~250ms coalesce), which is already live-ish in practice.
+
+- [ ] **The public face is an Organ you share a subset with**, and its
+  narrowing is the outbound per-field scoping above, which does not exist yet
+  (inbound acceptance and per-record hiding do). Filed here because the
+  DECISION belongs with the infrastructure it shapes; the mechanism it waits
+  on is the scoping work and the Facade it serves is the discovery work. The
+  mailbox it sat beside had no such dependency and proceeded alone.
+  **Surface:** whoever runs it must be able to see what the public Organ
+  actually holds — a published-subset view, not a promise.
+
+- [ ] **A published-subset view**: what the public Organ actually holds, shown
+  as data rather than promised in a settings screen. The same honest-empty-state
+  rule as everywhere else, applied where the consequence of getting it wrong is
+  a disclosure rather than an awkwardness.
+
+#### Profile and discovery: the three tiers and the Facade
+
+- [ ] **Reach defaults to relay-only.** Direct address publication — the thing
+  that puts your home IP in front of anyone holding your key — is opt-in, and
+  the surface must say what it buys (lower latency, no relay operator in the
+  middle) and what it costs. Today `Reach::Internet` publishes directly.
+
+- [ ] **mDNS defaults to OFF, and turning it on is TIME-BOUNDED.** It is the
+  sharpest leak in the system (above) and its whole use is a few minutes long:
+  you are meeting someone in a room. A persistent toggle means one afternoon's
+  meeting leaves you announcing yourself in every café for months. Ship it as
+  "discoverable for the next N minutes", expiring on its own, with a persistent
+  mode available but never the default.
+
+- [ ] **The two-tier roster is not a setting.** There is no configuration in
+  which the public tier lists more than the front door; the movement profile
+  it prevents is too large a loss to leave to a checkbox someone can be talked
+  into.
+
+- [ ] **Gossiping your card is opt-in, per tier.** T0 announcement, T1 card
+  propagation and T2 Facade availability are three separate consents, and none
+  implies the next. Publishing a profile locally must not silently enrol you
+  in unbounded propagation — a card that has travelled cannot be recalled, so
+  this consent is the one that is hardest to undo and therefore must be the
+  most explicit.
+
+- [ ] **Coarse area defaults to unset**, and when set defaults to its COARSEST
+  granularity, so the finer settings are always a deliberate step down rather
+  than a default someone forgot to raise.
+
+- [ ] **The seen-set, the per-source budget and the age expiry are mandatory,
+  not tunables.** A relay that forwards without dedup harms the whole network,
+  not only itself, so it may not be configured off.
+
+- [ ] **Publishing into a directory is a separate, explicit act** from
+  gossiping, and joining a directory is never automatic on discovering one.
+
+- [ ] **The invite door stays default-closed**, unchanged and restated here so
+  the profile work does not quietly open it: making yourself describable is
+  not making yourself contactable.
+
+- [ ] **T0 — the announcement. 245 bytes, text only, forever.**
+  `iroh::address_lookup::UserData` caps at 245 bytes (`engine/src/wire.rs:436`)
+  and today carries a bare display name clipped to `MAX_LENGTH/4`
+  (`wire.rs:476`). It must instead carry a structured pair: display name and
+  the profile version number. That is a real encoding change rather than a
+  longer string, and it is free — `AGENTS.md` keeps no compatibility with
+  older peers. No image reaches this tier and none ever will.
+
+- [ ] **The published organ key must NOT ride T0** — reversing what this
+  section said on 2026-08-09, corrected the same day. Putting the key in the
+  announcement looked like a convenience (a nearby row could then show a
+  profile card without connecting) and is a real regression. The Cell's NodeId
+  is already exposed by mDNS as a matter of how mDNS works, and that is
+  unavoidable; the ORGAN key is additive and avoidable, and it is the value
+  that links every one of your Cells to each other and to your public profile.
+  Broadcast it on the café wifi and a passive listener — who needed no
+  connection, no contact row, and no permission — keeps a permanent handle
+  that resolves your addresses anywhere afterwards and correlates you across
+  every network you ever sit on. The key arrives AFTER connect instead. The
+  cost is that a nearby row shows no card until connection, which is consistent
+  with the standing rule that the nearby list renders claims only.
+
+- [ ] **The T1 card DOES carry the key, and the difference is consent, not
+  readability.** Stated explicitly because the two rules look contradictory
+  and the next reader would otherwise resolve them by guessing. A gossiped
+  card is more widely readable than an mDNS announcement, not less, and is
+  received just as passively — so readability cannot be what separates them.
+  What separates them is that gossiping is opt-in per tier and time-unbounded
+  by nature, while mDNS was default-on and incidental to standing in a room:
+  one is a disclosure a person chose, the other is one they walked into. The
+  key must also stay in T1 on pain of breaking the card signature, which has
+  nothing to verify against without it.
+
+- [ ] **T1 — the card. A few KB, and the only tier that gossips.** Name,
+  description, organ key, coarse area if set, and a SMALL avatar inline —
+  128px webp lands around 4–8KB. This is the unit that travels hop to hop and
+  the thing a nearby list renders. Over a long-range low-bandwidth radio even
+  this is large, so the card must degrade to its text half rather than fail to
+  send.
+
+- [ ] **T2 — the Facade. An HTML page, fetched on demand, never gossiped.**
+  This is the Playground Facade (`docs/Interface.md`) and the machinery is
+  ALREADY BUILT: `board/archive.js` exports a workspace as one self-contained
+  file with a four-layer no-network guarantee — every script, `on*` handler,
+  `<link>`, `<base>`, `javascript:` URL and media src stripped; images and
+  stylesheets inlined as `data:` URIs with leftover CSS `url()` neutralised to
+  `url("data:,")`; each document embedded as `<iframe srcdoc sandbox>` with
+  the empty sandbox attribute; and `default-src 'none'` on the outer page,
+  which srcdoc children inherit. So a person builds a sand describing
+  themselves from their real data, exports it, and that file is the Facade.
+
+- [ ] **"JavaScript disabled" is not the property that makes this safe** — say
+  so wherever the feature is described. Plain scripts-off HTML still beacons
+  through `<img src>`, CSS `url()`, `<link>`, webfonts and form actions, and
+  every one of those tells the profile's AUTHOR who opened their page and
+  when. That is the online-times leak again, pointed at whoever was merely
+  curious, and it is worse than the original because the reader never chose to
+  be reachable. The CSP and the empty sandbox are what close it. The Facade
+  must therefore BE an archive export, not "an HTML page with JS off".
+
+- [ ] **Rendering a STRANGER's Facade is a threat model `archive.js` was never
+  built for.** Its four layers are anti-exfiltration and were designed for a
+  file you exported yourself. They are not anti-deception: sandboxed static
+  HTML can still imitate Lince's own chrome and phish a password. A Facade
+  therefore renders inside a bounded card that visibly belongs to someone
+  else, never fullscreen, never chrome-shaped, never able to present anything
+  that reads as a Lince prompt. This is a NEW requirement; nobody may later
+  read "we already have the safe export" as covering it.
+
+- [ ] **SANITISE ON RECEIPT, not on export — this corrects the box above.**
+  `archive.js` cleans a document as it WRITES the file, which protects a file
+  you exported yourself and does nothing whatever against the only adversary
+  that matters here: a hostile author simply does not use the exporter and
+  hand-writes the HTML, scripts and beacons intact. Every guarantee listed
+  above is void in that case. The receiving Cell must therefore run the strip/
+  inline/neutralise pass itself on every Facade before rendering it, treating
+  the sender's file as raw untrusted input; the export path is a convenience
+  for honest authors and nothing more. Practically this means the sanitiser
+  stops being an export-only routine in board chrome and becomes a shared
+  function with a second, mandatory caller on the ingest side. **A Facade that
+  fails sanitisation is refused, not cleaned** — rendering the stripped
+  remainder is what turns a partial-strip miss into a live bypass, and every
+  other failure branch in this section already resolves the same way (a bad
+  signature drops the card, a cache miss renders nothing).
+
+- [ ] **Render-side leakage is solved; fetch-side is the part that remains.**
+  Be precise about the limit rather than promising unlinkability: the CSP and
+  the empty sandbox mean a rendered Facade cannot phone home, so its AUTHOR
+  learns nothing about who read it — provided the fetch was content-addressed
+  from whoever happened to hold the bytes. What cannot be hidden is the fetch
+  from WHOEVER SERVES IT; that party sees a request. The mitigation is not
+  anonymity, it is choosing a server who already knows you: fetch through the
+  relay you already use for everything else, never directly from the origin
+  Organ.
+
+- [ ] **Fetch only on an explicit click.** A Facade pulled automatically
+  because its card scrolled into view is a passive beacon in everything but
+  name, and it converts the one leak into the one thing the tiers exist to
+  avoid.
+
+- [ ] **Links inside a Facade are INERT by default**, rendered as visible URL
+  text that does not navigate. Navigation out is an exfiltration channel the
+  CSP does not cover: a target the viewer clicks reaches the author's server
+  with timing and referrer, which is the read receipt returning by hand.
+  Click-to-confirm showing the full URL is available as an explicit
+  per-viewer setting, never the default, because the default is the state
+  someone is in before they have thought about it.
+
+- [ ] **Who serves T2: decided for the private answer, not the convenient
+  one.** A Facade is fetched BY HASH from any holder that has it, and never
+  from the origin Organ — not even as a fallback when no holder is found. The
+  three candidates were origin-serves (requires the author online and directly
+  reachable, which is exactly what has already failed for a card that came
+  three hops, and hands the author a read receipt on every view), relay-caches
+  (costs relays megabytes per profile), and origin-only-when-up (the feature
+  then mostly does not work at the distance it exists for). Relay-caching wins
+  because the cost is storage, which is boundable, while the others cost
+  privacy, which is not. The critical part is the absence of a fallback: an
+  origin fetch offered when the cache misses would be taken almost every time
+  a Facade is new, which is precisely when the author most wants to know who
+  is looking. **A cache miss renders nothing and says so.** Bound the storage
+  instead — a conservative per-Facade size cap, shown before the fetch, and
+  relay-side eviction under the separate cache lifetime below.
+
+- [ ] **Sign the card with the organ key — for integrity, not identity.**
+  Without a signature any relay carrying your card can rewrite your
+  description or swap your photo before passing it on, and the reader three
+  hops out cannot tell. This is what makes forwarding safe at all, and it is
+  one signature. It is NOT the verification dropped above, and the difference
+  must survive into the UI: a valid signature is a precondition for DISPLAYING
+  the card, never a mark drawn beside it. A card whose signature fails is
+  dropped silently — not shown with a warning icon, because a badge that can
+  be absent is a badge, and a badge is the checkmark coming back through the
+  side door.
+
+- [ ] **Content-address every image, and every Facade.** Referencing a photo
+  by the hash of its bytes means a relay that already holds it re-forwards the
+  card for free, two Organs using the same picture store it once, and — the
+  part that matters for privacy — fetching a Facade by hash from whoever has
+  it does not tell its author that you looked. Fetching from the origin is a
+  read receipt on a profile view. Content addressing is what removes it.
+
+- [ ] **A version number and a card TTL.** The version is monotonic and
+  highest-wins, so an edit supersedes rather than races; the TTL stops
+  relays re-spreading a card forever. Without both, a photo you deleted keeps
+  circulating and stale copies overwrite fresh ones.
+
+- [ ] **Cache eviction is a SEPARATE lifetime from the card TTL.** A
+  content-addressed image cached by a relay outlives the card that referenced
+  it unless its eviction is specified on its own. Otherwise the deleted-photo-
+  returns-forever problem survives the fix aimed at it.
+
+- [ ] **A last-updated timestamp**, so a stale card visibly looks stale rather
+  than reading as current.
+
+- [ ] **Pronouns and language** as first-class card fields. Both are tiny and
+  both are genuinely what a stranger needs to decide whether to speak to you.
+
+- [ ] **A reachability hint** — direct / relay-only / an always-on Cell
+  exists. Someone three hops out otherwise cannot tell whether reaching you is
+  possible at all before spending the attempt. It says a door exists; it never
+  names the Cells behind it.
+
+- [ ] **What you are offering or looking for travels WITH the card.** This is
+  the actual reason to gossip and it already has a home: OPEN promises are
+  named below as the propagating payload. The card is the person; the promises
+  are the content. Two systems that ship separately will not meet.
+
+- [ ] **A self-declared coarse area, and nothing finer.** Granularity is the
+  Organ's choice — country, region, city, neighbourhood — and the field is
+  NEVER derived from IP geolocation or GPS. The distinction that makes this
+  coherent alongside everything above: the transport leak is involuntary and
+  precise, while this is voluntary and as vague as its owner wants. A
+  "precise location" default-on would collapse the two and undo the section.
+
+- [ ] **Stays OUT of every tier**: the Cell roster (device count and
+  online-time leak — the public tier resolves to the front door alone), the
+  contact list, and any link rendered as anything other than plain unverified
+  text. A link presented with a mark of any kind puts back the mechanism
+  dropped at the top of this section by accident.
+
+- [ ] **The Facade is generated by the PUBLIC Organ, not by the internal one**
+  (decided 2026-08-15). Not a deployment preference: a generator running where
+  everything is visible is trusted to omit the right things, while one running
+  on a box that only ever received the published subset cannot leak what it does
+  not have. This is why the public face is a separate Organ rather than a Cell.
+
+#### Relay Cells, gossip, and asking around
+
+- [ ] **Relay Cells, not just `iroh-relay`.** `iroh-relay` above only
+  rendezvouses and falls back for two Cells that already know each other's
+  NodeId. A discovery relay is a different role: a Cell willing to carry OTHER
+  Organs' discovery/gossip traffic onward — over the internet, or, for the case
+  with no internet at all, LoRa or another long-range low-bandwidth radio. New
+  infrastructure, not a mode switch on the existing relay.
+
+- [ ] **OPEN promises are already the payload for this.** `GET
+  /organ/open-promises` (§11a) already exports what a subject may publicly
+  see; the missing piece is letting that propagate past direct contacts, hop by
+  hop, with a TTL so it cannot circulate forever, and a per-hop visibility
+  check so a hop never sees more than the Organ that sent it already allowed.
+  "Gossip" here means OPEN promises spreading outward through willing relay
+  Cells — not a new message type.
+
+- [ ] **Hop count is the only distance a Cell without internet or GPS can
+  reason about honestly** — no claim of physical distance, just "how many
+  willing Cells forwarded this." Proximity (§13) stays the separate,
+  local-only, decaying signal it already is; hop count is a network-topology
+  fact, not a nearness claim, and the two must never be conflated in the UI.
+
+- [ ] **LoRa (or similar) as its own transport, not a variant of iroh/QUIC.**
+  Long-range radio implies its own framing, its own tiny payload budget, and
+  almost certainly store-and-forward rather than a live connection — closer in
+  spirit to the existing durable outbox (§11a Threads) than to a live socket.
+  Worth treating as its own transport adapter from the start.
+
+- [ ] **Consent to relay is explicit per Cell**, the same way running
+  `iroh-relay` on the VPS above is a deliberate act, not ambient behavior every
+  Cell does by default — a Cell opts in to spending its own bandwidth/battery
+  carrying a stranger's discovery traffic.
+
+- [ ] **A seen-set is the missing piece, and it matters more than the TTL.**
+  Dedup on the card's content hash and drop anything already forwarded. TTL
+  bounds DEPTH, not fan-out multiplicity: in any graph with cycles the same
+  card arrives by many paths and is re-forwarded each time, so cost explodes
+  well inside the hop limit. TTL without a seen-set is the classic flood
+  failure.
+
+- [ ] **Forward to a random subset, not to everyone.** Epidemic/push-pull
+  gossip converges with dramatically less traffic than full flooding, and full
+  flooding plus TTL is precisely the design that did not survive contact with
+  real networks.
+
+- [ ] **A per-source rate budget**, or one Organ republishing in a loop is
+  indistinguishable from an attack and costs every relay downstream.
+
+- [ ] **Age-based expiry independent of remaining hops.** A card with hops
+  left but thirty days old must still die, or a slow corner of the network
+  keeps ancient copies alive forever.
+
+- [ ] **Hop count is sender-spoofable and nothing may depend on it.** A sender
+  chooses the counter's starting value, so "three hops away" is a claim, not a
+  measurement, and a receiver cannot tell it from a lie. This is the concrete
+  justification for the box above forbidding hop count from being read as a
+  nearness claim — it is not merely a different KIND of distance, it is not
+  reliably a distance at all.
+
+- [ ] **A directory Cell** — a relay that keeps a QUERYABLE INDEX an Organ
+  publishes into and others search, instead of forwarding to everyone in the
+  hope the right person is downstream. Push versus pull, and the reach an
+  index gives is the reach the wish was actually asking for.
+
+- [ ] **The directory's trust story is its own, and it is worse.** A
+  forwarding relay sees what passes through it; an index sees every QUERY —
+  who is looking for what, and when. That is a sharper disclosure than
+  anything gossip does, it lands on the searcher rather than the published
+  Organ, and it must be stated on the surface where someone searches. Several
+  independent directories are the mitigation; one blessed directory is a
+  naming authority in everything but name, which §11c refuses elsewhere.
+
+- [ ] **Searching an area resolves against the self-declared coarse area
+  field** (see The Organ Profile in three tiers) and nothing else. A search
+  never asks a Cell where it is, never derives an answer from IP geolocation,
+  and never returns anything finer than the Organ chose to publish. Asking to
+  mitigate the location leak and adding "people search an area and you tell
+  them where you are" would otherwise be the same paragraph contradicting
+  itself; what makes the pair coherent is that the transport leak is
+  involuntary and precise while the published area is voluntary and as vague
+  as its owner wants.
+
+- [ ] **Never blur them into a middle option.** A box that holds plaintext
+  "just to help" is a full Cell with none of a full Cell's accountability.
+  The choice is readable-and-yours, or unreadable-and-anyone's.
+
+- [ ] **Keep the two separate in configuration and in the interface**, so an
+  operator never believes moderating a townsquare gives them any power over
+  what a relay forwards, or that running a relay makes them responsible for
+  what a townsquare publishes. Stateless plumbing anyone may run and nobody
+  trusts, versus a social space with a person answerable for it.
+
+- [ ] **Relay mode uses `relay_capabilities()`.** The empty set exists and is
+  enforced by `cell_may`; nothing yet publishes a Cell with it. Lands with the
+  relay work above.
+
+- [ ] **When relay does arrive, it carries a SIGNED BATCH envelope** from the
+  original author, verified on arrival and passed along intact — one signature
+  per batch, never per op. Per-op signing is the version that hurts: a burst of
+  keystrokes is a burst of `crdt` ops, and a signature on each would put
+  asymmetric crypto in the typing path. Jazz reached the same shape from the
+  other direction, signing per SESSION with Ed25519 after each transaction
+  rather than per value. Batch signing is invisible (~50µs sign, ~100µs
+  verify, amortised over a whole drain); this belongs with the relay work, not
+  as a tax on ordinary sync.
+
+- [ ] **Relaying, if it returns, is a per-contact setting defaulting the quiet
+  way.** Forwarding a contact's ops to your other contacts is a disclosure
+  nobody in that chain consented to, independent of whether it is
+  cryptographically sound.

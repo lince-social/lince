@@ -2,10 +2,11 @@
 uid: r_Q46Z5FZHZFACPNSNPJP2GEDC1D
 @@chapter
 @instinct
-@stable
 @part-of [[Ontology|r_S8PQ17MQ3WBWM53ZN700K89V9F]] 13
+@stable
 quantity: 1
 ---
+
 
 ## Trail: the DNA of doing something
 
@@ -16,3 +17,199 @@ A Trail is not a new storage mechanism, and not a new concept in Lince's model. 
 - **Studying** a Trail is reading it — its Records and their bodies are the documentation, nothing separate to render.
 - **Doing what it says** is Karma reading the imported data exactly like any other data: a Rule's Condition matches against the newly-arrived Records the same way it matches anything else, and its Consequence acts on them — changes a Record, schedules a Transfer — the same way it acts on data a person entered by hand. Nothing about "this came from a Trail" is special to Karma; the import is what was special, execution is ordinary.
 - **Changing it** is ordinary editing. Once imported, a Trail's Records are your data, not a tracked copy of someone else's — there is no fork-with-provenance step to perform, because there is no package boundary left to fork away from. Where a piece of your data originally came from is the same open question any other imported or adopted content already has, not something Trails need to solve specially.
+
+### Trails that need more than one Organ
+
+Some Trails cannot be enacted by one Organ alone. Ride-sharing is the clean example: the DNA of "a ride happened" needs a Record in the driver's Organ and a Record in the rider's Organ, because the Transfer that is the actual ride is a condition/need match between the two — each side brings their own half. Today, making that happen requires a person to manually recreate the right Records in each Organ by hand before the Transfer that connects them can exist.
+
+**This is tree sync, and it is no longer specified here.** Resolved
+2026-08-09: the primitive this section asked for — taking a selection of
+one's data and placing it, by copy or by move, in a chosen Organ — is §11
+"Tree sync: syncing from a root Record, and the Move verb". A Trail naming
+its cross-Organ half names a root Record and a Protein; the placing is an
+ordinary consented sync of that tree. Nothing Trail-specific is needed, and
+specifying it twice is how the two definitions drift apart. What remains true
+and belongs here is only the line below.
+- This stays a thin, explicit act — a Person choosing to place specific data in a specific Organ — never an automatic replication triggered by adopting a Trail alone; adoption is data at rest, placement is a deliberate step on top of it.
+
+Below are earlier open cases for the Alexandria abstraction generally, kept for the questions they still ask rather than answers already found: knowledge can be inbued into components, when it is activated it creates Records with that content. Or maybe knowledge can be data in one specific server, but then you would need to contact such server to access it, if it's gated you loose access. Would it be best if it where inside a binary, inside a sand, in seed? We must find out which one is best, and support ourselves with past work, that made available to all a vast amount of knowledge in the internet, free, maybe we can import it, integrate with it, to jumpstart Alexandria.
+
+## Nutrition - Home Manager.
+
+Implementation checklist for the Home Manager nutrition tab.
+
+- [x] Replace the old Home Manager surface with thin top tabs: Nutrition and Bills.
+- [x] Keep Bills as a thin placeholder tab for this pass.
+- [x] Base nutrition rules on Brazil's current Ministry of Health food guide: prefer in natura and minimally processed foods, use culinary ingredients in small amounts, limit processed foods, avoid ultraprocessed foods.
+- [x] Use TBCA-style per-100g food-composition fields for built-in frontend data.
+- [x] Embed the initial food knowledge base in the Home Manager sand as JavaScript objects, not Lince tables.
+- [x] Include roughly 100 common food objects across fruit, vegetables, legumes, grains, roots, meat, eggs, dairy, nuts, seeds, oils, and Brazilian staples.
+- [x] Include calories, macros, fiber, common vitamin fields, common mineral fields, category, NOVA group, density, and generic-currency price fields where known.
+- [x] Store unknown custom-food micronutrients as `null`, never silently converting an empty edit field to zero.
+- [x] Add a custom alimentum record workflow using `record` plus `record_extension`.
+- [x] Use `record_extension.namespace = "nutrition.alimentum.v1"` for custom alimenta.
+- [x] Merge built-in foods and custom alimentum records in the frontend catalog.
+- [x] Keep marmita plans, optimizer inputs, allocations, prices, and shopping lists as widget/card state.
+- [x] Let the user configure weight, height, sex, age, activity factor, days, pot count, pot volume, meals per day, food min/max, and forced grams.
+- [x] Generate marmita allocation, nutrient totals, shopping list, total price, and price per marmita.
+- [x] Add a lowest-price optimizer using a frontend two-phase simplex linear optimizer with infeasibility reporting.
+- [x] Add visual workflow coverage for tab switching, custom alimentum creation, price editing, plan generation, optimizer run, and shopping-list display.
+
+## Data Shape
+
+Built-in and custom foods share this object shape:
+
+```json
+{
+  "id": "builtin:arroz-integral",
+  "name": "Arroz integral cozido",
+  "category": "cereals",
+  "nova": "minimally_processed",
+  "densityGPerMl": 0.78,
+  "pricePerKg": 7.5,
+  "portionG": 100,
+  "nutrients": {
+    "kcal": 124,
+    "proteinG": 2.6,
+    "carbG": 25.8,
+    "fatG": 1.0,
+    "fiberG": 2.7,
+    "calciumMg": 5,
+    "ironMg": 0.3,
+    "magnesiumMg": 43,
+      "potassiumMg": 86,
+      "zincMg": 0.6,
+      "sodiumMg": 1,
+      "phosphorusMg": 83,
+      "seleniumMcg": 5.1,
+      "copperMg": 0.1,
+      "manganeseMg": 0.7,
+      "vitaminCMg": 0,
+      "vitaminAMcg": 0,
+      "vitaminDMcg": 0,
+      "vitaminEMg": 0.2,
+      "vitaminKMcg": 1,
+      "thiaminMg": 0.1,
+      "riboflavinMg": 0,
+      "niacinMg": 1.3,
+      "vitaminB6Mg": 0.1,
+      "folateMcg": 4,
+      "b12Mcg": 0
+  },
+  "source": "Brazil food-guide category and TBCA-compatible planning value per 100g"
+}
+```
+
+Custom records store the same object, without the `builtin:` identity, in:
+
+```json
+{
+  "schema": "nutrition.alimentum.v1",
+  "food": { "...": "same shape" }
+}
+```
+
+### Optimizer
+
+The optimizer minimizes total generic-currency price over food gram variables. It uses a two-phase simplex tableau with these constraints:
+
+- per-food min, max, and forced grams
+- total marmita volume from pot count and pot volume
+- minimum calories from Mifflin-St Jeor estimated expenditure
+- minimum daily protein
+- minimum daily fiber
+
+If the LP is infeasible, the UI reports the violated class of constraint and keeps a generated fallback rather than silently producing a broken plan.
+
+### Sources
+
+- Ministry of Health, `Guia Alimentar para a Populacao Brasileira`, 2nd edition, official Gov.br listing updated 2021-07-29: https://www.gov.br/saude/pt-br/assuntos/saude-brasil/publicacoes-para-promocao-a-saude/guia_alimentar_populacao_brasileira_2ed.pdf/view
+- Ministry of Health PDF mirror in BVS: https://bvsms.saude.gov.br/bvs/publicacoes/guia_alimentar_populacao_brasileira_2ed.pdf
+- TBCA/USP food composition database: https://www.tbca.net.br/
+
+The UI must not claim the current official guide is a food pyramid. It may present a practical hierarchy based on NOVA processing groups. The embedded catalog is a planning database shaped from food-guide categories and TBCA-style per-100g fields; it is not a clinical or labeling-grade copy of TBCA records.
+
+## What is left
+
+### Trail — what is left
+
+#### Tree sync: taking a Record and everything under it
+
+- [ ] **The walk needs a visited set and a depth bound.** Records link to
+  Records, so a tree from a root over a link graph can cycle.
+
+- [ ] **A uid already present in the receiver's store MERGES, it does not
+  duplicate.** Same uid means same Record, reconciled by op identity like any
+  other sync. There is no "copy as new" and the interface must not imply one.
+
+- [ ] **Move's manual delete emits tombstones that propagate.** Moving a tree
+  to Organ B therefore also announces the deletion to contacts C and D. That
+  is correct behaviour AND a surprise, so it is said before the button is
+  pressed rather than discovered after.
+
+- [ ] **Copy first, and Copy alone, in the first version.** It reuses the
+  walk, the ops and the consent handshake that already exist.
+
+- [ ] **Move is Copy plus a SEPARATE manual deletion**, pressed by a human
+  after seeing the data arrive. Never automatic, never on an acknowledgement.
+  Delete-after-confirmed across two machines is a distributed transaction:
+  lose the ack and you either destroy something that never landed or keep
+  something you promised to drop. The cheap correct answer is a person
+  looking at the screen, and it is the chosen one.
+
+- [ ] **Taking a tree requires the receiver's consent**, like every other
+  incoming sync. A DNA published as free to use is the same act with the
+  consent pre-granted by the publisher — it enters your store AND stays in
+  theirs, which makes it a Copy in both directions of the word.
+
+- [ ] **The mechanism here stays "tree sync", and that is all it is called.**
+  Overridden in part 2026-08-16: the word **Trail** is now the name of the
+  BUNDLE — what was called a Recipe, see "Trail: the DNA of doing something" —
+  by the owner's decision. What survives of the original entry is the half
+  that was about this section: the walk itself gains nothing from a name, and
+  calling tree sync "Trail" would make one word mean the transport and the
+  cargo at once.
+  **The collision the original entry warned about is real and is NOT
+  resolved.** `Trail` is shipped, in code, in `crates/web/src/sand/relations`
+  — a view mode over a predicate's forward assertion graph, with
+  `activeTrailRule`, `computeTrailTree` and a user-visible label. Two
+  different things now share one word in one product. Deliberately left
+  standing rather than renamed on my own initiative: the relations view's own
+  option value is already `focus`, so "Focus" is the cheap way out if the
+  bundle keeps the word — but which one moves is the owner's call, and doing
+  it silently would be worse than the collision.
+
+#### Other subjects — listed, not scheduled
+
+- [ ] **An optional origin stamp, display-only.** Not lineage, not a package, not tracked for dedup or re-import: a small "came from Organ X's DNA of Y, at this time" note a Record may carry, purely informational, the way a photo carries EXIF. Worth doing only once a good place for it is found (a `record_extension` namespace is the obvious candidate) — deferred until then rather than guessed at now.
+
+- [ ] Schema.org mapping to a Lingua — no adapter built yet.
+
+- [ ] Nostr protocol adapter (identity, addressing, signatures, relay
+  delivery) — respected optional future integration, not the default. A
+  normal Organ stays native Organ-to-Organ without a relay or Nostr identity.
+
+- [ ] ActivityPub protocol adapter (delivery, addressing, signatures) — same
+  status as Nostr: optional, not started.
+
+- [ ] Same-LAN sighting bumps proximity: a verified discovery announce
+  from a known contact raises the score with time-decay (nearness fades if
+  never seen again); the bump uses the *verified* fingerprint, never the
+  announce alone.
+
+- [ ] BLE beacon (mobile): advertise the same transport-agnostic payload
+  as the LAN announce (`organ_uid`, fingerprint — it already fits a beacon
+  by design, §11); scanning devices match fingerprints against known
+  contacts and bump proximity by RSSI bucket. Unknown fingerprints are
+  ignored — BLE never drives introduction, because there is no channel for
+  the challenge handshake until a network exists.
+
+- [ ] Decay + buckets, not meters: proximity is a slowly-decaying score
+  fed by discrete events (LAN sighting, BLE bucket, UWB range when
+  present); the UI never shows raw RSSI or claims precision the radio
+  cannot give.
+
+- [ ] Privacy stance: beacons broadcast only what the LAN announce already
+  broadcasts (uid + public fingerprint, no names, no secrets); scanning
+  stores sightings of KNOWN contacts only, locally, decayed — Lince never
+  builds a log of strangers' devices.

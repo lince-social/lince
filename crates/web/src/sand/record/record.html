@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/board/lynx-ui.css" />
   <script src="/board/frame.js"></script>
   <script src="/board/editor.js"></script>
+  <script src="/board/vendor/mermaid.min.js"></script>
   <style>
     /* Record IS the editing surface: the kanban board only toggles checkboxes
        and moves columns — head/body/slug/quantity, work metadata
@@ -61,6 +62,7 @@
             background: var(--bg); font-size: .75rem; padding: 2px 5px; cursor: pointer; }
     #btn-zero, #btn-delete { color: var(--text); }
     .fields { padding: 5px; display: grid; gap: 4px; }
+    .bodyfields { padding: 5px; display: grid; gap: 4px; order: 100; }
     .frow { display: flex; gap: 4px; align-items: baseline; font-size: .85rem; }
     .frow .k { color: var(--muted); min-width: 4.2rem; text-transform: uppercase; font-size: .68rem; letter-spacing: .05em; }
     .frow .v { color: var(--text); white-space: pre-wrap; word-break: break-word; flex: 1; }
@@ -70,6 +72,12 @@
                         font-size: .68rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
     details > summary::before { content: "▸ "; }
     details[open] > summary::before { content: "▾ "; }
+    .property-fold { order: 5; display: grid; grid-template-columns: 1fr 1fr;
+                     min-height: 24px; border-block: var(--hairline) solid var(--muted); }
+    .property-fold button { border: 0; border-radius: 0; padding: 2px 0;
+                            color: var(--muted); font-size: .72rem; }
+    .property-fold button + button { border-left: var(--hairline) solid var(--muted); }
+    .property-fold button[aria-pressed="true"] { color: var(--text); background: var(--surface-hover); }
     .sec { padding: 0 5px 5px; display: grid; gap: 4px; }
     .chips { display: flex; flex-wrap: wrap; gap: 4px; }
     .chip { display: inline-flex; align-items: center; gap: 3px; border: var(--hairline) solid currentColor;
@@ -183,8 +191,20 @@
     .savestate.is-pending { opacity: 0.6; font-style: italic; }
     .f-peer::before { content: "•"; color: var(--accent); margin-right: 3px; }
     .f-peer.is-idle { opacity: 0.45; }
-    .preview { white-space: pre-wrap; word-break: break-word; border: var(--hairline) dashed var(--muted);
-               border-radius: 2px; padding: 4px 5px; font-size: .78rem; color: var(--text); }
+    .bodymode { display: flex; gap: 3px; justify-content: flex-end; }
+    .bodymode button { font-size: .7rem; padding: 2px 6px; color: var(--muted); }
+    .bodymode button[aria-pressed="true"] { color: var(--text); border-color: var(--accent); }
+    .preview { white-space: pre-wrap; word-break: break-word; min-height: 70px;
+               border: 1px solid var(--control-border); border-radius: 2px;
+               padding: 4px 5px; font-size: .78rem; color: var(--text); }
+    .preview .md-line { display: block; min-height: 1.3em; }
+    .preview .md-todo { margin: 2px 0; white-space: normal; }
+    .preview .md-todo input { width: auto; align-self: start; margin-top: .18em !important; }
+    .preview .md-block { margin: .35em 0; padding: 6px; overflow: auto;
+                         white-space: pre; border: var(--hairline) solid var(--muted); }
+    .preview.is-pragmatic [data-md-line] { cursor: text; }
+    .pragmatic-source { display: block; width: 100%; min-height: 1.8em; resize: none;
+                        overflow: hidden; font-family: var(--font-mono); line-height: 1.35; }
   </style>
 </head>
 <body class="lynx-ui">
@@ -231,10 +251,23 @@
       <button id="btn-delete" type="button" class="lynx-button tbtn" title="HARD delete — the record disappears everywhere; its Ledger history stays">Delete</button>
     </div>
 
-    <div class="fields">
+    <div id="record-core" class="fields">
       <div class="rowset">
         <span class="field"><span class="lbl">Slug</span><input id="f-slug" class="lynx-input" type="text" autocomplete="off" placeholder="dot.case" /></span>
         <span class="field"><span class="lbl">Qty</span><input id="f-quantity" class="lynx-input" type="number" step="1" /></span>
+      </div>
+    </div>
+
+    <div id="property-fold" class="property-fold" role="group" aria-label="Record properties">
+      <button id="properties-more" type="button" title="Show all properties" aria-label="Show all properties">▼</button>
+      <button id="properties-hide" type="button" title="Hide properties" aria-label="Hide properties">▲</button>
+    </div>
+
+    <div id="body-fields" class="bodyfields">
+      <div class="bodymode" role="group" aria-label="Body view">
+        <button id="body-raw" type="button" aria-pressed="false">Raw</button>
+        <button id="body-pragmatic" type="button" aria-pressed="true">Pragmatic</button>
+        <button id="body-pretty" type="button" aria-pressed="false">Pretty</button>
       </div>
       <textarea id="f-body" class="lynx-textarea" placeholder="Body…" aria-label="Body"></textarea>
       <div class="peers"><span id="f-savestate" class="savestate"></span><span id="f-peers" class="peerlist" hidden></span></div>
@@ -350,7 +383,7 @@
       </div>
     </details>
 
-    <details id="sec-facts" class="lynx-disclosure" open>
+    <details id="sec-facts" class="lynx-disclosure">
       <summary>History</summary>
       <ul id="facts-list"></ul>
     </details>
@@ -414,6 +447,10 @@
     let threadSearch = ""; // filters the thread TAB LIST only, not which is active
     let threadEditUid = null;
     let messageEdit = null; // { uid, draft }
+    let propertyFold = "filled"; // filled | all | hidden
+    let bodyMode = "pragmatic"; // raw | pragmatic | pretty
+    let pragmaticActive = null; // { start, count }
+    let pragmaticIdleTimer = null;
     // Which Lince the focused record lives on, taken from the event that named
     // it. This sand has no host of its own worth speaking of: it sits idle
     // until something hands it a record, and that record belongs to whichever
@@ -518,6 +555,10 @@
       workDirty = false;
       workLogEdit = null;
       sectionFilled = {}; // a different record: let its own content decide what is open
+      propertyFold = "filled";
+      pragmaticActive = null;
+      clearTimeout(pragmaticIdleTimer);
+      $("sec-facts").open = false;
       activeThreadUid = null; // a different record's threads are unrelated
       threadSearch = "";
       $("thread-search").value = "";
@@ -739,11 +780,11 @@
       arrangeSections();
     }
 
-    // ---- section order: what this record HAS, in a fixed reading order --------
-    // Work log, Estimate, Assignees, Links, Threads keep that relative order;
-    // the ones this record has nothing in sink below the filled ones, closed,
-    // so the panel opens on content rather than on five empty forms. History
-    // is not one of the five and stays last.
+    // ---- property accordion: what this record HAS, in a fixed reading order ---
+    // Work log, Estimate, Assignees, Links, Threads keep that relative order.
+    // The default shows only filled sections; the split fold control can show
+    // every property or hide every property without moving Head/slug/qty/body.
+    // History is not one of the five and remains last and closed by default.
     //
     // Reordering is `order` on a flex parent, never appendChild: renderFocus()
     // runs on every protein push, and moving the nodes would jump the scroll
@@ -770,7 +811,8 @@
       SECTIONS.forEach((id, at) => {
         const section = $(id);
         const filled = sectionHasContent(id);
-        section.style.order = String((filled ? 10 : 50) + at);
+        section.style.order = String(10 + at);
+        section.hidden = propertyFold === "hidden" || (propertyFold === "filled" && !filled);
         // Only on a CHANGE: writing `open` every push would slam shut the
         // empty Links section a user just opened to add their first link.
         if (sectionFilled[id] !== filled) {
@@ -778,8 +820,23 @@
           sectionFilled[id] = filled;
         }
       });
-      $("sec-facts").style.order = "90";
+      $("sec-facts").style.order = "70";
+      $("sec-facts").hidden = propertyFold === "hidden";
+      $("sec-reads").style.order = "71";
+      $("sec-reads").hidden = propertyFold === "hidden"
+        || !Array.isArray(row?.reference_reads)
+        || row.reference_reads.length === 0;
+      $("properties-more").setAttribute("aria-pressed", String(propertyFold === "all"));
+      $("properties-hide").setAttribute("aria-pressed", String(propertyFold === "hidden"));
     }
+    $("properties-more").addEventListener("click", () => {
+      propertyFold = propertyFold === "all" ? "filled" : "all";
+      arrangeSections();
+    });
+    $("properties-hide").addEventListener("click", () => {
+      propertyFold = propertyFold === "hidden" ? "filled" : "hidden";
+      arrangeSections();
+    });
 
     // ---- editable fields: the get view IS the edit view ------------------------
     for (const id of ["f-head", "f-slug", "f-quantity", "f-body"]) {
@@ -950,17 +1007,157 @@
       const uid = resolveToken(token);
       return uid ? { uid, label: token } : null;
     };
+    let mermaidSequence = 0;
+    if (window.mermaid) {
+      window.mermaid.initialize({ startOnLoad: false, securityLevel: "strict", theme: "dark" });
+    }
+    async function renderMermaids(holder) {
+      if (!window.mermaid) return;
+      for (const diagram of holder.querySelectorAll(".md-mermaid")) {
+        const source = diagram.textContent;
+        try {
+          const result = await window.mermaid.render(`record-mermaid-${++mermaidSequence}`, source);
+          if (diagram.isConnected && diagram.textContent === source) diagram.innerHTML = result.svg;
+        } catch (err) {
+          diagram.textContent = source;
+          diagram.title = `Mermaid could not render this block: ${String(err?.message || err)}`;
+        }
+      }
+    }
+    function markdownOptions(editable) {
+      return {
+        resolveRef: refResolver,
+        onNavigate: (uid) => focusRecord(uid),
+        onToggle: editable ? (lineAt) => toggleBodyLine(lineAt) : undefined,
+      };
+    }
+    function appendMarkdown(holder, source, start, end, editable) {
+      holder.appendChild(Editor.renderMarkdown(source, {
+        ...markdownOptions(editable),
+        lines: [start, end],
+      }));
+    }
     function renderBodyPreview() {
       const holder = $("f-preview");
       holder.innerHTML = "";
       const source = $("f-body").value;
-      holder.hidden = !Editor || !source.trim();
-      if (holder.hidden) return;
-      holder.appendChild(Editor.renderMarkdown(source, {
-        resolveRef: refResolver,
-        onNavigate: (uid) => focusRecord(uid),
-        onToggle: (lineAt) => toggleBodyLine(lineAt),
-      }));
+      const raw = bodyMode === "raw" || !Editor;
+      $("f-body").hidden = !raw;
+      holder.hidden = raw;
+      holder.classList.toggle("is-pragmatic", bodyMode === "pragmatic");
+      for (const mode of ["raw", "pragmatic", "pretty"]) {
+        $("body-" + mode).setAttribute("aria-pressed", String(bodyMode === mode));
+      }
+      if (raw) return;
+      const lines = source.split("\n");
+      if (bodyMode !== "pragmatic" || !pragmaticActive) {
+        holder.appendChild(Editor.renderMarkdown(source, markdownOptions(bodyMode === "pragmatic")));
+        void renderMermaids(holder);
+        return;
+      }
+      const start = Math.min(pragmaticActive.start, Math.max(0, lines.length - 1));
+      const count = Math.max(1, pragmaticActive.count);
+      appendMarkdown(holder, source, 0, start, true);
+      const area = document.createElement("textarea");
+      area.className = "lynx-textarea pragmatic-source";
+      area.setAttribute("aria-label", "Active Markdown source");
+      area.value = lines.slice(start, start + count).join("\n");
+      area.dataset.startLine = String(start);
+      area.addEventListener("input", () => updatePragmaticSource(area));
+      area.addEventListener("keydown", (event) => movePragmaticLine(event, area));
+      for (const event of ["keyup", "click", "select"]) {
+        area.addEventListener(event, schedulePragmaticPretty);
+      }
+      holder.appendChild(area);
+      appendMarkdown(holder, source, start + count, lines.length, true);
+      resizePragmaticSource(area);
+      area.focus();
+      area.setSelectionRange(area.value.length, area.value.length);
+      schedulePragmaticPretty();
+      void renderMermaids(holder);
+    }
+    function resizePragmaticSource(area) {
+      area.style.height = "auto";
+      area.style.height = `${Math.max(28, area.scrollHeight + 2)}px`;
+    }
+    function schedulePragmaticPretty() {
+      clearTimeout(pragmaticIdleTimer);
+      pragmaticIdleTimer = setTimeout(() => {
+        pragmaticActive = null;
+        renderBodyPreview();
+      }, 5000);
+    }
+    function updatePragmaticSource(area) {
+      const source = $("f-body");
+      const lines = source.value.split("\n");
+      const start = Number(area.dataset.startLine) || 0;
+      const inserted = area.value.split("\n");
+      lines.splice(start, pragmaticActive.count, ...inserted);
+      pragmaticActive.count = inserted.length;
+      source.value = lines.join("\n");
+      fieldsDirty = true;
+      $("f-save").disabled = false;
+      if (collab && collab.editor) collab.editor.localEdit();
+      resizePragmaticSource(area);
+      schedulePragmaticPretty();
+    }
+    function movePragmaticLine(event, area) {
+      if (event.shiftKey || area.selectionStart !== area.selectionEnd) return;
+      const before = area.value.slice(0, area.selectionStart);
+      const activeLine = before.split("\n").length - 1;
+      const activeLines = area.value.split("\n");
+      const sourceLines = $("f-body").value.split("\n");
+      const start = pragmaticActive.start;
+      let target = null;
+      if (event.key === "ArrowUp" && activeLine === 0 && start > 0) target = start - 1;
+      if (event.key === "ArrowDown" && activeLine === activeLines.length - 1
+          && start + pragmaticActive.count < sourceLines.length) {
+        target = start + pragmaticActive.count;
+      }
+      if (target === null) return;
+      event.preventDefault();
+      const column = before.length - (before.lastIndexOf("\n") + 1);
+      pragmaticActive = rawBlockForLine($("f-body").value, target);
+      renderBodyPreview();
+      const next = $("f-preview").querySelector(".pragmatic-source");
+      const line = event.key === "ArrowUp" ? next.value.split("\n").length - 1 : 0;
+      const lineStart = next.value.split("\n").slice(0, line).reduce((sum, value) => sum + value.length + 1, 0);
+      const lineLength = next.value.split("\n")[line].length;
+      next.setSelectionRange(lineStart + Math.min(column, lineLength), lineStart + Math.min(column, lineLength));
+      schedulePragmaticPretty();
+    }
+    function rawBlockForLine(source, lineAt) {
+      const lines = source.split("\n");
+      let fenceStart = null;
+      for (let at = 0; at < lines.length; at++) {
+        if (/^\s*```/.test(lines[at])) {
+          if (fenceStart === null) fenceStart = at;
+          else {
+            if (lineAt >= fenceStart && lineAt <= at) return { start: fenceStart, count: at - fenceStart + 1 };
+            fenceStart = null;
+          }
+        }
+      }
+      if (fenceStart !== null && lineAt >= fenceStart) {
+        return { start: fenceStart, count: lines.length - fenceStart };
+      }
+      return { start: Math.max(0, Math.min(lineAt, lines.length - 1)), count: 1 };
+    }
+    $("f-preview").addEventListener("click", (event) => {
+      if (bodyMode !== "pragmatic" || event.target.closest("button, input, textarea, a")) return;
+      const line = event.target.closest("[data-md-line]");
+      const lineAt = line ? Number(line.dataset.mdLine) : 0;
+      pragmaticActive = rawBlockForLine($("f-body").value, Number.isFinite(lineAt) ? lineAt : 0);
+      renderBodyPreview();
+    });
+    for (const mode of ["raw", "pragmatic", "pretty"]) {
+      $("body-" + mode).addEventListener("click", () => {
+        bodyMode = mode;
+        pragmaticActive = null;
+        clearTimeout(pragmaticIdleTimer);
+        renderBodyPreview();
+        if (mode === "raw") $("f-body").focus();
+      });
     }
     // Preview checkboxes: clean form -> write immediately (like a kanban card);
     // dirty form -> flip the draft only, Save commits it.

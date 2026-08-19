@@ -2,7 +2,7 @@
 uid: r_AKZ1T950YH2389CNM44S04RKR2
 @@chapter
 @instinct
-@part-of [[How we work|r_AY1B5PG2EN346HF57RA0PKDCZ6]] 4
+@part-of [[First Steps|r_YWPKA0Z1DJ8XCHTZRW4X2SDJ1N]] 15
 @stable
 quantity: 1
 ---
@@ -46,6 +46,65 @@ and are repeated in `AGENTS.md` for whoever is building rather than planning:
   same pass that produced this list.
 - **Expand freely** when finishing something honestly demands work nobody
   listed. This is a plan, not a contract.
+
+### How every one of these is written
+
+**Prose is what exists. A checkbox is what is left.** When a task lands, delete
+its box and fold the resulting behaviour into the prose above it — or keep it as
+an `[x]` when it is a decision or a sharp edge a future reader would otherwise
+fight. `[x]` is never an inventory of finished work.
+
+Every idea is written the same way: what it is for, how it works, what it
+touches, and where it lives in the code — a sentence or two each, three
+paragraphs at the outside. Everything after that is checkboxes.
+
+### Standing rules — not checkable work
+
+- Work on `dev`, no worktrees. `cargo check` and narrowest per-crate tests,
+  never a full workspace build.
+- Nothing domain-specific in the backend or the database. No money type: a gain
+  is a positive delta, a currency is a Unit Record, "worth five of theirs" is a
+  rule someone wrote. Economy is a preset of the Karma sand, not a sand.
+- Sands read Protein and write typed Actions, nothing else. Board chrome is host
+  state, never a Ledger Fact.
+- Everything runs on `nucleus → store → engine → protein → transport`.
+- Modelling vocabulary is the Ontology's: Records, Assertions, Concepts,
+  Lingua. Karma never invents a second one.
+- Migrations that have not shipped get edited in place; local databases are
+  expendable. Once one ships it is frozen.
+- `crates/web/tests/sand_boundary.rs` fails if `economy`, `money`, `currency` or
+  `finance` appears in backend code. Prose is exempt on purpose.
+- One word in the UI: **Rule**. Not recurrence, not program, not occurrence.
+  Karma is the pillar's name; a Rule is what you make.
+
+### Before adding a field: constraints belong above the core
+
+Not every predicate fits every Record pair. A Lingua, Sand, or protocol may
+constrain expected subject/object identity, direction, cardinality, units,
+permissions, or cycle behavior — those are constraints over assertions, never
+new per-feature link tables. Before adding a field, sidecar, relation, or
+transport message, ask:
+
+1. What things are Records?
+2. What standing or relational statements are assertions?
+3. Which Concepts name them, and which Lingua owns or shares them?
+4. Is this universal Record state, a typed extension, a Fact, or an assertion?
+5. Which constraints belong to the feature/protocol rather than the core?
+
+### Where the code goes
+
+`nucleus` holds pure types and arithmetic. `store` holds tables and queries and
+nothing that decides. `engine` holds evaluation, reaction, timers and Actions.
+`protein` holds reads. `transport` and `web` hold surfaces. The supervisor owns
+an injected `RuntimePorts` bundle — clock, scheduler, entropy, uid, network — so
+deterministic replay is possible at all.
+
+- [ ] **A small fixed set of long-lived tasks**, plus one per active Frequency,
+      and nothing proportional to rule count.
+- [ ] **Channels are bounded** and carry stable uids and small commands, never
+      large payloads.
+- [ ] **SQLite constraints, not process memory, guarantee correctness.** Unique
+      keys and transactions, so a restart cannot double-apply.
 
 ### Lince's own documentation, as Records
 

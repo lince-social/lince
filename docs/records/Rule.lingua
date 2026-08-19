@@ -4,9 +4,34 @@ uid: r_K99HSKDH25E128SY5JFMB0F73Y
 @instinct
 @part-of [[Karma|r_K7T3ZG08G5EBWRSTF8NBWMTZYV]] 9
 @stable
-quantity: 1
 ---
 
+
+# 1 — Rule
+
+**Purpose:** A Rule is the whole of Karma's authoring surface. It is three parts
+and nothing else, and it is one object so a person never has to learn where the
+schedule went.
+
+**How it works:** The Condition computes a number from blocks referenced by
+slug. The Threshold decides whether that number means *fire*. The Consequence
+happens and receives the number the Condition carried.
+
+```
+-1 * freq(@daily) + @apple    →  !=0  →  add-quantity @pear
+└──────── Condition ────────┘    Thresh.   └── Consequence ──┘
+```
+
+**Interacts:** Reads Record quantities and Frequencies; writes through Actions,
+which append Facts, which wake other Rules — that chain is deliberate and is how
+one Rule's consequence feeds another's condition.
+
+**Implementation:** `nucleus::karma::{Condition, Gate, Carry, Consequence}` are
+the four types and are already right — `Gate` *is* the Threshold in the drawing,
+`Carry` *is* "the value carried over by the condition". Storage is
+`0038_recurrence.sql` + `store/src/recurrence.rs`; evaluation is
+`Engine::react_to` in `crates/engine/src/actions.rs`, with a
+`MAX_REACTIONS_PER_CHANGE` cascade guard.
 
 ## Later, still Rule
 
@@ -234,6 +259,26 @@ violation enters stage-effects rather than continuing.
 **Implementation:** none.
 
 ## What is left
+
+### 1 — Rule
+
+- [ ] **Rename `recurrence` → `rule` everywhere.** Table, `recurrence_revision`
+      → `rule_revision`, `recurrence_skip` → `rule_skip`,
+      `store/src/recurrence.rs` → `store/src/rule.rs`, every Action name. Edit
+      `0038_recurrence.sql` in place. `rule_skip` keys on
+      `(rule_uid, frequency_uid, beat_at)` — a skip is per-beat, like a firing.
+- [ ] **Drop `cadence_json` and `anchor_at` from the rule.** They belong to the
+      Frequency now. A rule's schedule is whatever `freq(@x)` it reads; a rule
+      reading none has no schedule at all.
+- [ ] **Two triggers, one evaluator.** A condition holding a Frequency is
+      evaluated *only* on its beat. A condition holding none is evaluated *only*
+      when a Record or Command it reads changes — extend `Engine::react_to` to
+      skip rules carrying a `freq` token, keeping the cascade guard. Both paths
+      call one `evaluate_rule(rule, now, cause)` so a beat and a change cannot
+      drift.
+- [ ] **One target Record per rule** (`record_uid`); consequences apply to it.
+      Apple/Pear is already expressible — target `@pear`, condition reads
+      `@apple`.
 
 ### 1.6 — Later, still Rule
 

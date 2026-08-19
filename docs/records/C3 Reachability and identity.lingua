@@ -1,0 +1,38 @@
+---
+uid: r_ZSG0K8Y1XSV5T0TMZHVMG3VPC9
+@instinct
+@part-of [[Ontology|r_S8PQ17MQ3WBWM53ZN700K89V9F]] 90.5
+@@task
+@todo
+quantity: -1
+---
+
+
+## C3 Reachability and identity
+
+**Reachability and identity.** The harness prerequisite is met (C0
+complete). **Landed 2026-08-11**: the wire epoch (`/2` on all three ALPNs,
+mandatory rather than policy by then) and version-vector catch-up, which also
+closed relay-off on the pull side. **Also landed 2026-08-11**: the public
+directory record — pkarr publishing, the two publishing tiers (one piece of
+work, because the byte cap left no other shape), the republish-comparison
+fix, dial falling back to the directory when no known Cell answers, and the
+dial race.
+**Still do not start the rest at the
+enrolment client** — it is what makes a second Cell possible, so it wants the
+identity chain under it first. Remaining, in order: the enrolment
+client, front-door mechanics, root succession (decision 6) and the epoch
+policy (decision 1). One chain, in that order.
+**The epoch bump is no longer optional policy — C1 made it mandatory.**
+`WireOp` renamed `actor_organ` to `actor_cell` and added a non-defaulted
+`organ_uid`, so an older peer's batch no longer parses at all. Every roster
+signed before capabilities existed is `Refused` for the same reason. That is
+correct under no-legacy-peer-compat, but it means the wire is already broken
+and the epoch has to say so. C11 rides the same epoch and now has a second
+passenger.
+**Each remaining entry names its SURFACE** — the thing a person opens to use
+what the cluster builds. That line is part of the cluster, not a follow-up: a
+cluster that lands its mechanism and defers its surface has shipped something
+its owner cannot try. C3 proved how easily that happens — enrolment, the front
+door and the directory record were all built, all tested, and all unreachable
+from the running app until 2026-08-13.

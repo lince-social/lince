@@ -5,6 +5,7 @@
 pub mod action_intents;
 pub mod assertions;
 pub mod auth;
+pub mod budget;
 pub mod cells;
 pub mod communication;
 pub mod concepts;

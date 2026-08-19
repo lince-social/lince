@@ -1072,6 +1072,90 @@ pub async fn serve_cell_api_only(
         Ok(Json(serde_json::json!({ "path": path })))
     }
 
+    /// "How big is this Lince, and what is using it" (Ontology C2c).
+    ///
+    /// A host route rather than a Protein subscription because none of this is
+    /// a Record: it is bytes on this machine, and this Cell's bytes at that —
+    /// a phone and a VPS have no reason to report the same number, and putting
+    /// it in the Ledger would sync one device's disk usage to every other.
+    ///
+    /// Directory sizes are measured HERE and passed down, because where the
+    /// media and DNA folders live is this crate's layout; `store::budget` owns
+    /// the policy and never learns a path.
+    async fn get_storage(
+        State(state): State<CellApiState>,
+        headers: HeaderMap,
+    ) -> Result<impl IntoResponse, (StatusCode, String)> {
+        authenticate_headers(&state, &headers).await?;
+        let media = directory_bytes(crate::infrastructure::paths::media_dir()).await;
+        let dna = directory_bytes(crate::infrastructure::paths::dna_dir()).await;
+        // `None`, not `Some(0)`: the Facade cache arrives with C9 and does not
+        // exist yet, and a confident zero would read as "nothing cached"
+        // instead of "not built".
+        let usage = store::budget::usage(&state.store.pool, media, dna, None)
+            .await
+            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+        Ok(Json(serde_json::json!({
+            "total_bytes": usage.total_bytes,
+            "on_disk_bytes": usage.on_disk_bytes(),
+            "unbudgeted_bytes": usage.unbudgeted_bytes,
+            "areas": usage.areas.iter().map(|area| serde_json::json!({
+                "name": area.area.name(),
+                "used_bytes": area.used_bytes,
+                "limit_bytes": area.limit_bytes,
+                "live": area.live,
+            })).collect::<Vec<_>>(),
+        })))
+    }
+
+    /// Set the Cell's stated total. `0` is unlimited and is a legitimate
+    /// answer — the point of a budget is that the owner decides, and "no
+    /// ceiling" is one of the decisions.
+    async fn set_storage_budget(
+        State(state): State<CellApiState>,
+        headers: HeaderMap,
+        Json(body): Json<serde_json::Value>,
+    ) -> Result<impl IntoResponse, (StatusCode, String)> {
+        authenticate_headers(&state, &headers).await?;
+        let bytes = body.get("bytes").and_then(serde_json::Value::as_i64).ok_or((
+            StatusCode::BAD_REQUEST,
+            "bytes must be a whole number".to_string(),
+        ))?;
+        store::budget::set_total(&state.store.pool, bytes)
+            .await
+            .map_err(|error| (StatusCode::BAD_REQUEST, error.to_string()))?;
+        Ok(Json(serde_json::json!({ "total_bytes": bytes })))
+    }
+
+    /// Bytes under a directory, missing directory counting as zero.
+    ///
+    /// A missing folder is the ordinary state of a Cell that has never stored
+    /// anything of that kind, so it is not an error — and refusing to report
+    /// would make the panel fail rather than say "nothing here yet".
+    async fn directory_bytes(dir: std::path::PathBuf) -> i64 {
+        tokio::task::spawn_blocking(move || {
+            fn walk(dir: &std::path::Path) -> i64 {
+                let Ok(entries) = std::fs::read_dir(dir) else {
+                    return 0;
+                };
+                entries
+                    .flatten()
+                    .map(|entry| match entry.file_type() {
+                        Ok(kind) if kind.is_dir() => walk(&entry.path()),
+                        Ok(_) => entry
+                            .metadata()
+                            .map(|meta| i64::try_from(meta.len()).unwrap_or(i64::MAX))
+                            .unwrap_or(0),
+                        Err(_) => 0,
+                    })
+                    .sum()
+            }
+            walk(&dir)
+        })
+        .await
+        .unwrap_or(0)
+    }
+
     async fn get_media(
         State(state): State<CellApiState>,
         headers: HeaderMap,
@@ -1856,6 +1940,8 @@ pub async fn serve_cell_api_only(
         )
         .route("/host/media", post(upload_media))
         .route("/host/media/{name}", get(get_media))
+        .route("/host/storage", get(get_storage))
+        .route("/host/storage/budget", post(set_storage_budget))
         .route("/organ/nearby", get(organ_nearby))
         .route("/organ/pair", post(organ_pair))
         .route("/organ/conversation/offer", post(offer_nearby_conversation))

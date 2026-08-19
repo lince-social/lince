@@ -276,11 +276,11 @@
     // never touching the Record's one identity assertion. cardState.kanban.lanesDef overrides the defaults; the
     // Columns sheet edits it; presets swap it in one tap.
     const DEFAULT_LANES = [
-      { key: "backlog", label: "Backlog", value: 0, color: "#6e7681" },
-      { key: "next", label: "Next", value: -1, color: "#7aa2f7" },
-      { key: "wip", label: "WIP", value: -2, color: "#d29922" },
-      { key: "review", label: "Review", value: -3, color: "#bc8cff" },
-      { key: "done", label: "Done", value: 1, color: "#3fb950" },
+      { key: "backlog", label: "Backlog", value: 0, color: "#6e7681", concepts: [] },
+      { key: "next", label: "Next", value: -1, color: "#7aa2f7", concepts: [] },
+      { key: "wip", label: "WIP", value: -2, color: "#d29922", concepts: [] },
+      { key: "review", label: "Review", value: -3, color: "#bc8cff", concepts: [] },
+      { key: "done", label: "Done", value: 1, color: "#3fb950", concepts: [] },
     ];
     let lanes = DEFAULT_LANES;
     let conceptNames = {}; // uid -> canonical name (rows carry concept UIDs)
@@ -327,7 +327,7 @@
       const quantityMatches = lane.value === undefined || (lane.to !== undefined
         ? q >= lane.value && q <= lane.to : q === lane.value);
       const concepts = ordinaryConcepts[row.uid] || [];
-      return quantityMatches && lane.concepts.every((concept) => conceptMatches(concepts, concept));
+      return quantityMatches && (lane.concepts || []).every((concept) => conceptMatches(concepts, concept));
     }
     function laneFor(row) {
       for (const lane of lanes) if (laneBuckets(row, lane)) return lane.key;
@@ -1154,6 +1154,14 @@
         col.append(head, list);
         if (!laneUi.collapsed) col.appendChild(handle);
         columnsEl.appendChild(col);
+      }
+      if (!columnsEl.children.length) {
+        const empty = document.createElement("div");
+        empty.className = "no-protein-prompt";
+        empty.textContent = ui.hideEmpty
+          ? "No records yet. Columns are hidden while empty — turn off \"hide empty columns\" to see them."
+          : "No columns to show. Every lane is hidden — check this board's column settings.";
+        columnsEl.appendChild(empty);
       }
       for (const btn of $("all-modes").querySelectorAll("button")) {
         btn.classList.toggle("on", btn.dataset.mode === ui.defaultBodyMode);

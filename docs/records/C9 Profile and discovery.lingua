@@ -1,0 +1,18 @@
+---
+uid: r_7WY4ZN1WGFBPK1QZY8QE6TCBCV
+@instinct
+@part-of [[Ontology|r_S8PQ17MQ3WBWM53ZN700K89V9F]] 91.1
+@@task
+@todo
+quantity: -1
+---
+
+
+## C9 Profile and discovery
+
+**Profile and discovery.** The three tiers, the security defaults,
+the Facade, gossip with seen-set and budgets, hop rules, the directory Cell.
+Largest cluster; depends on C3 for identity and C4 for anywhere to run.
+**Surface:** a profile editor per tier that shows what each tier reveals, and
+to whom, BEFORE anything is published. This cluster's whole risk is people
+publishing more than they meant to.

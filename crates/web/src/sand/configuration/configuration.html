@@ -53,6 +53,15 @@
     .status.error { color: var(--danger, #f85149); }
     .actions { display: flex; align-items: center; gap: 8px; }
     .contact-empty { color: var(--secondary-ink, #8b949e); }
+    .budget-areas { display: grid; gap: 8px; margin: 4px 0 2px; }
+    .budget-area { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; font-size: 12px; }
+    .budget-area__bar { grid-column: 1 / -1; height: 5px; border-radius: 3px; background: var(--secondary-background, #1b222b); overflow: hidden; }
+    .budget-area__fill { height: 100%; background: var(--accent, #6366f1); }
+    /* An area over its share is not an error state — eviction brings it back.
+       It is worth seeing, though, which is why it is coloured rather than
+       clamped silently. */
+    .budget-area__fill.is-over { background: var(--danger, #f85149); }
+    .budget-area__used { color: var(--secondary-ink, #8b949e); }
   </style>
 </head>
 <body class="lynx-ui">
@@ -87,6 +96,11 @@
         <label class="property lynx-toggle"><input id="storage-enabled" class="lynx-toggle__input" type="checkbox" /><span class="lynx-toggle__track" aria-hidden="true"></span><span class="property-name">File sync</span></label>
         <label class="property"><span class="property-name">Directory</span><input id="storage-path" class="lynx-input" type="text" placeholder="/path/on/disk" /><span class="property-help">A string path on this machine.</span></label>
         <div class="actions"><button id="storage-save" class="lynx-button lynx-button--primary" type="button">Save</button><span id="storage-status" class="status"></span></div>
+
+        <header><h2>Disk budget</h2><p class="property-help">How much of this machine Lince may use, and what is using it. The ceiling is this Cell's alone — a phone and a server have no reason to agree.</p></header>
+        <label class="property"><span class="property-name">Ceiling</span><input id="budget-total" class="lynx-input" type="number" min="0" step="1" /><span class="property-help">Megabytes. Zero means no ceiling. Each area below evicts inside its own share, so one filling up never empties another.</span></label>
+        <div class="actions"><button id="budget-save" class="lynx-button lynx-button--primary" type="button">Save</button><span id="budget-status" class="status"></span></div>
+        <div class="property"><span class="property-name">In use</span><div id="budget-areas" class="budget-areas"></div><span id="budget-total-line" class="property-help"></span></div>
       </section>
 
       <section class="page" data-page="contacts" hidden>
@@ -154,6 +168,81 @@
     H.subscribeProtein("configuration_organs", { source: "record", where: [{ kind_eq: "organ" }], include: { contact: true }, order: [{ asc: "head" }] }, ({ rows }) => { organs = Array.isArray(rows) ? rows : []; render(); });
     H.subscribeProtein("configuration_discovery", { source: "record", where: [{ kind_eq: "organ" }], include: { extension: { namespace: "lince.discovery" } } }, ({ rows }) => { discovery = {}; for (const row of (rows || [])) discovery[row.uid] = row.extension || {}; render(); });
     H.subscribeProtein("configuration_storage", { source: "record", where: [{ kind_eq: "organ" }], include: { extension: { namespace: "lince.file_sync" } } }, ({ rows }) => { storage = {}; for (const row of (rows || [])) storage[row.uid] = row.extension || {}; render(); });
+
+    // The budget reads over a host route rather than a Protein subscription:
+    // none of this is a Record. It is bytes on THIS machine, and putting it in
+    // the Ledger would sync one device's disk usage to every other.
+    const MB = 1024 * 1024;
+    function bytesLabel(n) {
+      if (n < 1024) return `${n} B`;
+      if (n < MB) return `${(n / 1024).toFixed(1)} KB`;
+      if (n < 1024 * MB) return `${(n / MB).toFixed(1)} MB`;
+      return `${(n / (1024 * MB)).toFixed(2)} GB`;
+    }
+
+    function renderBudget(report) {
+      $("budget-total").value = Math.round((report.total_bytes || 0) / MB);
+      const host = $("budget-areas");
+      host.innerHTML = "";
+      for (const area of report.areas || []) {
+        const row = document.createElement("div");
+        row.className = "budget-area";
+        const name = document.createElement("span");
+        name.textContent = area.name;
+        const used = document.createElement("span");
+        used.className = "budget-area__used";
+        // A row reading 0 B because C9 has not built the Facade cache must not
+        // look like a row reading 0 B because nothing is cached. Say WHICH
+        // nothing it is.
+        used.textContent = !area.live
+          ? "not built yet"
+          : area.limit_bytes === null
+            ? `${bytesLabel(area.used_bytes)} — no ceiling`
+            : `${bytesLabel(area.used_bytes)} of ${bytesLabel(area.limit_bytes)}`;
+        const bar = document.createElement("div");
+        bar.className = "budget-area__bar";
+        const fill = document.createElement("div");
+        fill.className = "budget-area__fill";
+        const share = area.live && area.limit_bytes ? area.used_bytes / area.limit_bytes : 0;
+        if (share > 1) fill.classList.add("is-over");
+        fill.style.width = `${Math.min(100, Math.round(share * 100))}%`;
+        bar.append(fill);
+        row.append(name, used, bar);
+        host.append(row);
+      }
+      // The honest number, not the flattering one: the database and published
+      // sand packages are Lince's disk too, they are just never evicted.
+      $("budget-total-line").textContent =
+        `${bytesLabel(report.on_disk_bytes || 0)} on disk in total, of which ` +
+        `${bytesLabel(report.unbudgeted_bytes || 0)} is your own data and never evicted.`;
+    }
+
+    async function loadBudget() {
+      try {
+        const res = await fetch("/host/storage", { credentials: "same-origin" });
+        if (!res.ok) throw new Error(await res.text());
+        renderBudget(await res.json());
+      } catch (e) {
+        status("budget-status", e.message || String(e), true);
+      }
+    }
+    loadBudget();
+
+    $("budget-save").addEventListener("click", async () => {
+      const mb = Number.parseInt($("budget-total").value, 10);
+      if (!Number.isInteger(mb) || mb < 0) return status("budget-status", "The ceiling must be zero or more megabytes.", true);
+      status("budget-status", "Saving…");
+      try {
+        const res = await fetch("/host/storage/budget", {
+          method: "POST", credentials: "same-origin",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ bytes: mb * MB }),
+        });
+        if (!res.ok) throw new Error(await res.text());
+        status("budget-status", mb === 0 ? "Saved — no ceiling." : "Saved.");
+        await loadBudget();
+      } catch (e) { status("budget-status", e.message || String(e), true); }
+    });
 
     $("contact-select").addEventListener("change", renderContact);
     $("cell-save").addEventListener("click", () => { const row = localOrgan(); if (!row) return; status("cell-status", "Saving…"); H.act({ action: "edit-record-text", target: row.uid, head: $("cell-name").value.trim(), body: $("cell-address").value.trim() }).then(() => status("cell-status", "Saved.")).catch((e) => status("cell-status", e.message || String(e), true)); });

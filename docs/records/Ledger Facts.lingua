@@ -4,7 +4,6 @@ uid: r_9NQJ2VK53ZSRT0NXV11V3VB19G
 @instinct
 @part-of [[Ontology|r_S8PQ17MQ3WBWM53ZN700K89V9F]] 7
 @stable
-quantity: 1
 ---
 
 
@@ -17,3 +16,31 @@ own signing/provenance rules, never merged with Record assertions.
 - [x] Example: a flour Record has identity `@flour` (what the Record is)
   while one `-500 g` Fact is classified `@bread` (what that movement was),
   using the same Concept vocabulary.
+
+## Exact numbers
+
+**Purpose:** Fix the small vocabulary every other section spends, so a number
+means one thing everywhere.
+
+**How it works:** One decimal type on every durable path and no binary floats in
+any decision. Probability and confidence are different types, because a
+likelihood that something recurs and a confidence in an estimate are different
+claims. Time atoms are signed integer milliseconds. There is no money type: a
+currency is a Unit Record, so `12.50 @brl` is a `Quantity`.
+
+**Interacts:** Rule arithmetic, this Ledger and replay all depend on these being
+exact and canonical.
+
+**Implementation:** `nucleus::DecimalValue` stored as `(mantissa TEXT, scale
+INTEGER)`, summed in Rust as `i128` at a common scale and never in SQL.
+`fact.delta` and `record.quantity` are an exact pair with `REAL` removed. One
+named lossy inbound door, `NewFact::quantity_f64`.
+
+- [x] **Declared precision survives sync**, and the exact pair is inside the
+      hash preimage, so two Cells agree on the bytes and not merely the value.
+
+### What is left
+
+- [ ] **Exact multiply and divide.** Multiplication states its result scale,
+      division states its rounding, scale overflow is a publish-time refusal and
+      a zero divisor a runtime one. Unit algebra is explicit, never inferred.

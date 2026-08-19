@@ -4,7 +4,6 @@ uid: r_K7T3ZG08G5EBWRSTF8NBWMTZYV
 @instinct
 @part-of [[First Steps|r_YWPKA0Z1DJ8XCHTZRW4X2SDJ1N]] 14
 @stable
-quantity: 1
 ---
 
 
@@ -15,11 +14,6 @@ things without you — it watches Records, does arithmetic on them, and changes
 them, on a beat or when something moves, with your permission and a readable
 trail. Records model the world and Transfer coordinates change between people;
 Karma turns evidence into action.
-
-Karma is the part of Lince that watches Records, does math on them, and changes
-them — on a beat, or when something moves — with a person's permission and a
-readable trail. Records model the world, Transfer coordinates change between
-people, **Karma turns evidence into action.**
 
 It is useful without an LLM. People author exact rules visually, use transparent
 statistics and deterministic algorithms, and plan over their own goals. A model

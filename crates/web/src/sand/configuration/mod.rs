@@ -35,4 +35,26 @@ mod tests {
         assert!(HTML.contains("action: \"set-extension\""));
         assert!(HTML.contains("namespace: \"lince.discovery\""));
     }
+
+    /// C2c's surface. A budget nobody can inspect is a budget nobody can
+    /// trust, and the doc's own rule is that a cluster landing its mechanism
+    /// without its surface has shipped something its owner cannot try.
+    #[test]
+    fn the_storage_page_answers_how_big_this_lince_is() {
+        assert!(HTML.contains("/host/storage"), "no way to read the usage");
+        assert!(HTML.contains("/host/storage/budget"), "no way to set the ceiling");
+        assert!(HTML.contains("budget-areas"), "per-area usage is the whole point");
+        assert!(
+            HTML.contains("on disk in total"),
+            "the honest total has to include what is never evicted"
+        );
+    }
+
+    /// An area reading zero because its consumer does not exist yet must not
+    /// look like an area reading zero because it is empty.
+    #[test]
+    fn an_area_with_no_consumer_says_which_nothing_it_means() {
+        assert!(HTML.contains("not built yet"));
+        assert!(HTML.contains("area.live"));
+    }
 }

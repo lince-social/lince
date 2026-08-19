@@ -4,7 +4,6 @@ uid: r_6BCZ7AETZ417WJFZBHAH19Y4Q8
 @instinct
 @part-of [[Ontology|r_S8PQ17MQ3WBWM53ZN700K89V9F]] 8
 @stable
-quantity: 1
 ---
 
 
@@ -64,9 +63,18 @@ plausibly do not.
   original payload where appropriate, and anything untranslatable.
   Interpretation never silently becomes local authorship or authority.
 
+## Frozen types on the wire
+
+A wire format must never drift under a running Cell. Canonical JSON sorts object
+keys and preserves array order; failures are a stable machine `FailureCode` plus
+a safe message, so the other side can branch on the code and show the message.
+
 ## What is left
 
 ### Federation — what is left
+
+- [ ] **Every new public wire type extends the golden fixture in the same
+      commit.** A type that ships without one is how the format drifts.
 
 #### Your public face
 

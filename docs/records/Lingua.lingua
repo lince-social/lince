@@ -4,7 +4,6 @@ uid: r_CRGXD1W7FA6T1DSVG5YYCZ6M8H
 @instinct
 @part-of [[Ontology|r_S8PQ17MQ3WBWM53ZN700K89V9F]] 5
 @stable
-quantity: 1
 ---
 
 
@@ -65,12 +64,20 @@ lingua
   whoever is building, and Instinct explains a feature to whoever is using,
   and not every paragraph survives that change of audience.
 
-- [ ] **The checkboxes of `docs/` become task Records**, clustered by idea or
-  feature rather than one Record per box — a cluster is what a person actually
-  picks up. Quantity plus concept carries the ladder above. Once this lands
-  the markdown files must STOP holding checkboxes, or the drift this group
-  exists to end is simply recreated in a second place: tasks live in the
-  Records, and any list in a `.md` is generated.
+**A checkbox does NOT have to become its own Record** — dropped 2026-08-18.
+This group used to require it: every box a task Record, and a file holding a
+checkbox was drift by definition. That rule cost more than it bought. The
+development of Ontology has been done against its implementation clusters, C0
+through C11, and the value of a cluster is that you read a whole one at once —
+what is built, what moved, what is left, in the order it has to happen.
+Exploding that into a hundred task Records loses the reading and gains only
+uniformity. So a `.lingua` Record may hold its own checkbox list in its body,
+and `Ontology` holds the cluster list itself.
+
+What still holds is the part that was actually about drift: there is ONE place
+a given task is written. A box in `Ontology`'s cluster list and a box in a
+branch Record saying the same thing is the same claim written twice, and that
+is what this group exists to end — not the checkbox itself.
 
 - [ ] **`docs/` ends with NO Markdown in it at all** — only `.lingua`. The
   owner's end state, 2026-08-16, and the reason the distillation above has to

@@ -1,0 +1,135 @@
+---
+uid: r_K3XKXDKT1EQA7ZDH7F79KNP32S
+@instinct
+@part-of [[Ontology|r_S8PQ17MQ3WBWM53ZN700K89V9F]] 90.7
+@@task
+@todo
+quantity: -1
+---
+
+
+## C5 Scoping
+
+**Scoping.** Protein in both directions: outbound per-field
+narrowing, inbound acceptance, the tombstone rule, re-snapshot on widening,
+mutable-predicate grants, honest empty states. One selector language.
+**Surface:** the per-contact pairing panel already filed into this cluster —
+what they may see of you, what you accept from them, per field. Scoping
+nobody can inspect is scoping nobody can trust.
+
+**Most of the mechanism is already built; the surface is the gap.**
+`organ_contact.scope_fields` and `accept_fields` both exist, both are applied
+through the one shared predicate, and `set-contact-scope` is a real Action. The
+Organ sand only DISPLAYS the current scope and offers on/off chips for the whole
+feed. There is no per-field editor, which is the thing an owner actually needs.
+
+**Decided 2026-08-18, by the owner.**
+
+**The field list is curated, and a new column is invisible until somebody adds
+it.** The alternative — offering every column on `record` — leaks schema
+vocabulary into the interface and grows with every migration, so the owner is
+asked about fields that mean nothing to them. The cost is accepted and stated:
+a migration that adds a shareable field is not finished until that field is in
+the list, and until then it simply cannot be narrowed on. A field nobody can
+choose is a smaller failure than a list nobody can read.
+
+**A new contact starts narrowed to NOTHING, not unnarrowed.** Default-closed,
+the same stance as the invite door: pairing is a decision to be reachable, not
+a decision to be readable, and the two should not arrive together. **This
+changes behaviour for pairings that already exist and that is deliberate** —
+existing contacts are not grandfathered into a wider default just because they
+were added before the default changed. The panel says what it is doing rather
+than doing it silently, because a contact who suddenly sees nothing must be
+explainable as a setting rather than discovered as a break.
+
+**Row selection for a contact IS a Protein.** Not a new capability — Protein
+already evaluates predicates and the fact bus already re-runs a query when a
+committed fact might affect it. What a contact receives is the Protein you point
+at them: named Records, or a Concept, or a kind, or any other filter the one
+selector language already has. Sync consumes the result the way any subscriber
+does.
+
+**A rule may select on MUTABLE state, and that is in this cluster** — moved
+here 2026-08-18 from its own deferral. Mutable state is anything about a Record
+that can change after it exists: a Concept on it, a quantity, a status. A rule
+over it — "everything tagged family", "every task not yet done" — answers
+differently over time without anybody editing the rule, so each Record entering
+is a GRANT and each one leaving is a REVOKE, fired by a change that was not an
+act of sharing.
+
+**It costs nothing extra to allow, because the design above already is it.**
+The old deferral said this needed a capability that did not exist, and that was
+true of a world where row selection was a hide LIST rather than a query. Once
+selection is a Protein and membership is recomputed per changed Record, asking
+"does this Record match now, and did it before" is the same question whether the
+field it turns on is mutable or not. Restricting rules to immutable fields would
+throw away the useful half and simplify nothing.
+
+**The guardrail is a view, and it ships BEFORE the feature, not after.** A rule
+must be able to answer "what are you sharing right now" before it can be
+switched on. Tagging a Record for an unrelated reason silently sharing it is the
+failure this feature makes possible, and the membership table already holds the
+answer, so this is a read rather than new work. A rule nobody can inspect is how
+people overshare — the same reason this cluster's surface line exists at all.
+
+**Membership is MATERIALISED per contact, and that is what makes entry O(1).**
+A row per `(contact, record)` currently shared. The fact bus already says which
+Record changed, so the work on a commit is "does this one Record match this
+contact's Protein now, and did it before" — one evaluation, one insert or one
+delete. Diffing whole result sets would be O(set) on every commit and was the
+obvious wrong shape. The table pays for itself twice more: it is what the
+"what is this rule sharing right now" view reads, and it is how we know what a
+contact holds when a Record later leaves.
+
+**Entry catches the peer up, and how is an implementation question rather than
+a design one** (owner, 2026-08-18: as performant as it can be, the method is
+not the owner's call). What must be true is that the Record arrives COMPLETE:
+every op for it already sits below the peer's catch-up marker, so with no
+replay it arrives as an empty shell. Reuse the replay-by-identity that widening
+a field scope already performs, bounded by that one Record's history rather
+than by the log. Measure it against a Record with a long collab history before
+calling it done — a snapshot plus tail is available if the replay is the wrong
+cost, and that choice is free to make later because nothing else depends on it.
+
+**Deleting here deletes there — decided 2026-08-18. This is ordinary deletion
+and needs no special case.** The rule is one sentence: **a tombstone follows
+whoever was sent the Record.** They hold it, so they are told it is gone;
+otherwise a copy nobody can clean up lives on their disk forever. A contact who
+was never sent it never hears about it, because a tombstone for a Record they
+never had would be telling them it existed.
+
+The materialised membership above is what makes that answerable — it says who
+was sent what, so "did they have it" is a lookup rather than a guess. The
+question does not need to ask whether a Record is hidden NOW, or whether it has
+left the set since; those cases both fall out of the one sentence. The OLD
+hide-list rule withheld the delete of a hidden Record on the reasoning that
+sending it would reveal the Record existed. That reasoning survives exactly
+where it was right — for a Record they were never sent — and stops being a
+separate rule.
+
+**The hide list becomes a CLAUSE of the Protein, not a second gate — decided
+2026-08-18.** Today's `visibility_rule` exception list is well made and cheap:
+usually empty, checked empty-first, loaded once per feed as a set, and an O(1)
+lookup for `record` ops. But cheapness was never the question. It answers the
+same question the Protein answers — does this contact receive this Record — and
+two mechanisms that can answer it differently is precisely what the shared
+`op_in_scope` predicate exists to prevent; the second copy is the one that
+leaks, and nothing fails until it does. It also defaults the opposite way
+(shared-unless-excepted), which is the default we just replaced.
+
+So it survives as `<the contact's Protein> AND NOT hidden`, evaluated in one
+place. Keeping it matters for the gesture rather than the mechanism: "stop
+sending this one thing" has to stay one click, and making somebody edit a
+predicate to hide a single Record would be a worse interface justified by a
+tidier diagram.
+
+**Rate-limiting caps the RECORDING, never the sync.** A flooding contact keeps
+being processed at full speed; what stops is writing new rows into the ring.
+Slowing the connection and refusing it were both considered and both refused:
+either one lets a contact get itself ignored by sending garbage, which turns a
+peer's choice into what looks like our bug. Capping the recording has nothing to
+queue and therefore nothing to catch up on — it is current by construction.
+The honesty cost is paid on the panel: it shows the count that was refused, not
+only the rows that were kept, so "1,482 refused in the last hour, showing the
+most recent 200" is what a person reads rather than a list that quietly stopped
+growing.

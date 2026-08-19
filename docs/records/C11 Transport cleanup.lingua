@@ -1,0 +1,17 @@
+---
+uid: r_NRS62EEEX5SSDRY8ZJVS86Z3D5
+@instinct
+@part-of [[Ontology|r_S8PQ17MQ3WBWM53ZN700K89V9F]] 91.3
+@@task
+@todo
+quantity: -1
+---
+
+
+## C11 Transport cleanup
+
+**Transport cleanup.** `base_url` retirement, WS reuse deleting
+the outbox row, IPv6 preference. Rides an epoch from C3.
+**Surface:** none of its own, and that is legitimate — it REMOVES things.
+What it must not do is remove something a surface still shows: the Organ
+sand's contact rows read `base_url` today.

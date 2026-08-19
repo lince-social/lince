@@ -914,6 +914,53 @@ pub async fn quarantine(
     .bind(QUARANTINE_PER_CONTACT)
     .execute(pool)
     .await?;
+    trim_quarantine_to_budget(pool, from_organ).await?;
+    Ok(())
+}
+
+/// Trim one contact's ring to its share of the Cell's storage budget (C2c).
+///
+/// **Both bounds apply, and the tighter one wins.** The count above answers
+/// "how much garbage from one peer is worth reading"; this answers "how much
+/// disk may one peer cost me", and they are different questions — 200 rows of
+/// four bytes is nothing, 200 rows of a megabyte is not. Neither subsumes the
+/// other, so keeping both is not redundancy.
+///
+/// Per contact rather than per Cell, for the same reason the count is: a global
+/// byte cap lets one peer flood the ring and evict the evidence of what a
+/// different peer did, which is exactly what somebody would do to hide a real
+/// attack behind noise. The quota each contact gets is the whole quarantine
+/// share — contacts do not divide it between them, because dividing it would
+/// mean adding a contact shrinks everybody's evidence.
+async fn trim_quarantine_to_budget(pool: &SqlitePool, from_organ: &str) -> Result<(), StoreError> {
+    let total = crate::budget::total(pool).await?;
+    let Some(quota) = crate::budget::share(total, crate::budget::Area::Quarantine) else {
+        return Ok(()); // unlimited
+    };
+    // Newest first, which is the order `evict_plan` keeps by — the evidence a
+    // peer is misbehaving right now outranks last month's.
+    let rows: Vec<(i64, i64)> = sqlx::query(
+        "SELECT rowid AS id, LENGTH(payload) AS n FROM sync_quarantine
+          WHERE from_organ = ? ORDER BY rowid DESC",
+    )
+    .bind(from_organ)
+    .fetch_all(pool)
+    .await?
+    .into_iter()
+    .map(|row| (row.get("id"), row.get("n")))
+    .collect();
+    let evicted = crate::budget::evict_plan(&rows, quota);
+    if evicted.is_empty() {
+        return Ok(());
+    }
+    let mut tx = crate::write_tx(pool).await?;
+    for id in evicted {
+        sqlx::query("DELETE FROM sync_quarantine WHERE rowid = ?")
+            .bind(id)
+            .execute(&mut *tx)
+            .await?;
+    }
+    tx.commit().await?;
     Ok(())
 }
 

@@ -8,7 +8,7 @@ pub(crate) const FEATURE_FLAG: &str = "sand.instinct";
 // then the model underneath it, then Links, Concepts, Cells & Organs,
 // Transfers and Karma.
 //
-// Diagrams come from `docs/Sand: First Steps.md`, whose typst `visual-text`
+// Diagrams came from the earlier First Steps source, whose typst `visual-text`
 // blocks were already mermaid-shaped. They are NOT copy-pasted: that source
 // uses single-dash `->`/`<-` edges and unquoted parentheses in labels, both of
 // which mermaid rejects, so every graph was converted (`-->`, quoted labels).
@@ -19,14 +19,14 @@ pub(crate) const FEATURE_FLAG: &str = "sand.instinct";
 // chapter produces a mis-sized graph. Each chapter renders once, then caches.
 //
 // **The chapters are RECORDS now** (2026-08-16). `chapters/*.html` is deleted;
-// the source is `docs/records/*.lingua`, embedded once by `engine::instinct`
+// the source is root `anicca/*.lingua`, embedded once by `engine::instinct`
 // and read by both this sand and `Action::ImportInstinct`, so what a reader
 // sees and what the import button would put in their store cannot drift apart.
 // `instinct.html` is still the shell (head, styles, nav, script) and the
 // generated chapters are spliced in at `<!--CHAPTERS-->`. Chapter ORDER comes
 // from the assertions, not from an array here — the nav, the prev/next footer
 // and the saved reading position are all derived from the DOM at runtime, so
-// adding a chapter means adding a file to `docs/records/` and nothing else.
+// adding a chapter means adding a declaration to `anicca/` and nothing else.
 mod render;
 
 const SHELL: &str = include_str!("instinct.html");
@@ -35,7 +35,7 @@ const CHAPTERS_MARKER: &str = "<!--CHAPTERS-->";
 
 /// The chapters, built from the RECORDS rather than from seven HTML files.
 ///
-/// The files are gone (2026-08-16). `docs/records/*.lingua` is the source, and
+/// Root `anicca/*.lingua` is the source, and
 /// `engine::instinct` is the one embedded copy that both this sand and
 /// `Action::ImportInstinct` read — so the chapter you are reading and the
 /// Record the button would put in your store cannot drift apart.
@@ -66,7 +66,10 @@ fn chapters() -> String {
         // under this entry is simply everything that names it — in order,
         // however deep it sits. The entry's own body comes first because a
         // Record's path is a prefix of its children's.
-        for record in records.iter().filter(|r| r.entry_uid(&records) == entry.projection.uid) {
+        for record in records
+            .iter()
+            .filter(|r| r.entry_uid(&records) == entry.projection.uid)
+        {
             out.push_str(&render::body_to_html(&record.body));
         }
         out.push_str("</article>\n");
@@ -117,8 +120,15 @@ mod tests {
         );
         let records = engine::instinct::records();
         let chapters: Vec<_> = records.iter().filter(|r| r.is_entry()).collect();
-        assert!(chapters.len() >= 7, "the root and its branches: {}", chapters.len());
-        assert_eq!(chapters[0].head, "First Steps", "the reader opens on the root");
+        assert!(
+            chapters.len() >= 7,
+            "the root and its branches: {}",
+            chapters.len()
+        );
+        assert_eq!(
+            chapters[0].head, "First Steps",
+            "the reader opens on the root"
+        );
         for chapter in &chapters {
             assert!(
                 html.contains(&format!("data-chapter=\"{}\"", chapter.head)),
@@ -130,8 +140,16 @@ mod tests {
         // `.chapter` elements, so an idea whose chapter link went nowhere
         // would vanish from the document without the nav looking wrong.
         for idea in records.iter().filter(|r| !r.is_entry()) {
-            let first = idea.body.lines().find(|l| !l.trim().is_empty()).unwrap_or_default();
-            let probe: String = first.trim_start_matches(['#', '>', '-', ' ']).chars().take(24).collect();
+            let first = idea
+                .body
+                .lines()
+                .find(|l| !l.trim().is_empty())
+                .unwrap_or_default();
+            let probe: String = first
+                .trim_start_matches(['#', '>', '-', ' '])
+                .chars()
+                .take(24)
+                .collect();
             if probe.len() < 12 || probe.contains(['*', '_', '`', '<', '&', '[']) {
                 continue; // inline markup is rewritten; those are covered elsewhere
             }

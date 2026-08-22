@@ -1,4 +1,4 @@
-"Five-second toggle" (@toggle-demo: 0) {
+Five-second toggle (@toggle-demo: 0) {
 This Record starts at 0. Its Karma Rule changes it to 1, then 0, then 1 again every five seconds.
 Set next_at to the first instant when you want the Rule to run before syncing this file.
 }

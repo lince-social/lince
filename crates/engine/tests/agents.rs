@@ -50,7 +50,10 @@ async fn an_agent_is_an_actor_beside_a_person_rather_than_a_kind_of_its_own() {
         .created
         .unwrap();
 
-    let row = store::records::get(&e.store.pool, &uid).await.unwrap().unwrap();
+    let row = store::records::get(&e.store.pool, &uid)
+        .await
+        .unwrap()
+        .unwrap();
     assert_eq!(
         row.kind,
         RecordKind::Person.as_str(),
@@ -98,13 +101,20 @@ async fn an_agent_says_which_person_is_answerable_for_it() {
     assert!(
         assertions
             .iter()
-            .any(|a| a.predicate == "operated-by" && a.object_uid.as_deref() == Some(eduardo.as_str())),
+            .any(|a| a.predicate == "operated-by"
+                && a.object_uid.as_deref() == Some(eduardo.as_str())),
         "operator: {assertions:?}"
     );
     // The Organ half of "whose agent is this" needs nothing new — every Record
     // already carries where it originated.
-    let row = store::records::get(&e.store.pool, &uid).await.unwrap().unwrap();
-    assert!(row.organ_uid.is_none() || row.organ_uid.is_some(), "the column exists");
+    let row = store::records::get(&e.store.pool, &uid)
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(
+        row.organ_uid.is_none() || row.organ_uid.is_some(),
+        "the column exists"
+    );
 }
 
 /// Resolve the operator BEFORE creating anything. Naming something that is not
@@ -183,9 +193,14 @@ async fn importing_instinct_puts_the_documentation_in_the_store() {
     // The tree survived as assertions, not as an import order. `Record` sits
     // two levels down — under Ontology, under the root — so this also proves
     // the import carries a link the old one-hop reader could not have made.
-    let chapter = bundle.iter().find(|r| r.head == "Record").expect("the Record chapter");
+    let chapter = bundle
+        .iter()
+        .find(|r| r.head == "Record")
+        .expect("the Record chapter");
     let uids: Vec<String> = bundle.iter().map(|r| r.projection.uid.clone()).collect();
-    let assertions = store::assertions::for_subjects(&e.store.pool, &uids).await.unwrap();
+    let assertions = store::assertions::for_subjects(&e.store.pool, &uids)
+        .await
+        .unwrap();
     // This used to assert that something pointed AT `Record`, which is the
     // link inverted: `Record` is a child of Ontology, not a parent of
     // anything. It passed only while the documentation happened to file
@@ -221,12 +236,12 @@ async fn importing_instinct_puts_the_documentation_in_the_store() {
          the link a one-hop reader could not have made"
     );
     let _ = chapter;
-    // Stable documentation is quantity 1 — the same ladder the board reads.
+    // Completion and quantity are independent; this chapter authored zero.
     let level = store::records::quantity(&e.store.pool, chapter.projection.uid.trim())
         .await
         .unwrap()
         .unwrap();
-    assert_eq!(level.to_string(), "1", "chapters land as stable, not as zero");
+    assert_eq!(level.to_string(), "0", "#done does not rewrite quantity");
 }
 
 /// Importing twice must not undo an edit made in between. The whole reason
@@ -235,7 +250,11 @@ async fn importing_instinct_puts_the_documentation_in_the_store() {
 async fn a_second_import_leaves_your_edits_alone() {
     let e = cell().await;
     e.act(Action::ImportInstinct, None).await.unwrap();
-    let uid = engine::instinct::records()[0].projection.uid.trim().to_string();
+    let uid = engine::instinct::records()[0]
+        .projection
+        .uid
+        .trim()
+        .to_string();
     e.act(
         Action::EditRecordText {
             target: uid.clone(),
@@ -249,6 +268,9 @@ async fn a_second_import_leaves_your_edits_alone() {
 
     e.act(Action::ImportInstinct, None).await.unwrap();
 
-    let row = store::records::get(&e.store.pool, &uid).await.unwrap().unwrap();
+    let row = store::records::get(&e.store.pool, &uid)
+        .await
+        .unwrap()
+        .unwrap();
     assert_eq!(row.body, "I rewrote this in my own words.");
 }

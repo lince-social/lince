@@ -13,32 +13,87 @@ pub mod grammar {
         pub String,
     );
     #[derive(Debug, Clone, PartialEq, Eq)]
-    pub struct Title(
-        #[rust_sitter::leaf(pattern = r#"\"([^\"\\]|\\.)*\""#, transform = |v| serde_json::from_str(v).expect("valid JSON title"))]
-        pub String,
-    );
-    #[derive(Debug, Clone, PartialEq, Eq)]
-    pub struct Uid {
-        #[rust_sitter::leaf(text = "^")]
-        _marker: (),
-        pub raw: UidText,
+    pub struct Title {
+        pub first: TitleWord,
+        pub rest: Vec<TitleWord>,
     }
-    impl Uid {
-        pub fn new(value: String) -> Self {
-            Self {
-                _marker: (),
-                raw: UidText(value),
+    impl Title {
+        pub fn value(&self) -> String {
+            std::iter::once(&self.first)
+                .chain(&self.rest)
+                .map(TitleWord::value)
+                .collect::<Vec<_>>()
+                .join(" ")
+        }
+        pub fn set(&mut self, value: &str) {
+            let mut words = value.split_whitespace().map(TitleWord::ordinary);
+            self.first = words.next().unwrap_or_else(|| TitleWord::ordinary(""));
+            self.rest = words.collect();
+        }
+    }
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub enum TitleWord {
+        Rules(#[rust_sitter::leaf(text = "Rules", transform = |v| v.to_string())] String),
+        Rule(#[rust_sitter::leaf(text = "Rule", transform = |v| v.to_string())] String),
+        Title(#[rust_sitter::leaf(text = "title", transform = |v| v.to_string())] String),
+        Quantity(#[rust_sitter::leaf(text = "quantity", transform = |v| v.to_string())] String),
+        Every(#[rust_sitter::leaf(text = "every", transform = |v| v.to_string())] String),
+        Timezone(#[rust_sitter::leaf(text = "timezone", transform = |v| v.to_string())] String),
+        NextAt(#[rust_sitter::leaf(text = "next_at", transform = |v| v.to_string())] String),
+        Frequency(#[rust_sitter::leaf(text = "frequency", transform = |v| v.to_string())] String),
+        Record(#[rust_sitter::leaf(text = "record", transform = |v| v.to_string())] String),
+        Condition(#[rust_sitter::leaf(text = "condition", transform = |v| v.to_string())] String),
+        Gate(#[rust_sitter::leaf(text = "gate", transform = |v| v.to_string())] String),
+        Carry(#[rust_sitter::leaf(text = "carry", transform = |v| v.to_string())] String),
+        Consequences(
+            #[rust_sitter::leaf(text = "consequences", transform = |v| v.to_string())] String,
+        ),
+        Note(#[rust_sitter::leaf(text = "note", transform = |v| v.to_string())] String),
+        Is(#[rust_sitter::leaf(text = "is", transform = |v| v.to_string())] String),
+        Ordinary(
+            #[rust_sitter::word]
+            #[rust_sitter::leaf(pattern = r"[^(){}\s^]+", transform = |v| v.to_string())]
+            String,
+        ),
+    }
+    impl TitleWord {
+        fn ordinary(value: &str) -> Self {
+            Self::Ordinary(value.to_string())
+        }
+        fn value(&self) -> &str {
+            match self {
+                Self::Rules(value)
+                | Self::Rule(value)
+                | Self::Title(value)
+                | Self::Quantity(value)
+                | Self::Every(value)
+                | Self::Timezone(value)
+                | Self::NextAt(value)
+                | Self::Frequency(value)
+                | Self::Record(value)
+                | Self::Condition(value)
+                | Self::Gate(value)
+                | Self::Carry(value)
+                | Self::Consequences(value)
+                | Self::Note(value)
+                | Self::Is(value)
+                | Self::Ordinary(value) => value,
             }
         }
-        pub fn value(&self) -> String {
-            self.raw.0.clone()
-        }
     }
     #[derive(Debug, Clone, PartialEq, Eq)]
-    pub struct UidText(
-        #[rust_sitter::leaf(pattern = r"(?:r|freq|rule)_[0-9A-HJKMNP-TV-Z]{26}", transform = |v| v.to_string())]
+    pub struct Uid(
+        #[rust_sitter::leaf(pattern = r"\^(?:r|freq|rule)_[0-9A-HJKMNP-TV-Z]{26}", transform = |v| v.strip_prefix('^').expect("uid marker").to_string())]
         pub String,
     );
+    impl Uid {
+        pub fn new(value: String) -> Self {
+            Self(value)
+        }
+        pub fn value(&self) -> String {
+            self.0.clone()
+        }
+    }
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub struct Text(
         #[rust_sitter::leaf(pattern = r#"\"([^\"\\]|\\.)*\""#, transform = |v| serde_json::from_str(v).expect("valid JSON string"))]
@@ -51,7 +106,7 @@ pub mod grammar {
     );
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub struct Description(
-        #[rust_sitter::leaf(pattern = r"([^\n]|\n[^}])+", transform = |v| v.strip_prefix('\n').unwrap_or(v).to_string())]
+        #[rust_sitter::leaf(pattern = r#"\n(?:[^}\n][^\n]*|}[ \t]+\"[^\n]*)?(?:\n(?:[^}\n][^\n]*|}[ \t]+\"[^\n]*)?)*"#, transform = |v| v.strip_prefix('\n').unwrap_or(v).to_string())]
         pub String,
     );
     #[derive(Debug, Clone, PartialEq, Eq)]
@@ -105,13 +160,56 @@ pub mod grammar {
         pub header: RecordHeader,
         #[rust_sitter::leaf(text = ")")]
         _close_header: (),
-        #[rust_sitter::leaf(text = "{")]
-        _open_description: (),
+        pub opening: RecordOpening,
         pub description: Option<Description>,
-        #[rust_sitter::leaf(text = "}")]
-        _close_description: (),
-        pub uid: Option<Uid>,
+        pub closing: RecordClosing,
     }
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub enum RecordOpening {
+        Identified(IdentifiedRecordOpening),
+        Unidentified(UnidentifiedRecordOpening),
+    }
+    impl RecordOpening {
+        pub fn uid(&self) -> Option<&str> {
+            match self {
+                Self::Identified(value) => Some(&value.0),
+                Self::Unidentified(_) => None,
+            }
+        }
+        pub fn identified(uid: String) -> Self {
+            Self::Identified(IdentifiedRecordOpening(uid))
+        }
+    }
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct IdentifiedRecordOpening(
+        #[rust_sitter::leaf(pattern = r"\{[ \t]+r_[0-9A-HJKMNP-TV-Z]{26}", transform = |v| v.split_ascii_whitespace().last().expect("opening uid").to_string())]
+        pub String,
+    );
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct UnidentifiedRecordOpening(#[rust_sitter::leaf(text = "{")] ());
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub enum RecordClosing {
+        Identified(IdentifiedRecordClosing),
+        Unidentified(UnidentifiedRecordClosing),
+    }
+    impl RecordClosing {
+        pub fn uid(&self) -> Option<&str> {
+            match self {
+                Self::Identified(value) => Some(&value.0),
+                Self::Unidentified(_) => None,
+            }
+        }
+        pub fn identified(uid: String) -> Self {
+            Self::Identified(IdentifiedRecordClosing(uid))
+        }
+    }
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct IdentifiedRecordClosing(
+        #[rust_sitter::leaf(pattern = r"\}[ \t]+r_[0-9A-HJKMNP-TV-Z]{26}", transform = |v| v.split_ascii_whitespace().last().expect("closing uid").to_string())]
+        pub String,
+    );
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct UnidentifiedRecordClosing(#[rust_sitter::leaf(text = "}")] ());
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub struct RecordHeader {
         pub subject: RecordSubject,
@@ -279,16 +377,17 @@ pub mod grammar {
 
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub struct Frequency {
-        #[rust_sitter::leaf(text = "Frequency")]
-        _frequency: (),
-        pub name: Name,
-        #[rust_sitter::leaf(text = "{")]
-        _open: (),
+        pub opening: FrequencyOpening,
         pub fields: Vec<FrequencyField>,
         #[rust_sitter::leaf(text = "}")]
         _close: (),
         pub uid: Option<Uid>,
     }
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct FrequencyOpening(
+        #[rust_sitter::leaf(pattern = r"Frequency[ \t]+[A-Za-z][A-Za-z0-9.-]*[ \t]*\{", transform = |v| v.trim_end_matches('{').split_ascii_whitespace().nth(1).expect("Frequency name").to_string())]
+        pub String,
+    );
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub enum FrequencyField {
         Title(TitleField),
@@ -332,15 +431,16 @@ pub mod grammar {
 
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub struct Karma {
-        #[rust_sitter::leaf(text = "Karma")]
-        _karma: (),
-        pub name: Name,
-        #[rust_sitter::leaf(text = "{")]
-        _open: (),
+        pub opening: KarmaOpening,
         pub rules: Rules,
         #[rust_sitter::leaf(text = "}")]
         _close: (),
     }
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct KarmaOpening(
+        #[rust_sitter::leaf(pattern = r"Karma[ \t]+[A-Za-z][A-Za-z0-9.-]*[ \t]*\{", transform = |v| v.trim_end_matches('{').split_ascii_whitespace().nth(1).expect("Karma name").to_string())]
+        pub String,
+    );
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub struct Rules {
         #[rust_sitter::leaf(text = "Rules")]

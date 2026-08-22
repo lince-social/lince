@@ -798,7 +798,11 @@ impl Engine {
     /// caller either publishes the current key or opens mail with the retained
     /// ones, so both are exactly the moments the keyring should be fresh.
     pub async fn sealing_keyring(&self) -> Result<Option<crate::seal::Keyring>, EngineError> {
-        let path = self.sealing_keyring_path.lock().expect("sealing keyring").clone();
+        let path = self
+            .sealing_keyring_path
+            .lock()
+            .expect("sealing keyring")
+            .clone();
         let (Some(path), Some(cell)) = (path, store::cells::local(&self.store.pool).await?) else {
             return Ok(None);
         };

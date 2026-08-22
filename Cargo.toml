@@ -10,6 +10,8 @@ members = [
     "crates/engine",
     "crates/protein",
     "crates/transport",
+    "crates/anicca",
+    "crates/sensei",
 ]
 
 # desktop is a real workspace member so it inherits workspace fields and
@@ -72,6 +74,7 @@ rqrr = "=0.10.1"
 # Only the two formats a browser canvas actually produces. The default feature
 # set pulls a dozen codec crates that would never be called.
 image = { version = "0.25.10", default-features = false, features = ["png", "jpeg"] }
+postcard = { version = "1.1.3", features = ["alloc"] }
 jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }
 # Exact-pinned (Ontology §11 Collab): the record-doc CRDT engine. Upgrades are
 # deliberate — bump together with the vendored loro-wasm browser asset.
@@ -94,6 +97,9 @@ semver = "1.0.27"
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 sha2 = "0.10.9"
+sensei = { version = "=0.7.0", path = "crates/sensei" }
+rust-sitter = "0.4.5"
+rust-sitter-tool = "0.4.5"
 hkdf = "0.12.4"
 getrandom = "0.3.4"
 x25519-dalek = { version = "2.0.1", features = ["static_secrets"] }

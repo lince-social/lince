@@ -141,11 +141,13 @@ pub async fn registrations(pool: &SqlitePool) -> Result<Vec<Registration>, Store
 /// How much of a recipient's quota is currently spent.
 pub async fn held_bytes(pool: &SqlitePool, organ_uid: &str) -> Result<i64, StoreError> {
     Ok(
-        sqlx::query("SELECT COALESCE(SUM(bytes), 0) AS held FROM mailbox_bundle WHERE to_organ = ?")
-            .bind(organ_uid)
-            .fetch_one(pool)
-            .await?
-            .get("held"),
+        sqlx::query(
+            "SELECT COALESCE(SUM(bytes), 0) AS held FROM mailbox_bundle WHERE to_organ = ?",
+        )
+        .bind(organ_uid)
+        .fetch_one(pool)
+        .await?
+        .get("held"),
     )
 }
 
@@ -261,11 +263,7 @@ pub async fn sweep_expired(pool: &SqlitePool) -> Result<u64, StoreError> {
 /// Move a held bundle's expiry date. A narrow seam, the same shape as
 /// `organs::backdate_unreachable`: the retention window is thirty days, and a
 /// test that waited it out would not be a test.
-pub async fn backdate_expiry(
-    pool: &SqlitePool,
-    uid: &str,
-    when: &str,
-) -> Result<(), StoreError> {
+pub async fn backdate_expiry(pool: &SqlitePool, uid: &str, when: &str) -> Result<(), StoreError> {
     sqlx::query("UPDATE mailbox_bundle SET expires_at = ? WHERE uid = ?")
         .bind(when)
         .bind(uid)

@@ -505,7 +505,9 @@ impl Engine {
         };
         let organ_uid = root.actor_uid.clone();
         let Some(held) = self.roster_of(&organ_uid).await? else {
-            return Err(EngineError::Consequence("there is no roster to change".into()));
+            return Err(EngineError::Consequence(
+                "there is no roster to change".into(),
+            ));
         };
         let mut cells = held.roster.cells.clone();
         let Some(entry) = cells.iter_mut().find(|cell| cell.cell_uid == cell_uid) else {

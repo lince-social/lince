@@ -76,6 +76,113 @@ async fn hear(recv: &mut iroh::endpoint::RecvStream) -> ServerMessage {
     serde_json::from_slice(&buf).expect("parse server message")
 }
 
+/// Reactive replica writes borrow the already-open live connection. Removing
+/// the saved NodeId after opening makes the ordinary sync dial impossible, so
+/// this test cannot pass by silently falling back to a second connection.
+#[tokio::test]
+async fn reactive_outbox_reuses_the_live_connection_and_clears_its_rows() {
+    let (host, host_organ) = cell("http://host.test").await;
+    let (guest, guest_organ) = cell("http://guest.test").await;
+    let host_wire = Arc::new(
+        Wire::bind(host.clone(), SecretKey::from_bytes(&[61; 32]), Reach::Local)
+            .await
+            .expect("host binds"),
+    );
+    let guest_wire = Wire::bind(
+        guest.clone(),
+        SecretKey::from_bytes(&[62; 32]),
+        Reach::Local,
+    )
+    .await
+    .expect("guest binds");
+    know(&host, &guest_organ, &guest_wire.node_id().to_string()).await;
+    know(&guest, &host_organ, &host_wire.node_id().to_string()).await;
+    host.act(
+        Action::GrantOrganLogin {
+            organ: guest_organ,
+            person_name: "Marcia".into(),
+        },
+        None,
+    )
+    .await
+    .expect("grant login");
+
+    host_wire.set_live_handler(LiveHost::new(
+        host.clone(),
+        Arc::new(transport::LaneHub::new()),
+    ));
+    let serving = {
+        let host_wire = host_wire.clone();
+        tokio::spawn(async move { host_wire.serve().await })
+    };
+    let connection = guest_wire
+        .endpoint()
+        .connect(loopback(&host_wire), ALPN_LIVE)
+        .await
+        .expect("live dial");
+    let (mut live_send, mut live_recv) = connection.accept_bi().await.expect("Protein stream");
+    say(
+        &mut live_send,
+        &ClientMessage::Unsubscribe { id: "wake".into() },
+    )
+    .await;
+    assert!(matches!(
+        hear(&mut live_recv).await,
+        ServerMessage::LiveHello {
+            login_required: false
+        }
+    ));
+    assert!(matches!(
+        hear(&mut live_recv).await,
+        ServerMessage::SessionChallenge { .. }
+    ));
+    guest_wire.remember_live_connection(&host_organ, &connection);
+
+    // If reuse fails there is nowhere else to dial, making a false-green test
+    // impossible. The live connection itself remains authenticated and open.
+    store::organs::set_node_id(&guest.store.pool, &host_organ, None)
+        .await
+        .expect("remove fallback address");
+    store::records::create(
+        &guest.store.pool,
+        store::records::NewRecord {
+            slug: Some("live-reused"),
+            kind: nucleus::RecordKind::Plain,
+            head: "Rode the live connection",
+            body: "one connection",
+            quantity: store::exact::zero(),
+        },
+    )
+    .await
+    .expect("write");
+    assert!(
+        !store::sync_ops::outbox_due(&guest.store.pool)
+            .await
+            .expect("queued")
+            .is_empty(),
+        "the test needs a reactive row to deliver"
+    );
+
+    assert_eq!(guest_wire.push_outbox().await.expect("drain"), 1);
+    assert!(
+        store::sync_ops::outbox_due(&guest.store.pool)
+            .await
+            .expect("drained")
+            .is_empty(),
+        "a live delivery must run the same seq-guarded outbox delete"
+    );
+    assert!(
+        store::records::resolve(&host.store.pool, "live-reused")
+            .await
+            .expect("host read")
+            .is_some(),
+        "the delta did not arrive over the live connection"
+    );
+
+    connection.close(0u32.into(), b"test complete");
+    serving.abort();
+}
+
 /// A contact with a login granted gets a real session on my Cell — over iroh,
 /// as the Person I named — and what they can see is what that Person can see.
 #[tokio::test]
@@ -129,11 +236,8 @@ async fn a_contact_with_a_login_drives_a_live_session_over_iroh() {
         );
         // And nothing follows it. The session is not started, so no challenge
         // is ever written — a read here must time out rather than return.
-        let leaked = tokio::time::timeout(
-            std::time::Duration::from_millis(300),
-            hear(&mut recv),
-        )
-        .await;
+        let leaked =
+            tokio::time::timeout(std::time::Duration::from_millis(300), hear(&mut recv)).await;
         assert!(
             leaked.is_err(),
             "nothing may be served before the login: got {leaked:?}",
@@ -349,9 +453,13 @@ async fn a_live_guest_acts_on_the_host_and_the_write_lands_there() {
             .await
             .expect("host binds"),
     );
-    let guest_wire = Wire::bind(guest.clone(), SecretKey::from_bytes(&[82; 32]), Reach::Local)
-        .await
-        .expect("guest binds");
+    let guest_wire = Wire::bind(
+        guest.clone(),
+        SecretKey::from_bytes(&[82; 32]),
+        Reach::Local,
+    )
+    .await
+    .expect("guest binds");
     know(&host, &guest_organ, &guest_wire.node_id().to_string()).await;
     know(&guest, &host_organ, &host_wire.node_id().to_string()).await;
 
@@ -385,13 +493,7 @@ async fn a_live_guest_acts_on_the_host_and_the_write_lands_there() {
 
     // Poke the stream so the driver writes its first frame, then take the
     // challenge. The Person here is the host's decision, never our claim.
-    say(
-        &mut send,
-        &ClientMessage::Unsubscribe {
-            id: "wake".into(),
-        },
-    )
-    .await;
+    say(&mut send, &ClientMessage::Unsubscribe { id: "wake".into() }).await;
     // A granted contact is told it needs no login, then gets the challenge.
     assert!(
         matches!(
@@ -552,9 +654,13 @@ async fn a_stranger_with_a_password_gets_in_and_a_wrong_one_never_does() {
             .await
             .expect("host binds"),
     );
-    let guest_wire = Wire::bind(guest.clone(), SecretKey::from_bytes(&[82; 32]), Reach::Local)
-        .await
-        .expect("guest binds");
+    let guest_wire = Wire::bind(
+        guest.clone(),
+        SecretKey::from_bytes(&[82; 32]),
+        Reach::Local,
+    )
+    .await
+    .expect("guest binds");
     let hub = Arc::new(transport::LaneHub::new());
     host_wire.set_live_handler(LiveHost::new(host.clone(), hub.clone()));
     let host_addr = loopback(&host_wire);

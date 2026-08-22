@@ -872,12 +872,11 @@ async fn a_program_designated_to_another_cell_does_not_run_here() {
     let mine = active_program(&store, "run.mine", &frequency.record_uid, "mine", now).await;
     let theirs = active_program(&store, "run.theirs", &frequency.record_uid, "theirs", now).await;
 
-    let this_cell: String = store::sqlx::query_scalar(
-        "SELECT uid FROM record WHERE kind = 'device' LIMIT 1",
-    )
-    .fetch_one(&store.pool)
-    .await
-    .unwrap();
+    let this_cell: String =
+        store::sqlx::query_scalar("SELECT uid FROM record WHERE kind = 'device' LIMIT 1")
+            .fetch_one(&store.pool)
+            .await
+            .unwrap();
 
     // Designating THIS Cell must not stop it running — the filter has to test
     // equality, not merely the presence of a designation.

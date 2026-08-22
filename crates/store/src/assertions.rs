@@ -943,3 +943,56 @@ pub struct ProjectedAssertion {
     pub quantity: Option<DecimalValue>,
     pub unit_uid: Option<String>,
 }
+
+/// Every Record beneath `root` through assertions whose predicate is in
+/// `family`, breadth-first and cycle-safe.
+///
+/// The edge points UP — a child asserts `part-of` its parent — so descending
+/// means matching `object_uid` and collecting `subject_uid`. `family` is a
+/// concept closure rather than one predicate uid, so a Lingua that narrows
+/// `part-of` into its own sub-predicate still walks the same branch.
+pub async fn record_descendants(
+    pool: &SqlitePool,
+    root_uid: &str,
+    family: &[String],
+    include_self: bool,
+) -> Result<Vec<String>, StoreError> {
+    use std::collections::{HashSet, VecDeque};
+
+    if family.is_empty() {
+        return Ok(if include_self {
+            vec![root_uid.to_string()]
+        } else {
+            Vec::new()
+        });
+    }
+    let placeholders = std::iter::repeat_n("?", family.len())
+        .collect::<Vec<_>>()
+        .join(", ");
+    let sql = format!(
+        "SELECT subject_uid FROM record_assertion
+          WHERE object_uid = ? AND predicate_uid IN ({placeholders})"
+    );
+
+    let mut seen: HashSet<String> = HashSet::from([root_uid.to_string()]);
+    let mut queue: VecDeque<String> = VecDeque::from([root_uid.to_string()]);
+    let mut out = if include_self {
+        vec![root_uid.to_string()]
+    } else {
+        Vec::new()
+    };
+    while let Some(current) = queue.pop_front() {
+        let mut query = sqlx::query(&sql).bind(&current);
+        for uid in family {
+            query = query.bind(uid);
+        }
+        for row in query.fetch_all(pool).await? {
+            let uid: String = row.get("subject_uid");
+            if seen.insert(uid.clone()) {
+                out.push(uid.clone());
+                queue.push_back(uid);
+            }
+        }
+    }
+    Ok(out)
+}

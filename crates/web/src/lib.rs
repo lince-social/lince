@@ -1050,7 +1050,7 @@ pub async fn serve_cell_api_only(
         }
         let bytes =
             bytes.ok_or_else(|| (StatusCode::BAD_REQUEST, "missing `file` field".to_string()))?;
-        let path = media_assets::store_media_bytes(&bytes).await?;
+        let path = media_assets::store_media_bytes(&state.store.pool, &bytes).await?;
         Ok(Json(serde_json::json!({ "path": path })))
     }
 
@@ -1068,7 +1068,7 @@ pub async fn serve_cell_api_only(
         headers: HeaderMap,
     ) -> Result<impl IntoResponse, (StatusCode, String)> {
         authenticate_headers(&state, &headers).await?;
-        let path = media_assets::pick_and_store_image().await?;
+        let path = media_assets::pick_and_store_image(&state.store.pool).await?;
         Ok(Json(serde_json::json!({ "path": path })))
     }
 
@@ -1108,6 +1108,49 @@ pub async fn serve_cell_api_only(
         })))
     }
 
+    /// What recently happened to one Record's fields, and why.
+    ///
+    /// The merge is already correct; this is about it being LEGIBLE. A
+    /// field-level edit that lost a last-write-wins race left no trace a
+    /// person could find, so `displaced` carries the text that was replaced —
+    /// recovering the lost edit is then retyping what is on screen rather than
+    /// reading an op log.
+    ///
+    /// `mine` is the field that decides how a surface should treat an entry.
+    /// A remote op overwriting a value this Cell never authored is an ordinary
+    /// update; only one that displaced OUR OWN writing is something that
+    /// happened TO the person, and marking the rest that way would cry wolf on
+    /// every sync.
+    ///
+    /// Not a history tab: entries age out, so this answers "what just
+    /// happened" and nothing longer. The Ledger is the permanent record.
+    async fn get_record_changes(
+        State(state): State<CellApiState>,
+        headers: HeaderMap,
+        Path(record_uid): Path<String>,
+    ) -> Result<impl IntoResponse, (StatusCode, String)> {
+        authenticate_headers(&state, &headers).await?;
+        let changes = store::record_changes::recent(
+            &state.store.pool,
+            &record_uid,
+            store::record_changes::MAX_PER_RECORD,
+        )
+        .await
+        .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+        Ok(Json(serde_json::json!({
+            "record_uid": record_uid,
+            "retention_days": store::record_changes::RETENTION_DAYS,
+            "changes": changes.iter().map(|change| serde_json::json!({
+                "field": change.field,
+                "cause": change.cause.as_str(),
+                "winner_organ": change.winner_organ,
+                "displaced": change.displaced,
+                "mine": change.displaced_local,
+                "at": change.at,
+            })).collect::<Vec<_>>(),
+        })))
+    }
+
     /// Set the Cell's stated total. `0` is unlimited and is a legitimate
     /// answer — the point of a budget is that the owner decides, and "no
     /// ceiling" is one of the decisions.
@@ -1117,13 +1160,17 @@ pub async fn serve_cell_api_only(
         Json(body): Json<serde_json::Value>,
     ) -> Result<impl IntoResponse, (StatusCode, String)> {
         authenticate_headers(&state, &headers).await?;
-        let bytes = body.get("bytes").and_then(serde_json::Value::as_i64).ok_or((
-            StatusCode::BAD_REQUEST,
-            "bytes must be a whole number".to_string(),
-        ))?;
+        let bytes = body
+            .get("bytes")
+            .and_then(serde_json::Value::as_i64)
+            .ok_or((
+                StatusCode::BAD_REQUEST,
+                "bytes must be a whole number".to_string(),
+            ))?;
         store::budget::set_total(&state.store.pool, bytes)
             .await
             .map_err(|error| (StatusCode::BAD_REQUEST, error.to_string()))?;
+        media_assets::enforce_budget(&state.store.pool).await?;
         Ok(Json(serde_json::json!({ "total_bytes": bytes })))
     }
 
@@ -1172,6 +1219,7 @@ pub async fn serve_cell_api_only(
         let bytes = tokio::fs::read(&path)
             .await
             .map_err(|_| (StatusCode::NOT_FOUND, "image not found".to_string()))?;
+        media_assets::touch(path).await;
         let ext = name.rsplit_once('.').map(|(_, e)| e).unwrap_or("");
         let mut response_headers = HeaderMap::new();
         response_headers.insert(
@@ -1729,6 +1777,12 @@ pub async fn serve_cell_api_only(
     let cell_store = Store::open(&default_lince_db_url())
         .await
         .map_err(IoError::other)?;
+    // A Cell may have been stopped while over budget, or its budget may have
+    // been changed by another process. Boot closes that gap before serving a
+    // single old media path.
+    media_assets::enforce_budget(&cell_store.pool)
+        .await
+        .map_err(|(_, message)| IoError::other(message))?;
     let local_base_url = local_base_url_from_socket_addr(local_addr);
     crate::cell_bootstrap::bootstrap_cell(
         &cell_store,
@@ -1940,6 +1994,7 @@ pub async fn serve_cell_api_only(
         )
         .route("/host/media", post(upload_media))
         .route("/host/media/{name}", get(get_media))
+        .route("/host/records/{record_uid}/changes", get(get_record_changes))
         .route("/host/storage", get(get_storage))
         .route("/host/storage/budget", post(set_storage_budget))
         .route("/organ/nearby", get(organ_nearby))

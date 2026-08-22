@@ -390,6 +390,20 @@ pub enum Action {
         target: String,
         fields: Option<Vec<String>>,
     },
+    /// WHICH Records travel to a contact, named by a saved Protein query.
+    ///
+    /// The sibling of `SetContactScope` on the other axis: that one narrows
+    /// the COLUMNS of everything shared, this one narrows WHICH Records are
+    /// shared at all. `None` clears the selection back to the unnarrowed feed.
+    SetContactShare {
+        target: String,
+        protein: Option<serde_json::Value>,
+    },
+    /// Hand a Record over to a contact: they become its holder, and once the
+    /// handover has actually been delivered it stops being ours.
+    MoveRecordTo { record: String, target: String },
+    /// Call off a move that has not been handed over yet.
+    CancelRecordMove { record: String },
     /// WHICH columns we accept FROM a contact (Ontology §12).
     ///
     /// The other half of the pairing, and deliberately its own action rather
@@ -653,7 +667,9 @@ pub enum Action {
     /// person is away for a week should not have to wait it out, and somebody
     /// watching a batch not arrive wants to do something rather than read
     /// about a timer.
-    MailboxMailNow { organ_uid: String },
+    MailboxMailNow {
+        organ_uid: String,
+    },
     /// Write a LOCAL-ONLY config namespace on this Cell's own Record
     /// (Ontology §11, C4).
     ///
@@ -2312,12 +2328,13 @@ impl Engine {
                 // Exact from the text: a level someone wrote in a file is
                 // parsed straight to a decimal, so `3.50` never becomes a
                 // float on its way to a signed Fact.
-                let target_value = nucleus::DecimalValue::parse_inferred(amount.trim()).map_err(
-                    |_| EngineError::Conflict {
-                        code: "quantity_invalid",
-                        message: format!("`{amount}` is not an exact decimal amount"),
-                    },
-                )?;
+                let target_value =
+                    nucleus::DecimalValue::parse_inferred(amount.trim()).map_err(|_| {
+                        EngineError::Conflict {
+                            code: "quantity_invalid",
+                            message: format!("`{amount}` is not an exact decimal amount"),
+                        }
+                    })?;
                 let current = store::records::quantity(&self.store.pool, &uid)
                     .await?
                     .unwrap_or_else(store::exact::zero);
@@ -3480,6 +3497,101 @@ impl Engine {
                     )
                     .await?;
             }
+            Action::SetContactShare { target, protein } => {
+                let uid = self.resolve(&target).await?;
+                if store::organs::contact(&self.store.pool, &uid).await?.is_none() {
+                    return Err(EngineError::Consequence(
+                        "not a contact — this Cell's own Organ shares with nobody".into(),
+                    ));
+                }
+                // Evaluated BEFORE it is stored. A selection nobody can read
+                // narrows to nothing while the panel reads as configured,
+                // which is the silent-stop-sharing failure rather than an
+                // error anyone would notice.
+                let raw = match &protein {
+                    Some(value) => {
+                        let raw = value.to_string();
+                        let Some(parsed) = crate::share::parse(&raw) else {
+                            return Err(EngineError::Consequence(
+                                "this selection is not a Protein query".into(),
+                            ));
+                        };
+                        protein::matching_records(&self.store, &parsed, None).await?;
+                        Some(raw)
+                    }
+                    None => None,
+                };
+                store::organs::set_contact_share_protein(
+                    &self.store.pool,
+                    &uid,
+                    raw.as_deref(),
+                )
+                .await?;
+                if let Some(contact) = store::organs::contact(&self.store.pool, &uid).await? {
+                    crate::share::reconcile_contact(self, &contact).await?;
+                }
+                outcome.facts = self
+                    .annotate(uid, actor, serde_json::json!({ "share": protein }), now)
+                    .await?;
+            }
+            Action::MoveRecordTo { record, target } => {
+                let record_uid = self.resolve(&record).await?;
+                let contact_uid = self.resolve(&target).await?;
+                if store::organs::contact(&self.store.pool, &contact_uid)
+                    .await?
+                    .is_none()
+                {
+                    return Err(EngineError::Consequence(
+                        "a Record can only be handed to a contact".into(),
+                    ));
+                }
+                if store::records::get(&self.store.pool, &record_uid)
+                    .await?
+                    .is_none()
+                {
+                    return Err(EngineError::Consequence("no such Record".into()));
+                }
+                // Refused rather than re-targeted. Two handovers in flight for
+                // one Record is a race whose loser has already been told they
+                // own it; there is no answer at this layer that is not a
+                // guess, so the second one is a mistake to report.
+                if let Some(existing) =
+                    store::record_move::of_record(&self.store.pool, &record_uid).await?
+                {
+                    if existing.contact_organ != contact_uid {
+                        return Err(EngineError::Consequence(
+                            "this Record is already on its way to somebody else — cancel that \
+                             move first"
+                                .into(),
+                        ));
+                    }
+                }
+                store::record_move::begin(&self.store.pool, &record_uid, &contact_uid).await?;
+                // Handing something over means sending it, whatever the
+                // selection says: a Record they are about to own cannot be
+                // filtered out of its own handover.
+                store::sync_ops::enqueue_record_for_contact(
+                    &self.store.pool,
+                    &contact_uid,
+                    &record_uid,
+                )
+                .await?;
+                outcome.facts = self
+                    .annotate(
+                        record_uid,
+                        actor,
+                        serde_json::json!({ "moving_to": contact_uid }),
+                        now,
+                    )
+                    .await?;
+            }
+            Action::CancelRecordMove { record } => {
+                let record_uid = self.resolve(&record).await?;
+                store::record_move::forget(&self.store.pool, &record_uid).await?;
+                outcome.facts = self
+                    .annotate(record_uid, actor, serde_json::json!({ "moving_to": null }), now)
+                    .await?;
+            }
             Action::ForgetOrganContact { target } => {
                 let uid = self.resolve(&target).await?;
                 if store::organs::contact(&self.store.pool, &uid)
@@ -3828,32 +3940,23 @@ impl Engine {
                 // yet, that the mail is theirs. Without one there is nothing
                 // to check a presented roster against, so this refuses rather
                 // than registering something uncollectable.
-                let root_key = crate::trust::key_of(
-                    &self.store,
-                    &organ_uid,
-                    crate::roster::ROOT_KEY_ID,
-                )
-                .await?
-                .ok_or_else(|| {
-                    EngineError::Consequence(
+                let root_key =
+                    crate::trust::key_of(&self.store, &organ_uid, crate::roster::ROOT_KEY_ID)
+                        .await?
+                        .ok_or_else(|| {
+                            EngineError::Consequence(
                         "no root key is held for that Organ: pair with them before offering to \
                          carry their mail"
                             .into(),
                     )
-                })?;
+                        })?;
                 let quota = if quota_bytes > 0 {
                     quota_bytes
                 } else {
                     crate::mailbox::DEFAULT_QUOTA_BYTES
                 };
-                store::mailbox::register(
-                    &self.store.pool,
-                    &organ_uid,
-                    &root_key,
-                    &label,
-                    quota,
-                )
-                .await?;
+                store::mailbox::register(&self.store.pool, &organ_uid, &root_key, &label, quota)
+                    .await?;
                 outcome.data = Some(serde_json::json!({
                     "organ_uid": organ_uid,
                     "quota_bytes": quota,
@@ -3894,9 +3997,7 @@ impl Engine {
                                 "oldest_expires_at": waiting.oldest_expires_at,
                             }),
                         ),
-                        crate::wire::CarrierProbe::Refused => {
-                            ("refused", serde_json::Value::Null)
-                        }
+                        crate::wire::CarrierProbe::Refused => ("refused", serde_json::Value::Null),
                         crate::wire::CarrierProbe::Unreachable => {
                             ("unreachable", serde_json::Value::Null)
                         }
@@ -3913,22 +4014,23 @@ impl Engine {
                 // Who could be asked. Every known contact, because whether
                 // they carry for us is not something we hold — only they do,
                 // and the probe is what answers it.
-                let candidates: Vec<serde_json::Value> =
-                    store::organs::contacts(&self.store.pool)
-                        .await?
-                        .into_iter()
-                        .filter(|contact| contact.trust == "known")
-                        .filter(|contact| {
-                            !points.iter().any(|point| point.organ_uid == contact.record_uid)
+                let candidates: Vec<serde_json::Value> = store::organs::contacts(&self.store.pool)
+                    .await?
+                    .into_iter()
+                    .filter(|contact| contact.trust == "known")
+                    .filter(|contact| {
+                        !points
+                            .iter()
+                            .any(|point| point.organ_uid == contact.record_uid)
+                    })
+                    .map(|contact| {
+                        serde_json::json!({
+                            "organ_uid": contact.record_uid,
+                            "known_as": contact.head,
+                            "node_id": contact.node_id,
                         })
-                        .map(|contact| {
-                            serde_json::json!({
-                                "organ_uid": contact.record_uid,
-                                "known_as": contact.head,
-                                "node_id": contact.node_id,
-                            })
-                        })
-                        .collect();
+                    })
+                    .collect();
                 outcome.data = Some(serde_json::json!({
                     "pickup": published,
                     "candidates": candidates,
@@ -4138,14 +4240,13 @@ impl Engine {
                 // The code needs somewhere to point. A Cell with no endpoint
                 // can issue nothing usable, and saying so beats handing over a
                 // string that fails silently on the other person's machine.
-                let node_id = self
-                    .own_node_id()
-                    .await?
-                    .ok_or_else(|| EngineError::Consequence(
+                let node_id = self.own_node_id().await?.ok_or_else(|| {
+                    EngineError::Consequence(
                         "this Cell has published no address, so an invite would have nowhere \
                          to point. Publish a device list first."
                             .into(),
-                    ))?;
+                    )
+                })?;
                 let code = crate::pairing::MailboxInviteCode { node_id, token }.encode();
                 outcome.data = Some(serde_json::json!({
                     "code": code,
@@ -4752,13 +4853,14 @@ impl Engine {
                             .await?;
                         }
                     }
-                    // Everything in the bundle is stable documentation, which
-                    // is quantity 1 on the same ladder the Kanban board reads.
-                    if let Some((amount, _)) = &record.projection.quantity {
+                    // The state word and the number are two projections of one
+                    // fact, so a file that states only `@stable` still lands
+                    // on the same rung of the ladder the Kanban board reads.
+                    if let Some(amount) = record.quantity() {
                         self.act(
                             Action::SetQuantityExact {
                                 target: uid.clone(),
-                                amount: amount.clone(),
+                                amount,
                             },
                             actor.clone(),
                         )
@@ -10935,6 +11037,9 @@ impl Engine {
             Action::RenameOrganContact { .. }
             | Action::SetSyncPolicy { .. }
             | Action::SetContactScope { .. }
+            | Action::SetContactShare { .. }
+            | Action::MoveRecordTo { .. }
+            | Action::CancelRecordMove { .. }
             | Action::SetContactAcceptScope { .. }
             | Action::HideRecordFromContact { .. }
             | Action::ShareMyKey { .. }

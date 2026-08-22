@@ -276,7 +276,10 @@ async fn discovery(verbs: &[&str]) -> Result<(), Error> {
             );
             Ok(())
         }
-        [key @ ("accept-unknown" | "accept-logins" | "local" | "internet"), value @ ("on" | "off")] => {
+        [
+            key @ ("accept-unknown" | "accept-logins" | "local" | "internet"),
+            value @ ("on" | "off"),
+        ] => {
             let field = key.replace('-', "_");
             let mut next = current.clone();
             next.as_object_mut()

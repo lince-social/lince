@@ -138,8 +138,10 @@ pub fn body_to_html(body: &str) -> String {
         match std::mem::replace(kind, Block::Prose) {
             Block::Item => return out.push_str(&format!("<li>{}</li>\n", markup(&text))),
             Block::Quote => {
-                return out
-                    .push_str(&format!("<p class=\"chapter__eyebrow\">{}</p>\n", markup(&text)))
+                return out.push_str(&format!(
+                    "<p class=\"chapter__eyebrow\">{}</p>\n",
+                    markup(&text)
+                ));
             }
             Block::Prose => {}
         }
@@ -295,7 +297,9 @@ mod tests {
     /// line would otherwise pair with `file_sync` in the next.
     #[test]
     fn an_underscore_inside_a_name_is_not_emphasis() {
-        let html = body_to_html("The `lince.file_sync` config and record_editor\nboth read store_state here.\n");
+        let html = body_to_html(
+            "The `lince.file_sync` config and record_editor\nboth read store_state here.\n",
+        );
         assert!(!html.contains("<em>"), "{html}");
         assert!(html.contains("record_editor"), "{html}");
         assert!(html.contains("store_state"), "{html}");
@@ -314,7 +318,9 @@ mod tests {
     /// first line never closed.
     #[test]
     fn a_wrapped_quote_is_one_quote() {
-        let html = body_to_html("> **Records model things. Assertions\n> model what is said about them.**\n");
+        let html = body_to_html(
+            "> **Records model things. Assertions\n> model what is said about them.**\n",
+        );
         assert_eq!(html.matches("chapter__eyebrow").count(), 1, "{html}");
         assert!(html.contains("<strong>Records model things. Assertions<br>\nmodel what is said about them.</strong>"), "{html}");
     }

@@ -91,6 +91,10 @@ pub(crate) async fn relay(
         mut recv,
         organ: _,
     } = session;
+    // The login/hello gate is complete, so the sync runner may now reuse this
+    // exact QUIC connection for reactive outbox batches. There remains one
+    // browser WebSocket and one network connection to the contact.
+    wire.remember_live_connection(&organ, &connection);
     // The session is live only now. Until this frame lands the board keeps its
     // subscriptions queued and its status light off — a websocket upgrade to
     // our OWN Cell says nothing about whether the far Cell let us in.

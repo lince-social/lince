@@ -348,10 +348,7 @@ async fn insert_local(
 }
 
 /// The highest stamp any process has recorded for this Cell.
-async fn max_hlc_for_actor(
-    pool: &SqlitePool,
-    actor_cell: &str,
-) -> Result<Option<i64>, StoreError> {
+async fn max_hlc_for_actor(pool: &SqlitePool, actor_cell: &str) -> Result<Option<i64>, StoreError> {
     Ok(
         sqlx::query_scalar::<_, Option<i64>>("SELECT MAX(hlc) FROM sync_op WHERE actor_cell = ?")
             .bind(actor_cell)
@@ -393,6 +390,9 @@ pub async fn log_local(
     )
     .await?;
     if let Some(seq) = res {
+        if tbl == "record" && kind == OpKind::Set {
+            crate::record_changes::note_local(pool, uid, field).await?;
+        }
         let now = chrono::Utc::now().to_rfc3339();
         match &root {
             // Individually replicated: grant holders only, and NOT the general
@@ -490,6 +490,9 @@ pub async fn log_local_tx(
             "could not mint a free op identity for cell {actor_cell}"
         )));
     };
+    if tbl == "record" && kind == OpKind::Set {
+        crate::record_changes::note_local_tx(tx, uid, field).await?;
+    }
     let now = chrono::Utc::now().to_rfc3339();
     match &root {
         // Individually replicated: grant holders only, and NOT the general
@@ -941,6 +944,26 @@ pub async fn latest_hlc_for_field(
             .await?
             .get::<Option<i64>, _>("hlc"),
     )
+}
+
+pub async fn latest_author_for_field(
+    pool: &SqlitePool,
+    tbl: &str,
+    uid: &str,
+    field: &str,
+) -> Result<Option<String>, StoreError> {
+    Ok(sqlx::query(
+        "SELECT organ_uid FROM sync_op
+          WHERE tbl = ? AND uid = ? AND field = ?
+          ORDER BY hlc DESC
+          LIMIT 1",
+    )
+    .bind(tbl)
+    .bind(uid)
+    .bind(field)
+    .fetch_optional(pool)
+    .await?
+    .map(|r| r.get::<String, _>("organ_uid")))
 }
 
 /// Max HLC in the whole log — boot seeds the Cell clock past it.
@@ -1456,4 +1479,3 @@ pub async fn enqueue_widened_for_contact(
     }
     Ok(queued)
 }
-

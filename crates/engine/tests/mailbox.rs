@@ -72,11 +72,7 @@ fn entry(cell_uid: &str, node_id: &str, sealing: Option<engine::seal::SealingKey
 
 /// A recipient: its Organ, its root key, and a signed roster naming the Cells
 /// that may collect for it.
-async fn recipient(
-    engine: &Engine,
-    organ: &str,
-    cells: Vec<CellEntry>,
-) -> (Signer, SignedRoster) {
+async fn recipient(engine: &Engine, organ: &str, cells: Vec<CellEntry>) -> (Signer, SignedRoster) {
     let root = Signer::generate(organ, engine::roster::ROOT_KEY_ID);
     engine
         .publish_root_key(&root)
@@ -156,7 +152,10 @@ async fn mail_left_with_a_carrier_reaches_the_recipient_and_the_carrier_reads_no
     // that is the case a mailbox exists for.
     let signing = ed25519_dalek::SigningKey::from_bytes(&[11u8; 32]);
     let bundle = engine::seal::seal(
-        &engine::seal::MailedBatch { root: None, batch: batch(&sender_organ, "c-sender") },
+        &engine::seal::MailedBatch {
+            root: None,
+            batch: batch(&sender_organ, "c-sender"),
+        },
         "c-sender",
         &recipient_organ,
         &[sealing],
@@ -255,7 +254,10 @@ async fn a_carrier_refuses_mail_for_an_organ_it_does_not_serve() {
     let (_, sealing) = engine::seal::generate("c-nobody", 1, "2099-01-01T00:00:00Z");
     let signing = ed25519_dalek::SigningKey::from_bytes(&[12u8; 32]);
     let bundle = engine::seal::seal(
-        &engine::seal::MailedBatch { root: None, batch: batch(&sender_organ, "c-sender") },
+        &engine::seal::MailedBatch {
+            root: None,
+            batch: batch(&sender_organ, "c-sender"),
+        },
         "c-sender",
         "organ-a-stranger",
         &[sealing],
@@ -295,7 +297,11 @@ async fn only_a_cell_the_recipients_roster_names_may_collect() {
     let (root, roster) = recipient(
         &recipient_engine,
         &recipient_organ,
-        vec![entry("c-phone", &recipient_wire.node_id().to_string(), None)],
+        vec![entry(
+            "c-phone",
+            &recipient_wire.node_id().to_string(),
+            None,
+        )],
     )
     .await;
     store::mailbox::register(
@@ -457,14 +463,11 @@ async fn the_mailbox_door_serves_mailbox_verbs_and_nothing_else() {
         .request(
             carrier_addr.clone(),
             ALPN_SYNC,
-            &WireRequest::MailboxDeposit {
-                body: "{}".into(),
-            },
+            &WireRequest::MailboxDeposit { body: "{}".into() },
         )
         .await;
     assert!(
-        sneaked.is_err()
-            || matches!(sneaked, Ok(WireResponse::Refused { .. })),
+        sneaked.is_err() || matches!(sneaked, Ok(WireResponse::Refused { .. })),
         "a mailbox verb must not be served on the sync door"
     );
 }
@@ -496,7 +499,10 @@ async fn a_recipients_quota_bounds_what_a_stranger_can_leave() {
     let signing = ed25519_dalek::SigningKey::from_bytes(&[13u8; 32]);
     let body = serde_json::to_string(
         &engine::seal::seal(
-            &engine::seal::MailedBatch { root: None, batch: batch("organ-sender", "c-sender") },
+            &engine::seal::MailedBatch {
+                root: None,
+                batch: batch("organ-sender", "c-sender"),
+            },
             "c-sender",
             &recipient_organ,
             &[sealing],
@@ -816,7 +822,13 @@ async fn mail_reaches_a_recipient_through_the_pickup_point_it_published() {
         .await
         .expect("republish");
 
-    introduce(&recipient_engine, &recipient_organ, &recipient_root, &sender).await;
+    introduce(
+        &recipient_engine,
+        &recipient_organ,
+        &recipient_root,
+        &sender,
+    )
+    .await;
     introduce(&sender, &sender_organ, &sender_root, &recipient_engine).await;
 
     // The carrier agrees to hold their mail.
@@ -951,7 +963,13 @@ async fn a_sender_falls_through_to_the_second_pickup_point() {
     .await
     .expect("register");
 
-    introduce(&recipient_engine, &recipient_organ, &recipient_root, &sender).await;
+    introduce(
+        &recipient_engine,
+        &recipient_organ,
+        &recipient_root,
+        &sender,
+    )
+    .await;
     let published = recipient_engine
         .set_pickup_points(
             &recipient_root,
@@ -1006,13 +1024,23 @@ async fn an_organ_with_no_published_box_cannot_be_mailed() {
 
     assert_eq!(
         sender_wire
-            .leave_mail("someone-we-never-met", None, &batch(&sender_organ, &sender_cell))
+            .leave_mail(
+                "someone-we-never-met",
+                None,
+                &batch(&sender_organ, &sender_cell)
+            )
             .await
             .expect("leave"),
         engine::wire::MailLeft::NoRoster
     );
 
-    introduce(&recipient_engine, &recipient_organ, &recipient_root, &sender).await;
+    introduce(
+        &recipient_engine,
+        &recipient_organ,
+        &recipient_root,
+        &sender,
+    )
+    .await;
     assert_eq!(
         sender_wire
             .leave_mail(&recipient_organ, None, &batch(&sender_organ, &sender_cell))
@@ -1172,7 +1200,13 @@ async fn mail_is_left_only_after_the_retry_window_has_passed() {
     // about: a peer we hold a key for and cannot reach right now.
     let (recipient_engine, recipient_organ, recipient_root) =
         mailable("http://recipient.test", &recipient_dir, "node-recipient").await;
-    introduce(&recipient_engine, &recipient_organ, &recipient_root, &sender).await;
+    introduce(
+        &recipient_engine,
+        &recipient_organ,
+        &recipient_root,
+        &sender,
+    )
+    .await;
     introduce(&sender, &sender_organ, &sender_root, &recipient_engine).await;
 
     store::mailbox::register(
@@ -1300,7 +1334,13 @@ async fn leaving_mail_does_not_move_the_retention_floor() {
         .expect("sender binds");
     let (recipient_engine, recipient_organ, recipient_root) =
         mailable("http://recipient.test", &recipient_dir, "node-recipient").await;
-    introduce(&recipient_engine, &recipient_organ, &recipient_root, &sender).await;
+    introduce(
+        &recipient_engine,
+        &recipient_organ,
+        &recipient_root,
+        &sender,
+    )
+    .await;
     introduce(&sender, &sender_organ, &sender_root, &recipient_engine).await;
 
     store::mailbox::register(
@@ -1409,16 +1449,30 @@ async fn a_mailed_conversation_batch_lands_in_its_root_and_nowhere_else() {
     let sender_cell = local_cell(&sender).await;
     let (recipient_engine, recipient_organ, recipient_root) =
         mailable("http://recipient.test", &recipient_dir, "node-recipient").await;
-    introduce(&recipient_engine, &recipient_organ, &recipient_root, &sender).await;
+    introduce(
+        &recipient_engine,
+        &recipient_organ,
+        &recipient_root,
+        &sender,
+    )
+    .await;
     introduce(&sender, &sender_organ, &sender_root, &recipient_engine).await;
 
     // The recipient accepted a conversation with this sender.
-    store::replica::offer(&recipient_engine.store.pool, "r-conversation", &sender_organ)
-        .await
-        .expect("offer");
-    store::replica::accept(&recipient_engine.store.pool, "r-conversation", &sender_organ)
-        .await
-        .expect("accept");
+    store::replica::offer(
+        &recipient_engine.store.pool,
+        "r-conversation",
+        &sender_organ,
+    )
+    .await
+    .expect("offer");
+    store::replica::accept(
+        &recipient_engine.store.pool,
+        "r-conversation",
+        &sender_organ,
+    )
+    .await
+    .expect("accept");
 
     let sealed = sender
         .seal_batch_for(
@@ -1699,7 +1753,11 @@ async fn an_expiry_notice_reaches_the_sender_that_left_it_and_nobody_else() {
     // the property: an answer is built from the connection's node id and there
     // is no field in the request that could name anybody else.
     let answered = one_wire
-        .request(carrier_addr.clone(), ALPN_MAILBOX, &WireRequest::MailboxExpiries)
+        .request(
+            carrier_addr.clone(),
+            ALPN_MAILBOX,
+            &WireRequest::MailboxExpiries,
+        )
         .await
         .expect("the carrier answers");
     match answered {

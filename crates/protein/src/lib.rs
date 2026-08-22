@@ -233,6 +233,10 @@ pub struct Context<'a> {
     pub nearby: Option<&'a [nucleus::nearby::NearbyPeer]>,
 }
 
+fn part_of_kind() -> String {
+    "part-of".to_string()
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Predicate {
@@ -262,6 +266,20 @@ pub enum Predicate {
         direction: LinkDirection,
         #[serde(default)]
         other: Option<String>,
+    },
+    /// Everything beneath one Record through a link kind, transitively.
+    ///
+    /// `Relation` answers "is there an edge", one hop only, which cannot say
+    /// "this branch": a grandchild is under its grandparent through two edges
+    /// and matches no single-hop test. The whole point of sharing a branch is
+    /// that it keeps working as the branch grows, so the closure has to be the
+    /// predicate rather than something a caller re-enumerates.
+    Under {
+        record: String,
+        #[serde(default = "part_of_kind")]
+        kind: String,
+        #[serde(default)]
+        include_self: bool,
     },
     /// Case-insensitive search across a Record's head and body.
     TextContains(String),
@@ -629,9 +647,7 @@ fn read_permission_keys(source: Source) -> Option<&'static [&'static str]> {
         | Source::TransferBulkCompletionPreview => Some(&["transfer:read"]),
         Source::Frequency | Source::Recurrence => Some(&["frequency:read"]),
         Source::Karma => Some(&["karma:read"]),
-        Source::Decision | Source::Concept | Source::Lingua | Source::Nearby | Source::Auth => {
-            None
-        }
+        Source::Decision | Source::Concept | Source::Lingua | Source::Nearby | Source::Auth => None,
     }
 }
 
@@ -1022,30 +1038,27 @@ async fn execute_karma(store: &Store, protein: &Protein) -> Result<Vec<Value>, P
     // Which Cell is answering. The surface needs it to tell "designated to me"
     // from "designated to one of my others" — the same string in both cases,
     // and the difference is the whole meaning of the row.
-    let this_cell: Option<String> = store::cells::local(&store.pool)
-        .await?
-        .map(|cell| cell.uid);
+    let this_cell: Option<String> = store::cells::local(&store.pool).await?.map(|cell| cell.uid);
 
     // Read once for the whole union, like the two maps above. Every per-row
     // lookup in this loop is one query per Program per Protein query, and this
     // union is read on every refresh of the panel it feeds.
-    let designations: std::collections::BTreeMap<String, Option<String>> = store::sqlx::query(
-        "SELECT record_uid, fds FROM record_extension WHERE namespace = ?",
-    )
-    .bind(store::executor::NAMESPACE)
-    .fetch_all(&store.pool)
-    .await
-    .map_err(store::StoreError::from)?
-    .into_iter()
-    .map(|row| {
-        use store::sqlx::Row as _;
-        let fds: String = row.get("fds");
-        let cell = serde_json::from_str::<Value>(&fds)
-            .ok()
-            .and_then(|fds| fds.get("cell").and_then(|c| c.as_str().map(str::to_string)));
-        (row.get::<String, _>("record_uid"), cell)
-    })
-    .collect();
+    let designations: std::collections::BTreeMap<String, Option<String>> =
+        store::sqlx::query("SELECT record_uid, fds FROM record_extension WHERE namespace = ?")
+            .bind(store::executor::NAMESPACE)
+            .fetch_all(&store.pool)
+            .await
+            .map_err(store::StoreError::from)?
+            .into_iter()
+            .map(|row| {
+                use store::sqlx::Row as _;
+                let fds: String = row.get("fds");
+                let cell = serde_json::from_str::<Value>(&fds)
+                    .ok()
+                    .and_then(|fds| fds.get("cell").and_then(|c| c.as_str().map(str::to_string)));
+                (row.get::<String, _>("record_uid"), cell)
+            })
+            .collect();
 
     let mut rows = Vec::new();
     for handle in store::karma::programs::list_handles(&store.pool).await? {
@@ -1709,6 +1722,7 @@ pub async fn matching_records(
             | Predicate::SlugEq(_)
             | Predicate::ConceptIn(_)
             | Predicate::Relation { .. }
+            | Predicate::Under { .. }
             | Predicate::TextContains(_)
             | Predicate::WorkDate { .. }
             | Predicate::Near { .. }
@@ -1734,6 +1748,27 @@ pub async fn matching_records(
         }
     }
     Ok(rows)
+}
+
+/// Which of `among` the query selects — the incremental half of
+/// [`matching_records`].
+///
+/// A share reconciliation only ever asks about the Records an op touched since
+/// its watermark, so evaluating the selection against the whole store on every
+/// pass would do work proportional to the store rather than to the change.
+pub async fn matching_among(
+    store: &Store,
+    protein: &Protein,
+    among: &HashSet<String>,
+) -> Result<HashSet<String>, ProteinError> {
+    if among.is_empty() {
+        return Ok(HashSet::new());
+    }
+    Ok(matching_records(store, protein, Some(among))
+        .await?
+        .into_iter()
+        .map(|row| row.uid)
+        .collect())
 }
 
 async fn execute_records(
@@ -2637,6 +2672,8 @@ struct PredicateCtx {
     anchors: HashMap<String, Option<nucleus::place::Place>>,
     /// (kind, direction, optional opposite endpoint) -> matching Records.
     relations: HashMap<(String, LinkDirection, Option<String>), HashSet<String>>,
+    /// (root token, link kind, include_self) -> the branch beneath it.
+    branches: HashMap<(String, String, bool), HashSet<String>>,
     /// Batched `work` extension values, loaded only when a work-date leaf is used.
     work: Option<HashMap<String, Value>>,
     /// organ token (slug or uid) -> resolved organ uid (`None` = unresolvable).
@@ -2650,6 +2687,7 @@ impl PredicateCtx {
             record_concepts: HashMap::new(),
             anchors: HashMap::new(),
             relations: HashMap::new(),
+            branches: HashMap::new(),
             work: None,
             organs: HashMap::new(),
         };
@@ -2683,6 +2721,38 @@ impl PredicateCtx {
                     None => None,
                 };
                 self.anchors.insert(of.clone(), place);
+            }
+            Predicate::Under {
+                record,
+                kind,
+                include_self,
+            } => {
+                let key = (record.clone(), kind.clone(), *include_self);
+                if self.branches.contains_key(&key) {
+                    return Ok(());
+                }
+                let root = store::records::resolve(&store.pool, record).await?;
+                let kind_uid = store::concepts::resolve(&store.pool, kind).await?;
+                let members = match (root, kind_uid) {
+                    (Some(root), Some(kind_uid)) => {
+                        // The whole predicate family, so a Lingua that narrows
+                        // `part-of` into its own sub-predicate still walks the
+                        // same branch.
+                        let family =
+                            store::concepts::descendants_including(&store.pool, &kind_uid).await?;
+                        store::assertions::record_descendants(
+                            &store.pool,
+                            &root.uid,
+                            &family,
+                            *include_self,
+                        )
+                        .await?
+                        .into_iter()
+                        .collect()
+                    }
+                    _ => HashSet::new(),
+                };
+                self.branches.insert(key, members);
             }
             Predicate::Relation {
                 kind,
@@ -2816,6 +2886,14 @@ impl PredicateCtx {
                             .is_some_and(|concepts| concepts.iter().any(|c| family.contains(c)))
                     })
                 }
+                Predicate::Under {
+                    record,
+                    kind,
+                    include_self,
+                } => self
+                    .branches
+                    .get(&(record.clone(), kind.clone(), *include_self))
+                    .is_some_and(|members| members.contains(&r.uid)),
                 Predicate::Relation {
                     kind,
                     direction,
@@ -4862,6 +4940,7 @@ fn transfer_predicate_name(predicate: &Predicate) -> &'static str {
         Predicate::QuantityEq(_) => "quantity_eq",
         Predicate::KindEq(_) => "kind_eq",
         Predicate::Relation { .. } => "relation",
+        Predicate::Under { .. } => "under",
         Predicate::TextContains(_) => "text_contains",
         Predicate::WorkDate { .. } => "work_date",
         Predicate::StateIn(_) => "state_in",

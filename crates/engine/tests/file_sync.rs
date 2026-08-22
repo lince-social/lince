@@ -940,17 +940,16 @@ async fn a_malformed_uid_is_refused_at_the_door() {
     let dir = tmp_dir();
     let mut state = FileSyncState::new();
 
-    std::fs::write(
-        dir.join("Bad.lingua"),
-        "---\nuid: not-a-uid\n---\n\nbody\n",
-    )
-    .unwrap();
+    std::fs::write(dir.join("Bad.lingua"), "---\nuid: not-a-uid\n---\n\nbody\n").unwrap();
     let report = e.file_sync_tick(&dir, &organ, &mut state).await.unwrap();
 
     assert_eq!(report.conflicts.len(), 1, "refused: {report:?}");
     assert!(report.created.is_empty(), "and no Record was made");
     assert!(
-        store::records::get(&e.store.pool, "not-a-uid").await.unwrap().is_none(),
+        store::records::get(&e.store.pool, "not-a-uid")
+            .await
+            .unwrap()
+            .is_none(),
         "least of all under that uid"
     );
 }
@@ -966,11 +965,7 @@ async fn an_unknown_concept_refuses_the_file_and_creates_nothing() {
     let mut state = FileSyncState::new();
     e.file_sync_tick(&dir, &organ, &mut state).await.unwrap();
 
-    std::fs::write(
-        dir.join("Bad.lingua"),
-        "---\n@nonesuch\n---\n\nBody.\n",
-    )
-    .unwrap();
+    std::fs::write(dir.join("Bad.lingua"), "---\n@nonesuch\n---\n\nBody.\n").unwrap();
     let report = e.file_sync_tick(&dir, &organ, &mut state).await.unwrap();
 
     assert!(report.created.is_empty(), "nothing created: {report:?}");
@@ -1198,11 +1193,18 @@ async fn a_quantity_written_in_a_lingua_file_becomes_true_in_the_database() {
     assert!(on_disk.contains("quantity: 2"), "rendered: {on_disk}");
 
     // Write a new level, exactly as a person or an agent would.
-    std::fs::write(&path, on_disk.replace("quantity: 2", "quantity: 12.50 @hour")).unwrap();
+    std::fs::write(
+        &path,
+        on_disk.replace("quantity: 2", "quantity: 12.50 @hour"),
+    )
+    .unwrap();
     let report = e.file_sync_tick(&dir, &organ, &mut state).await.unwrap();
 
     assert!(report.conflicts.is_empty(), "not a conflict: {report:?}");
-    let row = store::records::get(&e.store.pool, &uid).await.unwrap().unwrap();
+    let row = store::records::get(&e.store.pool, &uid)
+        .await
+        .unwrap()
+        .unwrap();
     assert_eq!(
         row.quantity.to_string(),
         "12.50",
@@ -1280,14 +1282,34 @@ async fn a_restart_picks_the_folder_back_up_instead_of_refusing_every_file() {
 
     // The Cell stops, someone edits the note in their editor, the Cell comes
     // back: a new process, a new state, the same folder.
-    std::fs::write(&path, written.replace("the original body", "edited while closed")).unwrap();
+    std::fs::write(
+        &path,
+        written.replace("the original body", "edited while closed"),
+    )
+    .unwrap();
     let mut after_restart = FileSyncState::new();
-    let report = e.file_sync_tick(&dir, &organ, &mut after_restart).await.unwrap();
+    let report = e
+        .file_sync_tick(&dir, &organ, &mut after_restart)
+        .await
+        .unwrap();
 
-    assert!(report.conflicts.is_empty(), "the folder is picked back up: {:?}", report.conflicts);
-    assert!(report.created.is_empty(), "a file already adopted is not adopted twice");
-    let row = store::records::get(&e.store.pool, &uid).await.unwrap().unwrap();
-    assert_eq!(row.body, "edited while closed", "disk wins, as it does while running");
+    assert!(
+        report.conflicts.is_empty(),
+        "the folder is picked back up: {:?}",
+        report.conflicts
+    );
+    assert!(
+        report.created.is_empty(),
+        "a file already adopted is not adopted twice"
+    );
+    let row = store::records::get(&e.store.pool, &uid)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        row.body, "edited while closed",
+        "disk wins, as it does while running"
+    );
     assert_eq!(
         store::records::list_all(&e.store.pool).await.unwrap().len(),
         // The Organ and the Cell are Records too, and neither is mirrored.

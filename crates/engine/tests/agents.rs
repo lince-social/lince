@@ -186,11 +186,41 @@ async fn importing_instinct_puts_the_documentation_in_the_store() {
     let chapter = bundle.iter().find(|r| r.head == "Record").expect("the Record chapter");
     let uids: Vec<String> = bundle.iter().map(|r| r.projection.uid.clone()).collect();
     let assertions = store::assertions::for_subjects(&e.store.pool, &uids).await.unwrap();
-    assert!(
-        assertions.iter().any(|a| a.predicate == "part-of"
-            && a.object_uid.as_deref() == Some(chapter.projection.uid.as_str())),
-        "ideas point at the chapter they are part of"
+    // This used to assert that something pointed AT `Record`, which is the
+    // link inverted: `Record` is a child of Ontology, not a parent of
+    // anything. It passed only while the documentation happened to file
+    // something under it, and broke when the tree was reorganised — so it was
+    // testing an accident of the content rather than the property above.
+    let parent_of = |child: &str| {
+        let uid = bundle
+            .iter()
+            .find(|r| r.head == child)
+            .unwrap_or_else(|| panic!("the {child} chapter"))
+            .projection
+            .uid
+            .clone();
+        assertions
+            .iter()
+            .find(|a| a.subject_uid == uid && a.predicate == "part-of")
+            .and_then(|a| a.object_uid.clone())
+    };
+    let ontology = parent_of("Record").expect("Record is filed under a chapter");
+    assert_eq!(
+        ontology,
+        bundle
+            .iter()
+            .find(|r| r.head == "Ontology")
+            .expect("the Ontology chapter")
+            .projection
+            .uid,
+        "Record is part of Ontology"
     );
+    assert!(
+        parent_of("Ontology").is_some(),
+        "and Ontology is itself filed under the root — two levels, which is \
+         the link a one-hop reader could not have made"
+    );
+    let _ = chapter;
     // Stable documentation is quantity 1 — the same ladder the board reads.
     let level = store::records::quantity(&e.store.pool, chapter.projection.uid.trim())
         .await

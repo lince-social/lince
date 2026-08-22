@@ -2,51 +2,47 @@
 
 This file locates current authorities. It is not a second schema.
 
-## Format and File Sync
+## One source tree and one parser
 
-- `crates/engine/src/lingua_file.rs`: parser, renderer, and round-trip rules.
-- `crates/engine/src/file_sync.rs`: write-back, refusal, precedence, and
-  deletion behavior.
-- `crates/engine/tests/file_sync.rs`: executable behavior, including task
-  assignment.
+- `anicca/`: checked-in Lince documentation, declarations, and task plan.
+- `anicca/Lingua.lingua`: living language explanation and design decisions.
+- `anicca/Ontology.lingua`: the one project task list.
+- `crates/anicca/src/grammar.rs`: typed `rust-sitter` syntax authority.
+- `crates/anicca/src/lib.rs`: projection, validation, formatting, uid minting,
+  and machine-state contract.
+- `crates/anicca/src/main.rs`: `anicca check` and `anicca fmt` interface.
+- `crates/engine/src/file_sync.rs`: database application, write-back,
+  commitments, conflicts, and execution order when Anicca File Sync is wired.
+- `crates/engine/tests/file_sync.rs`: executable File Sync behavior.
 
-Read the applicable source. A property may not exist in every revision.
+`docs/records/`, `crates/engine/src/lingua_file.rs`, and JavaScript converters
+belong to the superseded projection format. Do not read them as authority,
+write new files there, or add a compatibility parser.
 
-## `docs/records` bundle
+## Validation
 
-- `tools/instinct/CONTRACT.txt`: bundle rules.
-- `tools/instinct/check_lingua.js`: adoptability check.
-- `crates/engine/src/instinct.rs`: vocabulary, hierarchy, ordering, and import.
-- `crates/engine/build.rs`: embedding and the `@instinct` invariant.
-
-The shipped bundle freezes its vocabulary and requires internal links to
-resolve. A live `@assigned-to` link may therefore be valid in File Sync but
-invalid in the source bundle when its Agent Record is outside the bundle. Run
-the checker before writing coordination state. If the bundle cannot represent
-it, record the assignment in live Lince or the current harness; do not weaken
-the bundle or fabricate an Agent inside it.
-
-After changing `docs/records`, run:
+After changing checked-in `.lingua`:
 
 ```sh
-node tools/instinct/check_lingua.js docs/records
-cargo check -p engine
+cargo run --offline -p anicca -- check anicca
+cargo run --offline -p anicca -- fmt anicca
 ```
 
-When format, import, or File Sync behavior changes, also run:
+After changing grammar, formatting, projection, or File Sync behavior:
 
 ```sh
-cargo test -p engine --test file_sync --test agents
+cargo test --offline -p anicca
+cargo test --offline -p engine --test file_sync
+cargo check --offline -p engine
 ```
+
+Warnings are errors. Use `cargo check`, not `cargo build`.
 
 ## Context order
 
-Load only what the task needs:
-
-1. Relevant `@@chapter` and `@@idea` Instinct Records for Lince fundamentals.
-2. `Ontology - 14. Lince today, in one read.lingua` for the implementation map.
-3. Exact topic Concepts and their structural links.
-4. The relevant `@@document` or `@@section` Records.
-5. The relevant `@@task` Record.
+1. `anicca/Lingua.lingua` for syntax or projection work.
+2. The relevant `is #chapter` or other identity Record.
+3. Exact Concepts and binary assertions connected to it.
+4. `anicca/Ontology.lingua` for current work and ordering.
 
 The Records contain Lince's evolving explanation; do not duplicate it here.

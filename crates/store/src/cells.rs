@@ -66,14 +66,14 @@ pub async fn ensure_local(
 }
 
 pub async fn local(pool: &SqlitePool) -> Result<Option<CellRecord>, StoreError> {
-    Ok(sqlx::query(
-        "SELECT uid, organ_uid, head FROM record WHERE slug = ? AND kind = ? LIMIT 1",
+    Ok(
+        sqlx::query("SELECT uid, organ_uid, head FROM record WHERE slug = ? AND kind = ? LIMIT 1")
+            .bind(LOCAL_CELL_SLUG)
+            .bind(RecordKind::Device.as_str())
+            .fetch_optional(pool)
+            .await?
+            .map(map),
     )
-    .bind(LOCAL_CELL_SLUG)
-    .bind(RecordKind::Device.as_str())
-    .fetch_optional(pool)
-    .await?
-    .map(map))
 }
 
 /// Rename this device. The label is what a roster entry shows a contact, and

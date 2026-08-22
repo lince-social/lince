@@ -317,6 +317,9 @@ pub async fn user_by_username(
 /// Look a Person up by uid. Returns `None` for a Person with no credential —
 /// a contact, or the Person a `GrantOrganLogin` named — which is a normal
 /// state, not an error: they simply cannot log in with a password here.
-pub async fn user_by_uid(pool: &SqlitePool, person_uid: &str) -> Result<Option<AuthUser>, StoreError> {
+pub async fn user_by_uid(
+    pool: &SqlitePool,
+    person_uid: &str,
+) -> Result<Option<AuthUser>, StoreError> {
     credential_row(pool, "c.person_uid", person_uid).await
 }

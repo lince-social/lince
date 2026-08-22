@@ -868,6 +868,11 @@ pub struct Wire {
     /// Installed from above; `None` means this Cell serves no live sessions,
     /// which is the correct behaviour for a headless or sync-only Cell.
     live: Arc<Mutex<Option<Arc<dyn LiveSessions>>>>,
+    /// A browser already has one live Protein session to this contact. The
+    /// reactive outbox may open request streams on the same QUIC connection;
+    /// a dead remembered connection simply misses and the ordinary sync dial
+    /// remains the fallback.
+    live_connections: Arc<Mutex<HashMap<String, Connection>>>,
     /// Installed from above; `None` means this Cell delivers no Transfers,
     /// and a peer asking is refused rather than left hanging.
     transfer: Arc<Mutex<Option<Arc<dyn TransferPeer>>>>,
@@ -967,6 +972,7 @@ impl Wire {
             nearby: Nearby::default(),
             known_addrs,
             live: Arc::new(Mutex::new(None)),
+            live_connections: Arc::new(Mutex::new(HashMap::new())),
             transfer: Arc::new(Mutex::new(None)),
         };
         if local_discovery {
@@ -981,6 +987,16 @@ impl Wire {
     /// sync-only Cell rather than an error.
     pub fn set_live_handler(&self, handler: Arc<dyn LiveSessions>) {
         *self.live.lock().expect("live handler") = Some(handler);
+    }
+
+    /// Make a successfully handshaken live session available to the reactive
+    /// outbox. Called only after the live hello/login gate, so a connection
+    /// that merely completed QUIC is never mistaken for a usable session.
+    pub fn remember_live_connection(&self, contact_organ: &str, connection: &Connection) {
+        self.live_connections
+            .lock()
+            .expect("live connections")
+            .insert(contact_organ.to_string(), connection.clone());
     }
 
     /// Install THIS wire as the transport the Engine enrols through, so
@@ -1979,12 +1995,22 @@ impl Wire {
                 } else {
                     organ
                 };
-                // Handed off whole: a live session is long-lived and streams
-                // its own frames, so none of the request/response loop below —
-                // including `MAX_FRAMES_PER_CONNECTION`, which would hang up
-                // mid-sentence on someone typing — applies to it.
-                handler.serve(session_organ, granted, connection).await;
-                return Ok(());
+                // The host opens the one Protein stream; reactive sync streams
+                // are opened in the other direction on this SAME connection.
+                // Run the session beside the request loop below rather than
+                // handing off the whole connection, or a live browser would
+                // force the outbox to dial a second channel.
+                let live_connection = connection.clone();
+                tokio::spawn(async move {
+                    handler
+                        .serve(session_organ, granted, live_connection.clone())
+                        .await;
+                    // The request loop below owns another handle. Explicitly
+                    // close when the Protein driver ends so a refused login or
+                    // departed browser cannot leave it waiting forever on a
+                    // connection nobody can use.
+                    live_connection.close(0u32.into(), b"live session ended");
+                });
             }
             (ALPN_THREAD, true) => {}
             (ALPN_THREAD, false) if !identified => {
@@ -2029,6 +2055,10 @@ impl Wire {
             .or_else(|| contact.map(|contact| contact.record_uid))
             .unwrap_or_default();
 
+        // On a live connection this counts only reactive sidecar requests,
+        // never the Protein frames on the host-opened stream. Keeping the cap
+        // therefore bounds a peer that opens streams forever without hanging
+        // up an editor merely because somebody kept typing.
         for _ in 0..MAX_FRAMES_PER_CONNECTION {
             let (mut send, mut recv) = match connection.accept_bi().await {
                 Ok(streams) => streams,
@@ -2040,6 +2070,22 @@ impl Wire {
                 .await
                 .map_err(|error| EngineError::Consequence(format!("peer frame: {error}")))?;
             let response = match serde_json::from_slice::<WireRequest>(&raw) {
+                // The live door has exactly one sidecar capability: push the
+                // reactive delta already owed to this authenticated Organ.
+                // Reads, introductions, Transfers and mailbox traffic retain
+                // their own doors and their own admission policies.
+                Ok(request)
+                    if alpn.as_slice() == ALPN_LIVE
+                        && !matches!(
+                            request,
+                            WireRequest::PushOps { .. } | WireRequest::PushGrantOps { .. }
+                        ) =>
+                {
+                    WireResponse::Refused {
+                        code: "wrong_door".into(),
+                        message: "that verb is not served on the live connection".into(),
+                    }
+                }
                 // THE MAILBOX DOOR SERVES MAILBOX VERBS AND NOTHING ELSE, and
                 // no other door serves them.
                 //
@@ -2230,12 +2276,7 @@ impl Wire {
     /// alongside the Organ uid because the mailbox verbs are answered to a
     /// caller who may be no contact of ours at all: their claim to an Organ
     /// is proven by a roster naming THIS node id, not by a contact row.
-    async fn handle(
-        &self,
-        authenticated: &str,
-        peer: &str,
-        request: WireRequest,
-    ) -> WireResponse {
+    async fn handle(&self, authenticated: &str, peer: &str, request: WireRequest) -> WireResponse {
         match request {
             // Both answer with ours. `Introduce` additionally bound THEIRS
             // above, in `serve_connection`, where the NodeId iroh proved is
@@ -2914,23 +2955,19 @@ impl Wire {
                 }
             }
             WireRequest::MailboxWaiting { organ_uid, roster } => {
-                match self
-                    .engine
-                    .may_collect(&organ_uid, peer, &roster)
-                    .await
-                {
-                    Ok(true) => match store::mailbox::waiting(&self.engine.store.pool, &organ_uid)
-                        .await
-                    {
-                        Ok(waiting) => WireResponse::MailboxWaiting {
-                            bundles: waiting.bundles,
-                            bytes: waiting.bytes,
-                            oldest_expires_at: waiting.oldest_expires_at,
-                        },
-                        Err(error) => WireResponse::Error {
-                            message: error.to_string(),
-                        },
-                    },
+                match self.engine.may_collect(&organ_uid, peer, &roster).await {
+                    Ok(true) => {
+                        match store::mailbox::waiting(&self.engine.store.pool, &organ_uid).await {
+                            Ok(waiting) => WireResponse::MailboxWaiting {
+                                bundles: waiting.bundles,
+                                bytes: waiting.bytes,
+                                oldest_expires_at: waiting.oldest_expires_at,
+                            },
+                            Err(error) => WireResponse::Error {
+                                message: error.to_string(),
+                            },
+                        }
+                    }
                     Ok(false) => not_your_mailbox(),
                     Err(error) => WireResponse::Error {
                         message: error.to_string(),
@@ -3435,7 +3472,7 @@ impl Wire {
         None
     }
 
-    async fn push_outbox(&self) -> Result<usize, EngineError> {
+    pub async fn push_outbox(&self) -> Result<usize, EngineError> {
         // One connection per contact for the whole drain, reused across the
         // batches a single pass produces.
         let connections: std::sync::Arc<tokio::sync::Mutex<HashMap<String, Option<Connection>>>> =
@@ -3446,6 +3483,39 @@ impl Wire {
                 let wire = wire.clone();
                 let connections = connections.clone();
                 async move {
+                    if contact.reach() == store::organs::Reach::Mailbox {
+                        return wire.mail_now(&contact, root.as_deref(), &batch).await;
+                    }
+                    let request = match root {
+                        Some(ref root) => WireRequest::PushGrantOps {
+                            root: root.clone(),
+                            batch: batch.clone(),
+                        },
+                        None => WireRequest::PushOps {
+                            batch: batch.clone(),
+                        },
+                    };
+                    let live = wire
+                        .live_connections
+                        .lock()
+                        .expect("live connections")
+                        .get(&contact.record_uid)
+                        .cloned();
+                    if let Some(live) = live {
+                        match wire.exchange(&live, &request).await {
+                            Ok(WireResponse::Applied { .. }) => return Delivery::Sent,
+                            // The peer answered: a second channel cannot turn
+                            // its refusal into acceptance, so keep the row.
+                            Ok(other) => return Delivery::Failed(format!("{other:?}")),
+                            // A stale/dead live connection falls through to
+                            // the ordinary outbox dial below.
+                            Err(error) => tracing::debug!(
+                                contact = %contact.record_uid,
+                                %error,
+                                "live delta path unavailable; falling back to sync"
+                            ),
+                        }
+                    }
                     let mut open = connections.lock().await;
                     let entry = match open.get(&contact.record_uid) {
                         Some(existing) => existing.clone(),
@@ -3457,11 +3527,10 @@ impl Wire {
                     };
                     let Some(connection) = entry else {
                         drop(open);
+                        if contact.reach() == store::organs::Reach::Direct {
+                            return Delivery::Failed(format!("{} unreachable", contact.record_uid));
+                        }
                         return wire.mail_if_due(&contact, root.as_deref(), &batch).await;
-                    };
-                    let request = match root {
-                        Some(root) => WireRequest::PushGrantOps { root, batch },
-                        None => WireRequest::PushOps { batch },
                     };
                     match wire.exchange(&connection, &request).await {
                         Ok(WireResponse::Applied { .. }) => Delivery::Sent,
@@ -3540,11 +3609,21 @@ pub const NOTICE_LINGER_DAYS: i64 = 15;
                 return Delivery::Failed(unreachable);
             }
         }
+        self.mail_now(contact, root, batch).await
+    }
+
+    async fn mail_now(
+        &self,
+        contact: &store::organs::Contact,
+        root: Option<&str>,
+        batch: &OpBatch,
+    ) -> Delivery {
+        let unreachable = format!("{} unreachable", contact.record_uid);
         match self.leave_mail(&contact.record_uid, root, batch).await {
             Ok(MailLeft::Left { carrier, uid }) => {
                 tracing::info!(
                     contact = %contact.record_uid, %carrier, %uid,
-                    "peer unreachable past the retry window; batch left as mail"
+                    "batch left as mail"
                 );
                 Delivery::Mailed
             }

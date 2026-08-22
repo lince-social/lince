@@ -81,6 +81,33 @@ impl BundledRecord {
             .unwrap_or("")
     }
 
+    /// The quantity this Record should land with.
+    ///
+    /// An explicit number wins; otherwise it is DERIVED from the state word.
+    /// The two are "two projections of one fact, never two authorities", and
+    /// most files state only the word — so reading the number alone left a
+    /// `@stable` chapter sitting at 0, which is the backlog rung, while every
+    /// surface that colours by the word called it stable. Deriving it is what
+    /// makes the two agree by construction instead of by everyone remembering
+    /// to type both.
+    pub fn quantity(&self) -> Option<String> {
+        if let Some((amount, _)) = &self.projection.quantity {
+            return Some(amount.clone());
+        }
+        self.projection
+            .assertions
+            .iter()
+            .filter(|line| !line.identity && line.object.is_none())
+            .find_map(|line| match line.predicate.as_str() {
+                "stable" => Some("1"),
+                "backlog" => Some("0"),
+                "todo" => Some("-1"),
+                "wip" => Some("-2"),
+                _ => None,
+            })
+            .map(str::to_string)
+    }
+
     /// The one line that makes this Record a child of another.
     ///
     /// `@chapter` is still read here because the corpus is being converted a
@@ -121,7 +148,12 @@ impl BundledRecord {
     pub fn position(&self) -> f64 {
         let predicate = if self.is_root() { "position" } else { "" };
         self.parent_line()
-            .or_else(|| self.projection.assertions.iter().find(|l| l.predicate == predicate))
+            .or_else(|| {
+                self.projection
+                    .assertions
+                    .iter()
+                    .find(|l| l.predicate == predicate)
+            })
             .and_then(|line| line.quantity.as_deref())
             .and_then(|value| value.parse().ok())
             .unwrap_or(f64::MAX)
@@ -182,7 +214,9 @@ impl BundledRecord {
         let mut current = self;
         let mut seen = vec![current.projection.uid.as_str()];
         while !current.is_entry() {
-            let Some(parent) = current.parent_uid() else { break };
+            let Some(parent) = current.parent_uid() else {
+                break;
+            };
             if seen.contains(&parent) {
                 break;
             }
@@ -356,7 +390,10 @@ mod tests {
     /// edit the file by hand — never through the UI the file was written for.
     #[test]
     fn a_file_with_no_metadata_block_is_adopted_rather_than_refused() {
-        let root = ("First Steps".to_string(), "r_S8PQ17MQ3WBWM53ZN700K89V9F".to_string());
+        let root = (
+            "First Steps".to_string(),
+            "r_S8PQ17MQ3WBWM53ZN700K89V9F".to_string(),
+        );
         let projection = adopted_projection("Thoughts", Some(&root));
         assert!(
             nucleus::id::valid_uid(&projection.uid, "r"),
@@ -420,7 +457,9 @@ mod tests {
         let records = records();
         let at = |uid: &str| records.iter().position(|r| r.projection.uid == uid);
         for (index, record) in records.iter().enumerate() {
-            let Some(parent) = record.parent_uid() else { continue };
+            let Some(parent) = record.parent_uid() else {
+                continue;
+            };
             let owner = at(parent)
                 .unwrap_or_else(|| panic!("{} hangs off a uid no file claims", record.head));
             assert!(owner < index, "{} is read before its parent", record.head);
@@ -444,6 +483,5 @@ mod tests {
         }
     }
 }
-
 
 

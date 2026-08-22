@@ -359,6 +359,41 @@ impl Engine {
         Ok(logged)
     }
 
+    async fn note_overwrite(
+        &self,
+        op: &WireOp,
+        from_organ: &str,
+        displaced_by: Option<&str>,
+    ) -> Result<(), EngineError> {
+        let pool = &self.store.pool;
+        let displaced = match op.field.as_str() {
+            "head" | "body" | "slug" | "kind" => {
+                let sql = format!("SELECT {} AS v FROM record WHERE uid = ?", op.field);
+                store::sqlx::query(&sql)
+                    .bind(&op.uid)
+                    .fetch_optional(pool)
+                    .await?
+                    .and_then(|r| store::sqlx::Row::get::<Option<String>, _>(&r, "v"))
+            }
+            _ => None,
+        };
+        let ours = store::organs::local(pool).await?.map(|organ| organ.uid);
+        let displaced_local = match (displaced_by, &ours) {
+            (Some(author), Some(ours)) => author == ours.as_str(),
+            _ => false,
+        };
+        store::record_changes::note_remote_win(
+            pool,
+            &op.uid,
+            &op.field,
+            from_organ,
+            displaced.as_deref(),
+            displaced_local,
+        )
+        .await?;
+        Ok(())
+    }
+
     async fn import_ops(
         &self,
         batch: &OpBatch,
@@ -453,6 +488,16 @@ impl Engine {
                     // LWW against the stored stamp BEFORE appending this op.
                     let prior =
                         sync_ops::latest_hlc_for_field(pool, "record", &op.uid, &op.field).await?;
+                    // Read BEFORE `log_incoming` appends this op, or the
+                    // arriving op is itself the latest and every overwrite
+                    // looks like it displaced its own author.
+                    let displaced_by = match prior {
+                        Some(_) => {
+                            sync_ops::latest_author_for_field(pool, "record", &op.uid, &op.field)
+                                .await?
+                        }
+                        None => None,
+                    };
                     let tomb = sync_ops::latest_hlc_for_field(pool, "record", &op.uid, "").await?;
                     if !self.log_incoming(op, kind, from, replica_root).await? {
                         continue; // duplicate identity
@@ -464,6 +509,10 @@ impl Engine {
                         if op.hlc <= tomb {
                             continue; // deleted stays deleted; late sets lose
                         }
+                    }
+                    if prior.is_some() {
+                        self.note_overwrite(op, &batch.from_organ, displaced_by.as_deref())
+                            .await?;
                     }
                     let outcome = self
                         .materialise(Materialise {
@@ -898,6 +947,10 @@ impl Engine {
         let Some(from_organ) = store::organs::local(pool).await?.map(|o| o.uid) else {
             return Ok(0);
         };
+        // Before reading what is queued, not after: a Record that has just
+        // entered somebody's selection is enqueued by this call, and a pass
+        // that read the queue first would leave it until the next one.
+        crate::share::reconcile_all(self).await?;
         let due = sync_ops::outbox_due(pool).await?;
         let mut sent = 0usize;
         let mut index = 0usize;
@@ -916,10 +969,11 @@ impl Engine {
                 sync_ops::outbox_clear_contact(pool, &contact_uid).await?;
                 continue;
             }
-            // Per-record hiding, read once per contact per pass. Almost always
-            // empty, and every use of it checks that first, so a Cell nobody
-            // hides anything on pays one indexed lookup and nothing else.
-            let hidden = store::visibility::hidden_from_organ(pool, &contact_uid).await?;
+            // WHICH Records travel to this contact, beside the column scope
+            // that decides which of their fields do. Read once per contact per
+            // pass, like `hidden` above.
+            let feed = crate::share::open_feed(self, &contact).await?;
+            let mut holdings = crate::share::Holdings::default();
             let mut log_rows = Vec::new();
             let mut kept = Vec::new();
             for row in rows {
@@ -999,12 +1053,28 @@ impl Engine {
                         // half of §12's "hiding is per-record AND per-field".
                         // Async, so it cannot be a match guard like the two
                         // above; the guard-shaped ones stay guards.
-                        if op.replica_root.is_none()
-                            && store::visibility::op_hidden_from(pool, &hidden, &op.tbl, &op.uid)
-                                .await?
-                        {
-                            sync_ops::outbox_delete(pool, &row).await?;
-                            continue;
+                        // Hiding is decided INSIDE the feed rather than ahead
+                        // of it. Deciding it here first would drop the
+                        // tombstone of a Record they already hold — hiding is
+                        // meant to stop what travels next, not to strand a
+                        // copy on their disk that nothing can ever clean up.
+                        //
+                        // The selection governs the broad feed only, for the
+                        // same reason the scope does: an accepted grant is a
+                        // per-Record permission the receiver already took.
+                        if op.replica_root.is_none() {
+                            match crate::share::feed_carries(self, &feed, &op).await? {
+                                // Not in their selection, and not something
+                                // they hold. Deleted rather than left queued —
+                                // it will never be owed to them under this
+                                // selection, and a queued row nobody is owed
+                                // holds the retention floor down behind it.
+                                None => {
+                                    sync_ops::outbox_delete(pool, &row).await?;
+                                    continue;
+                                }
+                                Some(records) => holdings.note(&op, records),
+                            }
                         }
                         log_rows.push(op);
                         kept.push(row);
@@ -1069,6 +1139,11 @@ impl Engine {
                     if let Some(high) = kept.iter().map(|row| row.seq).max() {
                         store::organs::advance_peer_acked_seq(pool, &contact_uid, high).await?;
                     }
+                    // What they now hold, so a Record that later LEAVES the
+                    // selection can still be deleted where it landed. Without
+                    // this, dropping something from a selection would strand
+                    // the copy on their disk with no way to reach it.
+                    crate::share::note_delivery(self, &contact_uid, &holdings).await?;
                     for row in &kept {
                         sync_ops::outbox_delete(pool, row).await?;
                     }
@@ -1093,6 +1168,10 @@ impl Engine {
                 }
             }
         }
+        // A handover only completes once the peer has actually acknowledged
+        // the Record, which is a fact this pass has just established. Settling
+        // before the send would let go of the only copy on a promise.
+        crate::share::settle_moves(self).await?;
         Ok(sent)
     }
 

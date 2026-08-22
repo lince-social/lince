@@ -1,14 +1,14 @@
 # Tips
 
-- Lince documentation and its task plan are `.lingua` Records in
-  `docs/records/`; `docs/` contains no Markdown. Before reading, creating,
-  updating, renaming, or deleting `.lingua`, use the `lince-lingua-crud` skill
-  in `.agents/skills/lince-lingua-crud/`. It is the shared workflow for agents
-  and harnesses now, including Fiote later.
-- For this repository's shipped documentation bundle, the live bundle contract
-  is `tools/instinct/CONTRACT.txt`; the parser and renderer in
-  `crates/engine/src/lingua_file.rs` remain the format authority. Do not copy a
-  changing `.lingua` schema into `AGENTS.md`.
+- Lince documentation, declarations, and its task plan are `.lingua` Records
+  in the repository-root `anicca/`. Before reading, creating, updating,
+  renaming, or deleting `.lingua`, use `lince-lingua-crud` from
+  `.agents/skills/lince-lingua-crud/`.
+- `crates/anicca/src/grammar.rs` is the sole syntax authority. It is a typed
+  `rust-sitter` grammar used by the parser, formatter, and checker. The living
+  explanation is `anicca/Lingua.lingua`; do not copy its changing schema into
+  `AGENTS.md`, revive `docs/records/`, or use the legacy JavaScript/line parser
+  workflow.
 
 # Working alongside other agents
 
@@ -44,13 +44,11 @@ workflow; do not restate it here.
   answered with an error instead of being misread as a neighbouring variant.
   Fail closed, then move on; never negotiate down.
 
-- Work closes BEHIND you, not ahead of you. The remaining work lives in
-  `docs/records/` as Records — `TODO - Ontology - *.lingua` and the same for
-  the other documents, each `@@task` with `quantity: -1`. There are no
-  clusters, no codes and no numbering. Take the next open task. `docs/` holds
-  no Markdown at all as of 2026-08-16; regenerating any of it is
-  `tools/docs/md_to_lingua.js`, and the two checks in `tools/` are what say
-  whether the folder is intact. The rules while building:
+- Work closes BEHIND you, not ahead of you. Remaining work lives once in
+  `anicca/Ontology.lingua`, under "What we work on next" and "Not Planned For
+  Now". Take the next open item only after reading that Record through the
+  current Anicca parser. Do not regenerate a second documentation tree or
+  maintain duplicate task Records. The rules while building:
   - **A bug found while building a later task is fixed where it BELONGS.**
     Go back, fix it there, land it there, and only then carry on. Never work
     around an earlier defect from inside later work — a workaround makes the

@@ -94,25 +94,21 @@ pub async fn publish_program(pool: &SqlitePool, program_uid: &str) -> Result<(),
 pub async fn publish_frequency(pool: &SqlitePool, frequency_uid: &str) -> Result<(), StoreError> {
     let handle = super::frequencies::get_handle(pool, frequency_uid).await?;
     let payload = match handle {
-        Some(handle) => {
-            match (handle.active_revision_hash, handle.active_activation_hash) {
-                (Some(revision_hash), Some(activation_hash)) => {
-                    let revision =
-                        super::frequencies::get_revision(pool, &revision_hash).await?;
-                    let activation =
-                        super::frequencies::get_activation(pool, &activation_hash).await?;
-                    match (revision, activation) {
-                        (Some(revision), Some(activation)) => json!({
-                            "hash": revision_hash.as_str(),
-                            "ast": revision.frequency,
-                            "activation": activation.epoch,
-                        }),
-                        _ => Value::Null,
-                    }
+        Some(handle) => match (handle.active_revision_hash, handle.active_activation_hash) {
+            (Some(revision_hash), Some(activation_hash)) => {
+                let revision = super::frequencies::get_revision(pool, &revision_hash).await?;
+                let activation = super::frequencies::get_activation(pool, &activation_hash).await?;
+                match (revision, activation) {
+                    (Some(revision), Some(activation)) => json!({
+                        "hash": revision_hash.as_str(),
+                        "ast": revision.frequency,
+                        "activation": activation.epoch,
+                    }),
+                    _ => Value::Null,
                 }
-                _ => Value::Null,
             }
-        }
+            _ => Value::Null,
+        },
         None => Value::Null,
     };
     set_key(pool, frequency_uid, KEY_FREQUENCY, payload).await
@@ -291,7 +287,11 @@ async fn import_frequency(
             .cloned()
             .ok_or_else(|| protocol("published Karma Frequency has no activation"))?,
     )
-    .map_err(|error| protocol(format!("published Karma Frequency activation is unreadable: {error}")))?;
+    .map_err(|error| {
+        protocol(format!(
+            "published Karma Frequency activation is unreadable: {error}"
+        ))
+    })?;
 
     let default_compiled = ast
         .compile(&std::collections::BTreeMap::new())
@@ -379,7 +379,11 @@ async fn import_frequency(
     .bind(canonical_string(activation.effective_parameters())?)
     .bind(canonical_string(activation.compiled())?)
     .bind(canonical_string(&activation)?)
-    .bind(activation.previous_activation_hash().map(CanonicalHash::as_str))
+    .bind(
+        activation
+            .previous_activation_hash()
+            .map(CanonicalHash::as_str),
+    )
     .bind(activation_cause_name(activation.cause()))
     .bind(activation.activated_at().to_string())
     .execute(&mut *tx)

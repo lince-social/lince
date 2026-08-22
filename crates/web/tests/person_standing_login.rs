@@ -145,9 +145,14 @@ async fn a_deactivated_person_is_refused_in_the_same_words_and_loses_their_sessi
     let wrong_body = wrong.text().await.unwrap_or_default();
 
     // --- she stops using Lince --------------------------------------------
-    store::people::deactivate(&store.pool, &maria, "2026-08-15T12:00:00Z", Some("moved out"))
-        .await
-        .expect("deactivate");
+    store::people::deactivate(
+        &store.pool,
+        &maria,
+        "2026-08-15T12:00:00Z",
+        Some("moved out"),
+    )
+    .await
+    .expect("deactivate");
 
     let refused = login("maria", MARIA_PASSWORD).await;
     assert_eq!(

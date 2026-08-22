@@ -222,11 +222,9 @@ async fn drive(
                 // was still buffered — so the peer would see the link die and
                 // have no idea it was their password rather than the network.
                 let _ = send.finish();
-                let _ = tokio::time::timeout(
-                    std::time::Duration::from_secs(5),
-                    connection.closed(),
-                )
-                .await;
+                let _ =
+                    tokio::time::timeout(std::time::Duration::from_secs(5), connection.closed())
+                        .await;
                 return Err(reason);
             }
         },

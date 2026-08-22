@@ -85,10 +85,44 @@ impl std::fmt::Display for Diagnostic {
 impl std::error::Error for Diagnostic {}
 
 pub fn parse(source: &str) -> Result<Document, Diagnostic> {
-    ast::parse(source).map_err(|error| Diagnostic {
+    let document = ast::parse(source).map_err(|error| Diagnostic {
         path: None,
         message: format!("{error:?}"),
-    })
+    })?;
+    validate_record_boundaries(&document)?;
+    Ok(document)
+}
+
+fn validate_record_boundaries(document: &Document) -> Result<(), Diagnostic> {
+    for declaration in &document.declarations {
+        let Declaration::Record(record) = declaration else {
+            continue;
+        };
+        let title = record.title.value();
+        match (record.opening.uid(), record.closing.uid()) {
+            (None, None) => {}
+            (Some(opening), Some(closing)) if opening == closing => {}
+            (Some(opening), Some(closing)) => {
+                return Err(diagnostic(format!(
+                    "Record `{}` opens with uid `{opening}` but closes with `{closing}`",
+                    title
+                )));
+            }
+            (Some(uid), None) => {
+                return Err(diagnostic(format!(
+                    "Record `{}` opens with uid `{uid}` but its closing boundary has none",
+                    title
+                )));
+            }
+            (None, Some(uid)) => {
+                return Err(diagnostic(format!(
+                    "Record `{}` closes with uid `{uid}` but its opening boundary has none",
+                    title
+                )));
+            }
+        }
+    }
+    Ok(())
 }
 
 pub fn parse_path(path: &Path) -> Result<Document, Diagnostic> {
@@ -134,20 +168,21 @@ pub fn ensure_uids(source: &str) -> Result<(String, Vec<MintedUid>), Diagnostic>
     let mut ordinal = 0usize;
     for declaration in &mut document.declarations {
         match declaration {
-            Declaration::Record(record) if record.uid.is_none() => {
+            Declaration::Record(record) if record.opening.uid().is_none() => {
                 let name = record
                     .header
                     .subject
                     .slug()
-                    .unwrap_or(&record.title.0)
-                    .to_string();
+                    .map(str::to_string)
+                    .unwrap_or_else(|| record.title.value());
                 let identity = minted(source, "Record", "r", &name, ordinal);
                 ordinal += 1;
-                record.uid = Some(ast::Uid::new(identity.uid.clone()));
+                record.opening = ast::RecordOpening::identified(identity.uid.clone());
+                record.closing = ast::RecordClosing::identified(identity.uid.clone());
                 missing.push(identity);
             }
             Declaration::Frequency(frequency) if frequency.uid.is_none() => {
-                let identity = minted(source, "Frequency", "freq", &frequency.name.0, ordinal);
+                let identity = minted(source, "Frequency", "freq", &frequency.opening.0, ordinal);
                 ordinal += 1;
                 frequency.uid = Some(ast::Uid::new(identity.uid.clone()));
                 missing.push(identity);
@@ -339,7 +374,8 @@ pub fn project(document: &Document) -> Result<ProjectedDocument, Diagnostic> {
                         }
                     }
                 }
-                let label = record.header.subject.slug().unwrap_or(&record.title.0);
+                let title = record.title.value();
+                let label = record.header.subject.slug().unwrap_or(&title);
                 if identity_count > 1 {
                     return Err(diagnostic(format!(
                         "`{label}` declares more than one identity assertion"
@@ -348,7 +384,7 @@ pub fn project(document: &Document) -> Result<ProjectedDocument, Diagnostic> {
                 let quantity = record.header.subject.quantity();
                 output.records.push(ProjectedRecord {
                     uid: typed_uid(
-                        required(record.uid.as_ref().map(ast::Uid::value), label, "uid")?,
+                        required(record.opening.uid().map(str::to_string), label, "uid")?,
                         "r",
                         label,
                     )?,
@@ -358,11 +394,11 @@ pub fn project(document: &Document) -> Result<ProjectedDocument, Diagnostic> {
                         .slug()
                         .map(|slug| checked_slug(slug.to_string(), label))
                         .transpose()?,
-                    head: record.title.0.clone(),
+                    head: title,
                     body: record
                         .description
                         .as_ref()
-                        .map_or_else(String::new, |v| v.0.clone()),
+                        .map_or_else(String::new, |v| decode_description_boundaries(&v.0)),
                     quantity: Some((
                         quantity.value.0.clone(),
                         quantity.unit.as_ref().map(|unit| unit.name.0.clone()),
@@ -383,7 +419,7 @@ pub fn project(document: &Document) -> Result<ProjectedDocument, Diagnostic> {
                             quantity = value.value.0.parse().map_err(|_| {
                                 diagnostic(format!(
                                     "{} has a non-integer quantity",
-                                    frequency.name.0
+                                    frequency.opening.0
                                 ))
                             })?
                         }
@@ -392,7 +428,7 @@ pub fn project(document: &Document) -> Result<ProjectedDocument, Diagnostic> {
                                 value.count.0.parse().map_err(|_| {
                                     diagnostic(format!(
                                         "{} has a non-integer interval",
-                                        frequency.name.0
+                                        frequency.opening.0
                                     ))
                                 })?,
                                 value.unit.0.clone(),
@@ -402,23 +438,23 @@ pub fn project(document: &Document) -> Result<ProjectedDocument, Diagnostic> {
                         FrequencyField::NextAt(value) => next_at = Some(value.value.0.clone()),
                     }
                 }
-                let slug = checked_slug(frequency.name.0.clone(), &frequency.name.0)?;
+                let slug = checked_slug(frequency.opening.0.clone(), &frequency.opening.0)?;
                 output.frequencies.push(ProjectedFrequency {
                     uid: typed_uid(
                         required(
                             frequency.uid.as_ref().map(ast::Uid::value),
-                            &frequency.name.0,
+                            &frequency.opening.0,
                             "uid",
                         )?,
                         "freq",
-                        &frequency.name.0,
+                        &frequency.opening.0,
                     )?,
                     head: head.unwrap_or_else(|| slug.clone()),
                     slug,
                     quantity,
-                    every: required(every, &frequency.name.0, "every")?,
-                    timezone: required(timezone, &frequency.name.0, "timezone")?,
-                    next_at: required(next_at, &frequency.name.0, "next_at")?,
+                    every: required(every, &frequency.opening.0, "every")?,
+                    timezone: required(timezone, &frequency.opening.0, "timezone")?,
+                    next_at: required(next_at, &frequency.opening.0, "next_at")?,
                 });
             }
             Declaration::Karma(karma) => {
@@ -673,11 +709,12 @@ pub fn set_record_runtime(
         let Declaration::Record(record) = declaration else {
             continue;
         };
-        if record.uid.as_ref().map(ast::Uid::value).as_deref() != Some(uid) {
+        if record.opening.uid() != Some(uid) {
             continue;
         }
-        record.title.0 = head.to_string();
-        record.description = (!body.is_empty()).then(|| ast::Description(body.to_string()));
+        record.title.set(head);
+        record.description =
+            (!body.is_empty()).then(|| ast::Description(encode_description_boundaries(body)));
         record.header.subject.quantity_mut().value.0 = quantity.to_string();
         let mut comments = HashMap::<String, VecDeque<ast::Comment>>::new();
         for item in &record.header.rest {
@@ -839,7 +876,8 @@ fn validate_document<'a>(
     for declaration in &document.declarations {
         match declaration {
             Declaration::Record(record) => {
-                let label = record.header.subject.slug().unwrap_or(&record.title.0);
+                let title = record.title.value();
+                let label = record.header.subject.slug().unwrap_or(&title);
                 let identity_count = record
                     .header
                     .rest
@@ -861,15 +899,20 @@ fn validate_document<'a>(
                         });
                     }
                 }
-                if record.title.0.is_empty() {
+                if title.is_empty() {
                     errors.push(Diagnostic {
                         path: Some(path.to_path_buf()),
                         message: "a Record title cannot be empty".to_string(),
                     });
                 }
-                if let Some(uid) = &record.uid {
-                    insert_unique(uids, &uid.value(), path, "uid", errors);
-                    validate_typed_uid(path, label, uid, "r", errors);
+                if let Some(uid) = record.opening.uid() {
+                    insert_unique(uids, uid, path, "uid", errors);
+                    if let Err(error) = typed_uid(uid.to_string(), "r", label) {
+                        errors.push(Diagnostic {
+                            path: Some(path.to_path_buf()),
+                            message: error.message,
+                        });
+                    }
                 }
                 for item in &record.header.rest {
                     if let RecordField::Assertion(field) = &item.field
@@ -880,8 +923,9 @@ fn validate_document<'a>(
                 }
             }
             Declaration::Frequency(frequency) => {
-                insert_unique(slugs, &frequency.name.0, path, "slug", errors);
-                if let Err(error) = checked_slug(frequency.name.0.clone(), &frequency.name.0) {
+                insert_unique(slugs, &frequency.opening.0, path, "slug", errors);
+                if let Err(error) = checked_slug(frequency.opening.0.clone(), &frequency.opening.0)
+                {
                     errors.push(Diagnostic {
                         path: Some(path.to_path_buf()),
                         message: error.message,
@@ -890,24 +934,24 @@ fn validate_document<'a>(
                 let mut seen = HashSet::new();
                 if let Some(uid) = &frequency.uid {
                     insert_unique(uids, &uid.value(), path, "uid", errors);
-                    validate_typed_uid(path, &frequency.name.0, uid, "freq", errors);
+                    validate_typed_uid(path, &frequency.opening.0, uid, "freq", errors);
                 }
                 for field in &frequency.fields {
                     let key = match field {
                         FrequencyField::Title(_) => "title",
                         FrequencyField::Quantity(field) => {
-                            validate_switch(path, &frequency.name.0, &field.value.0, errors);
+                            validate_switch(path, &frequency.opening.0, &field.value.0, errors);
                             "quantity"
                         }
                         FrequencyField::Every(_) => "every",
                         FrequencyField::Timezone(_) => "timezone",
                         FrequencyField::NextAt(_) => "next_at",
                     };
-                    duplicate_field(path, &frequency.name.0, key, &mut seen, errors);
+                    duplicate_field(path, &frequency.opening.0, key, &mut seen, errors);
                 }
                 require_fields(
                     path,
-                    &frequency.name.0,
+                    &frequency.opening.0,
                     &seen,
                     &["quantity", "every", "timezone", "next_at"],
                     errors,
@@ -1037,6 +1081,47 @@ fn quantity(value: &ast::Quantity) -> String {
 fn reference(value: &ast::Reference) -> String {
     format!("@{}", value.slug.0)
 }
+
+fn record_boundary_line(line: &str) -> Option<(usize, &str)> {
+    let value = line.strip_prefix("} ")?;
+    let leading_quotes = value.bytes().take_while(|byte| *byte == b'"').count();
+    let trailing_quotes = value.bytes().rev().take_while(|byte| *byte == b'"').count();
+    if leading_quotes != trailing_quotes || value.len() < leading_quotes * 2 {
+        return None;
+    }
+    let uid = &value[leading_quotes..value.len() - trailing_quotes];
+    typed_uid(uid.to_string(), "r", "description boundary").ok()?;
+    Some((leading_quotes, uid))
+}
+
+fn rewrite_description_boundaries(value: &str, delta: i8) -> String {
+    value
+        .split('\n')
+        .map(|line| {
+            let Some((quotes, uid)) = record_boundary_line(line) else {
+                return line.to_string();
+            };
+            let quotes = if delta > 0 {
+                quotes + 1
+            } else if quotes > 0 {
+                quotes - 1
+            } else {
+                return line.to_string();
+            };
+            format!("}} {}{uid}{}", "\"".repeat(quotes), "\"".repeat(quotes))
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+fn encode_description_boundaries(value: &str) -> String {
+    rewrite_description_boundaries(value, 1)
+}
+
+fn decode_description_boundaries(value: &str) -> String {
+    rewrite_description_boundaries(value, -1)
+}
+
 fn record_field(field: &ast::RecordField) -> String {
     use ast::RecordField::*;
     match field {
@@ -1072,12 +1157,16 @@ fn format_record(output: &mut String, record: &ast::Record) {
         .map(|item| record_field(&item.field))
         .collect();
     let comments = record.header.rest.iter().any(|item| item.comment.is_some());
-    let title = quoted(&record.title.0);
+    let title = record.title.value();
+    let opening_uid = record.opening.uid();
     let mut compact = format!("{title} ({subject}");
     for field in &fields {
         write!(compact, ", {field}").unwrap();
     }
     compact.push_str(") {");
+    if let Some(uid) = opening_uid {
+        write!(compact, " {uid}").unwrap();
+    }
     if !comments && compact.chars().count() <= 150 {
         writeln!(output, "{compact}").unwrap();
     } else {
@@ -1091,24 +1180,30 @@ fn format_record(output: &mut String, record: &ast::Record) {
             writeln!(output).unwrap();
             write!(output, "    {}", fields[index]).unwrap();
         }
-        writeln!(output, "\n) {{").unwrap();
+        write!(output, "\n) {{").unwrap();
+        if let Some(uid) = opening_uid {
+            write!(output, " {uid}").unwrap();
+        }
+        output.push('\n');
     }
     if let Some(description) = &record.description {
-        output.push_str(description.0.trim_end_matches('\n'));
+        let logical = decode_description_boundaries(&description.0);
+        let encoded = encode_description_boundaries(&logical);
+        output.push_str(encoded.trim_end_matches('\n'));
         if !description.0.is_empty() {
             output.push('\n');
         }
     }
     output.push('}');
-    if let Some(uid) = &record.uid {
-        write!(output, " ^{}", uid.value()).unwrap();
+    if let Some(uid) = record.closing.uid() {
+        write!(output, " {uid}").unwrap();
     }
     output.push('\n');
 }
 
 fn format_frequency(output: &mut String, frequency: &ast::Frequency) {
     use ast::FrequencyField::*;
-    writeln!(output, "Frequency {} {{", frequency.name.0).unwrap();
+    writeln!(output, "Frequency {} {{", frequency.opening.0).unwrap();
     for field in &frequency.fields {
         match field {
             Title(v) => writeln!(output, "    title {}", quoted(&v.value.0)),
@@ -1128,7 +1223,7 @@ fn format_frequency(output: &mut String, frequency: &ast::Frequency) {
 
 fn format_karma(output: &mut String, karma: &ast::Karma) {
     use ast::RuleField::*;
-    writeln!(output, "Karma {} {{\n    Rules {{", karma.name.0).unwrap();
+    writeln!(output, "Karma {} {{\n    Rules {{", karma.opening.0).unwrap();
     for rule in &karma.rules.rules {
         writeln!(output, "        Rule {} {{", rule.name.0).unwrap();
         for field in &rule.fields {
@@ -1207,9 +1302,9 @@ pub struct StatePaths {
 mod tests {
     use super::*;
 
-    const SOURCE: &str = r#""Rent" (@rent: 1, is #task) {
+    const SOURCE: &str = r#"Rent (@rent: 1, is #task) { r_00000000000000000000000001
 Pay it.
-} ^r_00000000000000000000000001
+} r_00000000000000000000000001
 Frequency monthly {
  title "Monthly"
  quantity 1
@@ -1246,13 +1341,14 @@ Karma home {
 
     #[test]
     fn missing_declaration_uids_are_minted_once_and_formatted() {
-        let source = r#""A note" (0) {
+        let source = r#"A note (0) {
 A note.
 }
 "#;
         let (first, minted) = ensure_uids(source).expect("mint uid");
         assert_eq!(minted.len(), 1);
-        assert!(first.contains(&format!("^{}", minted[0].uid)));
+        assert!(first.contains(&format!("{{ {}", minted[0].uid)));
+        assert!(first.contains(&format!("}} {}", minted[0].uid)));
         let (second, minted_again) = ensure_uids(&first).expect("read durable uid");
         assert!(minted_again.is_empty());
         assert_eq!(second, first);
@@ -1260,7 +1356,7 @@ A note.
 
     #[test]
     fn same_titled_slugless_records_receive_distinct_uids() {
-        let source = "\"Note\" (0) {\nFirst.\n}\n\"Note\" (0) {\nSecond.\n}\n";
+        let source = "Note (0) {\nFirst.\n}\nNote (0) {\nSecond.\n}\n";
         let (_, minted) = ensure_uids(source).expect("mint identities");
         assert_eq!(minted.len(), 2);
         assert_ne!(minted[0].uid, minted[1].uid);
@@ -1308,7 +1404,7 @@ A note.
 
     #[test]
     fn slug_only_references_are_bound_after_lince_mints_declaration_uids() {
-        let source = r#""Counter" (@counter: 0) {
+        let source = r#"Counter (@counter: 0) {
 Counter.
 }
 Frequency fast {
@@ -1350,7 +1446,7 @@ Karma demo {
 
     #[test]
     fn slugless_and_keyword_named_records_are_unambiguous() {
-        let source = "\"Karma\" (0) {\nA Record named Karma.\n}\n\"Rule\" (@rule-note: 0) {\nA Record named Rule.\n}\n";
+        let source = "Karma (0) {\nA Record named Karma.\n}\nRule (@rule-note: 0) {\nA Record named Rule.\n}\n";
         let (source, _) = ensure_uids(source).expect("mint identities");
         let project = project(&parse(&source).expect("parse")).expect("project");
         assert_eq!(project.records.len(), 2);
@@ -1360,7 +1456,7 @@ Karma demo {
 
     #[test]
     fn metadata_comments_survive_formatting() {
-        let source = "\"Commented\" (@commented: 0, // why it exists\n#done) {\nText.\n}\n";
+        let source = "Commented (@commented: 0, // why it exists\n#done) {\nText.\n}\n";
         let canonical = canonicalize(source).expect("parse");
         assert!(canonical.contains("// why it exists"));
         assert_eq!(canonicalize(&canonical).expect("reparse"), canonical);
@@ -1368,7 +1464,7 @@ Karma demo {
 
     #[test]
     fn metadata_comments_survive_runtime_writeback() {
-        let source = "\"Commented\" (@commented: 0, // completion is independent\n#done) {\nText.\n} ^r_00000000000000000000000001\n";
+        let source = "Commented (@commented: 0, // completion is independent\n#done) { r_00000000000000000000000001\nText.\n} r_00000000000000000000000001\n";
         let projected = project(&parse(source).expect("parse")).expect("project");
         let rewritten = set_record_runtime(
             source,
@@ -1385,8 +1481,41 @@ Karma demo {
 
     #[test]
     fn a_record_has_at_most_one_identity_assertion() {
-        let source = "\"Ambiguous\" (@ambiguous: 0, is #task, is #chapter) {\nText.\n} ^r_00000000000000000000000001\n";
+        let source = "Ambiguous (@ambiguous: 0, is #task, is #chapter) { r_00000000000000000000000001\nText.\n} r_00000000000000000000000001\n";
         let error = project(&parse(source).expect("parse")).expect_err("reject identities");
         assert!(error.message.contains("more than one identity"));
+    }
+
+    #[test]
+    fn record_uid_must_match_on_both_description_boundaries() {
+        let source =
+            "Mismatch (0) { r_00000000000000000000000001\nText.\n} r_00000000000000000000000002\n";
+        let error = parse(source).expect_err("reject mismatched boundary");
+        assert!(error.message.contains("opens with uid"));
+    }
+
+    #[test]
+    fn boundary_shaped_description_lines_are_escaped_reversibly() {
+        let uid = "r_00000000000000000000000001";
+        let source =
+            format!("Boundary (@boundary: 0) {{ {uid}\n}} \"{uid}\"\n}} \"\"{uid}\"\"\n}} {uid}\n");
+        let document = parse(&source).expect("parse escaped boundaries");
+        let projected = project(&document).expect("project logical description");
+        assert_eq!(
+            projected.records[0].body,
+            format!("}} {uid}\n}} \"{uid}\"\n")
+        );
+        assert_eq!(format(&document), source);
+
+        let rewritten = set_record_runtime(
+            &source,
+            uid,
+            "Boundary",
+            &format!("}} {uid}\n}} \"{uid}\""),
+            "0",
+            &[],
+        )
+        .expect("escape logical runtime body");
+        assert!(rewritten.contains(&format!("}} \"{uid}\"\n}} \"\"{uid}\"\"")));
     }
 }

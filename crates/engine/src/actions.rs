@@ -401,9 +401,14 @@ pub enum Action {
     },
     /// Hand a Record over to a contact: they become its holder, and once the
     /// handover has actually been delivered it stops being ours.
-    MoveRecordTo { record: String, target: String },
+    MoveRecordTo {
+        record: String,
+        target: String,
+    },
     /// Call off a move that has not been handed over yet.
-    CancelRecordMove { record: String },
+    CancelRecordMove {
+        record: String,
+    },
     /// WHICH columns we accept FROM a contact (Ontology §12).
     ///
     /// The other half of the pairing, and deliberately its own action rather
@@ -3499,7 +3504,10 @@ impl Engine {
             }
             Action::SetContactShare { target, protein } => {
                 let uid = self.resolve(&target).await?;
-                if store::organs::contact(&self.store.pool, &uid).await?.is_none() {
+                if store::organs::contact(&self.store.pool, &uid)
+                    .await?
+                    .is_none()
+                {
                     return Err(EngineError::Consequence(
                         "not a contact — this Cell's own Organ shares with nobody".into(),
                     ));
@@ -3521,12 +3529,8 @@ impl Engine {
                     }
                     None => None,
                 };
-                store::organs::set_contact_share_protein(
-                    &self.store.pool,
-                    &uid,
-                    raw.as_deref(),
-                )
-                .await?;
+                store::organs::set_contact_share_protein(&self.store.pool, &uid, raw.as_deref())
+                    .await?;
                 if let Some(contact) = store::organs::contact(&self.store.pool, &uid).await? {
                     crate::share::reconcile_contact(self, &contact).await?;
                 }
@@ -3589,7 +3593,12 @@ impl Engine {
                 let record_uid = self.resolve(&record).await?;
                 store::record_move::forget(&self.store.pool, &record_uid).await?;
                 outcome.facts = self
-                    .annotate(record_uid, actor, serde_json::json!({ "moving_to": null }), now)
+                    .annotate(
+                        record_uid,
+                        actor,
+                        serde_json::json!({ "moving_to": null }),
+                        now,
+                    )
                     .await?;
             }
             Action::ForgetOrganContact { target } => {
@@ -3903,11 +3912,12 @@ impl Engine {
                     // The contact's own name when we have one, so an operator
                     // reads a person rather than a uid. Falls back to the
                     // label they typed, then to the uid — never to nothing.
-                    let known_as = store::organs::contact(&self.store.pool, &registration.organ_uid)
-                        .await?
-                        .map(|contact| contact.head)
-                        .filter(|name| !name.is_empty())
-                        .unwrap_or_else(|| registration.label.clone());
+                    let known_as =
+                        store::organs::contact(&self.store.pool, &registration.organ_uid)
+                            .await?
+                            .map(|contact| contact.head)
+                            .filter(|name| !name.is_empty())
+                            .unwrap_or_else(|| registration.label.clone());
                     carrying.push(serde_json::json!({
                         "organ_uid": registration.organ_uid,
                         "known_as": known_as,
@@ -4257,15 +4267,11 @@ impl Engine {
                 let contact = store::organs::contact(&self.store.pool, &organ_uid)
                     .await?
                     .ok_or_else(|| EngineError::Consequence("no such contact".into()))?;
-                let node_id = contact
-                    .node_id
-                    .clone()
-                    .or_else(|| None)
-                    .ok_or_else(|| {
-                        EngineError::Consequence(
-                            "we hold no address for them, so there is nobody to ask".into(),
-                        )
-                    })?;
+                let node_id = contact.node_id.clone().or_else(|| None).ok_or_else(|| {
+                    EngineError::Consequence(
+                        "we hold no address for them, so there is nobody to ask".into(),
+                    )
+                })?;
                 self.ask_carrier(&node_id).await?;
                 outcome.data = Some(serde_json::json!({
                     "organ_uid": organ_uid,
@@ -4353,10 +4359,7 @@ impl Engine {
                 // Cell rotates its own mail key but cannot publish one, so
                 // this is the state that used to be invisible: mail keeps
                 // working for the Organ, and stops working for the device.
-                let mail_key_published = self
-                    .own_sealing_key_is_published()
-                    .await
-                    .unwrap_or(true);
+                let mail_key_published = self.own_sealing_key_is_published().await.unwrap_or(true);
                 outcome.data = Some(serde_json::json!({
                     "contacts": rows,
                     "window_minutes": crate::wire::Wire::MAIL_AFTER.num_minutes(),
@@ -4377,7 +4380,8 @@ impl Engine {
                 // second, the pass reaches them and no mail is left at all,
                 // which is the outcome the button's owner actually wants.
                 let past = (chrono::Utc::now() - crate::wire::Wire::MAIL_AFTER).to_rfc3339();
-                store::organs::backdate_unreachable(&self.store.pool, organ_uid.as_str(), &past).await?;
+                store::organs::backdate_unreachable(&self.store.pool, organ_uid.as_str(), &past)
+                    .await?;
                 store::organs::mark_mailed_clear(&self.store.pool, organ_uid.as_str()).await?;
                 let moved = self.sync_now().await?;
                 let after = store::organs::contact(&self.store.pool, organ_uid.as_str()).await?;
@@ -4817,7 +4821,7 @@ impl Engine {
                     store::records::create_with_uid(
                         &self.store.pool,
                         store::records::NewRecord {
-                            slug: None,
+                            slug: record.slug.as_deref(),
                             kind: RecordKind::Plain,
                             head: &record.head,
                             body: &record.body,
@@ -4853,9 +4857,6 @@ impl Engine {
                             .await?;
                         }
                     }
-                    // The state word and the number are two projections of one
-                    // fact, so a file that states only `@stable` still lands
-                    // on the same rung of the ladder the Kanban board reads.
                     if let Some(amount) = record.quantity() {
                         self.act(
                             Action::SetQuantityExact {

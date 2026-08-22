@@ -33,6 +33,7 @@ homepage = "https://lince.social"
 lince = { version = "=0.7.0", path = "crates/lince" }
 utils = { version = "=0.7.0", path = "crates/utils", package = "lince-utils" }
 web = { version = "=0.7.0", path = "crates/web", package = "lince-web" }
+anicca = { version = "=0.7.0", path = "crates/anicca" }
 nucleus = { version = "=0.7.0", path = "crates/nucleus" }
 store = { version = "=0.7.0", path = "crates/store" }
 engine = { version = "=0.7.0", path = "crates/engine" }

@@ -463,8 +463,8 @@ pub fn open(
         )
         .map_err(|_| SealError::Undecipherable)?;
 
-    let mail: MailedBatch = serde_json::from_slice(&plaintext)
-        .map_err(|why| SealError::Malformed(format!("{why}")))?;
+    let mail: MailedBatch =
+        serde_json::from_slice(&plaintext).map_err(|why| SealError::Malformed(format!("{why}")))?;
     let MailedBatch { root, batch } = mail;
     // The sealed batch must agree with the label the carrier routed on.
     // Disagreement is not a decryption failure — it is a sender that signed

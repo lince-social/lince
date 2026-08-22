@@ -1,4 +1,4 @@
-"1 â Rule" (@rule: 0, is #idea, #instinct, #part-of @karma, #done) {
+1 â Rule (@rule: 0, is #idea, #instinct, #part-of @karma, #done) { r_K99HSKDH25E128SY5JFMB0F73Y
 
 # 1 â Rule
 
@@ -445,4 +445,4 @@ violation enters stage-effects rather than continuing.
 - [ ] **Cell modes:** `normal`, `stage-effects`, `observe-only`,
       `emergency-stop` â each surviving reboot.
 - [ ] **Enforce CPU, memory, storage, I/O and notification limits** per rule.
-} ^r_K99HSKDH25E128SY5JFMB0F73Y
+} r_K99HSKDH25E128SY5JFMB0F73Y

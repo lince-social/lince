@@ -1,4 +1,4 @@
-"First Steps" (@first-steps: 1, is #chapter, #instinct, #position: 1, #done) {
+First Steps (@first-steps: 1, is #chapter, #instinct, #position: 1, #done) { r_YWPKA0Z1DJ8XCHTZRW4X2SDJ1N
 # First Steps
 
 Open Lince and there is no menu bar, no sidebar, no home screen waiting to be navigated. There is a canvas — a large surface you pan and zoom — and on it, small tools called **sands**: a table, a kanban, a record editor, a terminal, a graph of relations, a transfer panel, a rule builder, a reader for this very document. You choose which ones exist, where they sit, how big they are, and — the part that matters most — what data each one is looking at. Nothing here is a fixed screen, because nobody's work is a fixed screen.
@@ -135,4 +135,4 @@ Two things trip people up here. The Record sand calls it a **link** and the Data
 **Assignee** is the same filter with the ceremony removed: kind `assigned-to`, pre-filled, with a person picker. And because filters combine, "Project A but not archived", or "assigned to me across both projects", are just more filters on the same card.
 
 That is the whole frontend. The chapters that follow are about what is underneath it — starting with the one thing everything in Lince is made of.
-} ^r_YWPKA0Z1DJ8XCHTZRW4X2SDJ1N
+} r_YWPKA0Z1DJ8XCHTZRW4X2SDJ1N

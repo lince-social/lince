@@ -2248,7 +2248,8 @@ impl Wire {
                         }
                         _ => from_organ.clone(),
                     };
-                    self.handle(&authenticated, &peer.to_string(), request).await
+                    self.handle(&authenticated, &peer.to_string(), request)
+                        .await
                 }
                 // Fail closed on the unknown: a request shape this build does
                 // not recognise is refused, never guessed at.
@@ -2978,11 +2979,7 @@ impl Wire {
                 organ_uid,
                 roster,
                 limit,
-            } => match self
-                .engine
-                .may_collect(&organ_uid, peer, &roster)
-                .await
-            {
+            } => match self.engine.may_collect(&organ_uid, peer, &roster).await {
                 Ok(true) => {
                     match self
                         .engine
@@ -3016,11 +3013,7 @@ impl Wire {
                 organ_uid,
                 roster,
                 uids,
-            } => match self
-                .engine
-                .may_collect(&organ_uid, peer, &roster)
-                .await
-            {
+            } => match self.engine.may_collect(&organ_uid, peer, &roster).await {
                 Ok(true) => match self.engine.confirm_collected(&organ_uid, &uids).await {
                     Ok(dropped) => WireResponse::Applied {
                         applied: dropped as usize,
@@ -3555,14 +3548,14 @@ impl Wire {
     /// not a rule — what is load-bearing is that it is NOT zero.
     pub const MAIL_AFTER: chrono::Duration = chrono::Duration::minutes(10);
 
-/// How long a deposit stays on our books past the point where the carrier
-/// cannot still be holding it — the window in which an expiry report can
-/// arrive and be believed, and be read by a person afterwards.
-///
-/// Fifteen days rather than a number tuned to anything: mail expires at the
-/// retention window, and a person who opens Lince a fortnight later should
-/// still find out their message never landed.
-pub const NOTICE_LINGER_DAYS: i64 = 15;
+    /// How long a deposit stays on our books past the point where the carrier
+    /// cannot still be holding it — the window in which an expiry report can
+    /// arrive and be believed, and be read by a person afterwards.
+    ///
+    /// Fifteen days rather than a number tuned to anything: mail expires at the
+    /// retention window, and a person who opens Lince a fortnight later should
+    /// still find out their message never landed.
+    pub const NOTICE_LINGER_DAYS: i64 = 15;
 
     /// Leave a batch with one of the recipient's published carriers, but only
     /// once the retry window has passed (Ontology C4).
@@ -4615,8 +4608,7 @@ pub const NOTICE_LINGER_DAYS: i64 = 15;
             .ok_or_else(|| EngineError::Consequence("this Cell has no Organ".into()))?;
         let ours = self.engine.roster_of(&local.uid).await?.ok_or_else(|| {
             EngineError::Consequence(
-                "this Organ has published no device list, so there is nothing to register."
-                    .into(),
+                "this Organ has published no device list, so there is nothing to register.".into(),
             )
         })?;
         match self

@@ -1,7 +1,7 @@
 //! Record bodies (Markdown) -> the chapter markup the Instinct shell expects.
 //!
 //! Deliberately NOT a general Markdown implementation, and deliberately not a
-//! dependency. It renders exactly the subset `docs/records/*.lingua` uses, and
+//! dependency. It renders exactly the subset root `anicca/*.lingua` uses, and
 //! anything outside that subset is escaped and shown as text rather than
 //! guessed at. The bodies came from this repository's own HTML through a
 //! mechanical conversion, so the subset is known rather than hoped for — and a
@@ -244,7 +244,10 @@ mod tests {
         let html = body_to_html("text\n\n```mermaid\ngraph LR\n  A[\"Need\"] --> B\n```\n");
         assert!(html.contains("<pre class=\"mermaid\">"), "{html}");
         assert!(html.contains("graph LR"), "{html}");
-        assert!(html.contains("--&gt; B"), "the arrow is escaped, not markup: {html}");
+        assert!(
+            html.contains("--&gt; B"),
+            "the arrow is escaped, not markup: {html}"
+        );
     }
 
     #[test]
@@ -276,10 +279,20 @@ mod tests {
             "Open Lince and there is no menu bar, no sidebar, no home\nscreen waiting to be navigated.\n\n- a bullet that runs on\n  past the wrap column\n- a second one\n",
         );
         assert_eq!(html.matches("<p>").count(), 1, "one paragraph: {html}");
-        assert!(html.contains("no home<br>\nscreen waiting"), "the break is kept: {html}");
+        assert!(
+            html.contains("no home<br>\nscreen waiting"),
+            "the break is kept: {html}"
+        );
         assert_eq!(html.matches("<li>").count(), 2, "{html}");
-        assert!(html.contains("<li>a bullet that runs on<br>\npast the wrap column</li>"), "{html}");
-        assert_eq!(html.matches("<ul>").count(), 1, "one list, not one per line: {html}");
+        assert!(
+            html.contains("<li>a bullet that runs on<br>\npast the wrap column</li>"),
+            "{html}"
+        );
+        assert_eq!(
+            html.matches("<ul>").count(),
+            1,
+            "one list, not one per line: {html}"
+        );
     }
 
     /// Emphasis that spans a wrap point used to come out as literal asterisks,
@@ -287,8 +300,12 @@ mod tests {
     /// without swallowing it.
     #[test]
     fn emphasis_spanning_a_wrap_point_still_pairs() {
-        let html = body_to_html("this is deliberately **not YAML\nfront matter**: each line is Lingua.\n");
-        assert!(html.contains("<strong>not YAML<br>\nfront matter</strong>"), "{html}");
+        let html =
+            body_to_html("this is deliberately **not YAML\nfront matter**: each line is Lingua.\n");
+        assert!(
+            html.contains("<strong>not YAML<br>\nfront matter</strong>"),
+            "{html}"
+        );
         assert!(!html.contains("**"), "{html}");
     }
 

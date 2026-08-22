@@ -99,9 +99,9 @@ pub async fn organ_holding_cell(
             .get("cells")
             .and_then(|cells| cells.as_array())
             .is_some_and(|cells| {
-                cells.iter().any(|cell| {
-                    cell.get("cell_uid").and_then(|uid| uid.as_str()) == Some(cell_uid)
-                })
+                cells
+                    .iter()
+                    .any(|cell| cell.get("cell_uid").and_then(|uid| uid.as_str()) == Some(cell_uid))
             });
         if named {
             return Ok(Some(row.get("organ_uid")));

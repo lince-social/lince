@@ -210,10 +210,7 @@ impl crate::Engine {
 
     /// The installed transport, or a refusal that says what could not be done
     /// rather than that a pointer was missing.
-    fn transport_for(
-        &self,
-        what: &str,
-    ) -> Result<std::sync::Arc<dyn CellTransport>, EngineError> {
+    fn transport_for(&self, what: &str) -> Result<std::sync::Arc<dyn CellTransport>, EngineError> {
         self.enroller
             .lock()
             .expect("enroller")

@@ -160,7 +160,11 @@ fn the_tombstone_exemption_belongs_to_records_alone() {
 /// deny-list failure this cluster refuses everywhere else.
 #[test]
 fn an_unclassified_table_stays_home() {
-    let wide = vec!["head".to_string(), "body".to_string(), "quantity".to_string()];
+    let wide = vec![
+        "head".to_string(),
+        "body".to_string(),
+        "quantity".to_string(),
+    ];
     assert!(
         narrow_ops_to_scope(vec![op_on("something_new", "head", "set")], Some(&wide)).is_empty()
     );

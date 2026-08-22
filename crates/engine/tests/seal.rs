@@ -66,14 +66,18 @@ fn a_sealed_batch_opens_on_every_cell_of_the_recipient() {
     // Mail must be collectable from whichever device comes online first, so
     // each Cell is asked with ONLY its own key.
     for (key_id, secret) in &held {
-        let opened = seal::open(&bundle, &verifying, std::slice::from_ref(&(
-            key_id.clone(),
-            *secret,
-        )))
+        let opened = seal::open(
+            &bundle,
+            &verifying,
+            std::slice::from_ref(&(key_id.clone(), *secret)),
+        )
         .unwrap_or_else(|why| panic!("{key_id} could not open its own mail: {why}"));
         assert_eq!(opened.from_organ, "organ-sender");
         assert_eq!(opened.from_cell, "cell-sender");
-        assert_eq!(opened.batch.ops[0].value.as_deref(), Some("a thing said in confidence"));
+        assert_eq!(
+            opened.batch.ops[0].value.as_deref(),
+            Some("a thing said in confidence")
+        );
     }
 }
 

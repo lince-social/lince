@@ -317,7 +317,9 @@ impl crate::Engine {
             })
             .collect();
         let Some(cell) = store::cells::local(&self.store.pool).await? else {
-            return Err(EngineError::Consequence("this Cell has no Cell Record".into()));
+            return Err(EngineError::Consequence(
+                "this Cell has no Cell Record".into(),
+            ));
         };
         let signing = {
             let held = self.organ_signer.lock().await;
@@ -359,8 +361,9 @@ impl crate::Engine {
                 "a bundle claims a Cell that its Organ's roster does not name".into(),
             ));
         };
-        let verifying = crate::seal::verifying_key(&entry.operational_key)
-            .ok_or_else(|| EngineError::Consequence("that Cell's published key is unusable".into()))?;
+        let verifying = crate::seal::verifying_key(&entry.operational_key).ok_or_else(|| {
+            EngineError::Consequence("that Cell's published key is unusable".into())
+        })?;
         let keyring = self
             .sealing_keyring()
             .await?
@@ -395,7 +398,9 @@ impl crate::Engine {
     ) -> Result<(), EngineError> {
         let organ_uid = presented.roster.organ_uid.clone();
         if !crate::roster::roster_signature_is_valid(presented) {
-            return Err(EngineError::Consequence("that roster does not verify".into()));
+            return Err(EngineError::Consequence(
+                "that roster does not verify".into(),
+            ));
         }
         if !self
             .key_chains(&organ_uid, &presented.roster.root_key)
@@ -470,7 +475,9 @@ impl crate::Engine {
         presented: &crate::roster::SignedRoster,
     ) -> Result<store::mailbox::Registration, EngineError> {
         if !crate::roster::roster_signature_is_valid(presented) {
-            return Err(EngineError::Consequence("that roster does not verify".into()));
+            return Err(EngineError::Consequence(
+                "that roster does not verify".into(),
+            ));
         }
         let organ_uid = presented.roster.organ_uid.clone();
         let Some((label, quota)) = store::mailbox::redeem_invite(

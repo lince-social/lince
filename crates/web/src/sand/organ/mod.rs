@@ -250,11 +250,25 @@ mod tests {
         ] {
             assert!(HTML.contains(&format!("id=\"{id}\"")), "missing {id}");
         }
-        assert_eq!(
-            HTML.matches("class=\"group-head\"").count(),
-            11,
-            "every group is titled, and the titles are where the explanations live"
+        // The PROPERTY, not a count of it. This used to assert a magic 11 and
+        // had drifted to 16 groups without anyone noticing, so the tripwire
+        // that was supposed to catch an unexplained group was itself the
+        // thing that was broken. Checking each heading carries its tooltip
+        // says the same thing and cannot go stale as groups are added.
+        let groups: Vec<&str> = HTML.split("class=\"group-head\"").skip(1).collect();
+        assert!(
+            groups.len() >= 13,
+            "the organ panel lost its groups: {} left",
+            groups.len()
         );
+        for group in &groups {
+            let heading = group.split("</div>").next().unwrap_or_default();
+            assert!(
+                heading.contains("data-lynx-tooltip="),
+                "a group heading carries no explanation: {}",
+                heading.trim()
+            );
+        }
         assert!(
             HTML.contains("main [data-lynx-tooltip]::after"),
             "the shared 180px cap is widened HERE, never in the shared stylesheet"

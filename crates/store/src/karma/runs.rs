@@ -205,12 +205,11 @@ async fn freeze_next_epoch(
     // opened — but it does mean no designation can match, so a designated
     // Program correctly stays put rather than running on an unidentifiable
     // Cell.
-    let this_cell: Option<String> = sqlx::query_scalar(
-        "SELECT uid FROM record WHERE slug = ? AND kind = 'device' LIMIT 1",
-    )
-    .bind(crate::cells::LOCAL_CELL_SLUG)
-    .fetch_optional(&mut *tx)
-    .await?;
+    let this_cell: Option<String> =
+        sqlx::query_scalar("SELECT uid FROM record WHERE slug = ? AND kind = 'device' LIMIT 1")
+            .bind(crate::cells::LOCAL_CELL_SLUG)
+            .fetch_optional(&mut *tx)
+            .await?;
 
     // Two independent filters, and they are not the same question.
     //

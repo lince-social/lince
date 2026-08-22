@@ -33,6 +33,7 @@ pub mod mailbox;
 pub mod roster;
 pub mod seal;
 pub mod senses;
+pub mod share;
 pub mod signals;
 pub mod sync;
 pub mod threads;

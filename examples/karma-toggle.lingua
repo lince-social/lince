@@ -1,0 +1,27 @@
+"Five-second toggle" (@toggle-demo: 0) {
+This Record starts at 0. Its Karma Rule changes it to 1, then 0, then 1 again every five seconds.
+Set next_at to the first instant when you want the Rule to run before syncing this file.
+}
+
+Frequency every-five-seconds {
+    title "Every five seconds"
+    quantity 1
+    every 5 seconds
+    timezone "UTC"
+    next_at 2026-08-20T12:00:00Z
+}
+
+Karma toggle-record {
+    Rules {
+        Rule alternate-toggle-demo-quantity {
+            quantity 1
+            frequency @every-five-seconds
+            record @toggle-demo
+            condition """1 - @toggle-demo"""
+            gate always
+            carry value
+            consequences """[{"kind":"set-quantity"}]"""
+            note "Set toggle-demo to the opposite binary quantity."
+        }
+    }
+}

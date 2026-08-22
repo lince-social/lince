@@ -1,98 +1,95 @@
 ---
 name: lince-lingua-crud
-description: Read and change Lince .lingua Record projections and coordinate Lince task Records safely. Use for .lingua files, docs/records, Instinct content, File Sync-backed Records, and task assignment or state changes.
+description: Read and change Lince Anicca .lingua Records and coordinate Lince work safely. Use for anicca/, .lingua files, File Sync-backed declarations, and task state changes.
 ---
 
 # Lince `.lingua` CRUD
 
-Treat `.lingua` as a projection of Lince data, not YAML, generic front matter,
-or a second database. Lince owns the data; the current parser and validator own
-the file shape.
+Treat `.lingua` as Lince data with one typed language, not YAML, generic front
+matter, Markdown with a generated prelude, or a second database schema.
 
 ## Read the current contract
 
 1. Read [references/bootstrap.md](references/bootstrap.md).
-2. Read the current parser and the contract for the target folder before
-   editing. Do not rely on a schema copied into this skill.
-3. Use the current validation interface available to the agent or harness.
-   Prefer deterministic parsing over visual inspection.
+2. Read `crates/anicca/src/grammar.rs` and the relevant part of
+   `anicca/Lingua.lingua` before editing. Do not rely on syntax copied into a
+   prompt, this skill, or `AGENTS.md`.
+3. Parse before interpreting and use the Rust validation interface after every
+   change.
 
-Keep these stable meanings in mind:
+Keep these meanings in mind:
 
-- The fenced prelude is machine-readable Lingua; everything below it is the
-  Record body.
-- `uid` is identity. A filename or title is not.
-- `@@concept` says what the Record IS. `@concept` states an assertion.
-- `[[Title|uid]]` links by uid; the title is only for readers.
+- An unqualified top-level declaration is a Record. The JSON string before `(`
+  is its title and the text inside `{ ... }` is its Markdown description.
+- `@slug: quantity` gives a Record an addressable slug; a bare quantity creates
+  a valid slugless Record. Slugless Records cannot be the target of authored
+  `@slug` references.
+- Immutable uid identity is machine-owned closing metadata. Never fabricate,
+  copy, or change it. A title and slug are not uid identity.
+- `is #concept` is the identity assertion. `#concept` is ordinary;
+  `#predicate @target` is binary; `#predicate: quantity` carries an amount.
+- Record quantity and assertions such as `#done`, `#todo`, and `#wip` are
+  independent facts. Never infer one from the other.
+- Local references are written by unique slug and resolved project-wide to uid
+  before projection. Unknown or duplicate identities fail the whole change.
+- Comments in Record metadata are syntax and must survive formatting and
+  runtime write-back. Inside the description, `//` is ordinary text.
 - Quantities are exact decimal text, never floats.
-- A prelude edit is a real mutation. Invalid input must fail as a whole.
-- Preserve supported syntax you do not understand. Never simplify it into an
-  older shape.
 
 ## Find the needed context
 
-- Search exact prelude Concepts first, then body text. Follow `@part-of`,
-  `@chapter`, and `@see-also`; do not infer structure from filenames or
-  directory order.
-- Read only the relevant Records. Use the relevant Instinct Records for
-  unfamiliar Lince fundamentals. Use the matching project document for
-  architecture and its task Record for open work.
-- Report ambiguity. Do not invent a Concept, uid, link target, unit, or field.
+- Search exact `is #concept` and `#concept` metadata first, then description
+  text. Follow binary assertions such as `#part-of @slug`; do not infer
+  structure from filenames or directory order.
+- Read only relevant Records. Use `anicca/Ontology.lingua` for task order and
+  `anicca/Lingua.lingua` for language design.
+- Report ambiguity. Do not invent a Concept, slug, uid, target, unit, or field.
 
-## Coordinate task Records
+## Coordinate work
 
-Before coding, find the relevant `@@task` Records and inspect their quantity,
-`@wip`, and `@assigned-to` state.
+Before coding, inspect `anicca/Ontology.lingua` under "What we work on next".
+There is one task statement, not a mirrored task Record elsewhere.
 
-- `1` means done or stable; `0` unplanned; `-1` todo; `-2` plus `@wip` in
-  progress. Treat any quantity below `-1` as active work.
-- Claim a task when the user assigns it to you or asks you to take the next
-  open task. Confirm your Agent name and uid from current Lince or harness
-  state; never guess them. A matching Agent assignment does not prove this
-  chat owns the task. If the harness exposes active chats or runs, find the run
-  doing the work; leave the task alone when another run is active.
-- Where the current contract permits it, claiming means adding
-  `@assigned-to [[Agent name|agent uid]]`, adding `@wip`, and setting the exact
-  quantity to `-2` through the available agent interface.
-- Never remove or replace another assignee unless the user explicitly hands
-  the task over. If another agent holds it, leave it and choose other work.
-- A new user assignment is another task claim, not permission to erase an
-  earlier one. Finish or explicitly hand off earlier work before removing your
-  assignment.
-- Land work completely. Delete its open task entry and move durable knowledge
-  into the explanatory Record; do not leave a checked box that means “mostly.”
+- Record quantity is exact state. Assertions such as `#todo` and `#wip` add
+  meaning but do not secretly rewrite quantity.
+- Never replace another assignee or active work claim. If live Lince or the
+  harness exposes assignment state, use it; never guess an Agent uid.
+- Land work completely. Remove a finished open item and move durable knowledge
+  into the nearby prose rather than leaving a checked duplicate elsewhere.
 
-## Change a Record
+## Change a declaration
 
 ### Create
 
-- Determine whether this is an ordinary File Sync folder or a shipped,
-  cross-linked bundle. A hand-written File Sync file may omit a uid; a bundle
-  may require a deterministic pre-minted uid.
-- Use the current uid mechanism and vocabulary. Never copy or fabricate a uid,
-  resolve a link by title, or create a Concept as an import side effect.
-- Include the target folder's required identity, selection Concept, parent,
-  and quantity state.
+- A person may omit uid identity; Lince mints it and writes it after the closing
+  brace before projection.
+- A person may omit a Record slug by writing only its quantity. Give it a slug
+  only when it needs a readable unique address.
+- Resolve every referenced slug across the whole target directory before any
+  database mutation. Never create a Concept or retarget by title as an import
+  side effect.
 
 ### Update or rename
 
-- Keep the uid unchanged and make the smallest semantic edit.
-- Preserve unrelated assertions, quantities, body text, and newer syntax.
-- Resolve every link target before editing it. A title change must not retarget
-  the uid or trigger unrelated body rewrites.
+- Keep machine uid identity unchanged and make the smallest semantic edit.
+- Preserve unrelated metadata, comments, quantities, and description text.
+- A title edit is presentation. A slug edit changes the readable address but
+  must not change uid identity.
 
 ### Delete
 
-- Confirm whether the request removes one file projection or the Record. With
-  multiple formats, a Record may remain until every projection is gone.
-- Check incoming links, children, filters, and bundle rules. Do not orphan data
-  or infer broader deletion authority.
+- Confirm whether the request removes one file projection, one declaration, or
+  the database object. Check incoming `@slug` references first.
+- Do not orphan data or infer broader deletion authority.
 
 ## Validate
 
-1. Run the narrowest current parser or validator covering every changed file.
-2. Run the repository checks in
-   [references/bootstrap.md](references/bootstrap.md) for `docs/records`.
-3. Inspect the diff for lost uids, prelude expressions, links, or body text.
-4. If validation refuses the edit, report the refusal; do not weaken the
+1. Run `cargo run --offline -p anicca -- check anicca` for the checked-in tree,
+   or the same command with the actual File Sync directory.
+2. Run `cargo run --offline -p anicca -- fmt TARGET`; use `--write` only when
+   formatting is intended.
+3. For parser or projection changes, run `cargo test --offline -p anicca` and
+   the File Sync tests covering Anicca.
+4. Inspect the diff for changed uids, slugs, quantities, assertions, comments,
+   or lost description text. If validation refuses the edit, do not weaken the
    contract or guess a fallback representation.

@@ -248,8 +248,16 @@ impl Engine {
         }
 
         for (uid, paths) in to_edit {
-            self.apply_file_edits(&uid, &paths, &disk, &formats, state, &mut report, &mut conflicted)
-                .await?;
+            self.apply_file_edits(
+                &uid,
+                &paths,
+                &disk,
+                &formats,
+                state,
+                &mut report,
+                &mut conflicted,
+            )
+            .await?;
         }
         for (uid, paths) in to_delete {
             self.act(
@@ -759,7 +767,7 @@ impl Engine {
                     return Ok(Err(format!(
                         "Lince could not read back the block it wrote for this file ({err}), so \
                          it cannot tell which lines you changed"
-                    )))
+                    )));
                 }
             },
             None => crate::lingua_file::Projection::default(),
@@ -1121,12 +1129,13 @@ impl Engine {
                         .unwrap_or_else(|| row.predicate.clone()),
                     identity: record.identity_predicate_uid.as_deref()
                         == Some(row.predicate_uid.as_str()),
-                    object: row.object_uid.as_ref().map(|object| {
-                        crate::lingua_file::Link {
+                    object: row
+                        .object_uid
+                        .as_ref()
+                        .map(|object| crate::lingua_file::Link {
                             title: heads.get(object).cloned().unwrap_or_default(),
                             uid: object.clone(),
-                        }
-                    }),
+                        }),
                     quantity: row.quantity.map(crate::lingua_file::decimal_text),
                     unit: row
                         .unit_uid

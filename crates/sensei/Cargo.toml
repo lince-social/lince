@@ -1,0 +1,10 @@
+[package]
+name = "sensei"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "The codebase's own standards, enforced at build time. One rule today: Lince source carries no comments."
+
+[dependencies]

@@ -207,13 +207,13 @@ pub async fn root_for_op_tx(
     uid: &str,
 ) -> Result<Option<String>, StoreError> {
     Ok(match tbl {
-        "record" => sqlx::query_scalar::<_, Option<String>>(
-            "SELECT replica_root FROM record WHERE uid = ?",
-        )
-        .bind(uid)
-        .fetch_optional(&mut **tx)
-        .await?
-        .flatten(),
+        "record" => {
+            sqlx::query_scalar::<_, Option<String>>("SELECT replica_root FROM record WHERE uid = ?")
+                .bind(uid)
+                .fetch_optional(&mut **tx)
+                .await?
+                .flatten()
+        }
         "record_assertion" => sqlx::query_scalar::<_, Option<String>>(
             "SELECT r.replica_root FROM record_assertion a
                JOIN record r ON r.uid = a.subject_uid

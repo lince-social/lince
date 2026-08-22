@@ -1,0 +1,114 @@
+"Organ" (@organ: 0, is #chapter, #instinct, #part-of @ontology, #done) {
+
+
+--- AI Below Only ---
+# Organ
+
+Every Record so far lived alone on one machine. This is about what happens when
+people show up: your own Cell, other people’s Cells, and the Organs that let
+several Cells hold something in common.
+
+## Organ: the sovereign Record holder
+
+A **Cell** is one running Lince instance and its local data. An **Organ** is
+the social/network boundary a Cell represents (personal, family, company,
+project, community); other reachable Lince nodes are Organs regardless of
+their internal arrangement. An Organ is a `kind = organ` Record; it owns its
+Records, structure, policy, credentials, and private Lingua. Every Record
+carries its origin Organ, preserved through relaying.
+
+All of the following is built; §11 holds the mechanics.
+
+Contacts live in `organ_contact`: `trust` (unknown/known/blocked), numeric
+`proximity` (local-only, never exported), and independent `sync_out`/`sync_in`
+policy. `blocked` is terminal everywhere — import, discovery, export and
+delivery all reject. Introduction exchanges identity + public keys, and
+adopting stores the remote Organ under its own uid; Organ identity is
+transport/trust, not permission for one Person to act or sign for another.
+Sync carries visibility-gated op batches through a durable outbox with retry;
+imports verify hash-chain + signature, rejects go to quarantine verbatim while
+valid items still apply, import is idempotent by op identity and uid, and
+quantity deltas commute. Protein selects Records by origin Organ
+(`organ_eq`/`organ_in`).
+
+File Sync mirrors selected Records to Markdown files through the
+`lince.file_sync` extension (`enabled`, `path`); disk edits return through the
+normal `EditRecordText` action. Disk wins on a same-tick conflict, and a
+missing file deletes its Record only after two consecutive misses — a debounce
+against atomic editor saves. A live config supervisor
+(`engine::file_sync::spawn_supervisor`) starts and stops watchers when config
+toggles, reacting to `SetExtension` facts on the bus rather than requiring a
+reboot; boot seeds via the same reconcile pass.
+
+The Organ interface lists `kind = organ` Records, edits File Sync config, and
+— folded into the same sand as a friends-list panel — edits contact trust and
+proximity, with block/unblock as `trust: "blocked"`/`"known"`
+(`set-contact-trust`/`set-contact-proximity` Actions, `contact` Protein
+include on `organ_contact`). Its scope is trust/proximity; sync policy
+(`sync_out`/`sync_in`) and quarantine inspection stay out of that component.
+It has since grown Profile, Devices and Discovery panels — §11.
+
+## The Cell
+
+Everything so far happened in one place: your **Cell**. A Cell is your own Lince — your records, on your machine, answering to you.
+
+```mermaid
+graph LR
+  A["Cell"]
+```
+
+## Cells Have No Main One
+
+Other people have their own. No Cell is inside any other, and none of them is the "main" one:
+
+```mermaid
+graph LR
+  A["Cell"]
+  B["Cell"]
+  C["Cell"]
+  D["Cell"]
+```
+
+## The Organ
+
+When several Cells want to hold something in common — a household budget, a team backlog, a shared shopping list — they form an **Organ**.
+
+```mermaid
+graph TD
+  O["Organ"]
+  A["Cell"] --> O
+  B["Cell"] --> O
+  C["Cell"] --> O
+  D["Cell"] --> O
+```
+
+_An Organ is a shared context, not a server that owns the members._
+
+## Organs Do Not Blur Together
+
+You belong to as many Organs as you have contexts, and they do not blur into each other. Work does not see your hobby; your family does not see your work backlog.
+
+```mermaid
+graph TD
+  B["Work"] --> A["Your Cell"]
+  C["Hobby"] --> A
+  D["Family"] --> A
+  E["Friends"] --> A
+```
+
+## Lince Has No Centre
+
+Lince as a whole is just all of it — Cells and Organs, with no centre:
+
+```mermaid
+graph TD
+  A["Organ"] --> O["Lince"]
+  B["Cell"] --> O
+  C["Organ"] --> O
+  D["Cell"] --> O
+```
+
+This is why the frontend keeps **areas** (in the workspace menu) separate from each other, and why a Protein can filter by organ. The boundary is real, and it is the same boundary the next chapter has to cross.
+
+**Open work is not listed here.** Every task lives in one place — [[Ontology|r_S8PQ17MQ3WBWM53ZN700K89V9F]], under "What we work on next" and "-- Not Planned For Now --". This file is the specification; that list is the plan.
+} ^r_VAX3HA21RXF9AENHMCJTSEF1AT

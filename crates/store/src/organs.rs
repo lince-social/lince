@@ -286,6 +286,13 @@ pub struct Contact {
     /// Seconds between catch-up pulls; 0 disables the cycle (reactive deltas
     /// and reconnect catch-up still run).
     pub catchup_interval_secs: i64,
+    /// A saved Protein query naming WHICH Records travel to this contact.
+    /// `None` is the unnarrowed feed — the visibility gate alone decides.
+    pub share_protein: Option<String>,
+    /// How far the op log had been read when this contact's selection was last
+    /// reconciled. A watermark rather than a rescan: without it, every pass
+    /// would re-evaluate the selection against the whole log.
+    pub share_seen_seq: Option<i64>,
     /// Which COLUMNS of the Records this contact can see actually travel to
     /// them (Ontology §12, C5). `None` is unnarrowed — everything the
     /// visibility gate already allows.
@@ -326,10 +333,6 @@ pub struct Contact {
     /// we chose to drop. Kept so a WIDENING is at least visible locally, and
     /// so the two directions have the same shape.
     pub accept_version: i64,
-    /// The last address a SIGNED exchange succeeded from — a cached hint,
-    /// never identity (Ontology §11 "Peers"). Only the verified handshake
-    /// writes it; discovery announces alone never do.
-    pub last_seen_addr: Option<String>,
     /// Added from a code, with no connection yet to learn their real uid. The
     /// row is held under a uid derived from the NodeId until an Introduction
     /// replaces it; until then they cannot sync, because every batch they push
@@ -550,7 +553,8 @@ fn map_contact(r: sqlx::sqlite::SqliteRow) -> Contact {
         peer_acked_seq: r.get("peer_acked_seq"),
         mode: r.get("mode"),
         catchup_interval_secs: r.get("catchup_interval_secs"),
-        last_seen_addr: r.get("last_seen_addr"),
+        share_protein: r.get("share_protein"),
+        share_seen_seq: r.get("share_seen_seq"),
         node_id: r.get("node_id"),
         pending_introduction: r.get::<i64, _>("pending_introduction") != 0,
         unreachable_since: r.get("unreachable_since"),
@@ -760,21 +764,6 @@ pub async fn contact_by_node_id(
     .map(map_contact))
 }
 
-/// Record the address a signed exchange just succeeded from. The signature is
-/// what authorizes the update — never trust-on-IP.
-pub async fn set_last_seen_addr(
-    pool: &SqlitePool,
-    organ_uid: &str,
-    addr: Option<&str>,
-) -> Result<(), StoreError> {
-    sqlx::query("UPDATE organ_contact SET last_seen_addr = ? WHERE record_uid = ?")
-        .bind(addr)
-        .bind(organ_uid)
-        .execute(pool)
-        .await?;
-    Ok(())
-}
-
 /// Advance the catch-up checkpoint: the peer's op seq we have fully applied.
 pub async fn set_last_synced_seq(
     pool: &SqlitePool,
@@ -806,6 +795,53 @@ pub async fn advance_peer_acked_seq(
         "UPDATE organ_contact SET peer_acked_seq = MAX(peer_acked_seq, ?) WHERE record_uid = ?",
     )
     .bind(seq)
+    .bind(organ_uid)
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Reach {
+    Direct,
+    Mailbox,
+    Auto,
+}
+
+impl Reach {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Reach::Direct => "direct",
+            Reach::Mailbox => "mailbox",
+            Reach::Auto => "auto",
+        }
+    }
+}
+
+impl Contact {
+    pub fn reach(&self) -> Reach {
+        match self.mode.as_str() {
+            "direct" => Reach::Direct,
+            "mailbox" => Reach::Mailbox,
+            _ => Reach::Auto,
+        }
+    }
+}
+
+/// Save (or clear) the Protein query that names what travels to this contact.
+///
+/// Clearing the watermark with it is what makes a NEW selection evaluate
+/// against the whole log rather than only against ops since the last pass.
+pub async fn set_contact_share_protein(
+    pool: &SqlitePool,
+    organ_uid: &str,
+    protein: Option<&str>,
+) -> Result<(), StoreError> {
+    sqlx::query(
+        "UPDATE organ_contact SET share_protein = ?, share_seen_seq = NULL
+          WHERE record_uid = ?",
+    )
+    .bind(protein)
     .bind(organ_uid)
     .execute(pool)
     .await?;

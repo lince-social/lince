@@ -221,28 +221,28 @@ pub async fn records_of_op(
 ) -> Result<Vec<String>, StoreError> {
     Ok(match tbl {
         "record" => vec![uid.to_string()],
-        "fact" => sqlx::query_scalar::<_, Option<String>>(
-            "SELECT record_uid FROM fact WHERE uid = ?",
-        )
-        .bind(uid)
-        .fetch_optional(pool)
-        .await?
-        .flatten()
-        .into_iter()
-        .collect(),
-        "record_assertion" => sqlx::query(
-            "SELECT subject_uid, object_uid FROM record_assertion WHERE uid = ?",
-        )
-        .bind(uid)
-        .fetch_optional(pool)
-        .await?
-        .into_iter()
-        .flat_map(|row| {
-            let subject: String = row.get("subject_uid");
-            let object: Option<String> = row.get("object_uid");
-            std::iter::once(subject).chain(object)
-        })
-        .collect(),
+        "fact" => {
+            sqlx::query_scalar::<_, Option<String>>("SELECT record_uid FROM fact WHERE uid = ?")
+                .bind(uid)
+                .fetch_optional(pool)
+                .await?
+                .flatten()
+                .into_iter()
+                .collect()
+        }
+        "record_assertion" => {
+            sqlx::query("SELECT subject_uid, object_uid FROM record_assertion WHERE uid = ?")
+                .bind(uid)
+                .fetch_optional(pool)
+                .await?
+                .into_iter()
+                .flat_map(|row| {
+                    let subject: String = row.get("subject_uid");
+                    let object: Option<String> = row.get("object_uid");
+                    std::iter::once(subject).chain(object)
+                })
+                .collect()
+        }
         // An unknown table is not silently shared. A fourth logged table is a
         // change to this mapping, and defaulting to "no Record governs it"
         // would make the omission invisible until it leaked.

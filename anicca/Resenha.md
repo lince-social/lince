@@ -3,7 +3,7 @@
 Companion to `Resenha.lingua`. Not a Record: `anicca/` ingests `.lingua`
 only, so nothing here reaches Instinct.
 
-# Resenha â the Lince manager, and where untestable tests go to live
+# Resenha — the Lince manager, and where untestable tests go to live
 
 **Decided 2026-08-14.** Resenha runs several Linces on one machine and is the
 only place a multi-Cell property can be observed. It has two modes over the same
@@ -22,14 +22,14 @@ to be something the harness can drive, so that one seed reproduces one run
 exactly. Two sub-modes: **scripted**, where named scenarios run and each node
 reports pass or fail per assertion, and **random**, which explores from a seed
 and records what it broke. A failure is reported as a SEED, because a seed is a
-bug report you can replay â the log of what happened is a description, and
+bug report you can replay — the log of what happened is a description, and
 descriptions of concurrency bugs are how they escape. Maybe patchbay crate can help to simulate network
 
 **Why this is the answer to "tests I cannot run".** Several properties this
 document already depends on have no test today, and each has the same shape: it
 needs two or more Cells, or a partition, or a clock nobody's laptop can produce.
 Left as prose they are hopes. Written as DST scenarios they are code with a
-`#[ignore]` on them today and a runner tomorrow â so the rule from here on is
+`#[ignore]` on them today and a runner tomorrow — so the rule from here on is
 that **a property that cannot be tested now gets WRITTEN now as an ignored DST
 scenario naming its seed conditions**, rather than recorded as a sentence in a
 plan. `crates/engine/tests/dst_deferred.rs` holds them, and the file is the
@@ -40,7 +40,7 @@ attributes off one at a time.
 answer is consistently the same one: converge by construction rather than by
 coordination, and make the merge a property of the data instead of a protocol
 step. Where this document reaches for a lock or a leader, the first question is
-whether the state could have been a CRDT instead â and where it genuinely cannot
+whether the state could have been a CRDT instead — and where it genuinely cannot
 be (an outward act must happen exactly once, and no data structure makes sending
 one message twice into sending it once), that is the point to say so out loud
 rather than to invent a weaker lock.
@@ -51,7 +51,7 @@ rather than to invent a weaker lock.
 an item nobody can execute is not blocked work, it is work whose HARNESS is
 missing, and naming the harness is what turns a dead end into a queue. Each
 scenario in the task list names what it must reproduce and what it must
-report, because the point is not a green tick â it is telling whoever picks the feature back
+report, because the point is not a green tick — it is telling whoever picks the feature back
 up where it actually sat and what to do next.
 
 
@@ -77,7 +77,7 @@ DST is amazing! The idea (I think) is to have three things:
         https://www.youtube.com/watch?v=JoYjji1DZCE
 
 
-        Turso does not use a basic test script that just writes random data to different databases. Instead, Turso utilizes Deterministic Simulation Testing (DST) by completely abstracting the environmentâincluding time, the network, and file system I/Oâand replacing it with a pseudo-randomly seeded simulator. [1, 2, 3]
+        Turso does not use a basic test script that just writes random data to different databases. Instead, Turso utilizes Deterministic Simulation Testing (DST) by completely abstracting the environment—including time, the network, and file system I/O—and replacing it with a pseudo-randomly seeded simulator. [1, 2, 3]
 Because Turso is a ground-up rewrite of SQLite in Rust (originally under the repo name Limbo), they designed the core engine following "TigerStyle" software principles, ensuring that absolutely every background task can be controlled deterministically by a single PRNG seed. [3, 4, 5, 6]
 
 ---
@@ -87,7 +87,7 @@ Because Turso is a ground-up rewrite of SQLite in Rust (originally under the rep
 
 - [ ] **The simulated environment**: clock, network and disk behind traits the
   engine already has to go through, so a node cannot accidentally read the host
-  clock. This is the load-bearing item â the modes above it are a menu without
+  clock. This is the load-bearing item — the modes above it are a menu without
   it, and every place the engine calls `Utc::now()` directly is a hole in it.
 
 - [ ] **Scripted mode**: named scenarios, per-node pass/fail, and the deferred
@@ -98,17 +98,17 @@ Because Turso is a ground-up rewrite of SQLite in Rust (originally under the rep
 
 - [ ] **Fault injection worth the name**: partition, one-way partition, delay,
   reorder, duplicate, and a Cell that stops and comes back with an old clock.
-  A partition that is only "both nodes paused" tests nothing â the asymmetric
+  A partition that is only "both nodes paused" tests nothing — the asymmetric
   cases are where every one of this document's sync decisions actually lives.
 
 - [ ] **The always-on Cell** (from the infrastructure work). A third node that never sleeps, and two
   that alternate: a change made on the laptop reaches the phone while the
   laptop is off. Reports which node served it and whether the mailbox was
-  involved at all â if the always-on Cell is up, mail should never be used, and
+  involved at all — if the always-on Cell is up, mail should never be used, and
   a run where it is means the retry window or the dial preference is wrong.
 
 - [ ] **Relay, NAT and the upgrade to direct** (from the infrastructure work). The relay is a node
-  like any other; the interesting cases are the ones a laptop cannot produce â
+  like any other; the interesting cases are the ones a laptop cannot produce —
   symmetric NAT where the hole punch never lands and traffic stays on the relay
   for the life of the connection, and the asymmetric case where one side can
   reach the other but not the reverse. Reports whether each connection ended up
@@ -124,7 +124,7 @@ Because Turso is a ground-up rewrite of SQLite in Rust (originally under the rep
 - [ ] **A real host, last** (from the infrastructure work). One item genuinely needs a machine on
   the internet rather than a simulator: `iroh-relay` behind a public IP, a DNS
   name and TLS, with a Cell beside it as a roster member. Resenha's normal mode
-  is what drives it â a node list where one node is remote â and it comes after
+  is what drives it — a node list where one node is remote — and it comes after
   the simulated scenarios, because everything they can catch is cheaper to
   catch there. Reports reachability from outside, and nothing else, because
   that is the only question a real host answers that a simulator cannot.
@@ -140,7 +140,7 @@ Because Turso is a ground-up rewrite of SQLite in Rust (originally under the rep
 
 **Resenha, and everything that cannot be CLOSED from one laptop.**
 Created 2026-08-18. The rule for what lands here is narrow on purpose:
-**not** "cannot be tested in-process" â gossip, hop rules and the directory
+**not** "cannot be tested in-process" — gossip, hop rules and the directory
 Cell are all implementable today and only their convergence properties need a
 simulator, and those properties are already written down as ignored scenarios
 in `crates/engine/tests/dst_deferred.rs`. What lands here is work whose
@@ -148,13 +148,13 @@ COMPLETION needs a second Lince: a box no amount of typing on this machine
 can honestly tick. Everything else is therefore implementable start to
 finish, which is the point of splitting this one out.
 **C12 is not PARKED.** Parked work is not being built at all. This work is
-scheduled, specified and blocked on a harness â the difference matters
+scheduled, specified and blocked on a harness — the difference matters
 because parked items need a decision to revive and these need only Resenha.
-Resenha's own build comes first, in this order â the detail is in the Resenha
+Resenha's own build comes first, in this order — the detail is in the Resenha
 section:
 - [ ] **The node list and normal mode.** Ratatui: name, port, data directory,
       running state, start/stop, a log pane per node.
-- [ ] **The simulated environment** â clock, network and disk behind traits
+- [ ] **The simulated environment** — clock, network and disk behind traits
       the engine already goes through. The load-bearing item; every direct
       `Utc::now()` in the engine is a hole in it.
 - [ ] **Scripted mode**, with the deferred suite as its first scenarios.
@@ -163,28 +163,28 @@ section:
 - [ ] **Fault injection worth the name**: partition, ONE-WAY partition,
       delay, reorder, duplicate, and a Cell that returns with an old clock.
 Then the boxes that were waiting on it. These five came out of C4 on
-2026-08-18 and are unchanged â they need a machine with a public IP, and
+2026-08-18 and are unchanged — they need a machine with a public IP, and
 ticking them from a laptop would be a lie:
 - [ ] **Run `iroh-relay` on the VPS.** Public IP, DNS name and TLS; point the
       Cells at it as their configured relay instead of the default public
       ones, so the Organ's own machine carries its own connection metadata.
-- [ ] **Run a Cell on the VPS as a member of the Organ roster** â the
+- [ ] **Run a Cell on the VPS as a member of the Organ roster** — the
       always-on device that makes offline delivery work without either laptop
       being up.
 - [ ] **Only then does relay-only mode cost nothing that matters**, because
       the relay being depended on is the user's own.
-- [ ] **A full Cell on the VPS** â `mode = "server"`. Holds your keys and
+- [ ] **A full Cell on the VPS** — `mode = "server"`. Holds your keys and
       your plaintext data, merges and serves like any other Cell; both sides
       genuinely converge through it because it IS you. The honest cost is
       that whoever controls that box has your data.
-- [ ] **A blind mailbox** â `mode = "relay"`. Holds SEALED envelopes it
+- [ ] **A blind mailbox** — `mode = "relay"`. Holds SEALED envelopes it
       cannot read and hands them over when the recipient appears; no roster,
       no keys, converges nothing. The one case where encrypting op payloads
       earns its cost, precisely because a third party carries the bytes.
 **Acceptance is not a new checklist**: closing C12 means turning off the
 `#[ignore]` attributes in `dst_deferred.rs` one at a time, and each of those
 nine names its own seed conditions.
-**Surface:** Resenha's TUI is the surface â the node list, the log pane per
+**Surface:** Resenha's TUI is the surface — the node list, the log pane per
 node, and per-node pass/fail per assertion. A simulator whose result you
 cannot watch is a test runner, and the rule that every task names its
 surface is why this line is here rather than assumed.
@@ -193,7 +193,7 @@ surface is why this line is here rather than assumed.
 ## Deterministic Simulation
 
 
-## ð How It Is Structured
+## 📂 How It Is Structured
 
 Turso's simulator code is organized inside their repository under their testing directories (such as testing/simulator/). It is broken into four distinct architectural layers: [2, 7, 8]
 
@@ -202,7 +202,7 @@ Turso's simulator code is organized inside their repository under their testing 
 3.  Generation (generation.rs): The code responsible for pseudo-randomly generating interaction plans, mock database tables, and schema workloads based on a configured workload distribution. [2, 7]
 4.  Properties (properties.rs): Defines invariants and core database properties (like transaction atomicity, linearizability, or isolation levels). The engine checks these assertions at every step of the simulation loop. [2, 7, 9]
 
-## ð  How the Simulation Logic Works
+## 🛠 How the Simulation Logic Works
 
 Turso avoids standard third-party Rust crates that interact directly with the operating system or system clock. Instead, the simulator operates through a strict architectural loop: [10]
 

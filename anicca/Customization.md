@@ -133,7 +133,7 @@ and package any vendored dependency with its license and credits.
 
 - [ ] A deliberate second channel so color is never the only carrier: Solid = settled (Ledger facts, committed quantities). Dashed = declared (promises, projections, staged rules). This is as load-bearing as any hue.
 
-"- [ ] Numbers first: tabular figures everywhere quantities appear, negative quantities use a true minus (â3), and zero and positive quantities have no sign" (0, 5). The zero state is styled quietly — peace is the one value that should never demand attention.
+"- [ ] Numbers first: tabular figures everywhere quantities appear, negative quantities use a true minus (−3), and zero and positive quantities have no sign" (0, 5). The zero state is styled quietly — peace is the one value that should never demand attention.
 - [ ] Lato is the default body and interface typeface. Aleo is used mostly for titles and semantic headings. Quantities and technical metadata keep the monospace token. EN/PT is supported from day one, with generous line lengths and no cramped all-caps labels.
 - [ ] Ordinary interface text is 14px by default. Compact secondary metadata stays readable at 11–12px; do not shrink routine labels or content to create density.
 - [ ] Inline icons, counts, and quantity-state marks are optically centered with the adjacent text. Correct a glyph inside its SVG when its drawing is off-center; do not move the entire control.

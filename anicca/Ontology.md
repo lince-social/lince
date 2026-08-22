@@ -385,7 +385,7 @@ plausibly do not.
 - [x] Aggregation (`sum`/`count` by concept/kind on records, by
   cause_kind/day/concept on facts) — visibility gate applies BEFORE
   aggregation, so hidden rows can't leak through sums.
-"- [x] `nearby` â Organs currently visible on the local network" (2026-08-04).
+"- [x] `nearby` — Organs currently visible on the local network" (2026-08-04).
   NOT a departure from "the read contract": Protein already serves derived,
   non-table sources (`frequency`, `recurrence`) and already has a LOCAL-ONLY
   source in `decision`, which returns empty to any remote subject. `nearby`
@@ -4609,7 +4609,7 @@ Implementation checklist for the Home Manager nutrition tab.
 - [x] Add a lowest-price optimizer using a frontend two-phase simplex linear optimizer with infeasibility reporting.
 - [x] Add visual workflow coverage for tab switching, custom alimentum creation, price editing, plan generation, optimizer run, and shopping-list display.
 
-"## What is left after stages 1â7" (2026-08-04)
+"## What is left after stages 1–7" (2026-08-04)
 
 Stages 1–7 are closed and the workflow they exist for runs end to end: discover
 an Organ, add them by QR/paste/nearby, invite and talk in threads, grant a

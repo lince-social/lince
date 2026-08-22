@@ -4026,7 +4026,7 @@ tests do) share the counter."* The harness therefore shares the very state
 whose non-sharing causes the collision, so today's tests pass for a reason
 unrelated to the property they appear to check.
 
-"### What is left after stages 1â7" (2026-08-04)
+"### What is left after stages 1–7" (2026-08-04)
 
 Stages 1–7 are closed and the workflow they exist for runs end to end: discover
 an Organ, add them by QR/paste/nearby, invite and talk in threads, grant a

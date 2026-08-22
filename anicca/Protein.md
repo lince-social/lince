@@ -18,7 +18,7 @@ Protein (@protein: 0, is #chapter, #instinct, #part-of @ontology, #done) { r_BGR
 - [x] Aggregation (`sum`/`count` by concept/kind on records, by
   cause_kind/day/concept on facts) — visibility gate applies BEFORE
   aggregation, so hidden rows can't leak through sums.
-"- [x] `nearby` â Organs currently visible on the local network" (2026-08-04).
+"- [x] `nearby` — Organs currently visible on the local network" (2026-08-04).
   NOT a departure from "the read contract": Protein already serves derived,
   non-table sources (`frequency`, `recurrence`) and already has a LOCAL-ONLY
   source in `decision`, which returns empty to any remote subject. `nearby`

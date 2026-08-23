@@ -29,20 +29,13 @@ pub(crate) fn board_style(bootstrap: &AppBootstrap) -> String {
     )
 }
 
-pub(crate) fn app_shell_signals(bootstrap: &AppBootstrap) -> String {
-    serde_json::json!({
-        "appTitle": bootstrap.app_name,
-    })
-    .to_string()
-}
-
 pub(crate) fn render_lince_logo() -> Markup {
     html! {
         (PreEscaped(LINCE_LOGO_SVG))
     }
 }
 
-pub(crate) fn render_topbar_brand(title: &str, data_text: Option<&str>) -> Markup {
+pub(crate) fn render_topbar_brand(title: &str) -> Markup {
     html! {
         div class="topbar__brand" {
             div class="brand-mark" aria-hidden="true" {
@@ -51,11 +44,7 @@ pub(crate) fn render_topbar_brand(title: &str, data_text: Option<&str>) -> Marku
                 }
             }
             div class="brand-lockup" {
-                @if let Some(data_text) = data_text {
-                    span class="brand-name" data-text=(data_text) { (title) }
-                } @else {
-                    span class="brand-name" { (title) }
-                }
+                span class="brand-name" { (title) }
             }
         }
     }

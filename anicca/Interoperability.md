@@ -56,13 +56,12 @@ the integration path for foreign services and data models. A Blood adapter
 maps provenance and semantics explicitly; an embedded Web page does not become
 a Blood integration merely by loading in a Website Sand.
 
-OCIF is deliberately not an implementation target now. Only after every
-Interface implementation part and every Ontology task is complete, and Lince's
-own Box schema is stable, may the
-[OCIF specification](https://github.com/ocwg/ocif-spec) and
-[OCIF library](https://github.com/ocwg/ocif-lib) be evaluated as a lossy or
-lossless import/export adapter. Unsupported Lince features must survive in an
-extension or be reported honestly; the external format never limits Box.
+The [OCIF specification](https://github.com/ocwg/ocif-spec) and
+[OCIF library](https://github.com/ocwg/ocif-lib) are prior art and examples
+only. They can help illustrate stable canvas-node identity and graph-shaped
+documents, but Lince has no task to evaluate, integrate, import, export, or
+remain compatible with OCIF. It never limits Box and creates no future
+completion condition.
 
 ### Future public commerce experiments
 

@@ -12,8 +12,6 @@ use {
     },
 };
 
-const DATASTAR_BOOTSTRAP_SCRIPT: &str =
-    r#"<script type="module" src="/host/static/vendored/datastar.js"></script>"#;
 const WIDGET_BOOTSTRAP_SCRIPT: &str =
     r#"<script src="/host/static/presentation/board/widget-frame-bootstrap.js"></script>"#;
 
@@ -70,16 +68,7 @@ fn inject_package_html(raw_html: &str, entry_path: &str, content_root_url: &str)
         return ensure_base_href(raw_html, entry_path, content_root_url);
     }
 
-    let datastar_script = if raw_html.contains("datastar.js") {
-        ""
-    } else {
-        DATASTAR_BOOTSTRAP_SCRIPT
-    };
-    let injections = [datastar_script, WIDGET_BOOTSTRAP_SCRIPT]
-        .into_iter()
-        .filter(|value| !value.is_empty())
-        .collect::<Vec<_>>()
-        .join("\n");
+    let injections = WIDGET_BOOTSTRAP_SCRIPT;
 
     let html = ensure_base_href(raw_html, entry_path, content_root_url);
 

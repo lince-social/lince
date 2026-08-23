@@ -20,6 +20,23 @@ Kanban are borderless bundles of these pieces, not sealed windows: their
 controls can be separated, moved elsewhere, resized, reconnected, and grouped
 while continuing to interact.
 
+**Castle** is an optional human word for a saved compound Sand: a group of
+Sands prepackaged for reuse. It introduces no fourth object alongside Sand,
+group, and definition. A Button Sand may be placed directly in Box or
+referenced as a child of a Video Call Sand; the child is not copied or changed
+into a special castle component. A local group can be locked for movement,
+saved as a reusable compound definition, or forked without changing the
+composition semantics. Protein result templates use the same recursive group
+shape rather than a parallel template system.
+
+Each child has a stable identity within its owning definition, local
+coordinates, ordering, configuration overrides, and typed connections.
+Connections name child ports rather than DOM selectors. A compound definition
+may export selected child ports as its own interface; everything not exported
+stays internal. This lets the same composition be embedded again without its
+parent knowing its internal markup, and lets edit mode draw a complete route
+through nested groups.
+
 A Protein area's locked result template is one such compound group. Its child
 inputs are wired visibly to fields of one Protein result, and Box repeats the
 whole group once per row. Children without a field binding remain ordinary
@@ -32,6 +49,539 @@ External executable Sands are content-hash pinned and never update silently.
 An invalid or incompatible local definition update fails closed: existing
 instances keep the last known-good revision and show the authoring error until
 the definition is repaired. They never silently switch to broken content.
+
+#### One definition graph, several authoring paths
+
+The accepted default makes Maud the standard first-party authoring language for
+Sand document structure, native ES modules the ordinary Behavior runtime, and
+one shared Rust/`wgpu` WebAssembly renderer the Box spatial layer. The final
+stack decision and its alternatives are recorded in
+[Customization](Customization.md#final-board-stack-alternatives).
+Maud does not become the stored Sand format and it does not run in the browser.
+Rust/Maud, raw packaged HTML, and Box edit mode can all produce the same
+validated Sand definition graph:
+
+```text
+Rust constructors + Maud ──> Sand artifact ──> Sand definition ──┐
+Raw HTML + declared metadata ─> Sand artifact ─> Sand definition ─┤
+                                                                 ├─> composition host ─┬─> trusted DOM adapter
+Box edit operations ────────────────────────> Sand definition ───┘                    ├─> shared wgpu/Wasm renderer
+                                                                                      └─> isolated HTML bridge
+```
+
+The browser still receives ordinary HTML, CSS, and native JavaScript modules,
+plus the one shared first-party `wgpu` WebAssembly renderer artifact when Box's
+world layer is present. Third-party HTML remains a supported package source and
+never needs Rust, Maud, Wasm, or `wgpu`. Maud is valuable because a first-party
+author can build a button, panel, dropdown, Kanban, or complete Video Call from
+Rust functions while the emitted definition remains understandable and
+editable by Box.
+
+A Rust function returning only `maud::Markup` is not a composable Sand
+constructor. Markup alone loses child identity, ports, Behavior, capabilities,
+configuration, lineage, and the boundary that Box must reveal. The authoring
+API therefore returns a paired value conceptually shaped like this:
+
+```rust
+struct AuthoredNode {
+    node: SandNodeDefinition,
+    markup: maud::Markup,
+    assets: Vec<Asset>,
+}
+
+struct SandArtifact {
+    definition: SandDefinition,
+    fragments: Vec<RenderedFragment>,
+    behavior_modules: Vec<BehaviorModule>,
+    assets: Vec<Asset>,
+}
+```
+
+The exact Rust names may change in C0, but the pairing may not. Primitive
+constructors such as `button`, `panel`, `dropdown`, and `stack` produce both
+their semantic node and their accessible Maud fragment. Compound constructors
+compose those paired nodes, not bare HTML strings. The final artifact compiler
+normalizes and validates the definition, renders its fragments, gathers native
+ES modules and other assets, verifies declared licenses and credits, and
+computes the revision/content hashes.
+
+For example, first-party source should be able to read approximately like:
+
+```rust
+fn call_controls() -> SandArtifact {
+    compound("lince.video-call.controls")
+        .child(button("mute", "Mute"))
+        .child(button("camera", "Camera"))
+        .child(dropdown("device", "Microphone"))
+        .behavior(module_behavior("media", "behavior/media-controls.js"))
+        .connect(port("mute", "pressed"), behavior_port("media", "toggle_audio"))
+        .connect(port("camera", "pressed"), behavior_port("media", "toggle_video"))
+        .connect(port("device", "changed"), behavior_port("media", "select_device"))
+        .export(port("media", "state"), "media_state")
+        .build()
+}
+```
+
+That syntax is an authoring convenience, not another runtime model. Its output
+is the same logical definition that Box creates when a person places those
+three Sands, connects their visible ports, groups them, and saves the group.
+The examples below establish the semantic shape. C0 freezes exact field spelling,
+serialization, and the complete port-type vocabulary against shared fixtures;
+those details may change together before implementation begins.
+
+```json
+{
+  "schemaVersion": 1,
+  "uid": "lince.video-call.controls",
+  "revision": "sha256:…",
+  "capabilities": ["media.microphone", "media.camera"],
+  "configurationSchema": {},
+  "root": {
+    "localUid": "controls",
+    "renderer": { "uid": "lince.lynx.row", "revision": "sha256:…" },
+    "layout": { "direction": "row", "gap": "space-1" },
+    "children": [
+      {
+        "localUid": "mute",
+        "definition": { "uid": "lince.lynx.button", "revision": "sha256:…" },
+        "overrides": { "label": "Mute" }
+      },
+      {
+        "localUid": "camera",
+        "definition": { "uid": "lince.lynx.button", "revision": "sha256:…" },
+        "overrides": { "label": "Camera" }
+      },
+      {
+        "localUid": "device",
+        "definition": { "uid": "lince.lynx.dropdown", "revision": "sha256:…" },
+        "overrides": { "label": "Microphone" }
+      }
+    ]
+  },
+  "behaviors": [
+    {
+      "localUid": "media",
+      "kind": "module",
+      "module": { "asset": "behavior/media-controls.js", "hash": "sha256:…" },
+      "ports": {
+        "inputs": [
+          { "name": "toggle_audio", "type": { "kind": "event", "payload": "none" } },
+          { "name": "toggle_video", "type": { "kind": "event", "payload": "none" } },
+          { "name": "select_device", "type": { "kind": "event", "payload": "device-ref" } }
+        ],
+        "outputs": [
+          { "name": "state", "type": { "kind": "value", "schema": "lince.media-state/1" } }
+        ]
+      },
+      "capabilities": ["media.microphone", "media.camera"]
+    }
+  ],
+  "connections": [
+    {
+      "from": { "node": "mute", "port": "pressed" },
+      "to": { "behavior": "media", "port": "toggle_audio" }
+    },
+    {
+      "from": { "node": "camera", "port": "pressed" },
+      "to": { "behavior": "media", "port": "toggle_video" }
+    },
+    {
+      "from": { "node": "device", "port": "changed" },
+      "to": { "behavior": "media", "port": "select_device" }
+    }
+  ],
+  "exports": [
+    {
+      "name": "media_state",
+      "from": { "behavior": "media", "port": "state" }
+    }
+  ],
+  "assets": [
+    {
+      "path": "behavior/media-controls.js",
+      "kind": "module",
+      "hash": "sha256:…"
+    }
+  ]
+}
+```
+
+The schema stores references and meaning, not a copied expansion of every
+child's HTML. At render time the runtime resolves each exact definition
+revision, instantiates its fragment in the appropriate trusted composition
+root or isolated boundary, applies inherited configuration and instance
+overrides, and mounts Behavior. Flattening into HTML may be a disposable render
+optimization; it is never the persistent representation.
+
+Paired constructors stamp fragment roots with their stable local node uid, and
+the runtime builds an instance-scoped node map while mounting. Connections use
+that map, never persisted CSS selectors. Repeated instances cannot ship fixed
+global HTML `id` values: the runtime derives DOM ids from instance uid plus
+local node uid and repairs associated `for`, `aria-controls`, `aria-labelledby`,
+and similar references before interaction begins. The semantic local uid stays
+stable even though its concrete DOM id differs in every instance.
+
+This gives a Castle equivalent construction paths. A Maud-authored Castle
+ships the graph above. A raw first-party or external package must declare that
+graph beside its HTML rather than asking Box to infer it from tags. A
+Box-authored Castle begins as a workspace-owned local definition with the same
+child tree and connections. Locking changes only edit affordances. Saving
+promotes that workspace-owned definition into the reusable definition catalog;
+placing it creates an instance reference. There is no `castle` schema kind and
+no Castle-specific runtime or rendering path.
+
+The equivalence has an important limit: Box does not rewrite idiomatic Rust or
+round-trip edits into Maud source. A code-owned first-party definition is
+regenerated from Rust; Box may instantiate it, apply local overrides, or fork
+it into a user-owned definition. After a fork, Box owns the graph and the Rust
+definition continues on its own lineage. Conversely, a Box-authored Castle can
+be exported as the normalized definition and used by Rust, but it does not
+magically acquire handcrafted Maud source.
+
+Decomposability is declared, not inferred from nested tags. When Maud calls a
+paired Sand constructor, that child is visible in Box. When Maud emits an
+ordinary private `div`, it remains an implementation detail of the nearest
+declared node. A complex specialized renderer can therefore stay one leaf,
+while its toolbar and surrounding controls are reusable Sands. Turning every
+HTML element into a Sand would produce unusable authoring noise and is not the
+goal.
+
+#### Renderer and execution bindings
+
+A Sand's meaning is independent of the technology that presents it. The
+definition graph declares a renderer reference, typed ports, Behavior,
+capabilities, state ownership, assets, and teardown. The composition host then
+selects a runtime adapter:
+
+- ordinary first-party and raw HTML definitions render in a trusted DOM root
+  and mount native ES-module Behavior;
+- spatial material and specialized GPU leaves register stable visual nodes in
+  the one shared Rust/`wgpu` WebAssembly renderer;
+- installed external HTML communicates through a validated, size-bounded
+  `MessagePort` bridge inside an isolated iframe or WebView;
+- a Website's host-owned wrapper exposes only navigation/loading/focus/bounds
+  facts while the remote page receives no Lince bridge;
+- an optional Wasm Behavior may implement the same logical lifecycle and ports
+  through a generated component binding without receiving ambient DOM or host
+  authority.
+
+These are projections of one logical ABI, not one binary ABI or shared memory.
+The portable contract includes versions; definition and instance identity;
+mount, resize, suspend, resume, and dispose; typed input and output delivery;
+configuration and permitted state-plane handles; bounds and device scale;
+capability handles; errors; and host-validated Action requests. The
+authoritative Rust model generates the JavaScript and bridge validators,
+fixtures, and any future WIT projection. Raw DOM nodes, functions, GPU handles,
+pointers, credentials, and the global Box store are deliberately not portable
+values.
+
+The shared renderer is retained rather than rebuilt from the DOM. A stable
+visual-node uid maps each GPU primitive to its Sand or private renderer node;
+moving one instance updates only its transform and affected GPU buffer range.
+Ordinary Sands do not allocate a canvas, GPU device, Wasm instance, or animation
+loop. A specialized GPU Sand uses the shared safe renderer vocabulary where
+possible and receives a dedicated canvas only when its surface ownership or
+isolation genuinely requires one. GPU buffers, compiled pipelines, collision
+caches, and Worker state are disposable runtime resources and never enter the
+persisted Sand definition or Box document.
+
+Rendering does not grant Behavior authority. A GPU node emits a typed hit,
+drag, selection, or value event into the same port graph as a DOM button. A DOM
+or installed HTML Sand may answer that event, and only the host can convert a
+declared route into a durable Action. Likewise, Protein values reach a GPU leaf
+only after host validation and field binding; the renderer cannot query Lince
+data merely because it draws the result.
+
+Web Components are permitted inside trusted DOM renderer implementations, and
+Maud may emit their custom elements, but Custom Elements or Shadow DOM do not
+become the Sand schema or a security boundary. Their attributes and browser
+events are adapted to typed Sand ports. An untrusted or cross-origin component
+still uses the iframe/WebView boundary.
+
+WebAssembly is an optional execution format, not a requirement placed on Sand
+authors. Its first default use is the shared `wgpu` renderer and batched Worker
+physics. WIT and the WebAssembly Component Model may later provide generated
+bindings for portable installed Behaviors, but WIT does not replace the Sand
+definition, package manifest, capability model, JavaScript bridge, or Box
+editor. A browser toolchain or Component Model revision can therefore change
+without changing what a Sand means.
+
+#### Behavior modules and event composition
+
+JavaScript Behavior is attached to stable Sand or Behavior uids through the
+definition graph, never through inline `onclick` source, global DOM selectors,
+or an arbitrary script string stored in Box. A module is a content-addressed
+package asset with declared typed inputs, outputs, configuration, state-plane
+access, and capabilities. The runtime loads a module once per revision and
+mounts one scoped instance for each owning Sand instance.
+
+The module lifecycle is deliberately small:
+
+```javascript
+export function mount(context) {
+  const release = context.inputs.toggle_audio.subscribe(() => {
+    context.media.toggleAudio();
+  });
+
+  const releaseState = context.media.subscribe((state) => {
+    context.outputs.state.emit(state);
+  });
+
+  return () => {
+    release();
+    releaseState();
+  };
+}
+```
+
+The real `context` is runtime-validated and supplies only the instance
+identity, resolved configuration, typed input/output handles, permitted state
+plane handles, granted host capabilities, and an abort/teardown signal. A
+renderer adapter may additionally receive its scoped root. Ordinary Behavior
+does not receive the global Box store, unrelated Sand roots, raw credentials,
+or authority merely because another child in its Castle has it.
+
+Common wiring should remain declarative whenever possible. Emitting an event,
+invoking one typed Action, toggling local state, selecting a value, or mapping
+one typed field does not justify arbitrary JavaScript. These are inspectable
+built-in Behavior nodes that Box can draw, validate, copy, publish safely, and
+explain. A module Behavior is for a genuine transform, state machine, media
+controller, specialized view adapter, or interaction that the declarative
+registry cannot express cleanly. Its ports and capabilities stay visible even
+when its internals are opaque to Box.
+
+A button therefore owns a native `pressed` event port. It does not know whether
+the press deletes a Record, changes a page, emits a board event, or toggles a
+microphone. Connections decide that use:
+
+- `pressed -> Action(record-delete)` performs a durable write after the host
+  validates target identity, arguments, and authority;
+- `pressed -> emit(record-selected)` sends a typed event through the current
+  group and any explicitly exported parent port;
+- `pressed -> local-state(toggle, panel-open)` changes only instance host
+  presentation state;
+- `pressed -> module(toggle_audio)` enters a scoped JavaScript Behavior;
+- several connections may fan out from one port, with explicit deterministic
+  ordering where order matters.
+
+A Protein-bound Record control makes the separation concrete. Its compound
+definition exports one `record` input, routes that value to two declarative
+Behaviors, and exports the selection event needed by another Sand:
+
+```json
+{
+  "uid": "lince.record-actions",
+  "root": {
+    "localUid": "record-actions",
+    "renderer": { "uid": "lince.lynx.row", "revision": "sha256:…" },
+    "children": [
+      {
+        "localUid": "open",
+        "definition": { "uid": "lince.lynx.button", "revision": "sha256:…" },
+        "overrides": { "label": "Open" }
+      },
+      {
+        "localUid": "delete",
+        "definition": { "uid": "lince.lynx.button", "revision": "sha256:…" },
+        "overrides": { "label": "Delete" }
+      }
+    ]
+  },
+  "behaviors": [
+    {
+      "localUid": "select-record",
+      "kind": "emit",
+      "event": "record-selected",
+      "inputs": ["trigger", "record"],
+      "outputs": ["selected"]
+    },
+    {
+      "localUid": "delete-record",
+      "kind": "action",
+      "action": "record-delete",
+      "inputs": ["trigger", "record"]
+    }
+  ],
+  "connections": [
+    {
+      "from": { "node": "open", "port": "pressed" },
+      "to": { "behavior": "select-record", "port": "trigger" }
+    },
+    {
+      "from": { "node": "delete", "port": "pressed" },
+      "to": { "behavior": "delete-record", "port": "trigger" }
+    }
+  ],
+  "exports": [
+    {
+      "name": "record",
+      "direction": "input",
+      "type": "record-ref",
+      "to": [
+        { "behavior": "select-record", "port": "record" },
+        { "behavior": "delete-record", "port": "record" }
+      ]
+    },
+    {
+      "name": "selected",
+      "direction": "output",
+      "type": { "kind": "event", "payload": "record-ref" },
+      "from": { "behavior": "select-record", "port": "selected" }
+    }
+  ]
+}
+```
+
+Box then owns the bindings outside that definition:
+
+```json
+{
+  "proteinBindings": [
+    {
+      "from": { "area": "records-area", "field": "record" },
+      "to": { "instance": "record-actions-1", "port": "record" }
+    }
+  ],
+  "connections": [
+    {
+      "from": { "instance": "record-actions-1", "port": "selected" },
+      "to": { "instance": "record-view-1", "port": "record" }
+    }
+  ]
+}
+```
+
+Pressing Open now sends the bound Record reference to the Record Sand; pressing
+Delete requests the typed delete Action for that same reference. Neither
+button contains workflow knowledge, and this case needs no custom JavaScript.
+If a richer interaction later needs a module, it replaces one Behavior node
+without changing the buttons, Protein binding, exported Castle interface, or
+Box connection.
+
+DOM bubbling is not the composition bus. A child event enters the typed graph,
+stays within the owning group unless exported, and is attributed to the
+definition, child, instance, and triggering input. Actions remain host/engine
+operations; a JavaScript module can request one only through an explicitly
+granted Action handle. This makes the event arrows seen in Box correspond to
+the runtime route rather than merely documenting incidental DOM behavior.
+
+#### How a Box-built group is stored
+
+The Box document places instances of definitions. A hand-built group is a
+workspace-local definition plus one placement of it, not membership copied
+onto every child and not a stack of group ids:
+
+```json
+{
+  "schemaVersion": 1,
+  "workspaceUid": "workspace-main",
+  "localDefinitions": {
+    "workspace:call-controls": {
+      "uid": "workspace:call-controls",
+      "revision": "sha256:…",
+      "root": {
+        "localUid": "controls",
+        "renderer": { "uid": "lince.lynx.row", "revision": "sha256:…" },
+        "layout": { "direction": "row", "gap": "space-1" },
+        "children": [
+          {
+            "localUid": "mute",
+            "definition": { "uid": "lince.lynx.button", "revision": "sha256:…" },
+            "overrides": { "label": "Mute" }
+          },
+          {
+            "localUid": "camera",
+            "definition": { "uid": "lince.lynx.button", "revision": "sha256:…" },
+            "overrides": { "label": "Camera" }
+          }
+        ]
+      },
+      "behaviors": [
+        {
+          "localUid": "media",
+          "kind": "module",
+          "module": { "asset": "behavior/media-controls.js", "hash": "sha256:…" },
+          "capabilities": ["media.microphone", "media.camera"]
+        }
+      ],
+      "connections": [
+        {
+          "from": { "node": "mute", "port": "pressed" },
+          "to": { "behavior": "media", "port": "toggle_audio" }
+        },
+        {
+          "from": { "node": "camera", "port": "pressed" },
+          "to": { "behavior": "media", "port": "toggle_video" }
+        }
+      ],
+      "exports": [
+        {
+          "name": "media_state",
+          "from": { "behavior": "media", "port": "state" }
+        }
+      ],
+      "assets": [
+        {
+          "path": "behavior/media-controls.js",
+          "kind": "module",
+          "hash": "sha256:…"
+        }
+      ]
+    }
+  },
+  "instances": [
+    {
+      "uid": "call-controls-1",
+      "definition": {
+        "uid": "workspace:call-controls",
+        "revision": "sha256:…"
+      },
+      "parent": null,
+      "transform": { "x": 1240, "y": 680, "width": 420, "height": 40 },
+      "anchor": "world",
+      "layer": "content",
+      "order": 12,
+      "overrides": {},
+      "hostStateUid": "host-state-call-controls-1"
+    }
+  ],
+  "connections": [],
+  "proteinBindings": [],
+  "editor": {
+    "lockedDefinitionInstances": ["call-controls-1"]
+  }
+}
+```
+
+Internal children and connections belong to the definition. Connections
+between top-level instances and Protein field bindings belong to the Box
+document. Per-instance differences are override patches. Local transforms of
+children are relative to their definition root, so moving one Castle rewrites
+one parent transform. Saving it for reuse changes ownership/lineage and its
+catalog availability, not its composition semantics.
+
+The same definition can later serve as a Protein result template. Box supplies
+one row binding context per repeated instance and maps fields into its exported
+or child inputs. The definition itself does not contain one copy per result.
+Live Protein changes and interaction state remain JavaScript runtime concerns;
+Maud renders the reusable starting structure, not every future record arriving
+through a subscription.
+
+The correctness price of this model is required work, not optional
+optimization: paired Maud/schema constructors, stable local identities,
+authoritative Rust schemas and JavaScript validators, exact definition
+revisions, scoped module lifecycle and teardown, explicit state planes,
+capability enforcement, definition/instance separation, and visible
+fork/lineage behavior. Without these, Maud would only make source files
+prettier while Box and first-party code continued to mean different things.
+
+Performance work follows measurement: cache rendered fragments by definition
+revision, import each behavior module once, delegate common native events per
+composition root, suspend offscreen instances, and virtualize repeated Protein
+results. None of those optimizations may copy the definition graph, erase Sand
+identity, or merge security boundaries. Trusted first-party nodes may share a
+root; an external or isolated Sand remains behind its iframe/WebView boundary
+and participates in a Castle only through its wrapper's declared ports.
 
 There are three state planes, never one ambiguous shared bag:
 
@@ -488,16 +1038,72 @@ The coordination of production for our Needs requires specific interfaces? We wi
 ### Sand
 
 - [ ] Define the recursive Sand schema: definition identity, composition tree,
-  typed ports, Behavior bindings, required capabilities, default state,
-  overrides, lineage, content hash, assets, licenses, and credits.
+  renderer reference and binding kind, typed ports, Behavior bindings, required
+  capabilities, default state, overrides, lineage, content hash, assets,
+  licenses, and credits.
+- [ ] Under the accepted final-board stack, make Maud the standard
+  first-party structural authoring path without changing HTML packages into a
+  Rust-only format. Implement paired constructors that produce both accessible
+  `Markup` and the exact node/port/configuration metadata Box needs; reject
+  naked markup as a declared child boundary.
+- [ ] Define the Sand artifact compiler that normalizes the selected authored
+  graph (Rust/Maud or declared raw HTML metadata),
+  validates it through the authoritative Rust schema, renders and hashes
+  fragments, gathers native JavaScript modules, Wasm modules, generated loader
+  glue, shaders and other assets, and enforces manifest, capability, source to
+  artifact hash, LICENSE, NOTICE, and credit completeness.
+- [ ] Define declarative Behavior kinds for common event, local-state, field,
+  and typed-Action routes, plus the content-addressed ES-module Behavior ABI:
+  typed ports, runtime-validated context, explicit capabilities and state
+  planes, scoped roots only for renderer adapters, deterministic ordering, and
+  mandatory teardown.
+- [ ] Define the logical Sand runtime ABI once and generate its adapter
+  projections: direct scoped JavaScript for trusted DOM, retained-scene handles
+  for the shared `wgpu` renderer, validated size-bounded `MessagePort` messages
+  for installed external HTML, wrapper-only Website ports, and an optional WIT
+  projection for Wasm Behavior. Prove the adapters agree on lifecycle, typed
+  ports, attribution, capabilities, state planes, Action requests, errors, and
+  teardown while passing no raw DOM, GPU object, pointer, credential, or global
+  Box store through the portable boundary.
+- [ ] Define the GPU renderer vocabulary and package rules for built-in
+  patterns, sprites/glyphs, zones, connections, drawings, selection, and
+  specialized leaves. Use one shared device and retained scene with stable
+  visual-node uids and partial buffer updates. An arbitrary shader is installed
+  executable content with an exact hash, declared GPU capability, resource
+  budget, validation, license, credits, and deterministic disposal.
+- [ ] Use one group representation for an ordinary local group, a locked
+  group, a saved compound Sand/Castle, and a Protein result template. Locking
+  is editor state; saving creates a reusable definition; neither creates a new
+  component kind or execution path.
+- [ ] Give definition children stable local uids, local transforms and explicit
+  order, referenced definition revisions, override patches, and connections
+  between typed ports. Exported ports preserve their identity through nesting
+  and unexported ports remain sheltered.
 - [ ] Build composition into Box edit mode; there is no separate Sandbox Sand
   or Sand Editor product.
 - [ ] Rebuild official workflow Sands into referenced LynxUI + Behavior pieces
   after the contract is proven. Do not preserve the legacy component API or
   old board state merely to avoid rebuilding.
-- [ ] Prove the model vertically with one current Protein item, visual result
+- [ ] After the Customization completion gate and official-Sand migration,
+  prove the Box model vertically with one current Protein item, visual result
   fields, a mixed bound/unbound result-template group, repeated row instances,
-  and force/sort/mutation areas before migrating every official Sand.
+  and force/sort/mutation areas. Do not use this spatial proof to finish the
+  component or composition foundations underneath it.
+- [ ] Before that spatial proof, prove reuse in the composition workbench with
+  a standalone Button Sand and the same definition nested inside a Video Call
+  compound Sand, then nest that compound again. Editing the shared definition
+  updates every instance; instance overrides remain local; fork/detach is
+  explicit.
+- [ ] Under the accepted Maud stack, build that fixture twice: once from
+  Rust/Maud paired constructors and once through Box operations. Normalize both
+  into the same definition graph, render them through the same JavaScript
+  runtime, and prove equivalent trees, ports, connections, Behavior routes,
+  overrides, save/reload, and teardown. Do not require Box to generate or
+  rewrite Maud source.
+- [ ] Under the accepted Maud stack, treat code-owned definitions as
+  instantiate/override/fork in Box. Box edits a forked user definition rather
+  than creating a second source of truth for Rust; lineage and revision changes
+  remain visible.
 - [ ] Write concise author documentation that starts with composing existing
   pieces and progresses to HTML, Protein, Actions, ports, permissions, and
   packaged assets.

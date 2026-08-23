@@ -52,30 +52,70 @@ the definition is repaired. They never silently switch to broken content.
 
 #### One definition graph, several authoring paths
 
-The accepted default makes Maud the standard first-party authoring language for
-Sand document structure, native ES modules the ordinary Behavior runtime, and
-one shared Rust/`wgpu` WebAssembly renderer the Box spatial layer. The final
-stack decision and its alternatives are recorded in
-[Customization](Customization.md#final-board-stack-alternatives).
+The GPU-first Plan A and Maud/HTML-first Plan B share one validated Sand
+definition graph. Plan A pairs native Rust/GPUI or world-renderer
+implementations with that graph and uses CEF for real external HTML. Plan B
+pairs Rust/Maud fragments and native ES modules with the graph and uses one
+shared Rust/`wgpu` WebAssembly spatial renderer. The ordered runtime decision
+and HTML alternatives are recorded in
+[Customization](Customization.md#runtime-plans-and-plan-b-html-alternatives).
 Maud does not become the stored Sand format and it does not run in the browser.
-Rust/Maud, raw packaged HTML, and Box edit mode can all produce the same
-validated Sand definition graph:
+Native Rust, Rust/Maud, raw packaged HTML, and Box edit mode can all produce or
+consume the same graph:
 
 ```text
-Rust constructors + Maud ──> Sand artifact ──> Sand definition ──┐
-Raw HTML + declared metadata ─> Sand artifact ─> Sand definition ─┤
-                                                                 ├─> composition host ─┬─> trusted DOM adapter
-Box edit operations ────────────────────────> Sand definition ───┘                    ├─> shared wgpu/Wasm renderer
-                                                                                      └─> isolated HTML bridge
+Native Rust + GPUI/world renderer ────────────────┐
+Rust constructors + Maud ──> Sand artifact ───────┤
+Raw HTML + declared metadata ─> Sand artifact ────┼─> Sand definition ─> composition host
+Box edit operations ──────────────────────────────┘                         ├─> GPUI adapter
+                                                                           ├─> native world adapter
+                                                                           ├─> installed CEF adapter
+                                                                           ├─> Website CEF wrapper
+                                                                           └─> Plan B DOM/wgpu adapters
 ```
 
-The browser still receives ordinary HTML, CSS, and native JavaScript modules,
-plus the one shared first-party `wgpu` WebAssembly renderer artifact when Box's
-world layer is present. Third-party HTML remains a supported package source and
-never needs Rust, Maud, Wasm, or `wgpu`. Maud is valuable because a first-party
-author can build a button, panel, dropdown, Kanban, or complete Video Call from
-Rust functions while the emitted definition remains understandable and
-editable by Box.
+#### Renderer roles across v1 and v2
+
+V1 and v2 reuse the same Sand definitions but do not force every Sand through
+one drawing implementation. The preferred native projection is:
+
+- GPUI for sharp application chrome, inspectors, editors, focused rich Sands
+  and viewport-pinned HUD surfaces;
+- the shared Bevy/`wgpu` world for the desk, Areas, connections, large
+  populations of lightweight Sands, ordinary 2D/3D objects and later globe or
+  game content; and
+- CEF for installed external HTML and zero-authority Websites.
+
+The Lince component library on GPUI owns the visual grammar; it does not adopt
+Bevy's example UI or a generic game theme. Lightweight world Sands consume the
+same semantic tokens in instanced rectangle, line, icon, image and shaped-text
+primitives so density and hierarchy remain recognizably Lynx. A focused Sand
+may expose a richer GPUI editor without changing its definition or making its
+idle representation a second Sand.
+
+V1 places these projections in an orthographic local workspace. V2 may anchor
+the same instance to Earth, an authored frame, an avatar, another artifact or
+the viewport. The persistent definition declares semantic presentation and
+required capabilities, not “is a GPUI widget” or “is a Bevy entity.” Adapter
+selection, effective device scale, visual LOD and cached runtime handles remain
+runtime state. Visual LOD may simplify presentation but cannot remove declared
+information, ports, Behavior or authority.
+
+This split allows a clean low-cost desk and a dense world without making a
+Chromium surface or separate GPU texture for every small button. It also keeps
+external HTML genuine: CEF is an expensive, measured capability used where Web
+semantics matter, not the universal native widget renderer.
+
+Under Plan B and in browser/Facade adapters, the browser receives ordinary
+HTML, CSS, and native JavaScript modules plus the shared `wgpu` WebAssembly
+renderer when the world layer is present. Under Plan A, native built-ins use
+GPUI or the world renderer and external HTML runs unchanged in Chromium/CEF.
+Third-party HTML never needs Rust, Maud, Wasm, GPUI, or `wgpu`. Maud remains
+valuable because a first-party author can build an HTML-backed button, panel,
+dropdown, Kanban, or complete Video Call from Rust functions while the emitted
+definition remains understandable and editable by Box. It is the Plan B
+first-party structure and a Plan A HTML/Facade authoring path, not the primary
+native renderer.
 
 A Rust function returning only `maud::Markup` is not a composable Sand
 constructor. Markup alone loses child identity, ports, Behavior, capabilities,
@@ -253,37 +293,44 @@ definition graph declares a renderer reference, typed ports, Behavior,
 capabilities, state ownership, assets, and teardown. The composition host then
 selects a runtime adapter:
 
-- ordinary first-party and raw HTML definitions render in a trusted DOM root
-  and mount native ES-module Behavior;
-- spatial material and specialized GPU leaves register stable visual nodes in
-  the one shared Rust/`wgpu` WebAssembly renderer;
-- installed external HTML communicates through a validated, size-bounded
-  `MessagePort` bridge inside an isolated iframe or WebView;
+- Plan A native application controls and rich editor surfaces use GPUI with
+  Rust Behavior behind typed ports;
+- Plan A Box material, lightweight native Sands, maps, games, terrain, graphs,
+  splats, and specialised GPU leaves register entities or retained visual nodes
+  in the shared native world renderer;
+- installed external HTML runs as real Chromium content and communicates
+  through a validated, size- and rate-bounded CEF process bridge;
 - a Website's host-owned wrapper exposes only navigation/loading/focus/bounds
-  facts while the remote page receives no Lince bridge;
+  facts while the remote CEF page receives no Lince bridge;
+- Plan B ordinary first-party and raw HTML definitions render in a trusted DOM
+  root and mount native ES-module Behavior, while spatial material registers in
+  the shared Rust/`wgpu` WebAssembly renderer;
 - an optional Wasm Behavior may implement the same logical lifecycle and ports
   through a generated component binding without receiving ambient DOM or host
   authority.
 
 These are projections of one logical ABI, not one binary ABI or shared memory.
 The portable contract includes versions; definition and instance identity;
-mount, resize, suspend, resume, and dispose; typed input and output delivery;
-configuration and permitted state-plane handles; bounds and device scale;
-capability handles; errors; and host-validated Action requests. The
-authoritative Rust model generates the JavaScript and bridge validators,
-fixtures, and any future WIT projection. Raw DOM nodes, functions, GPU handles,
-pointers, credentials, and the global Box store are deliberately not portable
-values.
+mount, resize, camera-visibility hints, explicit user/system pause, and dispose;
+typed input and output delivery; configuration and permitted state-plane
+handles; bounds and device scale; capability handles; errors; and
+host-validated Action requests. Camera visibility may suppress presentation
+only and never pauses Behavior, physics, games, media, Protein, events, or CEF
+execution. The authoritative Rust model generates the JavaScript and CEF/DOM
+bridge validators, fixtures, and any future WIT projection. Raw DOM nodes,
+functions, GPU handles, pointers, credentials, and the global Box store are
+deliberately not portable values.
 
-The shared renderer is retained rather than rebuilt from the DOM. A stable
-visual-node uid maps each GPU primitive to its Sand or private renderer node;
-moving one instance updates only its transform and affected GPU buffer range.
-Ordinary Sands do not allocate a canvas, GPU device, Wasm instance, or animation
-loop. A specialized GPU Sand uses the shared safe renderer vocabulary where
-possible and receives a dedicated canvas only when its surface ownership or
-isolation genuinely requires one. GPU buffers, compiled pipelines, collision
-caches, and Worker state are disposable runtime resources and never enter the
-persisted Sand definition or Box document.
+The shared world renderer is retained rather than rebuilt from GPUI or the DOM.
+A stable visual-node uid maps each GPU primitive to its Sand or private renderer
+node; moving one instance updates only its transform and affected GPU buffer
+range. Ordinary Sands do not allocate a GPU device, engine, browser process, or
+animation loop apiece. A specialised GPU Sand uses the shared safe renderer
+vocabulary where possible and receives a dedicated surface only when media,
+isolation, or incompatible ownership genuinely requires one. GPU buffers,
+compiled pipelines, collision caches, ECS caches, and Plan B Worker state are
+disposable runtime resources and never enter the persisted Sand definition or
+Box document.
 
 Rendering does not grant Behavior authority. A GPU node emits a typed hit,
 drag, selection, or value event into the same port graph as a DOM button. A DOM
@@ -292,27 +339,30 @@ declared route into a durable Action. Likewise, Protein values reach a GPU leaf
 only after host validation and field binding; the renderer cannot query Lince
 data merely because it draws the result.
 
-Web Components are permitted inside trusted DOM renderer implementations, and
+Web Components are permitted inside trusted HTML renderer implementations, and
 Maud may emit their custom elements, but Custom Elements or Shadow DOM do not
 become the Sand schema or a security boundary. Their attributes and browser
 events are adapted to typed Sand ports. An untrusted or cross-origin component
-still uses the iframe/WebView boundary.
+still uses the CEF boundary under Plan A or iframe/WebView boundary under Plan
+B.
 
 WebAssembly is an optional execution format, not a requirement placed on Sand
-authors. Its first default use is the shared `wgpu` renderer and batched Worker
-physics. WIT and the WebAssembly Component Model may later provide generated
-bindings for portable installed Behaviors, but WIT does not replace the Sand
-definition, package manifest, capability model, JavaScript bridge, or Box
-editor. A browser toolchain or Component Model revision can therefore change
-without changing what a Sand means.
+authors. Plan B uses it for the shared `wgpu` renderer and batched Worker
+physics; Plan A may use it for portable untrusted Behavior or browser builds,
+not as a tax on native Sands. WIT and the WebAssembly Component Model may later
+provide generated bindings for portable installed Behaviors, but WIT does not
+replace the Sand definition, package manifest, capability model, JavaScript or
+CEF bridge, or Box editor. A browser toolchain or Component Model revision can
+therefore change without changing what a Sand means.
 
 #### Behavior modules and event composition
 
-JavaScript Behavior is attached to stable Sand or Behavior uids through the
-definition graph, never through inline `onclick` source, global DOM selectors,
-or an arbitrary script string stored in Box. A module is a content-addressed
-package asset with declared typed inputs, outputs, configuration, state-plane
-access, and capabilities. The runtime loads a module once per revision and
+Plan A built-in Behavior is implemented by Rust systems attached to stable Sand
+or Behavior uids. HTML Behavior is attached through the same graph, never
+through inline `onclick` source, global DOM selectors, or an arbitrary script
+string stored in Box. A JavaScript module is a content-addressed package asset
+with declared typed inputs, outputs, configuration, state-plane access, and
+capabilities. CEF or the Plan B browser runtime loads it once per revision and
 mounts one scoped instance for each owning Sand instance.
 
 The module lifecycle is deliberately small:
@@ -577,11 +627,14 @@ prettier while Box and first-party code continued to mean different things.
 
 Performance work follows measurement: cache rendered fragments by definition
 revision, import each behavior module once, delegate common native events per
-composition root, suspend offscreen instances, and virtualize repeated Protein
-results. None of those optimizations may copy the definition graph, erase Sand
-identity, or merge security boundaries. Trusted first-party nodes may share a
-root; an external or isolated Sand remains behind its iframe/WebView boundary
-and participates in a Castle only through its wrapper's declared ports.
+composition root, camera-cull offscreen presentation without suspending its
+instance, and virtualize only presentation for repeated Protein results. None
+of those optimizations may stop off-camera Behavior, physics, games, media,
+Protein, events, or CEF execution; copy the definition graph; erase Sand
+identity; or merge security boundaries. Trusted first-party nodes may share a
+root; an external or isolated Sand remains behind its CEF boundary under Plan A
+or iframe/WebView boundary under Plan B and participates in a Castle only
+through its wrapper's declared ports.
 
 There are three state planes, never one ambiguous shared bag:
 
@@ -644,7 +697,7 @@ A Website Sand is a deliberately untrusted browser surface. It is fully
 interactable and can be moved, resized, grouped, connected at its wrapper, and
 influenced like another Sand. Box owns those wrapper capabilities. The remote
 page receives no Lince identity, credential, Protein, Action, lane, host state,
-Tauri IPC, or ambient bridge and cannot inspect its parent composition. Lince
+native IPC, or ambient bridge and cannot inspect its parent composition. Lince
 cannot inspect or restyle the cross-origin page or read its private state.
 
 Website mode permits ordinary user-directed HTTPS navigation and the remote
@@ -675,18 +728,36 @@ inside a live Website:
   access with Protein, Actions, or typed Sand ports. An arbitrary live Website
   never upgrades itself into an integrated Sand.
 
-In the browser client, Website uses a
+An installed external Sand may therefore declare an input such as
+`record: RecordSummary`, receive it from a visible Protein field mapping, and
+emit `record-clicked: RecordRef` into Box. Another Sand or Castle may consume
+that event, and an explicitly connected route may request a typed Action. CEF
+IPC or `postMessage` is only transport: the host validates the port, value,
+instance, rate, size, capability, actor, and Action request before delivery.
+The event name does not grant access to the Record table, and the external Sand
+cannot subscribe to a Protein or invoke an Action that its definition and Box
+connections did not expose.
+
+Under Plan A, Website is a separate CEF browser surface and request context
+whose accelerated texture is composited by the native runtime. It remains
+mounted and executing when outside the camera even though Lince does not draw
+its texture. Because the CEF page is a browser surface rather than a child
+iframe, framing headers do not apply in the same way; sites may still reject
+embedded browsers, protected media, authentication, automation, or unsupported
+Chromium builds, and Lince offers an explicit open-in-browser fallback.
+
+In the browser client and Plan B, Website uses a
 [sandboxed cross-origin iframe](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/iframe).
 A site may refuse embedding with
 [`frame-ancestors`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/frame-ancestors)
 or `X-Frame-Options`; Lince respects that
 decision and offers to open it externally rather than proxying the page or
 stripping its protection. Services such as YouTube work only through their
-supported embed URLs. In Tauri, Website must use a dedicated WebView with no
-[`Tauri capability`](https://v2.tauri.app/security/capabilities/) instead of
-sharing a privileged WebView boundary. This is
-especially important where the platform cannot reliably attribute iframe IPC
-to the iframe rather than its containing WebView.
+supported embed URLs. If Plan B uses Tauri, Website uses a dedicated WebView
+with no [`Tauri capability`](https://v2.tauri.app/security/capabilities/)
+instead of sharing a privileged WebView boundary. This is especially important
+where the platform cannot reliably attribute iframe IPC to the iframe rather
+than its containing WebView.
 
 Website storage is useful and permitted, but is not Lince host state. Cookies,
 local storage, IndexedDB, Cache Storage, and service-worker data live in a
@@ -699,14 +770,15 @@ differently from a top-level tab, and Lince reports that incompatibility rather
 than weakening storage isolation silently.
 
 Normal Website navigation is HTTPS-only by default. A Website must never reach
-Lince/Tauri capabilities, custom protocols, `file:` URLs, or authenticated
-Lince host endpoints. Every local HTTP and WebSocket endpoint also rejects a
+Lince native/Tauri capabilities, custom protocols, `file:` URLs, or
+authenticated Lince host endpoints. Every local HTTP and WebSocket endpoint
+also rejects a
 foreign `Origin` and requires an unguessable, scoped credential for privileged
 requests; CORS and the browser's
 [same-origin policy](https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Same-origin_policy)
 are not treated as CSRF protection.
 
-Where a dedicated WebView exposes reliable request interception, Website mode
+Where CEF or a dedicated WebView exposes reliable request interception, Website mode
 also blocks loopback, link-local, and private-network destinations and
 rechecks redirects and DNS resolution against rebinding. A normal browser
 iframe does not give its parent complete control over the destinations its
@@ -1041,11 +1113,12 @@ The coordination of production for our Needs requires specific interfaces? We wi
   renderer reference and binding kind, typed ports, Behavior bindings, required
   capabilities, default state, overrides, lineage, content hash, assets,
   licenses, and credits.
-- [ ] Under the accepted final-board stack, make Maud the standard
-  first-party structural authoring path without changing HTML packages into a
-  Rust-only format. Implement paired constructors that produce both accessible
-  `Markup` and the exact node/port/configuration metadata Box needs; reject
-  naked markup as a declared child boundary.
+- [ ] After the Plan A prototype selects the runtime, make native Rust/GPUI or
+  world-renderer constructors the first-party Plan A path, paired with the exact
+  node/port/configuration metadata Box needs. Preserve Maud as the standard
+  Plan B and HTML-backed authoring path without changing HTML packages into a
+  Rust-only format. Its paired constructors produce accessible `Markup` and the
+  same metadata; reject naked markup as a declared child boundary.
 - [ ] Define the Sand artifact compiler that normalizes the selected authored
   graph (Rust/Maud or declared raw HTML metadata),
   validates it through the authoritative Rust schema, renders and hashes
@@ -1058,13 +1131,14 @@ The coordination of production for our Needs requires specific interfaces? We wi
   planes, scoped roots only for renderer adapters, deterministic ordering, and
   mandatory teardown.
 - [ ] Define the logical Sand runtime ABI once and generate its adapter
-  projections: direct scoped JavaScript for trusted DOM, retained-scene handles
-  for the shared `wgpu` renderer, validated size-bounded `MessagePort` messages
-  for installed external HTML, wrapper-only Website ports, and an optional WIT
-  projection for Wasm Behavior. Prove the adapters agree on lifecycle, typed
-  ports, attribution, capabilities, state planes, Action requests, errors, and
-  teardown while passing no raw DOM, GPU object, pointer, credential, or global
-  Box store through the portable boundary.
+  projections: native Rust/GPUI calls, retained world-scene handles, validated
+  size- and rate-bounded CEF messages for installed external HTML,
+  wrapper-only Website ports, Plan B scoped DOM/`MessagePort` calls, and an
+  optional WIT projection for Wasm Behavior. Prove the adapters agree on
+  lifecycle, typed ports, attribution, capabilities, state planes, Action
+  requests, errors, camera-only presentation culling, and teardown while
+  passing no raw DOM, GPU object, pointer, credential, or global Box store
+  through the portable boundary.
 - [ ] Define the GPU renderer vocabulary and package rules for built-in
   patterns, sprites/glyphs, zones, connections, drawings, selection, and
   specialized leaves. Use one shared device and retained scene with stable
@@ -1094,13 +1168,13 @@ The coordination of production for our Needs requires specific interfaces? We wi
   compound Sand, then nest that compound again. Editing the shared definition
   updates every instance; instance overrides remain local; fork/detach is
   explicit.
-- [ ] Under the accepted Maud stack, build that fixture twice: once from
-  Rust/Maud paired constructors and once through Box operations. Normalize both
-  into the same definition graph, render them through the same JavaScript
-  runtime, and prove equivalent trees, ports, connections, Behavior routes,
-  overrides, save/reload, and teardown. Do not require Box to generate or
-  rewrite Maud source.
-- [ ] Under the accepted Maud stack, treat code-owned definitions as
+- [ ] Build that fixture three ways: from the selected Plan A native paired
+  constructors, from Plan B Rust/Maud paired constructors, and through Box
+  operations. Normalize all into the same definition graph and prove equivalent
+  identity, ports, connections, Behavior meaning, overrides, save/reload, and
+  teardown through their renderer adapters. Do not require Box to generate or
+  rewrite Rust or Maud source.
+- [ ] Treat every code-owned native or Maud definition as
   instantiate/override/fork in Box. Box edits a forked user definition rather
   than creating a second source of truth for Rust; lineage and revision changes
   remain visible.
@@ -1111,22 +1185,31 @@ The coordination of production for our Needs requires specific interfaces? We wi
 - [ ] Define and version the Sand manifest, bridge handshake, typed ports,
   capability vocabulary, provenance record, resource limits, CSP, and package
   signature/integrity rules together.
+- [ ] Prove the installed external path with one CEF HTML Sand that receives a
+  mapped Protein Record summary, emits `record-clicked`, consumes a Box event,
+  keeps local browser state, and requests one granted typed Action. Run the same
+  semantic fixture through Plan B `MessagePort`. Reject undeclared ports,
+  malformed values, excessive size/rate, spoofed instance identity, and the
+  same messages from an arbitrary Website.
 - [ ] Replace the current broad iframe grant with the trust tiers above and
   prove that a denied Sand cannot reach Actions through another Sand or leak
   data through lanes, navigation, popups, downloads, or network requests.
 - [ ] Add import, inspect-before-run, permission review, update review,
   revoke, disable, and delete surfaces with honest failure and empty states.
-- [ ] Build the Website Sand with a sandboxed iframe in browsers and a
-  zero-capability dedicated WebView in Tauri. Keep origin/security chrome above
-  remote pixels and prove that Website content cannot invoke Lince/Tauri APIs,
-  overlap system chrome, or receive a privileged parent message.
+- [ ] Build the Website Sand with an isolated CEF browser surface and request
+  context under Plan A, a sandboxed iframe in browsers, and a zero-capability
+  dedicated WebView if Plan B uses Tauri. Keep origin/security chrome above
+  remote pixels and prove that Website content cannot invoke Lince native/Tauri
+  APIs, overlap system chrome, or receive a privileged parent message. Moving
+  it off-camera culls composition only and does not unload, suspend, or throttle
+  its browser execution.
 - [ ] Enforce HTTPS navigation; deny custom protocols, filesystem access, and
-  all Lince/Tauri capabilities; and harden every local HTTP/WebSocket endpoint
-  against foreign origins, unauthenticated requests, and CSRF. On dedicated
-  WebViews, additionally intercept requests to block loopback, link-local,
-  private-network destinations, unsafe redirects, and DNS rebinding. In a
-  browser iframe, disclose that broader private-network egress cannot be
-  guaranteed rather than presenting it as enforced.
+  all Lince native/Tauri capabilities; and harden every local HTTP/WebSocket
+  endpoint against foreign origins, unauthenticated requests, and CSRF. In CEF
+  or dedicated WebViews, additionally intercept requests to block loopback,
+  link-local, private-network destinations, unsafe redirects, and DNS
+  rebinding. In a browser iframe, disclose that broader private-network egress
+  cannot be guaranteed rather than presenting it as enforced.
 - [ ] Add the isolated per-origin Website profile, explicit persistent/private
   modes, storage quotas, usage inspection, clear-data controls, and tests for
   cookies, local storage, IndexedDB, Cache Storage, service workers, restart,
@@ -1137,10 +1220,13 @@ The coordination of production for our Needs requires specific interfaces? We wi
   have honest in-Sand explanations.
 - [ ] Test malicious Websites for local-network requests, CSRF against Lince,
   navigation spoofing, popup escape, downloads, resource exhaustion, tracking
-  identifiers crossing profiles, and frame/IPC confusion. Keep the WebView and
-  browser runtimes patched; sandboxing does not eliminate engine exploits.
-- [ ] Detect sites that prohibit framing and offer an explicit open-in-browser
-  fallback. Never bypass `frame-ancestors` or `X-Frame-Options`.
+  identifiers crossing profiles, and frame/IPC confusion. Keep CEF, WebView,
+  and browser runtimes patched; sandboxing does not eliminate engine exploits.
+- [ ] In browser/Plan B iframe mode, detect sites that prohibit framing and
+  offer an explicit open-in-browser fallback. Never strip or proxy around
+  `frame-ancestors` or `X-Frame-Options`. In Plan A CEF mode, detect sites,
+  authentication, protected media, or browser policies that still reject the
+  embedded runtime and offer the same fallback.
 - [ ] Package the authoring documentation and a minimal bridge test kit so
   external HTML can integrate without copying an official Sand as folklore.
 - [ ] Remove the legacy nested-payload frame and old Lynx component API during
@@ -1427,7 +1513,15 @@ The coordination of production for our Needs requires specific interfaces? We wi
 - [ ] Selftest: two controller instances race a claim; loser observes
       claimed state; intent completes.
 
-- [ ] Take the location of Records and/or people, display them in a 2d map in real time, synced between organs.
+- [ ] **Far-future, unplanned World/Map Sand:** project consented locations of
+      Records and/or people into a real-time 2D map synced between Organs, then
+      potentially add streets, terrain/elevation, Needs and Contributions as a
+      distinct semantic height field, Transfer Proposal routes/proximity, 3D
+      scenes, and Gaussian-splat places. Preserve provenance, privacy, map-data
+      licensing, the distinction between geographic and data-derived height,
+      and the game/world rules retained in
+      [Interface](Interface.md#long-horizon-world-direction). This is
+      capability motivation for Plan A, not current implementation work.
 
 - [ ] Transparent stock control
 - [ ] Logistic distribution and instant correction from a flicker of operational change of the brute mineral extractor to the chip manufacturer.

@@ -4,8 +4,8 @@ use {
 };
 
 use super::shared::{
-    app_shell_signals, asset_version_token, board_style, chevron_down_icon, eye_icon, render_card,
-    render_lince_logo, render_topbar_brand, safe_json_for_html, server_status_icon, sparkles_icon,
+    asset_version_token, board_style, chevron_down_icon, eye_icon, render_card, render_lince_logo,
+    render_topbar_brand, safe_json_for_html, server_status_icon, sparkles_icon,
 };
 
 pub fn render_app(bootstrap: &AppBootstrap) -> String {
@@ -60,7 +60,6 @@ window.addEventListener("unhandledrejection", function (event) {
                 ))
             }
             script src=(format!("/board/lynx-ui.js?v={asset_version}")) {}
-            script type="module" src=(format!("/static/vendored/datastar.js?v={asset_version}")) {}
             script type="module" src=(format!("/static/presentation/board/main.js?v={asset_version}")) {}
         }
     }
@@ -68,7 +67,7 @@ window.addEventListener("unhandledrejection", function (event) {
 
 fn render_app_body(bootstrap: &AppBootstrap, bootstrap_json: &str) -> Markup {
     html! {
-        body class="startup-active" data-signals=(app_shell_signals(bootstrap)) {
+        body class="startup-active" {
             (render_startup_screen())
             (render_app_shell(bootstrap))
             (render_app_modals(bootstrap))
@@ -130,7 +129,7 @@ fn render_app_shell(bootstrap: &AppBootstrap) -> Markup {
 fn render_topbar(bootstrap: &AppBootstrap) -> Markup {
     html! {
         header class="topbar" {
-            (render_topbar_brand(bootstrap.app_name, Some("$appTitle")))
+            (render_topbar_brand(bootstrap.app_name))
             (render_topbar_actions())
         }
     }

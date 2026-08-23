@@ -1,12 +1,20 @@
 Interface (@interface: 1, is #chapter, #instinct, #part-of @first-steps, #done) { r_99NWECF19VKV94HQQ3G3ASMC4M
 
-# Interface
+# The Zen on Interfaces.
 
-Interfaces in Lince aspire to be as small as possible and as flexible as the
-people using them need. The best interface may be almost interfaceless: Lince
-should ask for as little attention as possible, make human choices quick, and
-still leave every part under the person's control when they choose to engage
-with it fully.
+- [ ] Choices can be done quickly. Full control is always available.
+	- [ ] Customization
+- [ ] Built-in UI is minimal, not taking screenspace from users and flexible, fitting many Needs.
+	- [ ] Sands: the widgets/components that live in the Box. Smaller pieces can be composed into groups, with interactions between them and other sands, receiving data from a Protein stream and executing Protein Actions in certain interactions. We should have the fundamental blocks to construct several types of workflows:
+		- [ ] Basic elements of buttons, dropdowns, tooltips of an UI library.
+		- [ ] Ready made Sands, combined to form Castles: Kanban, Table, Calendar, Graphs, Clock, Games, Transfer and Karma built as the features around it stabilize in backend.
+	- [ ] Box
+		- [ ] Being able to edit sands, adding more properties associated with them, shown by them, events leaving from them, being read by them, and their consequences. Also editing the UI to use different tokens, or delve into custom CSS styling.
+		- [ ] Fundamental areas of data manipulation to emulate the ready made sands: areas to spawn data, areas to pull data in or push away, areas to sort data, areas for immunitiy to those effects. Maintaining everything built as a package from interacting with these Areas of Influence, so buttons can change areas and areas can move buttons around associated with properties that the areas affect.
+- [ ] Interfaces should ask for as little attention as possible throughout the user's life. The best interface is Interfaceless.
+	- [ ] Interoperability.
+
+# UI Guidelines
 
 The brand is black and white by default, with purple as the supporting color.
 
@@ -16,7 +24,7 @@ Deep Lead — CMYK: 10, 10, 0, 92; HEX: `#121214`; RGB: 18, 18, 20.
 Gray — CMYK: 10, 5, 0, 12; HEX: `#A7B4C2`; RGB: 167, 180, 194.
 Ice White — CMYK: 2, 1, 0, 1; HEX: `#F8FAFC`; RGB: 248, 250, 252.
 
-Components are flat by default. A component may opt into the one restrained shadow utility when it needs to appear above an adjacent region; the area that is not content should feel tight and shrunk, boiled to the essence, minimal, functional.
+Components are flat by default, preffering 2D forces us to convey information only with flat data, not layers and composition, constraining the space forces minimalism. Shadows and hints can be used for subtle differentiation of areas, components and data.
 
 } r_99NWECF19VKV94HQQ3G3ASMC4M
 

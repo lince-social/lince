@@ -26,6 +26,11 @@
     state, result fields, typed inputs and outputs, mapping arrows, spatial
     areas, connections, and inherited definitions, and copies these semantics
     together with appearance.
+  - [ ] Box consumes the completed Customization and recursive Sand contracts.
+    Token architecture, Configuration, strict schema-validated boundaries,
+    LynxUI/Sand composition, saved compound Sands, and the non-spatial
+    composition workbench are complete before canvas, Protein-area, or
+    influence-area work begins.
   - [ ] Workspace state is local for the current Interface completion
     contract. Its model must remain suitable for a later Protein-owned sync
     surface, but device sync and collaborative workspace sharing are deferred
@@ -45,8 +50,10 @@
   be adopted only after Lince's own canvas schema and capabilities are stable;
   no external specification may constrain Box features.
   - [ ] Public Facades make genuine data inspection cheap without exposing the
-    publishing Cell to viewer traffic or abuse and without giving the publisher
-    or delivery infrastructure a tracking identity for the viewer.
+    private publishing Cell to viewer traffic or abuse. Content-addressed
+    archive delivery avoids an origin read receipt; a Live Facade deliberately
+    trades that stronger network privacy for a real-time scoped Protein stream
+    and states the server-visible metadata honestly.
 - [ ] [Mobile](Mobile.lingua#mobile): mobile work begins only after the complete desktop
   Sandbox is implemented. Until then, this goal is deliberately not allowed to
   shape or delay the desktop implementation.
@@ -173,34 +180,82 @@ forms, accessibility, CSS, and imported Web content; choosing it does not mean
 that every spatial object must be a DOM node or that every visual operation
 must run on the CPU.
 
-The implementation choice for the current Interface work is a hybrid:
-DOM composition roots render interactive Sands while one GPU world layer
-renders spatial material. GPUI/WGPUI, Bevy, and Pulsar are future ideas, not
-competing foundations during this implementation. A renderer seam still leaves
-room for a later native or Bevy renderer without changing the Sand, Protein,
-Action, or Box-state contracts.
+The accepted default authors first-party Sand structure Maud-first in Rust and
+emits ordinary HTML fragments and packages. Native ES modules remain the
+ordinary browser Behavior runtime, and a shared `wgpu` renderer compiled to
+WebAssembly owns Box's spatial GPU layer. Customization C0 freezes the exact
+artifact and ABI details against the documented raw-HTML and Datastar
+alternatives rather than reopening this direction without new evidence. Maud
+constructors are paired with the
+recursive Sand nodes, stable child identities, ports, configuration, Behavior,
+assets, and capabilities they render; bare `Markup` is not enough to declare a
+composable child. Box edit mode and raw packages produce the same normalized
+definition graph, and the browser composition runtime consumes that graph
+regardless of authoring origin. Maud performs no browser rendering and external
+HTML remains independent of it.
+
+The implementation choice for the current Interface work is a hybrid. DOM
+composition roots render interactive Sands while one shared `wgpu` world
+renderer draws spatial material. In the browser and Tauri WebView that renderer
+runs as a content-addressed Rust/WebAssembly artifact over WebGPU, with wgpu's
+WebGL2 backend as the rendering fallback where required. The same renderer code
+can later target native Vulkan, Metal, Direct3D, or OpenGL without changing the
+Sand, Protein, Action, or Box-state contracts. GPUI/WGPUI, Bevy, and Pulsar are
+future ideas, not competing foundations during this implementation.
 
 Here, **hybrid** means one Web interface with two cooperating presentation
 layers, not two products and not a WebView per component. Ordinary interactive
 Sands stay in a small number of DOM composition roots. A transparent GPU
 surface behind or beside them owns the world-scale visuals and receives the
 same camera transform. Box performs hit testing and routes input to the owning
-layer. The first benchmark should use
-[PixiJS 8](https://pixijs.com/8.x/guides/components/renderers) as the smallest
-retained candidate, with WebGL as the compatibility baseline and WebGPU tested
-where available. Direct WebGL/WebGPU is worth comparing only if profiling
-finds a capability or overhead problem in that layer. A full game engine is
-justified only if these fail the contract.
+layer. The renderer owns a bounded number of shared surfaces and one device,
+not a canvas, GPU device, or Wasm runtime per Sand.
 
-PixiJS accelerates the shared world surface: the recursive base pattern, zone
-masks and force indicators, connections and arrows, drawing strokes, selection
-overlays, and thousands of lightweight sprites or glyph-like nodes. It also
-applies the common pan/zoom camera transform once. HTML continues to render
-Sand text, forms, editors, accessibility trees, and embedded pages; PixiJS does
-not turn those into textures. Zone-force calculation begins in a front-end
-Worker so it cannot block input. WebGPU compute is considered only if profiling
-shows that CPU/WASM calculation, rather than rendering, is the bottleneck. No
-back-end GPU is needed for local compositing.
+The shared `wgpu` renderer accelerates the recursive base pattern, zone masks
+and force indicators, connections and arrows, drawing strokes, selection
+overlays, and thousands of lightweight sprites or glyph-like nodes. It keeps a
+retained scene and GPU instance buffers keyed by stable Sand or visual-node uid.
+Moving one Sand updates that instance's transform and the spatial index; it
+does not rebuild every vertex, rerender unchanged DOM, or ask every other Sand
+to run. HTML continues to render Sand text, forms, editors, accessibility
+trees, and embedded pages; `wgpu` does not turn those into textures.
+
+Physics is a separate responsibility from rendering. The first implementation
+runs force, collision, and spatial-index work as batched Rust/WebAssembly in a
+front-end Worker so it cannot block input. It uses a broad-phase spatial index
+and a dirty/awake set: only moved bodies, nearby collision candidates, affected
+groups, and areas whose influence intersects them enter a step. Offscreen and
+settled bodies sleep until a relevant change wakes them. Groups may submit one
+coarse body before detailed child collision is justified. The simulation and
+render clocks are decoupled, and the main thread receives bounded transform
+diffs rather than a full-world snapshot every frame.
+
+A global force that genuinely moves every body necessarily performs at least
+linear work over the awake set; the architecture cannot make meaningful work
+free. Its guarantee is that one local drag does not become an all-world scan
+and that collision candidates do not become an all-pairs comparison. One
+thousand simple bodies is a modest batched Rust/Wasm and instanced-GPU workload;
+one thousand simultaneously visible rich DOM editors or live Websites is not,
+so visibility and runtime kind remain part of the budget.
+
+WebGPU compute is a later acceleration path for large, regular kernels after
+profiling proves the Worker calculation is the bottleneck. Rendering on the GPU
+does not automatically make collision or force code GPU-powered, and moving
+small active sets is normally cheaper on the Worker than uploading and reading
+back an entire world. The baseline does not require Wasm threads,
+`SharedArrayBuffer`, or cross-origin isolation, because those requirements can
+interfere with external Web content; transferable or copied batches are tested
+first. No back-end GPU is needed for local compositing.
+
+External HTML remains real DOM, and an untrusted Website remains a sandboxed
+iframe or dedicated WebView. An installed external HTML Sand and a GPU Sand can
+exchange typed events, Protein values, local state, and Action requests through
+the same logical Sand ports, but through different adapters: scoped JavaScript
+calls for trusted DOM, validated `MessagePort` messages for an iframe, and the
+renderer/Wasm binding for `wgpu`. A live Website receives only wrapper ports and
+never Lince authority. Cross-origin HTML cannot be captured into a GPU texture
+or inspected by `wgpu`; the browser compositor keeps it interactive above the
+world surface.
 
 [CanvasUI](https://canvasui.dev/) remains useful design research, but is not a
 foundation choice: imported HTML, rich text editing, accessibility, and
@@ -291,7 +346,7 @@ deletes the underlying Record.
 
 The Supercomponent is a set of Box capabilities, not one enormous Sand.
 Beyond supplying data, its areas can act on bound Sands. The first version has
-three single-purpose behaviors. Each uses the same filters and field semantics
+four single-purpose area semantics. Each uses the same filters and field semantics
 already available to Protein; arbitrary formulas, Karma-aware traversal, and
 new query languages are outside this plan. Only a Protein area spawns result
 groups. The areas below merely test the Protein-bound row already carried by a
@@ -304,6 +359,12 @@ group and then act on that group.
   bounds remain fixed and use internal scrolling when results do not fit.
 - A **mutation area** runs declared typed Actions when a compatible bound group
   enters it. The first mappings change quantity and add or remove Concepts.
+- An **immunity area** belongs to a Protein area and protects the groups spawned
+  by that source from the workspace-centering force and from force, sorting, or
+  mutation areas whose effective area lies outside the immunity boundary.
+  Areas inside the boundary remain valid. Immunity changes spatial/Behavior
+  eligibility only; it does not hide data, deny manual editing, or grant Action
+  authority.
 
 Force and sorting areas may act on read-only or aggregate rows. Mutation areas
 require a concrete writable target identity and an Action compatible with that
@@ -317,6 +378,13 @@ group to move onward or disappear from its original Protein area when the
 source query no longer returns it. That is a consequence of the committed
 Action and subsequent Protein refresh, not hidden direct manipulation of the
 Record.
+
+Immunity is evaluated before external area effects. It follows the originating
+Protein identity carried by the spawned group, not whichever rectangle the
+group happens to overlap later. A group spawned by another Protein area does
+not inherit immunity merely by entering the boundary. Edit mode shows the
+protected source, boundary, currently blocked external areas, and permitted
+internal areas so immunity never reads as broken physics.
 
 Entry caused by physics is meaningful and may trigger a mutation. It fires
 once for each outside-to-inside visit, not once per animation frame. Actions
@@ -387,6 +455,118 @@ writes until completion, but many Sand preference changes write a full
 snapshot. Cards may also carry copied HTML, so large workspaces can amplify
 writes and file size.
 
+The replacement is a versioned **Box document**, not a dump of DOM or
+JavaScript state. It has stable uids for the workspace, referenced Sand
+definitions, instances, groups, connections, Protein areas, field bindings,
+influence areas, drawings, and other durable authored entities. An instance
+records its definition revision, parent group, local transform, anchor space,
+layer, sibling order, override patch, exported bindings, and its persistent
+host-state allocation. Child position is relative to its group; moving the
+group therefore never rewrites every child. Persisted ordering is semantic
+layer and sibling order, not a leaked CSS `z-index` implementation detail.
+
+Pinning is not one ambiguous boolean. An anchor declares whether coordinates
+belong to the world, the viewport, or a parent group. Changing that anchor is
+an authored operation which converts coordinates visibly. Camera, focus,
+selection, open panels, hover, drag previews, media sessions, presence, and
+the current numerical position of a force simulation are personal view or
+ephemeral runtime state, not shared composition.
+
+The Box document keeps a compact human-readable snapshot plus a typed
+operation journal. The snapshot is the inspectable and editable interchange
+form; the journal provides crash recovery, small writes, undo, agent control,
+and the future synchronization seam. Each operation has its own uid and names
+stable target uids; unknown document or operation versions fail closed. An
+atomic batch represents one human gesture such as grouping, reconnecting, or
+dropping a result-template definition.
+
+Physics does not emit persistence on animation frames. Box persists authored
+constraints and changes: drag/resize completion, pin/unpin, group edits,
+configuration commits, connections, and area edits. A settled position may be
+checkpointed as a recoverability hint at a bounded configurable interval, but
+it is derived state and cannot overwhelm or outrank the authored operation
+that produced it. Append, fsync, snapshot compaction, File Sync publication,
+and contact synchronization are separate rates; making an external sync rate
+slower must not make the local document unsafe.
+
+The text format must be honest about its grammar. If the Box snapshot uses the
+same Lingua grammar and tooling, it may be a Lingua declaration. If spatial
+composition needs a different grammar, it uses a distinct extension such as
+`.box`, even when its vocabulary is Lingua-inspired. Two incompatible syntaxes
+must never share `.lingua`. A Lingua Record may reference a Box document
+without turning thousands of spatial operations into Ledger Records.
+
+Other programs and agents interact with a running Box through the same typed
+operation API and read-only Box projection used by the interface, rather than
+editing the snapshot behind Lince's back. Offline tools may edit the snapshot
+atomically; Lince validates the whole replacement, shows a structural diff,
+and retains the last known-good document if it is invalid. External canvas
+formats such as OCIF are examples to look at while explaining why Lince needs
+stable node identity and a readable graph. They create no import, export,
+adapter, compatibility, or evaluation obligation and do not define or limit
+Lince's native schema, typed ports, Protein bindings, Behaviors, capabilities,
+or spatial areas.
+
+### Public Facade
+
+A **Live Facade** is a published, read-only rendering of one Box composition at
+a public URL. Caddy and DNS may terminate and route the public origin, but
+Lince still owns the publication manifest, public assets, read-only data
+contract, and safe browser runtime. Publishing freezes the available Sand
+definitions, layout, areas, connections, and configuration until the owner
+publishes a new revision. A visitor receives no edit mode, Sand store, add or
+remove operation, Action bridge, terminal, filesystem authority, identity
+credential, or private Lince endpoint.
+
+The composition can remain alive without becoming writable. It subscribes to
+predeclared, read-only Protein projections and updates them in real time. A
+visitor cannot submit an arbitrary Protein query: publication names the saved
+Protein items, allowed fields, limits, and stable result keys, and the public
+service exposes only those projections. The Action route is absent, not merely
+hidden. The stream has revision/resume information, bounded messages,
+backpressure, reconnect behavior, and honest stale/offline/removed states.
+
+Interaction that changes only the visitor's browser remains available:
+opening a Record selected from a Kanban-like composition, changing the current
+Instinct page or chapter, expanding sections, filtering an already-delivered
+projection, panning, zooming, and running read-only force or sorting areas.
+This state begins in memory. A Facade may opt into namespaced browser storage
+for preferences such as the last page, with a visible reset and a small quota;
+it never sends that state back as an Action. Mutation areas, write ports, and
+Behaviors requiring durable authority make publication validation fail rather
+than quietly becoming inert.
+
+A ready-made Kanban Facade is therefore the same saved compound Sand a person
+could open and decompose in Box: Protein area, repeated card group, field
+arrows, grouping/sorting areas, and Record detail composition. It remains as a
+convenient Sand-store entry, but it is not a separately implemented widget.
+The Facade renderer consumes the same definitions and token cascade and simply
+removes authoring and mutation authority.
+
+The first Live Facade admits official/read-only compound Sands and inert,
+sanitized assets. It does not admit Website Sands, arbitrary remote resources,
+installed network-capable Sands, or raw advanced CSS that can impersonate
+Lince chrome or escape its bounds. It runs on an origin separated from private
+Lince administration, with a restrictive CSP whose only connection is the
+scoped public Protein stream, no ambient cookies or Lince credentials, bounded
+storage, and sanitization of rendered Record content.
+
+Public data must be projected into a separate public Organ before serving it.
+That Organ contains only the published subset; a bug or compromise must not
+turn a field filter into access to the private Cell. Publication shows the
+selected Records, fields, definitions, assets, and estimated size before the
+owner confirms it, and revocation closes the stream and removes future
+availability without pretending already downloaded public data can be erased.
+
+This Live Facade and the existing content-addressed archive Facade are two
+delivery modes. The archive has no live stream and can be fetched privately by
+hash. A direct public URL and WebSocket necessarily reveal network metadata
+such as visitor IP and timing to Caddy or whichever service answers it; Lince
+can avoid accounts, cookies, analytics, and application-level viewer ids, but
+cannot truthfully promise that a directly contacted server learns nothing
+about the request. Use the archive/relay path when that stronger privacy
+property matters.
+
 ### Deferred workspace synchronization and sharing
 
 Workspace device sync and collaborative sharing are preserved future work and
@@ -405,6 +585,13 @@ require Box state to pretend to be Records.
 The implementation beneath Protein may use a separate schema, storage, signed
 `WorkspaceOp` stream, and compacted snapshots. Protein remains the unified read
 and sync surface; typed Actions/Box edit operations remain the write surface.
+The local Box document deliberately establishes stable entity ids, operation
+semantics, atomic batches, snapshots, and compaction now so later sync does not
+have to reverse-engineer whole-file diffs. That does not make the local journal
+a collaboration protocol by itself: actor identity, authorization, causal
+dependencies, deterministic merge, tombstones, revocation, encryption, and
+resource limits still belong to the future transport envelope. Disk and wire
+may encode the same semantic operation differently.
 Future requirements retained for that work are:
 
 - versioned granular operations for instances, overrides, groups, ports,
@@ -442,11 +629,6 @@ nested data, remain possible future Protein work. The current area plan uses
 only capabilities Protein already exposes. Any future regex syntax must bound
 pattern size, result count, and execution cost and report invalid expressions
 visibly.
-
-**External-force immunity.** A future Protein area may protect the groups it
-spawns from the workspace centering force and from areas outside its boundary
-while still permitting forces and sorting inside. This is not required by the
-first force-area implementation.
 
 **Stacked workspaces and portals.** Workspaces may eventually behave as stacked
 surfaces. A person could open a bounded hole into the workspace beneath it,
@@ -498,29 +680,49 @@ without requiring Lince to reproduce that particular effect.
 
 ### Interface — what is left
 
+#### Entry gate
+
+- [ ] Complete every Customization C0–C5 gate and the recursive Sand
+  composition workbench before changing the canvas model. Box work begins
+  with versioned, validated definitions, typed ports, compound Sands,
+  configuration scopes, schema-validated native JavaScript Behavior, and the
+  renderer adapter contract already usable without the board.
+
 #### Runtime and rendering
 
 - [ ] Build a representative benchmark on the owner's Vostro 3150, 11th-gen
   Intel Core i7, Iris Xe integrated graphics, 16 GB RAM, and NixOS. At the
   machine's native display resolution it must sustain 60 FPS pan/zoom with 200
-  visible interactive Sands, thousands of lightweight nodes/connections,
-  offscreen suspension, and no frame-by-frame rerender of unchanged DOM. Record
-  the exact CPU, resolution, browser/WebView, and power mode with the result.
-  Test a small number of composition roots rather than 200 independent
-  WebViews/iframes.
+  visible interactive Sands and at least 1,000 placed Sand/group bodies,
+  thousands of lightweight nodes/connections, offscreen suspension, and no
+  frame-by-frame rerender of unchanged DOM. Moving one settled Sand through a
+  populated region must update only its dirty neighborhood rather than scan or
+  rewrite the whole workspace. Record frame time, Worker step time, main-thread
+  blocking time, GPU upload bytes, memory, active/sleeping body counts, exact
+  CPU, resolution, browser/WebView, and power mode. Test a small number of
+  composition roots and one shared GPU device rather than per-Sand canvases,
+  runtimes, WebViews, or iframes. Run separate settled-local-drag, dense
+  collision-pile, and global-force scenarios so a favorable sleeping case does
+  not conceal the real cost of waking the world.
 - [ ] Benchmark Website Sands separately at 0, 1, 4, and 12 simultaneously
   visible sites, including video playback, suspension, storage, and memory.
   The 200-Sand target does not mean 200 live Websites; offscreen Websites are
   frozen or unloaded under an explicit session policy.
-- [ ] Compare the HTML/Tauri host with a front-end WebGPU/WebGL world layer and
-  record frame time, memory, startup, text-input quality, and accessibility.
-  Back-end GPU work cannot accelerate browser compositing; the GPU layer must
-  live in the front end or be a separately composited native renderer. WebGPU
-  is an enhancement rather than the only path while it remains unavailable in
-  some supported browsers.
-- [ ] Treat the benchmark as validation of the chosen hybrid and a guide for
-  its budgets. Replace the renderer only if evidence shows it cannot meet the
-  contract; prefer the smallest repair before reconsidering a native rewrite.
+- [ ] Build the accepted shared `wgpu` world renderer as a content-addressed
+  Rust/WebAssembly front-end artifact. Exercise WebGPU and the supported WebGL2
+  fallback, device loss, resize/device-scale changes, suspension, context
+  recovery, and accessible DOM counterparts. Record download, compile, shader
+  warm-up, frame time, memory, and startup alongside text-input and Website
+  behavior. Back-end GPU work cannot accelerate browser compositing.
+- [ ] Build the Worker physics proof with a spatial broad phase, dirty/awake
+  sets, sleeping, group-level coarse bodies, bounded transform diffs, and
+  deterministic teardown. Compare JavaScript and Rust/Wasm only where the same
+  kernel supplies useful evidence. Add WebGPU compute to a separate spike only
+  if measured Worker time, rather than DOM or rendering time, misses the budget.
+- [ ] Treat the benchmark as validation and tuning of the accepted hybrid, not
+  as permission to omit its human surface. Replace `wgpu` only if evidence shows
+  it cannot meet the contract; prefer the smallest repair before reconsidering
+  a full game engine or native rewrite.
 
 #### Box canvas
 
@@ -552,7 +754,7 @@ without requiring Lince to reproduce that particular effect.
 - [ ] Show the Protein item hash and source area in every bound group's
   metadata and provide locate/highlight navigation in both directions.
 
-#### Force, sorting, and mutation areas
+#### Force, sorting, mutation, and immunity areas
 
 - [ ] Define common area geometry, current-Protein selection, overlap and
   evaluation order, entry/exit lifecycle, styling, persistence, and edit tools.
@@ -565,6 +767,11 @@ without requiring Lince to reproduce that particular effect.
   and fixed, internally scrollable bounds.
 - [ ] Implement mutation areas for quantity changes and Concept addition or
   removal through existing typed Actions, with one trigger per boundary visit.
+- [ ] Implement immunity areas attached to one Protein area. Protect that
+  source's spawned groups from workspace centering and external force, sorting,
+  and mutation areas while preserving internal areas and manual interaction.
+  Show the boundary, protected source, blocked influences, and effective
+  evaluation in edit mode and Why-is-it-here.
 - [ ] Add deterministic overlap ordering, serialized Actions, loop/resource
   ceilings, pause/recover controls, and honest partial-failure states.
 - [ ] Build the Why-is-it-here inspector and require structured causal metadata
@@ -600,9 +807,43 @@ without requiring Lince to reproduce that particular effect.
 
 - [ ] Replace copied Sand HTML in instances with content-addressed definition
   references plus small override patches.
-- [ ] Keep a readable compact snapshot, but journal or batch high-frequency
-  Box mutations and compact them atomically so a small preference change does
-  not rewrite megabytes.
+- [ ] Store a Box-built group as a workspace-owned local Sand definition plus
+  an instance placement. Its children, relative transforms, internal
+  connections, Behaviors, and exports live in that definition; top-level
+  connections and Protein bindings live in Box. Locking is persisted editor
+  state, while save-as-Castle promotes the same shape into the reusable
+  definition catalog.
+- [ ] Make the Box operation model able to create, edit, validate, fork,
+  promote, and instantiate that definition shape without copied HTML or group
+  membership duplicated onto every child. Code-owned Maud definitions are
+  override-or-fork and Box never attempts to rewrite their Rust source.
+- [ ] Define the versioned Box document schema with stable uids for every
+  authored entity; referenced Sand revisions; recursive group-local
+  transforms; world/viewport/group anchors; semantic layers and sibling order;
+  Protein references and field-to-port bindings; areas; connections; override
+  patches; persistent host-state allocation; and content-addressed assets.
+- [ ] Keep a readable compact snapshot plus a typed operation journal. Validate
+  both at runtime, batch one human gesture atomically, recover from an
+  interrupted tail, compact without changing meaning, and retain the last
+  known-good snapshot when an offline edit is invalid.
+- [ ] Choose the snapshot grammar and extension explicitly. Reuse `.lingua`
+  only if it is parsed, formatted, and checked as the same Lingua grammar;
+  otherwise use a separate `.box`-style format. Publish a formatter, checker,
+  structural diff, and concise author reference with it.
+- [ ] Expose a typed Box-operation write API and read-only Box projection for
+  the Web client, other programs, and agents. Live callers never modify the
+  snapshot file behind the process; authorization, schema validation, limits,
+  attribution, undo, and failure reporting apply equally to human and agent
+  edits.
+- [ ] Persist direct manipulation at semantic commit points rather than each
+  pointer or physics frame. Journal drag/resize completion, anchors, groups,
+  connections, configuration, and area edits; treat simulated positions as
+  derived checkpoints with a bounded configurable cadence.
+- [ ] Separate local journal durability, fsync cadence, snapshot compaction,
+  File Sync publication cadence, and later contact delivery. Ordinary Lingua
+  file synchronization keeps its current/immediate default; Box File Sync
+  exposes a rate policy and its possible recovery lag without changing the
+  meaning of the Box operations.
 - [ ] Measure actual write volume, recovery after interruption, compaction,
   state growth per Sand, and the cost of unbounded workspaces.
 - [ ] Separate reusable workspace composition from personal view state now so
@@ -610,4 +851,41 @@ without requiring Lince to reproduce that particular effect.
   configuration, definitions, groups, connections, zones, and drawings are
   composition; camera, focus, selection, open panels, and temporary portals are
   personal view state.
+#### Public Live Facade
 
+- [ ] Define a versioned Facade publication manifest that references one
+  validated Box composition revision, its content-addressed definitions and
+  assets, token/style revision, and an allow-list of saved Protein projections,
+  fields, limits, stable keys, and read-only Behaviors.
+- [ ] Add a publish review showing the exact public Organ, Records/fields,
+  Proteins, definitions, assets, external links, estimated size, and rejected
+  write/network capabilities. Publishing and revoking have visible progress,
+  success, stale, and failure states.
+- [ ] Serve the public subset from a separate public Organ and a separate Web
+  origin. Expose only static Facade assets and resumable read-only Protein
+  streams; do not mount Action, arbitrary-query, administration, private media,
+  terminal, filesystem, Sand-install, or Lince credential routes there.
+- [ ] Make publication to the public Organ an explicit, field-narrowed
+  replication policy with deletion/revocation propagation and visible lag.
+  The Facade-serving Cell holds only that materialized public subset and has no
+  capability to author data back into the private Organ.
+- [ ] Compile view mode from the same compound Sand definitions used in Box.
+  Strip edit mode, configuration, mutable ports, and mutation areas. Keep local
+  navigation, Record selection, disclosure, page/chapter state, pan/zoom, and
+  read-only sorting/force behavior.
+- [ ] Keep visitor state in memory by default and optionally in a small
+  Facade-uid-and-revision namespace in browser storage. Add inspect/reset and
+  quota behavior; never upload it or interpret it as Ledger or shared Box
+  state.
+- [ ] Enforce the public runtime boundary with a separate origin, restrictive
+  CSP, no ambient credentials or analytics, bounded stream messages and
+  storage, sanitized Record rendering, safe external-link confirmation, and
+  no Website or arbitrary network-capable Sand in the first version.
+- [ ] Test that every declared Action, write port, mutation area, arbitrary
+  Protein, private field, remote asset, Website Sand, unsafe CSS, unknown
+  contract version, oversized stream item, and cross-origin credential attempt
+  is rejected rather than hidden or partially applied.
+- [ ] Keep Archive Facade and Live Facade as explicit delivery choices. The UI
+  explains that a direct live server observes connection metadata while a
+  content-addressed cached archive can avoid contacting the author; neither
+  mode claims privacy it cannot provide.

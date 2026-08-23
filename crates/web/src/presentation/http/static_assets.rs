@@ -177,10 +177,6 @@ fn embedded_asset(path: &str) -> Option<EmbeddedAsset> {
         "presentation/board/frame.js" => Some(js(include_bytes!(
             "../../../static/presentation/board/frame.js"
         ))),
-        "vendored/datastar.js" => Some(js(include_bytes!("../../../static/vendored/datastar.js"))),
-        "vendored/DatastarReference" => Some(text(include_bytes!(
-            "../../../static/vendored/DatastarReference"
-        ))),
         _ => None,
     }
 }

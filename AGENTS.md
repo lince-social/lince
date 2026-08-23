@@ -4,6 +4,11 @@
   in the repository-root `anicca/`. Before reading `.lingua`, use
   `lince-lingua-crud` from `.agents/skills/lince-lingua-crud/`. Writing one is
   the owner's — see "`.lingua` is the owner's" below.
+- When `anicca/<Subject>.lingua` exists, consult it before planning from or
+  editing `anicca/<Subject>.md`. The owner-authored `.lingua` Record is the
+  higher source of truth; the adjacent Markdown holds agent reasoning and must
+  be reconciled to the Record, never used to override it silently. If they
+  conflict, preserve the `.lingua` decision and call out the Markdown conflict.
 - `crates/anicca/src/grammar.rs` is the sole syntax authority. It is a typed
   `rust-sitter` grammar used by the parser, formatter, and checker. The living
   explanation is `anicca/Lingua.lingua`; do not copy its changing schema into

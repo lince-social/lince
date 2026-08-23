@@ -172,10 +172,6 @@ async function requestBridgePrint(instanceId, label) {
   return normalizeBridgeState(payload);
 }
 
-function createDatastarBootstrapScript() {
-  return `<script type="module" src="${apiPath("/static/vendored/datastar.js")}"></script>`;
-}
-
 function createBridgeBootstrapScript() {
   return `<script src="${apiPath("/static/presentation/board/widget-frame-bootstrap.js")}"></script>`;
 }
@@ -216,12 +212,7 @@ export function enhancePackageHtml(rawHtml) {
     return html;
   }
 
-  const bridgeScript = createBridgeBootstrapScript();
-  const datastarScript = html.includes("datastar.js")
-    ? ""
-    : createDatastarBootstrapScript();
-  const injections = [datastarScript, bridgeScript].filter(Boolean).join("\n");
-  return injectHostBootstrap(html, injections);
+  return injectHostBootstrap(html, createBridgeBootstrapScript());
 }
 
 export function createWidgetBridge({

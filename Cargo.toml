@@ -12,6 +12,7 @@ members = [
     "crates/transport",
     "crates/anicca",
     "crates/sensei",
+    "crates/interface-prototype",
 ]
 
 # desktop is a real workspace member so it inherits workspace fields and

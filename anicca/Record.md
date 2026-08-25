@@ -2,30 +2,13 @@ Record (@record: 0, is #chapter, #instinct, #part-of @ontology, #done) { r_5JKQH
 
 # Record
 
-A **Record** is one thing that matters to you: a task, a project, a person, a
-message, a tool, a place, a transfer, a rule, a note, a saved query. Lince has
-no table for tasks and another for invoices and a third for contacts. It has
-this. What makes one Record a task and another an invoice is what has been said
-about it — never a column, and never a schema you had to choose correctly
-before you knew what you were doing.
+A **Record** is one thing that matters to you: a task, a project, a person, a message, a tool, a place, a transfer, a rule, a note, a saved query. Lince has no table for tasks and another for invoices and a third for contacts. It has this. What makes one Record a task and another an invoice is what has been said about it — never a column, and never a schema you had to choose correctly before you knew what you were doing.
 
-Giving up the schema sounds like giving up too much, and it is the opposite. A
-fixed shape is precisely what makes software refuse the thing you actually want
-to track. Once every thing is the same kind of thing, a rule that watches your
-pantry and a rule that watches your workload are one rule pointed at two
-subjects; a board of chores and a board of purchases are one board pointed
-somewhere else. The variety moves out of the database and into your hands,
-which is where it was always going to end up anyway.
+Giving up the schema sounds like giving up too much, and it is the opposite. A fixed shape is precisely what makes software refuse the thing you actually want to track. Once every thing is the same kind of thing, a rule that watches your pantry and a rule that watches your workload are one rule pointed at two subjects; a board of chores and a board of purchases are one board pointed somewhere else. The variety moves out of the database and into your hands, which is where it was always going to end up anyway.
 
-A Record carries a **head** and a **body** for you to read, and a **quantity**
-for the machine to work with. The quantity is the part that moves — the part
-rules read, transfers change, and history remembers — and its sign is meaning
-rather than bookkeeping: negative is a Need, positive is a Contribution, zero
-is neither.
+A Record carries a **head** and a **body** for you to read, and a **quantity** for the machine to work with. The quantity is the part that moves — the part rules read, transfers change, and history remembers — and its sign is meaning rather than bookkeeping: negative is a Need, positive is a Contribution, zero is neither.
 
-The parts below take those in turn: why a Need is where the model starts, why a
-Need and a Contribution are the same number, and what a Record is actually made
-of underneath.
+The parts below take those in turn: why a Need is where the model starts, why a Need and a Contribution are the same number, and what a Record is actually made of underneath.
 
 ## Every Need is one Record
 
@@ -149,9 +132,56 @@ Record
 The **uid** is the identity and nothing else is. A slug is a local convenience
 you can rename or drop without consequence, and a title is not identity at all
 — two people will name the same thing differently and one person will rename it
-twice. **Kind** is operational only: a new one earns its existence by having a
-distinct lifecycle or sidecar, never by making a Record easier to filter, which
-is what Concepts are already for.
+twice.
+
+**Kind is operational only, not a category.** It is not how you'd tell a task
+from an invoice — that split lives in Concepts and assertions, the same way
+everything else about what a Record *means* does. A new kind earns its
+existence only when a Record needs code to behave differently for it: a
+distinct state machine, extra tables it joins to, or validation nothing else
+needs. If the only thing you'd gain from a new kind is an easier filter, it
+isn't one — tag it with a Concept instead.
+
+A Transfer is the clearest example. It isn't a different concept from an
+ordinary Record — Record.md's own opening line lists "a transfer" alongside
+task, project, and note as one of the things a Record can be. What makes it
+earn `kind = transfer` is that a Transfer's proposal → agreement → settlement
+lifecycle needs its own sidecar tables (`transfer`, `promise`,
+`transfer_occurrence`, and friends) and its own validation on creation — real
+distinct machinery, not a label. Concretely, creating a Transfer inserts one
+`record` row with `kind = "transfer"` and then a matching `transfer` row
+alongside it (`crates/store/src/transfers.rs`).
+
+The full list of kinds today (`crates/nucleus/src/record.rs`), each earned the
+same way:
+
+```text
+plain          the default — no special behavior
+rule           a Rule's condition/action machinery
+signal
+transfer       Transfer's proposal/agreement/settlement lifecycle
+decision
+device
+organ
+person
+protein
+sand
+conversation   one relationship, one grant — Threads/Messages live inside it
+thread
+message
+thread-invite  a pending conversation request, before anyone has agreed to
+               one; deliberately NOT a conversation, so it can be declined
+               without ever having synced anything
+program
+frequency
+grant
+call-session   one occupancy of a conversation's audio/video room
+```
+
+Most things you'll ever create — a chore, a grocery item, a goal, a saved
+query — never need a kind of their own. They stay `plain` forever, and
+everything that makes them distinct from each other lives in their head, body,
+and Concepts, exactly as the sections above describe.
 
 The operations that touch a Record directly are deliberately few — create it,
 edit its text, set its slug, unit or place, set or add to its quantity, attach
@@ -213,9 +243,4 @@ named lossy inbound door, `NewFact::quantity_f64`.
 - [x] **Declared precision survives sync**, and the exact pair is inside the
       hash preimage, so two Cells agree on the bytes and not merely the value.
 
-### What is left
-
-
-
-**Open work is not listed here.** Every task lives in one place — [[Ontology|r_S8PQ17MQ3WBWM53ZN700K89V9F]], under "What we work on next" and "-- Not Planned For Now --". This file is the specification; that list is the plan.
 } r_9NQJ2VK53ZSRT0NXV11V3VB19G

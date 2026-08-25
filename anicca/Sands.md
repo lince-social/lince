@@ -50,10 +50,20 @@ An invalid or incompatible local definition update fails closed: existing
 instances keep the last known-good revision and show the authoring error until
 the definition is repaired. They never silently switch to broken content.
 
+The stored contract has three distinct layers. The semantic graph owns stable
+identity, recursive composition, ports, Behavior, configuration, capabilities
+and state-plane meaning. Projection manifests describe compatible retained
+native UI, world GPU, installed HTML, Website-wrapper or browser-DOM
+presentations and their assets and renderer capabilities. A mounted runtime
+instance selects one projection and owns disposable native UI nodes, world
+handles, CEF browser ids, DOM roots and GPU resources. A package may carry all
+three together, but a projection or runtime handle never becomes the Sand's
+semantic identity.
+
 #### One definition graph, several authoring paths
 
 The GPU-first Plan A and Maud/HTML-first Plan B share one validated Sand
-definition graph. Plan A pairs native Rust/GPUI or world-renderer
+definition graph. Plan A pairs native Rust retained-UI or world-renderer
 implementations with that graph and uses CEF for real external HTML. Plan B
 pairs Rust/Maud fragments and native ES modules with the graph and uses one
 shared Rust/`wgpu` WebAssembly spatial renderer. The ordered runtime decision
@@ -64,10 +74,11 @@ Native Rust, Rust/Maud, raw packaged HTML, and Box edit mode can all produce or
 consume the same graph:
 
 ```text
-Native Rust + GPUI/world renderer ────────────────┐
+Native Rust + retained UI/world renderer ─────────┐
 Rust constructors + Maud ──> Sand artifact ───────┤
-Raw HTML + declared metadata ─> Sand artifact ────┼─> Sand definition ─> composition host
-Box edit operations ──────────────────────────────┘                         ├─> GPUI adapter
+Raw HTML + declared metadata ─> Sand artifact ────┼─> semantic graph + projection set
+Box edit operations ──────────────────────────────┘                    └─> composition host
+                                                                           ├─> native UI adapter
                                                                            ├─> native world adapter
                                                                            ├─> installed CEF adapter
                                                                            ├─> Website CEF wrapper
@@ -79,24 +90,24 @@ Box edit operations ────────────────────
 V1 and v2 reuse the same Sand definitions but do not force every Sand through
 one drawing implementation. The preferred native projection is:
 
-- GPUI for sharp application chrome, inspectors, editors, focused rich Sands
-  and viewport-pinned HUD surfaces;
+- the Lince retained UI for sharp application chrome, inspectors, editors,
+  focused rich Sands and viewport-pinned HUD surfaces;
 - the shared Bevy/`wgpu` world for the desk, Areas, connections, large
   populations of lightweight Sands, ordinary 2D/3D objects and later globe or
   game content; and
 - CEF for installed external HTML and zero-authority Websites.
 
-The Lince component library on GPUI owns the visual grammar; it does not adopt
+The Lince retained component library owns the visual grammar; it does not adopt
 Bevy's example UI or a generic game theme. Lightweight world Sands consume the
 same semantic tokens in instanced rectangle, line, icon, image and shaped-text
 primitives so density and hierarchy remain recognizably Lynx. A focused Sand
-may expose a richer GPUI editor without changing its definition or making its
-idle representation a second Sand.
+may expose a richer native editor without changing its definition or making
+its idle representation a second Sand.
 
 V1 places these projections in an orthographic local workspace. V2 may anchor
 the same instance to Earth, an authored frame, an avatar, another artifact or
 the viewport. The persistent definition declares semantic presentation and
-required capabilities, not “is a GPUI widget” or “is a Bevy entity.” Adapter
+required capabilities, not “is a native widget” or “is a Bevy entity.” Adapter
 selection, effective device scale, visual LOD and cached runtime handles remain
 runtime state. Visual LOD may simplify presentation but cannot remove declared
 information, ports, Behavior or authority.
@@ -109,8 +120,9 @@ semantics matter, not the universal native widget renderer.
 Under Plan B and in browser/Facade adapters, the browser receives ordinary
 HTML, CSS, and native JavaScript modules plus the shared `wgpu` WebAssembly
 renderer when the world layer is present. Under Plan A, native built-ins use
-GPUI or the world renderer and external HTML runs unchanged in Chromium/CEF.
-Third-party HTML never needs Rust, Maud, Wasm, GPUI, or `wgpu`. Maud remains
+the retained UI or the world renderer and external HTML runs unchanged in
+Chromium/CEF. Third-party HTML never needs Rust, Maud, Wasm, a native UI
+toolkit, or `wgpu`. Maud remains
 valuable because a first-party author can build an HTML-backed button, panel,
 dropdown, Kanban, or complete Video Call from Rust functions while the emitted
 definition remains understandable and editable by Box. It is the Plan B
@@ -289,12 +301,13 @@ goal.
 #### Renderer and execution bindings
 
 A Sand's meaning is independent of the technology that presents it. The
-definition graph declares a renderer reference, typed ports, Behavior,
-capabilities, state ownership, assets, and teardown. The composition host then
-selects a runtime adapter:
+semantic graph declares typed ports, Behavior, capabilities, state ownership
+and teardown. Its projection set declares presentation assets and compatible
+adapter capabilities. The composition host then selects a projection and
+runtime adapter:
 
-- Plan A native application controls and rich editor surfaces use GPUI with
-  Rust Behavior behind typed ports;
+- Plan A native application controls and rich editor surfaces use the Lince
+  retained UI with Rust Behavior behind typed ports;
 - Plan A Box material, lightweight native Sands, maps, games, terrain, graphs,
   splats, and specialised GPU leaves register entities or retained visual nodes
   in the shared native world renderer;
@@ -321,7 +334,7 @@ bridge validators, fixtures, and any future WIT projection. Raw DOM nodes,
 functions, GPU handles, pointers, credentials, and the global Box store are
 deliberately not portable values.
 
-The shared world renderer is retained rather than rebuilt from GPUI or the DOM.
+The shared world renderer is retained rather than rebuilt from native UI or the DOM.
 A stable visual-node uid maps each GPU primitive to its Sand or private renderer
 node; moving one instance updates only its transform and affected GPU buffer
 range. Ordinary Sands do not allocate a GPU device, engine, browser process, or
@@ -667,9 +680,9 @@ making automation and Transfer consequences prominent.
 
 Box reaches combinations between these presets by editing Sands, Behavior,
 Protein field bindings, areas, and groups. The first implementation stays with
-the shape already returned by one Protein item: a person may wire `head`,
-`quantity`, and `body` into separate Sands, add an unbound button or label, and
-lock them as the repeated result-template group. Moving or spatially
+the shape already returned by one Protein item: a person may wire `title`,
+`quantity`, and `description` into separate Sands, add an unbound button or
+label, and lock them as the repeated result-template group. Moving or spatially
 influencing any matching child moves the whole group. Pulling a Record because
 of associated Karma, or composing Karma and Transfer projections into that
 row automatically, is a preserved later expression rather than part of the
@@ -753,11 +766,8 @@ A site may refuse embedding with
 or `X-Frame-Options`; Lince respects that
 decision and offers to open it externally rather than proxying the page or
 stripping its protection. Services such as YouTube work only through their
-supported embed URLs. If Plan B uses Tauri, Website uses a dedicated WebView
-with no [`Tauri capability`](https://v2.tauri.app/security/capabilities/)
-instead of sharing a privileged WebView boundary. This is especially important
-where the platform cannot reliably attribute iframe IPC to the iframe rather
-than its containing WebView.
+supported embed URLs. Plan B is the browser projection; it does not introduce a
+second Linux WebView desktop.
 
 Website storage is useful and permitted, but is not Lince host state. Cookies,
 local storage, IndexedDB, Cache Storage, and service-worker data live in a
@@ -770,7 +780,7 @@ differently from a top-level tab, and Lince reports that incompatibility rather
 than weakening storage isolation silently.
 
 Normal Website navigation is HTTPS-only by default. A Website must never reach
-Lince native/Tauri capabilities, custom protocols, `file:` URLs, or
+Lince native capabilities, custom protocols, `file:` URLs, or
 authenticated Lince host endpoints. Every local HTTP and WebSocket endpoint
 also rejects a
 foreign `Origin` and requires an unguessable, scoped credential for privileged
@@ -1110,11 +1120,13 @@ The coordination of production for our Needs requires specific interfaces? We wi
 ### Sand
 
 - [ ] Define the recursive Sand schema: definition identity, composition tree,
-  renderer reference and binding kind, typed ports, Behavior bindings, required
-  capabilities, default state, overrides, lineage, content hash, assets,
-  licenses, and credits.
-- [ ] After the Plan A prototype selects the runtime, make native Rust/GPUI or
-  world-renderer constructors the first-party Plan A path, paired with the exact
+  semantic presentation, typed ports, Behavior bindings, required capabilities,
+  default state, overrides and lineage; define renderer projection manifests
+  and their content hashes, assets, licenses and credits separately; keep the
+  selected binding and adapter handles runtime-only.
+- [ ] On the accepted [Native Interface Laboratory](Interface.md#native-interface-laboratory)
+  runtime, make native Rust retained-UI or world-renderer constructors the
+  first-party Plan A path, paired with the exact
   node/port/configuration metadata Box needs. Preserve Maud as the standard
   Plan B and HTML-backed authoring path without changing HTML packages into a
   Rust-only format. Its paired constructors produce accessible `Markup` and the
@@ -1131,7 +1143,7 @@ The coordination of production for our Needs requires specific interfaces? We wi
   planes, scoped roots only for renderer adapters, deterministic ordering, and
   mandatory teardown.
 - [ ] Define the logical Sand runtime ABI once and generate its adapter
-  projections: native Rust/GPUI calls, retained world-scene handles, validated
+  projections: native Rust retained-UI calls, retained world-scene handles, validated
   size- and rate-bounded CEF messages for installed external HTML,
   wrapper-only Website ports, Plan B scoped DOM/`MessagePort` calls, and an
   optional WIT projection for Wasm Behavior. Prove the adapters agree on
@@ -1141,8 +1153,10 @@ The coordination of production for our Needs requires specific interfaces? We wi
   through the portable boundary.
 - [ ] Define the GPU renderer vocabulary and package rules for built-in
   patterns, sprites/glyphs, zones, connections, drawings, selection, and
-  specialized leaves. Use one shared device and retained scene with stable
-  visual-node uids and partial buffer updates. An arbitrary shader is installed
+  specialized leaves. Use one host rendering device, queue/submission policy
+  and retained scene with stable visual-node uids and partial buffer updates;
+  isolated CEF GPU producer contexts cross only the synchronized external-
+  surface boundary. An arbitrary shader is installed
   executable content with an exact hash, declared GPU capability, resource
   budget, validation, license, credits, and deterministic disposal.
 - [ ] Use one group representation for an ordinary local group, a locked
@@ -1163,6 +1177,10 @@ The coordination of production for our Needs requires specific interfaces? We wi
   fields, a mixed bound/unbound result-template group, repeated row instances,
   and force/sort/mutation areas. Do not use this spatial proof to finish the
   component or composition foundations underneath it.
+- [ ] In that vertical proof, remove and restore one stable Protein row and
+  change one result field incompatibly. Show live, retired, restored and broken
+  binding states, retain bounded recoverable instance-local state, and provide
+  visible reconnect/clear/replace operations through **Why is it here?**.
 - [ ] Before that spatial proof, prove reuse in the composition workbench with
   a standalone Button Sand and the same definition nested inside a Video Call
   compound Sand, then nest that compound again. Editing the shared definition
@@ -1196,15 +1214,18 @@ The coordination of production for our Needs requires specific interfaces? We wi
   data through lanes, navigation, popups, downloads, or network requests.
 - [ ] Add import, inspect-before-run, permission review, update review,
   revoke, disable, and delete surfaces with honest failure and empty states.
+- [ ] Add a runtime-health and admission surface for heavyweight Sands. Show
+  process and texture cost, configured budget, denied starts, renderer crashes,
+  recovery attempts and the exact unavailable reason; keep retry, disable and
+  clear-storage controls reachable without opening developer tools.
 - [ ] Build the Website Sand with an isolated CEF browser surface and request
-  context under Plan A, a sandboxed iframe in browsers, and a zero-capability
-  dedicated WebView if Plan B uses Tauri. Keep origin/security chrome above
-  remote pixels and prove that Website content cannot invoke Lince native/Tauri
+  context under Plan A and a sandboxed iframe in browsers. Keep origin/security chrome above
+  remote pixels and prove that Website content cannot invoke Lince native
   APIs, overlap system chrome, or receive a privileged parent message. Moving
   it off-camera culls composition only and does not unload, suspend, or throttle
   its browser execution.
 - [ ] Enforce HTTPS navigation; deny custom protocols, filesystem access, and
-  all Lince native/Tauri capabilities; and harden every local HTTP/WebSocket
+  all Lince native capabilities; and harden every local HTTP/WebSocket
   endpoint against foreign origins, unauthenticated requests, and CSRF. In CEF
   or dedicated WebViews, additionally intercept requests to block loopback,
   link-local, private-network destinations, unsafe redirects, and DNS
@@ -1517,9 +1538,10 @@ The coordination of production for our Needs requires specific interfaces? We wi
       Records and/or people into a real-time 2D map synced between Organs, then
       potentially add streets, terrain/elevation, Needs and Contributions as a
       distinct semantic height field, Transfer Proposal routes/proximity, 3D
-      scenes, and Gaussian-splat places. Preserve provenance, privacy, map-data
-      licensing, the distinction between geographic and data-derived height,
-      and the game/world rules retained in
+      scenes, and spatially captured places; Gaussian splats are one possible
+      representation rather than a required format. Preserve provenance,
+      privacy, map-data licensing, the distinction between geographic and
+      data-derived height, and the game/world rules retained in
       [Interface](Interface.md#long-horizon-world-direction). This is
       capability motivation for Plan A, not current implementation work.
 

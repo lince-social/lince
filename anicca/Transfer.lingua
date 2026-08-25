@@ -1,0 +1,551 @@
+Transfer (@transfer: 0, is #chapter, #instinct, #part-of @first-steps, #done) { r_DAPVC5V6MF3N8N2V7C84QBR96W
+
+	Oh to have everything! Oh to be completely self-sufficient and isolated, no need for Transfers with other people... Oh!
+
+	Until interactions with other Actors are not longer Needed for the fullfilment from our most basic to our most enlightened Needs, Lince will Need the Transfer feature. Almost a position taken from axioms. Interactions, trades, agreements, proposals, contracts, donations, leases, borrowing, all can be taken care of by the Transfer feature, it is the ultimate collaboration details and agreements.
+
+	- [ ] Resources
+		- [ ] I can setup an amount of resources flowing out of my Organ and going into another Organ, which is weird to write. That means a one way Transfer, functioning more like a donation.
+		- [ ] I can compose a two way Transfer, functioning like a Trade.
+		- [ ] I can say how much should go to the other party's resources, how much I am willing to contribute with some Record, and have the amount that is publicly being Contributed by me be different from the one i contabilize internally in my Lince: saying I will pay you 10 might make me internally diminish my 'Money' Record by 5 instead. I still will pay 10, but I control how my resources fluctuate with Transfers internally.
+	- [ ] Coordination/Collaboration
+		- [ ] Several Parties
+		- [ ] Observers
+	- [ ] Visibility
+
+
+--- Eiai
+
+Phase 9.1 implementation:
+
+- `app/presets.js` owns the transient preset catalog and role binding. Preset
+  labels and helper-only role metadata are removed by the existing draft wire
+  projection, so no preset type or state reaches storage.
+- The toolbar menu opens donation, sale, assignment, group coordination,
+  service, information, dependency plan, ride, and delivery drafts. Preset
+  creation combines editable terms, People, promises, sharing, hierarchy,
+  time/place, and dependencies on one setup screen, followed by the unchanged
+  signed review screen; blank creation retains its five focused steps.
+- The existing `transferCreate` event/lane accepts preset context from other
+  sands. Known local Records, People, quantities, and title can arrive already
+  filled, reducing common creation to setup review and submission without
+  granting the calling sand authority to sign or choose an authenticated actor.
+- Presets that need a concrete two-party workflow reject submission until an
+  invitee is selected. Donation, service, and information remain valid OPEN
+  offers. Every field can still be changed before review, including turning an
+  OPEN promise into a concrete one or changing its direction.
+- No remote document submission, payment execution, map/routing, dispatch,
+  carrier, or external calendar integration was introduced. Remote document
+  references retain the Phase 9 behavior and limitations.
+- `nix develop -c cargo check --workspace --all-targets` completes warning-free.
+- The driven Chromium harness verifies that every preset produces a validated
+  ordinary `create-transfer-draft` Action with no persisted preset metadata and
+  that preset entry opens the compact two-step composer. It also retains the
+  Transfer overview, detail, message-reference, filter, and mobile assertions.
+- Two-Cell OPEN discovery was found to still assume ownerless OPEN promises.
+  Export and local matching now treat `party_uid` as the required proposer and
+  leave only the counterparty role unfilled. The signed cross-Cell package test
+  passes; the local matching predicate fix was made after the final bounded
+  OPEN-donation test and remains queued for the next verification run.
+
+**Exit gate:** every preset produces a valid ordinary `create-transfer-draft`
+payload after its required local choices are made; switching fields remains
+fully editable, and neither preset identity nor workflow state is persisted.
+
+### Existing implementation evidence (not phase gates)
+
+- The live Transfer sand provides portfolio/detail inspection, local
+  search/filter/sort, a five-step blank creation composer, and Record navigation.
+- `source: "transfer"` exposes revision, accepted parties, pending/terminal
+  invitations, promises, balance/confirmation data, viewer context,
+  capabilities, and blocker codes, but predicates, ordering, revision history,
+  occurrence evidence, and the full exceptional vocabulary remain incomplete.
+- `create-transfer-draft` validates and atomically commits the current draft,
+  one creator participant, pending invitees, promises, visibility, request-key
+  replay protection, and the signed canonical revision-1 Fact.
+- Authenticated users map explicitly to Person records and the Permissions sand
+  manages that mapping.
+- Current creation inserts exactly one explicit/derived creator participant and
+  stores every other selected Person as a pending invitation in revision 1.
+- Legacy add/edit/agree/activate/confirm/settle Actions are compatibility
+  groundwork, not authorization to expose later-phase controls.
+"### Standing Transfer decisions" (2026-07-18)
+
+- Parties are Person records. Organs are identity transport, visibility, trust,
+  and sync boundaries, never social parties. Another Person becomes a party
+  only after accepting an invitation or claiming an OPEN promise.
+- Each Cell settles only Records it owns. Public/shared evidence says which
+  giver provided what canonical amount to which receiver; the receiving Cell's
+  private `application_formula` decides its local Record delta. The default UI
+  is “you give” = negative local delta and “you receive” = positive local delta.
+- Agreement is mutual, revision-bound, and presented as human milestones:
+  level 1 is **Checked · ready to agree**, level 2 is **Agreed**, and later
+  dual-sided fulfillment evidence is **Confirmed conclusion**. The final label
+  is derived occurrence evidence, not an agreement level a person can assert
+  for someone else. Every agreement policy requires the relevant parties to
+  match levels before its next stage unlocks.
+- `individual` unlocks each mutually matched give/receive path independently;
+  `full` requires every party in the revision to match; `percentage` freezes
+  and unlocks only its signed quorum coalition; `dependency` adds named
+  upstream promise/Transfer state gates. No policy makes one person's signature
+  stand in for another's.
+- Under percentage agreement, reaching quorum freezes a committed coalition
+  for that revision. Non-signers and their promises are excluded and cannot be
+  activated or settled; changing percentage/coalition is a terms edit that
+  invalidates affected signatures. Dependency gates may target a promise or a
+  Transfer and explicitly name the required upstream state, defaulting to
+  `kept` when unspecified.
+- Public-result edits invalidate agreement: people, canonical quantities/units,
+  dates/windows (including time-only changes), locations, confirmation
+  requirements, dependencies/order, and
+  any term affecting what someone gives or receives. Private application
+  formulas, private notes, and local display choices do not. Visibility changes
+  cannot retroactively retract data already delivered.
+- Stale term writes are rejected, even when apparently non-conflicting. The UI
+  preserves the draft and shows the intervening signed diff with one-click
+  reapply/edit; the user must review and submit a new revision. Messages and
+  unrelated private state may continue concurrently.
+- Creating a Transfer immediately addresses and reveals revision 1 to its
+  pending invitees. Invitation acceptance and creator withdrawal alter the
+  signed terms revision; rejection and expiry are signed lifecycle evidence
+  but do not churn the terms revision.
+- Every promise snapshots its canonical unit. A Transfer may provide a default
+  location and each promise may override it. Neither signed unit nor location
+  is reinterpreted when its referenced Record later changes.
+- A promise's delta is not always a quantity change. **Custody/responsibility**
+  — who currently holds or is answerable for a Record, distinct from who owns
+  or created it — is expressed the same way: a promise whose effect is an
+  assertion change (e.g. `@responsible`) rather than a quantity change. It goes
+  through the same invitation, agreement, activation, and confirmation
+  lifecycle as any other promise, because a custody handoff crossing an Organ
+  boundary needs the same consent every other Transfer needs — a bare
+  unilateral assertion cannot speak for someone who never agreed to hold
+  something. Within a single Organ, a plain assertion with no Transfer remains
+  enough, since the trust a shared Organ implies already covers it. The
+  existing `assignment` preset is this shape already; a delivery/loan/rental
+  preset is the same mechanism with a different verb. The quantity-specific
+  machinery — settlement slices, reservation/availability derivation,
+  percentage-coalition arithmetic — has nothing to act on when a promise
+  carries no quantity delta, and needs no special case to skip it: it stays
+  idle by construction, exactly the way a plain donation Transfer already
+  leaves the two-sided consideration/sale machinery unused today. A custody
+  Transfer is a normal Transfer whose promises simply don't touch quantity.
+- [ ] **Splitting for partial custody.** A fungible Record cannot hand only
+  part of itself into someone's custody through an assertion alone — the
+  split belongs to the Record, not to Transfer. Splitting off the exact
+  quantity changing hands into its own child Record (linked back, e.g.
+  `split-of`/`lot-of`) gives that smaller Record its own quantity and its own
+  `@responsible` assertion to carry into a custody Transfer, without adding a
+  second quantity field anywhere. Not built.
+- [ ] **Revoking custody is a proposal, not a command.** Lince has no way to
+  reach into the physical world, so "give it back" cannot be forced — it can
+  only be suggested, the same shape as any other Transfer proposal: the
+  current owner proposes an "un-custody" (a promise reverting `@responsible`
+  back), and the holder still has to agree for it to complete signed. If they
+  never agree, Lince has nothing further it can do — the proposal stays open
+  and visible, honestly, rather than pretending a revoke button changes
+  anything in the world by itself.
+- An OPEN promise is a signed suggestion/template owned by the proposing
+  Person, with only the counterparty left open, and reuse policy
+  `duplicate|consume`, defaulting to `duplicate`. A claimant may refine every
+  copied term, but the result is a new signed two-Person counteroffer retaining
+  source lineage; consuming prevents later claims while duplicating leaves the
+  source OPEN. The proposal may say either “I offer to give this” or “I ask to
+  receive this” without naming a counterparty. Claiming creates opposite
+  concrete promises for proposer and claimant; agreement levels then require
+  both People to accept the refined terms. The OPEN template itself remains
+  non-executable discovery data. Settlement applies each Person's own signed
+  promise Record; it does
+  not invent a separate private target Record for the counterparty-free
+  template.
+- Every give/receive occurrence is independently claimable and confirmable by
+  its giver and receiver. Activation, retraction, delivery, receipt, and
+  correction evidence is signed by exactly that Person's available identity;
+  mutual current evidence confirms occurrence. Bulk completion is only an
+  explicit labor-saving action for one Person and emits separate evidence for
+  that Person across the reviewed tree selection. It cannot sign for another
+  party.
+- Partial fulfillment is normal progress and never rolls back completed facts.
+  The remainder stays visible; policy may create a local draft remainder
+  Transfer, never silently send or agree it. An accidental private mutation is
+  corrected by compensation; a social correction uses a linked reversing
+  Transfer. Disputes annotate evidence rather than rewriting it.
+- Expiry means a promise passed its end window: open/proposed becomes withdrawn,
+  agreed/active becomes broken. “Reopen” keeps the Transfer identity but creates
+  a linked successor promise revision, preserving the terminal promise and all
+  signatures.
+- Reservation defaults to `none`; incoming promises affect `planned`, never
+  `available`, until locally settled. Different concepts may be exchanged;
+  balance stays advisory per concept/dimension, Lingua converts only compatible
+  units, and incomparable buckets never silently combine.
+- User-facing exceptional states are derived and distinct: cancelled/rejected
+  before activation, expired/withdrawn, broken, partially settled, disputed,
+  settled, and compensated/reversed. Only immutable occurrences are terminal;
+  the enclosing Transfer may continue through successor/remainder promises.
+- Visibility defaults hidden. A user explicitly addresses Persons/Organs,
+  expands by proximity, or makes an OPEN promise public. Unknown non-contact
+  people may negotiate when directly addressed or through public discovery;
+  they are not forced into contacts, receive no ambient sync, and remain
+  blockable.
+- Social delivery is selectable and persistent: hosted mode uses an
+  authoritative remote view; replicated mode imports signed events/data into
+  the Cell. Push while connected plus durable outbox retry and periodic pull is
+  the normal cadence, with manual refresh/retry and visible freshness. Unknown
+  contacts default to hosted/reference-only.
+- Transfer hierarchy is required: parent/child trees group Transfers that must
+  happen together, with derived roll-up, retained child evidence/policies, and
+  executable dependency/order DAGs. Cycles are rejected rather than warned.
+- The Transfer sand opens on the inbox/list and big-picture tree status;
+  creation retains a compact list summary and gives high control. Preset build
+  order is donation, sale, assignment, then broader workflows.
+- Threads/messages are the integration point for external payment receipts,
+  contract documents, and other linked records; Lince does not execute payments
+  or provide legal-contract machinery. Promise time constraints are core.
+  Carrier APIs are deferred external delivery integrations; manual delivery and
+  ride Transfers are not deferred.
+- Shared threads are visible to participating parties by default; private
+  threads use explicit visibility. Sent messages are immutable social evidence;
+  correction is a reply, while permission-gated deletion leaves Ledger
+  evidence/tombstone. A never-shared draft may be hard-deleted; after invitation
+  or publication it is cancelled/tombstoned instead.
+
+### Open: reservation/availability quantity projection
+
+`promise.reserve_from` and `transfer.reservation_policy` record intent, but
+nothing turns them into a live number yet. Needed: a projection of reserved /
+available / planned / surplus quantity per Record, derived from open promises
+and their `reserve_from` state, exposed as a query/view rather than a
+maintained column — this is the one real gap the old `transfer_quantity_influence`
+table pointed at (planned/active/consumed/released deltas competing under a
+protect/surplus/proportional/manual policy).
+
+The rest of that old design is already covered under a different shape, not
+missing: `transfer_structured_item` (a Transfer's line items) is `promise` —
+one signed row per give/receive commitment, `transfer_uid`-scoped. `transfer_interaction`'s
+`depends_on` kind is `transfer_dependency` (`scope: transfer|promise`,
+`upstream_uid`, `required_state`), already wired to `promise.condition`
+(`crates/store/src/transfers.rs`, "Promises with a condition that are waiting
+to activate"). Nothing needs rebuilding there.
+
+### Open: Transfer messaging and discovery ride the Thread system
+
+`transfer_message` should not be rebuilt as its own table. A Transfer's
+messages are a conversation — the same `record_doc`/`thread_invite`/
+`conversation` sand already used for direct chat (see
+[Synchronization](Ontology.md)), tagged/linked to the Transfer record instead
+of a Person. No new schema, just wiring the Transfer sand to open/attach a
+conversation the way the Record sand's Threads panel does.
+
+Discovering and inviting a counterparty into a Transfer should work the same
+way Organs discover and invite each other into a chat thread: a
+`thread_invite`-style one-pending-per-Organ offer, accept/decline, nothing
+exposed until accepted. That layer doesn't exist for Transfers today.
+`transfer_invitation` (migration `0013_transfer_invitations.sql`) is close but
+solves a different problem — it addresses a known Person on an
+already-created, already-addressable Transfer/party row; it has no answer for
+"an unknown Organ wants to open a Transfer with me" the way `thread_invite` +
+`organ_contact` adoption answers it for chat. Worth deciding whether
+`thread_invite` itself grows a "this offer is also a Transfer proposal" mode,
+or a parallel `transfer_invite` mirrors its one-pending/accept/decline shape
+at the Organ level, upstream of `transfer_invitation`.
+
+The theory below is where this started, and the parts after it are what it
+became.
+
+### Transfer, in theory
+
+_Introduction_
+A Transfer is a well structured process for Contributing to other's Needs and having yours met. It might be a way of exchanging physical resources, buying services, exchanging information, proposing the assignment of tasks... It has a few steps: a proposal, an agreement and an action. It is designed to work best with Record's quantities between different Lince Cells.
+
+_Ideas_
+I start with information, I say what I can Contribute to or Need, another party confirms that it wants to be part of this Transfer, make it real. We then agree on the specifics and do our part. A Transfer can start out only with the Contribution part, used as a brainstorming mechanism, a way to generate consensus: if we model a Need and all involved agree on one specific Contribution, the following actions and automation are an agreed upon plan. If I post a Need (make a Record public as a Need), anyone that wants to Contribute will give a different solution, suggesting to break it down into other Needs and helping with some of them.
+
+_Automation_
+We want to be able to automate the Transfers with built-in mechanisms Karma. To not have to think of a frequent purchase, to commit to it, to show first our Needs and Contributions to a certain Organ/Cells, then if they are not interacted with expand the visibility of them to other parties.
+
+_POV_
+I can create a Transfer for a Record as either a Need or a Contribution, might depend on how you see it, use it: let's say I want to play the Guitar live in front of an audience, that can be a Need to perform, or a Contribution as a service, paid or not. Your framing of it as either in the Need part or in the Contribution part will tell people in advance what is your goal. If nobody believes they Need to hear you play they wouldn't hire you, but if you say that you want to be heard playing they wouldn't mind letting you play at an event of theirs, contributing to your Need.
+
+_Conditions_
+We might only make a Transfer when we reach a certain state: if Record less than 7 then we buy Apples until we have 14 with a certain specific Lince Cell (known farmer). If we know that our 'Apple' Record's 'quantity' property diminishes by one every day, and we have 8, the day after tomorrow we will have 6, hitting the state to activate a Transfer proposal to buy more Apples. The farmer that wants to buy a new tool to produce more will see that they can't make a Transfer with a tool maker to buy that tool because they dont have the money yet. But because they see only the predictability that the transfer will happen after two days they can plan their business better, knowing that the chain of Transfers will happen 2 days from now.
+
+That can extend to several different Transfers, many people agreeing to many things happening so they all happen. You might need 7 previous Transfers to meet Needs of your customers so they can Contribute to other Needs and buy your Apples. Knowing this you can take part in Contributing to those previous Needs so the flow of Contributions can continue flowing, unclogging the Transfers. You may call it Investing In Your Customers, or Just Helping.
+
+"The feature of Simulation is key for this. We might have a Karma to activate a Transfer proposal of donating all extra apples if we hit 20. So if we have 30 we activate that Transfer proposal and wait for someone to collect it. Until then, we see two numbers, the real number" (30) and the number that exists in our Lince for our own use (20), the extra 10 will be donated so they are like free Contribution Apples, if we eat one, now there are 9 Contributions we can make, because our donations are on the surplus. Or we make a rule that the eating of the Apple will remove a number from our non donation apples, and the donation stays the same with the 10 Apples.
+
+## Data Structure
+
+The data structure is still being developed, dont mind it.
+
+| Columns               | Data Type | User Input | Data Created |
+| --------------------- | --------- | ---------- | ------------ |
+| Id                    |           |            |              |
+| Records Received      |           |            |              |
+| Records Contributed   |           |            |              |
+| Agreement             |           |            |              |
+| Agreement Time        |           |            |              |
+| Transfer Confirmation |           |            |              |
+| Transfer Time         |           |            |              |
+
+## Transfer
+
+Main tracker for the Transfer feature.
+
+## What a Transfer is
+
+A Need in your Cell and a Contribution in someone else's do not meet by themselves. A **Transfer** is how the two sides agree to move something across the boundary.
+
+```mermaid
+graph LR
+  A["Person A"] --> C["1 unit of currency"]
+  B["Person B"] --> D["2 apples"]
+  C <--> D
+```
+
+_A trade: each side has what the other is short of._
+
+Nothing about that picture is special-cased for money. **Lince has no money in it.** A currency is an ordinary record used as a unit, and converting between currencies is a rule you write — exactly like converting hours to days. A trade of apples for hours needs no new machinery.
+
+## It does not have to be even
+
+A Transfer where only one side moves is a donation. A Transfer whose other side is enormous, or vague, or far away, is a request:
+
+```mermaid
+graph LR
+  A["Person A: 1 unit"] --> B["Person B: a brazillion apples"]
+```
+
+_Wildly lopsided, and still a perfectly valid Transfer to record._
+
+And it does not have to be two-sided at all:
+
+```mermaid
+graph LR
+  A["A"] --> B["B"]
+  B --> C["C"]
+  C --> A
+```
+
+_A three-party loop: nobody trades with one partner, everyone is settled._
+
+## What a Transfer actually is
+
+A Transfer bundles **promises** — each one saying who owes what to whom, in which unit, by when. Its status is derived from the states of those promises rather than set by hand, which is why the Transfer sand can tell you what stage a deal is at without anyone maintaining a status field.
+
+- Terms are versioned: a Transfer's signed revision is part of what everyone agreed to.
+
+- Participants have roles — creator, participant, invitee, observer — and a Protein can filter by yours.
+
+- Settlement moves the quantities on both sides at once, leaving facts behind on each.
+
+The same shape covers a marketplace purchase, splitting a bill, planning a party, or a project where four people each bring something different. It is one mechanism because it was one idea all along: a Need on one side, a Contribution on the other.
+
+#### In detail
+
+Transfer is a protocol for making Lince Record quantity changes and Record relationships socially valid before they become final database changes.
+
+Principles:
+
+- Transfer deals only with Lince data for now.
+- Quantity stays central and generic. Specialized units can be represented by metadata/extensions later.
+- A Transfer is a structured promise before execution, and may group smaller item-level interactions.
+- Records do not permanently become Needs or Contributions. Need, Contribution, support, task, information, and reservation are Transfer item roles.
+- A Transfer item carries Transfer-specific title/description and may hide the private source Record fields.
+- Parent Transfers group child Transfers without forcing one agreement or settlement policy on every child.
+- Counteroffers are edits. Agreement returns only when the relevant parties accept the edited state again.
+- Discovery must not mutate Records. It can suggest candidate assertions or create/edit Transfer proposals, but final Record quantity changes happen only through settlement.
+- Transfer status should be derived from item, interaction, agreement, delivery, receipt, settlement, quantity influence, and event facts instead of maintained as a separate source of truth.
+- Expiration is not hardcoded in Transfer for the first version; Karma can activate or neutralize Transfers by quantity.
+- Role-based agreement, legal-contract language, external payments, delivery integrations, calendars, and external messaging are out of MVP scope.
+
+Intended flow:
+
+1. Someone creates a Transfer from one or more Records.
+2. Transfer items describe what those Records mean in this Transfer.
+3. Visibility decides which party or Organ can see which fields.
+4. Parties edit the parts they are allowed to edit.
+5. Connected edits invalidate earlier agreement for affected items/interactions.
+6. Parties raise agreement levels when they accept the current visible state.
+7. Satisfied agreement policy activates the relevant item, interaction, or group.
+8. Transfer influence appears in simulation as plus/minus quantity.
+9. Parties confirm delivery and receipt.
+10. Settlement applies the actual Lince data changes.
+} r_DAPVC5V6MF3N8N2V7C84QBR96W
+
+Building Transfer (@building-transfer: 0, is #chapter, #instinct, #part-of @transfer, #done) { r_00ECACY50NWQQ3S0YH37V8KMK6
+
+# Building Transfer
+
+What is done, what is deliberately not, and where the pieces live.
+
+## MVP build order
+
+1. Transfer header with quantity and immutable agreement/settlement modes.
+2. Transfer parties.
+3. Transfer items with Transfer-specific title/description and source Record snapshots.
+4. Transfer interactions and dependencies.
+5. Transfer event log and validator.
+6. Coordinator-backed event sync cursor for participating Cells.
+7. Agreement levels with edit invalidation for connected items.
+8. Messages.
+9. Karma Transfer quantity tokens.
+10. Transfer quantity influence facts.
+11. Delivery/receipt confirmations.
+12. Individual/full settlement.
+13. Server-backed Transfer sand contract and typed backend actions.
+14. Transfer sand list/detail/create/agreement UI.
+15. Basic peer/contact table and Transfer discovery cache.
+16. Optional SQL views or sand queries for richer quantity projections.
+17. Visibility subjects, rules, and fields across all Transfer surfaces.
+
+
+## Not First
+
+- External integrations.
+- Global reputation.
+- Full peer-to-peer federation.
+- Hardcoded expiration.
+- Role-based agreement.
+- Complex legal-contract language.
+- Field-level visibility is intentionally last so the Transfer shape can settle first.
+
+## Cross-File Map
+
+- Product shape, core assumptions, agreement, events, messages, and the main checklist live in this file.
+- Remaining reversal/dispute settlement work lives in [Simulation And Settlement](transfer-simulation-settlement.md).
+
+## Implemented State
+
+The structured backend (parties, items, interactions, agreement, settlement, visibility, events, messages, work metadata) is live. The old single-row adapter is gone. The Transfer sand is a server-backed widget with typed actions.
+
+Key locations:
+
+- Schema: `20260614133000_structured_transfer_model.sql`, `20260617120000_generic_work_metadata.sql`
+- Domain enums: `crates/domain/src/clean/transfer.rs`
+- Widget backend: `crates/web/src/application/transfer_widget.rs`
+- Sand UI: `crates/web/src/sand/transfer/`
+
+### Agreement Levels
+
+| Level | Meaning                                             |
+| ----- | --------------------------------------------------- |
+| `0`   | No current agreement, or invalidated by an edit.    |
+| `1`   | First agreement: the party reviewed and is aligned. |
+| `2`   | Commitment threshold: the party accepts its part.   |
+
+### Agreement Modes
+
+| Mode         | Meaning                                                       |
+| ------------ | ------------------------------------------------------------- |
+| `individual` | Each party reaches level 2 independently (default).           |
+| `full`       | All parties must reach level 2.                               |
+| `percentage` | Ceil(n_parties × pct / 100) parties must reach level 2.       |
+| `dependency` | Agreement propagates through dependent interaction agreement. |
+
+### Reservation Policies
+
+| Policy             | Meaning                                                                               |
+| ------------------ | ------------------------------------------------------------------------------------- |
+| `none`             | Never stage Transfer quantity changes. Only final settlement changes Record quantity. |
+| `soft`             | Track proposal intent without reducing availability.                                  |
+| `hard_on_proposal` | Reserve outgoing quantity when a proposal is created.                                 |
+| `hard_on_consume`  | Reserve outgoing quantity when a proposal is duplicated/consumed.                     |
+| `hard_on_lock`     | Reserve outgoing quantity when both sides lock agreement terms.                       |
+
+Each Transfer can override the default in `transfer_tree_config.reservation_policy`.
+
+### Quantity Projections
+
+| Column                                                    | Meaning                                            |
+| --------------------------------------------------------- | -------------------------------------------------- |
+| `record.quantity`                                         | Actual settled Record quantity.                    |
+| `record_transfer_availability.proposed_outgoing_quantity` | Planned negative Transfer influence.               |
+| `record_transfer_availability.proposed_incoming_quantity` | Planned positive Transfer influence.               |
+| `record_transfer_availability.reserved_quantity`          | Active hard outgoing reservation.                  |
+| `record_transfer_availability.reserved_incoming_quantity` | Active positive Transfer influence, informational. |
+| `record_transfer_availability.available_quantity`         | Actual minus active hard outgoing reservation.     |
+| `record_transfer_availability.planned_quantity`           | Simple projection: actual + incoming − outgoing.   |
+
+```sql
+SELECT record.*, availability.*
+FROM record
+LEFT JOIN record_transfer_availability availability ON availability.record_id = record.id;
+```
+
+### Karma
+
+Transfer quantity is exposed to Karma with two equivalent token forms: `tq{id}` and `transfer-quantity-{id}`.
+
+"In a condition the token is replaced with the current Transfer quantity" (0 if Transfer does not exist). In a consequence the token identifies which Transfer quantity receives the evaluated value. The `transfer-proximity-broadening-{transfer_id}` consequence widens restricted visibility by setting `max_visible_proximity`.
+
+Field-level visibility design (when implemented):
+
+Subjects: an Organ, a specific user within an Organ (by `actor_label`), a Transfer role (`contribution`, `need`, `support`), or `public`. Rules attach to a field path on a Transfer, item, or interaction row. If no rule exists, the field falls back to the whole-Transfer visibility policy.
+
+Fields that can be scoped independently:
+
+- `transfer.title`, `transfer.topic_text`
+- `item.title`, `item.description` (visible without exposing source Record)
+- `item.source_record_id` / `item.record_head_snapshot` (the Record identity)
+- `item.quantity`
+- `party.actor_label` / `party.public_key` (hide other parties from each other)
+- `interaction.quantity`
+- Locations and units carried in item metadata
+
+A rule says "field X is visible to subject Y". Subjects are checked in order: exact actor_label match → role match → Organ match → public. The most specific matching rule wins. A field is hidden unless a matching rule grants access.
+
+Package export applies field rules before serializing: hidden fields are omitted or replaced with a placeholder. The Transfer recipient cannot tell whether a field was intentionally hidden or simply absent.
+
+Trust is important in workflows of Transfer, when we interact with other parties how do we know we can Trust them? Trust in Lince is done by verifyiable facts that happened when this party interacted with other parties. If you consider the parties they interacted with as Trustworthy, when both parties can agree something was done, you can maybe trust them a little more. For automation this is crucial, being able to trust will bring more agility to interactions.
+
+> Extracted from `docs/Karma.md` on 2026-07-29. Automation Trust scopes
+> (Karma phase K8) stay in that doc — they gate automation, not authorship.
+
+## What is left
+
+### Checklist
+
+- [/] A party can see only the Transfer fields allowed for it.
+- [/] A party can see a Transfer item title without seeing the source Record head.
+- [/] A party can see a Transfer item description without seeing the source Record body.
+- [/] Visibility can hide source Record identity.
+- [/] Visibility can hide other parties.
+- [/] Visibility can hide locations and quantities.
+- [/] Dependency agreement mode is wired to interaction dependency satisfaction. (Agreement is complete when the depended-on Transfer itself is agreed/settled, not when local parties sign. Requires querying `transfer_interaction` rows with `depends_on` kind and checking the referenced Transfer state.)
+- [/] Agreement state can also be derived for a parent Transfer.
+- [/] The Transfer sand can configure field-level visibility.
+- [ ] Surplus can be projected. (Surplus = quantity you have beyond what is already committed to hard reservations — the "safe to give away" figure. Formula: `record.quantity - reserved_quantity`. Distinct from `available_quantity` in that surplus could also account for confirmed incoming deliveries not yet settled.)
+- [ ] Gossip cache is available as a long-term discovery helper.
+- [ ] Delegated ask-around search is available with hop/TTL limits.
+
+- [ ] **Organ polling scheduler** (§2, tracked under Transfer T1).
+} r_00ECACY50NWQQ3S0YH37V8KMK6
+
+Trust (@trust: 0, is #chapter, #instinct, #part-of @transfer, #done) { r_1TQR1KWKMDMAYBQM3SVPSCRR9P
+
+## Trust
+
+- [x] Every locally-authored fact is signed on the write path; imported
+  facts keep their ORIGIN signature so downstream Cells can still verify the
+  original author — a two-layer tamper model (the hash chain guards
+  content, the signature guards authorship).
+- [x] Compaction archives stay verifiable file-side; the anchor fact makes
+  the file tamper-evident from inside the Ledger.
+- [x] No universal/global/public reputation score, ever. Kept/broken signed
+  history is the shareable raw material; Karma may derive a local,
+  purpose-specific estimate for one concept/role/window, but must show its
+  ingredients and must not publish it as a fact about a Person's character.
+- Field-level grants and most-specific-wins precedence are tracked in Transfer
+  Phase T3, with Transfer as the first consumer of this shared Trust behavior;
+  today grants remain whole-row only.
+
+## What is left
+
+### Trust
+
+- [ ] Karma phase K8 adds local Automation Trust scopes above coarse
+  `known|blocked`: exact concept/direction and stage ceilings, Person/origin-
+  Organ/via-Organ/proximity selectors, probability/confidence thresholds,
+  limits, expiry, and deny-first Proof. This policy gates automation only; it
+  is not reputation, visibility, consent, or a Program grant.
+} r_1TQR1KWKMDMAYBQM3SVPSCRR9P

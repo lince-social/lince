@@ -1,5 +1,39 @@
-jarma (@karma: 0, is #chapter, #instinct, #part-of @first-steps, #done) { r_K7T3ZG08G5EBWRSTF8NBWMTZYV
+Karma (@karma: 0, is #chapter, #instinct, #part-of @first-steps, #done) { r_K7T3ZG08G5EBWRSTF8NBWMTZYV
 
 - [ ] What if the actions people do on board, are events, like moving things around are Karma Consequences? That way karma can control the appearance/disappearance of sands the interaction with them. It could even control the position of records with some properties. Like moving them up and down. Agents doing actions in board can also fire these events so Fiote can move sands around to tidy them, add things it thinks you need for your workflows, call people (activating the Communication of a Record-message with someone). So when you interact with the board as a user you are not calling js directly, you are interacting with things that fire events and these events have consequences, Karma once again in frontend.
 
+
+One type of code in the rule can be of using assertions to query and modify data:
+
+#foo * 2 = #bar
+
+Can take all the quantities of all records with #foo, multiply by 2, and put that quantity in all Records with #bar assertion.
+
+
 } r_K7T3ZG08G5EBWRSTF8NBWMTZYV
+
+Fiote (@fiote: 0,#instinct, #part-of @karma) {
+	The AI agent of Lince, firstly a harness, then maybe a model running locally. It should be an everything helper. Autonomous as you set it, having the same capabilites as you, or not. It should be able to understand your way of approaching problems by looking at your data, learning from it, never sharing with outside your Lince (by default).
+	- [ ] Agency (with user control):
+	 	- [ ] Personality:
+			- [ ] Seeded into model context is a minimal explanation of Lince, short phrases, when user asks something to be done, it should translate it into Lince's model and go after more information if needed. This info can be the existing documentation of .lingua files, and it can be skills.
+			- [ ] One should be able to control with a Personality preprompt how they want the model to behave, like an AGENTS.md for Fiote.
+		- [ ] Constraints:
+			- [ ] Fiote is an Actor, of Agent type. It can perform Protein Actions in Backend, and it has Permissions due to his Role, or it can have access to some File Sync and change the db through it, if .lingua is chosen it can do effectivelly everything just changing those files.
+			- [ ] Autonomy.
+		- [ ] Be able to be prompted
+		- [ ] Be able to have loops (related to Karma frequency?)
+		- [ ] Be able to interact and manage a fleet of other Fiotes.
+	- [ ] CRUD Records
+	- [ ] CRUD Karma's Rules:
+		- [ ] Be able to set an autonomous initiative of searching for optimizations in your habits, the order of them in a day, the frequency, removing or adding.
+	- [ ] CRUD Transfers
+} r_137BM4Q7GV2707HBTRQ3GTJ9E5
+
+
+
+
+
+
+	
+}

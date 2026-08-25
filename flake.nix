@@ -44,29 +44,97 @@
                 || lib.hasPrefix "target/" rel
               );
           };
-          tauriLinuxNativeBuildInputs =
+          interfaceLinuxNativeBuildInputs =
             with pkgs;
             lib.optionals stdenv.isLinux [
+              cmake
               makeWrapper
+              ninja
               pkg-config
-              wrapGAppsHook3
             ];
-          tauriLinuxBuildInputs =
+          interfaceLinuxBuildInputs =
             with pkgs;
             lib.optionals stdenv.isLinux [
-              gsettings-desktop-schemas
-              glib-networking
-              gst_all_1.gst-plugins-base
-              gst_all_1.gst-plugins-good
-              gst_all_1.gstreamer
+              alsa-lib
+              atk
+              cairo
+              cups
+              dbus
+              expat
+              fontconfig
+              freetype
+              glib
               gtk3
-              libayatana-appindicator
+              libGL
+              libdrm
+              libgbm
+              libx11
+              libxcb
+              libxcomposite
+              libxdamage
+              libxext
+              libxfixes
+              libxcursor
+              libxi
               libxkbcommon
-              librsvg
-              libsoup_3
-              webkitgtk_4_1
-              xdotool
+              libxrandr
+              mesa
+              nspr
+              nss
+              pango
+              systemdLibs
+              vulkan-loader
+              wayland
             ];
+          cefLinuxArchive =
+            if system == "x86_64-linux" then
+              {
+                name = "cef_binary_151.3.24+g2384915+chromium-151.0.7922.174_linux64_minimal.tar.bz2";
+                hash = "sha256-21PEP9rOi37krw8AUSARbWlzqp2Ot3AsBhe635voaE4=";
+                sha1 = "b1e99d3e3ff4213f99f7cda0211db89454398811";
+              }
+            else if system == "aarch64-linux" then
+              {
+                name = "cef_binary_151.3.24+g2384915+chromium-151.0.7922.174_linuxarm64_minimal.tar.bz2";
+                hash = "sha256-R5ZbnDallYvdbW/bP+M2DzjRfWWRTvY2q63hSIHNxZs=";
+                sha1 = "95acd2a46975e2c60afa6b427ec50c0a3be6236f";
+              }
+            else
+              null;
+          cefLinuxRuntime =
+            if cefLinuxArchive == null then
+              null
+            else
+              pkgs.stdenvNoCC.mkDerivation {
+                pname = "lince-cef-runtime";
+                version = "151.3.24";
+                src = pkgs.fetchurl {
+                  url = "https://cef-builds.spotifycdn.com/${cefLinuxArchive.name}";
+                  inherit (cefLinuxArchive) hash;
+                };
+                nativeBuildInputs = with pkgs; [
+                  autoPatchelfHook
+                  bzip2
+                ];
+                buildInputs = interfaceLinuxBuildInputs;
+                sourceRoot = ".";
+                unpackPhase = ''
+                  tar -xjf "$src" --strip-components=1
+                '';
+                installPhase = ''
+                  mkdir -p "$out"
+                  cp CMakeLists.txt CREDITS.html LICENSE.txt "$out/"
+                  cp -R cmake include libcef_dll "$out/"
+                  cp -R Release/. "$out/"
+                  cp -R Resources/. "$out/"
+                  printf '%s\n' '${
+                    builtins.toJSON {
+                      type = "minimal";
+                      inherit (cefLinuxArchive) name sha1;
+                    }
+                  }' > "$out/archive.json"
+                '';
+              };
 
           mkLince =
             { pname }:
@@ -115,11 +183,16 @@
             inherit version;
             src = cleanSrc;
 
+            dontUseNinjaBuild = true;
+            dontUseNinjaCheck = true;
+            dontUseNinjaInstall = true;
+
             cargoLock = {
               lockFile = ./Cargo.lock;
             };
 
             RUSTFLAGS = "-D warnings";
+            CEF_PATH = lib.optionalString pkgs.stdenv.isLinux (toString cefLinuxRuntime);
 
             cargoBuildFlags = [
               "--package"
@@ -135,22 +208,30 @@
               [
                 pkg-config
               ]
-              ++ lib.remove pkg-config tauriLinuxNativeBuildInputs;
+              ++ lib.remove pkg-config interfaceLinuxNativeBuildInputs;
 
             buildInputs =
               (with pkgs; [
                 openssl
                 sqlite
               ])
-              ++ tauriLinuxBuildInputs;
+              ++ interfaceLinuxBuildInputs;
+
+            postInstall = lib.optionalString pkgs.stdenv.isLinux ''
+              mkdir -p "$out/lib/lince/cef"
+              cp -R ${cefLinuxRuntime}/. "$out/lib/lince/cef/"
+            '';
 
             postFixup = lib.optionalString pkgs.stdenv.isLinux ''
               wrapProgram "$out/bin/lince-desktop" \
-                --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath tauriLinuxBuildInputs}"
+                --set CEF_PATH "$out/lib/lince/cef" \
+                --prefix LD_LIBRARY_PATH : "${
+                  lib.makeLibraryPath interfaceLinuxBuildInputs
+                }:$out/lib/lince/cef"
             '';
 
             meta = {
-              description = "Lince desktop webview application";
+              description = "Lince native desktop application";
               mainProgram = "lince-desktop";
               license = lib.licenses.gpl3Plus;
               platforms = supportedSystems;
@@ -297,8 +378,9 @@
             packages =
               (with pkgs; [
                 cargo
-                cargo-tauri
                 clippy
+                cmake
+                ninja
                 openssl
                 pkg-config
                 rust-analyzer
@@ -306,8 +388,9 @@
                 rustfmt
                 sqlite
               ])
-              ++ tauriLinuxNativeBuildInputs
-              ++ tauriLinuxBuildInputs;
+              ++ lib.optionals (!pkgs.stdenv.isLinux) [ pkgs.cargo-tauri ]
+              ++ interfaceLinuxNativeBuildInputs
+              ++ interfaceLinuxBuildInputs;
 
             shellHook = ''
               export RUSTFLAGS="-D warnings"
@@ -316,33 +399,51 @@
             + lib.optionalString pkgs.stdenv.isLinux ''
               export LD_LIBRARY_PATH="${
                 lib.makeLibraryPath (
-                  tauriLinuxBuildInputs
+                  interfaceLinuxBuildInputs
                   ++ (with pkgs; [
                     openssl
                     sqlite
                   ])
                 )
               }:''${LD_LIBRARY_PATH:-}"
-              export XDG_DATA_DIRS="${pkgs.gsettings-desktop-schemas}/share:${pkgs.gtk3}/share:''${XDG_DATA_DIRS:-}"
-              export GIO_EXTRA_MODULES="${pkgs.glib-networking}/lib/gio/modules:''${GIO_EXTRA_MODULES:-}"
-              export GST_PLUGIN_SYSTEM_PATH_1_0="${
-                lib.makeSearchPath "lib/gstreamer-1.0" (
-                  with pkgs;
-                  [
-                    gst_all_1.gst-plugins-base
-                    gst_all_1.gst-plugins-good
-                    gst_all_1.gstreamer
-                  ]
-                )
-              }:''${GST_PLUGIN_SYSTEM_PATH_1_0:-}"
-              export GSETTINGS_SCHEMA_DIR="${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}/glib-2.0/schemas"
             ''
             + ''
               if [[ -t 1 && -z "''${Lince_desktop_shell_started:-}" ]]; then
                 export Lince_desktop_shell_started=1
-                cd crates/desktop
-                exec cargo tauri dev
+                exec ${if pkgs.stdenv.isLinux then "cargo run -p lince-desktop" else "cargo tauri dev --config crates/desktop/tauri.conf.json"}
               fi
+            '';
+          };
+
+          devShells.interface = pkgs.mkShell {
+            packages =
+              (
+                with pkgs;
+                [
+                  cargo
+                  clippy
+                  cmake
+                  ninja
+                  pkg-config
+                  python3
+                  rust-analyzer
+                  rustc
+                  rustfmt
+                ]
+                ++ lib.optionals stdenv.isLinux [
+                  at-spi2-core
+                jq
+                orca
+                ]
+              )
+              ++ interfaceLinuxBuildInputs;
+
+            shellHook = ''
+              export RUSTFLAGS="-D warnings"
+            ''
+            + lib.optionalString pkgs.stdenv.isLinux ''
+              export LD_LIBRARY_PATH="${lib.makeLibraryPath interfaceLinuxBuildInputs}:''${LD_LIBRARY_PATH:-}"
+              export LINCE_AT_SPI_BUS_LAUNCHER="${pkgs.at-spi2-core}/libexec/at-spi-bus-launcher"
             '';
           };
 
@@ -350,8 +451,9 @@
             packages =
               (with pkgs; [
                 cargo
-                cargo-tauri
                 clippy
+                cmake
+                ninja
                 openssl
                 pkg-config
                 rust-analyzer
@@ -359,8 +461,9 @@
                 rustfmt
                 sqlite
               ])
-              ++ tauriLinuxNativeBuildInputs
-              ++ tauriLinuxBuildInputs;
+              ++ lib.optionals (!pkgs.stdenv.isLinux) [ pkgs.cargo-tauri ]
+              ++ interfaceLinuxNativeBuildInputs
+              ++ interfaceLinuxBuildInputs;
 
             shellHook = ''
               export RUSTFLAGS="-D warnings"
@@ -369,32 +472,18 @@
             + lib.optionalString pkgs.stdenv.isLinux ''
               export LD_LIBRARY_PATH="${
                 lib.makeLibraryPath (
-                  tauriLinuxBuildInputs
+                  interfaceLinuxBuildInputs
                   ++ (with pkgs; [
                     openssl
                     sqlite
                   ])
                 )
               }:''${LD_LIBRARY_PATH:-}"
-              export XDG_DATA_DIRS="${pkgs.gsettings-desktop-schemas}/share:${pkgs.gtk3}/share:''${XDG_DATA_DIRS:-}"
-              export GIO_EXTRA_MODULES="${pkgs.glib-networking}/lib/gio/modules:''${GIO_EXTRA_MODULES:-}"
-              export GST_PLUGIN_SYSTEM_PATH_1_0="${
-                lib.makeSearchPath "lib/gstreamer-1.0" (
-                  with pkgs;
-                  [
-                    gst_all_1.gst-plugins-base
-                    gst_all_1.gst-plugins-good
-                    gst_all_1.gstreamer
-                  ]
-                )
-              }:''${GST_PLUGIN_SYSTEM_PATH_1_0:-}"
-              export GSETTINGS_SCHEMA_DIR="${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}/glib-2.0/schemas"
             ''
             + ''
               if [[ -t 1 && -z "''${Lince_desktop_shell_started:-}" ]]; then
                 export Lince_desktop_shell_started=1
-                cd crates/desktop
-                exec cargo tauri dev
+                exec ${if pkgs.stdenv.isLinux then "cargo run -p lince-desktop" else "cargo tauri dev --config crates/desktop/tauri.conf.json"}
               fi
             '';
           };
@@ -410,7 +499,7 @@
         { pkgs, ... }:
         {
           imports = [ ./scripts/deploy/nixos/lince-module.nix ];
-          # Both, lazily: `lince-desktop` needs GTK/webkit and is only
+          # Both, lazily: `lince-desktop` is only
           # evaluated if desktop mode actually asks for it.
           services.lince.serverPackage = nixpkgs.lib.mkDefault self.packages.${pkgs.system}.lince;
           services.lince.desktopPackage = nixpkgs.lib.mkDefault self.packages.${pkgs.system}.lince-desktop;

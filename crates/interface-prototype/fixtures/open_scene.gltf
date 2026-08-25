@@ -1,0 +1,70 @@
+{
+  "asset": {
+    "version": "2.0",
+    "generator": "Lince Interface Laboratory"
+  },
+  "scene": 0,
+  "scenes": [
+    {
+      "name": "High precision desk seam",
+      "nodes": [0]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "Open ridge artifact",
+      "mesh": 0,
+      "translation": [6378140.0, 24.0, -4199988.0]
+    }
+  ],
+  "meshes": [
+    {
+      "name": "Replaceable triangle proxy source",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 0
+          },
+          "indices": 1,
+          "mode": 4
+        }
+      ]
+    }
+  ],
+  "buffers": [
+    {
+      "uri": "data:application/octet-stream;base64,AAAAAAAAAAAAAAAAAACAPwAAAAAAAAAAAAAAAAAAAAAAAIA/AAABAAIAAAA=",
+      "byteLength": 44
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 36,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 36,
+      "byteLength": 6,
+      "target": 34963
+    }
+  ],
+  "accessors": [
+    {
+      "bufferView": 0,
+      "componentType": 5126,
+      "count": 3,
+      "type": "VEC3",
+      "min": [0.0, 0.0, 0.0],
+      "max": [1.0, 0.0, 1.0]
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5123,
+      "count": 3,
+      "type": "SCALAR"
+    }
+  ]
+}

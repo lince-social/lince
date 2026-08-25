@@ -4555,27 +4555,6 @@ no app store review to wait out, and a cut costs one rebuild. It becomes real
 the day someone else's device depends on this one, and not before.
 
 
-# Alexandria
-Was a library inside a temple, well maintained and kept, in a city with a port, many travelers where asked to hand their books and manuscripts and receive a copy instead. While there is the common imagination that it was burned, the details are a little conflicting. What remains from the story is the idea of a great body of knowledge, that worked because it was cared for, and the fact that it can suddenly catch fire and be lost. Great care can be put into maintaining and expanding knowledge. It will most likely provide itself useful if used for the meeting of our Needs.
-
-In Lince, the Alexandria vibe means sharing Records as knowledge of what things are, how they work, their consequences, and how to implement them.
-
-That in turn means possibly caring for the building of interfaces and components to access knowledge, learn it and help use it while also helping with the management of knowledge: writing it and sharing it.
-
-## Recipe: the DNA of doing something
-
-A Recipe is not a new storage mechanism, and not a new concept in Lince's model. It is a name for a *purpose*, not a thing: a bundle of ordinary table rows — Records, Assertions, Concepts, Transfers, Karma rules, referencing each other however the activity they describe requires — that someone can import as one unit because together they happen to be a recipe for doing X. Calling a bundle a Recipe, or DNA, is a convention over data already fully described by this document (§1-§7), the same way "tag" and "link" are interface words over Assertion rather than separate models.
-
-- A Recipe lives in an Organ the way any Records do. An Organ that specializes in keeping Recipes well-formed and current is an Alexandria Organ — curated the way the historical library was, by people who care for it, not by a ruling schema.
-- **Importing a Recipe is copying its rows into your own Organ's data.** There is no package it stays wrapped in and no lineage it keeps once imported — the moment it lands, it is simply more of your data, exactly as if you had entered it yourself. There is nothing to unpack: the referencing rows already form whatever structure the Recipe needs, the same way any other set of Records, Assertions, and Concepts does.
-- **Studying** a Recipe is reading it — its Records and their bodies are the documentation, nothing separate to render.
-- **Doing what it says** is Karma reading the imported data exactly like any other data: a Rule's Condition matches against the newly-arrived Records the same way it matches anything else, and its Consequence acts on them — changes a Record, schedules a Transfer — the same way it acts on data a person entered by hand. Nothing about "this came from a Recipe" is special to Karma; the import is what was special, execution is ordinary.
-- **Changing it** is ordinary editing. Once imported, a Recipe's Records are your data, not a tracked copy of someone else's — there is no fork-with-provenance step to perform, because there is no package boundary left to fork away from. Where a piece of your data originally came from is the same open question any other imported or adopted content already has, not something Recipes need to solve specially.
-
-## Recipes that need more than one Organ
-
-Some Recipes cannot be enacted by one Organ alone. Ride-sharing is the clean example: the DNA of "a ride happened" needs a Record in the driver's Organ and a Record in the rider's Organ, because the Transfer that is the actual ride is a condition/need match between the two — each side brings their own half. Today, making that happen requires a person to manually recreate the right Records in each Organ by hand before the Transfer that connects them can exist.
-
 **This is tree sync, and it is no longer specified here.** Resolved
 2026-08-09: the primitive this section asked for — taking a selection of
 one's data and placing it, by copy or by move, in a chosen Organ — is §11

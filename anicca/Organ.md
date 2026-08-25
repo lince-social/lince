@@ -1,10 +1,3 @@
-# Organ - AI notes
-
-Companion to `Organ.lingua`. Not a Record: `anicca/` ingests `.lingua`
-only, so nothing here reaches Instinct.
-
-# Organ
-
 Every Record so far lived alone on one machine. This is about what happens when
 people show up: your own Cell, other people’s Cells, and the Organs that let
 several Cells hold something in common.

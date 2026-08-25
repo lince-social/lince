@@ -42,25 +42,28 @@ panel does not satisfy the requirement merely because it is fast.
 That feeling is a system property rather than a GPUI brand property. It comes
 from a small visual grammar, semantic tokens, correct native text shaping,
 high-DPI geometry, consistent one-pixel decisions, low input-to-frame latency,
-stable layout, restrained motion and complete keyboard/focus behavior. GPUI is
-the preferred implementation for application chrome, inspectors, editors and
-rich native Sand surfaces because it already targets this class of interface.
-Bevy UI is not the default visual vocabulary. The world renderer consumes the
-same resolved tokens through dedicated Sand primitives, while CEF-backed Sands
-receive their allowed projection as CSS variables.
+stable layout, restrained motion and complete keyboard/focus behavior. P0b
+selected a Lince-owned retained UI for application chrome, inspectors, editors
+and rich native Sand surfaces because the measured GPUI source could not render
+into the host-owned frame. GPUI remains the strongest behavior and quality
+reference. Bevy UI is not the default visual vocabulary. The world renderer
+consumes the same resolved tokens through dedicated Sand primitives, while
+CEF-backed Sands receive their allowed projection as CSS variables.
 
 [Zed's account of GPUI](https://zed.dev/blog/videogame) is useful engineering
 direction: a small set of data-driven GPU primitives and platform text shaping
 can outperform a general arbitrary-vector layer while preserving native text
-quality. Lince may reuse GPUI or its public primitives where they fit and build
-specialised world-Sand passes where spatial transforms, batching or depth
-require them. The target is one coherent Lynx grammar, not two visually
-unrelated toolkits.
+quality. Lince may reuse bounded, licensed GPUI techniques whose ownership is
+separable and build specialised world-Sand passes where spatial transforms,
+batching or depth require them. It does not import GPUI's window, renderer or
+application lifecycle. The target is one coherent Lynx grammar, not two
+visually unrelated toolkits.
 
 The first native Gallery must test 1×, fractional scaling and 2×/4K-class
 density; light and dark themes; moving, scaling and rotating a Sand; text while
 the world moves beneath it; keyboard-only navigation; pointer capture; focus
-transfer between GPUI, the world and CEF; and p95/p99 input-to-present latency.
+transfer between retained native UI, the world and CEF; and p95/p99
+input-to-present latency.
 Text and borders must be rerasterized or redrawn for their effective device
 scale instead of magnifying a low-resolution Sand texture until it blurs.
 
@@ -141,24 +144,23 @@ neither token coverage nor a benchmark alone proves that Sands feel good.
 
 The implementation order is binding and closes behind us:
 
-1. Freeze v1's productivity scope, v2's permanent architectural invariants and
-   the required visual-character acceptance checks. Run the GPU-first Plan A
-   prototype and decide the native compositor, GPUI, selected Bevy features,
-   CEF, Web/Facade, and ownership gates. Implementation size and fork work are
-   accepted costs, not reasons to lower the capability or feel target. If no
-   path can meet correctness, security, performance and visual-quality gates,
-   select the preserved Maud/HTML-first Plan B and remove incomplete native
-   paths without weakening the shared Sand or v2 contracts.
+1. V1's productivity scope, v2's permanent architectural invariants and the
+   native ownership boundary are frozen by Interface. The joined laboratory
+   accepted the Lince-owned Wayland/WGPU host, selected Bevy rendering, retained
+   UI, CEF and Web/Facade projections, and rejected GPUI as a production
+   dependency. Linux has no second desktop runtime or fallback. Implementation
+   size remains an accepted cost, not a reason to lower the capability or feel
+   target.
 2. Inventory every current visual value and freeze one renderer-neutral token
    taxonomy, scope cascade, theme format, component-state matrix, and versioned
-   contract. The same resolved semantic token must reach GPUI/world-renderer
+   contract. The same resolved semantic token must reach retained-UI/world-renderer
    style data, CEF-installed Sand CSS variables, and Plan B browser CSS.
 3. Freeze the runtime schemas used by the Sand definition, composition, port,
    host-message, renderer-adapter, and future Box-op models. Native Rust,
    installed HTML/JavaScript, Websites, GPU leaves, and browser Plan B are
    projections of this one semantic contract.
 4. Freeze the first-party authoring paths selected by the prototype. Plan A
-   uses native Rust/GPUI and world-renderer implementations paired with Sand
+   uses native Rust retained-UI and world-renderer implementations paired with Sand
    definitions. Plan B uses Rust/Maud paired accessible fragments and native ES
    modules. Maud remains an authoring DSL, never a browser runtime or a
    requirement imposed on external Sands.
@@ -274,11 +276,11 @@ for generated implementations of ordinary Sand Behavior.
 
 Plan A is the GPU-first native prototype described in
 [Interface](Interface.md#plan-a-gpu-first-native-prototype): a Lince-owned
-`wgpu` compositor, GPUI native UI, a replaceable 2D/3D world-engine adapter,
-and accelerated CEF surfaces for real external HTML. Plan B is the preserved
-Maud/HTML-first browser hybrid. The plans share the Sand graph and token
-contract; the following HTML authoring/reactivity comparison chooses the Plan B
-implementation and the HTML-backed adapters that remain present under Plan A.
+`wgpu` compositor, retained Lince native UI, a replaceable 2D/3D world-engine
+adapter, and accelerated CEF surfaces for real external HTML. Plan B is the
+preserved Maud/HTML-first browser hybrid. The plans share the Sand graph and
+token contract; the following HTML authoring/reactivity comparison chooses the
+Plan B implementation and the HTML-backed adapters that remain present under Plan A.
 Both are v1 runtime paths. The v2 world horizon is not “Plan B”; the preferred
 Plan A exists partly to exercise its permanent compositor, Sand, coordinate and
 external-HTML seams while shipping only v1's productivity feature scope.
@@ -318,9 +320,11 @@ but cannot make those relationships visible and reusable.
 
 The stack does not get to redefine these contracts:
 
-- `SandDefinition` and the versioned Box document are the persistent truth;
-  neither rendered DOM nor a reactive signal store is persisted as the
-  composition.
+- The semantic `SandDefinition` graph and the versioned Box document are the
+  persistent truth; neither rendered DOM nor a reactive signal store is
+  persisted as the composition. Renderer projection manifests remain separate
+  from semantic identity and Behavior, and selected adapter handles remain
+  disposable runtime state.
 - A child is composable only when it has stable identity, typed ports,
   configuration, state-plane ownership, Behavior, capability requirements,
   isolation, lineage, and content-addressed assets. DOM nesting alone is not a
@@ -363,15 +367,22 @@ Plan A resolves the same token cascade once and projects it into each renderer:
 
 | Implementation | Runtime binding | Presentation boundary |
 | --- | --- | --- |
-| Native application or control Sand | Rust systems and typed GPUI view state | GPUI surface or GPUI texture in the final compositor |
+| Native application or control Sand | Rust systems and typed retained-UI state | Display work contributed to the host frame assembly |
 | Box/world/game/map/GPU Sand | ECS entity and retained renderer handle | Shared native `wgpu` world scene |
 | Installed external HTML Sand | Validated CEF process bridge with complete declared ports | Accelerated CEF texture imported into the compositor |
 | Website Sand | Host-owned wrapper ports only | Isolated CEF request context/profile and browser surface |
 | Browser or Facade adapter | Native ES modules and/or shared Wasm world renderer | Ordinary browser HTML plus canvas/iframe surfaces |
 
+The native host has one accepted rendering device, queue/submission policy,
+frame coordinator and final compositor. A CEF GPU process may produce an
+external surface from its isolated graphics context; the adapter imports or
+copies it with explicit synchronization and no framebuffer CPU readback. This
+does not make a Chromium device or context part of the Sand definition and
+does not weaken the one-host-owner rule.
+
 Primitive and semantic tokens remain canonical serializable values. The native
-adapter converts resolved roles into GPUI styles, packed instance data, text
-styles, shader uniforms, and renderer resources. The installed-HTML adapter
+adapter converts resolved roles into retained node styles, packed instance
+data, text styles, shader uniforms, and renderer resources. The installed-HTML adapter
 exposes allowed values as instance-scoped CSS custom properties. A Website can
 customize only its Lince-owned wrapper unless the remote origin voluntarily
 supports an ordinary Web theming API; Lince never injects styling into an
@@ -379,7 +390,7 @@ arbitrary cross-origin page.
 
 Native and HTML implementations of the same built-in definition share identity,
 ports, state planes, configuration, Behavior meaning, and test fixtures. Pixel
-identity is not required across GPUI, GPU, and browser text rasterizers, but the
+identity is not required across native UI, world GPU, and browser text rasterizers, but the
 information, order, affordances, focus behavior, non-color meaning, and resolved
 token roles are. A renderer-specific value is permitted only below the semantic
 token boundary and cannot become a second user-facing theme vocabulary.
@@ -1128,7 +1139,10 @@ and package any vendored dependency with its license and credits.
       productivity Box, current Protein, composable Sands/Castles, Areas,
       Customization and external HTML; v2 contains the world-model direction.
       Name the permanent v2 seams exercised by v1 and reject feature work that
-      quietly pulls globe, CAD or capture scope into the v1 Box.
+      quietly pulls planetary, general scene-construction or reality-capture
+      product scope into the v1 Box. Named authoring programs and geometry
+      systems are illustrative v2 capability candidates, not dependencies or
+      v1 requirements.
 - [ ] Inventory every non-vendored visual value in the base Web surface,
       LynxUI, and official Sands. Classify each as a palette primitive,
       semantic token, component alias, user-owned content, runtime layout, or
@@ -1149,18 +1163,6 @@ and package any vendored dependency with its license and credits.
       workspace overrides, group/Castle overrides, and Sand-instance
       overrides. An isolated root receives a resolved, inspectable token set;
       it does not grow a second cascade with different semantics.
-- [ ] Freeze the final-board stack after running the Plan A proof in
-      "Runtime plans and Plan B HTML alternatives." Decide compositor
-      ownership, the Lince `winit`/`wgpu` shell, GPUI fork/pin, the selected
-      Bevy features and custom render passes, CEF texture and process model,
-      browser/Facade renderer, packaging, and fallback from measured evidence.
-      Prove one event loop, device/queue topology, final compositor, frame
-      coordinator and input router; no adapter may start a competing owner. If
-      Plan A cannot pass correctness, security, performance, visual-quality or
-      defined-ownership gates even with the accepted implementation and fork
-      work, select the preserved Maud/HTML-first Plan B and remove incomplete
-      native production paths. Cost alone is not failure. Do not maintain two
-      desktop runtimes indefinitely.
 - [ ] Freeze JavaScript ES-module Behavior for Plan B and installed external
       HTML: source files are browser assets, imports and exports are explicit,
       inline scripts and HTML event handlers are removed as their surfaces are
@@ -1173,7 +1175,7 @@ and package any vendored dependency with its license and credits.
       source maps,
       and browser smoke test.
 - [ ] Freeze the logical Sand runtime ABI and its adapter projections: native
-      Rust systems and GPUI view state, retained world-scene handles, a
+      Rust systems and retained UI state, retained world-scene handles, a
       validated size- and rate-bounded CEF bridge for installed HTML,
       wrapper-only Website ports, Plan B scoped DOM/`MessagePort` calls, and an
       optional generated WIT projection for Wasm Behavior. The Rust model and
@@ -1181,20 +1183,27 @@ and package any vendored dependency with its license and credits.
       objects, pointers, credentials, or global Box state through the portable
       boundary. Prove an installed CEF Sand can consume Protein and emit a
       `record-clicked` Box event without giving a Website the same authority.
+- [ ] Freeze the three-layer Sand boundary: renderer-neutral semantic graph,
+      one or more renderer projection manifests, and disposable selected
+      runtime instance. Persisted data may select a projection key and require
+      capabilities but cannot store a Bevy/native-UI/CEF/GPU handle or make one
+      renderer implementation the meaning of the Sand.
 - [ ] Freeze the renderer/physics ownership contract: the chosen bounded GPU
       device/compositor topology, manual Bevy render-resource integration,
-      normalized GPUI input/offscreen output, stable visual-node uids, partial
+      normalized native input, retained UI/AccessKit projection, stable visual-node uids, partial
       instance-buffer writes, cameras and viewports, spatial broad phase,
       state-based dirty/awake sets, group-level coarse bodies, bounded diffs,
       deterministic teardown, device-loss recovery, and accessibility trees.
       Camera culling may omit presentation only and cannot suspend or throttle
       physics, Behaviors, games, media, CEF, Protein, or events. GPU compute and
       shared memory remain absent until measurements justify exact kernels.
+      Compare Avian with a narrow SoA force/sort/group/boundary solver under the
+      same adapter and workloads before selecting the v1 implementation.
 - [ ] Under Plan B, freeze Maud as the standard structural authoring path for
       first-party HTML Sands. Define paired constructors that emit accessible
       markup and the same definition nodes, stable child uids, ports,
       configuration, and Behavior bindings produced by Box. Under Plan A,
-      native GPUI/world constructors pair renderer implementations with those
+      native retained-UI/world constructors pair renderer implementations with those
       same nodes. Maud output remains ordinary HTML; raw and external HTML
       remains supported; no Maud runtime or third-party Rust requirement is
       introduced.
@@ -1326,13 +1335,14 @@ and package any vendored dependency with its license and credits.
       and revision, instance uid, stable child uid, referenced definition,
       typed inputs/outputs/events, exported ports, Behavior, local layout,
       configuration schema, token defaults, instance/group override patches,
-      renderer reference and binding kind, isolation, capability requirements,
-      and content-addressed assets.
+      semantic presentation, isolation, capability requirements, projection
+      manifests and content-addressed assets. Keep selected renderer binding
+      and all adapter handles in runtime state rather than the semantic graph.
 - [ ] Make each reusable LynxUI primitive available through that Sand contract
       without wrapping every trusted child in an iframe. Its native semantic
       element and accessibility behavior remain LynxUI's implementation; its
       identity, ports, state planes, configuration, and composition are Sand.
-- [ ] Under Plan A, implement native Rust/GPUI and world-renderer constructors
+- [ ] Under Plan A, implement native Rust retained-UI and world-renderer constructors
       for those primitives and compound layouts, each paired with its Sand
       node. Under Plan B and for HTML-backed variants, implement the equivalent
       Rust/Maud constructors returning markup paired with that same semantic
@@ -1344,7 +1354,7 @@ and package any vendored dependency with its license and credits.
       connections never persist global ids or CSS selectors.
 - [ ] Implement one Rust-owned composition host as the sole semantic consumer
       of normalized definitions regardless of authoring origin. Under Plan A it
-      selects GPUI, world-renderer, installed CEF, or Website CEF adapters;
+      selects retained UI, world-renderer, installed CEF, or Website CEF adapters;
       under Plan B its browser projection selects trusted DOM, shared `wgpu`,
       or isolated HTML adapters. It resolves exact revisions, applies
       configuration and overrides, wires ports, starts scoped Behavior, and
@@ -1399,7 +1409,7 @@ and package any vendored dependency with its license and credits.
 - [ ] Migrate the board, shared components, and every official Sand from hardcoded visual values to the semantic color, spacing, border, radius, typography, elevation, and motion variables. User-owned expression colors remain data, not system chrome.
 - [ ] Migrate every official Sand to LynxUI for ordinary interface elements and remove duplicated component CSS. Specialized graphs, terminals, games, document rendering, canvases and artwork keep their own implementation; their ordinary surrounding controls use LynxUI when practical.
 - [ ] Under Plan A, migrate first-party-owned interface structure to native
-      GPUI/world implementations paired with Sand definitions. Under Plan B
+      retained-UI/world implementations paired with Sand definitions. Under Plan B
       and for HTML-backed variants, migrate monolithic embedded HTML to small
       Maud functions and paired Sand constructors wherever the structure is
       meant to compose or be maintained by Lince. Keep HTML CSS and JavaScript
@@ -1467,6 +1477,11 @@ and package any vendored dependency with its license and credits.
       input-to-present latency while Sands move and while a world pass animates.
       Passing either the subjective review or latency measurements alone is
       insufficient.
+- [ ] Ship the runtime-health surface on LynxUI primitives. It identifies the
+      graphics backend and software rendering, shows heavy CEF/GPU Sand
+      resource use and admission decisions, explains unavailable and crashed
+      instances, exposes retry/recovery/disable controls, and never presents an
+      untested operating-system/backend path as supported.
 - [ ] Do not open the Box implementation stages until the Gallery and
       composition workbench pass in Dark Lynx, Light Lynx, a partial custom
       theme, reduced motion, keyboard-only use, an isolated root, after a

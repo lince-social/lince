@@ -1,0 +1,77 @@
+[package]
+name = "lince-interface"
+version = "0.7.0"
+edition = "2024"
+rust-version = "1.95"
+license = "MIT"
+repository = "https://github.com/lince-social/lince"
+homepage = "https://lince.social"
+description = "Native Interface runtime and instrumented acceptance laboratory for Lince."
+
+[features]
+bevy-preflight = ["dep:bevy"]
+browser-parity = ["dep:maud"]
+candidate-audit = ["joined-runtime"]
+cef-runtime = ["dep:ash", "dep:cef", "dep:libc"]
+physics-preflight = ["dep:avian2d", "bevy-preflight"]
+joined-runtime = [
+    "browser-parity",
+    "cef-runtime",
+    "semantic-spatial",
+    "dep:accesskit",
+    "dep:accesskit_winit",
+    "dep:bytemuck",
+]
+semantic-spatial = [
+    "physics-preflight",
+    "dep:nucleus",
+    "dep:protein",
+    "dep:store",
+    "dep:tokio",
+]
+
+[dependencies]
+avian2d = { version = "=0.7.0", default-features = false, features = ["2d", "f32", "parallel", "parry-f32"], optional = true }
+accesskit = { version = "=0.24.1", optional = true }
+accesskit_winit = { version = "=0.33.2", default-features = false, features = ["accesskit_unix", "async-io", "rwh_06"], optional = true }
+ash = { version = "=0.38.0", optional = true }
+bevy = { version = "=0.19.1", default-features = false, features = ["async_executor", "bevy_asset", "bevy_log", "bevy_render", "multi_threaded", "std"], optional = true }
+bytemuck = { version = "=1.25.2", features = ["derive"], optional = true }
+cef = { version = "=151.8.0", default-features = false, features = ["resources", "sandbox"], optional = true }
+glyphon = "=0.11.0"
+libc = { version = "=0.2.189", optional = true }
+maud = { version = "=0.27.0", optional = true }
+pollster = "=0.4.0"
+nucleus = { path = "../nucleus", optional = true }
+protein = { path = "../protein", optional = true }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.149"
+sha2 = "0.10.9"
+store = { path = "../store", optional = true }
+tokio = { version = "=1.49.0", features = ["macros", "rt-multi-thread"], optional = true }
+url = "=2.5.8"
+wgpu = "=29.0.4"
+winit = { version = "=0.30.12", default-features = false, features = ["rwh_06", "wayland", "wayland-csd-adwaita", "wayland-dlopen"] }
+
+[[bin]]
+name = "lince-interface"
+path = "src/main.rs"
+
+[[bin]]
+name = "lince-interface-dependency-audit"
+path = "src/dependency_audit.rs"
+
+[[bin]]
+name = "lince-interface-cef-diagnostic"
+path = "src/cef_diagnostic_main.rs"
+required-features = ["cef-runtime"]
+
+[[bin]]
+name = "lince-interface-spatial-diagnostic"
+path = "src/spatial_diagnostic.rs"
+required-features = ["semantic-spatial"]
+
+[[bin]]
+name = "lince-interface-parity-diagnostic"
+path = "src/parity_diagnostic.rs"
+required-features = ["browser-parity"]

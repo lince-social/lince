@@ -9,7 +9,9 @@ const DESKTOP_LISTEN_ADDR: &str = "127.0.0.1:6174";
 #[derive(Clone)]
 pub struct DesktopRuntime {
     pub url: String,
+    #[cfg(not(target_os = "linux"))]
     pub start_on_login: bool,
+    #[cfg(not(target_os = "linux"))]
     pub start_silent: bool,
 }
 
@@ -20,10 +22,12 @@ pub async fn start_desktop_server() -> Result<DesktopRuntime, Error> {
     }
     let bootstrap = bootstrap_config::load_or_init_bootstrap_config()?;
 
+    #[cfg(not(target_os = "linux"))]
     let start_on_login = staged_setup
         .as_ref()
         .and_then(|setup| setup.start_on_login)
         .unwrap_or(false);
+    #[cfg(not(target_os = "linux"))]
     let start_silent = staged_setup
         .as_ref()
         .and_then(|setup| setup.start_silent)
@@ -51,7 +55,9 @@ pub async fn start_desktop_server() -> Result<DesktopRuntime, Error> {
     let addr = addr_rx.await.map_err(Error::other)?;
     Ok(DesktopRuntime {
         url: format!("http://{addr}"),
+        #[cfg(not(target_os = "linux"))]
         start_on_login,
+        #[cfg(not(target_os = "linux"))]
         start_silent,
     })
 }

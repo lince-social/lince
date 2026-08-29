@@ -112,7 +112,10 @@ async fn organ(verbs: &[&str]) -> Result<(), Error> {
                 );
                 return Ok(());
             }
-            println!("{:<40}  {:<10}  {:<20}  NAME", "ORGAN UID", "TRUST", "LOGIN AS");
+            println!(
+                "{:<40}  {:<10}  {:<20}  NAME",
+                "ORGAN UID", "TRUST", "LOGIN AS"
+            );
             for contact in contacts {
                 // The login is the interesting column: `known` alone opens
                 // sync, and live mode additionally needs this to be set.
@@ -261,7 +264,10 @@ async fn discovery(verbs: &[&str]) -> Result<(), Error> {
 
     match verbs {
         [] | ["show"] => {
-            println!("local           {}   mDNS on this network", onoff(read("local", true)));
+            println!(
+                "local           {}   mDNS on this network",
+                onoff(read("local", true))
+            );
             println!(
                 "internet        {}   reachable off-LAN",
                 onoff(read("internet", true))

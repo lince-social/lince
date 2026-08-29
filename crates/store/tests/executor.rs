@@ -12,7 +12,9 @@
 use store::Store;
 
 async fn record(store: &Store, slug: &str) -> String {
-    let organ = store::organs::ensure_local(&store.pool, "me").await.unwrap();
+    let organ = store::organs::ensure_local(&store.pool, "me")
+        .await
+        .unwrap();
     let uid = nucleus::new_uid("r");
     store::sqlx::query(
         "INSERT INTO record (uid, slug, kind, head, body, quantity_mantissa, quantity_scale,
@@ -45,7 +47,9 @@ async fn an_undesignated_record_runs_here() {
 #[tokio::test]
 async fn a_record_designated_to_this_cell_runs_here() {
     let store = Store::open_memory().await.unwrap();
-    let organ = store::organs::ensure_local(&store.pool, "me").await.unwrap();
+    let organ = store::organs::ensure_local(&store.pool, "me")
+        .await
+        .unwrap();
     let cell = store::cells::ensure_local(&store.pool, &organ.uid, "laptop")
         .await
         .unwrap();
@@ -61,7 +65,9 @@ async fn a_record_designated_to_this_cell_runs_here() {
 #[tokio::test]
 async fn a_record_designated_to_another_cell_does_not_run_here() {
     let store = Store::open_memory().await.unwrap();
-    let organ = store::organs::ensure_local(&store.pool, "me").await.unwrap();
+    let organ = store::organs::ensure_local(&store.pool, "me")
+        .await
+        .unwrap();
     store::cells::ensure_local(&store.pool, &organ.uid, "laptop")
         .await
         .unwrap();
@@ -78,7 +84,9 @@ async fn a_record_designated_to_another_cell_does_not_run_here() {
 #[tokio::test]
 async fn clearing_a_designation_returns_the_work_to_every_cell() {
     let store = Store::open_memory().await.unwrap();
-    let organ = store::organs::ensure_local(&store.pool, "me").await.unwrap();
+    let organ = store::organs::ensure_local(&store.pool, "me")
+        .await
+        .unwrap();
     store::cells::ensure_local(&store.pool, &organ.uid, "laptop")
         .await
         .unwrap();
@@ -92,7 +100,9 @@ async fn clearing_a_designation_returns_the_work_to_every_cell() {
         .unwrap();
 
     assert_eq!(
-        store::executor::designated(&store.pool, &uid).await.unwrap(),
+        store::executor::designated(&store.pool, &uid)
+            .await
+            .unwrap(),
         None
     );
     assert!(store::executor::runs_here(&store.pool, &uid).await.unwrap());

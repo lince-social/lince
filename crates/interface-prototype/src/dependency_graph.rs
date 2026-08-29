@@ -1,4 +1,4 @@
-use crate::{git_revision, unix_millis};
+use crate::{git_dirty, git_revision, source_fingerprint, unix_millis};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -41,6 +41,8 @@ pub struct DependencyAudit {
     pub status: String,
     pub created_unix_millis: u128,
     pub git_revision: String,
+    pub git_dirty: bool,
+    pub source_fingerprint_sha256: String,
     pub target: String,
     pub profiles: Vec<DependencyProfile>,
     pub source_surfaces: Vec<SourceSurface>,
@@ -157,11 +159,13 @@ impl DependencyAudit {
         };
 
         Ok(Self {
-            schema_version: 1,
+            schema_version: 2,
             gate: "dependency and ownership preflight".into(),
             status: status.into(),
             created_unix_millis: unix_millis(),
             git_revision: git_revision(),
+            git_dirty: git_dirty(),
+            source_fingerprint_sha256: source_fingerprint(),
             target,
             profiles,
             source_surfaces,

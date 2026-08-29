@@ -682,7 +682,9 @@ async fn a_stranger_with_a_password_gets_in_and_a_wrong_one_never_does() {
         assert!(
             matches!(
                 hear(&mut recv).await,
-                ServerMessage::LiveHello { login_required: true }
+                ServerMessage::LiveHello {
+                    login_required: true
+                }
             ),
             "a peer with no granted binding must be asked to log in"
         );

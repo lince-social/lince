@@ -128,7 +128,9 @@ async fn a_person_can_read_what_recently_happened_to_a_record() {
         "an unraced local edit displaced nobody, so it is not flagged as a loss"
     );
     assert!(
-        body.get("retention_days").and_then(|d| d.as_i64()).is_some(),
+        body.get("retention_days")
+            .and_then(|d| d.as_i64())
+            .is_some(),
         "the surface is told how long this window is, so it never reads as a \
          full history"
     );

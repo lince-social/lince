@@ -143,15 +143,9 @@ fn print_help() {
     println!("      --quiet          Suppress normal status output");
     println!();
     println!("Server mode:");
-    println!(
-        "      --server         Serve only the API: no board UI, no sands, no static assets."
-    );
-    println!(
-        "                       Forces login on — without it, hiding the board would"
-    );
-    println!(
-        "                       still leave the socket open to anyone on the network."
-    );
+    println!("      --server         Serve only the API: no board UI, no sands, no static assets.");
+    println!("                       Forces login on — without it, hiding the board would");
+    println!("                       still leave the socket open to anyone on the network.");
     println!("      --initial-admin-password-file <path>  Create the first admin from a file");
     println!("      --initial-admin-password <password>   Same, but visible in `ps`");
     println!();

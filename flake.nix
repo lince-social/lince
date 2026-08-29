@@ -220,6 +220,9 @@
             postInstall = lib.optionalString pkgs.stdenv.isLinux ''
               mkdir -p "$out/lib/lince/cef"
               cp -R ${cefLinuxRuntime}/. "$out/lib/lince/cef/"
+              rm -f "$out/bin/chrome-sandbox"
+              rm -f "$out/lib/libEGL.so" "$out/lib/libGLESv2.so" "$out/lib/libcef.so"
+              rm -f "$out/lib/libvk_swiftshader.so" "$out/lib/libvulkan.so.1"
             '';
 
             postFixup = lib.optionalString pkgs.stdenv.isLinux ''

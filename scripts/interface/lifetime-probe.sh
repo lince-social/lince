@@ -50,6 +50,8 @@ startup_values=
 process_values=
 all_cycles_passed=true
 all_processes_closed=true
+fingerprints_match=true
+source_fingerprint=
 
 for cycle in $(seq 1 10); do
   cycle_report="$artifact_dir/cycles/$cycle.json"
@@ -73,6 +75,12 @@ for cycle in $(seq 1 10); do
   if ! jq -e '.status == "passed" and ([.surfaces[].closed] | all)' "$cycle_report" >/dev/null; then
     all_cycles_passed=false
   fi
+  cycle_fingerprint=$(jq -r '.source_fingerprint_sha256' "$cycle_report")
+  if [ -z "$source_fingerprint" ]; then
+    source_fingerprint=$cycle_fingerprint
+  elif [ "$cycle_fingerprint" != "$source_fingerprint" ]; then
+    fingerprints_match=false
+  fi
   if [ -n "$(matching_pids)" ]; then
     all_processes_closed=false
   fi
@@ -95,6 +103,8 @@ jq -n \
   --argjson processes "[$process_values]" \
   --argjson cycles_passed "$all_cycles_passed" \
   --argjson processes_closed "$all_processes_closed" \
+  --argjson fingerprints_match "$fingerprints_match" \
+  --arg source_fingerprint "$source_fingerprint" \
   '
     def monotonic: . as $values | all(range(1; length); $values[.] >= $values[. - 1]);
     def growth: if .[0] > 0 then (.[-1] - .[0]) / .[0] else 0 end;
@@ -104,9 +114,10 @@ jq -n \
     ($startup[1:] | all(. <= 2000.0)) as $warm_startup_passed |
     ($startup[0] <= 4000.0) as $cold_startup_passed |
     {
-      schema_version: 1,
+      schema_version: 2,
       gate: "joined runtime lifetime",
-      status: if $cycles_passed and $processes_closed and $rss_passed and $gpu_passed and $warm_startup_passed and $cold_startup_passed then "passed" else "failed" end,
+      status: if $cycles_passed and $processes_closed and $fingerprints_match and $rss_passed and $gpu_passed and $warm_startup_passed and $cold_startup_passed then "passed" else "failed" end,
+      source_fingerprint_sha256: $source_fingerprint,
       cycles: 10,
       peak_family_rss_kib: $rss,
       peak_family_drm_memory_kib: $gpu,
@@ -115,6 +126,7 @@ jq -n \
       assertions: [
         {name: "all joined cycles passed", passed: $cycles_passed},
         {name: "all CEF process families closed after every cycle", passed: $processes_closed},
+        {name: "all cycles use one source fingerprint", passed: $fingerprints_match},
         {name: "RSS has no unexplained monotonic growth above five percent after warm cycle", passed: $rss_passed},
         {name: "available DRM memory counters have no monotonic growth above five percent", passed: $gpu_passed},
         {name: "warm cycles reach an interactive native window within two seconds", passed: $warm_startup_passed},

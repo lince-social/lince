@@ -618,8 +618,13 @@ async fn a_mailed_batch_must_be_signed_by_a_cell_the_claimed_organ_owns() {
     };
 
     // The honest case: signed by a Cell the claimed Organ actually owns.
-    let honest = e.import_mailed_batch(&opened("cell-friend", "organ-friend")).await;
-    assert!(honest.is_ok(), "mail from a contact whose roster we hold must apply: {honest:?}");
+    let honest = e
+        .import_mailed_batch(&opened("cell-friend", "organ-friend"))
+        .await;
+    assert!(
+        honest.is_ok(),
+        "mail from a contact whose roster we hold must apply: {honest:?}"
+    );
 
     // Signed by someone else's Cell while claiming to be your friend. This is
     // the whole reason the bundle is signed at all.

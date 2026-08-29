@@ -514,7 +514,10 @@ async fn a_recipients_quota_bounds_what_a_stranger_can_leave() {
 
     assert!(carrier.accept_bundle(&body, "node-sender").await.is_ok());
     assert_eq!(
-        carrier.accept_bundle(&body, "node-sender").await.unwrap_err(),
+        carrier
+            .accept_bundle(&body, "node-sender")
+            .await
+            .unwrap_err(),
         engine::mailbox::Refusal::QuotaFull
     );
 
@@ -522,7 +525,10 @@ async fn a_recipients_quota_bounds_what_a_stranger_can_leave() {
     // exhausted by a single caller in a single deposit.
     let huge = "x".repeat(engine::mailbox::MAX_BUNDLE_BYTES + 1);
     assert_eq!(
-        carrier.accept_bundle(&huge, "node-sender").await.unwrap_err(),
+        carrier
+            .accept_bundle(&huge, "node-sender")
+            .await
+            .unwrap_err(),
         engine::mailbox::Refusal::TooLarge
     );
 }
@@ -569,7 +575,10 @@ async fn expired_mail_is_deleted_but_the_sender_can_still_be_told() {
     let left = store::mailbox::waiting(&carrier.store.pool, &recipient_organ)
         .await
         .expect("waiting");
-    assert_eq!(left.bundles, 0, "expired mail is deleted, not merely hidden");
+    assert_eq!(
+        left.bundles, 0,
+        "expired mail is deleted, not merely hidden"
+    );
 
     // The notice survives, because the retention rule promises the SENDER is
     // told. A message that vanishes with nobody knowing is the one failure
@@ -898,8 +907,7 @@ async fn mail_reaches_a_recipient_through_the_pickup_point_it_published() {
 #[tokio::test]
 async fn a_pickup_point_the_root_did_not_sign_is_refused() {
     let dir = scratch("only");
-    let (them, their_organ, their_root) =
-        mailable("http://them.test", &dir, "node-them").await;
+    let (them, their_organ, their_root) = mailable("http://them.test", &dir, "node-them").await;
     let genuine = them
         .set_pickup_points(
             &their_root,
@@ -1057,8 +1065,7 @@ async fn an_organ_with_no_published_box_cannot_be_mailed() {
 #[tokio::test]
 async fn a_republished_roster_keeps_the_pickup_points() {
     let dir = scratch("only");
-    let (them, their_organ, their_root) =
-        mailable("http://them.test", &dir, "node-them").await;
+    let (them, their_organ, their_root) = mailable("http://them.test", &dir, "node-them").await;
     them.set_pickup_points(
         &their_root,
         vec![engine::roster::PickupPoint {
@@ -1114,7 +1121,9 @@ async fn publishing_a_pickup_point_is_refused_by_a_box_that_does_not_carry_for_u
         .roster
         .cells;
     cells[0].node_id = our_wire.node_id().to_string();
-    us.publish_roster(&our_root, cells).await.expect("republish");
+    us.publish_roster(&our_root, cells)
+        .await
+        .expect("republish");
 
     // The candidate list is honest about the one thing it cannot know: whether
     // a contact carries for us lives on THEIR disk, so the panel offers every
@@ -1279,8 +1288,9 @@ async fn mail_is_left_only_after_the_retry_window_has_passed() {
     );
 
     // Now the same silence, older than the window. Nothing else changes.
-    let long_ago = (chrono::Utc::now() - engine::wire::Wire::MAIL_AFTER - chrono::Duration::minutes(1))
-        .to_rfc3339();
+    let long_ago =
+        (chrono::Utc::now() - engine::wire::Wire::MAIL_AFTER - chrono::Duration::minutes(1))
+            .to_rfc3339();
     store::organs::backdate_unreachable(&sender.store.pool, &recipient_organ, &long_ago)
         .await
         .expect("backdate");
@@ -1390,8 +1400,9 @@ async fn leaving_mail_does_not_move_the_retention_floor() {
         .expect("row")
         .peer_acked_seq;
 
-    let long_ago = (chrono::Utc::now() - engine::wire::Wire::MAIL_AFTER - chrono::Duration::minutes(1))
-        .to_rfc3339();
+    let long_ago =
+        (chrono::Utc::now() - engine::wire::Wire::MAIL_AFTER - chrono::Duration::minutes(1))
+            .to_rfc3339();
     store::organs::mark_unreachable(&sender.store.pool, &recipient_organ)
         .await
         .expect("mark");
@@ -1559,7 +1570,10 @@ async fn a_contact_can_ask_to_be_carried_and_a_stranger_can_spend_an_invite() {
     // The stranger's ask is refused, and nothing is written. This is the bound
     // on the table: not a rate limit, a relationship.
     let refused = stranger_wire.ask_to_be_carried(&carrier_node).await;
-    assert!(refused.is_err(), "a carrier cannot be asked by someone it cannot identify");
+    assert!(
+        refused.is_err(),
+        "a carrier cannot be asked by someone it cannot identify"
+    );
     assert!(
         store::mailbox::requests(&carrier.store.pool)
             .await
@@ -1589,7 +1603,10 @@ async fn a_contact_can_ask_to_be_carried_and_a_stranger_can_spend_an_invite() {
     );
 
     // Asking twice is one request, not two.
-    asker_wire.ask_to_be_carried(&carrier_node).await.expect("asks again");
+    asker_wire
+        .ask_to_be_carried(&carrier_node)
+        .await
+        .expect("asks again");
     assert_eq!(
         store::mailbox::requests(&carrier.store.pool)
             .await
@@ -1644,7 +1661,9 @@ async fn a_contact_can_ask_to_be_carried_and_a_stranger_can_spend_an_invite() {
 
     // Single use. The second spend is refused, and cannot be told apart from
     // an unknown or expired code.
-    let again = stranger_wire.redeem_mailbox_invite(&carrier_node, &token).await;
+    let again = stranger_wire
+        .redeem_mailbox_invite(&carrier_node, &token)
+        .await;
     assert!(again.is_err(), "an invite works exactly once");
 
     let _ = (carrier_addr, carrier_organ);
@@ -1697,13 +1716,11 @@ async fn an_expiry_notice_reaches_the_sender_that_left_it_and_nobody_else() {
         .await
         .expect("publish pickup");
 
-    let (one, one_organ, _one_root) =
-        mailable("http://one.test", &one_dir, "node-one").await;
+    let (one, one_organ, _one_root) = mailable("http://one.test", &one_dir, "node-one").await;
     let one_wire = Wire::bind(one.clone(), secret(92), Reach::Local)
         .await
         .expect("one binds");
-    let (two, two_organ, _two_root) =
-        mailable("http://two.test", &two_dir, "node-two").await;
+    let (two, two_organ, _two_root) = mailable("http://two.test", &two_dir, "node-two").await;
     let two_wire = Wire::bind(two.clone(), secret(93), Reach::Local)
         .await
         .expect("two binds");
@@ -1783,16 +1800,23 @@ async fn an_expiry_notice_reaches_the_sender_that_left_it_and_nobody_else() {
         .await
         .expect("expired");
     assert_eq!(told.len(), 1);
-    assert_eq!(told[0].to_organ, recipient_organ, "and it names WHO it was for");
+    assert_eq!(
+        told[0].to_organ, recipient_organ,
+        "and it names WHO it was for"
+    );
     assert!(told[0].expired_at.is_some());
 
     // Acknowledged means forgotten: the carrier's ledger of who wrote to whom
     // is the most sensitive thing it holds, so a delivered notice does not
     // become a permanent row.
-    let left_at_carrier = store::mailbox::expiries_for_node(&carrier.store.pool, &one_wire.node_id().to_string())
-        .await
-        .expect("notices");
-    assert!(left_at_carrier.is_empty(), "an acknowledged notice is dropped");
+    let left_at_carrier =
+        store::mailbox::expiries_for_node(&carrier.store.pool, &one_wire.node_id().to_string())
+            .await
+            .expect("notices");
+    assert!(
+        left_at_carrier.is_empty(),
+        "an acknowledged notice is dropped"
+    );
 
     // Sender two has heard nothing and lost nothing. Their notice is still
     // owed, which is the other half of the scoping.
@@ -1813,10 +1837,13 @@ async fn an_expiry_notice_reaches_the_sender_that_left_it_and_nobody_else() {
     // not trusted to name a failure; it is trusted only to report one we
     // already recorded making.
     assert!(
-        one.note_expired_mail(&carrier_node, &[("mb-never-happened".into(), "2000-01-01T00:00:00Z".into())])
-            .await
-            .expect("reports")
-            .is_empty(),
+        one.note_expired_mail(
+            &carrier_node,
+            &[("mb-never-happened".into(), "2000-01-01T00:00:00Z".into())]
+        )
+        .await
+        .expect("reports")
+        .is_empty(),
         "an unrecognised uid alarms nobody"
     );
 }

@@ -1200,7 +1200,12 @@ async fn an_enrolled_cell_gets_its_rotated_mail_key_published() {
         .expect("signed")
         .roster
         .version;
-    assert!(our_wire.publish_own_sealing_key().await.expect("asks again"));
+    assert!(
+        our_wire
+            .publish_own_sealing_key()
+            .await
+            .expect("asks again")
+    );
     assert_eq!(
         them.roster_of(&their_organ)
             .await
@@ -1249,7 +1254,6 @@ async fn an_enrolled_cell_gets_its_rotated_mail_key_published() {
 
     serving.abort();
 }
-
 
 /// A Cell with NO write capability — a front door, a relay — can still publish
 /// its own mail key.

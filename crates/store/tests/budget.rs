@@ -48,7 +48,10 @@ async fn quarantine_evicts_inside_its_share_and_keeps_the_newest() {
     }
 
     let used = budget::quarantine_bytes(&store.pool).await.expect("bytes");
-    assert!(used <= 100, "quarantine held {used} bytes, over its 100 share");
+    assert!(
+        used <= 100,
+        "quarantine held {used} bytes, over its 100 share"
+    );
 
     // Three 30-byte rows fit in 100; the rest are gone. And what survived is
     // the newest, because the evidence a peer is misbehaving NOW is the
@@ -131,6 +134,9 @@ async fn the_report_says_which_areas_have_a_consumer_yet() {
 
     // The unbudgeted remainder is reported rather than hidden, so the total
     // matches what the owner's file manager says.
-    assert!(usage.unbudgeted_bytes > 0, "the database is never zero bytes");
+    assert!(
+        usage.unbudgeted_bytes > 0,
+        "the database is never zero bytes"
+    );
     assert!(usage.on_disk_bytes() > usage.areas.iter().map(|a| a.used_bytes).sum::<i64>());
 }

@@ -34,7 +34,10 @@ pub fn new_uid(prefix: &str) -> String {
 /// it would simply be a Record whose identifier does not sort or compare like
 /// any other, found much later.
 pub fn valid_uid(uid: &str, prefix: &str) -> bool {
-    let Some(body) = uid.strip_prefix(prefix).and_then(|rest| rest.strip_prefix('_')) else {
+    let Some(body) = uid
+        .strip_prefix(prefix)
+        .and_then(|rest| rest.strip_prefix('_'))
+    else {
         return false;
     };
     body.len() == 26 && body.bytes().all(|byte| ALPHABET.contains(&byte))

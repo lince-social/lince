@@ -1,4 +1,21 @@
-Interoperability (@interoperability: 0, is #chapter, #instinct, #part-of @interface, #done) { r_7NJYRJYKVFGVG3DT27WRQFRCWF
+# Interface interoperability
+
+Purpose: Define the interface-facing boundary among Facades, Playground, Blood, portable canvas representations, and public experiments.
+
+Owner source: no dedicated Interoperability Record currently exists;
+[Interface](../Interface.lingua) governs shared interface decisions.
+
+Preserved source metadata: `@interoperability`, order 0, `#chapter`,
+`#instinct`, `#part-of @interface`, `#done`, uid
+`r_7NJYRJYKVFGVG3DT27WRQFRCWF`.
+
+Status: Mixed current and future constraints; consult by feature rather than as a default v1 read.
+
+Read when: publishing, importing/exporting, or connecting the interface to external systems.
+
+[Corpus map](README.md) · [Current context](current.md)
+
+---
 
 ## Interoperability
 
@@ -15,7 +32,7 @@ tokens. It remains the safest portable artifact and can be opened without a
 running Lince host.
 
 An Organ Facade is the public T2 surface described by
-[the Organ Profile](Ontology.md#the-organ-profile-in-three-tiers). It may
+[the Organ Profile](../Ontology.lingua#the-organ-profile-in-three-tiers). It may
 use one of two visibly distinct delivery policies:
 
 - **static** freezes public data into the archive and has a strict no-network,
@@ -51,7 +68,7 @@ mode.
 
 ### Blood and portable canvas representations
 
-[Blood](Ontology.md#9-federation-and-blood-talking-to-other-systems) remains
+[Blood](../Ontology.lingua#9-federation-and-blood-talking-to-other-systems) remains
 the integration path for foreign services and data models. A Blood adapter
 maps provenance and semantics explicitly; an embedded Web page does not become
 a Blood integration merely by loading in a Website Sand.
@@ -87,4 +104,3 @@ not part of the current Interface completion contract.
   application identity.
 - [ ] Add export and preview surfaces that state whether a Facade is static or
   dynamic and prove that neither can escape its bounded chrome.
-} r_7NJYRJYKVFGVG3DT27WRQFRCWF

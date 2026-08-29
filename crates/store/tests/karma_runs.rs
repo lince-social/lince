@@ -751,7 +751,8 @@ async fn a_program_nobody_configured_runs_and_the_table_stays_empty() {
     let now = instant();
     let frequency = active_frequency(&store, now).await;
     let activation_hash = frequency.active_activation_hash.clone().unwrap();
-    let program = active_program(&store, "run.default", &frequency.record_uid, "default", now).await;
+    let program =
+        active_program(&store, "run.default", &frequency.record_uid, "default", now).await;
 
     assert_eq!(count(&store, "karma_program_execution").await, 0);
     ingest_tick(&store, &activation_hash, 1, 0, '7', now).await;
@@ -844,7 +845,10 @@ async fn the_execute_flag_never_becomes_a_synced_op() {
     )
     .await
     .unwrap();
-    assert_eq!(sqlx_count(&store, "SELECT COUNT(*) FROM sync_op").await, before);
+    assert_eq!(
+        sqlx_count(&store, "SELECT COUNT(*) FROM sync_op").await,
+        before
+    );
     assert_eq!(
         sqlx_count(
             &store,

@@ -108,7 +108,8 @@ const ENQUEUE_GRANT: &str =
 /// Queue one op for every sync-out contact (except an optional excluded one),
 /// replacing any older queued op on the same (contact, tbl, uid, field) —
 /// the bounded outbox (Ontology §11 "Reactive deltas").
-const ENQUEUE: &str = "INSERT INTO sync_outbox (contact_organ, tbl, uid, field, kind, seq, queued_at)
+const ENQUEUE: &str =
+    "INSERT INTO sync_outbox (contact_organ, tbl, uid, field, kind, seq, queued_at)
     SELECT record_uid, ?, ?, ?, ?, ?, ?
       FROM organ_contact
      WHERE sync_out = 1 AND trust != 'blocked' AND record_uid != ?
@@ -1129,12 +1130,13 @@ pub async fn prune(pool: &SqlitePool, dry_run: bool) -> Result<PruneReport, Stor
                                    AND s.replica_root IS sync_op.replica_root
                                    AND s.seq > sync_op.seq)))";
 
-    let removable: i64 =
-        sqlx::query(&format!("SELECT COUNT(*) AS n FROM sync_op WHERE {PRUNABLE}"))
-            .bind(floor)
-            .fetch_one(pool)
-            .await?
-            .get("n");
+    let removable: i64 = sqlx::query(&format!(
+        "SELECT COUNT(*) AS n FROM sync_op WHERE {PRUNABLE}"
+    ))
+    .bind(floor)
+    .fetch_one(pool)
+    .await?
+    .get("n");
     let at_or_below: i64 = sqlx::query("SELECT COUNT(*) AS n FROM sync_op WHERE seq <= ?")
         .bind(floor)
         .fetch_one(pool)

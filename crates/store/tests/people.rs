@@ -9,7 +9,9 @@
 use store::Store;
 
 async fn person(store: &Store, slug: &str) -> String {
-    let organ = store::organs::ensure_local(&store.pool, "me").await.unwrap();
+    let organ = store::organs::ensure_local(&store.pool, "me")
+        .await
+        .unwrap();
     let uid = nucleus::new_uid("r");
     store::sqlx::query(
         "INSERT INTO record (uid, slug, kind, head, body, quantity_mantissa, quantity_scale,
@@ -154,5 +156,7 @@ async fn an_unreadable_standing_does_not_lock_anyone_out() {
 fn the_standing_field_is_the_one_the_sync_filter_looks_for() {
     assert!(store::people::is_standing_field("lince.person.standing"));
     assert!(!store::people::is_standing_field("lince.person"));
-    assert!(!store::people::is_standing_field("lince.schedule.executor.cell"));
+    assert!(!store::people::is_standing_field(
+        "lince.schedule.executor.cell"
+    ));
 }

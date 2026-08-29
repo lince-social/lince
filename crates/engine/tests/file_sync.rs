@@ -564,7 +564,10 @@ async fn a_body_edit_below_the_metadata_still_flows_back() {
 
     assert_eq!(report.updated_from_disk, vec![uid.clone()]);
     assert!(report.conflicts.is_empty(), "a body edit is not a conflict");
-    let row = store::records::get(&e.store.pool, &uid).await.unwrap().unwrap();
+    let row = store::records::get(&e.store.pool, &uid)
+        .await
+        .unwrap()
+        .unwrap();
     assert_eq!(row.body, "after");
 }
 
@@ -643,12 +646,20 @@ async fn editing_the_block_retracts_and_asserts_for_real() {
     e.file_sync_tick(&dir, &organ, &mut state).await.unwrap();
 
     let path = dir.join("Note.lingua");
-    let edited = std::fs::read_to_string(&path).unwrap().replace("@task", "@urgent");
+    let edited = std::fs::read_to_string(&path)
+        .unwrap()
+        .replace("@task", "@urgent");
     std::fs::write(&path, &edited).unwrap();
     let report = e.file_sync_tick(&dir, &organ, &mut state).await.unwrap();
 
-    assert!(report.conflicts.is_empty(), "applied, not reported: {report:?}");
-    let urgent = store::concepts::resolve(&e.store.pool, "urgent").await.unwrap().unwrap();
+    assert!(
+        report.conflicts.is_empty(),
+        "applied, not reported: {report:?}"
+    );
+    let urgent = store::concepts::resolve(&e.store.pool, "urgent")
+        .await
+        .unwrap()
+        .unwrap();
     let concepts = store::assertions::concepts_for_record(&e.store.pool, &uid)
         .await
         .unwrap();
@@ -683,7 +694,9 @@ async fn changing_a_number_in_the_block_actually_changes_it() {
     e.file_sync_tick(&dir, &organ, &mut state).await.unwrap();
 
     let path = dir.join("Note.lingua");
-    let edited = std::fs::read_to_string(&path).unwrap().replace("@chapter 1", "@chapter 3");
+    let edited = std::fs::read_to_string(&path)
+        .unwrap()
+        .replace("@chapter 1", "@chapter 3");
     std::fs::write(&path, &edited).unwrap();
     let report = e.file_sync_tick(&dir, &organ, &mut state).await.unwrap();
     assert!(report.conflicts.is_empty(), "applied: {report:?}");
@@ -724,7 +737,10 @@ async fn an_agent_assigns_itself_a_task_by_editing_the_file() {
     let concepts = store::assertions::concepts_for_record(&e.store.pool, &task)
         .await
         .unwrap();
-    let wip = store::concepts::resolve(&e.store.pool, "wip").await.unwrap().unwrap();
+    let wip = store::concepts::resolve(&e.store.pool, "wip")
+        .await
+        .unwrap()
+        .unwrap();
     assert!(concepts.contains(&wip), "concepts: {concepts:?}");
     let assertions = store::assertions::for_subjects(&e.store.pool, &[task.clone()])
         .await
@@ -732,7 +748,8 @@ async fn an_agent_assigns_itself_a_task_by_editing_the_file() {
     assert!(
         assertions
             .iter()
-            .any(|a| a.predicate == "assigned-to" && a.object_uid.as_deref() == Some(claude.as_str())),
+            .any(|a| a.predicate == "assigned-to"
+                && a.object_uid.as_deref() == Some(claude.as_str())),
         "the link landed on the right Record: {assertions:?}"
     );
 }
@@ -764,7 +781,10 @@ async fn a_new_hand_written_file_gets_its_concepts_and_links_applied() {
 
     assert_eq!(report.created.len(), 1, "created: {report:?}");
     let uid = report.created[0].clone();
-    let row = store::records::get(&e.store.pool, &uid).await.unwrap().unwrap();
+    let row = store::records::get(&e.store.pool, &uid)
+        .await
+        .unwrap()
+        .unwrap();
     assert_eq!(row.body, "Typed by hand.\n");
     assert!(
         row.identity_predicate_uid.is_some(),
@@ -798,7 +818,9 @@ async fn hand_written_files_cross_link_by_uid_before_either_record_exists() {
     let apples = nucleus::new_uid("r");
     std::fs::write(
         dir.join("Needs.lingua"),
-        format!("---\nuid: {needs}\n@@idea\n@see-also [[Apples|{apples}]]\n---\n\nA need is negative.\n"),
+        format!(
+            "---\nuid: {needs}\n@@idea\n@see-also [[Apples|{apples}]]\n---\n\nA need is negative.\n"
+        ),
     )
     .unwrap();
     std::fs::write(
@@ -846,7 +868,10 @@ async fn a_file_claiming_a_taken_uid_is_refused_rather_than_merged() {
 
     assert_eq!(report.conflicts.len(), 1, "refused: {report:?}");
     assert!(report.created.is_empty());
-    let row = store::records::get(&e.store.pool, &existing).await.unwrap().unwrap();
+    let row = store::records::get(&e.store.pool, &existing)
+        .await
+        .unwrap()
+        .unwrap();
     assert_eq!(row.body, "the original body", "the original is untouched");
     assert_eq!(row.head, "Already here");
 }
@@ -979,7 +1004,10 @@ async fn one_record_can_be_mirrored_in_both_formats_at_once() {
         "markdown carries the body and nothing else"
     );
     let lingua = std::fs::read_to_string(dir.join("Note.lingua")).unwrap();
-    assert!(lingua.contains("\n@task\n"), "and lingua carries the rest: {lingua}");
+    assert!(
+        lingua.contains("\n@task\n"),
+        "and lingua carries the rest: {lingua}"
+    );
     assert!(lingua.ends_with("---\n\nBody text."));
 }
 
@@ -994,7 +1022,10 @@ async fn an_edit_to_either_file_reaches_the_record() {
 
     std::fs::write(dir.join("Note.md"), "from markdown").unwrap();
     e.file_sync_tick(&dir, &organ, &mut state).await.unwrap();
-    let row = store::records::get(&e.store.pool, &uid).await.unwrap().unwrap();
+    let row = store::records::get(&e.store.pool, &uid)
+        .await
+        .unwrap()
+        .unwrap();
     assert_eq!(row.body, "from markdown");
     assert!(
         std::fs::read_to_string(dir.join("Note.lingua"))
@@ -1010,7 +1041,10 @@ async fn an_edit_to_either_file_reaches_the_record() {
     )
     .unwrap();
     e.file_sync_tick(&dir, &organ, &mut state).await.unwrap();
-    let row = store::records::get(&e.store.pool, &uid).await.unwrap().unwrap();
+    let row = store::records::get(&e.store.pool, &uid)
+        .await
+        .unwrap()
+        .unwrap();
     assert_eq!(row.body, "from lingua");
     assert_eq!(
         std::fs::read_to_string(dir.join("Note.md")).unwrap(),
@@ -1038,7 +1072,10 @@ async fn the_first_listed_format_wins_a_contested_body() {
     .unwrap();
     e.file_sync_tick(&dir, &organ, &mut state).await.unwrap();
 
-    let row = store::records::get(&e.store.pool, &uid).await.unwrap().unwrap();
+    let row = store::records::get(&e.store.pool, &uid)
+        .await
+        .unwrap()
+        .unwrap();
     assert_eq!(row.body, "lingua says this", "lingua is listed first");
 }
 
@@ -1059,10 +1096,16 @@ async fn removing_one_format_s_file_does_not_delete_the_record() {
     }
 
     assert!(
-        store::records::get(&e.store.pool, &uid).await.unwrap().is_some(),
+        store::records::get(&e.store.pool, &uid)
+            .await
+            .unwrap()
+            .is_some(),
         "the record survives — the .lingua file is still there"
     );
-    assert!(dir.join("Note.md").exists(), "and the projection comes back");
+    assert!(
+        dir.join("Note.md").exists(),
+        "and the projection comes back"
+    );
 }
 
 #[tokio::test]
@@ -1081,7 +1124,10 @@ async fn removing_every_file_still_deletes_the_record() {
     }
 
     assert!(
-        store::records::get(&e.store.pool, &uid).await.unwrap().is_none(),
+        store::records::get(&e.store.pool, &uid)
+            .await
+            .unwrap()
+            .is_none(),
         "every projection gone means the Record was deleted"
     );
 }
@@ -1175,7 +1221,10 @@ async fn an_unreadable_quantity_is_reported_and_changes_nothing() {
     let report = e.file_sync_tick(&dir, &organ, &mut state).await.unwrap();
 
     assert_eq!(report.conflicts.len(), 1, "reported: {report:?}");
-    let row = store::records::get(&e.store.pool, &uid).await.unwrap().unwrap();
+    let row = store::records::get(&e.store.pool, &uid)
+        .await
+        .unwrap()
+        .unwrap();
     assert_eq!(row.quantity.to_string(), "5", "and the level is untouched");
 }
 
@@ -1277,7 +1326,10 @@ async fn a_file_the_filter_excludes_is_kept_and_reported_never_swept() {
     assert!(path.exists(), "the note somebody wrote is still on disk");
     assert_eq!(report.created.len(), 1, "and it was adopted as a Record");
     assert!(
-        report.conflicts.iter().any(|c| c.reason.contains("not selected by this folder's filter")),
+        report
+            .conflicts
+            .iter()
+            .any(|c| c.reason.contains("not selected by this folder's filter")),
         "the folder says why it is not syncing: {:?}",
         report.conflicts,
     );
@@ -1286,7 +1338,10 @@ async fn a_file_the_filter_excludes_is_kept_and_reported_never_swept() {
     // the same text a second time.
     let report = e.file_sync_tick(&dir, &organ, &mut state).await.unwrap();
     assert!(path.exists());
-    assert!(report.created.is_empty(), "no duplicate Record on the next tick");
+    assert!(
+        report.created.is_empty(),
+        "no duplicate Record on the next tick"
+    );
     let thoughts: Vec<_> = store::records::list_all(&e.store.pool)
         .await
         .unwrap()
@@ -1318,17 +1373,28 @@ async fn renaming_a_file_renames_the_record_it_carries_the_uid_of() {
 
     // Closed at the time, so nothing is remembered — the hard case.
     let mut after_restart = FileSyncState::new();
-    let report = e.file_sync_tick(&dir, &organ, &mut after_restart).await.unwrap();
+    let report = e
+        .file_sync_tick(&dir, &organ, &mut after_restart)
+        .await
+        .unwrap();
     assert!(report.conflicts.is_empty(), "{:?}", report.conflicts);
     assert!(report.created.is_empty(), "a rename creates nothing");
-    let row = store::records::get(&e.store.pool, &uid).await.unwrap().unwrap();
+    let row = store::records::get(&e.store.pool, &uid)
+        .await
+        .unwrap()
+        .unwrap();
     assert_eq!(row.head, "Rule", "the Record took the new name");
-    assert_eq!(row.body, "what a rule will grow into", "and kept everything else");
+    assert_eq!(
+        row.body, "what a rule will grow into",
+        "and kept everything else"
+    );
 
     // Two more ticks: the debounce that used to fire on the vanished path must
     // not delete the Record, and the file keeps its new name.
     for _ in 0..2 {
-        e.file_sync_tick(&dir, &organ, &mut after_restart).await.unwrap();
+        e.file_sync_tick(&dir, &organ, &mut after_restart)
+            .await
+            .unwrap();
     }
     assert!(dir.join("Rule.lingua").exists(), "the renamed file stays");
     assert!(!old.exists(), "and the old name is not resurrected");
@@ -1337,5 +1403,8 @@ async fn renaming_a_file_renames_the_record_it_carries_the_uid_of() {
         .unwrap()
         .expect("the Record survived the rename");
     assert_eq!(row.head, "Rule");
-    assert_eq!(std::fs::read_to_string(dir.join("Rule.lingua")).unwrap(), text);
+    assert_eq!(
+        std::fs::read_to_string(dir.join("Rule.lingua")).unwrap(),
+        text
+    );
 }

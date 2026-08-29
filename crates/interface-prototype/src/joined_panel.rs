@@ -1,3 +1,4 @@
+use crate::style::ResolvedStyle;
 use glyphon::{
     Attrs, Buffer, Cache, Color, Family, FontSystem, Metrics, Resolution, Shaping, SwashCache,
     TextArea, TextAtlas, TextBounds, TextRenderer, Viewport,
@@ -16,6 +17,7 @@ pub struct JoinedPanel {
     scale_factor: f64,
     width: u32,
     height: u32,
+    font_size: f32,
 }
 
 impl JoinedPanel {
@@ -33,7 +35,7 @@ impl JoinedPanel {
         let renderer = TextRenderer::new(&mut atlas, device, MultisampleState::default(), None);
         let mut font_system = FontSystem::new();
         font_system.db_mut().load_font_data(LATO_REGULAR.to_vec());
-        let buffer = Buffer::new(&mut font_system, panel_metrics(scale_factor));
+        let buffer = Buffer::new(&mut font_system, panel_metrics(scale_factor, 14.0));
         let mut panel = Self {
             font_system,
             swash_cache: SwashCache::new(),
@@ -44,6 +46,7 @@ impl JoinedPanel {
             scale_factor,
             width,
             height,
+            font_size: 14.0,
         };
         panel.resize(queue, width, height, scale_factor);
         panel
@@ -54,8 +57,10 @@ impl JoinedPanel {
         self.height = height;
         self.scale_factor = scale_factor;
         self.viewport.update(queue, Resolution { width, height });
-        self.buffer
-            .set_metrics(&mut self.font_system, panel_metrics(scale_factor));
+        self.buffer.set_metrics(
+            &mut self.font_system,
+            panel_metrics(scale_factor, self.font_size),
+        );
         self.buffer.set_size(
             &mut self.font_system,
             Some(width as f32 * 0.45),
@@ -68,8 +73,15 @@ impl JoinedPanel {
         device: &Device,
         queue: &Queue,
         text: Option<&str>,
-        dark: bool,
+        style: &ResolvedStyle,
     ) -> Result<(), String> {
+        self.font_size = style
+            .length_px("--lynx-text-size-body")
+            .map_err(|error| error.to_string())?;
+        self.buffer.set_metrics(
+            &mut self.font_system,
+            panel_metrics(self.scale_factor, self.font_size),
+        );
         if let Some(text) = text {
             self.buffer.set_text(
                 &mut self.font_system,
@@ -83,11 +95,10 @@ impl JoinedPanel {
         let margin = (22.0 * self.scale_factor) as f32;
         let right = (self.width as f32 * 0.47) as i32;
         let bottom = i32::try_from(self.height).unwrap_or(i32::MAX);
-        let color = if dark {
-            Color::rgb(238, 245, 239)
-        } else {
-            Color::rgb(25, 35, 29)
-        };
+        let color = style
+            .color_srgba8("--lynx-ink-primary")
+            .map_err(|error| error.to_string())?;
+        let color = Color::rgba(color[0], color[1], color[2], color[3]);
         self.renderer
             .prepare(
                 device,
@@ -125,7 +136,7 @@ impl JoinedPanel {
     }
 }
 
-fn panel_metrics(scale_factor: f64) -> Metrics {
+fn panel_metrics(scale_factor: f64, font_size: f32) -> Metrics {
     let scale = scale_factor as f32;
-    Metrics::new(14.0 * scale, 20.0 * scale)
+    Metrics::new(font_size * scale, font_size * 1.43 * scale)
 }

@@ -1,3 +1,7 @@
+use crate::{
+    primitive_gallery::{GalleryVisualState, PRIMITIVE_COUNT},
+    style::{ResolvedStyle, StyleError},
+};
 use bytemuck::{Pod, Zeroable};
 use std::borrow::Cow;
 use wgpu::util::DeviceExt;
@@ -9,6 +13,7 @@ struct Node {
     center_half: vec4<f32>,
     color: vec4<f32>,
     style: vec4<f32>,
+    border_color: vec4<f32>,
 }
 
 @group(0) @binding(0) var<storage, read> nodes: array<Node>;
@@ -18,6 +23,7 @@ struct VertexOutput {
     @location(0) local: vec2<f32>,
     @location(1) color: vec4<f32>,
     @location(2) style: vec4<f32>,
+    @location(3) border_color: vec4<f32>,
 }
 
 @vertex
@@ -37,6 +43,7 @@ fn vertex(@builtin(vertex_index) vertex_index: u32, @builtin(instance_index) ins
     output.local = local;
     output.color = node.color;
     output.style = node.style;
+    output.border_color = node.border_color;
     return output;
 }
 
@@ -47,7 +54,7 @@ fn fragment(input: VertexOutput) -> @location(0) vec4<f32> {
     let distance = length(max(point, vec2<f32>(0.0))) + min(max(point.x, point.y), 0.0) - radius;
     let alpha = 1.0 - smoothstep(-0.025, 0.025, distance);
     let border = smoothstep(-0.18, -0.04, distance);
-    let surface = mix(input.color, vec4<f32>(0.94, 0.97, 0.94, input.color.a), border);
+    let surface = mix(input.color, input.border_color, border);
     return vec4<f32>(surface.rgb, surface.a * alpha);
 }
 "#;
@@ -58,6 +65,7 @@ struct NodeInstance {
     center_half: [f32; 4],
     color: [f32; 4],
     style: [f32; 4],
+    border_color: [f32; 4],
 }
 
 pub struct NodeLayer {
@@ -142,32 +150,32 @@ impl NodeLayer {
         &mut self,
         queue: &wgpu::Queue,
         positions: &[[f32; 2]],
-        palette: usize,
-        density: usize,
-        radius: usize,
-    ) {
+        style: &ResolvedStyle,
+        gallery_focus: usize,
+        gallery_state: GalleryVisualState,
+        gallery_active: bool,
+    ) -> Result<(), StyleError> {
         let count = positions.len().min(MAX_NODES);
+        let colors = [
+            style.color_linear("--lynx-need")?,
+            style.color_linear("--lynx-contribution")?,
+            style.color_linear("--lynx-info")?,
+            style.color_linear("--lynx-accent")?,
+        ];
+        let border_color = style.color_linear("--lynx-border")?;
+        let accent = style.color_linear("--lynx-accent")?;
+        let danger = style.color_linear("--lynx-danger")?;
+        let surface = style.color_linear("--lynx-surface-raised")?;
+        let hover = style.color_linear("--lynx-surface-hover")?;
+        let density_scale = style.scalar("--lynx-density-scale")?;
+        let radius = (style.length_px("--lynx-radius-control")? / 12.0).clamp(0.02, 0.96);
         let instances = positions
             .iter()
             .take(count)
             .enumerate()
             .map(|(index, position)| {
                 let column = index % 4;
-                let color = match (palette % 3, column) {
-                    (0, 0) => [0.18, 0.56, 0.34, 0.92],
-                    (0, 1) => [0.18, 0.39, 0.64, 0.92],
-                    (0, 2) => [0.62, 0.42, 0.16, 0.92],
-                    (0, _) => [0.48, 0.24, 0.56, 0.92],
-                    (1, 0) => [0.72, 0.22, 0.18, 0.94],
-                    (1, 1) => [0.87, 0.55, 0.12, 0.94],
-                    (1, 2) => [0.16, 0.52, 0.64, 0.94],
-                    (1, _) => [0.44, 0.27, 0.70, 0.94],
-                    (_, 0) => [0.13, 0.48, 0.46, 0.92],
-                    (_, 1) => [0.32, 0.32, 0.68, 0.92],
-                    (_, 2) => [0.68, 0.29, 0.45, 0.92],
-                    (_, _) => [0.55, 0.47, 0.13, 0.92],
-                };
-                let density_scale = [1.22, 1.0, 0.78][density % 3];
+                let color = colors[column];
                 let mut instance = NodeInstance {
                     center_half: [
                         (position[0] / 1_100.0).clamp(-0.96, 0.96) - 0.42,
@@ -176,24 +184,40 @@ impl NodeLayer {
                         0.024 * density_scale,
                     ],
                     color,
-                    style: [[0.08, 0.2, 0.48][radius % 3], 0.0, 0.0, 0.0],
+                    style: [radius, 0.0, 0.0, 0.0],
+                    border_color,
                 };
-                match index {
-                    0 => {
-                        instance.center_half = [-0.72, 0.80, 0.20, 0.055];
-                        instance.style[0] = 0.48;
-                    }
-                    1 => instance.center_half = [-0.70, 0.42, 0.27, 0.25],
-                    2 => instance.center_half = [-0.70, 0.56, 0.22, 0.035],
-                    3 => instance.center_half = [-0.58, 0.29, 0.10, 0.045],
-                    4 => instance.center_half = [-0.81, 0.29, 0.10, 0.045],
-                    _ => {}
+                if index < PRIMITIVE_COUNT {
+                    let column = index % 2;
+                    let row = index / 2;
+                    instance.center_half = [
+                        if column == 0 { -0.77 } else { -0.31 },
+                        0.69 - row as f32 * 0.055,
+                        0.21,
+                        0.022,
+                    ];
+                    instance.color = if index == gallery_focus {
+                        match gallery_state {
+                            GalleryVisualState::Hover => hover,
+                            GalleryVisualState::Invalid => danger,
+                            GalleryVisualState::Active | GalleryVisualState::Selected => accent,
+                            _ => surface,
+                        }
+                    } else {
+                        surface
+                    };
+                    instance.border_color = if gallery_active && index == gallery_focus {
+                        accent
+                    } else {
+                        border_color
+                    };
                 }
                 instance
             })
             .collect::<Vec<_>>();
         queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&instances));
         self.count = count as u32;
+        Ok(())
     }
 
     pub fn render<'a>(&'a self, pass: &mut wgpu::RenderPass<'a>) {

@@ -1,10 +1,14 @@
 extern crate self as lince_interface;
 
+pub mod composition;
 pub mod dependency_graph;
 pub mod frame;
 pub mod html;
 pub mod input;
+pub mod primitive_gallery;
+pub mod sand;
 pub mod semantic;
+pub mod style;
 pub mod window_stress;
 
 #[cfg(feature = "physics-preflight")]
@@ -40,6 +44,7 @@ pub mod bevy_layer;
 use crate::input::{InputEnvelope, InputEvidence};
 use crate::window_stress::{WindowStress, WindowStressFacts};
 use serde::Serialize;
+use sha2::{Digest, Sha256};
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -529,30 +534,68 @@ pub fn unix_millis() -> u128 {
         .map_or(0, |duration| duration.as_millis())
 }
 
-pub fn git_revision() -> String {
-    let revision = Command::new("git")
+pub fn raw_git_revision() -> String {
+    Command::new("git")
         .args(["rev-parse", "HEAD"])
         .output()
         .ok()
         .filter(|output| output.status.success())
         .and_then(|output| String::from_utf8(output.stdout).ok())
         .map(|revision| revision.trim().to_owned())
-        .filter(|revision| !revision.is_empty());
-    let dirty = Command::new("git")
-        .args(["status", "--porcelain", "--untracked-files=no"])
+        .filter(|revision| !revision.is_empty())
+        .unwrap_or_else(|| "unavailable".into())
+}
+
+pub fn git_dirty() -> bool {
+    Command::new("git")
+        .args(["status", "--porcelain"])
         .output()
         .ok()
         .filter(|output| output.status.success())
-        .is_some_and(|output| !output.stdout.is_empty());
-    revision
-        .map(|revision| {
-            if dirty {
-                format!("{revision}-dirty")
-            } else {
-                revision
-            }
-        })
-        .unwrap_or_else(|| "unavailable".into())
+        .is_some_and(|output| !output.stdout.is_empty())
+}
+
+pub fn git_revision() -> String {
+    let revision = raw_git_revision();
+    if revision != "unavailable" && git_dirty() {
+        format!("{revision}-dirty")
+    } else {
+        revision
+    }
+}
+
+pub fn source_fingerprint() -> String {
+    let paths = Command::new("git")
+        .args(["ls-files", "-co", "--exclude-standard", "-z"])
+        .output()
+        .ok()
+        .filter(|output| output.status.success())
+        .map(|output| output.stdout)
+        .unwrap_or_default();
+    let mut hasher = Sha256::new();
+    for path in paths
+        .split(|byte| *byte == 0)
+        .filter(|path| !path.is_empty())
+    {
+        let path = String::from_utf8_lossy(path);
+        if !(path.starts_with("crates/interface-prototype/")
+            || path.starts_with("crates/desktop/")
+            || path.starts_with("scripts/interface/")
+            || matches!(
+                path.as_ref(),
+                "Cargo.lock" | "Cargo.toml" | "flake.nix" | "mise.toml"
+            ))
+        {
+            continue;
+        }
+        hasher.update(path.as_bytes());
+        hasher.update([0]);
+        if let Ok(bytes) = fs::read(path.as_ref()) {
+            hasher.update(bytes);
+        }
+        hasher.update([0]);
+    }
+    format!("{:x}", hasher.finalize())
 }
 
 #[cfg(test)]

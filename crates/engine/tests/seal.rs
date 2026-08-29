@@ -17,18 +17,18 @@ fn batch(from_organ: &str, cell: &str) -> seal::MailedBatch {
         // where there is an accepted grant to import against.
         root: None,
         batch: OpBatch {
-        from_organ: from_organ.to_string(),
-        ops: vec![WireOp {
-            tbl: "record".into(),
-            uid: "record-1".into(),
-            field: "title".into(),
-            kind: "set".into(),
-            value: Some("a thing said in confidence".into()),
-            hlc: 1_000,
-            actor_cell: cell.into(),
-            organ_uid: from_organ.to_string(),
-            fact: None,
-        }],
+            from_organ: from_organ.to_string(),
+            ops: vec![WireOp {
+                tbl: "record".into(),
+                uid: "record-1".into(),
+                field: "title".into(),
+                kind: "set".into(),
+                value: Some("a thing said in confidence".into()),
+                hlc: 1_000,
+                actor_cell: cell.into(),
+                organ_uid: from_organ.to_string(),
+                fact: None,
+            }],
         },
     }
 }

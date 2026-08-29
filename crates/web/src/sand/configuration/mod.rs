@@ -42,8 +42,14 @@ mod tests {
     #[test]
     fn the_storage_page_answers_how_big_this_lince_is() {
         assert!(HTML.contains("/host/storage"), "no way to read the usage");
-        assert!(HTML.contains("/host/storage/budget"), "no way to set the ceiling");
-        assert!(HTML.contains("budget-areas"), "per-area usage is the whole point");
+        assert!(
+            HTML.contains("/host/storage/budget"),
+            "no way to set the ceiling"
+        );
+        assert!(
+            HTML.contains("budget-areas"),
+            "per-area usage is the whole point"
+        );
         assert!(
             HTML.contains("on disk in total"),
             "the honest total has to include what is never evicted"

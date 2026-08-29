@@ -3,9 +3,9 @@
 //! stamped by the Cell's HLC, with the local organ as actor. A Cell without a
 //! local organ has no sync identity and logs nothing.
 
-use engine::sync::Delivery;
 use engine::Engine;
 use engine::actions::Action;
+use engine::sync::Delivery;
 use engine::trust::Signer;
 use nucleus::RecordKind;
 use store::records::NewRecord;

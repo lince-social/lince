@@ -3,9 +3,9 @@
 //! hardened fact import, per-field LWW convergence, tombstones that cannot
 //! resurrect, and the discovery feed closing the loop into the Decision Queue.
 
-use engine::sync::Delivery;
 use engine::Engine;
 use engine::actions::{Action, ConceptSeed};
+use engine::sync::Delivery;
 use engine::sync::OpBatch;
 use engine::trust::Signer;
 use nucleus::{PromiseState, RecordKind};

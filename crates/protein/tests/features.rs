@@ -833,9 +833,10 @@ async fn auth_source_is_gated_by_read_permission_for_a_remote_subject() {
     store::auth::grant(&e.store.pool, reader_role, perm_id)
         .await
         .unwrap();
-    let reader = store::auth::create_person_login(&e.store.pool, "R", "reader", "hash", reader_role)
-        .await
-        .unwrap();
+    let reader =
+        store::auth::create_person_login(&e.store.pool, "R", "reader", "hash", reader_role)
+            .await
+            .unwrap();
 
     let p = base(Source::Auth, vec![]);
     let hidden = protein::execute_for(&e.store, &p, Some(&bystander.to_string()))

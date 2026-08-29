@@ -6,12 +6,12 @@ use bevy::{
     time::TimeUpdateStrategy,
 };
 use lince_interface::{
+    git_dirty, raw_git_revision,
     scene_artifact::{SceneArtifactEvidence, load_open_scene_fixture},
-    semantic::{
-        FieldValue, SemanticDiff, SemanticDiffOp, TokenLayer, TokenValue, composition_fixture,
-        record_row,
-    },
+    semantic::{FieldValue, SemanticDiff, SemanticDiffOp, composition_fixture, record_row},
+    source_fingerprint,
     spatial::{FieldSolver, ParentFrame, PhysicsAdapter, Rect, Vec2},
+    style::{StyleLayer, StyleValue},
 };
 use nucleus::{DecimalValue, RecordKind};
 use protein::{Include, Order, Predicate, Protein, Source};
@@ -28,7 +28,7 @@ use store::{
     records::{NewRecord, create},
 };
 
-const REPORT_SCHEMA_VERSION: u32 = 1;
+const REPORT_SCHEMA_VERSION: u32 = 2;
 const BODY_COUNT: usize = 10_000;
 const AVIAN_BODY_COUNT: usize = 1_000;
 const STATIC_INDEX_NODE_COUNT: usize = 100_000;
@@ -108,6 +108,9 @@ struct SpatialReport {
     gate: String,
     status: String,
     created_unix_millis: u128,
+    git_revision: String,
+    git_dirty: bool,
+    source_fingerprint_sha256: String,
     profile: String,
     protein: ProteinEvidence,
     semantic: SemanticEvidence,
@@ -165,7 +168,7 @@ async fn run(report_path: &Path) -> Result<SpatialReport, Box<dyn std::error::Er
         .len()
         == BODY_COUNT;
 
-    let mut tokens = TokenLayer::default();
+    let mut tokens = StyleLayer::default();
     let mut semantic_revision = projection.revision;
     let operations = (0..100)
         .map(|index| SemanticDiffOp::UpsertProteinRow {
@@ -177,16 +180,16 @@ async fn run(report_path: &Path) -> Result<SpatialReport, Box<dyn std::error::Er
         })
         .chain([
             SemanticDiffOp::SetGlobalToken {
-                name: "sand.radius".into(),
-                value: TokenValue::Number(12.0),
+                name: "--lynx-radius-control".into(),
+                value: StyleValue::LengthPx(12.0),
             },
             SemanticDiffOp::SetGlobalToken {
-                name: "sand.surface".into(),
-                value: TokenValue::Color("#f8f7f2".into()),
+                name: "--lynx-surface-primary".into(),
+                value: StyleValue::Color("#F8F7F2".into()),
             },
             SemanticDiffOp::SetGlobalToken {
-                name: "box.density".into(),
-                value: TokenValue::Number(0.82),
+                name: "--lynx-density-scale".into(),
+                value: StyleValue::Scalar(0.82),
             },
         ])
         .collect::<Vec<_>>();
@@ -408,6 +411,9 @@ async fn run(report_path: &Path) -> Result<SpatialReport, Box<dyn std::error::Er
             .duration_since(UNIX_EPOCH)
             .unwrap_or_default()
             .as_millis(),
+        git_revision: raw_git_revision(),
+        git_dirty: git_dirty(),
+        source_fingerprint_sha256: source_fingerprint(),
         profile: if cfg!(debug_assertions) {
             "debug"
         } else {

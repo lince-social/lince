@@ -1518,8 +1518,8 @@ pub async fn serve_cell_api_only(
                 // the message rather than a typed error because the refusal
                 // crosses the wire as text — worth replacing with a typed
                 // refusal when another caller needs the same distinction.
-                let refused = message.contains("no longer shared")
-                    || message.contains("no accepted grant");
+                let refused =
+                    message.contains("no longer shared") || message.contains("no accepted grant");
                 Err((
                     if refused {
                         StatusCode::FORBIDDEN
@@ -1994,7 +1994,10 @@ pub async fn serve_cell_api_only(
         )
         .route("/host/media", post(upload_media))
         .route("/host/media/{name}", get(get_media))
-        .route("/host/records/{record_uid}/changes", get(get_record_changes))
+        .route(
+            "/host/records/{record_uid}/changes",
+            get(get_record_changes),
+        )
         .route("/host/storage", get(get_storage))
         .route("/host/storage/budget", post(set_storage_budget))
         .route("/organ/nearby", get(organ_nearby))
@@ -2423,7 +2426,10 @@ pub(crate) async fn discovery_is_local(store: &Store, organ_uid: &str) -> bool {
     if !on {
         return false;
     }
-    match fields.get("local_until").and_then(serde_json::Value::as_str) {
+    match fields
+        .get("local_until")
+        .and_then(serde_json::Value::as_str)
+    {
         Some(until) => chrono::DateTime::parse_from_rfc3339(until)
             .map(|when| when.with_timezone(&chrono::Utc) > chrono::Utc::now())
             // An unparseable expiry is treated as EXPIRED. Failing closed on
@@ -2529,7 +2535,10 @@ mod discovery_tests {
         )
         .await
         .expect("config");
-        assert!(discovery_is_local(&store, &organ).await, "on while it lasts");
+        assert!(
+            discovery_is_local(&store, &organ).await,
+            "on while it lasts"
+        );
 
         let past = (chrono::Utc::now() - chrono::Duration::minutes(1)).to_rfc3339();
         store::cells::set_config(

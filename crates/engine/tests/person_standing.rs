@@ -11,8 +11,8 @@
 //! never send, because a filter is our policy on our side and proves nothing
 //! about what can arrive.
 
-use engine::sync::Delivery;
 use engine::Engine;
+use engine::sync::Delivery;
 use engine::trust::Signer;
 
 async fn cell() -> (Engine, String) {

@@ -1,20 +1,24 @@
-Lince, the philosophy (@lince: 1, is #chapter, #instinct, #part-of @first-steps, #done) { r_YJQ36ETAKE8J7F8Y65DG7V43MB
+Lince, the philosophy (@philosophy: 1, is #chapter, #instinct, #part-of @first-steps, #done) { 
 
 # Lince, the philosophy
 
 It is possible to find many different philosophies to divide life. The Lince tool separates it into Needs and Contributions to Needs. The Lince philosophy is to meet your Needs and Contribute to the Needs of those you care about; using the Lince tool or not. The maximum point of the Lince philosophy is all Needs deemed fair being met, and in the void of unmet Needs... We don't know yet.
 
-# Lince, the tool
+}
+
+Lince, the tool (@tool: 1, is #chapter, #instinct, #part-of @first-steps, #done) { 
 
 > **Everything is a Record. Every change is a Fact. Every intended change is a Promise.**
 
-Lince models everything with a Record, it has head and body as text columns and a quantity, the quantity is thought to be the most changed field, representing state that can participate in math by automations and transfers. Lince thinks by default that when a quantity of a record is negative, it means the person needs that much of the record in question, so '-1 Apple' is the need of 1 apple, if it is positive it's a possible contribution, to oneself or others, if it's zero, its neither a resource we can use nor a need.
+Lince models everything with a Record, it has title and description as text columns and a quantity, the quantity is thought to be the most changed field, representing state that can be affected by math in automations and Transfers. Lince thinks by default that when a quantity of a record is negative, it means an Actor Needs that much of the Record in question, so '-1 Apple' is the Need of 1 apple, if it is positive it's a possible Contribution, to oneself or others, if it's zero, its neither a resource we can use nor a Need.
 
-Records can also have a generic field to store data in different shapes for any workflow. These records can have concepts like @apple, and the @apple concept can be linked to @food, so selecting all @food records returns the apple one. One can also connect two records, like A @needs B. The Lingua is what keeps these concepts, the name of them, synced across people, if we use a common Lingua, we know that when i attatch the @apple concept to my Radarada record and you do the same for your Blabla record we mean the same thing, we call it different names, but sharing a concept makes it equivalent in possible trades.
+Recors can have a long title, and can also be given a slug (nickname), like @my-record for easy referencing. We can also give #tags to records, called Assertions. We can tag something as '#done', or link it to another like '#needs @my-other-record'. These can be anything you want #needs-testing, #food, #v1 #part-of @my-record...
+
+These Assertions are done by you, and they mean something to you. Other people may have different meanings, so when you apply an Assertion, you can say it is the #apple from a Vocabulary, coming from someone's Lince. So when both users use the same #apple from the same Vocabulary, they mean the same thing. This is useful for setting equal units so people can trade things.
 
 When something changes, we save a Fact, saying the change to a Record was to gain +1, made by this part of Lince or this person. We have work metadata like assignees, dates, work log for hours, etc.
 
-A Lince app/node is called an Organ, it can have many users inside or not. People can have users in various Organs, a personal one, family, work, project... And access them all through any one of them with login.
+A Lince is called a Cell. Each Cell can be part of many groups, that may represent such group called an Organ. The Organ can be the group of your devices like your phone and computer that represent you. Or it can be a group for your work, education, friends, family, hobbies, communities. Your devices/Cells will be part of many Organs, making a very connected network. Each Cell can have a lot of users inside, that log in to change the data there or sync with their Cells. Each Lince can also sync data with the files on computer in many formats, having a constant file backup of your data in Lince, being able to use it in different apps.
 
 You can make Transfers with other people/nodes, by agreeing to levels of resources both parties will get in return, or not, for donations. They are all promises, and they unlock all types of economic activites and several types of organization. You can use for donations, organize buying lists for parties saying people will bring certain items. One person may receive a raw material and promise to give to next person a final product, modeling transparently for all the network a public supply chain, or make it private. Or you can buy products and services like delivery apps and ride sharing, or use as a big purchase platform.
 
@@ -60,3 +64,176 @@ A team is being assembled, to fight the battle of killing Lince. Will you join t
 
 | "Death is only the beginning" - The Mummy.
 } r_YJQ36ETAKE8J7F8Y65DG7V43MB
+
+Record (@record: 1, #instinct, #part-of @tool) {
+	
+### Every Need is one Record
+
+Lince starts from a claim that sounds too simple to be useful: everything you might want software to help you with is a **Need**. And a Need always shows up in one of three shapes.
+
+```mermaid
+graph LR
+  A["Need"] --> B["Action: Habit, Task"]
+  A --> C["Item: Food, Tool"]
+  A --> D["Goal: Milestone, Dream"]
+```
+
+Take one apple and all three appear at once:
+
+```mermaid
+graph LR
+  A["Need"] --> B["Action: eat an apple"]
+  A --> C["Item: an apple"]
+  A --> D["Goal: be someone who plants apple trees"]
+```
+
+_A habit, a thing, and a life direction — the same subject at three scales._
+
+Most software picks one shape and builds an app around it: a to-do app for actions, an inventory app for items, a goal tracker for goals. Then your apples live in three places that cannot talk to each other. Lince refuses the split. Every Need becomes one Record.
+
+### The other half: contribution
+
+A Need on its own does nothing. Something has to meet it — and whatever meets it is a **Contribution**. Between the two sits the thing being moved.
+
+```mermaid
+graph RL
+  A["-1 Need"] --> B["Apple"]
+  B --> C["1 Contribution"]
+```
+
+_Before: someone is short one apple, someone else has one spare._
+
+Watch the numbers. A Need is a **negative** quantity — something missing. A Contribution is a **positive** one — something available. Meeting the Need is the two moving toward each other until both sides are zero: nothing missing and nothing spare.
+
+So Need and Contribution are not two concepts at all. They are one concept with opposite signs, and instead of an app about apples you get a Record that everything about apples hangs off:
+
+```mermaid
+graph RL
+  A["Record: apples"]
+  B["Need: eat an apple"] --> A
+  C["Need: an apple"] --> A
+  D["Need: plant apple trees"] --> A
+  E["Contribution: an apple"] --> A
+```
+
+### What a Record actually holds
+
+The **title** and **description** are for you — they carry the human meaning. The **quantity** is for you or the machine: it is the state, and it is the part rules read and change.
+
+```mermaid
+graph LR
+  A["Record"] --> B["Quantity: -1"]
+  A --> C["Head: Apple"]
+  A --> D["Body: the description"]
+  A --> E["...and more"]
+```
+
+_"I am one apple short." That is a complete, working Record._
+
+A number is deliberately unopinionated. The same field can mean stock, debt, need, budget, progress, votes, hours, or responsibility — which is what lets one kind of Record carry every workflow you have, instead of a new table per feature. Every change to a quantity is recorded as a **Fact**: who changed it, when, and why. Nothing moves invisibly, and turning on `facts` in a Protein shows a sand the whole trail.
+}
+
+Assertion (@assertion: 0, #instinct, #part-of @ontology) {
+Records can be given ideas they represent:
+
+Subject --> Predicate
+Apple       #apple
+
+That is called applying a concept to a Record.
+
+When you make an assertion that a Record is something in relation to another Record, you are making a link:
+
+Subject --> Predicate --> Object
+Hand        #part-of      Arm
+
+An assertion can have the place of the Identity of a Record, being the concept that represents that apple most. When you want to understand what something is that has a bunch of assertions, you look for the main one, the Identity:
+
+Apple is #apple
+}
+
+
+Organ (@organ: 0, #instinct, #part-of @ontology, #done) { r_VAX3HA21RXF9AENHMCJTSEF1AT
+Every Record so far lived alone on one machine. This is about what happens when
+people show up: your own Cell, other people’s Cells, and the Organs that let
+several Cells hold something in common.
+
+## The Cell
+
+Everything so far happened in one place: your **Cell**. A Cell is your own Lince — your records, on your machine, answering to you.
+
+```mermaid
+graph LR
+  A["Cell"]
+```
+
+## Cells Have No Main One
+
+Other people have their own. No Cell is inside any other, and none of them is the "main" one:
+
+```mermaid
+graph LR
+  A["Cell"]
+  B["Cell"]
+  C["Cell"]
+  D["Cell"]
+```
+
+## The Organ
+
+When several Cells want to hold something in common — a household budget, a team backlog, a shared shopping list — they form an **Organ**.
+
+```mermaid
+graph TD
+  O["Organ"]
+  A["Cell"] --> O
+  B["Cell"] --> O
+  C["Cell"] --> O
+  D["Cell"] --> O
+```
+
+_An Organ is a shared context, not a server that owns the members._
+
+## Organs Do Not Blur Together
+
+You belong to as many Organs as you have contexts, and they do not blur into each other. Work does not see your hobby; your family does not see your work backlog.
+
+```mermaid
+graph TD
+  B["Work"] --> A["Your Cell"]
+  C["Hobby"] --> A
+  D["Family"] --> A
+  E["Friends"] --> A
+```
+
+## Lince Has No Centre
+
+Lince as a whole is just all of it — Cells and Organs, with no centre:
+
+```mermaid
+graph TD
+  A["Organ"] --> O["Lince"]
+  B["Cell"] --> O
+  C["Organ"] --> O
+  D["Cell"] --> O
+```
+
+This is why the frontend keeps **areas** (in the workspace menu) separate from each other, and why a Protein can filter by organ. The boundary is real, and it is the same boundary the next chapter has to cross.
+
+Other Organs can be saved as contacts, with unknown, known and blocked states, and a numeric Proximity property that you can use to indicate the value of your bond with them. In Transfers, you may use it to offer to people you have only a certain level of Proximity with, perhaps increasing the range of which you may donate something over time by increasing needed proximity to see such donation if closer contacts dont immediatelly want it.
+
+} r_VAX3HA21RXF9AENHMCJTSEF1AT
+
+
+Lingua (@lingua: 0, #instinct, #part-of @ontology) {
+A Language for turning Lince's data into file versions with File Sync.
+
+## Vocabulary
+
+We call a Vocabulary the bundle of Assertions that come from an Organ, as if we create some dialect, some units, and they mean something to us. When people use the same Vocabulary it is expected that they are speaking about the same thing. So if a Lingua file is for talking to the file system with sync, a Lingua Vocabulary is for talking with other people with common ground. Like a dictionary, with the meanings you give it and Records as examples with text, photo, video, links, all that Records have to make the Vocabulary an encyclopedia of knowledge, each thing that is an identity can be consulted to understand from the Vocabulary this identity belongs to what is it's definition, it's meaning. We can have an Organ deemed by us as the official when talking about a subject, we just such and such Vocabulary. Like a standard, ISO.
+}
+
+Blood (@blood: 0, #instinct, #part-of @ontology) {
+If your Lince is a Cell, we call Blood the capability of interacting with other systems. Several protocols exist that allow for really useful apps, we should try to integrate with that: Nostr, irc, Matrix, ActivityPub... And not only protocols but simple file formats, the act of saving something to a simple markdown already allows for so much. Putting the mapped Karma into .ics may be a very simple way of scheduling changes to Records.
+
+This is a good step in interoperability of systems, less isolation and complex APIs and more common formats easy to deal with, allowing for extraction of data in a simple, readable and continuous way.
+}

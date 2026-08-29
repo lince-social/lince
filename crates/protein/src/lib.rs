@@ -2168,9 +2168,7 @@ async fn attach_includes(
         // than to a friendly placeholder: "someone" would be a worse answer
         // than an unreadable one, since it implies we do not know.
         let mut reads = Vec::new();
-        for (reader, count, at) in
-            store::replica::reference_reads(&store.pool, record_uid).await?
-        {
+        for (reader, count, at) in store::replica::reference_reads(&store.pool, record_uid).await? {
             let name = store::organs::contact(&store.pool, &reader)
                 .await?
                 .map(|contact| contact.head);

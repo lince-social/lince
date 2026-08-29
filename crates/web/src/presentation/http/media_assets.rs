@@ -334,7 +334,9 @@ mod tests {
     #[tokio::test]
     async fn evicting_media_leaves_quarantine_untouched() {
         let store = store::Store::open_memory().await.expect("store");
-        store::budget::set_total(&store.pool, 2000).await.expect("total");
+        store::budget::set_total(&store.pool, 2000)
+            .await
+            .expect("total");
         for _ in 0..3 {
             store::organs::quarantine(&store.pool, "organ-a", "bad-sig", "the evidence")
                 .await
@@ -350,7 +352,9 @@ mod tests {
         tokio::fs::create_dir_all(&dir).await.expect("test dir");
         for n in 0..6_u64 {
             let path = dir.join(format!("00000000-0000-4000-8000-{n:012}.png"));
-            tokio::fs::write(&path, vec![n as u8; 300]).await.expect("image");
+            tokio::fs::write(&path, vec![n as u8; 300])
+                .await
+                .expect("image");
             std::fs::File::options()
                 .write(true)
                 .open(&path)

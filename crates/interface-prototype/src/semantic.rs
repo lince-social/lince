@@ -4,7 +4,20 @@ use std::{
     fmt::{Display, Formatter},
 };
 
-pub const SEMANTIC_SCHEMA_VERSION: u32 = 1;
+pub use crate::sand::{
+    DefinitionChild, DefinitionGraph, DefinitionRef, InputPort, OutputPort, ProjectionManifest,
+    RendererCapability, SandDefinition, SandValue as FieldValue, Transform2d, ValueType,
+};
+pub type RendererProjectionManifest = ProjectionManifest;
+use crate::{
+    sand::{
+        AccessibilityRole, AccessibilitySpec, BehaviorBinding, DeclarativeBehavior, Isolation,
+        ProjectionKind, SAND_SCHEMA_VERSION, SandCapability, SandElement,
+    },
+    style::{StyleLayer, StyleValue},
+};
+
+pub const SEMANTIC_SCHEMA_VERSION: u32 = SAND_SCHEMA_VERSION;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SemanticError {
@@ -26,209 +39,6 @@ impl Display for SemanticError {
 }
 
 impl std::error::Error for SemanticError {}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum ValueType {
-    Text,
-    Number,
-    Boolean,
-    Record,
-    Json,
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "type", content = "value", rename_all = "snake_case")]
-pub enum FieldValue {
-    Text(String),
-    Number(f64),
-    Boolean(bool),
-    Record(String),
-    Json(serde_json::Value),
-}
-
-impl FieldValue {
-    pub fn value_type(&self) -> ValueType {
-        match self {
-            Self::Text(_) => ValueType::Text,
-            Self::Number(_) => ValueType::Number,
-            Self::Boolean(_) => ValueType::Boolean,
-            Self::Record(_) => ValueType::Record,
-            Self::Json(_) => ValueType::Json,
-        }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct InputPort {
-    pub name: String,
-    pub value_type: ValueType,
-    pub required: bool,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct OutputPort {
-    pub name: String,
-    pub value_type: ValueType,
-}
-
-#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Transform2d {
-    pub x: f64,
-    pub y: f64,
-    pub width: f64,
-    pub height: f64,
-    pub rotation_radians: f64,
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct DefinitionChild {
-    pub uid: String,
-    pub definition_uid: String,
-    pub transform: Transform2d,
-    pub sibling_order: u32,
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
-pub enum Behavior {
-    EmitEvent {
-        source_output: String,
-        event: String,
-    },
-    SetLocalState {
-        source_output: String,
-        key: String,
-        value: FieldValue,
-    },
-    RequestAction {
-        source_output: String,
-        action: String,
-    },
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct SandDefinition {
-    pub uid: String,
-    pub revision: u64,
-    pub display_name: String,
-    pub inputs: Vec<InputPort>,
-    pub outputs: Vec<OutputPort>,
-    pub children: Vec<DefinitionChild>,
-    pub behaviors: Vec<Behavior>,
-    pub token_overrides: BTreeMap<String, TokenValue>,
-}
-
-impl SandDefinition {
-    fn validate(&self) -> Result<(), SemanticError> {
-        validate_uid("Sand definition", &self.uid)?;
-        if self.revision == 0 {
-            return Err(SemanticError::new(
-                "Sand definition revision must be positive",
-            ));
-        }
-        if self.display_name.trim().is_empty() {
-            return Err(SemanticError::new("Sand display name must not be empty"));
-        }
-        unique_names(
-            "input port",
-            self.inputs.iter().map(|port| port.name.as_str()),
-        )?;
-        unique_names(
-            "output port",
-            self.outputs.iter().map(|port| port.name.as_str()),
-        )?;
-        unique_names(
-            "child",
-            self.children.iter().map(|child| child.uid.as_str()),
-        )?;
-        for port in &self.inputs {
-            validate_uid("input port", &port.name)?;
-        }
-        for port in &self.outputs {
-            validate_uid("output port", &port.name)?;
-        }
-        for child in &self.children {
-            validate_uid("child", &child.uid)?;
-            validate_uid("child definition", &child.definition_uid)?;
-            validate_transform(child.transform)?;
-        }
-        for token in self.token_overrides.values() {
-            token.validate()?;
-        }
-        Ok(())
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct DefinitionGraph {
-    pub schema_version: u32,
-    pub definitions: BTreeMap<String, SandDefinition>,
-}
-
-impl DefinitionGraph {
-    pub fn validate(&self) -> Result<(), SemanticError> {
-        if self.schema_version != SEMANTIC_SCHEMA_VERSION {
-            return Err(SemanticError::new(format!(
-                "unsupported semantic schema version {}",
-                self.schema_version
-            )));
-        }
-        for (uid, definition) in &self.definitions {
-            if uid != &definition.uid {
-                return Err(SemanticError::new(format!(
-                    "definition map key {uid} does not match {}",
-                    definition.uid
-                )));
-            }
-            definition.validate()?;
-            for child in &definition.children {
-                if !self.definitions.contains_key(&child.definition_uid) {
-                    return Err(SemanticError::new(format!(
-                        "definition {} references missing child definition {}",
-                        definition.uid, child.definition_uid
-                    )));
-                }
-            }
-        }
-        for uid in self.definitions.keys() {
-            self.validate_acyclic(uid, &mut BTreeSet::new(), &mut BTreeSet::new())?;
-        }
-        Ok(())
-    }
-
-    fn validate_acyclic(
-        &self,
-        uid: &str,
-        visiting: &mut BTreeSet<String>,
-        complete: &mut BTreeSet<String>,
-    ) -> Result<(), SemanticError> {
-        if complete.contains(uid) {
-            return Ok(());
-        }
-        if !visiting.insert(uid.to_string()) {
-            return Err(SemanticError::new(format!(
-                "recursive Sand definition cycle reaches {uid}"
-            )));
-        }
-        let definition = self
-            .definitions
-            .get(uid)
-            .ok_or_else(|| SemanticError::new(format!("missing definition {uid}")))?;
-        for child in &definition.children {
-            self.validate_acyclic(&child.definition_uid, visiting, complete)?;
-        }
-        visiting.remove(uid);
-        complete.insert(uid.to_string());
-        Ok(())
-    }
-}
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -343,7 +153,7 @@ impl ResultTemplate {
         let children = definition
             .children
             .iter()
-            .map(|child| (child.uid.as_str(), child))
+            .map(|child| (child.local_uid.as_str(), child))
             .collect::<BTreeMap<_, _>>();
         let mut destinations = BTreeSet::new();
         for mapping in &self.mappings {
@@ -361,7 +171,7 @@ impl ResultTemplate {
             })?;
             let child_definition = graph
                 .definitions
-                .get(&child.definition_uid)
+                .get(&child.definition.uid)
                 .ok_or_else(|| SemanticError::new("mapped child definition is missing"))?;
             let port = child_definition
                 .inputs
@@ -468,92 +278,11 @@ pub enum WhyReason {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "type", content = "value", rename_all = "snake_case")]
-pub enum TokenValue {
-    Number(f64),
-    Color(String),
-    Text(String),
-    Boolean(bool),
-}
-
-impl TokenValue {
-    fn validate(&self) -> Result<(), SemanticError> {
-        match self {
-            Self::Number(value) if !value.is_finite() => {
-                Err(SemanticError::new("token number must be finite"))
-            }
-            Self::Color(value) if !valid_color(value) => {
-                Err(SemanticError::new(format!("invalid token color {value}")))
-            }
-            Self::Text(value) if value.len() > 4096 => {
-                Err(SemanticError::new("token text exceeds 4096 bytes"))
-            }
-            _ => Ok(()),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct TokenLayer {
-    pub values: BTreeMap<String, TokenValue>,
-}
-
-impl TokenLayer {
-    pub fn validate(&self) -> Result<(), SemanticError> {
-        for (name, value) in &self.values {
-            validate_token_name(name)?;
-            value.validate()?;
-        }
-        Ok(())
-    }
-}
-
-pub fn resolve_tokens(layers: &[&TokenLayer]) -> Result<TokenLayer, SemanticError> {
-    let mut values = BTreeMap::new();
-    for layer in layers {
-        layer.validate()?;
-        values.extend(layer.values.clone());
-    }
-    Ok(TokenLayer { values })
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum RendererCapability {
-    RetainedControls,
-    InstancedNodes,
-    ExternalHtml,
-    ThreeDimensional,
-    Accessibility,
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct RendererProjectionManifest {
-    pub key: String,
-    pub required: BTreeSet<RendererCapability>,
-    pub assets: Vec<String>,
-}
-
-impl RendererProjectionManifest {
-    pub fn select<'a>(
-        manifests: &'a [Self],
-        available: &BTreeSet<RendererCapability>,
-    ) -> Result<&'a Self, SemanticError> {
-        manifests
-            .iter()
-            .find(|manifest| manifest.required.is_subset(available))
-            .ok_or_else(|| SemanticError::new("no renderer projection satisfies capabilities"))
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "op", rename_all = "snake_case", deny_unknown_fields)]
 pub enum SemanticDiffOp {
     UpsertProteinRow { row: ProteinRow },
     RemoveProteinRow { stable_key: String },
-    SetGlobalToken { name: String, value: TokenValue },
+    SetGlobalToken { name: String, value: StyleValue },
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -570,7 +299,7 @@ impl SemanticDiff {
         &self,
         current_revision: &mut u64,
         protein: &mut ProteinProjection,
-        tokens: &mut TokenLayer,
+        tokens: &mut StyleLayer,
     ) -> Result<(), SemanticError> {
         if self.schema_version != SEMANTIC_SCHEMA_VERSION {
             return Err(SemanticError::new("unsupported semantic diff schema"));
@@ -607,7 +336,9 @@ impl SemanticDiff {
         }
         next_protein.revision = self.next_revision;
         next_protein.validate()?;
-        next_tokens.validate()?;
+        next_tokens
+            .validate_standard()
+            .map_err(|error| SemanticError::new(error.to_string()))?;
         *protein = next_protein;
         *tokens = next_tokens;
         *current_revision = self.next_revision;
@@ -623,6 +354,7 @@ pub fn composition_fixture() -> (DefinitionGraph, ProteinProjection, ResultTempl
             name: "text".into(),
             value_type: ValueType::Text,
             required: true,
+            default: None,
         }],
         Vec::new(),
     );
@@ -634,6 +366,7 @@ pub fn composition_fixture() -> (DefinitionGraph, ProteinProjection, ResultTempl
             name: "selected".into(),
             value_type: ValueType::Text,
             required: false,
+            default: None,
         }],
         vec![OutputPort {
             name: "changed".into(),
@@ -644,16 +377,19 @@ pub fn composition_fixture() -> (DefinitionGraph, ProteinProjection, ResultTempl
         uid: "button".into(),
         revision: 1,
         display_name: "Button".into(),
+        element: SandElement::Button,
         inputs: vec![
             InputPort {
                 name: "label".into(),
                 value_type: ValueType::Text,
                 required: true,
+                default: None,
             },
             InputPort {
                 name: "record".into(),
                 value_type: ValueType::Record,
                 required: true,
+                default: None,
             },
         ],
         outputs: vec![OutputPort {
@@ -661,16 +397,32 @@ pub fn composition_fixture() -> (DefinitionGraph, ProteinProjection, ResultTempl
             value_type: ValueType::Record,
         }],
         children: Vec::new(),
-        behaviors: vec![Behavior::EmitEvent {
-            source_output: "clicked".into(),
-            event: "record_clicked".into(),
+        connections: Vec::new(),
+        exports: Vec::new(),
+        behaviors: vec![BehaviorBinding::Declarative {
+            behavior: DeclarativeBehavior::EmitEvent {
+                source_output: "clicked".into(),
+                event: "record-clicked".into(),
+            },
         }],
-        token_overrides: BTreeMap::new(),
+        configuration: Vec::new(),
+        style: StyleLayer::default(),
+        accessibility: accessibility(AccessibilityRole::Button, "Open Record"),
+        capabilities: BTreeSet::from([SandCapability::EmitEvent {
+            event: "record-clicked".into(),
+        }]),
+        projections: projections(
+            ["root"],
+            BTreeSet::from([SandCapability::EmitEvent {
+                event: "record-clicked".into(),
+            }]),
+        ),
     };
     let castle = SandDefinition {
         uid: "record-card".into(),
         revision: 1,
         display_name: "Record card".into(),
+        element: SandElement::Compound,
         inputs: Vec::new(),
         outputs: Vec::new(),
         children: vec![
@@ -680,8 +432,24 @@ pub fn composition_fixture() -> (DefinitionGraph, ProteinProjection, ResultTempl
             child("status", "dropdown", 18.0, 140.0, 130.0, 32.0, 3),
             child("open", "button", 164.0, 140.0, 138.0, 32.0, 4),
         ],
+        connections: Vec::new(),
+        exports: Vec::new(),
         behaviors: Vec::new(),
-        token_overrides: BTreeMap::new(),
+        configuration: Vec::new(),
+        style: StyleLayer::default(),
+        accessibility: accessibility(AccessibilityRole::Article, "Record card"),
+        capabilities: BTreeSet::new(),
+        projections: projections(
+            [
+                "root",
+                "background",
+                "title",
+                "description",
+                "status",
+                "open",
+            ],
+            BTreeSet::new(),
+        ),
     };
     let definitions = [text, panel, dropdown, button, castle]
         .into_iter()
@@ -760,16 +528,71 @@ fn primitive_definition(
     inputs: Vec<InputPort>,
     outputs: Vec<OutputPort>,
 ) -> SandDefinition {
+    let (element, role) = match uid {
+        "text" => (SandElement::Text, AccessibilityRole::Text),
+        "panel" => (SandElement::Panel, AccessibilityRole::Group),
+        "dropdown" => (SandElement::Select, AccessibilityRole::Select),
+        _ => (SandElement::Specialized, AccessibilityRole::Group),
+    };
     SandDefinition {
         uid: uid.into(),
         revision: 1,
         display_name: display_name.into(),
+        element,
         inputs,
         outputs,
         children: Vec::new(),
+        connections: Vec::new(),
+        exports: Vec::new(),
         behaviors: Vec::new(),
-        token_overrides: BTreeMap::new(),
+        configuration: Vec::new(),
+        style: StyleLayer::default(),
+        accessibility: accessibility(role, display_name),
+        capabilities: BTreeSet::new(),
+        projections: projections(["root"], BTreeSet::new()),
     }
+}
+
+fn accessibility(role: AccessibilityRole, label: &str) -> AccessibilitySpec {
+    AccessibilitySpec {
+        role,
+        label: label.into(),
+        description: None,
+        live: false,
+    }
+}
+
+fn projections<const N: usize>(
+    nodes: [&str; N],
+    capabilities: BTreeSet<SandCapability>,
+) -> Vec<ProjectionManifest> {
+    let projected_nodes = nodes.into_iter().map(String::from).collect::<BTreeSet<_>>();
+    vec![
+        ProjectionManifest {
+            key: "native-retained".into(),
+            kind: ProjectionKind::NativeRetained,
+            isolation: Isolation::Trusted,
+            required: BTreeSet::from([
+                RendererCapability::RetainedControls,
+                RendererCapability::Accessibility,
+            ]),
+            capabilities: capabilities.clone(),
+            assets: Vec::new(),
+            projected_nodes: projected_nodes.clone(),
+        },
+        ProjectionManifest {
+            key: "browser-dom".into(),
+            kind: ProjectionKind::BrowserDom,
+            isolation: Isolation::Trusted,
+            required: BTreeSet::from([
+                RendererCapability::BrowserDom,
+                RendererCapability::Accessibility,
+            ]),
+            capabilities,
+            assets: Vec::new(),
+            projected_nodes,
+        },
+    ]
 }
 
 fn child(
@@ -782,8 +605,11 @@ fn child(
     sibling_order: u32,
 ) -> DefinitionChild {
     DefinitionChild {
-        uid: uid.into(),
-        definition_uid: definition_uid.into(),
+        local_uid: uid.into(),
+        definition: DefinitionRef {
+            uid: definition_uid.into(),
+            revision: 1,
+        },
         transform: Transform2d {
             x,
             y,
@@ -792,6 +618,8 @@ fn child(
             rotation_radians: 0.0,
         },
         sibling_order,
+        configuration: BTreeMap::new(),
+        style: StyleLayer::default(),
     }
 }
 
@@ -828,43 +656,6 @@ fn unique_names<'a>(
     Ok(())
 }
 
-fn validate_transform(transform: Transform2d) -> Result<(), SemanticError> {
-    let values = [
-        transform.x,
-        transform.y,
-        transform.width,
-        transform.height,
-        transform.rotation_radians,
-    ];
-    if values.iter().any(|value| !value.is_finite())
-        || transform.width <= 0.0
-        || transform.height <= 0.0
-    {
-        return Err(SemanticError::new("child transform is invalid"));
-    }
-    Ok(())
-}
-
-fn validate_token_name(value: &str) -> Result<(), SemanticError> {
-    if value.is_empty()
-        || value.len() > 256
-        || !value
-            .chars()
-            .all(|character| character.is_ascii_alphanumeric() || "-._".contains(character))
-    {
-        return Err(SemanticError::new("invalid token name"));
-    }
-    Ok(())
-}
-
-fn valid_color(value: &str) -> bool {
-    matches!(value.len(), 4 | 7 | 9)
-        && value.starts_with('#')
-        && value[1..]
-            .chars()
-            .all(|character| character.is_ascii_hexdigit())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -899,36 +690,17 @@ mod tests {
     }
 
     #[test]
-    fn token_cascade_retains_instance_override() {
-        let global = TokenLayer {
-            values: BTreeMap::from([
-                ("density".into(), TokenValue::Number(1.0)),
-                ("radius".into(), TokenValue::Number(8.0)),
-            ]),
-        };
-        let definition = TokenLayer {
-            values: BTreeMap::from([("radius".into(), TokenValue::Number(12.0))]),
-        };
-        let instance = TokenLayer {
-            values: BTreeMap::from([("radius".into(), TokenValue::Number(3.0))]),
-        };
-        let resolved = resolve_tokens(&[&global, &definition, &instance]).unwrap();
-        assert_eq!(resolved.values["density"], TokenValue::Number(1.0));
-        assert_eq!(resolved.values["radius"], TokenValue::Number(3.0));
-    }
-
-    #[test]
     fn diff_is_atomic_and_rejects_unknown_version() {
         let (_, mut protein, _) = composition_fixture();
-        let mut tokens = TokenLayer::default();
+        let mut tokens = StyleLayer::default();
         let mut revision = 1;
         let diff = SemanticDiff {
             schema_version: SEMANTIC_SCHEMA_VERSION,
             base_revision: 1,
             next_revision: 2,
             operations: vec![SemanticDiffOp::SetGlobalToken {
-                name: "radius".into(),
-                value: TokenValue::Number(10.0),
+                name: "--lynx-radius-control".into(),
+                value: StyleValue::LengthPx(10.0),
             }],
         };
         assert!(diff.apply(&mut revision, &mut protein, &mut tokens).is_ok());
@@ -952,13 +724,21 @@ mod tests {
     fn projection_selection_uses_declared_capabilities() {
         let native = RendererProjectionManifest {
             key: "native-light".into(),
+            kind: ProjectionKind::NativeRetained,
+            isolation: Isolation::Trusted,
             required: BTreeSet::from([RendererCapability::InstancedNodes]),
+            capabilities: BTreeSet::new(),
             assets: Vec::new(),
+            projected_nodes: BTreeSet::from(["root".into()]),
         };
         let html = RendererProjectionManifest {
             key: "installed-html".into(),
+            kind: ProjectionKind::InstalledHtml,
+            isolation: Isolation::InstalledHtml,
             required: BTreeSet::from([RendererCapability::ExternalHtml]),
+            capabilities: BTreeSet::new(),
             assets: vec!["index.html".into()],
+            projected_nodes: BTreeSet::from(["root".into()]),
         };
         let available = BTreeSet::from([
             RendererCapability::InstancedNodes,

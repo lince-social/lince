@@ -2,9 +2,9 @@
 //! text edits are cumulative `crdt` ops that converge character-wise across
 //! Cells; SQLite always holds the materialized current values.
 
-use engine::sync::Delivery;
 use engine::Engine;
 use engine::actions::Action;
+use engine::sync::Delivery;
 use engine::trust::Signer;
 use nucleus::RecordKind;
 use store::records::NewRecord;

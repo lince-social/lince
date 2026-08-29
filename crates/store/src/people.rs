@@ -153,7 +153,8 @@ pub async fn deactivated(pool: &SqlitePool) -> Result<Vec<(String, Standing)>, S
         .into_iter()
         .filter_map(|(uid, fds)| {
             let value: serde_json::Value = serde_json::from_str(&fds).ok()?;
-            let standing: Standing = serde_json::from_value(value.get(STANDING_KEY)?.clone()).ok()?;
+            let standing: Standing =
+                serde_json::from_value(value.get(STANDING_KEY)?.clone()).ok()?;
             (!standing.active).then_some((uid, standing))
         })
         .collect();

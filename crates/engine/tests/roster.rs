@@ -849,7 +849,9 @@ async fn a_swapped_sealing_key_breaks_the_root_signature() {
     let (them, their_organ) = cell("http://them.test").await;
     let (us, _) = cell("http://us.test").await;
     let root = Signer::generate(&their_organ, engine::roster::ROOT_KEY_ID);
-    them.publish_root_key(&root).await.expect("publish root key");
+    them.publish_root_key(&root)
+        .await
+        .expect("publish root key");
 
     engine::trust::adopt_key(
         &us.store,
@@ -874,7 +876,11 @@ async fn a_swapped_sealing_key_breaks_the_root_signature() {
         us.adopt_roster(&signed).await.expect("adopt"),
         RosterOutcome::Accepted
     );
-    let held = us.roster_of(&their_organ).await.expect("read").expect("held");
+    let held = us
+        .roster_of(&their_organ)
+        .await
+        .expect("read")
+        .expect("held");
     assert!(held.roster.cells[0].sealing_key.is_some());
 
     // The substitution rides a GENUINE later roster, with only the sealing key
@@ -901,9 +907,16 @@ async fn a_swapped_sealing_key_breaks_the_root_signature() {
 
     // And the refusal left what we already held alone. A substitution that
     // errors while corrupting stored state would still have redirected mail.
-    let after = us.roster_of(&their_organ).await.expect("read").expect("held");
+    let after = us
+        .roster_of(&their_organ)
+        .await
+        .expect("read")
+        .expect("held");
     assert_ne!(
-        after.roster.cells[0].sealing_key.as_ref().map(|k| &k.public),
+        after.roster.cells[0]
+            .sealing_key
+            .as_ref()
+            .map(|k| &k.public),
         Some(&theirs.public)
     );
 }
@@ -921,7 +934,9 @@ async fn the_mirrored_roster_carries_the_sealing_key_for_the_device_list() {
     let (_, published) = engine::seal::generate("c-laptop", 1, "2099-01-01T00:00:00Z");
     let mut listed = entry("laptop", "node-1", "opkey-1");
     listed.sealing_key = Some(published.clone());
-    e.publish_roster(&root, vec![listed]).await.expect("publish");
+    e.publish_roster(&root, vec![listed])
+        .await
+        .expect("publish");
 
     let mirrored = store::records::get_extension(&e.store.pool, &organ, "lince.roster")
         .await

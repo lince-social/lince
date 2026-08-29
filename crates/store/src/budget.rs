@@ -201,7 +201,10 @@ pub async fn database_bytes(pool: &SqlitePool) -> Result<i64, StoreError> {
         .fetch_one(pool)
         .await?
         .get(0);
-    let size: i64 = sqlx::query("PRAGMA page_size").fetch_one(pool).await?.get(0);
+    let size: i64 = sqlx::query("PRAGMA page_size")
+        .fetch_one(pool)
+        .await?
+        .get(0);
     Ok(pages.saturating_mul(size))
 }
 
@@ -253,7 +256,10 @@ mod tests {
     #[test]
     fn the_shares_account_for_the_whole_budget() {
         let sum: i64 = Area::ALL.iter().map(|a| a.share_percent()).sum();
-        assert_eq!(sum, 100, "shares that do not sum to 100 waste the difference");
+        assert_eq!(
+            sum, 100,
+            "shares that do not sum to 100 waste the difference"
+        );
     }
 
     #[test]

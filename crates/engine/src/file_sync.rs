@@ -181,7 +181,10 @@ impl Engine {
         // "was it deleted" are about the Record, not about any one of them.
         let mut by_uid: HashMap<String, Vec<PathBuf>> = HashMap::new();
         for (path, known) in state.known.iter() {
-            by_uid.entry(known.uid.clone()).or_default().push(path.clone());
+            by_uid
+                .entry(known.uid.clone())
+                .or_default()
+                .push(path.clone());
         }
         for paths in by_uid.values_mut() {
             paths.sort_by_key(|path| format_rank(&formats, path));
@@ -299,9 +302,7 @@ impl Engine {
             if format_of(&formats, path) != Some(FileFormat::Lingua) {
                 continue;
             }
-            if let Ok((Some(projection), _)) =
-                crate::lingua_file::parse_file(&disk[path])
-            {
+            if let Ok((Some(projection), _)) = crate::lingua_file::parse_file(&disk[path]) {
                 if !projection.uid.trim().is_empty() {
                     declared.insert(projection.uid.trim().to_string());
                 }
@@ -804,8 +805,16 @@ impl Engine {
             }
         }
 
-        let identity_now = disk.assertions.iter().find(|l| l.identity).map(|l| l.predicate.clone());
-        let identity_was = known.assertions.iter().find(|l| l.identity).map(|l| l.predicate.clone());
+        let identity_now = disk
+            .assertions
+            .iter()
+            .find(|l| l.identity)
+            .map(|l| l.predicate.clone());
+        let identity_was = known
+            .assertions
+            .iter()
+            .find(|l| l.identity)
+            .map(|l| l.predicate.clone());
 
         // Clear the identity first when it is moving. An identity assertion
         // must be unary and unquantified, and retracting the assertion that
@@ -884,8 +893,10 @@ impl Engine {
         let Ok(target) = nucleus::DecimalValue::parse_inferred(amount.trim()) else {
             report.conflicts.push(FileConflict {
                 path: path.display().to_string(),
-                reason: format!("`{amount}` is not an exact decimal amount, so the level was left \
-                                 as it was"),
+                reason: format!(
+                    "`{amount}` is not an exact decimal amount, so the level was left \
+                                 as it was"
+                ),
             });
             return Ok(());
         };
@@ -904,8 +915,10 @@ impl Engine {
                 None => {
                     report.conflicts.push(FileConflict {
                         path: path.display().to_string(),
-                        reason: format!("the unit @{unit} is not a Concept here, so the level kept \
-                                         the unit it had"),
+                        reason: format!(
+                            "the unit @{unit} is not a Concept here, so the level kept \
+                                         the unit it had"
+                        ),
                     });
                 }
             }
@@ -1087,12 +1100,11 @@ impl Engine {
 
         let uids: Vec<String> = matched.iter().map(|r| r.uid.clone()).collect();
         let assertions = store::assertions::for_subjects(&self.store.pool, &uids).await?;
-        let concept_names: HashMap<String, String> =
-            store::concepts::list_all(&self.store.pool)
-                .await?
-                .into_iter()
-                .map(|c| (c.uid, c.canonical_name))
-                .collect();
+        let concept_names: HashMap<String, String> = store::concepts::list_all(&self.store.pool)
+            .await?
+            .into_iter()
+            .map(|c| (c.uid, c.canonical_name))
+            .collect();
         // Titles for whatever the links point at — including Records outside
         // this folder's selection, which are exactly the interesting ones.
         let mut object_uids: Vec<String> = assertions
@@ -1200,13 +1212,18 @@ impl Engine {
                 )));
             }
             if let Some(unit) = &line.unit {
-                if store::concepts::resolve(&self.store.pool, unit).await?.is_none() {
+                if store::concepts::resolve(&self.store.pool, unit)
+                    .await?
+                    .is_none()
+                {
                     return Ok(Err(format!("the unit @{unit} is not a Concept here")));
                 }
             }
             if let Some(link) = &line.object {
                 if !pending.contains(&link.uid)
-                    && store::records::get(&self.store.pool, &link.uid).await?.is_none()
+                    && store::records::get(&self.store.pool, &link.uid)
+                        .await?
+                        .is_none()
                 {
                     return Ok(Err(format!(
                         "[[{}|{}]] points at no Record here — a link is its uid, never its title, \

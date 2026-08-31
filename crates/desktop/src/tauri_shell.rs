@@ -11,7 +11,7 @@ use tauri::{
 use tauri_plugin_autostart::ManagerExt;
 
 const MAIN_WINDOW_LABEL: &str = "main";
-const APP_ICON_PNG: &[u8] = include_bytes!("../../../assets/black_in_white.png");
+const APP_ICON_PNG: &[u8] = include_bytes!("../../../assets/logo/black_in_white.png");
 
 pub fn run(tokio_runtime: tokio::runtime::Runtime, args: Vec<String>) {
     tauri::async_runtime::set(tokio_runtime.handle().clone());

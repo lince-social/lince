@@ -182,7 +182,7 @@ impl DependencyAudit {
     }
 
     pub fn write_default(&self) -> Result<PathBuf, String> {
-        let path = PathBuf::from("target/interface-prototype/reports")
+        let path = PathBuf::from("target/interface/reports")
             .join(format!("dependencies-{}.json", unix_millis()));
         self.write_pretty(&path)?;
         Ok(path)
@@ -713,7 +713,7 @@ fn source_findings() -> Vec<SourceFinding> {
             subject: "GPUI external composition".into(),
             state: "rejected as production owner".into(),
             detail: "The exact-source diagnostic proved GPUI's compositor path but also retained GPUI ownership of the event loop and final presentation. Lince keeps only its visual and behavioral reference, not the dependency, in the joined runtime.".into(),
-            evidence: "target/interface-prototype/reports/gpui-diagnostic-v7.json and the GPUI findings in anicca/Interface.md".into(),
+            evidence: "target/interface/reports/gpui-diagnostic-v7.json and the GPUI findings in anicca/interface/architecture.md".into(),
         },
         SourceFinding {
             subject: "CEF Linux accelerated surface".into(),

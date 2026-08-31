@@ -3,7 +3,7 @@
 Purpose: Retain explicitly unplanned World/Map and production-coordination ideas.
 
 Owner source: no dedicated Sands Record currently exists;
-[Interface](../../Interface.lingua) governs shared interface decisions.
+[Interface in Lince](../../Lince.lingua) governs shared interface decisions.
 
 Status: Future; no current implementation authority.
 

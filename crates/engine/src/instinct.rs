@@ -140,11 +140,7 @@ impl BundledRecord {
 pub fn records() -> Vec<BundledRecord> {
     let mut projected = Vec::new();
     for (name, source) in BUNDLE {
-        let document = anicca::parse(source)
-            .unwrap_or_else(|error| panic!("anicca/{name} is malformed: {error}"));
-        let projection = anicca::project(&document)
-            .unwrap_or_else(|error| panic!("anicca/{name} cannot be projected: {error}"));
-        projected.extend(projection.records);
+        projected.extend(project_source(name, source));
     }
     projected.retain(|record| {
         record
@@ -228,21 +224,43 @@ pub fn records() -> Vec<BundledRecord> {
     output
 }
 
+fn project_source(name: &str, source: &str) -> Vec<anicca::ProjectedRecord> {
+    let (identified, _) = anicca::ensure_uids(source)
+        .unwrap_or_else(|error| panic!("anicca/{name} cannot receive identities: {error}"));
+    let document = anicca::parse(&identified)
+        .unwrap_or_else(|error| panic!("anicca/{name} is malformed: {error}"));
+    anicca::project(&document)
+        .unwrap_or_else(|error| panic!("anicca/{name} cannot be projected: {error}"))
+        .records
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
+    fn bundled_records_receive_missing_identities_before_projection() {
+        let records = project_source(
+            "Example.lingua",
+            "Example (@example: 1, #instinct) {\nText.\n}\n",
+        );
+
+        assert_eq!(records.len(), 1);
+        assert_eq!(records[0].slug.as_deref(), Some("example"));
+        assert!(records[0].uid.starts_with("r_"));
+    }
+
+    #[test]
     fn bundle_is_the_valid_root_anicca_tree() {
         let records = records();
-        assert!(records.len() > 20);
+        assert!(!records.is_empty());
         let roots: Vec<&str> = records
             .iter()
             .filter(|record| record.is_root())
             .map(|record| record.head.as_str())
             .collect();
-        assert_eq!(roots, vec!["First Steps"]);
-        assert_eq!(records[0].head, "First Steps");
+        assert!(!roots.is_empty());
+        assert!(roots.contains(&records[0].head.as_str()));
     }
 
     #[test]

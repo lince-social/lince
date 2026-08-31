@@ -37,7 +37,11 @@ pub fn run() {
     #[cfg(target_os = "linux")]
     {
         match tokio_runtime.block_on(runtime::start_desktop_server()) {
-            Ok(runtime) => lince_interface::run_native_interface(Some(runtime.url)),
+            Ok(runtime) => {
+                eprintln!("Legacy Lince interface available at {}", runtime.url);
+                let _runtime_guard = tokio_runtime.enter();
+                lince_interface::run_native_interface(None);
+            }
             Err(error) => {
                 eprintln!("Failed to start Lince desktop server: {error}");
                 std::process::exit(1);

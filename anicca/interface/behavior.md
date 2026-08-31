@@ -2,7 +2,7 @@
 
 Purpose: Define how native Rust and shipped JavaScript implement the same logical Sand Behavior without TypeScript, bundler, or framework requirements.
 
-Owner source: [Interface](../Interface.lingua); no separate Customization or
+Owner source: [Interface in Lince](../Lince.lingua); no separate Customization or
 Sands Record currently exists.
 
 Status: Accepted boundary; Plan B remains browser/Facade projection rather than Linux desktop fallback.

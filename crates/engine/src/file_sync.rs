@@ -6,10 +6,9 @@
 //! (`Action::EditRecordText` fires the same annotation fact the fact_bus
 //! carries to Protein subscriptions — no separate push mechanism needed).
 //!
-//! Selection is deliberately NOT Protein-configurable yet (tracked as future
-//! work in the living doc) — v1 hardcodes "every record whose `organ_uid` is
-//! this organ" (`Predicate::OrganEq`), per the "simplest thing for now"
-//! instruction.
+//! Selection starts at "every record whose `organ_uid` is this organ"
+//! (`Predicate::OrganEq`) and narrows further when the sync config carries a
+//! `protein::Predicate` of its own — see `configured_filter`.
 //!
 //! **Conflict rule: disk wins.** A tick applies disk-side changes to the
 //! Ledger FIRST, then mirrors the (now-reconciled) Ledger state back to disk

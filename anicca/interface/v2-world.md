@@ -2,7 +2,7 @@
 
 Purpose: Preserve the globe-to-desk, authored-world, terrain, scene, time, disclosure, and capture-to-work direction.
 
-Owner source: [Interface](../Interface.lingua).
+Owner source: [Interface in Lince](../Lince.lingua).
 
 Status: Capability horizon and future research, not a v1 product checklist.
 

@@ -5,10 +5,10 @@ separates the current v1 implementation from accepted runtime evidence,
 subject specifications, deferred work, historical alternatives, and the v2
 world direction.
 
-The owner-authored [Interface Record](../Interface.lingua) remains
+The owner-authored [Interface section in Lince](../Lince.lingua) remains
 authoritative for interface decisions. [Ontology](../Ontology.lingua) and
 [Karma](../Karma.lingua) remain authoritative when a subject here links to
-them. There are currently no separate Customization, Sands, or
+them. There are currently no separate Interface, Customization, Sands, or
 Interoperability `.lingua` files. If one is created, it immediately becomes
 the higher source of truth for its adjacent subject.
 
@@ -44,23 +44,30 @@ substantive source passage was dropped.
 
 ## Current checkpoint
 
-[current.md](current.md) is the compact continuation context. The accepted
+[current.md](current.md) is the compact continuation context. The promoted
 native foundation is described in [architecture.md](architecture.md), while
-its evidence and known production-launch blocker live in
+its evidence and current production-launch blocker live in
 [laboratory.md](laboratory.md) and
 [plans/interface.md](plans/interface.md).
 
 The typed Customization, semantic primitive-Sand and recursive-composition
-kernels are landed. The active product sequence is Configuration and external
-authoring, official-Sand migration, the completion gate, and only then Box.
+kernels are landed. The ordered 30-entry Pulsar/Helio study in
+[links.md](links.md) is complete. It selected no engine, renderer, database or
+GPUI dependency; its narrow carry-forward set is canonical in
+[architecture.md](architecture.md#completed-pulsarhelio-study-and-carry-forward-boundary).
+Implementation continues with Configuration and external authoring,
+official-Sand migration, the completion gate, and only then Box. The completed
+SceneDB/EngineFS cluster informs Box durability and live collaboration without
+owning either design.
 
 ## Subject map
 
 | Document | Canonical responsibility | Status |
 | --- | --- | --- |
+| [First Steps.linguai](First%20Steps.linguai) | Agent-maintained future user tutorial that will become owner-reviewed Instinct after v1 settles | Draft; legacy instructions plus clearly marked native plan |
 | [product.md](product.md) | Product promises, UI guidelines, collaboration/editor surface | Active product boundary |
 | [architecture.md](architecture.md) | V1 runtime ownership, Plan A/Plan B disposition, engine seams | Plan A accepted |
-| [laboratory.md](laboratory.md) | Prototype fixtures, benchmarks, acceptance evidence and handoff | Accepted through C2; production launch blocked by owner Records |
+| [laboratory.md](laboratory.md) | Native fixtures, benchmarks, acceptance evidence and handoff | Promoted through C2; production launch awaits valid owner references |
 | [customization.md](customization.md) | Tokens, themes, visual character and design-system sequence | Composition landed; Configuration next |
 | [visual-inventory.md](visual-inventory.md) | First-party visual source boundary and token migration classification | Landed inventory; migration pending |
 | [legacy-web-ui.md](legacy-web-ui.md) | Existing Web component/API inventory | Migration input only |
@@ -68,14 +75,16 @@ authoring, official-Sand migration, the completion gate, and only then Box.
 | [sand-model.md](sand-model.md) | Recursive Sand/Castle model, ports, state and renderer projections | Recursive host and workbench landed |
 | [html-and-websites.md](html-and-websites.md) | Installed HTML, Website authority, packages and isolation | Prototype proven; product surface pending |
 | [official-sands.md](official-sands.md) | Existing first-party Sand behavior that migration must preserve | Migration input |
-| [box.md](box.md) | Box, Protein result templates, Areas, topology, 2D/3D field views and persistence | Opens after customization gate |
+| [box.md](box.md) | Box, Protein result templates, Areas, surface topology, free space, projection and persistence | Opens after customization gate |
 | [facade.md](facade.md) | Public read-only Live Facade | Late v1 |
 | [interoperability.md](interoperability.md) | Interface-facing Facade, Blood and portable-canvas boundaries | Partly deferred |
 | [communication.md](communication.md) | Communication Sand domain and staged implementation | Separate Sand backlog |
 | [future-sands.md](future-sands.md) | Unplanned 2D Map and Ergon ideas | Future |
-| [deferred.md](deferred.md) | Workspace sync, richer Protein, portals and advanced topology extensions | Explicitly deferred |
+| [deferred.md](deferred.md) | Offline workspace replicas/failover, richer Protein, portals and advanced topology extensions | Explicitly deferred |
 | [v2-world.md](v2-world.md) | Globe-to-desk worlds, terrain, scenes, time and capture-to-work | V2 research |
 | [research/runtime-alternatives.md](research/runtime-alternatives.md) | Maud, raw HTML, Datastar and renderer alternatives | Reference only |
+| [research/scenedb.md](research/scenedb.md) | SceneDB runtime, Box durability, EngineFS, sync lanes and live collaboration review | Accepted research direction |
+| [links.md](links.md) | Complete Pulsar/Helio research ledger, relevance judgments and focused source snapshots | 30 reviews complete; reference only |
 
 ## Plans
 

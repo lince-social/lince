@@ -1,5 +1,13 @@
 First Steps (@first-steps: 1, is #chapter, #instinct, #position: 1, #done) { r_YWPKA0Z1DJ8XCHTZRW4X2SDJ1N
+This was the old First Steps.lingua file, i have renamed it .linguai to give you the ability to write in it. Please use it as a file that will in the end become a .lingua after we settle the new v1.0.0 frontend for users to use. So it is the first thing they do, the text that is displayed in pretty record text rendered and teaches people how do use the interface. So you should update how things happen in interface so people can understand what has been developed and how to use.
+
 # First Steps
+
+> **Draft status:** this is the future v1 tutorial. The toolbar, card and
+> Protein instructions below describe the legacy interface that can be used
+> today. Sections explicitly marked **planned native Box** explain the accepted
+> replacement and must lose that label only after a person can perform the
+> described work in the running application.
 
 Open Lince and there is no menu bar, no sidebar, no home screen waiting to be navigated. There is a canvas — a large surface you pan and zoom — and on it, small tools called **sands**: a table, a kanban, a record editor, a terminal, a graph of relations, a transfer panel, a rule builder, a reader for this very document. You choose which ones exist, where they sit, how big they are, and — the part that matters most — what data each one is looking at. Nothing here is a fixed screen, because nobody's work is a fixed screen.
 
@@ -97,6 +105,87 @@ To set one, turn on edit mode, click the **gear** on a sand, and find the **Data
 
 Give it a name and save it. Saved Proteins are records themselves, so the same query can drive several cards, and editing it updates all of them at once.
 
+## Areas make an interface from data — planned native Box
+
+A normal application gives you screens chosen by its developer. Box instead
+lets you place a few reusable **Areas of influence** around Sands fed by
+Protein. Together those Areas can behave like many different applications.
+
+- A **Protein Area** is where matching data enters. You choose a Protein and
+  build one small group of Sands as its template. Each result becomes another
+  complete instance of that group.
+
+- A **force Area** attracts or repels matching groups. It can gather urgent
+  work, push completed work away, or carry items through a visual process.
+
+- A **sorting Area** puts the groups inside it in a declared order and
+  direction. A few bounded sorting Areas can become Kanban columns.
+
+- A **mutation Area** previews an Action when a matching group enters. It does
+  nothing permanent until you explicitly arm it, and every accepted change is
+  still an attributed Lince change rather than anonymous physics.
+
+- An **immunity Area** protects the results from one Protein Area against
+  influences outside its boundary while keeping influences inside valid.
+
+The whole locked result group moves as one object. A title Sand cannot be torn
+away from the quantity button and assignee Sands it was packaged with. Select
+**Why is it here?** to see the source Protein, field arrows, matching Areas,
+forces, sorting, collisions and Actions that explain a group's current place.
+
+This is the larger idea behind the interface: a Kanban, inventory line, case
+pipeline, dashboard or small simulation should be a useful arrangement of
+shared building blocks, not another isolated application with another private
+copy of your data.
+
+## Surface, topology and free space — planned native Box
+
+Box has two spatial modes. It also has camera controls, and those are not the
+same choice.
+
+### Surface mode: cards always touch the floor
+
+Surface mode begins like a normal 2D canvas. In edit mode you can sculpt that
+canvas with raise, lower, flatten, smooth, circle, square and ridge brushes. A
+pit pulls matching groups downhill; a hill pushes them away; a slope can carry
+them along a production line. Filters mean two kinds of Record may experience
+different terrain at the same place, so the field lens tells you whose surface
+you are looking at.
+
+Choose **Top** to look straight down. Choose **Perspective** to tilt or orbit
+the camera and see the same plane in 3D. Cards are glued to the surface: they
+sit at its height, follow its slope and always touch their effective floor.
+Their text can still face you on a readable panel. Top and Perspective do not
+change the simulation or move the data; they are two ways to inspect it.
+
+### Space mode: cards float and Areas become volumes
+
+Choose **Space** only when you intend to change the physics. The topology floor
+stops supporting or moving Sands, and every world Sand can move in `x`, `y`
+and `z`. Force Areas become three-dimensional volumes that gather or repel
+matching Records. Sorting Areas use a direction or a local shelf. Mutation and
+immunity Areas react when a group enters their volume. Ordinary cards remain
+readable instead of spinning uncontrollably, while a Sand designed as a 3D
+object may expose rotation.
+
+A thin ghost plane marks local `z = 0`. It is not a floor and cannot catch a
+Sand. It shows where things would land if the workspace were collapsed back to
+the surface. Box can draw an Area's footprint on it and a line from a selected
+floating item to its projected position.
+
+Moving from Surface to Space keeps every `x` and `y`, starts each Sand at the
+height of the terrain it was touching, and expands flat Areas into volumes.
+Moving back previews an overhead projection: each `(x, y, z)` becomes `(x, y)`,
+Area volumes become footprints, and Sands touch their effective terrain again.
+You see overlaps before committing. The conversion happens as one undoable
+edit, so undo restores the exact prior transforms.
+
+Remember the two controls:
+
+- **Top / Perspective** changes the camera and never changes physics.
+- **Surface / Space** changes the simulation and always previews the
+  conversion.
+
 ## One card for Project A, one for Project B
 
 This is the common case: your tasks all live in the same organ, but you want a board per project. It turns on one choice — whether a word stands alone, or points at a record.
@@ -134,5 +223,9 @@ Two things trip people up here. The Record sand calls it a **link** and the Data
 
 **Assignee** is the same filter with the ceremony removed: kind `assigned-to`, pre-filled, with a person picker. And because filters combine, "Project A but not archived", or "assigned to me across both projects", are just more filters on the same card.
 
-That is the whole frontend. The chapters that follow are about what is underneath it — starting with the one thing everything in Lince is made of.
+That is the current legacy frontend plus the accepted shape of the native Box.
+As the native controls become usable, this draft will replace old toolbar and
+card instructions instead of keeping two tutorials forever. The chapters that
+follow are about what is underneath it — starting with the one thing everything
+in Lince is made of.
 } r_YWPKA0Z1DJ8XCHTZRW4X2SDJ1N

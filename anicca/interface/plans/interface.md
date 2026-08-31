@@ -2,7 +2,7 @@
 
 Purpose: Retain the landed foundation statement and detailed remaining Box, Area, persistence, and Facade work.
 
-Owner source: [Interface](../../Interface.lingua).
+Owner source: [Interface in Lince](../../Lince.lingua).
 
 Status: native foundation, customization, C1 semantic primitive-Sand and C2
 recursive-composition runtimes accepted; C3 Configuration is next.
@@ -64,16 +64,28 @@ binary still closes over its upstream GTK and X-family shared libraries even
 though Lince exposes and launches only its Ozone Wayland path.
 
 The production desktop release binary also builds, links and packages. The
-2026-08-28 cold release build completed after the offline desktop environment
-was pointed at the exact CEF distribution already validated by the joined
-runtime. Its live report remains blocked before the window opens because the
-owner-authored `Interface.lingua` fails at bytes 2489–2497 on line 31's
-`Interfaceless` opening. The project checker separately reports
-opening/closing UID mismatches in the owner-authored `Karma.lingua`,
-`Lince.lingua` and `Transfer.lingua`. This Markdown does not repair or bypass
-any Record. After the owner restores valid syntax, rerun
-`mise run interface-desktop-report`; until then the production launch is not
-claimed as human-usable evidence.
+native package is promoted at `crates/interface`; `mise run interface` favors
+it, while `mise run interface-legacy` preserves the old Web UI as an explicit
+browser surface. Both use the real Lince server. The native desktop prints the
+legacy URL but does not place that privileged first-party page inside a
+zero-authority Website Sand.
+
+The exact pinned CEF distribution is materialized as a writable derived cache
+inside `target/` for development because `cef-dll-sys` copies its files during
+Cargo builds. The production package still bundles the immutable Nix payload.
+The 2026-08-29 release run compiled the current merged owner corpus and fixed
+the bundled consumer to mint Lingua's optional declaration UIDs before
+projection. It now stops before the window because the removed First Steps
+root leaves six `@first-steps` references unresolved in Karma, Lince and
+Ontology. This Markdown does not repair or bypass any Record. After the owner
+chooses those Records' new parent, rerun `mise run interface-desktop-report`;
+until then the production launch is not claimed as human-usable evidence.
+
+The same promoted release runtime passed its direct joined report on
+2026-08-29 at 1920×1052. Under the accepted 200/1,000/10,000 workload and two
+accelerated CEF surfaces it measured 10.958 ms frame p95, 12.448 ms p99,
+1.172 ms fixed-step p95 and zero backlog. This closes the crate-promotion and
+runtime seam; it does not bypass the separate owner-reference launch gate.
 
 The customization kernel is also landed. Its versioned typed contract resolves
 91 canonical roles through seven inspectable scopes into native WGPU/retained
@@ -107,11 +119,38 @@ and Installed HTML agree on the same normalized package. Release parity and
 the joined Wayland report pass; the completed entries and exact evidence are
 in [Customization plan](customization.md#landed-c2-recursive-composition-workbench).
 
+#### Completed engine study and its place in the waterfall
+
+The 30-entry Pulsar/Helio study is complete. It selected no GPUI, Pulsar,
+Helio, SceneDB or WGPUI dependency and inserts no engine-adoption stage. The
+canonical seven-point carry-forward boundary and implementation sourcing order
+are in
+[Runtime architecture](../architecture.md#completed-pulsarhelio-study-and-carry-forward-boundary).
+The complete audits remain in [the research ledger](../links.md), not in this
+checklist.
+
+The accepted ideas attach to work that already exists:
+
+| Existing stage | Study constraint carried into it |
+| --- | --- |
+| C3–C4 Configuration and official Sands | Stable semantic ids and renderer-neutral definitions remain above retained nodes, Bevy entities, DOM nodes, CEF ids and GPU handles. Focused UI crates or bounded techniques may assist projections without creating another application model. |
+| C5 completion gate | Runtime health relates input and semantic revisions to simulation, CEF and presentation work. Frame coordination, recovery, accessibility and visual quality remain human-tested. |
+| Box navigation | The Lince coordinator owns the frame; culling removes only extraction and drawing. Coordinate frames, displayed-revision picking and bounded adapter snapshots are correct before scale optimization. |
+| Protein and Areas | Typed events and Actions cross ownership boundaries. Neither camera visibility nor renderer residency changes Protein, Behavior or physics meaning. |
+| Topology and free space | Authoritative frames and potential fields are shared across physics, rendering, picking and persistence. Dirty tiles, dense GPU buffers and compute enter only from measured workload evidence. |
+| Box durability and collaboration | Snapshots, journals and stable ids own truth; runtime slots, contacts, meshes, GPU buffers and browser handles are rebuilt. SceneDB remains repertoire, not storage or protocol. |
+| Installed HTML, Websites and Facade | CEF/DOM state stays behind its adapter, receives transformed input for the displayed revision and never becomes Box authority. |
+
+Correctness work ships with its owning stage. Dirty-range tuning, indirect
+drawing, GPU compaction, generated detail, advanced pass fusion, lighting and
+other renderer techniques remain optional measured work; the waterfall does
+not claim them merely because the study found them interesting.
+
 #### V1 master waterfall
 
-The owner-authored Record syntax repairs are an independent production launch
-gate. They do not block isolated foundation work, but they must pass before any
-production desktop stage is called human-usable.
+The owner-authored unresolved-reference repair is an independent production
+launch gate. It does not block isolated foundation work, but it must pass
+before any production desktop stage is called human-usable.
 
 1. Build Configuration and external authoring on the landed primitives. The gate is
    human control of every supported scope, inheritance, theme assets,
@@ -131,16 +170,24 @@ production desktop stage is called human-usable.
    is deterministic overlap, typed Actions, complete-group behavior and
    visible failure/recovery.
 7. Build topology stamps/brushes, filtered effective fields, Protein admission
-   controls and camera-consistent 2D/3D views. Compare Avian with a narrow SoA
-   solver here under the accepted workload; choose or optimize compute only
-   from measurements. The gate is the reproducible spatial circuit and flat
-   Kanban-like configuration.
+   controls, surface-bound top/perspective views, free-space volume physics and
+   the previewable collapse/expand operation between them. Compare Avian with
+   a narrow SoA solver here under the accepted workload; choose or optimize
+   compute only from measurements. The gate is the reproducible surface
+   circuit, free-space clustering and collapse, and flat Kanban-like
+   configuration.
 8. Build the readable Box snapshot, typed operation journal, semantic commit
-    policy, recovery, compaction and agent/program operation API.
+   and spatial-checkpoint policy, recovery, compaction and agent/program
+   operation API. Prove that a Sand moved by Areas/topology restores at its
+   last durable position after restart.
 9. Finish Installed HTML and Website administration, capability review,
-    storage/network controls, admission budgets, crash/recovery and runtime
-    health on the actual Box.
-10. Build the public read-only Live Facade from the same semantic definitions,
+   storage/network controls, admission budgets, crash/recovery and runtime
+   health on the actual Box.
+10. Build live-only host-authoritative workspace collaboration through the
+    shared Synchronization surface. Reuse contact identity, grants and delivery
+    infrastructure while keeping Box transactions distinct from Record sync
+    and File projection operations.
+11. Build the public read-only Live Facade from the same semantic definitions,
     Protein stream and browser adapters, with local-only interactions and no
     Actions.
 
@@ -238,8 +285,13 @@ Box and after.
 - [ ] Add edit tools for drawing, resizing, copying, stacking, styling, and
   removing areas without silently changing the data they currently contain.
 
-#### Topology editing and 2D/3D field views
+#### Topology editing, surface views and free space
 
+- [ ] Give each workspace one explicit spatial mode, `surface` or `space`, and
+  keep camera projection separate. Surface mode owns logical `(x, y)` body
+  positions; space mode owns `(x, y, z)` body transforms. Never run or persist
+  two contradictory active simulations for one Sand. Pinned viewport Sands
+  remain outside both world simulations.
 - [ ] Define the versioned topology document shape as ordered compact stamps
   and effects rather than a persisted mesh: stable uid, anchor, local
   transform, primitive profile, extent, signed height/depth, steepness,
@@ -266,14 +318,34 @@ Box and after.
   overview lenses. In 2D show contours, gradient arrows, boundaries, color,
   and pattern distortion. In 3D show the selected effective surface and
   matching groups without pretending nonmatching groups share it. Keep
-  ordinary Sand text crisp through a screen-facing or gravity-upright
-  projection and leave viewport-anchored Sands outside terrain.
-- [ ] Keep each group's authoritative simulation position in one logical
-  plane. Switching or tilting between 2D and 3D changes camera and explanation
-  only; it cannot rerun, resettle, or persist a contradictory second
-  simulation. Raycast 3D input back into the same logical coordinates,
+  each matching group's support point and orientation glued to the sampled
+  height and normal. Keep ordinary Sand text crisp through a reading face
+  mounted on the terrain-bound body and leave viewport-anchored Sands outside
+  terrain.
+- [ ] In surface mode, keep each group's authoritative simulation position in
+  one logical plane. Switching between Top and Perspective changes camera and
+  explanation only; it cannot rerun, resettle, or persist a contradictory
+  position. Raycast perspective input back into the same logical coordinates,
   preserve focus/selection across camera changes, make a dragged group
   kinematic only for the gesture, and move attached effects with their anchor.
+- [ ] Build free-space mode with authoritative 3D transforms and no topology
+  floor, contact, or gradient force. Project Protein, force, sorting, mutation
+  and immunity Areas as declared volumes; give forces 3D vectors, sorting a
+  local basis, and entry behavior volume crossings. Keep ordinary cards
+  readable without forcing physical tumbling, while allowing specialized 3D
+  Sand projections to expose orientation.
+- [ ] Render the local `z = 0` collapse plane as a thin, nonphysical reference
+  in space mode. Show Area footprints and optional selected-entity projection
+  lines without turning the plane into a collider, support, topology force or
+  second simulation.
+- [ ] Implement expansion and collapse as explicit previewable, atomic and
+  undoable Box operations. Surface-to-space preserves `(x, y)`, initializes
+  Sand `z` from its effective terrain and extrudes Area footprints. Space-to-
+  surface orthographically projects `(x, y, z)` to `(x, y)`, squashes Area
+  volumes to declared footprints and places Sands on their effective terrain.
+  Preview overlap and bounds consequences, retain exact source transforms in
+  operation history for undo, and never silently translate dormant topology
+  into a 3D force.
 - [ ] Let every Area/effect configure boundary, color, opacity, contour,
   pattern, and pattern-distortion presentation independently of physical
   strength. Extend Why-is-it-here with sampled height, gradient,
@@ -284,15 +356,21 @@ Box and after.
   direct-placement policies. Materialize a complete result group atomically
   before physics admission; bound pre-settle work and reveal an honest
   unsettled state when its budget expires.
-- [ ] Prove one spatial circuit: a Protein source feeds a visible slope,
+- [ ] Prove one surface circuit: a Protein source feeds a visible slope,
   filtered branches route groups through lanes, and terminal pits collect
-  distinct cohorts. Show the same deterministic result from above in 2D and
-  through the selected field lens in 3D, then reproduce a flat Kanban-like
-  direct-placement configuration from the same primitives.
+  distinct cohorts. Show the same deterministic result from Top and
+  Perspective cameras, then reproduce a flat Kanban-like direct-placement
+  configuration from the same primitives.
+- [ ] Expand that fixture into space, move Areas and groups above and below the
+  collapse plane, cluster cohorts using only 3D force volumes, preview the
+  projected footprints, collapse it deterministically to surface mode, and
+  undo back to the exact 3D transforms. Verify Sand identity, bindings, state,
+  focus, group integrity, Area order and Why-is-it-here explanations throughout.
 - [ ] Establish scaling curves for stamp count, dirty field tiles, active
-  bodies, gradient sampling, mesh/pattern generation, and 2D/3D lens changes.
-  Start with deterministic CPU field sampling and use GPU tile/mesh work where
-  it avoids readback; move physics kernels to GPU only after measurement.
+  bodies, 2D gradient sampling, 3D volume queries, mesh/pattern generation,
+  camera changes and surface/space conversion. Start with deterministic CPU
+  field sampling and use GPU tile/mesh work where it avoids readback; move
+  physics kernels to GPU only after measurement.
 
 #### Canvas base pattern
 
@@ -312,8 +390,9 @@ Box and after.
   can display it; an image or PDF can choose Document Viewer. A drop never
   silently creates Ledger data.
 - [ ] Add performant drawing as compact Box data rather than bitmap snapshots.
-  Its operation shape must remain suitable for later merging and workspace
-  sync without making that deferred work part of the current implementation.
+  Its operation shape must participate in the live Box transaction stream
+  without sending bitmap snapshots. Offline multi-writer drawing merge remains
+  deferred.
   Benchmark complex diagrams and painting-like frames against the interaction
   and culling behavior people expect from tools such as Excalidraw.
 
@@ -334,9 +413,11 @@ Box and after.
 - [ ] Define the versioned Box document schema with stable uids for every
   authored entity; referenced Sand revisions; recursive group-local
   transforms; world/viewport/group anchors; semantic layers and sibling order;
-  Protein references and field-to-port bindings; areas; connections; override
-  patches; topology stamps/effects and their anchors; persistent host-state
-  allocation; and content-addressed assets.
+  workspace spatial mode and local collapse-plane frame; surface placements
+  and free-space transforms; Protein references and field-to-port bindings;
+  Area footprint, volume, projection and local-basis definitions; connections;
+  override patches; topology stamps/effects and their anchors; persistent
+  host-state allocation; and content-addressed assets.
 - [ ] Keep a readable compact snapshot plus a typed operation journal. Validate
   both at runtime, batch one human gesture atomically, recover from an
   interrupted tail, compact without changing meaning, and retain the last
@@ -352,20 +433,67 @@ Box and after.
   edits.
 - [ ] Persist direct manipulation at semantic commit points rather than each
   pointer or physics frame. Journal drag/resize completion, anchors, groups,
-  connections, configuration, and area edits; treat simulated positions as
-  derived checkpoints with a bounded configurable cadence.
-- [ ] Separate local journal durability, fsync cadence, snapshot compaction,
-  File Sync publication cadence, and later contact delivery. Ordinary Lingua
-  file synchronization keeps its current/immediate default; Box File Sync
-  exposes a rate policy and its possible recovery lag without changing the
-  meaning of the Box operations.
+  connections, configuration, topology stamps and Area edits. Harvest
+  coalesced spatial checkpoints only at a completed fixed-step boundary when a
+  body settles, reaches a stable effective destination, or exceeds a bounded
+  maximum recovery age while continuously moving.
+- [ ] Persist surface checkpoints as logical surface coordinates plus local
+  orientation and space checkpoints as full free-space transforms. Ordinary
+  work Sands reopen at rest; only an explicit continuous-simulation policy
+  retains bounded velocity state. Never persist Area membership, solver
+  caches, runtime handles, topology meshes, GPU buffers or visibility.
+- [ ] Prove crash and clean-restart behavior with Sands spawned by Protein,
+  transported by topology/Areas and settled in a destination. The last
+  complete authored transaction always survives; documented recovery lag is
+  bounded to the spatial-checkpoint policy.
+- [ ] Separate local journal append/fsync, spatial checkpoint, snapshot
+  compaction, File projection, and contact-delivery rates. Ordinary Lingua
+  File Sync keeps its existing projection policy. A slower external delivery
+  rate never weakens local durability or changes Box operation meaning.
 - [ ] Measure actual write volume, recovery after interruption, compaction,
-  state growth per Sand, and the cost of unbounded workspaces.
+  state growth per Sand, spatial-checkpoint churn, sparse versus bulk encoding,
+  and the cost of unbounded workspaces.
 - [ ] Separate reusable workspace composition from personal view state now so
-  future synchronization does not need to unpick them. Sand placement, size,
+  synchronization does not need to unpick them. Sand placement, size,
   configuration, definitions, groups, connections, zones, and drawings are
   composition; camera, focus, selection, open panels, and temporary portals are
   personal view state.
+
+#### Live workspace collaboration
+
+- [ ] Add one Workspace lane beside Record/Organ sync and File projection in
+  Protein's Synchronization surface. Share invitation, contact identity,
+  owner/editor/viewer authority, status, cursors, recovery and error
+  vocabulary without merging their typed operation schemas.
+- [ ] Define a distinct versioned workspace protocol for hello, permission,
+  snapshot hash/chunks, ordered transaction tail, editor intent, accepted
+  canonical transaction or structured refusal, durable spatial-checkpoint
+  batch, ephemeral preview/presence, gap recovery, access loss and host end.
+  Unknown versions and operation kinds fail closed.
+- [ ] Make one Cell the live session host and sole owner of the canonical Box
+  revision, durable store and active physics simulation. Editors send typed
+  intents with stable ids and base revisions; the host validates authority,
+  limits and semantic preconditions before ordering and persisting them.
+- [ ] Reuse existing authenticated contact transport, grants, durable delivery
+  and health infrastructure, but do not add workspace variants to the Record
+  operation schema and do not make a remote peer a filesystem provider.
+- [ ] Keep cursor, camera, selection, media and high-rate transform previews
+  ephemeral. Permit optimistic local interaction, then confirm or correct it
+  from the host's canonical transaction. Persist and deliver coalesced spatial
+  checkpoints through the same Box store used for restart recovery.
+- [ ] Let a guest cache a verified snapshot for quick reconnect and an
+  explicit read-only unavailable-host view. Do not permit offline edits,
+  implicit host promotion, automatic failover or multi-writer replica merge in
+  the first version. An explicit fork creates a new workspace lineage.
+- [ ] Ship the human surface with invite, role review, connected/synchronizing/
+  caught-up/offline/host-ended/access-lost states, pending and durable revision,
+  checkpoint recovery lag, rejected-edit explanation, leave/revoke, limits and
+  honest empty cases.
+- [ ] Test concurrent intents, stale base revisions, duplicate/reordered and
+  malformed frames, missing snapshot chunks/assets, host crash/restart,
+  revocation, oversized topology/definition edits, guest reconnect, checkpoint
+  convergence and zero Record/Action authority implied by Box edit rights.
+
 #### Public Live Facade
 
 - [ ] Define a versioned Facade publication manifest that references one

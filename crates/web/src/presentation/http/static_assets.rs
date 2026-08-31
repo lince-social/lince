@@ -16,7 +16,7 @@ pub async fn serve(Path(path): Path<String>) -> Response {
 
 pub async fn favicon() -> Response {
     asset_response(EmbeddedAsset {
-        bytes: include_bytes!("../../../../../assets/black_in_white.ico"),
+        bytes: include_bytes!("../../../../../assets/logo/black_in_white.ico"),
         content_type: "image/x-icon",
     })
 }

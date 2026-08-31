@@ -502,11 +502,6 @@ pub enum Action {
         conversation: String,
         title: String,
     },
-    /// Append a message to a thread.
-    SendMessage {
-        thread: String,
-        body: String,
-    },
     /// Let a known contact Organ open live sessions on this Cell, acting as a
     /// Person here (Ontology §11 "live mode").
     ///
@@ -3743,21 +3738,6 @@ impl Engine {
             } => {
                 let conversation_uid = self.resolve(&conversation).await?;
                 outcome.created = Some(self.open_thread(&conversation_uid, title.trim()).await?);
-            }
-            Action::SendMessage { thread, body } => {
-                let thread_uid = self.resolve(&thread).await?;
-                let body = body.trim();
-                if body.is_empty() {
-                    return Err(EngineError::Consequence("nothing to send".into()));
-                }
-                // The head is a label for lists; the body is the message. A
-                // long message gets an elided label rather than a wall of text
-                // where a title belongs.
-                let head: String = match body.char_indices().nth(60) {
-                    Some((cut, _)) => format!("{}…", &body[..cut]),
-                    None => body.to_string(),
-                };
-                outcome.created = Some(self.send_message(&thread_uid, &head, body).await?);
             }
             Action::GrantOrganLogin { organ, person_name } => {
                 let organ_uid = self.resolve(&organ).await?;
@@ -11046,7 +11026,6 @@ impl Engine {
             | Action::ShareMyKey { .. }
             | Action::StartConversation { .. }
             | Action::OpenThread { .. }
-            | Action::SendMessage { .. }
             | Action::GrantOrganLogin { .. }
             | Action::RevokeOrganLogin { .. }
             | Action::AcceptThreadInvite { .. }

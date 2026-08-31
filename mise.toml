@@ -21,60 +21,72 @@ mprocs --names web,package \
     "mise run lynxui-watch"
 """
 
+[tasks.interface]
+description = "Run the favored native Lince interface on NixOS"
+run = "nix develop .#desktop -c cargo run --release -p lince-desktop"
+
+[tasks.interface-native]
+description = "Run the favored native Lince interface on NixOS"
+run = "nix develop .#desktop -c cargo run --release -p lince-desktop"
+
+[tasks.interface-legacy]
+description = "Run the legacy Web interface at http://127.0.0.1:6174 and open it in the default browser"
+run = "nix develop .#legacy -c bash scripts/interface/run-legacy.sh"
+
 [tasks.interface-lab]
 description = "Run the human-visible Native Interface Laboratory"
-run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface-prototype/Cargo.toml --bin lince-interface"
+run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface/Cargo.toml --bin lince-interface"
 
 [tasks.interface-lab-report]
 description = "Render one ownership-preflight frame, export its report, and exit"
-run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface-prototype/Cargo.toml --bin lince-interface -- --export-report-and-exit"
+run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface/Cargo.toml --bin lince-interface -- --export-report-and-exit"
 
 [tasks.interface-lab-audit]
 description = "Audit every native-interface candidate dependency graph and export a report"
-run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface-prototype/Cargo.toml --bin lince-interface-dependency-audit"
+run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface/Cargo.toml --bin lince-interface-dependency-audit"
 
 [tasks.interface-lab-bevy]
 description = "Run the Lince-owned host with manually initialized Bevy render resources"
-run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface-prototype/Cargo.toml --bin lince-interface --features bevy-preflight"
+run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface/Cargo.toml --bin lince-interface --features bevy-preflight"
 
 [tasks.interface-lab-bevy-report]
 description = "Render the manual-Bevy host, export its ownership report and exit"
-run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface-prototype/Cargo.toml --bin lince-interface --features bevy-preflight -- --export-report-and-exit"
+run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface/Cargo.toml --bin lince-interface --features bevy-preflight -- --export-report-and-exit"
 
 [tasks.interface-lab-bevy-stress]
 description = "Run the manual-Bevy host resize stress, export its report, and exit"
-run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface-prototype/Cargo.toml --bin lince-interface --features bevy-preflight -- --stress-resize-and-exit"
+run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface/Cargo.toml --bin lince-interface --features bevy-preflight -- --stress-resize-and-exit"
 
 [tasks.interface-lab-cef]
 description = "Run the accelerated CEF installed-Sand and Website seam"
-run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface-prototype/Cargo.toml --features cef-runtime --bin lince-interface-cef-diagnostic"
+run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface/Cargo.toml --features cef-runtime --bin lince-interface-cef-diagnostic"
 
 [tasks.interface-lab-cef-report]
 description = "Exercise the accelerated CEF seam, export its report, close browsers, and exit"
-run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface-prototype/Cargo.toml --features cef-runtime --bin lince-interface-cef-diagnostic -- --export-report-and-exit"
+run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface/Cargo.toml --features cef-runtime --bin lince-interface-cef-diagnostic -- --export-report-and-exit"
 
 [tasks.interface-lab-spatial-report]
 description = "Exercise current Protein, Sand composition, Areas and physics candidates"
-run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface-prototype/Cargo.toml --features semantic-spatial --bin lince-interface-spatial-diagnostic"
+run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface/Cargo.toml --features semantic-spatial --bin lince-interface-spatial-diagnostic"
 
 [tasks.interface-lab-parity-report]
 description = "Export browser and read-only Facade projections of the shared Sand fixture"
-run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface-prototype/Cargo.toml --features browser-parity --bin lince-interface-parity-diagnostic"
+run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface/Cargo.toml --features browser-parity --bin lince-interface-parity-diagnostic"
 
 [tasks.interface-lab-joined]
 description = "Run the joined native, Bevy, Sand, Area and accelerated-CEF laboratory"
-run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface-prototype/Cargo.toml --features joined-runtime --bin lince-interface-cef-diagnostic"
+run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface/Cargo.toml --features joined-runtime --bin lince-interface-cef-diagnostic"
 
 [tasks.interface-lab-joined-report]
 description = "Exercise the joined v1 runtime seam, export its report, close browsers, and exit"
-run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface-prototype/Cargo.toml --features joined-runtime --bin lince-interface-cef-diagnostic -- --joined-report-and-exit"
+run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface/Cargo.toml --features joined-runtime --bin lince-interface-cef-diagnostic -- --joined-report-and-exit"
 
 [tasks.interface-lab-cef-count-matrix]
 description = "Measure the joined runtime with 0, 1, 4 and 12 admitted CEF Sands"
 run = '''
 nix develop .#interface -c bash -eu -c '
 for count in 0 1 4 12; do
-  cargo run --release --manifest-path crates/interface-prototype/Cargo.toml --features joined-runtime --bin lince-interface-cef-diagnostic -- --joined-report-and-exit --warmup-seconds 1 --sample-seconds 5 --cef-count "$count" --report "target/interface-laboratory/matrix/cef-$count.json"
+  cargo run --release --manifest-path crates/interface/Cargo.toml --features joined-runtime --bin lince-interface-cef-diagnostic -- --joined-report-and-exit --warmup-seconds 1 --sample-seconds 5 --cef-count "$count" --report "target/interface-laboratory/matrix/cef-$count.json"
 done
 jq -s '\''{
   schema_version: 1,
@@ -96,7 +108,7 @@ run = "nix develop .#interface -c bash scripts/interface/benchmark.sh"
 
 [tasks.interface-lab-recovery-report]
 description = "Induce CEF renderer and WGPU device loss and export joined recovery evidence"
-run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface-prototype/Cargo.toml --features joined-runtime --bin lince-interface-cef-diagnostic -- --joined-report-and-exit --recovery-probe --warmup-seconds 2 --sample-seconds 12 --report target/interface-laboratory/recovery/report.json"
+run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface/Cargo.toml --features joined-runtime --bin lince-interface-cef-diagnostic -- --joined-report-and-exit --recovery-probe --warmup-seconds 2 --sample-seconds 12 --report target/interface-laboratory/recovery/report.json"
 
 [tasks.interface-lab-accessibility-report]
 description = "Traverse and operate the joined AccessKit tree through AT-SPI and Orca"

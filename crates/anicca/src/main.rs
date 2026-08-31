@@ -132,5 +132,5 @@ fn atomic_write(path: &Path, bytes: &[u8]) -> Result<(), String> {
 }
 
 fn usage() -> String {
-    "usage: anicca check [DIR] | anicca fmt [--write] [FILE_OR_DIR]".to_string()
+    "usage: lingua check [DIR] | lingua fmt [--write] [FILE_OR_DIR]".to_string()
 }

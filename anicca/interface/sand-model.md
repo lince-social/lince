@@ -3,7 +3,7 @@
 Purpose: Define recursive Sand identity, composition, state, ports, Behavior, renderer projections, and Box-built groups.
 
 Owner source: no dedicated Sands Record currently exists;
-[Interface](../Interface.lingua) governs shared interface decisions.
+[Interface in Lince](../Lince.lingua) governs shared interface decisions.
 
 Preserved source metadata: `@sands`, order 1, `#chapter`, `#instinct`,
 `#part-of @interface`, `#done`, uid
@@ -22,7 +22,7 @@ Read when: implementing reusable primitives, Castles, bindings, artifacts, or co
 
 ### Landed version-1 contract
 
-`crates/interface-prototype/src/sand.rs` is the executable Rust authority for
+`crates/interface/src/sand.rs` is the executable Rust authority for
 Sand schema and ABI version 1. It separates `SandDefinition` and
 `DefinitionGraph`, serializable `SandInstance`, projection-specific
 `ProjectionManifest`, and non-serializable `RuntimeSandInstance`. Persisted
@@ -59,7 +59,7 @@ composition host consumes this contract rather than creating another model.
 
 ### Landed composition host
 
-`crates/interface-prototype/src/composition.rs` is the executable authority for
+`crates/interface/src/composition.rs` is the executable authority for
 composition artifact and catalog schema version 1. A catalog retains exact
 definition revisions and one active revision per definition. A document owns
 placements and typed Protein-read, Sand-event and Action-write bindings. A

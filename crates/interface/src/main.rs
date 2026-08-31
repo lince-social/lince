@@ -179,7 +179,7 @@ impl RenderState {
         };
         let (device, queue) = adapter
             .request_device(&DeviceDescriptor {
-                label: Some("lince-interface-prototype-host"),
+                label: Some("lince-interface-host"),
                 ..DeviceDescriptor::default()
             })
             .await
@@ -552,11 +552,11 @@ impl RenderState {
         let mut encoder = self
             .device
             .create_command_encoder(&CommandEncoderDescriptor {
-                label: Some("lince-interface-prototype-frame"),
+                label: Some("lince-interface-frame"),
             });
         {
             let mut pass = encoder.begin_render_pass(&RenderPassDescriptor {
-                label: Some("lince-interface-prototype-panel"),
+                label: Some("lince-interface-panel"),
                 color_attachments: &[Some(RenderPassColorAttachment {
                     view: &view,
                     depth_slice: None,

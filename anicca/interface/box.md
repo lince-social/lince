@@ -1,10 +1,10 @@
 # Box, Protein areas, and spatial behavior
 
-Purpose: Specify the v1 Box, current-Protein result templates, Areas,
-editable topology, 2D/3D field views, interaction, navigation, and local
-durability.
+Purpose: Specify the v1 Box, current-Protein result templates, Areas, editable
+surface topology, free-space volume mode, projection, interaction, navigation,
+and local durability.
 
-Owner source: [Interface](../Interface.lingua); no separate Sands Record
+Owner source: [Interface in Lince](../Lince.lingua); no separate Sands Record
 currently exists.
 
 Status: Planned; implementation opens only after the Customization C5 gate.
@@ -194,10 +194,23 @@ emit structured reasons rather than setting positions or data anonymously.
 ### Topology editing and effective terrain
 
 In the v1 Box, **topology** means an editable scalar height or potential field
-over the logical plane. It is closer to sculpting literal sand than to the
-mathematical study of connectivity. It gives the same force system a spatial
-shape that can be manipulated and understood from above in 2D or from an
-oblique camera in 3D.
+over a logical plane. It is closer to sculpting literal sand than to the
+mathematical study of connectivity. Box has two workspace-level spatial modes,
+and the camera choice is deliberately separate from them:
+
+- **surface mode** binds ordinary world Sands to the deformed plane. A person
+  can inspect the same simulation from a top/orthographic camera or an oblique
+  perspective camera; changing the camera does not change physics;
+- **space mode** removes the supporting floor from simulation. World Sands
+  have authoritative `(x, y, z)` positions and float in a volume, while Areas
+  of influence provide attraction, repulsion, grouping, sorting and entry
+  behavior; and
+- pinned viewport Sands remain screen-space tools in either mode.
+
+Only one spatial mode simulates a workspace at a time. Box never keeps a
+hidden surface simulation and a contradictory free-space simulation running
+for the same Sand. Switching modes is an explicit document operation described
+below, not a camera animation with undisclosed physical consequences.
 
 Topology does not replace or silently change the four Area semantics. Protein
 still selects data, force areas still combine forces, sorting areas still
@@ -208,7 +221,7 @@ effects are eligible. Topology adds two related things:
 2. filtered **Topology Effects** whose potential applies only to groups that
    match their declared current-Protein filter.
 
-For a group `g` at `(x, y)`, the runtime evaluates a common base field
+In surface mode, for a group `g` at `(x, y)`, the runtime evaluates a common base field
 `B(x, y)` and the matching effect field `P_g(x, y)`. The topology force is
 the downhill gradient of their sum:
 
@@ -263,30 +276,85 @@ field lenses:
   influences through contours, arrows, boundaries, color, and pattern
   distortion rather than pretending they affect everyone.
 
-In a selected-field 3D view, matching groups can sit visually on their
-effective surface, making a collected set appear inside a pit or on a plateau.
-Nonmatching groups remain on the neutral/base plane or are visually subdued.
-In 2D, the same state is seen from above: the groups have the same `(x, y)`
-simulation positions, while contours, gradient arrows, color, and distorted
-pattern communicate the field. Tilting between 2D and 3D is a camera and
-explanation change; it never reruns the simulation under different rules or
-persists a contradictory second position.
+In a selected-field perspective view of surface mode, every matching group is
+glued to the effective terrain it experiences. Its support point is
+`(x, y, B + P_g)` and its support orientation follows the sampled surface
+normal, so a card really climbs, tilts across, or falls into the visible slope
+and always touches its floor. Nonmatching groups remain on their own effective
+surface, which the current lens can render as the neutral/base plane or
+visually subdue rather than falsely placing them on the selected cohort's
+terrain. An ordinary text card may mount a crisp screen-facing reading face on
+that terrain-bound body; this preserves legibility without changing its
+contact point, collider, group motion, or topology force.
 
-The Sand definition, instance, local state, ports, and Behavior are identical
-in both views. A renderer projection may present an ordinary card as a crisp
-screen-facing or gravity-upright surface in 3D so text stays readable, while
-specialized Sands may deliberately lie on terrain or use a native 3D
-projection. Changing projection never creates a second Sand instance. Pinned
-viewport Sands remain HUD-like and do not fall into world terrain.
+The top view shows the same surface-mode state from above. Groups keep the
+same `(x, y)` simulation positions while contours, gradient arrows, color and
+distorted pattern communicate height and force. Switching between top and
+perspective cameras is therefore only a view and explanation change. It never
+reruns or resettles surface physics, and it never creates another Sand
+instance.
 
-Pointer interaction in 3D raycasts into the selected plane/lens and resolves
-back to the same logical `(x, y)` coordinates used in 2D. Dragging a Sand
-makes its group body kinematic for the gesture; release restores its declared
-forces and settling. Dragging a Sand-attached Topology Effect moves its field
-with it and updates affected neighbors during the gesture. The topology brush
-edits the hit plane, while ordinary select/move mode continues to manipulate
-Sands, so one gesture cannot accidentally do both. Camera tilt/orbit preserves
-selection, focus, active editor, and field lens.
+Pointer interaction in a surface perspective view raycasts into the selected
+effective surface and resolves back to the same logical `(x, y)` coordinates
+used by the top view. Dragging a Sand makes its group body kinematic for the
+gesture; release restores its declared forces and settling. Dragging a
+Sand-attached Topology Effect moves its field with it and updates affected
+neighbors during the gesture. The topology brush edits the hit surface, while
+ordinary select/move mode continues to manipulate Sands, so one gesture cannot
+accidentally do both. Camera tilt/orbit preserves selection, focus, active
+editor, and field lens.
+
+#### Free-space mode and collapse projection
+
+Space mode is not a perspective view of topology. The topology plane and its
+downhill force do not participate in the active simulation. Authored topology
+stamps remain safely stored for a later return to surface mode, but they are
+shown as inactive and cannot invisibly attract or support a floating Sand.
+Direct force Areas remain active because they are the behavioral source; an
+Area-linked pit or hill was only its surface-mode explanation.
+
+Every world Sand or complete group owns one authoritative free-space position
+and, where its projection needs it, orientation. Ordinary cards translate in
+three dimensions but do not have to tumble: their default visual face remains
+camera-facing or gravity-upright, while a specialized native 3D Sand may expose
+rotation. Groups remain one body. Protein spawn Areas, force Areas, sorting
+Areas, mutation Areas and immunity Areas become declared volumes with a local
+3D transform. Radial forces use a 3D direction, directional forces use an
+explicit vector, sorting uses declared local axes or a local shelf, and entry
+semantics use volume crossings rather than a flat boundary.
+
+Space mode displays a thin, nonphysical **collapse plane** in the workspace's
+local `z = 0` frame. It is a preview of where surface mode would exist, not a
+floor, collider or gravity source. Box can show the orthogonal footprint of
+each Area on that plane and an optional line between a selected Sand or Area
+and its footprint. This makes the future 2D result inspectable while entities
+remain freely movable above or below it.
+
+Expanding a surface workspace into space preserves every `(x, y)` coordinate.
+Each terrain-bound Sand begins at its currently rendered contact height, and
+each flat Area begins as a volume extruded from its footprint according to an
+explicit default or authored depth. From that point onward their `(x, y, z)`
+transforms are ordinary free-space state. The saved topology is inactive, not
+deleted.
+
+Collapsing space onto the surface is an orthographic projection in the local
+frame: `(x, y, z)` becomes `(x, y)`, an Area volume becomes its declared
+projected footprint, and each Sand is placed back onto the effective terrain
+for its group at that coordinate. Vertical displacement and volume depth do
+not silently survive as live surface positions. Box previews the footprints,
+overlaps and out-of-bounds consequences before commit, applies the conversion
+as one undoable operation, and records the source transforms in its operation
+history so undo can restore them exactly. After commit, ordinary deterministic
+surface collision and Areas may move projected overlaps; that motion is
+explained rather than hidden.
+
+The mode control and camera control use different names and affordances. A
+person chooses **Surface** or **Space** to change simulation, then **Top** or
+**Perspective** to change how the active simulation is seen. Selection, focus,
+active editor, Sand identity, Protein binding, ports, Behavior and local state
+survive both camera changes and spatial conversion. **Why is it here?** names
+the active mode and either the sampled surface contributors or the 3D Areas,
+collisions and conversion operation responsible for the current position.
 
 Every Area and Topology Effect may customize its boundary, color, opacity,
 contours, pattern, and how strongly it distorts the canvas pattern. Visual
@@ -360,36 +428,59 @@ The replacement is a versioned **Box document**, not a dump of DOM or
 JavaScript state. It has stable uids for the workspace, referenced Sand
 definitions, instances, groups, connections, Protein areas, field bindings,
 influence areas, topology stamps/effects, drawings, and other durable authored
-entities. An instance
-records its definition revision, parent group, local transform, anchor space,
-layer, sibling order, override patch, exported bindings, and its persistent
-host-state allocation. Child position is relative to its group; moving the
-group therefore never rewrites every child. Persisted ordering is semantic
-layer and sibling order, not a leaked CSS `z-index` implementation detail.
+entities. The workspace records its active spatial mode and local collapse
+plane frame. An Area records its surface footprint, free-space volume and local
+basis or the explicit rule that derives one from the other. An instance records
+its definition revision, parent group, mode-appropriate authored transform,
+anchor space, layer, sibling order, override patch, exported bindings, and its
+persistent host-state allocation. Child position is relative to its group;
+moving the group therefore never rewrites every child. Persisted ordering is
+semantic layer and sibling order, not a leaked CSS `z-index` implementation
+detail.
 
 Pinning is not one ambiguous boolean. An anchor declares whether coordinates
 belong to the world, the viewport, or a parent group. Changing that anchor is
 an authored operation which converts coordinates visibly. Camera, focus,
 selection, open panels, hover, drag previews, media sessions, presence, and
-the current numerical position of a force simulation are personal view or
-ephemeral runtime state, not shared composition.
+uncommitted high-frequency simulation previews are personal view or ephemeral
+runtime state, not shared composition. The latest committed spatial checkpoint
+is shared recoverable Box state: a Sand which travelled from its Protein area
+and settled in an influence area returns to that position after restart.
 
 The Box document keeps a compact human-readable snapshot plus a typed
 operation journal. The snapshot is the inspectable and editable interchange
 form; the journal provides crash recovery, small writes, undo, agent control,
-and the future synchronization seam. Each operation has its own uid and names
-stable target uids; unknown document or operation versions fail closed. An
-atomic batch represents one human gesture such as grouping, reconnecting, or
-dropping a result-template definition.
+and the live-workspace synchronization seam. Each operation has its own uid
+and names stable target uids; unknown document or operation versions fail
+closed. An
+atomic batch represents one human gesture such as grouping, reconnecting,
+dropping a result-template definition, or committing a previewed surface/space
+conversion. That conversion batch retains the source transforms required for
+exact undo without keeping them as a second active simulation.
 
-Physics does not emit persistence on animation frames. Box persists authored
-constraints and changes: drag/resize completion, pin/unpin, group edits,
-configuration commits, connections, and area edits. A settled position may be
-checkpointed as a recoverability hint at a bounded configurable interval, but
-it is derived state and cannot overwhelm or outrank the authored operation
-that produced it. Append, fsync, snapshot compaction, File Sync publication,
-and contact synchronization are separate rates; making an external sync rate
-slower must not make the local document unsafe.
+Physics does not emit persistence on animation frames. Box journals authored
+constraints and changes at semantic commit points: drag/resize completion,
+pin/unpin, group edits, configuration commits, connections, topology stamps,
+and Area edits. It harvests coalesced spatial checkpoint batches only at a
+completed fixed-step boundary. A body becomes eligible when it settles,
+reaches a stable effective destination, or exceeds a bounded maximum recovery
+age while continuously moving. Clean shutdown performs a final bounded flush.
+
+A checkpoint is durable recovery state, but it cannot overwhelm or outrank
+the authored operation and Box revision which produced it. Surface mode stores
+logical surface coordinates and local orientation, then derives world height
+from the current topology after loading. Space mode stores the full free-space
+transform. Velocity and angular velocity are stored only for an explicit
+continuous-simulation resume policy; ordinary work Sands reopen at rest. Area
+membership, contact manifolds, solver caches, dense runtime handles, topology
+meshes, GPU buffers, visibility and CEF textures remain derived.
+
+Append, fsync, spatial checkpoint, snapshot compaction, File projection, and
+contact delivery are separate rates; making an external delivery rate slower
+must not make the local document unsafe. The human surface reports the last
+durable revision, pending state, possible recovery lag, and recovery failure.
+Exact settle thresholds, maximum checkpoint age, batch size and compaction
+limits are measured policies rather than schema constants.
 
 The text format must be honest about its grammar. If the Box snapshot uses the
 same Lingua grammar and tooling, it may be a Lingua declaration. If spatial
@@ -408,3 +499,43 @@ stable node identity and a readable graph. They create no import, export,
 adapter, compatibility, or evaluation obligation and do not define or limit
 Lince's native schema, typed ports, Protein bindings, Behaviors, capabilities,
 or spatial areas.
+
+### Live workspace collaboration
+
+Synchronization remains one place in Protein for the person using Lince, but
+its implementation has distinct semantic lanes. Existing Record/Organ sync
+continues to carry typed Record operations. File Sync remains a projection
+between a selected directory and domain changes. Workspace collaboration
+carries Box transactions, spatial checkpoints, snapshots and referenced
+assets. These lanes may share identity, invitation, permission, delivery,
+status and recovery infrastructure without pretending that a file operation,
+a Record field operation and a topology edit have the same merge rule.
+
+The first collaborative Box is live-only and host-authoritative. One Cell owns
+the canonical Box store, revision and active physics simulation. Named viewers
+or editors join through authenticated contact identity. An editor sends a
+typed intent; the host validates authority, resource limits, base revision and
+semantic preconditions, then commits one canonical transaction or returns a
+structured refusal. Reliable ordered transactions and coalesced spatial
+checkpoints are durable. Presence, cursors, cameras, selections, media and
+high-rate transform previews are ephemeral.
+
+A joining or out-of-date guest receives a verified snapshot and its ordered
+tail. A guest may cache the snapshot for fast reconnect and an explicit
+read-only unavailable-host view, but cannot edit offline or silently promote
+that cache into an authoritative replica. Optimistic local previews keep
+direct manipulation responsive while the host acceptance confirms or corrects
+them. Host loss, access loss, missing assets, a revision gap and a rejected
+edit each have a distinct visible state.
+
+Offline multi-writer replicas, automatic host election and failover are
+deferred. They require causal merge, topology and definition conflict
+semantics, physics reconciliation, tombstones, encrypted membership changes,
+asset availability and garbage collection. An explicit export or fork creates
+a new workspace lineage instead. Stable transaction ids, actor attribution,
+typed operations and snapshots keep later replication possible without
+claiming that whole-file synchronization provides it.
+
+The detailed SceneDB and EngineFS evaluation, including the separation between
+durability and runtime storage, is in
+[SceneDB 2.0 and EngineFS review](research/scenedb.md).

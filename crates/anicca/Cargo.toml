@@ -19,5 +19,5 @@ sensei = { workspace = true }
 rust-sitter-tool = { workspace = true }
 
 [[bin]]
-name = "anicca"
+name = "lingua"
 path = "src/main.rs"

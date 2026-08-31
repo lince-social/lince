@@ -3,7 +3,7 @@
 Purpose: Define the strict pre-Box dependency waterfall and its completion gates.
 
 Owner source: no dedicated Customization Record currently exists;
-[Interface](../../Interface.lingua) governs shared interface decisions.
+[Interface in Lince](../../Lince.lingua) governs shared interface decisions.
 
 Status: customization, semantic primitive-Sand and C2 recursive-composition
 kernels landed; C3 Configuration and external authoring is next.
@@ -23,11 +23,20 @@ composition test harness: it opens only after C5 proves the foundations it
 will consume.
 
 V1 remains the productivity Box with current Protein, recursive Sands, Areas,
-bounded topology editing, consistent 2D/3D field views, Customization and
-external HTML. V2 retains the world-model direction. Planetary scale, general
+bounded surface topology, surface Top/Perspective views, one free-space mode,
+collapse projection, Customization and external HTML. V2 retains the
+world-model direction. Planetary scale, general
 scene construction and reality capture do not silently enter this waterfall;
 named authoring programs and geometry systems are examples rather than v1
 dependencies.
+
+The completed Pulsar/Helio study adds no prerequisite or framework migration
+to C3–C5. Configuration and official Sands continue on the landed Lince-owned
+retained projections. Focused UI crates or bounded licensed techniques may be
+used where they satisfy that ownership, but GPUI, Pulsar, Helio and SceneDB do
+not enter this waterfall. C5 consumes the study's causal runtime-health and
+frame-boundary constraints; renderer optimizations remain measured work under
+[the Interface plan](interface.md#completed-engine-study-and-its-place-in-the-waterfall).
 
 ## Landed customization kernel
 

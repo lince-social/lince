@@ -12,7 +12,8 @@ members = [
     "crates/transport",
     "crates/anicca",
     "crates/sensei",
-    "crates/interface-prototype",
+    "crates/interface",
+    "crates/fiote",
 ]
 
 # desktop is a real workspace member so it inherits workspace fields and
@@ -40,6 +41,7 @@ store = { version = "=0.7.0", path = "crates/store" }
 engine = { version = "=0.7.0", path = "crates/engine" }
 protein = { version = "=0.7.0", path = "crates/protein" }
 transport = { version = "=0.7.0", path = "crates/transport" }
+fiote = { version = "=0.7.0", path = "crates/fiote", package = "lince-fiote" }
 
 argon2 = "0.5.3"
 async-stream = "0.3.6"

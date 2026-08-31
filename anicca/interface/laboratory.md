@@ -2,10 +2,10 @@
 
 Purpose: Preserve the acceptance fixtures, benchmark contract, evidence, and handoff for the selected runtime.
 
-Owner source: [Interface](../Interface.lingua).
+Owner source: [Interface in Lince](../Lince.lingua).
 
-Status: Accepted architecture, customization and primitive-Sand evidence; the
-production live report still awaits the owner-authored Interface Record repair
+Status: Promoted native architecture, customization and primitive-Sand
+evidence; the production live report awaits the owner reference repair
 described in the plan.
 
 Read when: validating runtime changes or deciding whether a prototype seam may become production contract.
@@ -23,8 +23,9 @@ parts can share ownership cleanly, preserve genuine HTML and meet the
 representative v1 load on the owner's machine.
 
 Its code is the root-workspace package `lince-interface` at
-`crates/interface-prototype`; the directory name records its origin, not its
-current status. It uses the root lockfile, contains no experimental Git
+`crates/interface`. The laboratory was promoted in place, so its package is
+now the favored native interface implementation rather than a parallel
+prototype. It uses the root lockfile, contains no experimental Git
 dependency, and is consumed by `lince-desktop` on Linux. Semantic crates do not
 depend on it. On Linux the production desktop starts the real local Lince
 server and then enters this same native Wayland runtime; there is no parallel
@@ -90,7 +91,7 @@ when the required compositor or offscreen API cannot be applied to that
 baseline; the plan does not preserve an old pin for compatibility.
 
 The first ownership slice originally established a standalone laboratory host
-in `crates/interface-prototype`; it is now the root-workspace `lince-interface`
+in `crates/interface`; it is the root-workspace `lince-interface`
 package consumed by the desktop. `mise run interface-lab` enters a dedicated Nix
 shell and opens a Lince-owned `winit` 0.30.12 / `wgpu` 29.0.4 window with a
 Lynx-colored, Lato-rendered dependency and ownership panel. It records the
@@ -656,13 +657,24 @@ the source package hash was
 `sha256:b90813aac80ab7c0fb2da5ba2c198c142a252a7ca813ca3baa2025e3fc1bcafd`.
 
 The production desktop release binary completed a cold build when the offline
-desktop environment reused the already validated CEF distribution, but its
-live report still stopped before opening a window. Instinct reports the
-owner-authored `Interface.lingua` malformed at bytes 2489–2497 on line 31's
-`Interfaceless` opening. The project checker also reports opening/closing UID
-mismatches in owner-authored Karma, Lince and Transfer Records. This is an
-independent production-entry gate; no Markdown or interface adapter repairs or
-bypasses owner Records.
+desktop environment reused the already validated CEF distribution. After the
+Interface material moved into `Lince.lingua`, the bundled Instinct consumer was
+updated to mint omitted declaration UIDs before projection, matching Lingua's
+current contract without writing owner files. A 2026-08-29 release run then
+reached the current corpus and stopped before the window because the removed
+First Steps root leaves six `@first-steps` references unresolved across Karma,
+Lince and Ontology. `lingua check anicca` reports the same references. This is
+an independent production-entry gate; no Markdown or interface adapter repairs
+or bypasses owner Records.
+
+The post-promotion joined release report passed independently at 1920×1052
+with source fingerprint
+`73f4855f4b38cc95ec8550cf1480a009f2680d8472a566168a19e622503b487f`.
+Its 200 visible Sands, 1,000 continuously eligible 120 Hz bodies, 10,000
+resident nodes and two CEF surfaces measured 10.958 ms frame p95, 12.448 ms
+p99, 7.653 ms CPU-frame p95, 1.172 ms fixed-step p95 and zero backlog. Both
+Installed and Website surfaces loaded through accelerated DMA-BUF copies with
+zero CPU paints; the Website retained no bridge authority.
 
 The exit artifact contains exact dependency and license inventory, architecture
 decision records, raw and summarized benchmark results, known platform limits,

@@ -2,7 +2,7 @@
 
 Purpose: Specify publication of a deliberately narrow, read-only projection of one Box composition.
 
-Owner source: [Interface](../Interface.lingua); no separate Interoperability
+Owner source: [Interface in Lince](../Lince.lingua); no separate Interoperability
 Record currently exists.
 
 Status: Late-v1 product work; browser parity is proven, publication is not built.

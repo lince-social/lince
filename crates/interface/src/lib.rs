@@ -369,7 +369,7 @@ impl LaboratoryReport {
     }
 
     pub fn write_default(&self) -> Result<PathBuf, String> {
-        let path = PathBuf::from("target/interface-prototype/reports")
+        let path = PathBuf::from("target/interface/reports")
             .join(format!("ownership-{}.json", unix_millis()));
         self.write_pretty(&path)?;
         Ok(path)
@@ -578,7 +578,7 @@ pub fn source_fingerprint() -> String {
         .filter(|path| !path.is_empty())
     {
         let path = String::from_utf8_lossy(path);
-        if !(path.starts_with("crates/interface-prototype/")
+        if !(path.starts_with("crates/interface/")
             || path.starts_with("crates/desktop/")
             || path.starts_with("scripts/interface/")
             || matches!(

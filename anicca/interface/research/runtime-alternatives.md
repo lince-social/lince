@@ -2,7 +2,7 @@
 
 Purpose: Preserve the Maud, raw HTML, Datastar, renderer, physics, and composition evaluation that led to the accepted architecture.
 
-Owner source: [Interface](../../Interface.lingua); no separate Customization
+Owner source: [Interface in Lince](../../Lince.lingua); no separate Customization
 or Sands Record currently exists.
 
 Status: Reference evidence. Accepted choices live in architecture, behavior, and current context; do not reopen alternatives without new evidence.
@@ -52,7 +52,7 @@ B's native-JavaScript Behavior decision. The four honest combinations are:
 | Maud | Datastar | Strong server-rendered hypermedia option: Rust functions render initial and streamed fragments while Datastar supplies signals and morphing |
 
 All four must preserve the owner-authored Interface contract in
-`Interface.lingua`: small and ready-made Sands compose into Castles, receive
+`Lince.lingua`: small and ready-made Sands compose into Castles, receive
 Protein, issue typed Actions, exchange events, expose editable properties, and
 remain customizable in Box. A stack is rejected if it can make a reactive page
 but cannot make those relationships visible and reusable.

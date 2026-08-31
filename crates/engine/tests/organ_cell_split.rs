@@ -645,3 +645,103 @@ async fn a_mailed_batch_must_be_signed_by_a_cell_the_claimed_organ_owns() {
         .await;
     assert!(unknown.is_err(), "an unplaceable signer must refuse");
 }
+
+/// This device's address is on this device's Record, and there is nothing on
+/// the Organ Record for it to travel in.
+///
+/// The Organ Record SYNCS. While `baseUrl`, `aliases` and `local` sat on it —
+/// in its body and in a `lince.organ` extension — one machine's local address
+/// reached every sibling Cell and the last writer won. A migration cleaned
+/// both and `ensure_local` wrote them back on the next boot, so the cleanup
+/// only ever looked done.
+///
+/// The assertion that matters is the NEGATIVE one: not that the surface reads
+/// back, but that the syncing Record carries no surface at all.
+#[tokio::test]
+async fn this_cells_address_never_reaches_the_organ_record() {
+    let (e, organ, this_cell) = cell("http://one-machine.test").await;
+
+    let read = store::organs::local(&e.store.pool)
+        .await
+        .expect("local organ")
+        .expect("an organ");
+    assert_eq!(read.base_url, "http://one-machine.test");
+    assert_eq!(
+        read.body, "",
+        "the Organ Record's body is not an address any more"
+    );
+
+    let on_the_organ: i64 = store::sqlx::query_scalar(
+        "SELECT COUNT(*) FROM record_extension WHERE record_uid = ?",
+    )
+    .bind(&organ)
+    .fetch_one(&e.store.pool)
+    .await
+    .expect("count");
+    assert_eq!(
+        on_the_organ, 0,
+        "nothing local may sit on the Record that travels"
+    );
+
+    let on_the_cell = store::cells::config(&e.store.pool, "lince.cell.surface")
+        .await
+        .expect("cell config")
+        .expect("the surface config lives on the Cell");
+    assert_eq!(
+        on_the_cell.get("baseUrl").and_then(|v| v.as_str()),
+        Some("http://one-machine.test")
+    );
+
+    let owner: String =
+        store::sqlx::query_scalar("SELECT record_uid FROM record_extension WHERE namespace = ?")
+            .bind("lince.cell.surface")
+            .fetch_one(&e.store.pool)
+            .await
+            .expect("one row");
+    assert_eq!(owner, this_cell, "and it is THIS Cell's Record it sits on");
+}
+
+/// Joining another Organ keeps this device's address, and still puts nothing
+/// on the identity it joined.
+///
+/// `adopt_identity` deletes the old Organ Record and every extension hanging
+/// off it. The surface config survives because it was never there — it is on
+/// the Cell Record, which the swap only repoints.
+#[tokio::test]
+async fn joining_an_organ_keeps_the_address_on_the_device() {
+    let (e, _minted, this_cell) = cell("http://joiner.test").await;
+    let joined = "r-someone-elses-organ";
+
+    store::organs::adopt_identity(&e.store.pool, joined, "http://joiner.test")
+        .await
+        .expect("join");
+
+    let read = store::organs::local(&e.store.pool)
+        .await
+        .expect("local organ")
+        .expect("an organ");
+    assert_eq!(read.uid, joined);
+    assert_eq!(
+        read.base_url, "http://joiner.test",
+        "the device kept its own address across the swap"
+    );
+
+    let on_the_joined_organ: i64 = store::sqlx::query_scalar(
+        "SELECT COUNT(*) FROM record_extension WHERE record_uid = ?",
+    )
+    .bind(joined)
+    .fetch_one(&e.store.pool)
+    .await
+    .expect("count");
+    assert_eq!(
+        on_the_joined_organ, 0,
+        "an enrolled device publishes nothing of itself onto the Organ it joined"
+    );
+
+    let cell_now = store::cells::local(&e.store.pool)
+        .await
+        .expect("cell")
+        .expect("cell record");
+    assert_eq!(cell_now.uid, this_cell, "the same device, repointed");
+    assert_eq!(cell_now.organ_uid, joined);
+}

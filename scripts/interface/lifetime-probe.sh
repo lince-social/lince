@@ -56,7 +56,7 @@ source_fingerprint=
 for cycle in $(seq 1 10); do
   cycle_report="$artifact_dir/cycles/$cycle.json"
   cycle_log="$artifact_dir/cycles/$cycle.log"
-  cargo run --release --manifest-path crates/interface-prototype/Cargo.toml --features joined-runtime --bin lince-interface-cef-diagnostic -- --joined-report-and-exit --warmup-seconds 0 --sample-seconds 5 --cef-count 2 --report "$cycle_report" >"$cycle_log" 2>&1 &
+  cargo run --release --manifest-path crates/interface/Cargo.toml --features joined-runtime --bin lince-interface-cef-diagnostic -- --joined-report-and-exit --warmup-seconds 0 --sample-seconds 5 --cef-count 2 --report "$cycle_report" >"$cycle_log" 2>&1 &
   runner_pid=$!
   peak_rss=0
   peak_gpu=0

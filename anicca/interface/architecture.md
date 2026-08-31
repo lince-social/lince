@@ -2,7 +2,7 @@
 
 Purpose: Define v1/v2 horizons, Plan A ownership, retained alternatives, and the engine boundary.
 
-Owner source: [Interface](../Interface.lingua).
+Owner source: [Interface in Lince](../Lince.lingua).
 
 Status: Plan A accepted; the joined laboratory is the evidence, not a collection of independent demos.
 
@@ -25,9 +25,9 @@ unrelated applications and not permission to throw the first one away.
 
 **Lince v1.0.0** is the productivity Box already being planned: composable
 Sands and compound Sands/Castles, the current Protein capabilities, visual
-field wiring, Areas of influence, bounded topology editing and 2D/3D field
-views, direct manipulation, Why-is-it-here, Customization, installed external
-HTML, Websites and Facade. Its default
+field wiring, Areas of influence, bounded topology editing, surface-bound
+top/perspective views and an explicit free-space mode, direct manipulation,
+Why-is-it-here, Customization, installed external HTML, Websites and Facade. Its default
 experience is a clean orthographic desk with no required game mechanics or 3D
 camera. It solves the immediate problem of having a usable Lince for work as
 work is commonly organised now.
@@ -119,6 +119,10 @@ engine demonstration. A person opening v1 receives:
 - group-level motion, immunity boundaries, a configurable weak recentering
   force, deterministic overlap order, scrollable constrained Areas, anchors,
   layers and pinned viewport Sands;
+- one surface mode in which Sands remain in contact with filtered effective
+  terrain, one free-space mode in which 3D Area volumes cluster floating Sands,
+  separate Top/Perspective camera controls, and a visible, previewable,
+  undoable projection between the modes;
 - lightweight native GPU Sands for large populations, retained rich native
   controls and editors, installed CEF HTML Sands with declared Protein/event/
   Action capabilities, and Website Sands with ordinary web networking and
@@ -126,7 +130,11 @@ engine demonstration. A person opening v1 receives:
 - a human-readable runtime-health and resource surface that identifies the
   selected graphics backend, software rendering, heavy-Sand admission cost,
   denied starts, browser/GPU failures, recovery progress and the reason a Sand
-  is unavailable; and
+  is unavailable;
+- a durable Box snapshot/journal whose coalesced spatial checkpoints restore
+  Sands after Area/topology motion, plus live-only host-authoritative workspace
+  collaboration in the same Protein Synchronization area as Record sync and
+  File projection; and
 - a read-only Live Facade that consumes the same public definitions and
   Protein projection, permits only local visitor interaction state and never
   exposes Action or composition authority.
@@ -141,16 +149,22 @@ ordinary desk remains fast and calm.
 V1 includes only the Box topology specified in
 [Topology editing and effective terrain](box.md#topology-editing-and-effective-terrain):
 compact brush stamps, filtered scalar potentials, Sand-attached effects, and
-consistent 2D/3D explanation of one simulation.
+consistent Top/Perspective explanation of the surface simulation. It also
+includes one workspace-level free-space simulation with a nonphysical collapse
+plane and an explicit projection back to surface mode. The two modes reuse the
+same Sand identities, Protein bindings and Areas but never run as contradictory
+live positions.
 
-The v1 exclusion line remains concrete: no calendar generator, workspace
-sharing, arbitrary Protein language beyond the current supported operations,
-free-form force expressions, multiple independently physical Sand planes,
-planetary terrain/world, general scene authoring, reality reconstruction,
-avatar/game product, or collaborative world session is required for v1.0.0. A
-future capability may be represented by a prototype fixture, stable id, port
-or adapter boundary only when that seam is also needed by the v1 Box; it does
-not acquire a dormant schema field or public button.
+The v1 exclusion line remains concrete: no calendar generator, offline
+multi-writer workspace replicas, automatic collaborative-host failover,
+arbitrary Protein language beyond the current supported operations, free-form
+force expressions, multiple independently physical Sand planes, planetary
+terrain/world, general scene authoring, reality reconstruction, avatar/game
+product, or collaborative world session is required for v1.0.0. The included
+workspace session is bounded live composition around the v1 Box, not the v2
+shared-world product. A future capability may be represented by a prototype
+fixture, stable id, port or adapter boundary only when that seam is also needed
+by the v1 Box; it does not acquire a dormant schema field or public button.
 
 The native architecture is accepted on the owner's NixOS/Wayland machine.
 Linux is Wayland-only: Winit is built without its X11 backend, the event loop is
@@ -321,7 +335,7 @@ compaction, particles, height fields, splat sorting, or other work that can stay
 on the GPU. It is not assumed to improve branch-heavy collision resolution when
 upload, synchronization, or readback costs dominate.
 
-#### Engine boundary: native UI, Bevy, GPUI research, and Pulsar
+#### Engine boundary: native UI, Bevy, and completed GPUI/Pulsar research
 
 The Lince retained UI layer is the selected native application-UI path, not the
 persistent Sand schema and never a second owner of the final frame. It must
@@ -334,16 +348,13 @@ boundary is further-looking than choosing one engine for the whole product:
 Lince can improve or replace either projection without rewriting Protein
 bindings, Castles, external HTML, or Box documents.
 
-[Pulsar](https://pulsarnative.com/) is the closest architectural research
+[Pulsar](https://pulsarnative.com/) was the closest architectural research
 reference: GPUI editor surfaces, a separately scheduled game renderer, an ECS,
-fixed-rate physics, and a final compositor. Its GPU-driven Helio ideas and
-GPUI/WGPUI changes are valuable to study. Its maintainers describe the failed
-direct-integration and final compositing direction in
-[this discussion](https://github.com/orgs/Far-Beyond-Pulsar/discussions/40).
-Pulsar also describes itself as early-stage and subject to heavy architectural
-change, so Plan A must not make Lince's data or Sand model depend on Pulsar
-formats, plugins, SceneDB, or editor lifecycle before a benchmark and
-maintenance audit justify adoption.
+fixed-rate physics, and a final compositor. The completed source-audited study
+is retained in [links.md](links.md). It did not select Pulsar, Helio, SceneDB,
+GPUI, WGPUI or their formats, plugins and editor lifecycle as production
+dependencies. Their value is bounded repertoire and negative evidence, not a
+second engine plan.
 
 [Bevy 0.19.1](https://bevy.org/news/bevy-0-19/) is the default world-runtime
 candidate today: it has a much larger ecosystem, improved GPU-driven rendering,
@@ -362,10 +373,78 @@ single-owner constitution an intended integration path rather than a source
 tree trick. Lince retains narrow custom `wgpu` passes as escape hatches and
 comparisons instead of attempting to build a complete second engine.
 
-Pulsar/Helio is adopted only if measured capability and maintainability beat
-that path; marketing claims such as an O(1) CPU hot path are not performance
-evidence because the corresponding culling and scene work still happens on the
-GPU.
+No v1 stage waits for Pulsar or Helio adoption. An individual bounded technique
+may be reimplemented or reused only after the existing Bevy, Avian, focused UI
+crate or direct WGPU path exposes a representative measured gap. Marketing
+claims such as an O(1) CPU hot path are not performance evidence because the
+corresponding culling and scene work still happens on the GPU.
+
+The completed [SceneDB 2.0 and EngineFS review](research/scenedb.md) narrows
+that decision. SceneDB is useful repertoire for generation-checked dense
+handles, structure-of-arrays pages, explicit relocation boundaries, dirty
+ranges and spatial residency. It is not the durable Box database: the formal
+specification omits crash persistence, current spatial snapshot restore
+allocates new handles, and collaboration authority/transport remain outside
+the crate. Lince retains stable semantic ids, its own snapshot/journal and one
+authoritative live simulation, then considers SceneDB-like hot storage only
+after the real Box workload exposes a measured bottleneck.
+
+#### Completed Pulsar/Helio study and carry-forward boundary
+
+The 30 reviews do not create 30 implementation commitments. They leave seven
+ideas in active interface development:
+
+1. Stable Lince identities remain above disposable Bevy entities, CEF browser
+   ids, dense runtime slots and GPU handles.
+2. One Lince frame coordinator owns ordered boundaries between input, fixed
+   simulation, semantic revisions, retained UI, world extraction, browser
+   paint, GPU work and presentation.
+3. Adapters exchange bounded revisioned snapshots, typed events and dirty
+   changes instead of sharing arbitrary mutable state or rebuilding everything
+   unconditionally.
+4. Visibility removes presentation work only. Off-camera Protein, Behavior,
+   media, browser execution, Areas and physics retain the same semantics.
+5. Runtime health attributes a displayed result to the responsible input,
+   semantic revision, simulation work, browser copy and render work in language
+   a person can act on.
+6. Hierarchical coordinate frames are authoritative Box/spatial data shared by
+   rendering, physics, picking, accessibility, CEF input mapping, persistence
+   and collaboration; renderer-only sublevels are insufficient.
+7. Dense GPU storage, compaction, indirect work, dirty ranges and generated
+   detail are performance options for disposable projections. They enter only
+   after the accepted Box workload identifies the bottleneck and never move
+   semantic authority onto the GPU.
+
+Stable identity, authoritative ownership, ordered frame handoff, off-camera
+semantics, causal status and shared coordinate meaning are correctness or
+explanation constraints where their owning feature appears. Revision matching
+is also correctness; dirty-range coalescing and the seventh idea are measured
+performance work. A simple typed frame schedule is sufficient until resource
+dependencies require a compiled graph; a CPU solver is sufficient until
+Area/topology measurements justify a different kernel. The research therefore
+strengthens boundaries without prepaying for Helio's renderer, SceneDB's hot
+store, GPUI's application model, Fusor, Corona, probe lighting, foliage,
+portals, XR or a Behavior compiler.
+
+Implementation sourcing remains ordered:
+
+1. Keep Protein, Sands, Actions, Box transactions, permissions, durable ids and
+   coordinate meaning in Lince.
+2. Use selected Bevy and Avian public modules for ordinary world rendering,
+   scheduling, collision and spatial queries where they satisfy the owned
+   adapter.
+3. Use focused crates for text, accessibility, layout or rendering primitives
+   when they fit the Lince-owned frame and Sand model more cleanly than a full
+   UI framework.
+4. Use direct WGPU for final composition, CEF interop and specialized measured
+   passes that belong to Lince's host.
+5. Reimplement, fork or vendor a bounded studied technique only when the prior
+   routes fail a named correctness, capability, quality or performance gate;
+   retain license, provenance, behavior tests and update ownership.
+
+This boundary means inspiration never silently becomes GPUI ownership or a
+Pulsar dependency. The active waterfall maps these ideas to existing stages;
+the detailed article findings remain reference material and not active tasks.
 
 `winit` and `wgpu` are foundation pieces, not a world engine. Starting from
 them alone would give Lince perfect ownership while also making it responsible
@@ -401,6 +480,8 @@ The ownership boundary is the important final decision:
 | Capability | Default owner | What must not own it |
 | --- | --- | --- |
 | Records, Protein, Actions, Sand/Castle graph, permissions | Lince semantic kernel | Bevy scenes, GPUI views, CEF DOM |
+| Box snapshots, operation journal, canonical revisions and spatial recovery checkpoints | Lince Box store | SceneDB handles, Bevy entities, renderer buffers or a remote filesystem provider |
+| Current in-session Sand transforms, velocities, contacts and Area/topology physics | Lince spatial runtime behind its adapter | The renderer or an independently simulating collaboration guest |
 | Worlds, coordinate frames, layer/version graph, privacy and provenance | Lince spatial kernel | A game-engine save file or map provider |
 | Native scene runtime, ECS scheduling, ordinary 2D/3D rendering | Bevy adapter | Persisted Lince truth |
 | Window, event loop, shared GPU resources and final frame | Lince `winit`/`wgpu` shell and compositor | Bevy, GPUI or CEF independently |
@@ -437,14 +518,14 @@ advance. A boundary earns a crate when its contract and independent tests are
 real.
 
 Pulsar can mature alongside Lince without becoming Lince's constitution.
-Useful upstream research includes Linux shared-device composition,
-GPUI-to-texture rendering, multiple viewports, frame pacing, device-loss
-recovery, CEF texture surfaces, and Helio measurements. Lince would skew GPUI
-badly by asking it to become a globe/game renderer and would skew Pulsar badly
-by putting geospatial privacy, scenario history, Protein, or Sand persistence
-inside its game schema. It uses GPUI as a measured application/editor reference
-and Bevy substantially as intended as a game/world runtime; the unusual work
-stays in Lince adapters and domain kernels.
+Lince may compare later work with its shared-device composition, multiple
+viewports, frame pacing, recovery, CEF surfaces and GPU measurements, but a
+comparison does not reopen the host decision. Lince would skew GPUI badly by
+asking it to become a globe/game renderer and would skew Pulsar badly by
+putting geospatial privacy, scenario history, Protein or Sand persistence
+inside its game schema. GPUI remains a measured application/editor reference,
+Bevy is used substantially as intended as a game/world runtime, and the
+unusual work stays in Lince adapters and domain kernels.
 
 #### Plan B: Maud/HTML-first hybrid
 

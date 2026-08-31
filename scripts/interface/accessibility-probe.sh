@@ -39,7 +39,7 @@ fi
 address=$(busctl --user call org.a11y.Bus /org/a11y/bus org.a11y.Bus GetAddress | sed -n 's/^s "\(.*\)"$/\1/p')
 test -n "$address"
 
-cargo run --release --manifest-path crates/interface-prototype/Cargo.toml --features joined-runtime --bin lince-interface-cef-diagnostic -- --joined-report-and-exit --accessibility-probe --warmup-seconds 1 --sample-seconds 8 --report "$report" >"$runtime_log" 2>&1 &
+cargo run --release --manifest-path crates/interface/Cargo.toml --features joined-runtime --bin lince-interface-cef-diagnostic -- --joined-report-and-exit --accessibility-probe --warmup-seconds 1 --sample-seconds 8 --report "$report" >"$runtime_log" 2>&1 &
 runner_pid=$!
 
 service=

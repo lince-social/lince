@@ -3,7 +3,7 @@
 Purpose: Define the interface-facing boundary among Facades, Playground, Blood, portable canvas representations, and public experiments.
 
 Owner source: no dedicated Interoperability Record currently exists;
-[Interface](../Interface.lingua) governs shared interface decisions.
+[Interface in Lince](../Lince.lingua) governs shared interface decisions.
 
 Preserved source metadata: `@interoperability`, order 0, `#chapter`,
 `#instinct`, `#part-of @interface`, `#done`, uid
@@ -62,9 +62,29 @@ window; it cannot erase a public generation that someone already downloaded.
 The publication UI states that consequence before publishing.
 
 If someone needs current direct access rather than an honestly timestamped
-public generation, they use Lince live/replica sharing with explicit identity,
-authorization, and encryption. Facade privacy is not weakened to imitate that
-mode.
+public generation, they use Lince's authenticated live workspace sharing. A
+future offline replica is a separately granted policy, never an accidental
+property of a Facade or downloaded cache. Facade privacy is not weakened to
+imitate either mode.
+
+### Synchronization and storage adapters
+
+Protein presents Record/Organ synchronization, live Workspace collaboration
+and File projection in one Synchronization area. This is one product and
+service experience, not one low-level operation format. Record fields retain
+their current reconciliation; Workspace uses Box transactions, canonical
+revisions, snapshots and spatial checkpoints; File Sync translates a
+user-selected directory to and from typed domain changes.
+
+The lanes may reuse authenticated contact identity, invitations, grants,
+delivery cursors, status, recovery, content-addressed assets and resource
+health. They do not treat a peer as a filesystem provider, synchronize
+arbitrary host paths, or collapse file overwrite, Record merge and topology
+editing into generic write/rename events. Live Workspace guests send intents
+to the authoritative host; File Sync remains a projection adapter.
+
+The rationale and the EngineFS comparison are in
+[SceneDB 2.0 and EngineFS review](research/scenedb.md).
 
 ### Blood and portable canvas representations
 

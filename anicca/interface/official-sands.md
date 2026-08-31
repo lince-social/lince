@@ -3,7 +3,7 @@
 Purpose: Preserve user-visible behavior of current first-party Sands while their implementation is rebuilt on the new composition system.
 
 Owner source: no dedicated Sands Record currently exists;
-[Interface](../Interface.lingua) governs shared interface decisions.
+[Interface in Lince](../Lince.lingua) governs shared interface decisions.
 
 Status: Migration input; checked historical capabilities are not proof of native C4 migration.
 

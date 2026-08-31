@@ -280,7 +280,7 @@
       const body = box.value.trim();
       if (!body || !selectedThread) return;
       box.value = "";
-      H.act({ action: "send-message", thread: selectedThread, body })
+      H.act({ action: "create-message", thread: selectedThread, body })
         .then(() => status(""))
         .catch((e) => {
           // Put the text back rather than losing it to an error.

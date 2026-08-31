@@ -135,6 +135,17 @@
                   }' > "$out/archive.json"
                 '';
               };
+          interfaceCefShellHook = lib.optionalString pkgs.stdenv.isLinux ''
+            cef_work_path="$PWD/target/interface-cef/${cefLinuxRuntime.name}"
+            if [[ ! -e "$cef_work_path/.ready" ]]; then
+              mkdir -p "$cef_work_path"
+              chmod -R u+w "$cef_work_path"
+              cp -R --reflink=auto ${cefLinuxRuntime}/. "$cef_work_path/"
+              chmod -R u+w "$cef_work_path"
+              touch "$cef_work_path/.ready"
+            fi
+            export CEF_PATH="$cef_work_path"
+          '';
 
           mkLince =
             { pname }:
@@ -228,9 +239,7 @@
             postFixup = lib.optionalString pkgs.stdenv.isLinux ''
               wrapProgram "$out/bin/lince-desktop" \
                 --set CEF_PATH "$out/lib/lince/cef" \
-                --prefix LD_LIBRARY_PATH : "${
-                  lib.makeLibraryPath interfaceLinuxBuildInputs
-                }:$out/lib/lince/cef"
+                --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath interfaceLinuxBuildInputs}:$out/lib/lince/cef"
             '';
 
             meta = {
@@ -261,7 +270,7 @@
             };
           };
 
-          formatter = pkgs.nixfmt-rfc-style;
+          formatter = pkgs.nixfmt;
 
           # Both relay jobs on one VPS, checked by EVALUATING the modules
           # rather than by reading them (Ontology C4). Linux only: a NixOS
@@ -399,6 +408,7 @@
               export RUSTFLAGS="-D warnings"
               export LINCE_MIGRATION_PREFLIGHT=1
             ''
+            + interfaceCefShellHook
             + lib.optionalString pkgs.stdenv.isLinux ''
               export LD_LIBRARY_PATH="${
                 lib.makeLibraryPath (
@@ -409,12 +419,6 @@
                   ])
                 )
               }:''${LD_LIBRARY_PATH:-}"
-            ''
-            + ''
-              if [[ -t 1 && -z "''${Lince_desktop_shell_started:-}" ]]; then
-                export Lince_desktop_shell_started=1
-                exec ${if pkgs.stdenv.isLinux then "cargo run -p lince-desktop" else "cargo tauri dev --config crates/desktop/tauri.conf.json"}
-              fi
             '';
           };
 
@@ -435,8 +439,8 @@
                 ]
                 ++ lib.optionals stdenv.isLinux [
                   at-spi2-core
-                jq
-                orca
+                  jq
+                  orca
                 ]
               )
               ++ interfaceLinuxBuildInputs;
@@ -444,9 +448,31 @@
             shellHook = ''
               export RUSTFLAGS="-D warnings"
             ''
+            + interfaceCefShellHook
             + lib.optionalString pkgs.stdenv.isLinux ''
               export LD_LIBRARY_PATH="${lib.makeLibraryPath interfaceLinuxBuildInputs}:''${LD_LIBRARY_PATH:-}"
               export LINCE_AT_SPI_BUS_LAUNCHER="${pkgs.at-spi2-core}/libexec/at-spi-bus-launcher"
+            '';
+          };
+
+          devShells.legacy = pkgs.mkShell {
+            packages = with pkgs; [
+              cargo
+              cmake
+              curl
+              ninja
+              openssl
+              pkg-config
+              rust-analyzer
+              rustc
+              rustfmt
+              sqlite
+              xdg-utils
+            ];
+
+            shellHook = ''
+              export RUSTFLAGS="-D warnings"
+              export LINCE_MIGRATION_PREFLIGHT=1
             '';
           };
 
@@ -472,6 +498,7 @@
               export RUSTFLAGS="-D warnings"
               export LINCE_MIGRATION_PREFLIGHT=1
             ''
+            + interfaceCefShellHook
             + lib.optionalString pkgs.stdenv.isLinux ''
               export LD_LIBRARY_PATH="${
                 lib.makeLibraryPath (
@@ -482,12 +509,6 @@
                   ])
                 )
               }:''${LD_LIBRARY_PATH:-}"
-            ''
-            + ''
-              if [[ -t 1 && -z "''${Lince_desktop_shell_started:-}" ]]; then
-                export Lince_desktop_shell_started=1
-                exec ${if pkgs.stdenv.isLinux then "cargo run -p lince-desktop" else "cargo tauri dev --config crates/desktop/tauri.conf.json"}
-              fi
             '';
           };
         }

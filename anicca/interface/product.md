@@ -2,7 +2,7 @@
 
 Purpose: Collect the interface promise, UI guidelines, and collaboration/editor expectations.
 
-Owner source: [Interface](../Interface.lingua); no separate Customization,
+Owner source: [Interface in Lince](../Lince.lingua); no separate Customization,
 Sands, or Interoperability Record currently exists.
 
 Status: Active product boundary; detailed implementation lives in subject documents.
@@ -32,8 +32,9 @@ Read when: changing what v1 exposes to a person or how the base interface should
   spatial playground for building, connecting, and using Sands. It is a
   holistic environment rather than a sidebar of separate applications. Its
   canvas, recursive base pattern, Protein areas, spatial behaviors, topology
-  editing, 2D/3D field views, and edit tools make it feel alive while the
-  default remains minimal and paper-like.
+  editing, surface Top/Perspective views, free-space mode, collapse projection,
+  and edit tools make it feel alive while the default remains minimal and
+  paper-like.
   - [ ] Add built-in and external Sands at every scale.
   - [ ] Link Sands through typed interactions, data, events, and explicit state
     planes. Groups move as one and shelter their internal events, except for
@@ -47,10 +48,12 @@ Read when: changing what v1 exposes to a person or how the base interface should
     primitive/compound Sand composition, saved compound Sands, and the non-spatial
     composition workbench are complete before canvas, Protein-area, or
     influence-area work begins.
-  - [ ] Workspace state is local for the current Interface completion
-    contract. Its model must remain suitable for a later Protein-owned sync
-    surface, but device sync and collaborative workspace sharing are deferred
-    and do not block Base.
+  - [ ] Workspace state is locally durable before it is collaborative. The
+    current Interface completion then adds live-only, host-authoritative
+    workspace sharing in Protein's Synchronization surface. Record/Organ sync,
+    Workspace transactions and File projection share one human-facing place
+    and infrastructure where appropriate, but retain distinct typed semantics.
+    Offline editable replicas and automatic host failover remain deferred.
   - [ ] Human-readable authoring documentation must let a non-technical person
     build from existing Sands, query through Protein, invoke Actions, and
     connect behaviors without first learning the Rust implementation.
@@ -73,6 +76,37 @@ Read when: changing what v1 exposes to a person or how the base interface should
 - [ ] **Mobile:** mobile work begins only after the complete desktop
   Sandbox is implemented. Until then, this goal is deliberately not allowed to
   shape or delay the desktop implementation.
+
+## Software archetypes composed from Box
+
+These are design probes, not a promise to turn each application into a sealed
+built-in Sand. Lince should reproduce their useful interaction grammar from a
+small set of reusable Sands, typed ports, Protein projections, Actions, Areas
+and spatial modes. A new primitive earns its place when several archetypes need
+it; an application-specific exception does not.
+
+| Software shape | Composition from Lince primitives | Reusable pressure it reveals |
+| --- | --- | --- |
+| Kanban and task tracker | Protein result groups become cards; sorting Areas form columns; mutation Areas request status Actions; immunity and fixed bounds keep columns stable. | Card template, lane/shelf, status control, assignee display, internal scrolling. |
+| Spreadsheet and financial dashboard | Dense table Sands bind Record fields; aggregate Proteins feed totals and charts; Actions edit attributable values; groups package reusable reports. | Virtualized grid, number/date editors, chart primitives, selection ranges and an eventual safe formula capability. |
+| CRM and case pipeline | Person, Organ and Record cards share relation ports; force/sorting Areas cluster accounts and stages; a detail Sand follows `record-clicked`. | Relation picker, activity trail, master/detail selection and reusable pipeline presets. |
+| Inventory, warehouse and production line | Quantity-bearing groups enter through Protein Areas, travel through slopes or force lanes, branch by filters and request quantity/concept changes at guarded mutation Areas. | Quantity/unit controls, batch admission, route explanation, capacity limits and map/layout views. |
+| Node automation and rule editor | Typed Sand ports expose events and Actions; wires and Areas create visible flow; Karma remains the durable rule mechanism rather than hidden canvas JavaScript. | Port inspector, event trace, Action preview/grant, cycle diagnosis and reusable subgraphs. |
+| Inbox, help desk and communication client | Protein streams feed thread/message groups; sorting Areas express priority and assignment; a thread Castle combines list, reader, composer and call Sands. | Virtualized feed, thread/message primitives, unread state, media/session adapters and notification policy. |
+| Wiki, research notebook and learning trail | Record/text Sands, relation graphs and reader Sands compose knowledge views; Protein chooses chapters while local or attributed Actions record reading progress. | Rich document projection, outline/tree, citations, backlinks, search and progress controls. |
+| IDE, terminal and operations console | File, editor, terminal, diagnostics and command Sands exchange typed selections and events inside a Castle; external tools receive narrowly granted capabilities. | High-quality text editor, tree, terminal surface, command palette, diagnostics and explicit process/file authority. |
+| Monitoring and control room | Streaming Protein or external adapters feed gauges, charts, logs and topology-aware status groups; Actions remain guarded controls rather than clickable telemetry. | Time-series chart, bounded stream/log view, thresholds, alert explanation and rate/backpressure controls. |
+| Presentation, storyboard and document reader | Saved groups form scenes or pages; camera bookmarks and selection events move between them; pinned Sands provide navigation while reader state stays local when appropriate. | Camera bookmarks, ordered page/scene primitive, presenter controls and optional timeline. |
+| 3D scene planning and spatial whiteboard | Space mode provides free transforms, volume Areas and floating native/HTML Sands; collapse previews how the composition becomes a surface workspace. | 3D transform gizmos, local frames, volume shapes, picking, snapping and spatial artifact adapters. |
+| Simulation and game | Records project as actors; Behavior and fixed-step systems update them; force volumes, collisions and Actions connect simulation consequences back to Lince authority. | Deterministic simulation boundary, input mapping, sprite/mesh/audio Sands, replay and capability-limited game rules. |
+| Map, logistics and geographic planning | Location-aware Records, routes, layers and Area filters eventually project through the world frame while ordinary Sands remain usable as map annotations and HUD. | V2 globe/map streaming, disclosure-aware location, route primitives and multiscale spatial indexing. |
+| Calendar, Gantt and media timeline | Protein can select dated Records and groups can render entries, but pagination, recurrence and a shared time-axis interaction remain deliberately undecided. | A future bounded timeline/time-ruler primitive; these applications must not smuggle calendar semantics into v1 Areas. |
+
+The strongest near-term primitives across this matrix are a virtualized table,
+tree/outline, chart, master/detail selection, camera bookmark, 3D transform
+gizmo, Area shelf/lane and an inspectable stream/log. Calendar recurrence,
+planetary maps, exact geometry and a general media timeline remain separate
+future semantics even though the Box should leave room for them.
 
 ## UI guidelines
 

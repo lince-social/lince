@@ -6,7 +6,13 @@ use sqlx::{Row, SqlitePool};
 use crate::StoreError;
 
 pub const LOCAL_ORGAN_SLUG: &str = "local-organ";
-const LOCAL_ORGAN_EXTENSION: &str = "lince.organ";
+
+/// Where this machine is reachable, and what it calls itself locally.
+///
+/// It lives on the CELL Record, which never syncs. On the Organ Record it
+/// described one device on a body every sibling receives, so a laptop's
+/// `baseUrl` travelled to the phone and the last writer won.
+const CELL_SURFACE_CONFIG: &str = "lince.cell.surface";
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct OrganRecord {
@@ -44,12 +50,10 @@ pub async fn ensure_local(pool: &SqlitePool, base_url: &str) -> Result<OrganReco
             sqlx::query(
                 "UPDATE record
                     SET kind = ?,
-                        body = ?,
                         updated_at = ?
                   WHERE uid = ?",
             )
             .bind(RecordKind::Organ.as_str())
-            .bind(&base_url)
             .bind(&now)
             .bind(&uid)
             .execute(pool)
@@ -67,7 +71,7 @@ pub async fn ensure_local(pool: &SqlitePool, base_url: &str) -> Result<OrganReco
             .bind(LOCAL_ORGAN_SLUG)
             .bind(RecordKind::Organ.as_str())
             .bind("Local Lince")
-            .bind(&base_url)
+            .bind("")
             // An Organ Record's origin is itself. The alternative — leaving it
             // unstamped because "there is no Organ yet" — is the circularity
             // that made the column nullable in the first place, and the answer
@@ -81,16 +85,9 @@ pub async fn ensure_local(pool: &SqlitePool, base_url: &str) -> Result<OrganReco
         }
     };
 
-    // Before anything can log an op: `sync_ops::log_local` stamps the CELL as
-    // the op's actor, and the `set_extension` below is a logged write.
+    // The Cell must exist before its own config can be written to it.
     crate::cells::ensure_local(pool, &uid, "this cell").await?;
-
-    let fds = json!({
-        "baseUrl": base_url,
-        "aliases": ["http://127.0.0.1", "http://localhost"],
-        "local": true
-    });
-    crate::records::set_extension(pool, &uid, LOCAL_ORGAN_EXTENSION, &fds).await?;
+    crate::cells::set_config(pool, CELL_SURFACE_CONFIG, &surface(&base_url)).await?;
     local(pool).await?.ok_or(sqlx::Error::RowNotFound)
 }
 
@@ -125,14 +122,16 @@ pub async fn holds_own_records(pool: &SqlitePool) -> Result<bool, StoreError> {
 /// scanning a code is exactly the wrong default. Refused with a readable
 /// reason instead.
 ///
-/// **The bootstrap ops are PURGED, not re-stamped.** First boot already writes
-/// ops (the `lince.organ` extension is a logged write), stamped with an Organ
-/// uid that is about to stop existing. Re-stamping them to the joined Organ
-/// would publish this device's local settings — its `baseUrl`, its `local`
-/// flag — onto the shared Organ Record and over the wire to every sibling
-/// Cell. They have never been sent anywhere (a fresh Cell has no contacts), so
-/// deleting them loses nothing and keeps `rebuild_read_model` able to replay a
-/// log that is coherent with the identity it belongs to.
+/// **The bootstrap ops are PURGED, not re-stamped.** First boot writes ops
+/// stamped with an Organ uid that is about to stop existing, and re-stamping
+/// them to the joined Organ would replay one Cell's first minutes as the
+/// joined identity's history. They have never been sent anywhere (a fresh Cell
+/// has no contacts), so deleting them loses nothing and keeps
+/// `rebuild_read_model` able to replay a log that is coherent with the
+/// identity it belongs to.
+///
+/// The surface config is NOT among them: it lives on the Cell Record, which
+/// survives the swap untouched and never travelled in the first place.
 pub async fn adopt_identity(
     pool: &SqlitePool,
     joined_organ_uid: &str,
@@ -154,6 +153,9 @@ pub async fn adopt_identity(
                 .into(),
         ));
     }
+    let cell = crate::cells::local(pool)
+        .await?
+        .ok_or_else(|| sqlx::Error::Protocol("this Cell has no Cell Record".into()))?;
 
     let mut tx = crate::write_tx(pool).await?;
     // Order matters: the extension references the Record.
@@ -183,32 +185,25 @@ pub async fn adopt_identity(
     .bind(LOCAL_ORGAN_SLUG)
     .bind(RecordKind::Organ.as_str())
     .bind(&current.head)
-    .bind(base_url)
+    .bind("")
     // An Organ Record's origin is itself, joined or minted.
     .bind(joined_organ_uid)
     .bind(&now)
     .bind(&now)
     .execute(&mut *tx)
     .await?;
-    // RAW, logging no op. These are this DEVICE's settings — its base url, its
-    // `local` flag — and they now sit on a Record that SYNCS. Writing them
-    // through the logged path would ship one Cell's address to every sibling
-    // and have the last writer win. That the local surface config lives on the
-    // shared Organ Record at all is a wart; it belongs on the Cell Record
-    // (which never syncs) and moving it is scoping work.
-    let fds = json!({
-        "baseUrl": base_url,
-        "aliases": ["http://127.0.0.1", "http://localhost"],
-        "local": true
-    });
+    // RAW, logging no op — this Cell's own address, on this Cell's own Record.
+    // It is written inside the same transaction as the identity swap so the
+    // device cannot end up enrolled with an address belonging to the Organ it
+    // just left.
     sqlx::query(
         "INSERT INTO record_extension (record_uid, namespace, fds) VALUES (?, ?, ?)
          ON CONFLICT(record_uid, namespace)
          DO UPDATE SET fds = excluded.fds, version = version + 1",
     )
-    .bind(joined_organ_uid)
-    .bind(LOCAL_ORGAN_EXTENSION)
-    .bind(fds.to_string())
+    .bind(&cell.uid)
+    .bind(CELL_SURFACE_CONFIG)
+    .bind(surface(&normalize_base_url(base_url)).to_string())
     .execute(&mut *tx)
     .await?;
     tx.commit().await?;
@@ -216,44 +211,49 @@ pub async fn adopt_identity(
     local(pool).await?.ok_or(sqlx::Error::RowNotFound.into())
 }
 
+/// The published identity, with this device's own surface read alongside it.
+///
+/// The two come from different Records on purpose. `uid`, `slug` and `head`
+/// are the Organ every sibling Cell shares; `base_url` and `local` are read
+/// from the Cell Record and describe this machine and no other.
 pub async fn local(pool: &SqlitePool) -> Result<Option<OrganRecord>, StoreError> {
     let row = sqlx::query(
-        "
-        SELECT r.uid, r.slug, r.head, r.body, e.fds
-        FROM record r
-        LEFT JOIN record_extension e
-          ON e.record_uid = r.uid AND e.namespace = ?
-        WHERE r.slug = ? AND r.kind = ?
-        LIMIT 1
-        ",
+        "SELECT r.uid, r.slug, r.head, r.body
+           FROM record r
+          WHERE r.slug = ? AND r.kind = ?
+          LIMIT 1",
     )
-    .bind(LOCAL_ORGAN_EXTENSION)
     .bind(LOCAL_ORGAN_SLUG)
     .bind(RecordKind::Organ.as_str())
     .fetch_optional(pool)
     .await?;
 
-    Ok(row.map(|row| {
-        let fds = row
-            .get::<Option<String>, _>("fds")
-            .and_then(|raw| serde_json::from_str::<Value>(&raw).ok())
-            .unwrap_or_else(|| json!({}));
-        let body = row.get::<String, _>("body");
-        let base_url = fds
+    let Some(row) = row else {
+        return Ok(None);
+    };
+    let fds = crate::cells::config(pool, CELL_SURFACE_CONFIG)
+        .await?
+        .unwrap_or_else(|| json!({}));
+    Ok(Some(OrganRecord {
+        uid: row.get("uid"),
+        slug: row.get("slug"),
+        head: row.get("head"),
+        body: row.get("body"),
+        base_url: fds
             .get("baseUrl")
             .and_then(Value::as_str)
-            .map(str::to_string)
-            .unwrap_or_else(|| body.clone());
-        let local = fds.get("local").and_then(Value::as_bool).unwrap_or(true);
-        OrganRecord {
-            uid: row.get("uid"),
-            slug: row.get("slug"),
-            head: row.get("head"),
-            body,
-            base_url,
-            local,
-        }
+            .unwrap_or_default()
+            .to_string(),
+        local: fds.get("local").and_then(Value::as_bool).unwrap_or(true),
     }))
+}
+
+fn surface(base_url: &str) -> Value {
+    json!({
+        "baseUrl": base_url,
+        "aliases": ["http://127.0.0.1", "http://localhost"],
+        "local": true
+    })
 }
 
 fn normalize_base_url(base_url: &str) -> String {

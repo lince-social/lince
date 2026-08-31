@@ -1,9 +1,9 @@
 # Tips
 
 - Lince documentation, declarations, and its task plan are `.lingua` Records
-  in the repository-root `anicca/`. Before reading `.lingua`, use
-  `lince-lingua-crud` from `.agents/skills/lince-lingua-crud/`. Writing one is
-  the owner's — see "`.lingua` is the owner's" below.
+  in the repository-root `anicca/`. Before reading `.lingua`, use the `lingua`
+  skill from `.agents/skills/lingua/`. Writing one is the owner's — see
+  "`.lingua` is the owner's" below.
 - When `anicca/<Subject>.lingua` exists, consult it before planning from or
   editing `anicca/<Subject>.md`. The owner-authored `.lingua` Record is the
   higher source of truth; the adjacent Markdown holds agent reasoning and must
@@ -19,10 +19,11 @@
 
 # Working alongside other agents
 
-Agents and harness sessions coordinate through Lince task Records. Before
-coding, use `lince-lingua-crud` to inspect task state, confirm assignment, and
-claim work without replacing another assignee. That skill is the canonical
-workflow; do not restate it here.
+Agents and harness sessions coordinate through Lince task Records, which the
+owner still edits alone. Before coding, use the `lingua` skill to read task
+state and assignment, and report what you intend to claim in chat rather than
+recording it yourself. When work is cut into parallel nodes, the `graph-work`
+skill owns that workflow; do not restate either here.
 
 # Programming Rules
 

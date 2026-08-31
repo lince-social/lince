@@ -4,7 +4,7 @@ artifact_dir=target/interface-laboratory/benchmark
 mkdir -p "$artifact_dir"
 
 for repeat in 1 2 3; do
-  cargo run --release --manifest-path crates/interface-prototype/Cargo.toml --features joined-runtime --bin lince-interface-cef-diagnostic -- --joined-report-and-exit --warmup-seconds 30 --sample-seconds 120 --cef-count 2 --report "$artifact_dir/joined-$repeat.json"
+  cargo run --release --manifest-path crates/interface/Cargo.toml --features joined-runtime --bin lince-interface-cef-diagnostic -- --joined-report-and-exit --warmup-seconds 30 --sample-seconds 120 --cef-count 2 --report "$artifact_dir/joined-$repeat.json"
 done
 
 jq -s '

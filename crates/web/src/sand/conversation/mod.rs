@@ -20,7 +20,7 @@ pub(crate) fn manifest() -> PackageManifest {
         details: "Three levels of ordinary Records — conversation, thread, message — \
             joined by `in` Assertions and assembled here from a `links` include, \
             since Protein has no 'linked to X' predicate. Sending uses \
-            `send-message`; a new topic uses `open-thread` and needs no new grant, \
+            `create-message`; a new topic uses `open-thread` and needs no new grant, \
             because it is born inside the conversation that was already shared. \
             Pending invites appear here and in board notifications: accepting keeps a \
             copy of what was offered and nothing else — it does not promote the \
@@ -54,7 +54,7 @@ mod tests {
     fn conversations_read_records_and_acknowledge_invites_through_the_host() {
         assert!(HTML.contains("kind_eq: \"conversation\""));
         assert!(HTML.contains("kind_eq: \"thread_invite\""));
-        assert!(HTML.contains("action: \"send-message\""));
+        assert!(HTML.contains("action: \"create-message\""));
         assert!(HTML.contains("action: \"open-thread\""));
         assert!(HTML.contains("/host/notifications/${encodeURIComponent(invite.uid)}/accept"));
         assert!(HTML.contains("/host/notifications/${encodeURIComponent(invite.uid)}/decline"));

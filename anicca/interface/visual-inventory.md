@@ -5,7 +5,7 @@ renderer-neutral Lynx style contract and distinguish governed style from
 content and runtime geometry.
 
 Owner source: no dedicated Customization Record currently exists;
-[Interface](../Interface.lingua) governs the shared interface direction.
+[Interface in Lince](../Lince.lingua) governs the shared interface direction.
 
 Status: source inventory and canonical replacement contract landed; legacy
 sources remain migration input until the official-Sand rebuild.
@@ -120,7 +120,7 @@ data.
 
 ## Canonical replacement contract
 
-`crates/interface-prototype/src/style.rs` is the current executable authority.
+`crates/interface/src/style.rs` is the current executable authority.
 Contract version 1 defines 91 standard tokens across palette, surface, ink,
 intent, state, spacing, size, border, radius, typography, icon, elevation,
 opacity, density, stacking, motion and truth families. Values are typed as

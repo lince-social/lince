@@ -2,7 +2,7 @@
 
 Purpose: Define external package identity, capabilities, isolation, storage, networking, updates, and Website authority.
 
-Owner source: [Interface](../Interface.lingua); no separate Sands or
+Owner source: [Interface in Lince](../Lince.lingua); no separate Sands or
 Interoperability Record currently exists.
 
 Status: Joined CEF authority and composition are proven; installation, review, health, and hostile-content product surfaces remain.

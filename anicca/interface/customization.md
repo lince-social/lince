@@ -3,7 +3,7 @@
 Purpose: Define tokens, themes, visual character, scopes, and the design-system build order.
 
 Owner source: no dedicated Customization Record currently exists;
-[Interface](../Interface.lingua) governs shared interface decisions.
+[Interface in Lince](../Lince.lingua) governs shared interface decisions.
 
 Preserved source metadata: `@customization`, order 0, `#chapter`,
 `#instinct`, `#part-of @interface`, `#done`, uid

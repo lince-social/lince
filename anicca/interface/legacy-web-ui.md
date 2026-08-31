@@ -4,7 +4,7 @@ Purpose: Record the existing Web component library and Gallery behavior that
 the native Sand system must preserve or deliberately replace.
 
 Owner source: no dedicated Customization Record currently exists;
-[Interface](../Interface.lingua) governs shared interface decisions.
+[Interface in Lince](../Lince.lingua) governs shared interface decisions.
 
 Status: Landed Web baseline and migration input. `LynxUI` is a historical
 implementation/API name and does not survive as a second compositional

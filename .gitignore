@@ -9,7 +9,6 @@ trash/
 .claude
 .agents/*
 !.agents/skills/
-!.agents/skills/**
 node_modules/
 test-results/
 playwright-report/

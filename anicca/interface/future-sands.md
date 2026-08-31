@@ -3,7 +3,7 @@
 Purpose: Retain unplanned 2D Map and Ergon interface ideas without mixing them into the current Sand contract.
 
 Owner source: no dedicated Sands Record currently exists;
-[Interface](../Interface.lingua) governs shared interface decisions.
+[Interface in Lince](../Lince.lingua) governs shared interface decisions.
 
 Status: Future and unplanned.
 

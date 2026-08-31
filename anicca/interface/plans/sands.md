@@ -3,7 +3,7 @@
 Purpose: Define production Sand schema, authoring, composition, package, HTML, Website, and migration work.
 
 Owner source: no dedicated Sands Record currently exists;
-[Interface](../../Interface.lingua) governs shared interface decisions.
+[Interface in Lince](../../Lince.lingua) governs shared interface decisions.
 
 Status: Coordinated with Customization C3-C5; semantic kernel, primitive
 Gallery and recursive composition landed, and Box follows the gate.
@@ -161,3 +161,247 @@ for a saved compound.
   store, and it must not require a central registry.
 
 - [ ] Later on, some form of creation of data, similar to ontology's trail should exist and be able to see it in this sand, to input in some dsl or lingua the creation of data to make this demo of paradigms of intelligence: https://paradigms-of-intelligence.github.io/morpho/.
+
+## Task-bound terminal Sand (Fiote)
+
+Owner ask, 2026-08-29: "we should be able to have in the end a libghostty or
+equivalent sand so we can attach properties to that specific sand which can be
+the record of the task we are trying to do in such terminal."
+
+The design reasoning lives in [Fiote build notes](../../Karma.md) (D1, D13,
+D14); only the interface consequence belongs here.
+
+**The binding needs no schema change.** `BoardCard` already carries
+`widget_state: Value` — arbitrary per-instance JSON persisted with the card. A
+terminal pane bound to a task is `widget_state.record_uid`, set when the pane
+is opened from a task and read back on reload. What the instance carries is a
+*binding*, never a copy: the Record is the truth, the pane displays it.
+
+- [ ] Let a Ghostty terminal instance carry a bound Record uid in
+  `widget_state`, shown in the pane's own chrome (title, status control) so a
+  board of several terminals is readable at a glance. The honest empty case is
+  "not bound to a task", distinct from "task deleted" and from "no permission
+  to see it".
+- [ ] Open a bound terminal *from* a Record — the inverse direction is what
+  makes the binding worth having, because a person starts from the task, not
+  from a pane.
+- [ ] Let the bound Record be changed or cleared on a live pane without
+  killing the session. The PTY and the binding have different lifetimes, and
+  today the PTY's is the shorter one
+  (`crates/transport/src/terminal.rs` owns sessions per websocket connection —
+  see Fiote D2, which moves agent sessions off that ownership).
+- [ ] Show the same binding on whatever pane a Fiote cub runs in, so the
+  terminal view and the Fiote view are two projections of one task rather than
+  two unrelated surfaces.
+- [ ] Decide whether `widget_state` bindings are workspace-local or travel
+  with an exported workspace/archive. A shared board that references a Record
+  the recipient cannot see must degrade to the honest empty case above rather
+  than a dead uid.
+
+### Fiote sessions stream into the interface
+
+Owner, 2026-08-30, marked high priority for the interface refactor: whatever
+Fiote and its cubs are doing must be watchable here, live.
+
+This is the same surface as the task-bound terminal above — a pane bound to a
+Record — with a different source behind it. The harness design lives in
+[Fiote build notes](../../Karma.md); only the surface consequence belongs here.
+
+- [ ] Stream a Fiote or cub session into a pane as it runs: assistant text,
+  thinking, tool calls and their results, and the bytes of any command it ran.
+  The stream is host-owned and the pane attaches to it, so closing the pane
+  does not end the session and reopening replays the backlog.
+- [ ] Show per-session state beside the stream — model, tokens used, context
+  percentage, cost, and whether it is streaming, waiting on a tool, waiting on
+  a person, or finished. A pane with no state readout cannot be told apart
+  from a stalled one.
+- [ ] Let a person type into a running session (steering) and have it land
+  between tool calls rather than mid-stream.
+- [ ] Several sessions on one board at once, each labelled by which Fiote owns
+  it and which task it is on, since a board of unlabelled panes stops being
+  readable at about four.
+- [ ] Decide whether a raw terminal view of a session is a separate pane kind
+  or a mode of the same one. The Ghostty sand already renders VT bytes; a
+  session that ran a command has bytes worth rendering that way.
+
+### Pinned and queued messages, one list
+
+Owner, 2026-08-30. The reasoning is in [Fiote build notes](../../Karma.md) D32;
+this is the surface.
+
+A draft message is a Record only its author can see, carrying assertions for
+what it will do: `#pinned` (a preset, copied on send, survives), `#steer`
+(delivered at the next safe point in a running turn), `#next` (delivered when
+the turn finishes). A queued draft without `#pinned` is consumed when it sends.
+One list holds both, and the tags say what each entry will do.
+
+- [ ] One drafts list per conversation, private to its author, holding presets
+  and queued messages together. Reorder by dragging; promote an entry to go
+  next; edit or delete in place.
+- [ ] The send control shows what pressing it will do, because that changes
+  with what is running: send now, deliver at the next safe point, or queue
+  behind what is already queued. Never learned by surprise.
+- [ ] Delivery controls appear only while a turn is in flight, and when inert
+  they are still reachable and say why — "no turn running: this sends now".
+  Presets are unconditional; a canned reply is useful in a conversation between
+  people too.
+- [ ] Show a queued entry's age. One queued an hour ago and fired unattended is
+  a stale intent, not an instruction.
+- [ ] "Send next" must never be labelled "now" while a tool is running: the
+  honest maximum is when that tool returns. Abort-and-send is a separate
+  control and looks destructive.
+
+### The terminal and the thread are two views of one session
+
+- [ ] A session's pane can show the thread (messages, durable) or the terminal
+  (raw bytes of what it ran, ephemeral), and switching between them does not
+  restart or interrupt anything. The terminal is the uncollapsed form of what
+  a folded tool result already shows.
+- [ ] Decide whether the terminal is read-only or interactive. If interactive,
+  typing into it **bypasses the model** — it is not a message and the agent
+  does not know it happened unless the output returns to its context. That must
+  be visibly distinct from steering: a different pane state, and a line in the
+  thread recording that a person typed directly.
+- [ ] Ctrl-C in the terminal stops the running command; a stop control on the
+  session cancels the whole turn. An interrupted turn must be marked as
+  interrupted where the model can see it, or it reads its half-finished work as
+  finished.
+- [ ] The terminal owns its keys entirely (it already has its own keymap), so
+  composer shortcuts such as Tab-to-queue apply only in the composer. No
+  keyboard trap in either pane.
+
+### Three views of a session, and live messages
+
+Owner, 2026-08-30. Reasoning in [Fiote build notes](../../Karma.md) D31, D32.
+
+Agreed and settled: a queued draft is consumed on send and a pinned preset is
+copied; delivery aspects are assertions on the draft; delivery controls appear
+only while a turn is in flight and say honestly what they would do when inert;
+a queued entry shows its age; "send next" is never labelled "now" while a tool
+is running; queued messages are editable; when a turn ends with several queued,
+they are delivered one at a time by default and the setting can be flipped.
+
+- [ ] A session pane offers three views, and switching never restarts or
+  interrupts anything: **the thread** (messages, durable, what other people
+  see), **what the agent ran** (its commands and their output, rendered as a
+  terminal because that is what they are, read-only), and **a real terminal for
+  the person** (their own shell in the session's working directory, fully
+  interactive — theirs, not the agent's).
+- [ ] Match what Pi's own interface shows, and list the gaps rather than
+  excusing them: tool calls with arguments, results, diffs, token and context
+  counts, queue state, compaction. All of it arrives over the protocol; where
+  our rendering is thinner, that is work, not a missing capability.
+- [ ] Never let the agent's command view be typed into as if it were a shell.
+  Input there bypasses the model and the model does not know it happened.
+  Either keep it read-only or make the intervention visibly exceptional and
+  record it in the thread.
+- [ ] Render an assistant message **live, as it is written** — the Record's
+  body grows and the thread shows it growing, including for a person on another
+  Organ watching the same thread.
+- [ ] Show a message's state: still writing, finished, or interrupted. A reader
+  who cannot tell a live message from a stalled one does not know whether to
+  wait.
+- [ ] A streaming message is read-only until it finishes; editing arrives after.
+
+### A session is a Sand group
+
+Owner, 2026-08-30: when we have a session with an agent we have a Sand group —
+the thread, what the agent ran, and possibly the terminal — reusing existing
+Sands and inventing the few that are missing.
+
+The board already has the mechanism: `BoardCard` carries `groupId` and a
+nested `groupIds` stack, and `group-logic.js` has `wrapInGroup`. Nothing new is
+needed to make a session a group; what is new is what goes in it and where the
+group comes from.
+
+**What is reused, and what is actually new.**
+
+| View | Sand |
+| --- | --- |
+| The thread | **`conversation`**, unchanged. It already reads Conversation → Thread → Message over Protein and sends with `create-message` / `open-thread`. A session thread is an ordinary thread. |
+| The task | **`record`**, unchanged, bound to the Record the session hangs off. |
+| A real terminal | **`terminal`**, unchanged. |
+| What the agent ran | **New.** A tool timeline: each call with its arguments, its result, diffs it produced, folded by default. Command output renders through the same VT path the terminal Sand already uses, read-only. |
+| Session control | **New.** The cub tree, spawn and stop, model and thinking level, tokens / context / cost, compaction. |
+| Drafts and queue | Part of the composer, not its own Sand. |
+
+- [ ] Bind every member of a session group to the same session Record through
+  `widget_state`, and give the group one lane room so its members coordinate
+  without going through the Ledger.
+- [ ] Opening a session reconstructs its group; closing it destroys nothing,
+  because the session is host-owned and outlives every view of it (Fiote D2).
+  *Where the layout itself lives — a recipe on the session Record versus loose
+  cards on one board — is deferred to the v2 interface refactor (owner,
+  2026-08-30), along with anything mobile.*
+- [ ] **One group per Fiote, not per cub.** Three or four Sands per session
+  multiplied by several cubs is a board nobody can read — the same failure as
+  unlabelled panes. Cubs are rows in the session-control Sand, and any one of
+  them can be *promoted* into its own group on demand. Nested groups already
+  support that; auto-spawning them does not.
+- [ ] A new Sand needs its permission in the manifest, the way the terminal
+  Sand declares `terminal_session`. The session Sands need one of their own
+  rather than borrowing `act`.
+- [ ] Keep the operator's view and the shared artifact separate: **another
+  person opens the same thread with only the `conversation` Sand** and sees
+  the conversation, because the thread is the shared thing and the group is
+  one person's way of working on it. Nothing about the group should be
+  required to read what happened.
+
+### The two new session Sands, in tiers
+
+Owner, 2026-08-30: face the feature increase — write down the full version and
+build it piece by piece. First cut is what the Fiote prototype needs
+(Karma.md Phase 2); full is what it becomes.
+
+**Session control.**
+
+- [ ] *First cut:* the roster — this Fiote and its cubs, each with a state
+  (idle, streaming, running a tool, waiting on a person, finished) and the task
+  it is on; tokens used and context percentage per session; stop.
+- [ ] Model and thinking level per session, changeable mid-session.
+- [ ] Budget: a ceiling per session and per Fiote, spend so far, and what
+  happens when it is reached — stopping, not warning.
+- [ ] Tool policy: which MCP servers and which tools this agent may use, each
+  allow / ask / deny.
+- [ ] Which Agent Record the session's prompt came from **and which revision**,
+  so "why did these two behave differently" has an answer.
+- [ ] Traversal policy: the link Concepts followed, direction, depth, and
+  whether each is glanced at, summarised or read in full.
+- [ ] The draft queue with ages, reorder and promote (shares the composer's
+  list).
+- [ ] Compaction: current context use, the compact gesture, and what a past
+  compaction dropped.
+- [ ] Provider trouble: the last retry, the last error, and whether it is
+  retrying now.
+- [ ] Spawn a cub, fork a session, rename a session.
+
+**Tool timeline.**
+
+- [ ] *First cut:* a folded chronological list — tool name, what it acted on,
+  ok or error, duration. Nothing is persisted (Fiote D33): the timeline is
+  live while the session runs and empty afterwards, and "output not kept" is
+  stated rather than looking like "no output".
+- [ ] Render a payload by what it is: text, VT for a command, a diff for an
+  edit, an image for an image.
+- [ ] Promote a payload into the thread — the one way anything about a tool
+  call becomes durable, since nothing is kept by default (Fiote D33). Copying
+  it into a Message is an ordinary write and needs no persistence layer.
+- [ ] Filter by tool and by status, and search within outputs.
+- [ ] Jump from a call to the turn it belongs to, and back.
+- [ ] Copy the command.
+- [ ] **Not to be built casually: re-run a call.** Replaying a side effect
+  outside the context that produced it is a different act from repeating a
+  query, and the timeline should not make them look alike.
+
+### Fiote arranging the board
+
+- [ ] Once a group is derived rather than hand-placed, a Fiote adding or moving
+  a Sand is an ordinary write and needs no privileged path — which is what
+  [Karma](../../Karma.lingua) imagined. It must be **visible and undoable**,
+  or a board that rearranges itself reads as haunted rather than helpful.
+
+### The agent work board
+
+- [ ] Task Records assigned to agents form a `part-of` tree, which `kanban` and
+  `relations` already render. "What are my agents working on" is likely an
+  existing Sand with a filter rather than a new one — check before building.

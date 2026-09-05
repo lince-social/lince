@@ -1,5 +1,3 @@
-//! Place rows (blueprint IX): the stored side of the place Instinct.
-
 use nucleus::place::Place;
 use sqlx::{Row, SqlitePool};
 
@@ -48,7 +46,6 @@ pub async fn set_record_place(
     Ok(())
 }
 
-/// The place of a record, if it has one.
 pub async fn of_record(pool: &SqlitePool, record_uid: &str) -> Result<Option<Place>, StoreError> {
     let place_uid: Option<String> = sqlx::query("SELECT place_uid FROM record WHERE uid = ?")
         .bind(record_uid)

@@ -1,43 +1,3 @@
-//! The Karma sand: the human surface over rules.
-//!
-//! A rule is a trigger, a condition, an arithmetic, and a consequence. This sand
-//! is where a person creates, reads, revises and retires them, and where the
-//! record they act on is drawn with its past, its present and its declared
-//! future on one line.
-//!
-//! Economy is not a sand. It is what you get when the rules on this surface are
-//! about a balance, exactly as a pantry is what you get when they are about
-//! flour. The backend cannot tell the difference and must not be able to: the
-//! vocabulary — resource, cost, category — is supplied here, in HTML, over
-//! primitives that would answer the same questions about hours without a line
-//! changing.
-//!
-//! What it owns: capturing one change, correcting one, declaring a recurring
-//! one, answering the instants a schedule produces, and drawing one classified
-//! concept through time. What it deliberately does not own: any total, any
-//! balance, any projection. Every number on screen arrives already computed from
-//! Protein, because the moment JavaScript adds two amounts, exactness is gone.
-//!
-//! A declared rule fires itself. The heartbeat applies every date that falls
-//! due, through the same Action the apply button sends — so the inbox is where
-//! a person *can* answer a date early or differently, not where they must go for
-//! anything to happen at all. Declaring the rule is the authorization.
-//!
-//! A rule can also carry consequences that reach outward — propose a promise,
-//! ask a question, notify, run a command, a saved query or a typed Action.
-//! None of those *run* when the rule fires: each is committed as an obligation,
-//! a question, or a queued effect, and a separate worker carries it out and can
-//! still refuse. A rule therefore never acquires a private path to the outside
-//! world, and there is somewhere left to check a grant.
-//!
-//! The honest limits today: delivery resolution is the heartbeat period, so a
-//! cadence written in milliseconds is declared exactly and delivered on the
-//! tick. Transfer automation is deliberately absent rather than merely
-//! unfinished — a rule cannot advance an agreement, because Transfer/Karma is
-//! parked and shipping it quietly would be shipping parked behaviour. And this
-//! form authors the *when*, the *if* and the Record-shaped *then*; the outward
-//! consequences are storable and firable but not yet drawable here.
-
 mod body;
 
 use {
@@ -126,8 +86,6 @@ fn document(manifest: &PackageManifest) -> String {
                 title { (manifest.title.as_str()) }
                 link rel="stylesheet" href="styles.css";
                 script src="/board/frame.js" {}
-                // The canvas's camera is d3-zoom, not a force graph — same
-                // always-registered vendor route the relations sand uses.
                 script src="/board/vendor/d3.v7.min.js" {}
             }
             body {
@@ -167,7 +125,6 @@ mod tests {
         ] {
             assert!(assets.contains(&asset), "missing {asset}");
         }
-        // The builder normalises permission order, so compare as a set.
         let mut permissions = package.manifest.permissions.clone();
         permissions.sort();
         assert_eq!(
@@ -182,8 +139,6 @@ mod tests {
 
     #[test]
     fn the_capture_line_and_both_control_surfaces_are_present() {
-        // The three things the sand exists to do. A refactor that drops one
-        // should fail here rather than in someone's hands.
         let html = package().html_document();
         assert!(html.contains("capture-form"), "one-line capture");
         assert!(html.contains("recurrence-form"), "recurring control");
@@ -193,9 +148,6 @@ mod tests {
 
     #[test]
     fn every_step_component_is_reachable_down_to_milliseconds() {
-        // A backend that accepts `1 month + 1 day + 1 second + 10ms` behind a
-        // form offering four presets is not the feature. The whole ladder has
-        // to be typeable, or the fine control exists only in tests.
         let html = package().html_document();
         for field in [
             "step-years",
@@ -216,10 +168,6 @@ mod tests {
 
     #[test]
     fn the_main_view_is_a_canvas_behind_a_rules_panel() {
-        // The face of the sand is a static card deck a camera pans over, not
-        // the form — every rule control still lives on the page, just tucked
-        // behind the corner's "+ Rule" button instead of being the first
-        // thing shown.
         let html = package().html_document();
         assert!(
             html.contains(r#"id="karma-canvas""#),
@@ -245,10 +193,6 @@ mod tests {
 
     #[test]
     fn the_panel_leads_with_the_builder_then_frequencies_then_the_slop() {
-        // The order is the point. A rule is authored from its three parts at
-        // the top, the beats those parts read are declared under it, and the
-        // pre-rewrite surface sits below a divider that says what it is rather
-        // than passing for a peer of the sections above it.
         let html = package().html_document();
         let builder = html.find("rule-builder-form").expect("the builder");
         let frequency = html.find("frequency-form").expect("frequency CRUD");
@@ -261,10 +205,6 @@ mod tests {
 
     #[test]
     fn a_condition_is_written_with_blocks_and_a_threshold_and_a_consequence() {
-        // The three parts of the drawing, in order, each with the control that
-        // authors it: an input that completes block names, a threshold that
-        // needs no number for its two commonest settings, and a consequence
-        // that can be borrowed from a rule that already does it.
         let html = package().html_document();
         assert!(
             html.contains(r#"id="condition-input""#),
@@ -299,9 +239,6 @@ mod tests {
 
     #[test]
     fn a_rule_can_be_changed_after_it_is_declared() {
-        // Create, read and delete were reachable while revise was an Action the
-        // sand never called — so the only way to fix a wrong figure was to
-        // delete the rule and lose its identity. The form does both jobs.
         let html = package().html_document();
         assert!(
             html.contains("recurrence-submit"),
@@ -319,10 +256,6 @@ mod tests {
 
     #[test]
     fn a_declined_date_is_visible_and_can_be_taken_back() {
-        // Skipping is the main way to opt out now that the heartbeat applies
-        // due dates on its own. A list that hides skips undoes the reason
-        // skipping exists — that "decided against" and "nobody has looked yet"
-        // must not read the same — and leaves the decision unreachable.
         assert!(
             super::APP_RECURRENCE_JS.contains("unskip-recurrence-occurrence"),
             "a skip must be reversible from the surface that made it"
@@ -335,9 +268,6 @@ mod tests {
 
     #[test]
     fn a_schedule_is_offered_as_a_term_in_the_arithmetic() {
-        // The unification, where a person can see it. If the form never names
-        // `freq(...)`, then a rule referencing another rule's rhythm exists
-        // only in tests, and "check daily, act monthly" stays unsayable.
         let html = package().html_document();
         assert!(
             html.contains("freq(@rule)"),
@@ -355,14 +285,9 @@ mod tests {
 
     #[test]
     fn a_rule_can_be_told_to_look_before_it_acts() {
-        // "When, if, then." Without the *if*, a rule can only ever mean "every
-        // Tuesday, unconditionally" — and the useful ones are conditional:
-        // every day, but only when stock is low.
         let html = package().html_document();
         assert!(html.contains("rule-condition"), "the reading to test");
         assert!(html.contains("rule-gate"), "whether it means fire");
-        // Gate and carry are separate controls because what to test and what
-        // to write are two decisions.
         assert!(html.contains("rule-carry"), "what the consequence receives");
         assert!(
             super::APP_RECURRENCE_JS.contains("const:"),
@@ -372,11 +297,13 @@ mod tests {
 
     #[test]
     fn every_consequence_a_rule_can_carry_is_authorable() {
-        // The backend has stored a list of typed consequences for a while, but
-        // a form that only writes `capture-entry` means the rest exist solely
-        // in tests. Each kind needs a control, or the feature is unreachable.
         let html = package().html_document();
-        for kind in ["capture-entry", "add-quantity", "set-quantity"] {
+        for kind in [
+            "capture-entry",
+            "add-quantity",
+            "set-quantity",
+            "set-quantity-where",
+        ] {
             assert!(
                 html.contains(kind),
                 "the {kind} consequence needs a control"
@@ -386,8 +313,6 @@ mod tests {
         for action in [r#"value="add""#, r#"value="remove""#, r#"value="move""#] {
             assert!(html.contains(action), "concept action {action}");
         }
-        // A rule that does nothing to the number is how a pure reclassification
-        // is said. Without it, moving a card would have to invent an amount.
         assert!(
             html.contains(r#"value="none""#),
             "a rule must be able to leave the number alone"
@@ -396,8 +321,6 @@ mod tests {
 
     #[test]
     fn the_weekday_landing_and_short_month_choice_are_offered() {
-        // The two adjustments that turn a step into a rule a person actually
-        // means: "then move to a Friday", and what a 31st means in February.
         let html = package().html_document();
         assert!(html.contains(r#"name="land-on""#), "weekday landing");
         for day in ["monday", "friday", "sunday"] {
@@ -412,8 +335,6 @@ mod tests {
 
     #[test]
     fn the_anchor_carries_a_time_not_only_a_date() {
-        // A rule stepping in seconds is phased by the instant it started at. A
-        // date-only anchor would silently round every such rule to midnight.
         let html = package().html_document();
         assert!(
             html.contains(r#"id="rule-anchor" type="datetime-local""#),
@@ -424,10 +345,6 @@ mod tests {
 
     #[test]
     fn a_rule_can_be_told_where_to_stop_including_after_one() {
-        // Where a rule ends is part of the rule, and "once, on that day" is the
-        // bound set to one. If this control were missing, a one-off promise
-        // would need a second kind of object again — which is the split the
-        // backend just stopped having.
         let html = package().html_document();
         assert!(html.contains("rule-bound"), "a bound must be choosable");
         assert!(html.contains("rule-bound-count"), "a count of occurrences");
@@ -440,13 +357,8 @@ mod tests {
 
     #[test]
     fn a_truncated_list_has_somewhere_to_say_so() {
-        // A millisecond rule produces more dates than any page can hold, and a
-        // list that stops without saying so reads as an obligation fully met.
         let html = package().html_document();
         assert!(html.contains("occurrence-more"), "room to report a prefix");
-        // The quietest way to be a prefix: the inbox only asked back so far.
-        // The sand names its own lookback so it can say where the list stops
-        // instead of inheriting a default it cannot describe.
         assert!(
             super::APP_STATE_JS.contains("at_since"),
             "the inbox must choose the window it can explain"
@@ -459,8 +371,6 @@ mod tests {
 
     #[test]
     fn no_total_or_direction_control_is_offered() {
-        // Two design rules the backend depends on: direction is the amount's
-        // sign, and no form may ask which total a change belongs to.
         let html = package().html_document();
         let lowered = html.to_lowercase();
         assert!(
@@ -473,14 +383,6 @@ mod tests {
         );
     }
 
-    /// C7 axis 2 has a surface, and it says "this Cell" rather than naming the
-    /// rule's state.
-    ///
-    /// The wording assertion is the substance of the test, not decoration. A
-    /// control labelled "disable" or "pause" describes the RULE, and a person
-    /// reading it would expect their other Cells to stop too — the exact
-    /// opposite of what the setting does. The three honest states are: runs
-    /// here, held here and running elsewhere, and nothing to configure.
     #[test]
     fn where_rules_run_is_a_per_cell_surface_and_says_so() {
         let html = package().html_document();
@@ -503,11 +405,6 @@ mod tests {
         }
     }
 
-    /// The empty state is a sentence, not an empty list.
-    ///
-    /// An Organ with one Cell is the common case and has nothing to arrange
-    /// here, and a blank panel in that case reads as a feature that failed to
-    /// load rather than one with nothing to say.
     #[test]
     fn the_execution_panel_has_something_to_say_when_there_is_nothing_to_show() {
         let html = package().html_document();
@@ -518,24 +415,6 @@ mod tests {
         );
     }
 
-    /// Nothing on this panel asks through a browser modal.
-    ///
-    /// The same rule the Organ sand pins. A `confirm()` here would be
-    /// especially wrong: turning a rule off on one Cell is reversible in one
-    /// click and needs no ceremony at all.
-    /// A rule that acts outside the Cell says so on its own row.
-    ///
-    /// The classification is `Act`-routed consequences only — the other four
-    /// routes end in something a person answers, and one person answering one
-    /// proposal is one answer however many Cells proposed it. The sentence
-    /// names the consequence ("it acts twice") rather than warning vaguely
-    /// about duplicates, because the vague version is the one people skip.
-    /// The note the store and the migration both promise is actually asked for.
-    ///
-    /// Written because the selector existed before the field did: the toggle
-    /// read `[data-execution-note]`, nothing rendered one, and the note was
-    /// therefore always null — a feature that silently did nothing while three
-    /// layers of comment described it working.
     #[test]
     fn turning_a_rule_off_can_carry_a_reason() {
         assert!(super::APP_EXECUTION_JS.contains("data-execution-note"));
@@ -557,13 +436,6 @@ mod tests {
         );
     }
 
-    /// Designating an executor is offered, is reversible, and names THIS Cell.
-    ///
-    /// Naming only the local Cell is the design, not a limitation: it is the
-    /// one uid this page can be certain of, and choosing a Cell you are not
-    /// sitting at is how a rule ends up designated to a machine that is no
-    /// longer running. Moving it means going to that Cell and pressing it
-    /// there — the manual takeover chosen over a heartbeat lease.
     #[test]
     fn an_executor_can_be_designated_and_undesignated_from_the_cell_itself() {
         let js = super::APP_EXECUTION_JS;

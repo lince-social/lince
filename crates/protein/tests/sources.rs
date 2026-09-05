@@ -1,6 +1,3 @@
-//! Part VII completion: the fact/concept/transfer sources and the
-//! extension/projection/link-depth includes.
-
 use chrono::{DateTime, Utc};
 use engine::Engine;
 use engine::actions::{
@@ -121,31 +118,26 @@ async fn fact_source_filters_and_aggregates_the_ledger() {
     )
     .await;
 
-    // W-provenance: the facts of one record
     let mut q = protein(Source::Fact);
     q.filter = vec![Predicate::RecordEq("apples.stock".into())];
     let rows = protein::execute(&e.store, &q).await.unwrap();
     assert_eq!(rows.len(), 2);
     assert!(rows.iter().all(|r| r["record"] == apples.as_str()));
 
-    // at_since (absolute) narrows the window
     let mut q = protein(Source::Fact);
     q.filter = vec![Predicate::AtSince("2026-07-02T00:00:00Z".into())];
     assert_eq!(protein::execute(&e.store, &q).await.unwrap().len(), 2);
 
-    // concept_in walks the Lingua DAG on the fact's record
     let mut q = protein(Source::Fact);
     q.filter = vec![Predicate::ConceptIn("food".into())];
     assert_eq!(protein::execute(&e.store, &q).await.unwrap().len(), 2);
 
-    // W-finance: sum delta by cause_kind
     let mut q = protein(Source::Fact);
     q.aggregate = Some(Aggregate {
         op: AggregateOp::Sum,
         by: GroupBy::CauseKind,
     });
     let rows = protein::execute(&e.store, &q).await.unwrap();
-    // Sums cross the wire as canonical decimal text, not IEEE doubles.
     let get = |group: &str| {
         rows.iter()
             .find(|r| r["group"] == group)
@@ -154,7 +146,6 @@ async fn fact_source_filters_and_aggregates_the_ledger() {
     assert_eq!(get("user_edit").as_deref(), Some("11"));
     assert_eq!(get("settlement").as_deref(), Some("-3"));
 
-    // ... and by calendar day
     let mut q = protein(Source::Fact);
     q.aggregate = Some(Aggregate {
         op: AggregateOp::Sum,
@@ -194,7 +185,6 @@ async fn concept_source_reads_the_lingua_dag() {
     let apple = rows.iter().find(|r| r["name"] == "apple").unwrap();
     assert_eq!(apple["parents"][0], fruit.as_str());
 
-    // concept_in narrows to the family
     let mut q = protein(Source::Concept);
     q.filter = vec![Predicate::ConceptIn("food".into())];
     let names: Vec<String> = protein::execute(&e.store, &q)
@@ -512,7 +502,6 @@ async fn extension_and_projection_includes_attach() {
         "the agreed +3 folds in by September"
     );
 
-    // before the window closes, the promise does not count yet
     q.include.projection = Some(ProjectionInclude {
         at: "2026-07-15T00:00:00Z".into(),
     });
@@ -550,7 +539,7 @@ async fn link_depth_expands_the_tree() {
         links: Some(LinksInclude {
             kinds: vec!["needs".into()],
             direction: protein::LinkDirection::Out,
-            depth: 0, // default: direct links only
+            depth: 0,
         }),
         ..Default::default()
     };

@@ -5,8 +5,8 @@ Purpose: Define the strict pre-Box dependency waterfall and its completion gates
 Owner source: no dedicated Customization Record currently exists;
 [Interface in Lince](../../Lince.lingua) governs shared interface decisions.
 
-Status: customization, semantic primitive-Sand and C2 recursive-composition
-kernels landed; C3 Configuration and external authoring is next.
+Status: customization, semantic primitive-Sand, C2 recursive-composition and
+C3 Configuration/external-authoring kernels landed; C4 migration is next.
 
 Read when: executing the active interface refactor.
 
@@ -30,8 +30,8 @@ scene construction and reality capture do not silently enter this waterfall;
 named authoring programs and geometry systems are examples rather than v1
 dependencies.
 
-The completed Pulsar/Helio study adds no prerequisite or framework migration
-to C3–C5. Configuration and official Sands continue on the landed Lince-owned
+The completed Pulsar/Helio study added no prerequisite or framework migration
+to C3–C5. Configuration and official Sands use the landed Lince-owned
 retained projections. Focused UI crates or bounded licensed techniques may be
 used where they satisfy that ownership, but GPUI, Pulsar, Helio and SceneDB do
 not enter this waterfall. C5 consumes the study's causal runtime-health and
@@ -41,7 +41,7 @@ frame-boundary constraints; renderer optimizations remain measured work under
 ## Landed customization kernel
 
 The completed task has been deleted from the remaining checklist. Contract
-version 1 provides 91 typed `--lynx-*` tokens, complete Dark and Light Lynx
+version 1 provides 92 typed `--lynx-*` tokens, complete Dark and Light Lynx
 modes, partial-theme inheritance, declared local extensions, safe local asset
 references, fail-closed validation and the exact seven-scope cascade. Every
 resolved value carries provenance. The [visual inventory](../visual-inventory.md)
@@ -52,7 +52,7 @@ The joined native Gallery applies the same resolved style to WGPU nodes,
 borders, compositor background and retained text. F1/F2/F3/F4/F7 expose
 workspace, group, instance, partial-theme and mode changes. Installed CEF gets
 the resolved CSS declarations without reload; Website CEF gets no style or
-bridge authority. The release report passed with 91 resolved tokens, two style
+bridge authority. The first release report passed with 91 resolved tokens, two style
 projections and one Installed document load.
 
 The first-party runtime remains pure JavaScript where JavaScript is needed;
@@ -169,42 +169,102 @@ teardown. Under the representative load, frame p95 was 10.265 ms and the
 `target/interface-laboratory/parity/` and
 `target/interface-laboratory/sand-contract/`.
 
-### C3 — Configuration and external authoring
+### Landed C3 Configuration and external authoring
 
-This stage gives a person complete control over the landed kernel and
-composition model without file editing.
+C3 is complete and its task entries have been deleted. Configuration artifact
+schema version 1 persists one validated unit containing global theme/mode,
+workspace and group layers, developer CSS and domain-launch receipts together
+with the exact composition artifact. Instance overrides remain on placements;
+definition defaults, ports, Behavior, isolation and capabilities publish
+through the same transactional catalog. Save uses a pending file and atomic
+rename, and the live artifact advances only after that rename succeeds.
+Missing state creates the complete Lynx default; unreadable, stale or
+identity-mismatched state opens that safe default without overwriting the
+refused bytes.
 
-- [ ] Build the Configuration Sand on the same primitives. It edits active
-      style/mode, workspace, group and instance overrides, spacing, margin,
-      gap, radii, thickness, typography, density, definition defaults,
-      Behavior, ports, isolation and capabilities with live preview, undo,
-      reset-to-inherited and honest invalid states. Every value names its
-      origin; both global and local choices persist.
-- [ ] Generate the token reference from the executable contract. The default
-      manifest always resolves first and defines every standard role. Partial,
-      invalid, missing or unreadable themes cannot prevent Lince or a Sand
-      from opening.
-- [ ] Select manifests and local assets by validated identity, not an
-      arbitrary path or remote URL. Apply the same cascade to native style
-      data, shared HTML roots, isolated Installed roots and Plan B browser
-      roots. Global changes update inheriting roots without replacing local
-      patches.
-- [ ] Keep semantic slots open through declared typed extensions rather than
-      a fixed palette ceiling. Sand authors name roles, not a chosen Lynx hex
-      value. User-owned expression remains data.
-- [ ] Expose advanced raw workspace/Sand CSS, extension creation, Behavior and
-      port editing only in developer mode. Scope presentation below the
-      declared root; reject `@import`, external URLs, executable/extension
-      schemes, escaping selectors and rules that imitate host security
-      corners. Preview in a disposable boundary and retain a safe reset outside
-      the customized root.
-- [ ] Publish the versioned external-author contract and minimal test kit.
-      Ordinary external HTML uses its own HTML/CSS/JavaScript and manifest;
-      first-party Maud conveniences are optional. Unknown contract versions
-      fail closed and never negotiate down.
+The 22-definition Configuration package composes the landed Panel, Title and
+Button primitives. F11 exposes 16 operations through keyboard, pointer and
+AccessKit, with live native and Installed-HTML preview, value origins, undo,
+inherit, safe reset, refused-state feedback and save/reopen. Human runs persist
+beneath the Lince configuration directory. The native Configuration Sand is
+outside raw-CSS roots and remains available even when a preview is refused.
+
+The standard table now has 92 typed roles, including `--lynx-margin-sand`.
+The generated reference carries Dark and Light values for every role. Themes
+are selected by uid plus manifest SHA-256; assets retain relative path, kind
+and content-hash validation. Typed `--lynx-local-*` extensions participate in
+the normal cascade. Native, shared HTML, isolated Installed HTML and browser
+roots receive the same declarations without replacing local patches or
+reloading CEF.
+
+Developer CSS is a bounded presentation-declaration list. Imports, URLs,
+executable/extension schemes, selector braces, root escape, dynamic bindings,
+security-stack imitation and unapproved properties fail closed. The generated
+external-author kit contains seven files: schemas, accepted ordinary
+HTML/CSS/ES-module package and exact-root manifest, unknown-version manifest,
+token reference, launch recipe and guide. Maud is optional.
+
+The version-1 launch recipe names exact definitions, placements, typed Record
+reads and exported Action writes. Materialization creates ordinary composition
+entries and a durable domain receipt. The same launch after save/reopen focuses
+the existing placement and advances its provenance count; no recipe or receipt
+contains a renderer handle. The release parity gate and 61-test joined suite
+pass. The real Wayland/WGPU/CEF report passed at 1920×1052 under the accepted
+200/1,000/10,000 workload with two accelerated CEF surfaces. It applied and
+restored the live Configuration projection without changing the Installed
+document's one-load count, measured 10.879 ms frame p95 and 0.752 ms
+fixed-step p95 with no backlog, and carries source fingerprint
+`577dc8b13f1e2b00822f0e97ecd1722fc0672b3edf0295f1f3a06532391c439c`.
 
 ### C4 — Rebuild the existing interface before Box
 
+The first C4 structure boundary and its shell, Record, Conversation and first
+Record-collection operational slices are landed. The native F12 catalog validates 25
+official roots over 72 Rust definitions. Configuration is `landed`; edit
+controls, zoom controls, Record, Conversation, Table, Todo and Kanban have native retained
+Behavior, and the production desktop supplies Record, Conversation and
+private-draft input through live Protein subscriptions; the other 17 roots keep
+the honest `Rust structure cataloged; runtime Behavior pending` state. Common Action, property,
+field, status, toolbar, empty-state, Record, Kanban, table, Message,
+Conversation and private-draft shapes are recursively reusable. Specialized
+renderers remain bounded leaves under compound roots. The legacy Web surfaces
+are still active behavioral references, so this is not called a completed
+migration.
+
+The operational slice recursively projects the exact definitions into stable
+semantic retained nodes instead of inventing a second widget tree. Canonical
+tokens drive WGPU geometry and Glyphon text; the same paths drive hit testing,
+keyboard focus and a dynamic AccessKit subtree. Edit/group/Castle controls,
+zoom/recenter, Record property presentation, local draft/send requests and typed
+`record-clicked` behavior are human-operable from F12. An unconfigured
+laboratory run uses representative Protein-shaped data; the production desktop
+uses the same ports with bounded live Protein subscriptions. Message and draft
+create/revise/delete/send requests now cross that Action boundary and retain
+local state until acknowledgement.
+
+The collection slice instantiates one exact row/card definition per stable
+Protein uid. Table pages and creates; Todo creates and completes
+negative-quantity tasks; Kanban projects five default quantity lanes and moves
+the selected Record through `SetQuantity`. It deliberately leaves inline Table
+editing/deletion, selected Protein drivers, saved Kanban lane/concept presets,
+bulk selection/actions and swimlanes unchecked within C4.
+
+C4 proceeds internally as a strict waterfall: first render and operate the
+shared native shell/Record pieces; then finish Conversation state and private
+queues; then migrate the remaining data workflows; then connect the bounded
+document/game/terminal/graph/Website and other specialized leaves; finally
+delete the last official legacy caller, duplicated CSS/JavaScript and LynxUI
+vocabulary. Each slice reaches the running native interface before the next
+one claims its behavior.
+
+- [ ] Treat Rust-authored Sand definitions as the first-party source of every
+      reusable semantic piece. Decompose a workflow until each remaining leaf
+      either has an independently useful meaning or is a deliberately bounded
+      specialized renderer. Labels, values, badges, fields, buttons, menus,
+      rows, cards, toolbars, empty/error states and inspectors remain
+      individually placeable Sands; a Record, Conversation, Kanban or other
+      workflow is a recursive compound over them. Do not replace legacy HTML
+      monoliths with equally monolithic Rust constructors.
 - [ ] Migrate the board host, shared components and every official Sand from
       hardcoded governed values to canonical color, spacing, border, radius,
       type, elevation, stacking and motion roles. Preserve user expression and
@@ -221,6 +281,14 @@ composition model without file editing.
 - [ ] Replace genuine workflow structure with recursive definitions while
       preserving specialized internals. Ready-made Kanban and video call stay
       convenient compound definitions, not sealed exceptions.
+- [x] Rebuild Conversation on the shared definitions together with its general
+      data contract: author and delegated operator on every Message; explicit
+      `writing`, `finished` and `interrupted` state; read-only live growth while
+      writing; and author-private drafts that support pinned presets, reorder,
+      age and declared send timing. These are ordinary multi-person
+      conversation capabilities, not Fiote-only controls. Commit coalescing is
+      performance work and may be selected only after ordered state changes
+      and restart behavior are correct.
 - [ ] Split first-party JavaScript by contract and state ownership as each
       surface moves. Delete copied instance HTML, duplicated CSS, stale token
       aliases, replaced APIs and the parallel component vocabulary instead of
@@ -242,9 +310,15 @@ composition model without file editing.
 - [ ] Test quantity formatting, tabular figures, solid/dashed truth, non-color
       status, keyboard navigation, focus, ARIA state, associated help/errors,
       reduced motion and absence of ornamental animation.
-- [ ] Add concise theme/Sand author guides, generated token reference,
-      component/composition behavior tests, schema fixtures, CEF/browser tests
-      and the minimal external-author kit.
+- [ ] Prove Conversation live growth, interruption, authorship, private
+      draft/preset isolation, reorder and restart behavior through keyboard,
+      pointer and AccessKit. Fiote may later expose the same Actions through
+      speech or plain language, but that alternative channel never excuses an
+      inaccessible native Sand.
+- [ ] Curate checked-in theme/Sand author guides around the landed generated
+      token reference and external-author kit; expand component/composition,
+      schema-fixture and CEF/browser regression coverage for every official
+      Sand migrated in C4.
 - [ ] Test teardown, stable identity, focus preservation and bounded work with
       at least 200 Sand instances. No view state may outlive its root, submit
       unrelated state or bypass validated Actions and future Box operations.

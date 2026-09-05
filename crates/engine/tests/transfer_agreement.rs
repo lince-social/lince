@@ -1,8 +1,3 @@
-//! Phase 3 Transfer agreement acceptance tests.
-//!
-//! These use the current draft, invitation, agreement, and Protein contracts
-//! rather than the legacy Transfer convenience actions.
-
 use engine::Engine;
 use engine::actions::{
     Action, TransferDependencyInput, TransferDependencyScopeInput,

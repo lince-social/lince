@@ -677,13 +677,6 @@ async fn act_routed_candidate_is_atomic_durable_and_still_inert() {
     );
 }
 
-/// C7 axis 2: a Program this Cell does not execute is not in the frozen epoch.
-///
-/// The assertion is about the EPOCH, not only about the run count, because
-/// those are different claims. A dormant Program that was frozen into the epoch
-/// and then skipped at evaluation time would still advance the cursor past its
-/// ordinal and could still touch its own Program state — and the executing
-/// Cell's next run reads that state. Excluded means never considered.
 #[tokio::test]
 async fn a_program_this_cell_does_not_execute_is_not_in_the_epoch() {
     let store = Store::open_memory().await.unwrap();
@@ -740,11 +733,6 @@ async fn a_program_this_cell_does_not_execute_is_not_in_the_epoch() {
     );
 }
 
-/// Absence means execute, and that is the property every existing single-Cell
-/// Organ depends on. Written as its own test rather than as an assertion inside
-/// the one above, because it is the direction a refactor breaks: an inner join
-/// or an `executes = 1` reads naturally and stops every rule on every Organ
-/// that never opened the setting.
 #[tokio::test]
 async fn a_program_nobody_configured_runs_and_the_table_stays_empty() {
     let store = Store::open_memory().await.unwrap();
@@ -771,8 +759,6 @@ async fn a_program_nobody_configured_runs_and_the_table_stays_empty() {
             .any(|row| row.run.program_uid == program.record_uid)
     );
 
-    // The surface lists it as executing even with no row of its own — showing
-    // only configured Programs would leave "what runs here" unanswerable.
     let listed = store::karma::execution::list(&store.pool).await.unwrap();
     let row = listed
         .iter()
@@ -782,8 +768,6 @@ async fn a_program_nobody_configured_runs_and_the_table_stays_empty() {
     assert_eq!(row.note, None);
 }
 
-/// Turning execution back on removes the row rather than storing a 1, so an
-/// empty table keeps meaning "nothing here has been narrowed".
 #[tokio::test]
 async fn re_enabling_execution_clears_the_deviation() {
     let store = Store::open_memory().await.unwrap();
@@ -806,9 +790,6 @@ async fn re_enabling_execution_clears_the_deviation() {
     );
 }
 
-/// A setting stored against a uid that names no Program would never be read by
-/// anything. Refused by name, so the surface can say why rather than surfacing
-/// a foreign-key failure.
 #[tokio::test]
 async fn execution_cannot_be_set_for_a_program_that_does_not_exist() {
     let store = Store::open_memory().await.unwrap();
@@ -825,9 +806,6 @@ async fn execution_cannot_be_set_for_a_program_that_does_not_exist() {
     assert_eq!(count(&store, "karma_program_execution").await, 0);
 }
 
-/// The axis is LOCAL. This is the property the whole design rests on: if the
-/// flag travelled, turning a rule off on the laptop would turn it off on the
-/// always-on Cell, which is the opposite of the setting's purpose.
 #[tokio::test]
 async fn the_execute_flag_never_becomes_a_synced_op() {
     let store = Store::open_memory().await.unwrap();
@@ -859,14 +837,6 @@ async fn the_execute_flag_never_becomes_a_synced_op() {
     );
 }
 
-/// C7 — a Program designated to another Cell does not run here.
-///
-/// Designated executor with MANUAL takeover, not a heartbeat lease. The
-/// designation is a synced value rather than a claim, so this test is about a
-/// single Cell reading it correctly; the multi-Cell half — that exactly one of
-/// three acts, and that an unreachable holder does NOT hand the lease to
-/// whoever cannot see it — lives in `engine/tests/dst_deferred.rs` and needs
-/// Resenha.
 #[tokio::test]
 async fn a_program_designated_to_another_cell_does_not_run_here() {
     let store = Store::open_memory().await.unwrap();
@@ -882,8 +852,6 @@ async fn a_program_designated_to_another_cell_does_not_run_here() {
             .await
             .unwrap();
 
-    // Designating THIS Cell must not stop it running — the filter has to test
-    // equality, not merely the presence of a designation.
     store::executor::designate(&store.pool, &mine.record_uid, Some(&this_cell))
         .await
         .unwrap();
@@ -922,12 +890,6 @@ async fn a_program_designated_to_another_cell_does_not_run_here() {
     assert_eq!(members, vec![mine.record_uid.as_str()]);
 }
 
-/// Clearing a designation returns the Program to running everywhere.
-///
-/// The undesignated state has to be reachable, not just the initial one:
-/// otherwise designating a Cell is a one-way door, and a person whose
-/// designated Cell died would have no way back except designating another
-/// blind.
 #[tokio::test]
 async fn a_cleared_designation_lets_every_cell_run_it_again() {
     let store = Store::open_memory().await.unwrap();
@@ -969,12 +931,6 @@ async fn a_cleared_designation_lets_every_cell_run_it_again() {
     );
 }
 
-/// The designation SYNCS — unlike the local execute flag beside it.
-///
-/// The two settings sit next to each other and mean opposite things about
-/// travel, which is exactly the pair a later change conflates. "Which Cell is
-/// the one" is a fact every Cell needs; "do I run it" is this machine's own
-/// business.
 #[tokio::test]
 async fn the_designation_travels_even_though_the_local_flag_does_not() {
     let store = Store::open_memory().await.unwrap();
@@ -1015,13 +971,6 @@ async fn the_designation_travels_even_though_the_local_flag_does_not() {
     );
 }
 
-/// The outward-consequence classification, which decides what the interface
-/// warns about before a rule is left running on several Cells.
-///
-/// `Act` is the line: the other four routes end in something a person answers,
-/// and one person answering one proposal is one answer however many Cells
-/// proposed it. A Program with no route at all computes and stops — running it
-/// everywhere is the point, not a hazard.
 #[test]
 fn only_an_act_routed_rule_counts_as_acting_outside_the_cell() {
     let plain = program("run.plain", "r_01ARZ3NDEKTSV4RRFFQ69G5FAX");
@@ -1037,11 +986,6 @@ fn only_an_act_routed_rule_counts_as_acting_outside_the_cell() {
     );
     assert!(acting.is_externally_observable());
 
-    // The discriminating half. A rule that ROUTES — so it is not the trivial
-    // no-consequence case — but routes somewhere a person has to answer. Three
-    // Cells proposing the same thing is still one question and one answer, so
-    // it is not the hazard the warning is about, and asserting it here is what
-    // stops `Act` quietly widening to "any route" later.
     let mut asking = acting.clone();
     for node in asking.nodes.values_mut() {
         if let NodeOperation::RouteCandidate { route, .. } = &mut node.operation {
@@ -1473,17 +1417,8 @@ async fn count(store: &Store, table: &str) -> i64 {
         .unwrap()
 }
 
-// ---------------------------------------------------------------------------
-// K5.2 — budgeted authority and inert durable intents.
-//
-// These live beside the run tests because an intent can only exist downstream of
-// a real accepted `act` candidate, and this file already owns that pipeline.
-// ---------------------------------------------------------------------------
-
 const GRANT_PERSON_UID: &str = "p_01ARZ3NDEKTSV4RRFFQ69G5FAW";
 
-/// Accepting without naming a grant stays inert exactly as K4.3 left it;
-/// naming one authorizes, reserves budget, and freezes the proof — in one commit.
 #[tokio::test]
 async fn accepting_with_a_grant_authorizes_one_intent_and_spends_its_budget() {
     let store = Store::open_memory().await.unwrap();
@@ -1498,7 +1433,6 @@ async fn accepting_with_a_grant_authorizes_one_intent_and_spends_its_budget() {
     )
     .await;
 
-    // Without a grant the acceptance is inert: no intent, exactly as before.
     let inert = accept(
         &store,
         &candidate.candidate_hash,
@@ -1514,7 +1448,6 @@ async fn accepting_with_a_grant_authorizes_one_intent_and_spends_its_budget() {
     assert!(intent.is_none(), "no grant named, so no authority is taken");
     assert_eq!(count(&store, "karma_intent").await, 0);
 
-    // A second candidate, this time accepted with authority.
     let second = second_act_candidate(&store, now).await;
     let authorized = accept(
         &store,
@@ -1548,11 +1481,9 @@ async fn accepting_with_a_grant_authorizes_one_intent_and_spends_its_budget() {
         row.intent.idempotency_key,
         format!("karma-intent:{}", second.candidate_hash.as_str())
     );
-    // The proof carries the whole reservation, not just a yes.
     assert!(row.intent.authorization.decision.allowed);
     assert_eq!(row.intent.authorization.budget.intents_before, 0);
     assert_eq!(row.intent.authorization.budget.intents_after, 1);
-    // Authority never outlives the consent that granted it.
     let revision =
         store::karma::grants::get_revision(&store.pool, &row.grant_uid, &row.grant_revision_hash)
             .await
@@ -1567,13 +1498,10 @@ async fn accepting_with_a_grant_authorizes_one_intent_and_spends_its_budget() {
     assert_eq!(state.status, nucleus::karma::IntentStatus::Authorized);
     assert_eq!(state.actor_person_uid, GRANT_PERSON_UID);
 
-    // Nothing executed: no domain Fact beyond the review and intent evidence.
     assert_eq!(count(&store, "karma_intent").await, 1);
     assert_eq!(count(&store, "transfer").await, 0);
 }
 
-/// A spent budget refuses the whole acceptance rather than quietly accepting a
-/// proposal with no authority behind it.
 #[tokio::test]
 async fn an_exhausted_budget_refuses_the_acceptance_entirely() {
     let store = Store::open_memory().await.unwrap();
@@ -1618,7 +1546,6 @@ async fn an_exhausted_budget_refuses_the_acceptance_entirely() {
         message.contains("IntentCapExhausted"),
         "expected an exhausted budget, got {message}"
     );
-    // The refusal is total: the candidate is not accepted either.
     let state = store::karma::candidates::get_state(&store.pool, &second.candidate_hash)
         .await
         .unwrap()
@@ -1628,7 +1555,6 @@ async fn an_exhausted_budget_refuses_the_acceptance_entirely() {
     assert_eq!(count(&store, "karma_intent").await, 1);
 }
 
-/// Revoking a grant cancels the work it authorized and hands the budget back.
 #[tokio::test]
 async fn revoking_a_grant_cancels_its_intents_and_releases_their_budget() {
     let store = Store::open_memory().await.unwrap();
@@ -1642,9 +1568,6 @@ async fn revoking_a_grant_cancels_its_intents_and_releases_their_budget() {
         now,
     )
     .await;
-    // Two intents on one grant on purpose: one revocation is the shared cause of
-    // both cancellations, which is the case a per-cause uniqueness constraint
-    // would break and a single-intent test would never notice.
     let accepted = accept(
         &store,
         &candidate.candidate_hash,
@@ -1712,7 +1635,6 @@ async fn revoking_a_grant_cancels_its_intents_and_releases_their_budget() {
         nucleus::karma::IntentStatus::Cancelled,
         "one revocation cancels every intent it authorized"
     );
-    // The intent itself is immutable evidence; only its state moved.
     assert!(
         store::karma::intents::get(&store.pool, &intent_hash)
             .await
@@ -1720,8 +1642,6 @@ async fn revoking_a_grant_cancels_its_intents_and_releases_their_budget() {
             .is_some()
     );
 
-    // The history is a chain, and both cancellations name the same revocation
-    // request as their cause without colliding.
     let history = store::karma::intents::history(&store.pool, &intent_hash)
         .await
         .unwrap();
@@ -1748,11 +1668,6 @@ async fn revoking_a_grant_cancels_its_intents_and_releases_their_budget() {
         second_history[1].transition.cause_request_id, "revoke-with-intents",
         "one cause legitimately owns many transitions"
     );
-    // The reservation is genuinely released. Budget consumption is the count of
-    // intents still holding one, so this is the exact quantity the next
-    // authorization would read — asserted directly, because the only route to
-    // cancellation in K5.2 also revokes the grant, leaving no way to observe a
-    // refilled budget through the public API until K5.3 adds per-intent states.
     let still_reserved: i64 = store::sqlx::query_scalar(
         "SELECT COUNT(*) FROM karma_intent intent
          JOIN karma_intent_state state ON state.intent_hash = intent.intent_hash
@@ -1766,10 +1681,6 @@ async fn revoking_a_grant_cancels_its_intents_and_releases_their_budget() {
     assert_eq!(still_reserved, 0, "a cancelled intent reserves nothing");
 }
 
-/// The rule about which states reserve budget is stated twice — once in the
-/// kernel enum, once as seeded rows the budget queries join — so it is proven
-/// once that the two agree. If they ever drift, a state could silently stop
-/// counting and its reservation would become double-spendable.
 #[tokio::test]
 async fn the_stored_status_vocabulary_agrees_with_the_kernel() {
     let store = Store::open_memory().await.unwrap();
@@ -1788,7 +1699,6 @@ async fn the_stored_status_vocabulary_agrees_with_the_kernel() {
             "{status} disagrees with the kernel about holding a reservation"
         );
     }
-    // K5.2 may reach no other state, so nothing else is writable yet.
     let seeded: BTreeSet<&str> = rows.iter().map(|(status, _)| status.as_str()).collect();
     let expected: BTreeSet<&str> = nucleus::karma::K5_2_INTENT_STATES
         .iter()
@@ -1797,10 +1707,6 @@ async fn the_stored_status_vocabulary_agrees_with_the_kernel() {
     assert_eq!(seeded, expected);
 }
 
-/// A state this slice must not produce cannot be written at all, and recorded
-/// history cannot be rewritten. Asserted directly against the database, because
-/// both claims rest on constraints rather than on Rust: an unenforced foreign
-/// key would make the seeded vocabulary decorative.
 #[tokio::test]
 async fn an_unreachable_state_cannot_be_forced_into_the_history() {
     let store = Store::open_memory().await.unwrap();
@@ -1833,9 +1739,6 @@ async fn an_unreachable_state_cannot_be_forced_into_the_history() {
         .unwrap()
         .unwrap();
 
-    // `leased` is real in the kernel vocabulary and deliberately unseeded here,
-    // so the vocabulary foreign key refuses it. This is also the proof that
-    // foreign keys are enforced on this pool.
     let forced = store::sqlx::query(
         "INSERT INTO karma_intent_event
             (event_hash, intent_hash, state_revision, previous_event_hash, status, reason,
@@ -1854,7 +1757,6 @@ async fn an_unreachable_state_cannot_be_forced_into_the_history() {
         "the vocabulary foreign key must be what refuses it, got: {refusal}"
     );
 
-    // Recorded transitions are evidence, not scratch space.
     let rewritten = store::sqlx::query(
         "UPDATE karma_intent_event SET status = 'cancelled' WHERE intent_hash = ?",
     )
@@ -1863,7 +1765,6 @@ async fn an_unreachable_state_cannot_be_forced_into_the_history() {
     .await;
     assert!(rewritten.is_err(), "intent history is immutable");
 
-    // And the projection cannot be moved to a state it never transitioned into.
     let drifted = store::sqlx::query(
         "UPDATE karma_intent_state SET status = 'cancelled', cancelled_reason = 'forced'
          WHERE intent_hash = ?",
@@ -1877,8 +1778,6 @@ async fn an_unreachable_state_cannot_be_forced_into_the_history() {
     );
 }
 
-/// The same acceptance replayed reports the same intent instead of minting a
-/// second one, and a different grant is a different request.
 #[tokio::test]
 async fn authorization_replays_exactly_and_never_mints_a_second_intent() {
     let store = Store::open_memory().await.unwrap();
@@ -1925,7 +1824,6 @@ async fn authorization_replays_exactly_and_never_mints_a_second_intent() {
     assert_eq!(count(&store, "karma_intent").await, 1);
     assert_eq!(count(&store, "fact").await, facts_after_first);
 
-    // Same request id, different grant: refused rather than silently reused.
     let other = active_grant(
         &store,
         &candidate.proposal.program_uid,
@@ -1953,15 +1851,12 @@ async fn authorization_replays_exactly_and_never_mints_a_second_intent() {
     );
 }
 
-/// Authority is refused for a grant that is merely a draft, and for a template
-/// the grant never covered.
 #[tokio::test]
 async fn a_grant_must_be_active_and_cover_the_template() {
     let store = Store::open_memory().await.unwrap();
     let now = instant();
     let candidate = act_candidate(&store, now).await;
 
-    // A draft grant authorizes nothing.
     let draft = create_grant(
         &store,
         &candidate.proposal.program_uid,
@@ -1989,7 +1884,6 @@ async fn a_grant_must_be_active_and_cover_the_template() {
         "a draft grant must not authorize"
     );
 
-    // A grant scoped to another template denies on the template dimension.
     let narrow = active_grant_with(
         &store,
         &candidate.proposal.program_uid,
@@ -2047,7 +1941,6 @@ async fn accept(
     .unwrap()
 }
 
-/// Drive the real pipeline until one `act` candidate exists.
 async fn act_candidate(
     store: &Store,
     now: DateTime<Utc>,
@@ -2083,7 +1976,6 @@ async fn act_candidate(
     candidates.into_iter().next().expect("one act candidate")
 }
 
-/// A second occurrence of the same Program yields a second distinct candidate.
 async fn second_act_candidate(
     store: &Store,
     now: DateTime<Utc>,
@@ -2252,8 +2144,6 @@ fn grant_signer(hash: &str) -> Option<nucleus::karma::DelegationSignature> {
     })
 }
 
-/// The same shape as `candidate_program`, but routed through a template K5.2
-/// actually maps to a reversible local capability.
 fn authorized_candidate_program(frequency_uid: &str) -> ProgramAst {
     let mut value = program("run.authorized", frequency_uid);
     value.nodes.insert(

@@ -1,6 +1,3 @@
-//! Parts IX–X completion: the demand token, and the senses heartbeat arm —
-//! match rules as records, drafts landing in the Decision Queue.
-
 use chrono::{DateTime, Utc};
 use engine::Engine;
 use engine::actions::Action;
@@ -13,7 +10,6 @@ use store::senses::RemoteOpenRow;
 
 async fn engine() -> Engine {
     let engine = Engine::open_memory().await.expect("engine opens");
-    // An OPEN promise is an offer somebody published, and the database says so.
     store::records::create(
         &engine.store.pool,
         store::records::NewRecord {
@@ -75,7 +71,6 @@ async fn demand_token_samples_the_hourly_histogram() {
         .unwrap();
     plain(&e, "mirror", 0.0).await;
 
-    // three facts at 08:xx, one at 20:xx -> demand at an 08:xx now is 0.75
     for (i, hour) in [(1, 8), (2, 8), (3, 8), (4, 20)] {
         e.append(
             NewFact::quantity_f64(apples.clone(), 1.0, Cause::user_edit()),
@@ -100,8 +95,6 @@ async fn demand_token_samples_the_hourly_histogram() {
     )
     .await;
 
-    // trigger an evaluation at 08:30 — demand(@food) = 3/5 of facts so far...
-    // careful: this append itself lands at 08:30 and counts (4 of 6 at 08).
     e.append(
         NewFact::quantity_f64(apples.clone(), 1.0, Cause::user_edit()),
         at("2026-07-05T08:30:00Z"),
@@ -135,7 +128,6 @@ async fn senses_heartbeat_arm_drafts_decisions_once() {
         .await
         .unwrap();
 
-    // my published Need: an OPEN promise wanting -3 filled
     let local = store::misc::insert_promise(
         &e.store.pool,
         store::misc::NewPromise {
@@ -149,7 +141,6 @@ async fn senses_heartbeat_arm_drafts_decisions_once() {
     .await
     .unwrap();
 
-    // the discovery cache knows a complementary offer nearby and one too far
     store::senses::upsert_remote_open(&e.store.pool, &remote("p_R1", Some(&food), 5.0, 1))
         .await
         .unwrap();
@@ -157,7 +148,6 @@ async fn senses_heartbeat_arm_drafts_decisions_once() {
         .await
         .unwrap();
 
-    // a match rule as a record, created through the Action catalog
     let rule = e
         .act(
             Action::CreateMatchRule {
@@ -190,11 +180,9 @@ async fn senses_heartbeat_arm_drafts_decisions_once() {
     assert_eq!(drafts.len(), 1);
     assert!(drafts[0].2.contains("organ.bakery"));
 
-    // the pass is idempotent: same situation never asks twice
     let again = e.senses_pass().await.unwrap();
     assert!(again.is_empty());
 
-    // heartbeat runs the arm too (fresh cache row, same dedup)
     let more = e.heartbeat(at("2026-07-11T12:00:00Z")).await.unwrap();
     let _ = more;
     assert_eq!(
@@ -207,7 +195,6 @@ async fn senses_heartbeat_arm_drafts_decisions_once() {
         1
     );
 
-    // deactivating the match rule (a record like any other) stops the matcher
     e.act(Action::Deactivate { target: rule }, None)
         .await
         .unwrap();

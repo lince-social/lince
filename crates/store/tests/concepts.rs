@@ -1,9 +1,5 @@
-//! Lingua Part III backend items: unit conversion within a shared dimension
-//! and dialect fallback via the parent DAG.
-
 use store::Store;
 
-/// mass dimension: kg and g under @mass; unrelated @count stands alone.
 async fn seed_units(store: &Store) -> (String, String, String) {
     let mass = store::concepts::create(&store.pool, "mass", &[])
         .await
@@ -25,21 +21,18 @@ async fn conversion_direct_inverse_and_identity() {
         .await
         .unwrap();
 
-    // direct: 2 kg -> 2000 g
     assert_eq!(
         store::concepts::convert(&store.pool, &kg, &g, 2.0)
             .await
             .unwrap(),
         Some(2000.0)
     );
-    // derived inverse: 500 g -> 0.5 kg
     assert_eq!(
         store::concepts::convert(&store.pool, &g, &kg, 500.0)
             .await
             .unwrap(),
         Some(0.5)
     );
-    // identity
     assert_eq!(
         store::concepts::convert(&store.pool, &kg, &kg, 3.25)
             .await
@@ -55,7 +48,6 @@ async fn conversion_upsert_replaces_and_reverse_row_is_removed() {
     store::concepts::set_conversion(&store.pool, &kg, &g, 900.0)
         .await
         .unwrap();
-    // declaring the opposite direction becomes the single authoritative row
     store::concepts::set_conversion(&store.pool, &g, &kg, 0.001)
         .await
         .unwrap();
@@ -74,7 +66,6 @@ async fn conversion_requires_a_shared_dimension() {
     let count = store::concepts::create(&store.pool, "count", &[])
         .await
         .unwrap();
-    // a declared factor across dimensions is still refused
     store::concepts::set_conversion(&store.pool, &kg, &count, 12.0)
         .await
         .unwrap();
@@ -126,28 +117,24 @@ async fn nearest_ancestor_falls_back_up_the_dag() {
             .unwrap();
 
     let known = vec![blocks.clone(), precedes.clone()];
-    // itself when already known
     assert_eq!(
         store::concepts::nearest_ancestor_in(&store.pool, &blocks, &known)
             .await
             .unwrap(),
         Some(blocks.clone())
     );
-    // parent
     assert_eq!(
         store::concepts::nearest_ancestor_in(&store.pool, &blocks_softly, &known)
             .await
             .unwrap(),
         Some(blocks.clone())
     );
-    // grandparent
     assert_eq!(
         store::concepts::nearest_ancestor_in(&store.pool, &blocks_gently, &known)
             .await
             .unwrap(),
         Some(blocks.clone())
     );
-    // miss: no ancestor in the known set
     assert_eq!(
         store::concepts::nearest_ancestor_in(&store.pool, &precedes, &[blocks_softly.clone()])
             .await

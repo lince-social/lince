@@ -10,7 +10,6 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-/// A `subject:action` pair in the permission catalog.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct PermissionKey {
     pub subject: &'static str,
@@ -27,8 +26,6 @@ impl PermissionKey {
     }
 }
 
-/// The full permission catalog. Seeded into the Cell's `permission` table on
-/// bootstrap and granted in full to the `admin` role.
 pub const ALL_PERMISSIONS: &[PermissionKey] = &[
     PermissionKey::new("record", "create"),
     PermissionKey::new("record", "read"),
@@ -102,8 +99,6 @@ pub fn all_permission_keys() -> Vec<String> {
     normalized_permission_strings(ALL_PERMISSIONS.iter().map(|permission| permission.as_str()))
 }
 
-/// Sorted, deduplicated permission strings — the canonical comparison form for
-/// JWT staleness checks.
 pub fn normalized_permission_strings<I>(permissions: I) -> Vec<String>
 where
     I: IntoIterator<Item = String>,
@@ -117,8 +112,6 @@ where
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AuthClaims {
-    /// The Person uid. One human reference: the same value that lands on
-    /// facts as the actor and gates reads in `visible_targets`.
     pub sub: String,
     pub username: String,
     pub role_id: u64,

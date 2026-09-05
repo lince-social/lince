@@ -90,9 +90,42 @@ The runtime decision now has an ordered Plan A and Plan B. The normalized Sand
 definition, Protein and Action boundaries, typed ports, capability model,
 Customization cascade, Box document, and recursive composition semantics are
 shared by both plans. A renderer may change without changing what a Sand means.
-The browser remains a first-class client and public Facade surface; Plan A is a
+The Web remains first-class as DATA, COMPOSITION and PROJECTION; Plan A is a
 native desktop/runtime decision, not permission to make Web data, composition,
 or external HTML second-class.
+
+#### Reaching this Cell's own interface through a browser: NOT PLANNED
+
+Decided 2026-09-01, and indefinite rather than deferred to a date. **A person
+opening a web browser and pointing it at a Lince Cell to use that Cell's
+interface is not planned work, and no task may depend on it, until the owner
+says otherwise.** It is not cancelled and not deleted: the model below stays
+written down, stays consistent with the shared contracts, and can be picked up
+unchanged on the day it is wanted.
+
+What this decision does NOT touch, because none of it is a browser reaching a
+Cell's interface:
+
+- **HTML as a Sand source.** Local HTML files, Sand packages and `.lince`
+  packages remain first-class, and raw HTML remains supported.
+- **Website Sands and CEF.** Embedding a remote site as a deliberately
+  untrusted surface is unaffected, as is the joined CEF authority and
+  composition that carries it.
+- **The public Facade.** A Facade is a published, read-only PROJECTION that a
+  stranger looks at. It is not someone using this Cell, and it stays planned.
+- **The exported archive.** A workspace exported as one self-contained file is
+  opened in a browser by design and is untouched.
+- **Maud/HTML authoring and the shared normalized definition.** Plan B's
+  authoring constraints continue to shape what a Sand IS.
+
+What it does gate, until the owner lifts it: browser-based login and session to
+a Cell you are using as a client; the ordinary HTTPS deployment whose purpose
+is that login; and any surface, protocol or capability whose only justification
+is a browser acting as a Lince client.
+
+**The model is kept, not erased.** Plan B below, `html-and-websites.md` and
+`facade.md` continue to describe how a browser client would work if it returned.
+Nothing here removes a contract; it removes a commitment.
 
 #### V1 final product boundary
 
@@ -528,6 +561,10 @@ Bevy is used substantially as intended as a game/world runtime, and the
 unusual work stays in Lince adapters and domain kernels.
 
 #### Plan B: Maud/HTML-first hybrid
+
+**Gated by the decision above.** Plan B's Facade and portable-authoring halves
+stay planned; its browser-as-client half is modelled here and not planned. The
+description is kept in full so it can be resumed unchanged.
 
 The existing Maud/HTML-first design is retained in full as Plan B, not erased.
 Rust/Maud emits ordinary accessible HTML fragments paired with recursive Sand

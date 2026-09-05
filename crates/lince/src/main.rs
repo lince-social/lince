@@ -10,14 +10,6 @@ use utils::logging::set_quiet;
 use web::{HttpServeMode, serve_cell_api_only};
 
 fn main() -> Result<(), Error> {
-    // `engine::actions::act_at_with_authorship` is one giant async fn covering
-    // every `Action` variant (78 arms as of 2026-07-19, still growing with the
-    // transfer/negotiation work) — its generated state machine outgrows
-    // tokio's default 2 MiB worker-thread stack in debug builds, so ANY Action
-    // (not just kanban's) can stack-overflow and abort the whole process a few
-    // seconds after boot. Bypass the `#[tokio::main]` macro to size the
-    // runtime's worker threads generously instead (verified: 2 MiB reliably
-    // crashes on a single `act()` call, 32 MiB does not).
     tokio::runtime::Builder::new_multi_thread()
         .enable_all()
         .thread_stack_size(32 * 1024 * 1024)
@@ -38,13 +30,7 @@ async fn async_main() -> Result<(), Error> {
         utils::config::set_lince_data_dir_override(PathBuf::from(data_dir))?;
     }
 
-    // Administration of a Cell that has no board to administer it from. Placed
-    // after `--data-dir` so it acts on the same store the unit serves, and
-    // before everything else because it must not start a server.
     if let Some(result) = admin::dispatch(&args).await {
-        // Printed rather than returned: `main`'s Err is Debug-formatted, and
-        // `Custom { kind: Other, error: "..." }` around a sentence written for
-        // a person reads like a crash.
         return match result {
             Ok(()) => Ok(()),
             Err(error) => {
@@ -54,35 +40,13 @@ async fn async_main() -> Result<(), Error> {
         };
     }
 
-    // Server mode: hold the data, answer authenticated clients, hand nobody a
-    // board. Forcing auth on is not a convenience — `authenticate_headers` is
-    // a no-op when auth is off, so dropping the board while leaving
-    // `/host/transport/ws` reachable would still give any network peer an
-    // unauthenticated way to act on this store. Hiding the UI without this
-    // would look like hardening and be none.
-    //
-    // Deliberately NOT persisted to `lince.toml`. `--server` is a
-    // per-invocation posture, and a unit file that passes the flag every time
-    // does not need it on disk. Writing it would also strand anyone trying the
-    // flag out: the run can still abort afterwards (bad --listen-addr,
-    // unreadable password file, the no-admin refusal below), and a persisted
-    // toggle would survive that — leaving a login wall with no account on a
-    // desktop board, from a flag they had already given up on.
     let server_mode = has_arg(&args, "--server");
 
-    // The installer stages a one-shot setup file (auth toggle, initial admin
-    // password, language, desktop startup flags). The auth toggle lands in the
-    // bootstrap config here; the rest is imported by the Cell bootstrap inside
-    // `serve_cell_api_only`, after which the staged file is removed.
     let mut staged_setup = read_staged_setup()?;
     if let Some(auth_enabled) = staged_setup.as_ref().and_then(|setup| setup.auth_enabled) {
         bootstrap_config::set_auth_enabled(auth_enabled)?;
     }
 
-    // Non-interactive provisioning of the first admin, for a unit file or a
-    // container that has no terminal to prompt on. This reuses the installer's
-    // one-shot setup channel rather than inventing a second path into
-    // `cell_bootstrap`.
     if let Some(password) = initial_admin_password(&args)? {
         let setup = staged_setup.get_or_insert_with(DesktopInstallSetup::default);
         setup.initial_admin_password = Some(password);
@@ -98,9 +62,6 @@ async fn async_main() -> Result<(), Error> {
     serve_cell_api_only(
         listen_addr,
         bootstrap.secret,
-        // `--server` overrides a configured `enabled = false`: an operator who
-        // asks for a server gets login, and a stale config never silently
-        // unlocks one.
         bootstrap.auth_enabled || server_mode,
         staged_setup,
         None,
@@ -113,10 +74,6 @@ async fn async_main() -> Result<(), Error> {
     .await
 }
 
-/// The initial admin password, from a file (preferred) or straight from argv.
-///
-/// The file form exists because argv is world-readable in `ps` and normally
-/// ends up committed in a unit file; a mode-0600 secret next to it is not.
 fn initial_admin_password(args: &[String]) -> Result<Option<String>, Error> {
     if let Some(path) = arg_value(args, "--initial-admin-password-file") {
         let raw = std::fs::read_to_string(&path)

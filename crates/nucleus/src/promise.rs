@@ -1,11 +1,3 @@
-//! Promise states and the transition matrix (blueprint V.2).
-//!
-//! ```text
-//! open ──claim──> proposed ──agree──> agreed ──activate──> active ──settle──> kept
-//!   └─withdraw─┐      └─withdraw/expire─┐                    └──fail/expire──> broken
-//!              └────────> withdrawn <───┘   (edits drop agreed → proposed)
-//! ```
-
 use crate::error::NucleusError;
 use serde::{Deserialize, Serialize};
 
@@ -47,7 +39,6 @@ impl PromiseState {
         })
     }
 
-    /// Ordinal exposed to Karma conditions via `promise_state(@p)`.
     pub fn ordinal(self) -> f64 {
         match self {
             Self::Open => 0.0,
@@ -69,7 +60,7 @@ impl PromiseState {
                 | (Proposed, Agreed)
                 | (Proposed, Withdrawn)
                 | (Agreed, Active)
-                | (Agreed, Proposed)   // edit invalidation: counteroffers are edits
+                | (Agreed, Proposed)
                 | (Agreed, Withdrawn)
                 | (Active, Kept)
                 | (Active, Broken)

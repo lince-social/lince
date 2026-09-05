@@ -1,32 +1,11 @@
-//! The Karma condition language (blueprint VI.2).
-//!
-//! Full math, exactly as The Lince Way demands: `@slug` tokens are substituted
-//! with real values, then the whole expression evaluates. Booleans are native
-//! numbers (`true = 1.0`, `false = 0.0`) — `@apples.stock < 3` needs no `* 1`.
-//!
-//! Grammar:
-//!   or    := and ( '||' and )*
-//!   and   := cmp ( '&&' cmp )*
-//!   cmp   := add ( ('<'|'<='|'>'|'>='|'=='|'!=') add )*
-//!   add   := mul ( ('+'|'-') mul )*
-//!   mul   := unary ( ('*'|'/'|'%') unary )*
-//!   unary := ('-'|'!')* primary
-//!   primary := NUMBER | DURATION | '@'SLUG | IDENT '(' args ')' | '(' or ')'
-//!
-//! `30d`/`2h`/`90s`/`5m` are duration literals. A bare `@slug` is sugar for
-//! `quantity(@slug)`. Inside function arguments, `@slug` passes through as a
-//! reference (functions receive *which* record, not its value).
-
 use crate::error::NucleusError;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expr {
-    /// The literal exactly as written. Kept as text, not as `f64`, so an exact
-    /// evaluator can read `0.1` as one tenth rather than as the nearest double.
     Num(String),
-    Dur(i64), // seconds
+    Dur(i64),
     Ref(String),
     Fn(String, Vec<Expr>),
     Unary(UnOp, Box<Expr>),
@@ -56,7 +35,6 @@ pub enum BinOp {
     Or,
 }
 
-/// Values during evaluation. `Ref` only survives inside function arguments.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value {
     Num(f64),
@@ -76,14 +54,12 @@ impl Value {
     }
 }
 
-/// The engine implements this against real data; tests use `MapResolver`.
-/// Must be pure over already-fetched data (blueprint VI.2: conditions read
-/// the store, never the world).
 pub trait Resolver {
     fn call(&mut self, name: &str, args: &[Value]) -> Result<Value, NucleusError>;
 }
 
-/// A token the engine must prefetch before evaluation: `(function, slug, duration)`.
+pub const ASSERTION: &str = "assertion";
+
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct TokenKey {
     pub func: String,
@@ -105,8 +81,6 @@ impl Expr {
         Ok(e)
     }
 
-    /// Every token the engine must resolve before evaluating this expression.
-    /// Bare refs count as `quantity`.
     pub fn tokens(&self) -> Vec<TokenKey> {
         let mut out = Vec::new();
         self.collect_tokens(&mut out);
@@ -125,8 +99,6 @@ impl Expr {
                     Expr::Dur(s) => Some(*s),
                     _ => None,
                 });
-                // multi-ref functions (distance(@a, @b)) form ONE token whose
-                // slug joins the refs with '|' — matching MapResolver::call
                 let refs: Vec<&String> = args
                     .iter()
                     .filter_map(|a| match a {
@@ -160,7 +132,6 @@ impl Expr {
         }
     }
 
-    /// Evaluate to a number. Bare refs become `quantity(@ref)` resolver calls.
     pub fn eval(&self, r: &mut dyn Resolver) -> Result<f64, NucleusError> {
         self.eval_value(r)?.as_num()
     }
@@ -189,7 +160,6 @@ impl Expr {
             }
             Expr::Bin(op, a, b) => {
                 let x = a.eval(r)?;
-                // short-circuit logicals
                 if *op == BinOp::And && x == 0.0 {
                     return Ok(Value::Num(0.0));
                 }
@@ -221,7 +191,6 @@ fn bool_num(b: bool) -> f64 {
     if b { 1.0 } else { 0.0 }
 }
 
-/// Map-backed resolver: prefetch values keyed by `TokenKey`, evaluate pure.
 #[derive(Debug, Default, Clone)]
 pub struct MapResolver {
     pub values: HashMap<TokenKey, f64>,
@@ -272,13 +241,12 @@ impl Resolver for MapResolver {
     }
 }
 
-// ---------------------------------------------------------------- lexer/parser
-
 #[derive(Debug, Clone, PartialEq)]
 enum Tok {
     Num(String),
     Dur(i64),
     Ref(String),
+    Assert(String),
     Ident(String),
     LParen,
     RParen,
@@ -408,6 +376,24 @@ fn lex(src: &str) -> Result<Vec<Tok>, NucleusError> {
                 out.push(Tok::Ref(chars[start..j].iter().collect()));
                 i = j;
             }
+            '#' => {
+                let start = i + 1;
+                let mut j = start;
+                while j < chars.len()
+                    && (chars[j].is_ascii_alphanumeric()
+                        || chars[j] == '.'
+                        || chars[j] == '-'
+                        || chars[j] == '_'
+                        || chars[j] == '/')
+                {
+                    j += 1;
+                }
+                if j == start {
+                    return Err(NucleusError::Parse("empty #assertion".into()));
+                }
+                out.push(Tok::Assert(chars[start..j].iter().collect()));
+                i = j;
+            }
             c if c.is_ascii_digit() => {
                 let start = i;
                 let mut j = i;
@@ -418,7 +404,6 @@ fn lex(src: &str) -> Result<Vec<Tok>, NucleusError> {
                 let n: f64 = num_str
                     .parse()
                     .map_err(|_| NucleusError::Parse(format!("bad number `{num_str}`")))?;
-                // duration suffix: s/m/h/d not followed by identifier chars
                 let suffix = chars.get(j).copied();
                 let after_ok = chars
                     .get(j + 1)
@@ -568,6 +553,7 @@ impl Parser {
             Some(Tok::Num(text)) => Ok(Expr::Num(text)),
             Some(Tok::Dur(s)) => Ok(Expr::Dur(s)),
             Some(Tok::Ref(r)) => Ok(Expr::Ref(r)),
+            Some(Tok::Assert(name)) => Ok(Expr::Fn(ASSERTION.into(), vec![Expr::Ref(name)])),
             Some(Tok::LParen) => {
                 let e = self.parse_or()?;
                 self.expect(Tok::RParen)?;
@@ -614,7 +600,6 @@ mod tests {
 
     #[test]
     fn booleans_are_numbers_no_times_one_workaround() {
-        // The old Rhai workaround `(rq1 < 3) * 1` is dead: bools ARE numbers.
         assert_eq!(
             eval("(@apples.stock < 3) + 2", |r| r.set(
                 "quantity",
@@ -640,7 +625,6 @@ mod tests {
 
     #[test]
     fn full_math_composition_from_the_blueprint() {
-        // -1 * freq(@daily-7am)
         assert_eq!(
             eval("-1 * freq(@daily-7am)", |r| r.set(
                 "freq",
@@ -650,7 +634,6 @@ mod tests {
             )),
             -1.0
         );
-        // (@checking - value(@rules.monthly-burn)) < 500
         assert_eq!(
             eval("(@checking - value(@rules.monthly-burn)) < 500", |r| {
                 r.set("quantity", "checking", None, 900.0);
@@ -700,15 +683,6 @@ mod tests {
     }
 }
 
-/// Parse a duration literal (`90s`, `5m`, `2h`, `30d`) into seconds.
-///
-/// One grammar, one parser. The same literal appears in `sum(@x, 30d)`, in a
-/// signal's sampling period, and in a saved query's window, and those three
-/// agreeing is not a coincidence to be maintained by hand — it is this
-/// function. It lives beside the lexer that produces the token rather than in
-/// a schedule module, because a duration is a *length*, and a schedule is a
-/// rule for producing instants; conflating the two is what used to make
-/// "frequency" mean two different things.
 pub fn parse_duration(text: &str) -> Option<i64> {
     let text = text.trim();
     let (number, unit) = text.split_at(text.len().checked_sub(1)?);

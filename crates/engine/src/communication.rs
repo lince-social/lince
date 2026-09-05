@@ -1,18 +1,3 @@
-//! Communication sand actions (S3 of `notes/institute/Communication.md`).
-//!
-//! The typed write surface for conversations-with-rooms. Everything here is an
-//! `impl Engine` method so it terminates in the same `append()`/annotate
-//! provenance path as every other Action. The dispatch arms and the `Action`
-//! enum variants that call these live in `actions.rs` (see the S3 snippets in
-//! Communication.md — they are kept there while `actions.rs` is mid-refactor by
-//! the transfer work, to avoid colliding with it).
-//!
-//! Scope of S3: conversation creation, controller binding, the server-side
-//! room state machine (idle → active on first join, active → idle on last
-//! leave/close), recording start/stop flags, and participant-only join
-//! authorization. NO call-intent / Karma machinery — that is the Far-Future
-//! part (F2). NO media — that starts at S7 on the browser side.
-
 use chrono::{DateTime, Utc};
 use nucleus::{Cause, NewFact, RecordKind};
 use serde_json::json;
@@ -22,25 +7,14 @@ use crate::actions::ActionOutcome;
 use crate::error::EngineError;
 use store::communication as comm;
 
-/// A participant reference as it arrives from the sand: a local person/user
-/// Record token (slug or uid) or a remote-organ identity. Cross-organ identity
-/// resolution rides the organ network (SD-open: which organ is signaling
-/// authority); for now a remote ref is stored as a participant link the same
-/// way, and the media/signaling layer (S7+) enforces reachability.
 #[derive(Debug, Clone, serde::Deserialize)]
 pub struct ParticipantRef {
-    /// Person/user Record token to link as a `participant`.
     pub person: String,
-    /// Origin organ of that person, when it is not this cell. Advisory at S3.
     #[serde(default)]
     pub organ: Option<String>,
 }
 
 impl Engine {
-    /// `conversation-create`: create the conversation Record, tag it (default
-    /// `@communication`), and link every participant. Returns the new Record's
-    /// uid in `outcome.created`. Groups are linked `group-of`; membership
-    /// expansion for room authorization happens at join time.
     pub(crate) async fn communication_create(
         &self,
         head: &str,
@@ -69,11 +43,9 @@ impl Engine {
         )
         .await?;
 
-        // Tag for discovery (`@communication` unless the sand chose another).
         let tag = comm::ensure_tag_record(&self.store.pool, tag_slug).await?;
         comm::tag(&self.store.pool, &conversation.uid, &tag.uid).await?;
 
-        // Link participants (resolved to their Record uids) and groups.
         for participant in participants {
             let person_uid = self.comm_resolve(&participant.person).await?;
             comm::add_participant(&self.store.pool, &conversation.uid, &person_uid).await?;
@@ -98,7 +70,6 @@ impl Engine {
             }
         }
 
-        // Seed the room extension (idle, no controller, manual recording).
         comm::set_ext(
             &self.store.pool,
             &conversation.uid,
@@ -109,7 +80,6 @@ impl Engine {
         )
         .await?;
 
-        // Activate the Record and record provenance.
         outcome.facts = self
             .append(
                 NewFact {
@@ -136,9 +106,6 @@ impl Engine {
         Ok(())
     }
 
-    /// `room-bind-controller`: bind a widget instance as the conversation's
-    /// room controller (the single sand that drives room lifecycle and, later,
-    /// claims Karma intents in F2).
     pub(crate) async fn communication_bind_controller(
         &self,
         conversation: &str,
@@ -164,10 +131,6 @@ impl Engine {
         Ok(())
     }
 
-    /// `room-join`: authorize the actor as a participant, then run the room
-    /// state machine. First join of an idle room opens a `call_session`
-    /// (idle → active); subsequent joins just extend the occupant mirror and
-    /// bump the peak participant count.
     pub(crate) async fn communication_join(
         &self,
         conversation: &str,
@@ -184,13 +147,11 @@ impl Engine {
             .await?
             .unwrap_or_default();
 
-        // First join opens the session (state machine: idle -> active).
         let session_uid = match (ext.room.state.as_str(), &ext.room.session_record_id) {
             ("active", Some(existing)) => existing.clone(),
             _ => {
                 let session =
                     comm::open_session(&self.store.pool, &conversation_uid, media).await?;
-                // open_session re-reads/writes the ext; refresh our copy.
                 ext = comm::get_ext(&self.store.pool, &conversation_uid)
                     .await?
                     .unwrap_or_default();
@@ -198,14 +159,12 @@ impl Engine {
             }
         };
 
-        // Extend the advisory occupant mirror.
         let occupant = actor.clone().unwrap_or_else(|| "anonymous".into());
         if !ext.room.occupants.contains(&occupant) {
             ext.room.occupants.push(occupant);
         }
         comm::set_ext(&self.store.pool, &conversation_uid, &ext).await?;
 
-        // Track the peak occupancy on the session sidecar.
         if let Some(mut sidecar) = comm::get_session(&self.store.pool, &session_uid).await? {
             let live = ext.room.occupants.len() as i64;
             if live > sidecar.peak_participants {
@@ -232,8 +191,6 @@ impl Engine {
         Ok(())
     }
 
-    /// `room-leave`: remove the actor from the occupant mirror; the last leave
-    /// closes the session (active → idle).
     pub(crate) async fn communication_leave(
         &self,
         conversation: &str,
@@ -250,7 +207,6 @@ impl Engine {
         ext.room.occupants.retain(|o| o != &occupant);
 
         if ext.room.occupants.is_empty() {
-            // Last one out: close the session.
             if let Some(session_uid) = ext.room.session_record_id.clone() {
                 let peak = comm::get_session(&self.store.pool, &session_uid)
                     .await?
@@ -274,8 +230,6 @@ impl Engine {
         Ok(())
     }
 
-    /// `room-close`: force the room idle regardless of occupants (controller
-    /// or Karma consequence in F2). Closes any open session.
     pub(crate) async fn communication_close(
         &self,
         conversation: &str,
@@ -305,10 +259,6 @@ impl Engine {
         Ok(())
     }
 
-    /// `recording-start` / `recording-stop`: flip the current session's
-    /// recording state. The artifact flow (resource ref → `call-recording`
-    /// link → thread message) is S11; this only moves the visible flag so all
-    /// occupants can see a recording is running.
     pub(crate) async fn communication_recording(
         &self,
         conversation: &str,
@@ -353,32 +303,18 @@ impl Engine {
         Ok(())
     }
 
-    /// Authorization: the actor must be a linked participant of the
-    /// conversation (or a member of a linked group). Local-no-auth mode
-    /// (`actor == None`) is allowed, matching the rest of the engine's
-    /// single-user path. Cross-organ membership resolution is SD-open and is
-    /// enforced again at the signaling layer (S7+).
-    ///
-    /// The `actor` string is an `app_user.id` (the fact `actor_uid`
-    /// namespace), which is DISTINCT from the Ledger's Person record uids that
-    /// participant links point at. It must be resolved app_user → Person before
-    /// comparison — the same resolution `require_transfer_thread_writer` does
-    /// via `actor_person`. Comparing the raw actor id against Person uids would
-    /// reject every real participant.
     async fn require_communication_participant(
         &self,
         conversation_uid: &str,
         actor: Option<&str>,
     ) -> Result<(), EngineError> {
         let Some(person_uid) = self.comm_actor_person(actor).await? else {
-            return Ok(()); // no-auth mode: single user, always authorized
+            return Ok(());
         };
-        // A participant link whose target IS this actor's Person record.
         let participants = comm::participants(&self.store.pool, conversation_uid).await?;
         if participants.iter().any(|p| p.uid == person_uid) {
             return Ok(());
         }
-        // Group membership: any linked group whose members include this Person.
         if let Some(group_of) =
             store::concepts::resolve(&self.store.pool, comm::KIND_GROUP_OF).await?
         {
@@ -408,21 +344,12 @@ impl Engine {
         ))
     }
 
-    /// The Person an actor acts as, or `None` for the local no-auth Cell.
-    ///
-    /// An identity function now that there is one human reference — kept as a
-    /// named function because the `None` case still carries meaning ("trusted
-    /// local") that a bare `Option` at each call site would not.
     async fn comm_actor_person(&self, actor: Option<&str>) -> Result<Option<String>, EngineError> {
         Ok(actor.map(str::to_string))
     }
 }
 
 impl Engine {
-    /// Resolve a slug/uid token to a record uid, erroring if unknown. A local
-    /// twin of the private `Engine::resolve` in `actions.rs` (that method is
-    /// not visible across modules and its file is mid-refactor), built on the
-    /// public store resolver.
     async fn comm_resolve(&self, token: &str) -> Result<String, EngineError> {
         store::records::resolve(&self.store.pool, token)
             .await?
@@ -430,8 +357,6 @@ impl Engine {
             .ok_or_else(|| EngineError::UnknownRecord(token.to_string()))
     }
 
-    /// Append a zero-delta annotation fact (provenance) on a record. A local
-    /// twin of the private `Engine::annotate`, built on the public `append`.
     async fn comm_annotate(
         &self,
         record_uid: String,

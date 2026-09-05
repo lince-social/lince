@@ -56,3 +56,9 @@ zip = { workspace = true, default-features = false, features = ["deflate"] }
 # the lock file (axum's `ws` feature pulls the first, `futures` the second), so
 # this adds a test client rather than a dependency.
 tokio-tungstenite = "0.28"
+
+[build-dependencies]
+sensei = { workspace = true }
+
+[lints]
+workspace = true

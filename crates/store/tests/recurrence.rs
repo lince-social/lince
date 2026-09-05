@@ -1,7 +1,3 @@
-//! A recurring declaration has to survive the things that make recurrence hard:
-//! a retried write, a rule edited after some dates already ran, and the
-//! difference between "declined" and "not looked at yet".
-
 use chrono::{DateTime, Utc};
 use nucleus::DecimalValue;
 use nucleus::karma::{Cadence, Consequences};
@@ -125,9 +121,6 @@ async fn dates_are_derived_and_split_into_past_due_and_still_planned() {
     .await
     .unwrap();
 
-    // Everything on or before "now" that nobody answered is due; everything
-    // after is merely planned. A screen that cannot tell these apart cannot
-    // show a person what needs attention.
     assert_eq!(
         states(&found.dates)
             .iter()
@@ -163,7 +156,6 @@ async fn a_skip_is_remembered_and_can_be_taken_back() {
     )
     .await
     .unwrap();
-    // Skipping twice is the same decision, not an error.
     skip(
         &store.pool,
         &uid,
@@ -209,9 +201,6 @@ async fn a_skip_is_remembered_and_can_be_taken_back() {
 
 #[tokio::test]
 async fn the_occurrence_key_names_one_rule_and_one_date() {
-    // This string is the occurrence's whole identity, and `entry_revision`'s
-    // UNIQUE(request_id) is what it buys. Two rules on the same date, or one
-    // rule on two dates, must never collide.
     let a = occurrence_request_id("rec_a", at("2026-02-01T00:00:00Z"));
     let b = occurrence_request_id("rec_b", at("2026-02-01T00:00:00Z"));
     let c = occurrence_request_id("rec_a", at("2026-03-01T00:00:00Z"));
@@ -252,7 +241,6 @@ async fn revising_a_rule_changes_what_is_expected_without_touching_what_ran() {
         Some(amount("-1300"))
     );
 
-    // A stale edit is refused rather than silently overwriting a newer one.
     let stale = revise(
         &store.pool,
         ReviseRecurrence {
@@ -304,8 +292,6 @@ async fn pausing_hides_the_future_but_keeps_the_past() {
     )
     .await
     .unwrap();
-    // Jan, Feb and Mar already happened and are still explained by this rule;
-    // April and May are no longer offered.
     assert_eq!(found.len(), 3);
     assert!(
         found
@@ -352,7 +338,6 @@ async fn a_rule_stops_producing_dates_at_its_own_end() {
             consequences: Consequences::capture(amount("-50"), None),
             condition: None,
             note: Some("gym"),
-            // The close is part of the rule now, not a column beside it.
             cadence: Cadence::every_months(1).until(
                 nucleus::karma::CivilDateTime::parse_canonical("2026-04-01T00:00:00.000").unwrap(),
             ),
@@ -381,8 +366,6 @@ async fn a_rule_stops_producing_dates_at_its_own_end() {
     )
     .await
     .unwrap();
-    // The end is exclusive like every other window here, so April's own 1st is
-    // not produced.
     assert_eq!(found.len(), 3);
     assert!(
         found
@@ -450,7 +433,6 @@ async fn a_rule_survives_a_reopen_with_its_cadence_intact() {
         .unwrap()
         .unwrap();
     assert_eq!(rule.cadence, Cadence::every_weeks(2));
-    // Exactness survives the round trip: a subscription is 12.50, not 12.5.
     assert_eq!(
         rule.consequences.declared_delta().copied(),
         Some(amount("-12.50"))

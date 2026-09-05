@@ -59,9 +59,7 @@ impl Supervisor {
     }
 
     pub fn stop(&self, id: &str) -> Result<(), String> {
-        let cub = self
-            .get(id)
-            .ok_or_else(|| format!("no cub named `{id}`"))?;
+        let cub = self.get(id).ok_or_else(|| format!("no cub named `{id}`"))?;
         cub.stop();
         Ok(())
     }

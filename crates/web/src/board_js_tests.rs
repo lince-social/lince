@@ -1,9 +1,3 @@
-//! Frontend tests for the board grouping logic (marquee selection, group
-//! move/resize, group pin, lock persistence). The board JS is written as ES
-//! modules, so each test stages the real files as `.mjs` in a temp dir and
-//! runs node against them - the retired trail sand's node-driven pattern,
-//! but with real module imports instead of source concatenation.
-
 use std::{
     fs,
     path::PathBuf,
@@ -105,10 +99,6 @@ function byId(cards, id) {
 }
 "#;
 
-/// These tests drive the board JS through `node`. Some environments have no
-/// node (and never will), so skip cleanly instead of failing when it is absent
-/// — the same JS logic is also covered by node-free chromium selftests under
-/// `scripts/other/` (e.g. `group-add-selftest.sh`, `kanban-group-e2e-selftest.sh`).
 fn node_available() -> bool {
     Command::new("node")
         .arg("--version")
@@ -140,8 +130,6 @@ fn stage_and_run(label: &str, body: &str) {
         ("viewport", VIEWPORT_JS),
     ];
     for (name, source) in modules {
-        // The staged copies import each other with .mjs specifiers so node
-        // treats them as ES modules without a package.json.
         let rewritten = source.replace(".js\"", ".mjs\"");
         fs::write(dir.join(format!("{name}.mjs")), rewritten).expect("stage board module");
     }
@@ -255,9 +243,6 @@ assert.ok(!sharesGroup(byId(cards, "kanban"), byId(cards, "recinfo")));
 
 #[test]
 fn marquee_group_forms_without_crypto_random_uuid() {
-    // Regression: crypto.randomUUID only exists in secure contexts, so the
-    // marquee must still form a group when it is unavailable (e.g. the app
-    // served over plain http on a LAN address).
     stage_and_run(
         "marquee-no-crypto",
         r#"
@@ -335,9 +320,6 @@ assert.strictEqual(b.y - a.y, 200);
     );
 }
 
-// Re-enabled 2026-08-04. The disabled note said the assertion "disagrees with
-// the shipped behaviour"; on inspection the SHIPPED behaviour was right and
-// the assertion was wrong, so the expectation moved rather than the maths.
 #[test]
 fn group_resize_scales_proportionally_with_min_floor() {
     stage_and_run(
@@ -422,10 +404,6 @@ assert.strictEqual(untouched.x, 5000);
 
 #[test]
 fn ctrl_drag_reaches_marquee_instead_of_camera_pan() {
-    // Regression: the custom camera pan listens for pointerdown on window in
-    // the capture phase, which runs before the board's marquee listener on
-    // #board-canvas. It must yield to ctrl/meta+drag (the marquee gesture) or
-    // area selection can never start on empty canvas.
     stage_and_run(
         "viewport-ctrl-drag",
         r#"

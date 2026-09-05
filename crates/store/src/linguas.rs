@@ -1,6 +1,3 @@
-//! Named vocabularies. A Lingua groups Concepts without owning local Record
-//! structure; the same Concept may be adopted by several Linguas.
-
 use chrono::Utc;
 use sqlx::{Row, SqlitePool};
 

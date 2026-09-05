@@ -1,12 +1,3 @@
-//! Snapshots in the log (Ontology §11, architectural decision 2).
-//!
-//! Before this, a Loro snapshot lived only in `record_doc` — local, never
-//! travelling — while `crdt` ops were cumulative only since that snapshot. So
-//! the log could not reconstruct text, `crdt` ops could never be pruned, and
-//! replica bootstrap needed a mechanism of its own. Making `snapshot` an op
-//! kind resolves all three, and these tests pin the parts that could silently
-//! lose text if they regressed.
-
 use engine::Engine;
 use engine::sync::OpBatch;
 use engine::trust::Signer;
@@ -51,13 +42,6 @@ async fn ops_of_kind(e: &Engine, uid: &str, kind: &str) -> Vec<sync_ops::OpRow> 
         .collect()
 }
 
-/// A snapshot is a real op by a real Cell, not a synthesized identity.
-///
-/// This was the objection that kept snapshots out of the log — "it needs an
-/// invented `(actor_cell, hlc)`, and that identity IS the unique index import
-/// dedupes on". The compacting Cell signs it like any other write, so nothing
-/// is invented and it passes the import gate that requires an op's Cell to
-/// belong to the sending Organ's roster.
 #[tokio::test]
 async fn compaction_logs_a_snapshot_op_owned_by_this_cell() {
     let (e, organ) = cell("http://cell-a").await;
@@ -80,9 +64,6 @@ async fn compaction_logs_a_snapshot_op_owned_by_this_cell() {
     assert!(snapshots[0].value.is_some(), "the blob travels on the op");
 }
 
-/// A snapshot is logged and served, never pushed. Sending a full document copy
-/// to every contact on every compaction would be pure waste — they already
-/// hold every op it folds together.
 #[tokio::test]
 async fn a_snapshot_op_is_never_queued_to_the_outbox() {
     let (e, _organ) = cell("http://cell-a").await;
@@ -103,20 +84,12 @@ async fn a_snapshot_op_is_never_queued_to_the_outbox() {
         !queued.iter().any(|row| row.kind == "snapshot"),
         "no snapshot in the queue: {queued:?}"
     );
-    // ...but it IS in the log, which is what a from-zero peer reads.
     assert_eq!(ops_of_kind(&e, &uid, "snapshot").await.len(), 1);
 }
 
-/// The point of the whole change: a `crdt` op below a snapshot can be dropped.
-///
-/// Safe only because our snapshot is exported from a doc that has already
-/// imported every op we hold, so everything below it is inside it. Asserted
-/// rather than reasoned about, because the failure mode is silent text loss.
 #[tokio::test]
 async fn crdt_ops_below_a_snapshot_are_prunable_and_the_text_survives() {
     let (e, _organ) = cell("http://cell-a").await;
-    // A contact that has acknowledged everything, so there IS a retention
-    // floor. With nobody to send to, pruning correctly does nothing.
     store::organs::add_contact(&e.store.pool, "organ-b", None, "B", "http://cell-b", 1)
         .await
         .expect("contact");
@@ -133,8 +106,6 @@ async fn crdt_ops_below_a_snapshot_are_prunable_and_the_text_survives() {
     assert_eq!(ops_of_kind(&e, &uid, "crdt").await.len(), 3);
     e.compact_doc(&uid).await.expect("compact");
 
-    // Everything is acknowledged and nothing is queued, so the floor covers
-    // the whole log.
     let head = sync_ops::max_seq(&e.store.pool).await.expect("max seq");
     store::organs::advance_peer_acked_seq(&e.store.pool, "organ-b", head)
         .await
@@ -155,8 +126,6 @@ async fn crdt_ops_below_a_snapshot_are_prunable_and_the_text_survives() {
         "the snapshot that folded them is NOT pruned"
     );
 
-    // The text is still there, and still there after a cold load — which is
-    // the only claim that actually matters.
     e.close_record_doc(&uid);
     let row = store::records::get(&e.store.pool, &uid)
         .await
@@ -170,10 +139,6 @@ async fn crdt_ops_below_a_snapshot_are_prunable_and_the_text_survives() {
     );
 }
 
-/// A record tombstone must never be pruned because a snapshot or crdt op sits
-/// above it. All three use `field = ''`, and the supersede rule used to ignore
-/// `kind` — so the delete would vanish and the record would come back for a
-/// peer replaying from zero, and only for them.
 #[tokio::test]
 async fn a_tombstone_is_not_superseded_by_a_collab_op() {
     let (e, _organ) = cell("http://cell-a").await;
@@ -188,10 +153,6 @@ async fn a_tombstone_is_not_superseded_by_a_collab_op() {
     e.write_record_text(&uid, None, Some("text"))
         .await
         .expect("write");
-    // A snapshot ABOVE the tombstone is the dangerous shape. It cannot be made
-    // locally — `compact_doc` refuses a deleted record — so it arrives the way
-    // it really would: a peer that had not yet heard about the delete sends
-    // one, and it joins the log before the freeze refuses to apply it.
     e.compact_doc(&uid).await.expect("compact");
     let snapshot = ops_of_kind(&e, &uid, "snapshot").await;
     store::records::mark_deleted(&e.store.pool, &uid)
@@ -208,7 +169,7 @@ async fn a_tombstone_is_not_superseded_by_a_collab_op() {
         op.actor_cell = format!("{peer_organ}-cell");
         op.hlc = nucleus::hlc::next();
     }
-    let _ = peer; // the peer only supplies an identity for the batch
+    let _ = peer;
     e.import_op_batch(&OpBatch {
         from_organ: peer_organ,
         ops: wire,
@@ -239,9 +200,6 @@ async fn a_tombstone_is_not_superseded_by_a_collab_op() {
     );
 }
 
-/// A doc edited heavily and then abandoned still compacts. Compaction used to
-/// happen only on the next write — which never comes — so its tail grew
-/// forever and none of it was ever prunable.
 #[tokio::test]
 async fn the_sweep_compacts_a_doc_nobody_has_open() {
     let (e, _organ) = cell("http://cell-a").await;
@@ -251,15 +209,11 @@ async fn the_sweep_compacts_a_doc_nobody_has_open() {
             .await
             .expect("write");
     }
-    // Abandoned: evicted from the registry, never written again.
     e.close_record_doc(&uid);
 
     let swept = e.compact_stale_docs().await.expect("sweep");
     assert_eq!(swept, 0, "below the threshold, nothing to do");
 
-    // Force the sweep's hand by asking for the record directly; the threshold
-    // is a tuning constant, the BEHAVIOUR under test is that a closed doc can
-    // still be compacted at all.
     assert!(
         e.compact_doc(&uid).await.expect("compact"),
         "a doc nobody has open still compacts"
@@ -267,18 +221,9 @@ async fn the_sweep_compacts_a_doc_nobody_has_open() {
     assert_eq!(ops_of_kind(&e, &uid, "snapshot").await.len(), 1);
 }
 
-/// C2's headline claim, asserted as a property rather than as its parts: a
-/// contact added AFTER a prune still ends up with the text.
-///
-/// This is what "replica bootstrap collapses into catch-up" means. There is no
-/// bootstrap protocol — the new peer reads the ordinary feed from zero, and
-/// what it finds where the pruned tail used to be is the snapshot op that
-/// folded it.
 #[tokio::test]
 async fn a_contact_added_after_a_prune_still_receives_the_text() {
     let (a, a_organ) = cell("http://cell-a").await;
-    // The acked contact has to exist BEFORE pruning: with no contacts at all
-    // there is no retention floor and pruning correctly does nothing.
     store::organs::add_contact(&a.store.pool, "organ-old", None, "Old", "http://old", 1)
         .await
         .expect("contact");
@@ -307,7 +252,6 @@ async fn a_contact_added_after_a_prune_still_receives_the_text() {
         "the tail really is gone, so this test means something"
     );
 
-    // NOW a brand-new contact appears, with a cursor of zero.
     let (b, _b_organ) = cell("http://cell-b").await;
     store::organs::add_contact(&b.store.pool, &a_organ, None, "A", "http://cell-a", 1)
         .await
@@ -332,10 +276,6 @@ async fn a_contact_added_after_a_prune_still_receives_the_text() {
     assert_eq!(row.body, "final text", "and it is materialized");
 }
 
-/// Importing a peer's snapshot must not trigger our own compaction. A snapshot
-/// blob clears the byte threshold on arrival, so compacting in response would
-/// emit ours, which they import, which emits theirs — two Cells volleying
-/// whole documents forever.
 #[tokio::test]
 async fn importing_a_snapshot_does_not_emit_one_back() {
     let (a, a_organ) = cell("http://cell-a").await;
@@ -370,15 +310,6 @@ async fn importing_a_snapshot_does_not_emit_one_back() {
     );
 }
 
-/// Importing a crdt op big enough to trip the compaction threshold must not
-/// deadlock.
-///
-/// The import path reaches compaction through
-/// `import_ops` → `materialise` → `apply_remote_crdt` → `maybe_compact` →
-/// `compact_doc`, and `import_ops` holds the op lock for the whole batch. Any
-/// attempt to take that lock again inside `compact_doc` hangs here — and only
-/// here, because ordinary tests never write the 256KB it takes to get in.
-/// Wrapped in a timeout so a regression fails instead of hanging the suite.
 #[tokio::test]
 async fn importing_a_compaction_sized_op_does_not_deadlock() {
     let (a, a_organ) = cell("http://cell-a").await;
@@ -387,7 +318,6 @@ async fn importing_a_compaction_sized_op_does_not_deadlock() {
     b.adopt_introduction(&a_intro, 1).await.expect("adopt");
 
     let uid = plain(&a, "big").await;
-    // Comfortably past COMPACT_BYTES once base64-encoded.
     let big = "lorem ipsum ".repeat(40_000);
     a.write_record_text(&uid, None, Some(&big))
         .await
@@ -416,19 +346,12 @@ async fn importing_a_compaction_sized_op_does_not_deadlock() {
     assert_eq!(b.doc_text(&uid).await.expect("text").1, big);
 }
 
-/// Catch-up by version vector: "here is what I hold of yours, send the rest".
-///
-/// The property the old seq cursor could not give — a peer that has PRUNED
-/// still answers correctly, because the question is asked in stamps both sides
-/// share rather than in a cursor into the server's own local seq, which stops
-/// meaning anything the moment the server prunes.
 #[tokio::test]
 async fn a_version_vector_catch_up_survives_the_servers_prune() {
     let (a, a_organ) = cell("http://cell-a").await;
     let (b, _b_organ) = cell("http://cell-b").await;
     let a_intro = a.introduction().await.expect("introduction");
     b.adopt_introduction(&a_intro, 1).await.expect("adopt");
-    // A contact of A's, so A has a retention floor and can prune at all.
     store::organs::add_contact(&a.store.pool, "organ-old", None, "Old", "http://old", 1)
         .await
         .expect("contact");
@@ -437,8 +360,6 @@ async fn a_version_vector_catch_up_survives_the_servers_prune() {
         .expect("policy");
 
     let uid = plain(&a, "shared").await;
-    // Repeated writes to ONE key: each supersedes the last, so all but the tip
-    // become prunable — which is what gives this test something to prune.
     for value in ["one", "two", "three"] {
         store::records::set_extension(
             &a.store.pool,
@@ -459,7 +380,6 @@ async fn a_version_vector_catch_up_survives_the_servers_prune() {
     let report = a.prune_op_log(false).await.expect("prune");
     assert!(report.removed > 0, "A really did prune: {report:?}");
 
-    // B holds nothing of A's, and says so with an empty vector.
     let mine = store::sync_ops::version_vector_for_organ(&b.store.pool, &a_organ)
         .await
         .expect("vector");
@@ -486,7 +406,6 @@ async fn a_version_vector_catch_up_survives_the_servers_prune() {
         "B has the surviving tip despite A having pruned the history"
     );
 
-    // Asked again, B is converged: its vector now covers everything A holds.
     let mine = store::sync_ops::version_vector_for_organ(&b.store.pool, &a_organ)
         .await
         .expect("vector");
@@ -500,9 +419,6 @@ async fn a_version_vector_catch_up_survives_the_servers_prune() {
     );
 }
 
-/// The vector we send a contact names only THEIR Cells. Sending everything we
-/// hold would disclose which Cells of other Organs we sync with, and those
-/// third parties never agreed to be named.
 #[tokio::test]
 async fn a_version_vector_never_mentions_a_third_organ() {
     let (us, _our_organ) = cell("http://us").await;

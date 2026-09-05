@@ -17,6 +17,10 @@ pub trait Rule: Send + Sync {
 
     fn inspect(&self, source: &str) -> Vec<Finding>;
 
+    fn fix(&self, _source: &str) -> Option<String> {
+        None
+    }
+
     fn remedy(&self) -> &'static str;
 }
 

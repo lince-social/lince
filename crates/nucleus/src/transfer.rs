@@ -1,12 +1,7 @@
-//! Transfer agreement policies (blueprint VIII.2), pure.
-
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::collections::{BTreeMap, BTreeSet};
 
-/// The exact public Transfer result bound by one revision Fact. The current
-/// SQL sidecars are a projection of this value; agreements name its revision
-/// instead of trusting mutable rows in isolation.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TransferRevisionSnapshot {
     pub revision: u64,
@@ -14,14 +9,11 @@ pub struct TransferRevisionSnapshot {
     pub parties: Vec<TransferRevisionParty>,
     pub invitations: Vec<TransferRevisionInvitation>,
     pub promises: Vec<TransferRevisionPromise>,
-    /// Named, structured gates that are part of the signed public result.
     #[serde(default)]
     pub dependencies: Vec<TransferRevisionDependency>,
 }
 
 impl TransferRevisionSnapshot {
-    /// Uids are stable across Cells, so sorting by them gives the signed JSON a
-    /// deterministic collection order independent of SQL insertion order.
     pub fn canonicalize(&mut self) {
         self.parties.sort_by(|a, b| a.uid.cmp(&b.uid));
         self.invitations.sort_by(|a, b| a.uid.cmp(&b.uid));
@@ -45,7 +37,6 @@ pub struct TransferRevisionTerms {
     pub source_uid: Option<String>,
     pub reserve_default: Option<String>,
     pub require_confirmation: bool,
-    /// Default location inherited by promises that do not name one.
     #[serde(default)]
     pub default_place: Option<TransferLocationSnapshot>,
 }
@@ -75,20 +66,13 @@ fn default_invitation_attempt() -> u64 {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TransferRevisionPromise {
     pub uid: String,
-    /// OPEN duplication provenance. Consuming an OPEN promise retains its uid,
-    /// while duplicating it creates a new promise linked to this source.
     #[serde(default)]
     pub source_promise_uid: Option<String>,
-    /// Revision in which these current public terms were last established.
     pub revision: u64,
     pub record_uid: Option<String>,
     pub concept_uid: Option<String>,
-    /// Unit frozen with the signed delta. It does not follow later Record
-    /// metadata edits.
     #[serde(default)]
     pub unit_uid: Option<String>,
-    /// Owner of these signed terms. For `state = "open"` this is the known
-    /// proposer; only the matching counterparty is unspecified.
     pub person_uid: Option<String>,
     pub delta: f64,
     #[serde(default)]
@@ -152,9 +136,6 @@ impl TransferDependencyUpstreamKind {
     }
 }
 
-/// One dependency gate sealed into the complete Transfer revision. A
-/// Transfer-scoped gate applies to every promise; a promise-scoped gate applies
-/// only to `promise_uid`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TransferRevisionDependency {
     pub uid: String,
@@ -166,8 +147,6 @@ pub struct TransferRevisionDependency {
     pub required_state: String,
 }
 
-/// A typed node in the Transfer execution graph. Promise and Transfer uids
-/// occupy separate namespaces even when their textual ids happen to match.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(tag = "kind", content = "uid", rename_all = "snake_case")]
 pub enum TransferDependencyNode {
@@ -181,8 +160,6 @@ pub struct TransferDependencyEdge {
     pub downstream: TransferDependencyNode,
 }
 
-/// Stable topological order: equally-ready nodes are ordered by typed uid.
-/// The returned cycle contains the still-blocked nodes in that same order.
 pub fn transfer_dependency_order(
     edges: &[TransferDependencyEdge],
 ) -> Result<Vec<TransferDependencyNode>, Vec<TransferDependencyNode>> {
@@ -243,7 +220,6 @@ impl TransferDependencyReadiness {
     }
 }
 
-/// Stable blocker order used by projections and irreversible-step previews.
 pub fn ordered_transfer_dependency_readiness(
     mut values: Vec<TransferDependencyReadiness>,
 ) -> Vec<TransferDependencyReadiness> {
@@ -264,8 +240,6 @@ fn default_revision_promise_state() -> String {
     "proposed".into()
 }
 
-/// Location values are copied into signed terms. A later edit to a reusable
-/// Place record therefore cannot rewrite what a party reviewed.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TransferLocationSnapshot {
     pub lat: Option<f64>,
@@ -298,8 +272,6 @@ impl OpenPromiseReusePolicy {
     }
 }
 
-/// Payload sealed into the revision Fact. Including the complete terms, rather
-/// than only changed row ids, makes the signature independently auditable.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TransferRevisionEvidence {
     pub action: String,
@@ -308,9 +280,6 @@ pub struct TransferRevisionEvidence {
     pub terms: TransferRevisionSnapshot,
 }
 
-/// Append-only evidence for invitation lifecycle changes. Some transitions
-/// also establish a new Transfer revision; rejection and expiry intentionally
-/// remain standalone social facts.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TransferInvitationLifecycleEvidence {
     pub action: String,
@@ -324,8 +293,6 @@ pub struct TransferInvitationLifecycleEvidence {
     pub revision: Option<u64>,
 }
 
-/// Append-only evidence for one Person moving their own agreement by one
-/// adjacent milestone on one exact signed revision.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TransferAgreementTransitionEvidence {
     pub action: String,
@@ -338,8 +305,6 @@ pub struct TransferAgreementTransitionEvidence {
     pub to_level: u8,
 }
 
-/// Immutable public occurrence terms copied from one executable promise when
-/// its owning Person activates it.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TransferOccurrenceSnapshot {
     pub uid: String,
@@ -428,8 +393,6 @@ pub fn transfer_bulk_claim_review_token(
     digest.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
-/// Signed audit evidence for private formula replacement. Formula text stays
-/// only in the receiving Cell's policy table and is never embedded here.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TransferOccurrenceApplicationEvidence {
     pub action: String,
@@ -446,9 +409,6 @@ pub fn occurrence_application_formula_hash(formula: &str) -> String {
     digest.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
-/// What to do with canonical quantity left after a partial settlement. The
-/// local-draft option is deliberately only a request to prepare local work; it
-/// never addresses, sends, agrees, activates, confirms, or settles a Transfer.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
 pub enum TransferRemainderPolicy {
@@ -474,8 +434,6 @@ impl TransferRemainderPolicy {
     }
 }
 
-/// Shareable evidence for one immutable canonical fulfillment slice. Local
-/// Record identity, formula text, and quantity delta are intentionally absent.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TransferOccurrenceSettlementEvidence {
     pub action: String,
@@ -518,9 +476,6 @@ pub struct TransferSourceGroupLoserEvidence {
     pub observed_by_person_uid: String,
 }
 
-/// Local Fact payload paired with a public settlement Fact. The target Record
-/// and delta live in the Fact's canonical fields; formula text remains only in
-/// the local settlement slice table.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TransferOccurrenceSettlementApplicationEvidence {
     pub action: String,
@@ -536,8 +491,6 @@ pub struct TransferOccurrenceSettlementApplicationEvidence {
     pub local_cumulative_after: f64,
 }
 
-/// Private audit evidence for reversing one settlement's local Record effect.
-/// The canonical fulfillment slice remains untouched and publicly valid.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TransferOccurrenceSettlementCompensationEvidence {
     pub action: String,
@@ -550,8 +503,6 @@ pub struct TransferOccurrenceSettlementCompensationEvidence {
     pub original_application_fact_uid: String,
 }
 
-/// Public, signed assertion of whether one occurrence participant currently
-/// disputes fulfillment. Retraction is another event, never a deletion.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TransferOccurrenceDisputeEvidence {
     pub action: String,
@@ -592,11 +543,6 @@ impl AgreementType {
     }
 }
 
-/// Is the transfer's agreement policy satisfied? Levels: 0 none/invalidated,
-/// 1 reviewed, 2 committed. `Individual` binds each party only to its own
-/// promises, so the bundle-level gate is always open; per-promise checks are
-/// the engine's job. `Dependency` is resolved by the engine through structured
-/// signed dependency terms, not here.
 pub fn policy_satisfied(agreement: AgreementType, pct: Option<u8>, party_levels: &[i64]) -> bool {
     let n = party_levels.len();
     let committed = party_levels.iter().filter(|&&l| l >= 2).count();
@@ -607,7 +553,7 @@ pub fn policy_satisfied(agreement: AgreementType, pct: Option<u8>, party_levels:
             let pct = pct.unwrap_or(100) as usize;
             n > 0 && committed * 100 >= n * pct
         }
-        AgreementType::Dependency => true, // engine checks structured upstream gates
+        AgreementType::Dependency => true,
     }
 }
 
@@ -621,7 +567,6 @@ mod tests {
         assert!(!policy_satisfied(AgreementType::Full, None, &[2, 1]));
         assert!(policy_satisfied(AgreementType::Full, None, &[2, 2]));
         assert!(!policy_satisfied(AgreementType::Full, None, &[]));
-        // ceil semantics: 50% of 3 parties needs 2 committed
         assert!(!policy_satisfied(
             AgreementType::Percentage,
             Some(50),

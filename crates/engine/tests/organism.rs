@@ -1,6 +1,3 @@
-//! Stage 1/2 completion tests: focus queue (Window 1b), signal sampling,
-//! checkpoints, and the Lingua concept DAG.
-
 use chrono::{DateTime, Utc};
 use engine::Engine;
 use nucleus::karma::{Cadence, Consequence};
@@ -33,9 +30,6 @@ fn at(s: &str) -> DateTime<Utc> {
     DateTime::parse_from_rfc3339(s).unwrap().with_timezone(&Utc)
 }
 
-// The focus-queue acceptance test lives in `protein/tests` now — ordering by
-// links is Protein's `topo` (blueprint Window 1b), not an engine query.
-
 #[tokio::test]
 async fn same_pair_carries_many_link_kinds() {
     let e = engine().await;
@@ -48,7 +42,6 @@ async fn same_pair_carries_many_link_kinds() {
         .await
         .unwrap();
 
-    // Both predicates between the same two Records coexist.
     let first = store::assertions::assert(
         &e.store.pool,
         store::assertions::NewAssertion {
@@ -78,7 +71,6 @@ async fn same_pair_carries_many_link_kinds() {
     .await
     .unwrap();
 
-    // Reasserting the same current statement is idempotent.
     let repeated = store::assertions::assert(
         &e.store.pool,
         store::assertions::NewAssertion {
@@ -95,7 +87,6 @@ async fn same_pair_carries_many_link_kinds() {
     .unwrap();
     assert_eq!(repeated, first);
 
-    // each kind is its own graph
     assert_eq!(
         store::assertions::edges_of_predicate(&e.store.pool, &before)
             .await
@@ -125,13 +116,11 @@ async fn concept_dag_widens_matching() {
         .await
         .unwrap();
 
-    // `concept_in @food` matches @apple through the parent DAG
     let family = store::concepts::descendants_including(&e.store.pool, &food)
         .await
         .unwrap();
     assert!(family.contains(&apple) && family.contains(&fruit));
 
-    // multilingual names resolve to the same concept
     assert_eq!(
         store::concepts::resolve(&e.store.pool, "Maçã")
             .await
@@ -172,9 +161,6 @@ async fn signals_sample_the_world_and_cascade() {
 
     let now = at("2026-07-05T10:00:00Z");
     let facts = e.sample_due_signals(now).await.unwrap();
-    // The sample lands as a Signal fact, and the rule reading it reacts on the
-    // same pass. The rule's own change is an ordinary entry — what records
-    // that a rule made it is the occurrence it spent, not a second cause kind.
     assert!(facts.iter().any(|f| f.cause.kind == CauseKind::Signal));
     assert_eq!(
         store::records::quantity(&e.store.pool, &alert)
@@ -184,7 +170,6 @@ async fn signals_sample_the_world_and_cascade() {
         Some(1.0)
     );
 
-    // within the schedule window nothing re-samples; unchanged value makes no noise
     let facts = e
         .sample_due_signals(at("2026-07-05T10:00:30Z"))
         .await
@@ -209,8 +194,6 @@ async fn checkpoints_anchor_without_cascading() {
     let checkpoints = e.checkpoint_all(Utc::now()).await.unwrap();
     assert_eq!(checkpoints.len(), 1);
     assert_eq!(checkpoints[0].delta, store::exact::zero());
-    // The level is canonical decimal TEXT, not a JSON float: after compaction
-    // this payload IS the record's level (blueprint E0.0).
     assert!(
         checkpoints[0]
             .payload
@@ -227,7 +210,6 @@ async fn checkpoints_anchor_without_cascading() {
         "checkpoint changes nothing"
     );
 
-    // idempotent sweep: already-anchored records are skipped
     let again = e.checkpoint_all(Utc::now()).await.unwrap();
     assert!(again.is_empty());
 }

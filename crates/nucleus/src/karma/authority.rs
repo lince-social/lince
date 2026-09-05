@@ -96,24 +96,18 @@ pub enum GrantTargetScope {
     Only { targets: BTreeSet<GrantTarget> },
 }
 
-/// A fixed count of intents over a fixed tumbling window.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct GrantWindowLimit {
     pub count: u64,
     pub duration_ms: DurationMs,
 }
 
-/// A total quantity a grant may ever authorize, in one declared unit. The scale
-/// is part of the consent: a differently scaled amount is refused rather than
-/// rounded into range.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct GrantQuantityLimit {
     pub unit_uid: TypedUid,
     pub limit: DecimalValue,
 }
 
-/// What a grant may spend. `None` everywhere means unlimited, which is why the
-/// narrowing comparator treats absence as the widest possible value.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct GrantBudget {
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -125,9 +119,6 @@ pub struct GrantBudget {
 }
 
 impl GrantBudget {
-    /// An unlimited budget is omitted from the wire entirely, so a grant that
-    /// declares no budget hashes exactly as it did before budgets existed and
-    /// revisions stored by K5.1 still verify against their recorded hash.
     pub fn is_unlimited(&self) -> bool {
         self.max_intents.is_none() && self.per_window.is_none() && self.quantity_limit.is_none()
     }
@@ -160,8 +151,6 @@ impl GrantBudget {
         Ok(())
     }
 
-    /// Which tumbling window an instant falls in, counted from `valid_from`.
-    /// Deterministic, so a replay lands in the same window as the original.
     pub fn window_index(&self, valid_from: TimestampMs, at: TimestampMs) -> Option<u64> {
         let window = self.per_window.as_ref()?;
         let elapsed = at.as_millis().checked_sub(valid_from.as_millis())?;
@@ -597,41 +586,30 @@ fn set_relation<T: Ord>(old: &BTreeSet<T>, new: &BTreeSet<T>) -> ScopeRelation {
     }
 }
 
-/// Absence of a limit is unlimited, so adding one narrows and dropping one
-/// widens. Where both sides carry a limit, the replacement may only go lower.
 fn budget_relation(old: &GrantBudget, new: &GrantBudget) -> ScopeRelation {
     let intents = limit_relation(
         old.max_intents.as_ref(),
         new.max_intents.as_ref(),
-        |old, new| {
-            // A smaller cap is the narrower one.
-            old.cmp(new)
-        },
+        |old, new| old.cmp(new),
     );
     let window = limit_relation(
         old.per_window.as_ref(),
         new.per_window.as_ref(),
-        |old, new| {
-            // Conservative on purpose: a replacement counts as narrower only when it
-            // allows no more events over no shorter a window. A lower rate carrying a
-            // bigger burst is Mixed, not narrower, and is refused.
-            match (
-                new.count.cmp(&old.count),
-                new.duration_ms.get().cmp(&old.duration_ms.get()),
-            ) {
-                (std::cmp::Ordering::Equal, std::cmp::Ordering::Equal) => std::cmp::Ordering::Equal,
-                (std::cmp::Ordering::Greater, _) | (_, std::cmp::Ordering::Less) => {
-                    std::cmp::Ordering::Less
-                }
-                _ => std::cmp::Ordering::Greater,
+        |old, new| match (
+            new.count.cmp(&old.count),
+            new.duration_ms.get().cmp(&old.duration_ms.get()),
+        ) {
+            (std::cmp::Ordering::Equal, std::cmp::Ordering::Equal) => std::cmp::Ordering::Equal,
+            (std::cmp::Ordering::Greater, _) | (_, std::cmp::Ordering::Less) => {
+                std::cmp::Ordering::Less
             }
+            _ => std::cmp::Ordering::Greater,
         },
     );
     let quantity = limit_relation(
         old.quantity_limit.as_ref(),
         new.quantity_limit.as_ref(),
         |old, new| {
-            // A different unit or scale is not comparable, so it cannot be a narrowing.
             if old.unit_uid != new.unit_uid || old.limit.scale() != new.limit.scale() {
                 return std::cmp::Ordering::Less;
             }
@@ -641,8 +619,6 @@ fn budget_relation(old: &GrantBudget, new: &GrantBudget) -> ScopeRelation {
     intents.combine(window).combine(quantity)
 }
 
-/// `compare` reports Greater when the replacement is strictly narrower, Equal
-/// when identical, and Less for anything wider or incomparable.
 fn limit_relation<T: PartialEq>(
     old: Option<T>,
     new: Option<T>,

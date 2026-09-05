@@ -1,12 +1,17 @@
 use std::{
-    collections::BTreeMap, future::Future, num::NonZeroU32, pin::Pin, sync::Arc, time::Duration,
+    collections::BTreeMap,
+    future::Future,
+    num::{NonZeroU32, NonZeroUsize},
+    pin::Pin,
+    sync::Arc,
+    time::Duration,
 };
 
 use chrono::{TimeZone, Utc};
 use nucleus::karma::{
     ArmedDeadline, CanonicalHash, DeadlineAdmission, DeadlineEntry, DeadlineIndex,
     DemandedDeadline, DispatcherResourceGrant, DurationMs, EvaluationLimits, HostTimerCapabilities,
-    MAX_OCCURRENCE_BATCH_PAGE_TICKS, ScheduleCursorLifecycle, ScheduleDemandCapacity,
+    MAX_OCCURRENCE_BATCH_PAGE_TICKS, RationalRate, ScheduleCursorLifecycle, ScheduleDemandCapacity,
     ScheduleWorkloadUpperBounds, SchedulerCalibration, TimeZoneProvider, TimestampMs, TzdbRevision,
     plan_demanded_deadlines,
 };
@@ -14,14 +19,18 @@ use tokio::sync::watch;
 
 use crate::{Engine, EngineError};
 
+const HOST_MAXIMUM_ARMED_ENTRIES: usize = 4_096;
+const HOST_MAXIMUM_LANES: usize = 8;
+const HOST_CLOCK_DISCONTINUITY_TOLERANCE_MS: i64 = 250;
+const HOST_LEASE_DURATION_MS: i64 = 30_000;
+
+fn host_nonzero(value: u32) -> NonZeroU32 {
+    NonZeroU32::new(value).expect("host runtime constants are non-zero")
+}
+
 pub type DeadlineSleep<'a> =
     Pin<Box<dyn Future<Output = Result<DeadlineClockWake, EngineError>> + Send + 'a>>;
 
-/// Fills `store`'s boundary-input seam (blueprint E0.1).
-///
-/// `protein` is built on top of `store`, so the run path cannot execute a saved
-/// Protein itself. `engine` sits above both, so it is the one layer that can —
-/// it implements the trait `store` declared and hands it down.
 pub struct SavedProteinInputs<'a> {
     pub store: &'a store::Store,
 }
@@ -34,21 +43,12 @@ impl store::karma::runs::ExternalInputResolver for SavedProteinInputs<'_> {
     ) -> Result<Option<nucleus::karma::LiteralValue>, store::StoreError> {
         let rows = match protein::execute_saved(self.store, view_uid, None).await {
             Ok(rows) => rows,
-            // A view that cannot execute is a refusal the run reports by name,
-            // not an error that aborts the whole processing turn: one broken
-            // saved query must not stop every other Program from running.
             Err(_) => return Ok(None),
         };
         Ok(scalar_boundary_value(&rows))
     }
 }
 
-/// Reduce a Protein's rows to the single number an Input node can read.
-///
-/// Deliberately strict: exactly one row, holding either a bare number or an
-/// object with exactly one numeric field. Anything else — no rows, many rows,
-/// several numeric columns — is ambiguous, and guessing which number the author
-/// meant is how a rule quietly computes against the wrong one.
 fn scalar_boundary_value(rows: &[serde_json::Value]) -> Option<nucleus::karma::LiteralValue> {
     let [row] = rows else {
         return None;
@@ -58,7 +58,7 @@ fn scalar_boundary_value(rows: &[serde_json::Value]) -> Option<nucleus::karma::L
             let mut numeric = fields.values().filter(|value| decimal_of(value).is_some());
             let only = numeric.next()?;
             if numeric.next().is_some() {
-                return None; // ambiguous: which column did the author mean?
+                return None;
             }
             only
         }
@@ -67,9 +67,6 @@ fn scalar_boundary_value(rows: &[serde_json::Value]) -> Option<nucleus::karma::L
     decimal_of(value).map(|value| nucleus::karma::LiteralValue::Decimal { value })
 }
 
-/// A JSON string is preferred and stays exact; a JSON number goes through the
-/// named lossy door, because Protein still renders quantities as `f64` until
-/// E0.1's read side is exact end to end.
 fn decimal_of(value: &serde_json::Value) -> Option<nucleus::DecimalValue> {
     match value {
         serde_json::Value::String(text) => nucleus::DecimalValue::parse_inferred(text).ok(),
@@ -152,9 +149,6 @@ impl DeadlineClock for TokioDeadlineClock {
     }
 }
 
-/// One Cell-wide scheduling budget and the exact calendar artifacts available
-/// to it. All elapsed and civil-calendar work is admitted together; providers
-/// are keyed by their immutable revision rather than a mutable timezone name.
 #[derive(Clone)]
 pub struct KarmaDeadlineDirectorConfig {
     pub host: HostTimerCapabilities,
@@ -256,6 +250,54 @@ impl KarmaDeadlineDirectorConfig {
         })
     }
 
+    pub fn for_host(worker_id: String) -> Result<Self, EngineError> {
+        let unbounded = RationalRate::new(u64::MAX, 1).map_err(|error| EngineError::Conflict {
+            code: "karma_demand_capacity_invalid",
+            message: error.to_string(),
+        })?;
+        Self::new(
+            HostTimerCapabilities::new(
+                [
+                    host_nonzero(1),
+                    host_nonzero(10),
+                    host_nonzero(100),
+                    host_nonzero(1_000),
+                ],
+                NonZeroUsize::new(HOST_MAXIMUM_ARMED_ENTRIES)
+                    .expect("host armed entry maximum is non-zero"),
+            )
+            .map_err(|error| EngineError::Conflict {
+                code: "karma_host_timer_invalid",
+                message: error.to_string(),
+            })?,
+            DispatcherResourceGrant::new(
+                host_nonzero(10),
+                NonZeroUsize::new(HOST_MAXIMUM_LANES).expect("host lane maximum is non-zero"),
+                NonZeroUsize::new(HOST_MAXIMUM_ARMED_ENTRIES)
+                    .expect("host armed entry maximum is non-zero"),
+                true,
+            ),
+            ScheduleWorkloadUpperBounds::new(0, host_nonzero(1), 0, 256),
+            SchedulerCalibration::new(host_nonzero(1_000)),
+            ScheduleDemandCapacity {
+                semantic_ticks_per_second: unbounded,
+                timer_wakes_per_second: unbounded,
+                scheduler_cpu_ns_per_second: unbounded,
+                evaluator_fuel_per_second: unbounded,
+                writes_per_second: unbounded,
+                effects_per_second: unbounded,
+                trace_bytes_per_second: unbounded,
+            },
+            Arc::new(TokioDeadlineClock::new(DurationMs::new(
+                HOST_CLOCK_DISCONTINUITY_TOLERANCE_MS,
+            ))?),
+            worker_id,
+            DurationMs::new(HOST_LEASE_DURATION_MS),
+            host_nonzero(64),
+            [crate::karma_timezone::utc_time_zone_provider()?],
+        )
+    }
+
     pub fn provider(&self, revision: &TzdbRevision) -> Option<&dyn TimeZoneProvider> {
         self.providers.get(revision).map(AsRef::as_ref)
     }
@@ -266,9 +308,6 @@ impl KarmaDeadlineDirectorConfig {
 }
 
 impl Engine {
-    /// Start the single Cell-wide deadline director. It rebuilds the durable
-    /// directory only at boot or after an explicit change notification. A
-    /// normal firing removes and reinserts only the completed cursor.
     pub fn start_karma_deadline_director(
         self: Arc<Self>,
         config: KarmaDeadlineDirectorConfig,

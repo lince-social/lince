@@ -1,59 +1,5 @@
 # Fiote — build notes
 
-Agent notes for `Karma.lingua` → `Fiote (@fiote)`. Nothing here is the plan;
-the Record is. This is the reasoning, the measurements, and the rejected
-alternatives.
-
-## Where this stands — 2026-08-30
-
-Read this; everything below it is the archive of how each line was arrived at.
-
-**Fiote starts as a configured Pi and becomes its own harness by replacement.**
-Not a wrapper, and not a rewrite either: Pi runs locally as a tool the owner
-already has — no bundling, no packaging, no embedded runtime — and Fiote's
-prompts and extensions live beside Fiote from the first day. Each part of Pi is
-then replaced in turn until nothing of it is load-bearing. The parts list for
-the finished thing is D29; the order of replacement is below.
-
-**This revives the landed code.** `crates/fiote`'s `locate()`, the spawn path,
-the line framing and the replayable backlog are all live again — the previous
-entry here, which called them dead in favour of in-process sessions, was wrong
-for one day.
-
-**The replacement ladder, outside in.** Each rung is useful on its own, and
-none of them requires the next.
-
-1. **Prompts and policy — ours immediately.** The shared `Agent` Record and
-   each Fiote's own body are rendered by us and handed to Pi as text. Pi never
-   holds the source.
-2. **Tools — a Lince MCP server.** Lince's Actions exposed over MCP, which Pi
-   consumes like any other server. Capability becomes ours without touching
-   Pi's code. **Prefer this over writing a Pi extension**: extensions are
-   TypeScript and would have to be thrown away, whereas an MCP server is
-   language-neutral and survives every later rung.
-3. **Context assembly — ours.** We decide what enters the window (the walk
-   below), and hand it over as appended system prompt, skills and injected
-   messages. This is where the token wins are, and it is the whole reason to
-   own a harness at all.
-4. **Surface and accounting — already ours.** The sand and the token readout do
-   not care whose loop is running.
-5. **Sessions — ours.** The Lince Session Record becomes authoritative; Pi's
-   session file degrades to a cache.
-6. **The loop — last.** `genai` behind the same seam, and Pi stops being
-   started at all.
-
-**The session is a thread** (D31). What you say to a Fiote is a Message, its
-completed turn is a Message, the session is a Thread on the task Record;
-streaming deltas stay on the lane. People and other people's agents read it and
-talk into it. This is the centre of the design, and it makes the wake path
-(D25/D26) and the multi-party room (D16) load-bearing rather than far-future.
-
-**Not planned, written up anyway:** files in messages (D30 — a hash on the
-Record, bytes over `iroh-blobs`, verified to resolve alongside the workspace's
-`iroh = "=1.0.3"`) and General Files sync with LSP-derived code links (Ideas,
-at the end). Both are recorded so the finding is not re-derived; neither is
-scheduled.
-
 **Bring-your-own and subscriptions: ACP, later** (D29). Our own loop cannot
 redeem a Claude or ChatGPT subscription; only the vendor's client can. An ACP
 backend behind the same seam covers both that and "use your own agent". Not
@@ -77,15 +23,20 @@ agent, and authorship shown on messages.
 backlog, attach/detach, send and kill, one passing integration test driving a
 real Pi session.
 
-**Next: Phase 0, then the Interface refactor as Phase 1.** Phase 0 is three
-small cleanups so the refactor is not built on a mechanism that lies. Phase 1
-is the refactor itself, carrying the five thread and board capabilities Fiote
-needs — every one of which an ordinary conversation wants too. Fiote's own
-prototype is Phase 2 and starts after them.
+**Next: Phase 0 beside C4-C5, then Fiote Phase 2.** The Interface refactor has
+already landed its native runtime, Sand ABI and recursive composition host.
+Phase 0 is three independent cleanups that must finish before Fiote resumes.
+C3 has now landed the domain-derived compound recipe. The remaining Phase 1
+work maps concretely onto C4 Conversation and official-Sand migration and the
+C5 human-use gate. Fiote's own prototype starts after C5 without becoming a
+prerequisite for Box.
 
-**Also high priority, and it belongs to the interface refactor:** Fiote's
-sessions stream to the interface, in the same surface as the task-bound
-terminal sand. Written up in `anicca/interface/plans/sands.md`.
+**Also high priority, and split at the right boundary:** C4 gives every
+conversation live Messages, authorship and private drafts. Fiote Phase 2 adds
+the session-control and tool-timeline Sands, reusing the Terminal renderer for
+read-only command bytes and a separate Terminal Sand for the person's shell.
+The compound and its task/session Record bindings are written up in
+`anicca/interface/plans/sands.md`.
 
 **Parked after this planning pass** (owner, 2026-08-30). Fiote resumes once the
 new Interface lands. What must be built *during* that refactor rather than
@@ -1180,7 +1131,7 @@ the LLM providers and tool management, write the rest ourselves — so we learn
 how to build the best agent for Lince, control spawning, headless or not, and
 fit the ecosystem instead of being constrained by someone else's.*
 
-**Agreed, and this is the right call for this project.** CLAUDE.md's standing
+**Agreed, and this is the right call for this project.** `AGENTS.md`'s standing
 rule applies: where the cheap option and the best long-term architecture
 differ, the reason to pick cheap does not exist here. goose and Pi are both
 built for a person at a terminal editing a git checkout; Fiote is built for a
@@ -1839,7 +1790,8 @@ decision; where they refined, the refinement is better than the objection.
 ## Carry into the Interface refactor
 
 *Fiote is parked after this planning pass and resumes once the new Interface
-lands (owner, 2026-08-30). The concrete list is **Phase 0 and Phase 1** of the
+lands (owner, 2026-08-30). In the current waterfall that means the C5
+pre-Box foundation gate. The concrete list is **Phase 0 and Phase 1** of the
 build order below; this is the principle behind it.*
 
 **The two must be designed against each other, and one rule keeps both
@@ -1869,7 +1821,7 @@ version, and there is no retrofit.
 Reorganised 2026-08-30 into phases, because the old list had accreted out of
 sequence and because Fiote and the Interface refactor have to be built with
 each other in mind. Every step must be usable by a person when it lands
-(CLAUDE.md), so the surface travels with the mechanism.
+(`AGENTS.md`), so the surface travels with the mechanism.
 
 **The test that keeps the two honest.** An item belongs in the Interface
 refactor only if **a conversation between two people would want it**. If it is
@@ -1884,16 +1836,17 @@ The other five survive it.
 
 ---
 
-### Phase 0 — before the refactor. Small, and only what prevents building on a lie.
+### Phase 0 — beside C4-C5 and before Fiote resumes.
 
 - [ ] **Delete `OfficialWidgetBuilder::feature_flag()`** and the `#[allow(dead_code)]`
   around it. It looks like a gate, gates nothing, and the refactor decides what
   a real runtime switch is (owner, 2026-08-30: remove now, do it properly
   there).
-- [ ] **Fix the `subject_kind` comment** at `0001_init.sql:225`. It documents
-  `organ | actor | role | public | fiote`; `visible_targets` honours only
-  `subject_uid` or `public`. The feature can wait; the comment cannot, because
-  a schema comment describing behaviour that does not exist is worse than none.
+- [ ] **Delete the misleading `subject_kind` source comment** at
+  `0001_init.sql:225`. It documents `organ | actor | role | public | fiote`;
+  `visible_targets` honours only `subject_uid` or `public`. Source comments are
+  forbidden in this repository anyway; the real behavior belongs in these
+  notes until the feature exists.
 - [ ] **Make `cargo test -p lince-fiote` opt-in** rather than failing on a
   fresh checkout with no Pi. It must still refuse to pass silently when the
   harness is absent — a test that goes green without the thing it tests is the
@@ -1914,16 +1867,20 @@ of them mentions an agent in its justification.
 - [ ] **A message body that grows while it is watched** (D31). Record bodies
   are already Loro documents and sync already carries `crdt` and `snapshot`
   blobs; what is new is a thread that renders a body while it changes, and
-  holds it read-only until it settles. Batch commits on a cadence — at
-  `COMPACT_OPS = 100`, per-token writes would churn snapshots; a few hundred
-  milliseconds keeps it to tens of ops per message.
+  holds it read-only until it settles. Correctness requires ordered state,
+  interruption and restart behavior. Coalescing deltas into commits is a
+  separate measured performance policy; do not make a guessed cadence part of
+  the Message contract.
 - [ ] **A composer that says what sending will do**, with a drafts list beside
   it holding presets and queued messages (D32). Presets are canned replies,
   useful between people; queueing is what happens when the other side is busy.
   A queued draft is consumed on send, a pinned preset is copied.
-- [ ] **Sand groups derived from something rather than hand-placed.** Where a
-  layout lives is this refactor's question (owner, 2026-08-30), and every
-  multi-Sand workflow needs the answer, not only sessions.
+**Landed Interface prerequisite:** C3 supplies renderer-neutral domain launch
+recipes that instantiate an exact compound definition, typed Record inputs
+and stable placements idempotently. Reusable layout lives in the definition;
+workspace placement and user overrides live in Box host state; the domain
+Record does not absorb UI layout. Fiote's later use of that mechanism remains
+Phase 2 work, not an unfinished Interface mechanism.
 
 Interface work is written in `anicca/interface/plans/sands.md`; the Fiote
 reasoning behind each is in the D-sections here.

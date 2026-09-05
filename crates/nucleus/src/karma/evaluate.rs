@@ -60,8 +60,6 @@ impl Default for EvaluationLimits {
     }
 }
 
-/// Every external value is frozen before evaluation. Keys identify the
-/// trigger/input node whose adapter supplied the value, not an ambient lookup.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct FrozenEvaluationContext {
     #[serde(default)]
@@ -120,15 +118,6 @@ pub struct NodeTrace {
     pub staged_control_state_update: Option<ControlState>,
 }
 
-/// One place where an exact value could not be represented at its declared
-/// scale and had to be rounded.
-///
-/// This is the whole point of `RoundedDecimal::exact`: a discarded remainder
-/// that nobody records is indistinguishable from arithmetic that came out even,
-/// and the difference between those two is what "exact" means. Every rounded
-/// operation in a run appears here, with enough of the declaration to explain
-/// itself — the operator, the scale it was forced to, and the rule that chose
-/// the last digit.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RoundingNote {
     pub node: LocalId,
@@ -136,7 +125,6 @@ pub struct RoundingNote {
     pub operator: BinaryOperator,
     pub scale: u8,
     pub rounding: Rounding,
-    /// The value after rounding — what the rule went on to use.
     pub result: DecimalValue,
 }
 
@@ -148,8 +136,6 @@ pub struct EvaluationResult {
     pub state_updates: BTreeMap<LocalId, LiteralValue>,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub control_state_updates: BTreeMap<LocalId, ControlState>,
-    /// Every rounding this run performed, in evaluation order. Empty means the
-    /// run was exact throughout.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub rounding: Vec<RoundingNote>,
     pub fuel_used: u64,
@@ -1298,14 +1284,6 @@ fn evaluate_product(
     }
 }
 
-/// Multiplication and division over exact values, at the scale and rounding the
-/// author declared.
-///
-/// Proof has already checked that the dimensions combine and that a result unit
-/// is declared exactly where one is needed, so the remaining runtime duties are
-/// the two things a type cannot settle: refusing a zero divisor, and refusing to
-/// wrap. `mul_exact` and `div_exact` return `None` rather than a saturated or
-/// wrapped value, and both become typed failures here.
 fn evaluate_exact_product(
     operator: BinaryOperator,
     left: LiteralValue,
@@ -1319,11 +1297,6 @@ fn evaluate_exact_product(
     else {
         return invariant_expression(node, path, meter);
     };
-    // Unreachable for any accepted Program: `evaluate_program` proves first, and
-    // Proof sends only Multiply and Divide down the precision path, refusing a
-    // precision on Remainder outright. Kept as a refusal rather than an
-    // `unreachable!` because the evaluator's contract is that a malformed AST
-    // fails typed, never panics.
     if operator == BinaryOperator::Remainder {
         return invariant_expression(node, path, meter);
     }
@@ -1357,12 +1330,6 @@ fn exact_amount(value: &LiteralValue) -> Option<DecimalValue> {
     }
 }
 
-/// Rebuild the result literal with the dimension Proof inferred.
-///
-/// These arms mirror `infer_exact_product` case for case, including their
-/// order. If the two ever disagree the failure surfaces as a `RuntimeTypeMismatch`
-/// from `ensure_type` — a publish-time error arriving at evaluation time, which
-/// is both the wrong moment and nearly impossible to read.
 fn exact_literal(
     left: &LiteralValue,
     right: &LiteralValue,
@@ -1372,7 +1339,6 @@ fn exact_literal(
 ) -> LiteralValue {
     let multiply = operator == BinaryOperator::Multiply;
     match (left, right) {
-        // Scaling by a plain decimal: the dimensioned side keeps its dimension.
         (LiteralValue::Quantity { unit, .. }, LiteralValue::Decimal { .. }) => {
             LiteralValue::Quantity {
                 amount,
@@ -1385,7 +1351,6 @@ fn exact_literal(
                 unit: unit.clone(),
             }
         }
-        // Everything else carries the dimension the author declared.
         _ => match &precision.result_unit {
             Some(DeclaredUnit::Unit { unit }) => LiteralValue::Quantity {
                 amount,
@@ -1507,10 +1472,6 @@ fn arithmetic_overflow(node: &LocalId, path: &str, meter: &FuelMeter) -> Evaluat
 struct FuelMeter {
     limits: EvaluationLimits,
     used: u64,
-    /// Collected behind a `RefCell` because the arithmetic that produces them
-    /// runs under `&FuelMeter` — the error-building closures already hold a
-    /// shared borrow, and widening those to `&mut` to carry a log would fight
-    /// the borrow checker for no gain.
     rounding: std::cell::RefCell<Vec<RoundingNote>>,
 }
 

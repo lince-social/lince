@@ -1,10 +1,3 @@
-//! Rebuild and audit (Ontology §11, cluster C2b): "the log is authoritative"
-//! as something checkable rather than a slogan.
-//!
-//! Every test here corrupts the READ MODEL behind the log's back — writing the
-//! `record` row directly, which is what a torn concurrent import effectively
-//! does — and then asks whether the audit notices and the rebuild repairs.
-
 use engine::Engine;
 use engine::trust::Signer;
 use nucleus::RecordKind;
@@ -38,8 +31,6 @@ async fn plain(e: &Engine, slug: &str, head: &str) -> String {
     .expect("record")
 }
 
-/// Corrupt the read model without touching the log — the shape a torn
-/// concurrent import leaves behind.
 async fn scribble(e: &Engine, uid: &str, head: &str) {
     store::sqlx::query("UPDATE record SET head = ? WHERE uid = ?")
         .bind(head)
@@ -60,9 +51,6 @@ async fn a_healthy_cell_audits_clean() {
     assert!(audit.is_clean(), "no divergence: {:?}", audit.diverged);
 }
 
-/// The failure this exists for: the log holds the right value and the read
-/// model does not. Nothing else in the system notices, and it does not
-/// self-heal.
 #[tokio::test]
 async fn the_audit_finds_a_read_model_that_drifted_from_the_log() {
     let (e, _organ) = cell().await;
@@ -102,8 +90,6 @@ async fn the_rebuild_repairs_what_the_audit_found() {
     );
 }
 
-/// A clean Cell is not rebuilt. Repairing unconditionally and calling that
-/// health is how a detector stops being able to report anything.
 #[tokio::test]
 async fn a_clean_cell_is_not_rebuilt() {
     let (e, _organ) = cell().await;
@@ -114,8 +100,6 @@ async fn a_clean_cell_is_not_rebuilt() {
     assert!(rebuild.is_none(), "nothing to repair, so nothing ran");
 }
 
-/// Collaborative text comes back from the doc, not from the create-era `set`
-/// op that the log also still holds.
 #[tokio::test]
 async fn a_rebuild_restores_collaborative_text_from_the_doc() {
     let (e, _organ) = cell().await;
@@ -139,8 +123,6 @@ async fn a_rebuild_restores_collaborative_text_from_the_doc() {
     assert_eq!(row.body, "the real body");
 }
 
-/// A rebuild must not resurrect a deleted record. The tombstone is in the log
-/// like everything else, and replaying in HLC order has to land it.
 #[tokio::test]
 async fn a_rebuild_keeps_deletes_deleted() {
     let (e, _organ) = cell().await;
@@ -163,9 +145,6 @@ async fn a_rebuild_keeps_deletes_deleted() {
     );
 }
 
-/// Quantity is the fact chain's business. A rebuild must leave it exactly
-/// alone — re-folding a chain that is already correct would corrupt the very
-/// thing the chain exists to protect.
 #[tokio::test]
 async fn a_rebuild_does_not_touch_quantity() {
     let (e, _organ) = cell().await;
@@ -189,8 +168,6 @@ async fn a_rebuild_does_not_touch_quantity() {
     assert_eq!(after, before, "the Ledger is untouched");
 }
 
-/// A rebuild replays; it never truncates. A row the log says nothing about
-/// must survive, or the repair becomes the thing that loses data.
 #[tokio::test]
 async fn a_rebuild_does_not_delete_what_the_log_does_not_mention() {
     let (e, _organ) = cell().await;
@@ -212,14 +189,6 @@ async fn a_rebuild_does_not_delete_what_the_log_does_not_mention() {
     );
 }
 
-/// Quantity is ADDED on import, never assigned, so a record's opening value
-/// and its fact deltas compose whichever order they arrive in.
-///
-/// The bug this pins: a peer that received the facts first held the sum of the
-/// deltas, and the creation op then overwrote it with the opening value —
-/// silently discarding every change the record had ever seen. Reachable by any
-/// peer catching up from zero, because a catch-up feed is served in local seq
-/// order and nothing guarantees creation precedes the facts on the wire.
 #[tokio::test]
 async fn a_late_creation_op_does_not_reset_a_folded_quantity() {
     let (a, a_organ) = cell().await;
@@ -247,10 +216,7 @@ async fn a_late_creation_op_does_not_reset_a_folded_quantity() {
         "opening 5 plus a delta of 7"
     );
 
-    // B receives the same ops with creation LAST — the adversarial order.
     let (b, _b_organ) = cell().await;
-    // Pair properly: an unpaired peer holds no key for A, so its signed facts
-    // would be quarantined and the test would pass for the wrong reason.
     let a_intro = a.introduction().await.expect("introduction");
     b.adopt_introduction(&a_intro, 1).await.expect("adopt");
     let (feed, _head) = a.ops_after(0, 10_000).await.expect("feed");
@@ -277,14 +243,6 @@ async fn a_late_creation_op_does_not_reset_a_folded_quantity() {
     );
 }
 
-/// Two peers importing ops for the SAME field at once must leave the read
-/// model agreeing with the log.
-///
-/// `wire.rs` serves every connection on its own task, so this interleaving is
-/// the normal case rather than a race someone has to contrive. Each importer
-/// reads the stored stamp, each decides it wins, and the later writer
-/// materialises second — leaving the log with the correct winner and the read
-/// model with the loser. It does not self-heal.
 #[tokio::test]
 async fn concurrent_imports_leave_the_read_model_agreeing_with_the_log() {
     let (e, _organ) = cell().await;
@@ -296,7 +254,6 @@ async fn concurrent_imports_leave_the_read_model_agreeing_with_the_log() {
         let _ = intro_from;
     }
 
-    // Both peers write the same field of the same uid, at different stamps.
     let uid = "r-contested";
     let batch = |organ: &str, cell_uid: &str, head: &str, hlc: i64| engine::sync::OpBatch {
         from_organ: organ.to_string(),

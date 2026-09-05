@@ -38,3 +38,9 @@ pkarr = { version = "8", default-features = false, features = ["relays"] }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt"] }
+
+[build-dependencies]
+sensei = { workspace = true }
+
+[lints]
+workspace = true

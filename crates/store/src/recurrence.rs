@@ -1,27 +1,3 @@
-//! Recurring declarations: what is expected to happen again, and when.
-//!
-//! A rule states an amount, a cadence, and what the change counts as. It writes
-//! no Fact and holds no total. Applying one of its dates appends an ordinary
-//! entry, so a rent paid by a rule and a rent typed by hand are the same kind of
-//! thing in the Ledger afterwards — which is the point. Nothing downstream needs
-//! to know a rule was involved to read a balance.
-//!
-//! Nothing here is domain-specific. A recurring cost, a recurring income, and a
-//! recurring stock count are one shape.
-//!
-//! ## Occurrences are derived, never stored
-//!
-//! Due dates come from [`nucleus::karma::Cadence`], which is pure. Storing them
-//! would duplicate a derivable fact and add a cursor to keep in sync with it.
-//! Only the two things that cannot be derived are recorded:
-//!
-//! - **applied** — an entry exists whose `request_id` is
-//!   `<recurrence_uid>:<due_at>`. `entry_revision.request_id` is already UNIQUE,
-//!   so applying the same date twice is impossible without any new state, and a
-//!   retried apply returns the first entry rather than moving the quantity again.
-//! - **skipped** — a row in `recurrence_skip`, because "decided against" and
-//!   "not looked at yet" must not read the same.
-
 use chrono::{DateTime, Utc};
 use nucleus::DecimalValue;
 use nucleus::karma::{Cadence, Carry, Consequences, Gate};
@@ -38,13 +14,6 @@ fn protocol(message: &str) -> StoreError {
 pub const STATE_ACTIVE: &str = "active";
 pub const STATE_PAUSED: &str = "paused";
 
-/// The idempotency key that ties an applied entry back to the exact date of the
-/// exact rule that produced it.
-///
-/// This string *is* the occurrence's identity. It is why no occurrence table is
-/// needed: `entry_revision.request_id` is UNIQUE, so the database refuses a
-/// second apply of the same date, and the read path finds applied dates by
-/// looking these up.
 pub fn occurrence_request_id(recurrence_uid: &str, due_at: DateTime<Utc>) -> String {
     format!("{recurrence_uid}:{}", instant(due_at))
 }
@@ -53,11 +22,7 @@ pub fn occurrence_request_id(recurrence_uid: &str, due_at: DateTime<Utc>) -> Str
 pub struct Recurrence {
     pub uid: String,
     pub record_uid: String,
-    /// What this rule does when one of its dates is applied. Ordered,
-    /// non-empty, and every item reduces to a typed Action.
     pub consequences: Consequences,
-    /// The *if* half. `None` is unconditional: the date arriving is the whole
-    /// reason to act, which is what every rule was before conditions existed.
     pub condition: Option<RuleCondition>,
     pub note: Option<String>,
     pub cadence: Cadence,
@@ -69,8 +34,6 @@ pub struct Recurrence {
     pub updated_at: String,
 }
 
-/// A rule's condition as it is stored: the text a person wrote, plus the two
-/// decisions that turn the number it computes into an action.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RuleCondition {
     pub source: String,
@@ -84,17 +47,11 @@ impl Recurrence {
     }
 }
 
-/// Where one derived date stands.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OccurrenceState {
-    /// Derived, still ahead, nothing decided.
     Planned,
-    /// Derived, its date has passed, and it was neither applied nor skipped.
-    /// This is the one a person needs shown: an expectation nobody answered.
     Due,
-    /// An entry was appended for it.
     Applied,
-    /// Explicitly declined.
     Skipped,
 }
 
@@ -109,21 +66,12 @@ impl OccurrenceState {
     }
 }
 
-/// One derived date and what became of it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Occurrence {
     pub recurrence_uid: String,
     pub due_at: DateTime<Utc>,
     pub state: OccurrenceState,
-    /// The entry that applied it, when it was applied.
     pub entry_uid: Option<String>,
-    /// The amount the rule declares for this date, when it declares one. Read
-    /// from the rule as it stands now; an already-applied date reports what the
-    /// entry actually carried instead, since that is what moved.
-    ///
-    /// `None` for a rule whose consequences only change concepts. That is not a
-    /// gap: nothing about a quantity moved, so a quantity timeline correctly
-    /// has no point to draw for it.
     pub amount: Option<DecimalValue>,
 }
 
@@ -145,12 +93,6 @@ impl RecurrenceCommit {
     }
 }
 
-/// The three condition columns, read as one thing or not at all.
-///
-/// A stored gate or carry that no longer parses is a protocol error rather than
-/// a silent `None`: dropping the condition would turn a rule that fires
-/// *sometimes* into one that fires *always*, which is the most dangerous
-/// possible way to misread a row.
 fn read_condition(row: &sqlx::sqlite::SqliteRow) -> Result<Option<RuleCondition>, StoreError> {
     let Some(source) = row.get::<Option<String>, _>("condition_src") else {
         return Ok(None);
@@ -168,9 +110,6 @@ fn read_condition(row: &sqlx::sqlite::SqliteRow) -> Result<Option<RuleCondition>
     }))
 }
 
-/// Split a condition into the three columns that store it. All three are NULL
-/// together or set together — a half-written condition is not a state a rule
-/// may be in.
 fn condition_columns(
     condition: Option<&RuleCondition>,
 ) -> (Option<String>, Option<String>, Option<String>) {
@@ -215,8 +154,6 @@ pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<Recurrence>, Sto
     row.as_ref().map(map_recurrence).transpose()
 }
 
-/// Every rule, newest first. Paused rules are included — a person managing
-/// recurrence needs to see what they switched off.
 pub async fn all(pool: &SqlitePool) -> Result<Vec<Recurrence>, StoreError> {
     let rows = sqlx::query("SELECT * FROM recurrence ORDER BY created_at DESC")
         .fetch_all(pool)
@@ -236,7 +173,6 @@ pub async fn for_record(
     rows.iter().map(map_recurrence).collect()
 }
 
-/// The rule a request already produced, if this request has been seen.
 pub async fn replayed(
     pool: &SqlitePool,
     request_id: &str,
@@ -255,7 +191,6 @@ pub async fn replayed(
 pub struct NewRecurrence<'a> {
     pub record_uid: &'a str,
     pub consequences: Consequences,
-    /// The *if* half, or `None` for a rule the date alone justifies.
     pub condition: Option<RuleCondition>,
     pub note: Option<&'a str>,
     pub cadence: Cadence,
@@ -344,7 +279,6 @@ pub struct ReviseRecurrence<'a> {
     pub recurrence_uid: &'a str,
     pub expected_revision: i64,
     pub consequences: Consequences,
-    /// The *if* half, or `None` for a rule the date alone justifies.
     pub condition: Option<RuleCondition>,
     pub note: Option<&'a str>,
     pub cadence: Cadence,
@@ -353,11 +287,6 @@ pub struct ReviseRecurrence<'a> {
     pub actor_uid: Option<&'a str>,
 }
 
-/// Change what a rule expects from here on.
-///
-/// Dates already applied keep the amount their entry carried — those are Facts,
-/// and a rule revision is not a correction of history. To fix one that was
-/// applied wrongly, revise its *entry*.
 pub async fn revise(
     pool: &SqlitePool,
     input: ReviseRecurrence<'_>,
@@ -435,10 +364,6 @@ pub async fn revise(
         .ok_or_else(|| protocol("recurring rule vanished after revision"))
 }
 
-/// Stop or resume offering a rule's future dates.
-///
-/// Pausing disowns nothing: entries already applied stay, and the rule still
-/// explains them.
 pub async fn set_state(
     pool: &SqlitePool,
     recurrence_uid: &str,
@@ -472,9 +397,6 @@ pub async fn set_state(
         .map_err(|_| protocol("cadence could not be written"))?;
     let consequences_json = serde_json::to_string(&current.consequences)
         .map_err(|_| protocol("consequences could not be written"))?;
-    // Pausing changes only the state, so the revision records the condition
-    // exactly as it stands. A log that dropped it here would read as a rule
-    // that lost its condition on the day it was paused.
     let (condition_src, gate, carry) = condition_columns(current.condition.as_ref());
 
     let mut tx = crate::write_tx(pool).await?;
@@ -517,7 +439,6 @@ pub async fn set_state(
         .ok_or_else(|| protocol("recurring rule vanished after a state change"))
 }
 
-/// Decline one date. Idempotent: skipping twice is the same decision.
 pub async fn skip(
     pool: &SqlitePool,
     recurrence_uid: &str,
@@ -541,7 +462,6 @@ pub async fn skip(
     Ok(())
 }
 
-/// Take a skip back, so the date is offered again.
 pub async fn unskip(
     pool: &SqlitePool,
     recurrence_uid: &str,
@@ -555,10 +475,6 @@ pub async fn unskip(
     Ok(())
 }
 
-/// Derive one rule's dates in `[from, to)` and say what became of each.
-///
-/// A paused rule yields nothing ahead of `now`, but still reports the dates it
-/// already produced — pausing is not a denial that the rule ran.
 pub async fn occurrences(
     pool: &SqlitePool,
     rule: &Recurrence,
@@ -567,17 +483,10 @@ pub async fn occurrences(
     now: DateTime<Utc>,
 ) -> Result<Occurrences, StoreError> {
     let anchor = parse_instant(&rule.anchor_at)?;
-    // Where a rule stops is part of the rule, so the window is just the window.
-    // There used to be a second end date on the row and a `min` of the two here;
-    // the bound inside the cadence is now the only answer, and a one-shot is
-    // simply a bound of one.
     let derived = rule
         .cadence
         .between(anchor, from, to)
         .map_err(|error| protocol(&error.to_string()))?;
-    // Carried all the way to the surface. A fast rule's dates are always a
-    // prefix, and a list that looks complete but is not would have a person
-    // believing they had answered everything the rule expects.
     let mut result = Occurrences {
         truncated: derived.truncated,
         dates: Vec::with_capacity(derived.len()),
@@ -589,15 +498,11 @@ pub async fn occurrences(
     let skipped = skipped_dates(pool, &rule.uid).await?;
     let out = &mut result.dates;
     for due_at in derived {
-        // A paused rule keeps its past but offers no future.
         if rule.is_paused() && due_at > now {
             continue;
         }
         let key = instant(due_at);
         let applied = applied_entry(pool, &rule.uid, due_at).await?;
-        // An applied date reports what actually moved; every other state
-        // reports what the rule currently declares, which is `None` when the
-        // rule only changes concepts.
         let declared = rule.consequences.declared_delta().copied();
         let (state, amount) = if let Some((_, amount)) = applied.as_ref() {
             (OccurrenceState::Applied, Some(*amount))
@@ -619,12 +524,6 @@ pub async fn occurrences(
     Ok(result)
 }
 
-/// One rule's derived dates, and whether the derivation ran out of room.
-///
-/// `truncated` is not cosmetic. A rule stepping every ten milliseconds produces
-/// more dates in an hour than any surface can hold, so the only honest report is
-/// "these, and more" — and a surface that cannot say so would invite someone to
-/// treat a page as the whole obligation.
 #[derive(Debug, Clone, Default)]
 pub struct Occurrences {
     pub dates: Vec<Occurrence>,
@@ -668,15 +567,6 @@ async fn skipped_dates(
         .collect())
 }
 
-/// The entry that applied one date, found by the request id that names it.
-/// The entry that already applied this date, if one exists.
-///
-/// This is the only "has it been applied?" signal there is, and it is why every
-/// apply must write exactly one entry carrying
-/// [`occurrence_request_id`] — including a rule whose consequences move no
-/// quantity at all. Without that, a concept-only rule would leave no trace of
-/// having run, show as due forever, and re-apply every time somebody pressed
-/// the button.
 pub async fn applied(
     pool: &SqlitePool,
     recurrence_uid: &str,
@@ -763,23 +653,8 @@ async fn insert_revision(
     Ok(())
 }
 
-/// Remove a rule and its own history entirely.
-///
-/// Pausing was the only way to stop a rule, which meant a finished one sat in
-/// the list forever wearing a badge. Retiring it as a third state would have the
-/// same problem one word further along, so this is a real delete.
-///
-/// **What it does not touch: the Ledger.** Dates this rule already applied are
-/// ordinary entries and ordinary Facts. They were never owned by the rule — the
-/// rule only proposed them — so they survive, exactly as a hand-typed entry
-/// would if you deleted the note that reminded you to type it. What disappears
-/// is the rule's *future*, which is the only thing a rule ever really held.
-///
-/// The revision log and the skips go with it, because both are statements about
-/// a rule that no longer exists.
 pub async fn delete(pool: &SqlitePool, uid: &str) -> Result<bool, StoreError> {
     let mut tx = crate::write_tx(pool).await?;
-    // Children first: both name the rule by foreign key.
     sqlx::query("DELETE FROM recurrence_skip WHERE recurrence_uid = ?")
         .bind(uid)
         .execute(&mut *tx)

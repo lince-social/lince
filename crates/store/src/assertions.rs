@@ -1,6 +1,3 @@
-//! One canonical Record assertion store. Unary rows are tags/classifications;
-//! binary rows are relationships. Identity is a constrained unary role.
-
 use chrono::Utc;
 use nucleus::DecimalValue;
 use nucleus::graph::Edge;
@@ -9,9 +6,6 @@ use sqlx::{Row, Sqlite, SqlitePool, Transaction};
 use crate::StoreError;
 use crate::sync_ops::OpKind;
 
-/// The `set` op payload for one assertion row: everything an importer needs to
-/// recreate it under the same uid (Ontology §11 — assert/retract per tuple,
-/// later HLC wins).
 fn assertion_op_value(
     subject_uid: &str,
     predicate_uid: &str,
@@ -109,9 +103,6 @@ pub struct ImportedAssertion<'a> {
     pub created_at: &'a str,
 }
 
-/// Import one active ordinary assertion without changing its global identity.
-/// Identity assertions travel in the Record seed and are restored through the
-/// constrained `set_identity` path.
 pub async fn import_active(
     pool: &SqlitePool,
     imported: ImportedAssertion<'_>,
@@ -145,45 +136,20 @@ pub async fn assert(pool: &SqlitePool, new: NewAssertion<'_>) -> Result<String, 
             "an identity assertion must be unary and unquantified".into(),
         ));
     }
-    // An Assertion's op takes its root from the SUBJECT, and that decides
-    // which of three cases is a leak (Ontology §11 "Threads", C6).
-    //
-    // This was written as `subject_root != object_root`, which refused all
-    // three — and one of them is the entire mechanism C6 is built on. The two
-    // that are genuinely wrong stay wrong; the third was collateral.
     if let Some(object_uid) = new.object_uid {
         let subject_root = crate::replica::root_of(pool, new.subject_uid).await?;
         let object_root = crate::replica::root_of(pool, object_uid).await?;
         match (subject_root, object_root) {
-            // Two DIFFERENT conversations. Joining them would silently widen
-            // both, and there is no correct answer about which root the op
-            // belongs to, so refuse rather than pick one.
             (Some(subject), Some(object)) if subject != object => {
                 return Err(sqlx::Error::Protocol(
                     "an assertion cannot cross an individual-replica boundary".into(),
                 ));
             }
-            // General-feed subject, PRIVATE object. The op would ride the
-            // general feed carrying a private uid, disclosing that the
-            // conversation exists to everyone we sync with. Still refused.
             (None, Some(_)) => {
                 return Err(sqlx::Error::Protocol(
                     "an assertion cannot put a private record on the general feed".into(),
                 ));
             }
-            // PRIVATE subject, general-feed object — a message mentioning an
-            // ordinary Record, which is how a reference is expressed at all.
-            // Safe in the direction that matters: the op takes the subject's
-            // root, so it travels only to that conversation's grant holders,
-            // and what it discloses to them is a general-feed uid they are
-            // being deliberately pointed at. Nothing is widened; the general
-            // feed never sees this op, and the mentioned Record is not pulled
-            // into the root.
-            //
-            // `replica::root_for_link` has always answered this case exactly
-            // this way. The two now agree, which they should have from the
-            // start: one question with two implementations is the shape that
-            // eventually gets an edge wrong.
             _ => {}
         }
     }
@@ -560,9 +526,6 @@ pub async fn retract_tuple(
     retract(pool, &row.get::<String, _>("uid"), actor_uid).await
 }
 
-/// Replace selected ordinary unary assertions as part of a caller-owned
-/// transaction. This deliberately cannot touch identity or binary assertions:
-/// Kanban state is a set of ordinary tags, never a Record's primary identity.
 pub async fn transition_unary(
     tx: &mut Transaction<'_, Sqlite>,
     subject_uid: &str,
@@ -648,10 +611,6 @@ pub async fn transition_unary(
     Ok(())
 }
 
-/// Atomically turn a unary assertion `A @task` into the binary `A @task
-/// [object]`: retract the unary tuple (if present) and assert the binary one
-/// under the same predicate, in one transaction. A convenience wrapper over
-/// retract+assert — no new storage model.
 pub async fn refine(
     pool: &SqlitePool,
     subject_uid: &str,
@@ -849,15 +808,6 @@ pub async fn edges_of_predicates(
     Ok(out)
 }
 
-/// The object UIDs of a subject's links, WITHOUT requiring the object to exist
-/// locally (Ontology §11, C6).
-///
-/// `objects_from_subject` inner-joins `record`, which is right everywhere the
-/// link points at something we hold — and silently drops the case a reference
-/// exists FOR: a message mentioning a Record that lives on its owner's Cell and
-/// was never copied here. Through that join a remote reference is not merely
-/// unresolved, it is invisible, and a surface cannot offer to read what it
-/// cannot see.
 pub async fn object_uids_from_subject(
     pool: &SqlitePool,
     subject_uid: &str,
@@ -875,18 +825,6 @@ pub async fn object_uids_from_subject(
     .await?)
 }
 
-/// Every active assertion whose subject is one of `subject_uids`, with the
-/// predicate's canonical name already resolved.
-///
-/// One query for the whole set on purpose. The caller is File Sync's tick,
-/// which runs on an interval over every selected Record — a per-Record query
-/// there turns a projection into an N+1 walk of the whole store.
-///
-/// Ordered so a projection built from it is DETERMINISTIC. That is not about
-/// tidy files: a render that reorders between two ticks rewrites the file,
-/// which the disk half then reads back as an edit and turns into an op that
-/// travels to every peer. Stable order is what stops a no-op tick from
-/// producing sync traffic.
 pub async fn for_subjects(
     pool: &SqlitePool,
     subject_uids: &[String],
@@ -932,7 +870,6 @@ pub async fn for_subjects(
         .collect()
 }
 
-/// One active assertion, flattened for projection into a file.
 #[derive(Debug, Clone, PartialEq)]
 pub struct ProjectedAssertion {
     pub uid: String,
@@ -944,13 +881,6 @@ pub struct ProjectedAssertion {
     pub unit_uid: Option<String>,
 }
 
-/// Every Record beneath `root` through assertions whose predicate is in
-/// `family`, breadth-first and cycle-safe.
-///
-/// The edge points UP — a child asserts `part-of` its parent — so descending
-/// means matching `object_uid` and collecting `subject_uid`. `family` is a
-/// concept closure rather than one predicate uid, so a Lingua that narrows
-/// `part-of` into its own sub-predicate still walks the same branch.
 pub async fn record_descendants(
     pool: &SqlitePool,
     root_uid: &str,

@@ -22,11 +22,25 @@ use lince_interface::{
         COMPOSITION_SCHEMA_VERSION, CompositionRuntimeFacts, CompositionWorkbenchState,
         WorkbenchOperation, composition_workbench_package,
     },
+    configuration::{
+        CONFIGURATION_DEFINITION_COUNT, CONFIGURATION_SCHEMA_VERSION, ConfigurationFacts,
+        ConfigurationOperation, ConfigurationWorkbenchState, configuration_sand_package,
+        default_configuration_path,
+    },
+    domain::{NativeDomainClient, NativeDomainFacts},
     frame::FrameAssembly,
     joined_accessibility::JoinedAccessibility,
     joined_panel::JoinedPanel,
     node_layer::NodeLayer,
+    official_runtime::{
+        OfficialRuntimeIntent, SharedOfficialRuntimeFacts, SharedOfficialRuntimeState,
+    },
+    official_sands::{
+        OFFICIAL_SAND_COUNT, OFFICIAL_SANDS, OfficialMigrationState, OfficialSandGalleryState,
+        official_sand_package,
+    },
     primitive_gallery::{PRIMITIVE_COUNT, PrimitiveGalleryState, primitive_gallery_package},
+    retained_ui::{RetainedRect, RetainedScene, RetainedTextLayer},
     sand::{SAND_ABI_VERSION, SAND_SCHEMA_VERSION},
     spatial::{FieldSolver, PhysicsAdapter},
     style::{ResolvedStyle, STYLE_CONTRACT_VERSION, StyleGalleryState, StyleScope, StyleValue},
@@ -990,6 +1004,7 @@ struct DiagnosticApplication {
     accessibility_probe: bool,
     process_started: Instant,
     website_url: String,
+    domain_url: Option<String>,
 }
 
 struct DiagnosticWindow {
@@ -1043,6 +1058,8 @@ struct DiagnosticWindow {
     #[cfg(feature = "joined-runtime")]
     joined_panel: JoinedPanel,
     #[cfg(feature = "joined-runtime")]
+    retained_text_layer: RetainedTextLayer,
+    #[cfg(feature = "joined-runtime")]
     field_solver: FieldSolver,
     #[cfg(feature = "joined-runtime")]
     semantic_instances: usize,
@@ -1052,6 +1069,24 @@ struct DiagnosticWindow {
     composition_workbench_active: bool,
     #[cfg(feature = "joined-runtime")]
     composition_package_sha256: String,
+    #[cfg(feature = "joined-runtime")]
+    configuration_workbench: ConfigurationWorkbenchState,
+    #[cfg(feature = "joined-runtime")]
+    configuration_workbench_active: bool,
+    #[cfg(feature = "joined-runtime")]
+    configuration_package_sha256: String,
+    #[cfg(feature = "joined-runtime")]
+    official_sand_gallery: OfficialSandGalleryState,
+    #[cfg(feature = "joined-runtime")]
+    official_sand_gallery_active: bool,
+    #[cfg(feature = "joined-runtime")]
+    official_sand_package_sha256: String,
+    #[cfg(feature = "joined-runtime")]
+    official_runtime: SharedOfficialRuntimeState,
+    #[cfg(feature = "joined-runtime")]
+    official_runtime_scene: Option<RetainedScene>,
+    #[cfg(feature = "joined-runtime")]
+    native_domain: NativeDomainClient,
     #[cfg(feature = "joined-runtime")]
     joined_cpu_frame_nanos: Vec<u64>,
     #[cfg(feature = "joined-runtime")]
@@ -1098,6 +1133,14 @@ struct DiagnosticWindow {
     token_probe_load_before: Option<u64>,
     #[cfg(feature = "joined-runtime")]
     token_probe_load_after: Option<u64>,
+    #[cfg(feature = "joined-runtime")]
+    configuration_probe_applied: bool,
+    #[cfg(feature = "joined-runtime")]
+    configuration_probe_reverted: bool,
+    #[cfg(feature = "joined-runtime")]
+    configuration_probe_load_before: Option<u64>,
+    #[cfg(feature = "joined-runtime")]
+    configuration_probe_load_after: Option<u64>,
     #[cfg(feature = "joined-runtime")]
     joined_host_submissions: u64,
     #[cfg(feature = "joined-runtime")]
@@ -1148,6 +1191,7 @@ impl DiagnosticApplication {
             self.accessibility_probe,
             self.process_started,
             &self.website_url,
+            self.domain_url.clone(),
         )) {
             Ok(state) => {
                 window.set_visible(true);
@@ -1174,6 +1218,7 @@ impl DiagnosticWindow {
         accessibility_probe: bool,
         process_started: Instant,
         website_url: &str,
+        domain_url: Option<String>,
     ) -> Result<Self, String> {
         #[cfg(feature = "joined-runtime")]
         let accessibility = JoinedAccessibility::new(event_loop, &window, cef_count);
@@ -1245,6 +1290,15 @@ impl DiagnosticWindow {
             window.scale_factor(),
         );
         #[cfg(feature = "joined-runtime")]
+        let retained_text_layer = RetainedTextLayer::new(
+            &device,
+            &queue,
+            format,
+            size.width,
+            size.height,
+            window.scale_factor(),
+        );
+        #[cfg(feature = "joined-runtime")]
         let field_solver = FieldSolver::deterministic_fixture(ACTIVE_BODY_COUNT, 0x4c494e4345);
         #[cfg(feature = "joined-runtime")]
         let style_gallery = StyleGalleryState::new().map_err(|error| error.to_string())?;
@@ -1271,6 +1325,51 @@ impl DiagnosticWindow {
             workbench.exercise().map_err(|error| error.to_string())?;
             let placements = workbench.facts().mounted_placements;
             (workbench, hash, placements)
+        };
+        #[cfg(feature = "joined-runtime")]
+        let (configuration_workbench, configuration_package_sha256) = {
+            let package = configuration_sand_package();
+            package.validate().map_err(|error| error.to_string())?;
+            let hash = package.graph_sha256().map_err(|error| error.to_string())?;
+            let path = if export_and_exit {
+                report_path.with_file_name("configuration.json")
+            } else {
+                default_configuration_path().map_err(|error| error.to_string())?
+            };
+            let mut workbench = if export_and_exit {
+                ConfigurationWorkbenchState::fixture(path)
+            } else {
+                ConfigurationWorkbenchState::open(path)
+            }
+            .map_err(|error| error.to_string())?;
+            if export_and_exit {
+                workbench.exercise().map_err(|error| error.to_string())?;
+            }
+            (workbench, hash)
+        };
+        #[cfg(feature = "joined-runtime")]
+        let (official_sand_gallery, official_sand_package_sha256) = {
+            let package = official_sand_package();
+            package.validate().map_err(|error| error.to_string())?;
+            let hash = package.graph_sha256().map_err(|error| error.to_string())?;
+            (
+                OfficialSandGalleryState::new().map_err(|error| error.to_string())?,
+                hash,
+            )
+        };
+        #[cfg(feature = "joined-runtime")]
+        let mut official_runtime = {
+            let mut runtime = SharedOfficialRuntimeState::new();
+            runtime.exercise()?;
+            runtime
+        };
+        #[cfg(feature = "joined-runtime")]
+        let native_domain = {
+            let client = NativeDomainClient::connect(domain_url);
+            if client.facts().endpoint.is_some() {
+                official_runtime.set_domain_status(client.status_line());
+            }
+            client
         };
         let config = SurfaceConfiguration {
             usage: TextureUsages::RENDER_ATTACHMENT | TextureUsages::COPY_DST,
@@ -1344,6 +1443,8 @@ impl DiagnosticWindow {
             #[cfg(feature = "joined-runtime")]
             joined_panel,
             #[cfg(feature = "joined-runtime")]
+            retained_text_layer,
+            #[cfg(feature = "joined-runtime")]
             field_solver,
             #[cfg(feature = "joined-runtime")]
             semantic_instances,
@@ -1353,6 +1454,24 @@ impl DiagnosticWindow {
             composition_workbench_active: false,
             #[cfg(feature = "joined-runtime")]
             composition_package_sha256,
+            #[cfg(feature = "joined-runtime")]
+            configuration_workbench,
+            #[cfg(feature = "joined-runtime")]
+            configuration_workbench_active: false,
+            #[cfg(feature = "joined-runtime")]
+            configuration_package_sha256,
+            #[cfg(feature = "joined-runtime")]
+            official_sand_gallery,
+            #[cfg(feature = "joined-runtime")]
+            official_sand_gallery_active: false,
+            #[cfg(feature = "joined-runtime")]
+            official_sand_package_sha256,
+            #[cfg(feature = "joined-runtime")]
+            official_runtime,
+            #[cfg(feature = "joined-runtime")]
+            official_runtime_scene: None,
+            #[cfg(feature = "joined-runtime")]
+            native_domain,
             #[cfg(feature = "joined-runtime")]
             joined_cpu_frame_nanos: Vec::new(),
             #[cfg(feature = "joined-runtime")]
@@ -1399,6 +1518,14 @@ impl DiagnosticWindow {
             token_probe_load_before: None,
             #[cfg(feature = "joined-runtime")]
             token_probe_load_after: None,
+            #[cfg(feature = "joined-runtime")]
+            configuration_probe_applied: false,
+            #[cfg(feature = "joined-runtime")]
+            configuration_probe_reverted: false,
+            #[cfg(feature = "joined-runtime")]
+            configuration_probe_load_before: None,
+            #[cfg(feature = "joined-runtime")]
+            configuration_probe_load_after: None,
             #[cfg(feature = "joined-runtime")]
             joined_host_submissions: 0,
             #[cfg(feature = "joined-runtime")]
@@ -1467,6 +1594,11 @@ impl DiagnosticWindow {
             installed,
             website,
             self.primitive_gallery.focused_index(),
+            self.configuration_workbench_active,
+            self.configuration_workbench.selected_index(),
+            self.official_sand_gallery_active,
+            self.official_sand_gallery.selected_index(),
+            self.official_runtime_scene.as_ref(),
         );
     }
 
@@ -1482,6 +1614,20 @@ impl DiagnosticWindow {
             size.height,
             self.window.scale_factor(),
         );
+        #[cfg(feature = "joined-runtime")]
+        self.retained_text_layer.resize(
+            &self.queue,
+            size.width,
+            size.height,
+            self.window.scale_factor(),
+        );
+        #[cfg(feature = "joined-runtime")]
+        if self.official_runtime.active().is_some() {
+            self.official_runtime_scene = self
+                .official_runtime
+                .scene(self.official_runtime_viewport())
+                .ok();
+        }
         self.update_layout();
     }
 
@@ -1492,6 +1638,88 @@ impl DiagnosticWindow {
         let joined_sampling = self.started.elapsed() >= Duration::from_secs(self.warmup_seconds);
         #[cfg(feature = "joined-runtime")]
         {
+            if self.native_domain.poll() {
+                let facts = self.native_domain.facts();
+                if facts.snapshots > 0 || facts.updates > 0 {
+                    self.official_runtime.bind_domain_records(
+                        self.native_domain.records(),
+                        self.native_domain.status_line(),
+                    );
+                    self.official_runtime
+                        .bind_domain_conversations(self.native_domain.conversations());
+                    self.official_runtime
+                        .bind_domain_message_drafts(self.native_domain.message_drafts());
+                } else if facts.endpoint.is_some() {
+                    self.official_runtime
+                        .set_domain_status(self.native_domain.status_line());
+                }
+                self.last_panel_refresh = Instant::now() - Duration::from_secs(1);
+            }
+            for receipt in self.native_domain.take_action_receipts() {
+                self.official_runtime.apply_action_receipt(receipt);
+                self.last_panel_refresh = Instant::now() - Duration::from_secs(1);
+            }
+            for intent in self.official_runtime.take_intents() {
+                let result = match &intent {
+                    OfficialRuntimeIntent::SendMessage { thread, body, .. } => {
+                        self.native_domain.request_message(thread, body)
+                    }
+                    OfficialRuntimeIntent::CreateDraft {
+                        conversation,
+                        thread,
+                        body,
+                        pinned,
+                        timing,
+                        position,
+                        ..
+                    } => self.native_domain.request_create_draft(
+                        conversation,
+                        thread,
+                        body,
+                        *pinned,
+                        (*timing).into(),
+                        *position,
+                    ),
+                    OfficialRuntimeIntent::ReviseDraft {
+                        draft,
+                        body,
+                        pinned,
+                        timing,
+                        position,
+                        ..
+                    } => self.native_domain.request_revise_draft(
+                        draft,
+                        body,
+                        *pinned,
+                        (*timing).into(),
+                        *position,
+                    ),
+                    OfficialRuntimeIntent::DeleteDraft { draft } => {
+                        self.native_domain.request_delete_draft(draft)
+                    }
+                    OfficialRuntimeIntent::SendDraft { draft, .. } => {
+                        self.native_domain.request_send_draft(draft)
+                    }
+                    OfficialRuntimeIntent::CreateRecord {
+                        title,
+                        description,
+                        quantity,
+                        ..
+                    } => self.native_domain.request_create_record(
+                        title,
+                        description,
+                        *quantity,
+                    ),
+                    OfficialRuntimeIntent::SetRecordQuantity { record, value, .. } => self
+                        .native_domain
+                        .request_set_record_quantity(record, *value),
+                };
+                match result {
+                    Ok(id) => self.official_runtime.domain_action_submitted(id, intent),
+                    Err(error) => self.official_runtime.domain_action_refused(&intent, error),
+                }
+                self.last_panel_refresh = Instant::now() - Duration::from_secs(1);
+            }
             if let Some(index) = self.accessibility.take_requested_primitive() {
                 self.focus_native_gallery();
                 self.primitive_gallery.focus_at(
@@ -1503,8 +1731,47 @@ impl DiagnosticWindow {
             }
             if self.accessibility.take_requested_composition() {
                 self.composition_workbench_active = true;
+                self.configuration_workbench_active = false;
+                self.official_sand_gallery_active = false;
                 let _ = self.composition_workbench.activate();
                 self.last_panel_refresh = Instant::now() - Duration::from_secs(1);
+            }
+            if let Some(index) = self.accessibility.take_requested_configuration() {
+                self.configuration_workbench_active = true;
+                self.composition_workbench_active = false;
+                self.official_sand_gallery_active = false;
+                self.configuration_workbench.focus_at(index);
+                if self.configuration_workbench.activate().is_ok()
+                    && let Ok(style) = self.configuration_workbench.resolved_style()
+                {
+                    self.resolved_style = style;
+                }
+                self.last_panel_refresh = Instant::now() - Duration::from_secs(1);
+                self.publish_accessibility();
+            }
+            if let Some(index) = self.accessibility.take_requested_official() {
+                self.official_runtime.close();
+                self.official_sand_gallery_active = true;
+                self.composition_workbench_active = false;
+                self.configuration_workbench_active = false;
+                self.native_gallery_focused = false;
+                self.official_sand_gallery.focus_at(index);
+                self.last_panel_refresh = Instant::now() - Duration::from_secs(1);
+                self.publish_accessibility();
+            }
+            if let Some(index) = self.accessibility.take_requested_official_runtime()
+                && let Some(scene) = self.official_runtime_scene.clone()
+            {
+                self.official_runtime.focus_at(index, &scene);
+                if let Ok(focused_scene) = self
+                    .official_runtime
+                    .scene(self.official_runtime_viewport())
+                {
+                    let _ = self.official_runtime.activate(&focused_scene);
+                    self.official_runtime_scene = Some(focused_scene);
+                }
+                self.last_panel_refresh = Instant::now() - Duration::from_secs(1);
+                self.publish_accessibility();
             }
             let simulation_now = Instant::now();
             self.simulation_accumulator += simulation_now.duration_since(self.simulation_last);
@@ -1530,19 +1797,39 @@ impl DiagnosticWindow {
                 .take(VISIBLE_NATIVE_SAND_COUNT)
                 .map(|position| [position.x, position.y])
                 .collect::<Vec<_>>();
-            self.node_layer
-                .update(
-                    &self.queue,
-                    &positions,
-                    &self.resolved_style,
-                    self.primitive_gallery.focused_index(),
-                    self.primitive_gallery.state(),
-                    self.native_gallery_focused,
+            self.official_runtime_scene = if self.official_runtime.active().is_some() {
+                Some(
+                    self.official_runtime
+                        .scene(self.official_runtime_viewport())?,
                 )
-                .map_err(|error| error.to_string())?;
+            } else {
+                None
+            };
+            if let Some(scene) = self.official_runtime_scene.as_ref() {
+                self.node_layer
+                    .update_retained(
+                        &self.queue,
+                        scene,
+                        [self.config.width, self.config.height],
+                        &self.resolved_style,
+                    )
+                    .map_err(|error| error.to_string())?;
+            } else {
+                self.node_layer
+                    .update(
+                        &self.queue,
+                        &positions,
+                        &self.resolved_style,
+                        self.primitive_gallery.focused_index(),
+                        self.primitive_gallery.state(),
+                        self.native_gallery_focused,
+                    )
+                    .map_err(|error| error.to_string())?;
+            }
             self.drive_external_begin_frames();
             self.drive_input_probe();
             self.drive_token_probe();
+            self.drive_configuration_probe();
             self.drive_style_projection();
             let refresh_panel = self.last_panel_refresh.elapsed() >= Duration::from_millis(200);
             let panel_text = refresh_panel.then(|| self.panel_text());
@@ -1550,6 +1837,12 @@ impl DiagnosticWindow {
                 &self.device,
                 &self.queue,
                 panel_text.as_deref(),
+                &self.resolved_style,
+            )?;
+            self.retained_text_layer.prepare(
+                &self.device,
+                &self.queue,
+                self.official_runtime_scene.as_ref(),
                 &self.resolved_style,
             )?;
             if refresh_panel {
@@ -1639,7 +1932,14 @@ impl DiagnosticWindow {
         }
         #[cfg(not(feature = "joined-runtime"))]
         self.queue.submit([clear.finish()]);
+        #[cfg(feature = "joined-runtime")]
+        let native_surface_covers_cef = self.official_runtime.active().is_some();
+        #[cfg(not(feature = "joined-runtime"))]
+        let native_surface_covers_cef = false;
         for surface in &mut self.surfaces {
+            if native_surface_covers_cef {
+                continue;
+            }
             let result = surface
                 .shared
                 .gpu
@@ -1687,6 +1987,8 @@ impl DiagnosticWindow {
             self.node_layer.render(&mut pass);
             #[cfg(feature = "joined-runtime")]
             self.joined_panel.render(&mut pass)?;
+            #[cfg(feature = "joined-runtime")]
+            self.retained_text_layer.render(&mut pass)?;
             #[cfg(not(feature = "joined-runtime"))]
             let _ = &mut pass;
         }
@@ -1715,6 +2017,7 @@ impl DiagnosticWindow {
             }
             self.joined_last_presented = Some(presented);
             self.joined_panel.trim();
+            self.retained_text_layer.trim();
             if self.first_cef_frame_millis.is_none() && self.surfaces_have_results() {
                 self.first_cef_frame_millis = Some(
                     self.startup_to_window_ready_millis
@@ -1852,6 +2155,41 @@ impl DiagnosticWindow {
     }
 
     #[cfg(feature = "joined-runtime")]
+    fn drive_configuration_probe(&mut self) {
+        if !self.export_and_exit {
+            return;
+        }
+        let elapsed = self.started.elapsed();
+        if !self.configuration_probe_applied && elapsed >= Duration::from_millis(4_250) {
+            self.configuration_probe_load_before = self
+                .installed()
+                .map(|surface| surface.shared.load_completions.load(Ordering::Relaxed));
+            if let Ok(style) = self.configuration_workbench.resolved_style() {
+                self.resolved_style = style;
+                self.configuration_workbench_active = true;
+                self.composition_workbench_active = false;
+                self.official_sand_gallery_active = false;
+                self.configuration_probe_applied = true;
+                self.last_panel_refresh = Instant::now() - Duration::from_secs(1);
+                self.publish_accessibility();
+            }
+        }
+        if self.configuration_probe_applied
+            && !self.configuration_probe_reverted
+            && elapsed >= Duration::from_millis(4_750)
+        {
+            self.configuration_probe_load_after = self
+                .installed()
+                .map(|surface| surface.shared.load_completions.load(Ordering::Relaxed));
+            self.configuration_workbench_active = false;
+            let _ = self.refresh_style();
+            self.configuration_probe_reverted = true;
+            self.last_panel_refresh = Instant::now() - Duration::from_secs(1);
+            self.publish_accessibility();
+        }
+    }
+
+    #[cfg(feature = "joined-runtime")]
     fn refresh_style(&mut self) -> Result<(), String> {
         let next = self
             .style_gallery
@@ -1870,7 +2208,13 @@ impl DiagnosticWindow {
         if load_completions == 0 {
             return;
         }
-        let css = self.resolved_style.css_declarations();
+        let css = if self.configuration_workbench_active {
+            self.configuration_workbench
+                .css_declarations()
+                .unwrap_or_else(|_| self.resolved_style.css_declarations())
+        } else {
+            self.resolved_style.css_declarations()
+        };
         if css == self.last_style_css && load_completions == self.last_style_load_completions {
             return;
         }
@@ -1889,6 +2233,15 @@ impl DiagnosticWindow {
 
     #[cfg(feature = "joined-runtime")]
     fn panel_text(&self) -> String {
+        if let Some(scene) = self.official_runtime_scene.as_ref() {
+            return self.official_runtime.panel_text(scene);
+        }
+        if self.official_sand_gallery_active {
+            return self.official_sand_panel_text();
+        }
+        if self.configuration_workbench_active {
+            return self.configuration_panel_text();
+        }
         if self.composition_workbench_active {
             return self.composition_panel_text();
         }
@@ -1959,6 +2312,69 @@ impl DiagnosticWindow {
             RESIDENT_NODE_COUNT,
             self.node_layer.count(),
             self.surfaces.len(),
+        )
+    }
+
+    #[cfg(feature = "joined-runtime")]
+    fn official_sand_panel_text(&self) -> String {
+        let selected = self.official_sand_gallery.selected();
+        let sands = OFFICIAL_SANDS
+            .chunks(2)
+            .map(|pair| {
+                pair.iter()
+                    .map(|spec| {
+                        let marker = if spec.uid == selected.uid { "▸" } else { " " };
+                        format!("{marker} {:<20}", spec.display_name)
+                    })
+                    .collect::<String>()
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        let tree = self
+            .official_sand_gallery
+            .tree_lines()
+            .into_iter()
+            .take(24)
+            .collect::<Vec<_>>()
+            .join("\n");
+        let boundary = self.official_sand_gallery.boundary_lines().join("\n");
+        format!(
+            "LINCE · OFFICIAL SANDS · C4 MIGRATION\n\nACTIVE native catalog · F12 Gallery/catalog · Tab/Shift-Tab Sand · Enter/Space operate available runtime · pointer or AccessKit select · F8 report\nStructure readiness is not Behavior completion.\n\n{sands}\n\nSELECTED {}/{} · {}\n{}\nlegacy {}\n{}\n\nRUST DEFINITION TREE\n{tree}\n\nPUBLIC TYPED BOUNDARY\n{boundary}\n\n{} total Rust definitions\npackage {}",
+            self.official_sand_gallery.selected_index() + 1,
+            OFFICIAL_SAND_COUNT,
+            selected.display_name,
+            selected.state.label(),
+            selected.legacy_source,
+            selected.purpose,
+            self.official_sand_gallery.package().graph.definitions.len(),
+            self.official_sand_package_sha256,
+        )
+    }
+
+    #[cfg(feature = "joined-runtime")]
+    fn configuration_panel_text(&self) -> String {
+        let operations = ConfigurationOperation::ALL
+            .iter()
+            .enumerate()
+            .map(|(index, operation)| {
+                let marker = if index == self.configuration_workbench.selected_index() {
+                    "▸"
+                } else {
+                    " "
+                };
+                format!("{marker} {}", operation.label())
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+        let origins = self.configuration_workbench.origin_lines().join("\n");
+        let artifact = self.configuration_workbench.artifact();
+        format!(
+            "LINCE · CONFIGURATION SAND\n\nACTIVE native Sand · F11 Gallery/Configuration · Tab/Shift-Tab operation · Enter apply · F8 report\nEvery accepted edit previews live and persists. REFUSED edits leave the last good state active.\n\nOPERATIONS\n{operations}\n\nRESOLVED VALUE · ORIGIN\n{origins}\n\n{}\n\nConfiguration schema v{} · {} definitions · {} launch receipt\npackage {}",
+            self.configuration_workbench.status_line(),
+            CONFIGURATION_SCHEMA_VERSION,
+            artifact.composition.catalog.active.len(),
+            artifact.configuration.launches.len(),
+            self.configuration_package_sha256,
         )
     }
 
@@ -2082,6 +2498,14 @@ impl DiagnosticWindow {
             self.config.height,
             self.window.scale_factor(),
         );
+        let new_retained_text_layer = RetainedTextLayer::new(
+            &new_device,
+            &new_queue,
+            self.config.format,
+            self.config.width,
+            self.config.height,
+            self.window.scale_factor(),
+        );
         for surface in &self.surfaces {
             let replacement =
                 VulkanCopyTarget::new(new_device.clone()).map_err(|error| error.to_string())?;
@@ -2096,6 +2520,7 @@ impl DiagnosticWindow {
         self.bevy_layer = new_bevy_layer;
         self.node_layer = new_node_layer;
         self.joined_panel = new_joined_panel;
+        self.retained_text_layer = new_retained_text_layer;
         let old_device = std::mem::replace(&mut self.device, new_device);
         self.queue = new_queue;
         self.surface.configure(&self.device, &self.config);
@@ -2147,7 +2572,7 @@ impl DiagnosticWindow {
             .map(|path| format!(" · report {}", path.display()))
             .unwrap_or_default();
         self.window.set_title(&format!(
-            "Lince joined seam · {} CEF Sands · GPU {copied}/{refused} · bridge {bridge_allowed}/{bridge_refused} · F8 export{suffix}",
+            "Lince native Interface · {} CEF Sands · GPU {copied}/{refused} · bridge {bridge_allowed}/{bridge_refused} · F10 compose · F11 configure · F12 official Sands · F8 export{suffix}",
             self.surfaces.len(),
         ));
     }
@@ -2196,11 +2621,27 @@ impl DiagnosticWindow {
     }
 
     fn target_at_cursor(&self) -> Option<usize> {
+        #[cfg(feature = "joined-runtime")]
+        if self.official_runtime.active().is_some() {
+            return None;
+        }
         self.surfaces
             .iter()
             .enumerate()
             .rev()
             .find_map(|(index, surface)| point_in_rect(self.cursor, surface.rect).then_some(index))
+    }
+
+    #[cfg(feature = "joined-runtime")]
+    fn official_runtime_viewport(&self) -> RetainedRect {
+        let width = self.config.width as f32;
+        let height = self.config.height as f32;
+        RetainedRect {
+            x: width * 0.5 + 12.0,
+            y: 18.0,
+            width: (width * 0.5 - 30.0).max(1.0),
+            height: (height - 36.0).max(1.0),
+        }
     }
 
     fn focus(&mut self, index: usize) {
@@ -2219,6 +2660,9 @@ impl DiagnosticWindow {
     #[cfg(feature = "joined-runtime")]
     fn focus_native_gallery(&mut self) {
         self.native_gallery_focused = true;
+        self.composition_workbench_active = false;
+        self.configuration_workbench_active = false;
+        self.official_sand_gallery_active = false;
         for surface in &self.surfaces {
             if let Some(host) = surface.browser.host() {
                 host.set_focus(0);
@@ -2230,13 +2674,46 @@ impl DiagnosticWindow {
     #[cfg(feature = "joined-runtime")]
     fn gallery_index_at_cursor(&self) -> Option<usize> {
         let panel_width = f64::from(self.config.width) * 0.47;
-        if self.cursor.x >= panel_width || self.cursor.y < 100.0 {
+        if self.composition_workbench_active
+            || self.configuration_workbench_active
+            || self.official_sand_gallery_active
+            || self.cursor.x >= panel_width
+            || self.cursor.y < 100.0
+        {
             return None;
         }
         let row = ((self.cursor.y - 100.0) / 21.0).floor().max(0.0) as usize;
         let column = usize::from(self.cursor.x >= panel_width * 0.5);
         let index = row.saturating_mul(2).saturating_add(column);
         (index < PRIMITIVE_COUNT).then_some(index)
+    }
+
+    #[cfg(feature = "joined-runtime")]
+    fn configuration_index_at_cursor(&self) -> Option<usize> {
+        let panel_width = f64::from(self.config.width) * 0.47;
+        if !self.configuration_workbench_active
+            || self.cursor.x >= panel_width
+            || self.cursor.y < 100.0
+        {
+            return None;
+        }
+        let index = ((self.cursor.y - 100.0) / 21.0).floor().max(0.0) as usize;
+        (index < ConfigurationOperation::ALL.len()).then_some(index)
+    }
+
+    #[cfg(feature = "joined-runtime")]
+    fn official_index_at_cursor(&self) -> Option<usize> {
+        let panel_width = f64::from(self.config.width) * 0.47;
+        if !self.official_sand_gallery_active
+            || self.cursor.x >= panel_width
+            || self.cursor.y < 100.0
+        {
+            return None;
+        }
+        let row = ((self.cursor.y - 100.0) / 21.0).floor().max(0.0) as usize;
+        let column = usize::from(self.cursor.x >= panel_width * 0.5);
+        let index = row.saturating_mul(2).saturating_add(column);
+        (index < OFFICIAL_SAND_COUNT).then_some(index)
     }
 
     fn export_report(&mut self) {
@@ -2375,18 +2852,46 @@ impl ApplicationHandler for DiagnosticApplication {
                     }
                 } else {
                     #[cfg(feature = "joined-runtime")]
-                    if button == WinitMouseButton::Left
-                        && button_state == ElementState::Pressed
-                        && let Some(index) = state.gallery_index_at_cursor()
-                    {
-                        state.focus_native_gallery();
-                        state.primitive_gallery.focus_at(
-                            index,
-                            lince_interface::primitive_gallery::GalleryVisualState::FocusVisible,
-                        );
-                        state.primitive_gallery.activate();
-                        state.accessibility.record_keyboard_action();
-                        state.publish_accessibility();
+                    if button == WinitMouseButton::Left && button_state == ElementState::Pressed {
+                        if let Some(scene) = state.official_runtime_scene.clone()
+                            && let Some(index) = scene.hit_test([state.cursor.x, state.cursor.y])
+                        {
+                            state.official_runtime.focus_at(index, &scene);
+                            if let Ok(focused_scene) = state
+                                .official_runtime
+                                .scene(state.official_runtime_viewport())
+                            {
+                                let _ = state.official_runtime.activate(&focused_scene);
+                                state.official_runtime_scene = Some(focused_scene);
+                            }
+                            state.accessibility.record_keyboard_action();
+                            state.last_panel_refresh = Instant::now() - Duration::from_secs(1);
+                            state.publish_accessibility();
+                        } else if let Some(index) = state.official_index_at_cursor() {
+                            state.official_sand_gallery.focus_at(index);
+                            state.accessibility.record_keyboard_action();
+                            state.last_panel_refresh = Instant::now() - Duration::from_secs(1);
+                            state.publish_accessibility();
+                        } else if let Some(index) = state.configuration_index_at_cursor() {
+                            state.configuration_workbench.focus_at(index);
+                            if state.configuration_workbench.activate().is_ok()
+                                && let Ok(style) = state.configuration_workbench.resolved_style()
+                            {
+                                state.resolved_style = style;
+                            }
+                            state.accessibility.record_keyboard_action();
+                            state.last_panel_refresh = Instant::now() - Duration::from_secs(1);
+                            state.publish_accessibility();
+                        } else if let Some(index) = state.gallery_index_at_cursor() {
+                            state.focus_native_gallery();
+                            state.primitive_gallery.focus_at(
+                                index,
+                                lince_interface::primitive_gallery::GalleryVisualState::FocusVisible,
+                            );
+                            state.primitive_gallery.activate();
+                            state.accessibility.record_keyboard_action();
+                            state.publish_accessibility();
+                        }
                     }
                 }
             }
@@ -2417,11 +2922,152 @@ impl ApplicationHandler for DiagnosticApplication {
             WindowEvent::KeyboardInput { event, .. } => {
                 #[cfg(feature = "joined-runtime")]
                 if event.state == ElementState::Pressed {
+                    if event.logical_key == Key::Named(NamedKey::Escape)
+                        && state.official_runtime.active().is_some()
+                    {
+                        state.official_runtime.close();
+                        state.official_runtime_scene = None;
+                        state.official_sand_gallery_active = true;
+                        state.last_panel_refresh = Instant::now() - Duration::from_secs(1);
+                        state.publish_accessibility();
+                        return;
+                    }
                     if event.logical_key == Key::Named(NamedKey::F10) {
+                        state.official_runtime.close();
+                        state.official_runtime_scene = None;
                         state.composition_workbench_active = !state.composition_workbench_active;
+                        state.configuration_workbench_active = false;
+                        state.official_sand_gallery_active = false;
                         state.native_gallery_focused = false;
                         state.last_panel_refresh = Instant::now() - Duration::from_secs(1);
+                        state.publish_accessibility();
                         return;
+                    }
+                    if event.logical_key == Key::Named(NamedKey::F11) {
+                        state.official_runtime.close();
+                        state.official_runtime_scene = None;
+                        state.configuration_workbench_active =
+                            !state.configuration_workbench_active;
+                        state.composition_workbench_active = false;
+                        state.official_sand_gallery_active = false;
+                        state.native_gallery_focused = false;
+                        if state.configuration_workbench_active {
+                            if let Ok(style) = state.configuration_workbench.resolved_style() {
+                                state.resolved_style = style;
+                            }
+                        } else {
+                            let _ = state.refresh_style();
+                        }
+                        state.last_panel_refresh = Instant::now() - Duration::from_secs(1);
+                        state.publish_accessibility();
+                        return;
+                    }
+                    if event.logical_key == Key::Named(NamedKey::F12) {
+                        if state.official_runtime.active().is_some() {
+                            state.official_runtime.close();
+                            state.official_runtime_scene = None;
+                            state.official_sand_gallery_active = true;
+                        } else {
+                            state.official_sand_gallery_active =
+                                !state.official_sand_gallery_active;
+                        }
+                        state.composition_workbench_active = false;
+                        state.configuration_workbench_active = false;
+                        state.native_gallery_focused = false;
+                        state.last_panel_refresh = Instant::now() - Duration::from_secs(1);
+                        state.publish_accessibility();
+                        return;
+                    }
+                    if state.official_runtime.active().is_some()
+                        && let Some(scene) = state.official_runtime_scene.clone()
+                    {
+                        let handled = match &event.logical_key {
+                            Key::Named(NamedKey::Tab) => {
+                                state
+                                    .official_runtime
+                                    .focus_next(state.modifiers.shift, &scene);
+                                true
+                            }
+                            Key::Named(NamedKey::Enter) => {
+                                let _ = state.official_runtime.activate(&scene);
+                                state.accessibility.record_keyboard_action();
+                                true
+                            }
+                            Key::Named(NamedKey::Backspace) => {
+                                state.official_runtime.backspace(&scene);
+                                true
+                            }
+                            Key::Character(value) if value.as_str() == " " => {
+                                let _ = state.official_runtime.activate(&scene);
+                                state.accessibility.record_keyboard_action();
+                                true
+                            }
+                            Key::Character(value) => {
+                                state.official_runtime.input_text(value.as_str(), &scene);
+                                true
+                            }
+                            _ => false,
+                        };
+                        if handled {
+                            state.official_runtime_scene = state
+                                .official_runtime
+                                .scene(state.official_runtime_viewport())
+                                .ok();
+                            state.last_panel_refresh = Instant::now() - Duration::from_secs(1);
+                            state.publish_accessibility();
+                            return;
+                        }
+                    }
+                    if state.official_sand_gallery_active {
+                        if event.logical_key == Key::Named(NamedKey::Tab) {
+                            state
+                                .official_sand_gallery
+                                .move_focus(state.modifiers.shift);
+                            state.last_panel_refresh = Instant::now() - Duration::from_secs(1);
+                            state.publish_accessibility();
+                            return;
+                        }
+                        if event.logical_key == Key::Named(NamedKey::Enter)
+                            || matches!(&event.logical_key, Key::Character(value) if value.as_str() == " ")
+                        {
+                            let selected = state.official_sand_gallery.selected();
+                            if state.official_runtime.open(selected.uid) {
+                                state.official_sand_gallery_active = false;
+                                state.official_runtime_scene = state
+                                    .official_runtime
+                                    .scene(state.official_runtime_viewport())
+                                    .ok();
+                            }
+                            state.accessibility.record_keyboard_action();
+                            state.last_panel_refresh = Instant::now() - Duration::from_secs(1);
+                            state.publish_accessibility();
+                            return;
+                        }
+                    }
+                    if state.configuration_workbench_active {
+                        match &event.logical_key {
+                            Key::Named(NamedKey::Tab) => {
+                                state
+                                    .configuration_workbench
+                                    .focus_next(state.modifiers.shift);
+                                state.last_panel_refresh = Instant::now() - Duration::from_secs(1);
+                                state.publish_accessibility();
+                                return;
+                            }
+                            Key::Named(NamedKey::Enter) => {
+                                if state.configuration_workbench.activate().is_ok()
+                                    && let Ok(style) =
+                                        state.configuration_workbench.resolved_style()
+                                {
+                                    state.resolved_style = style;
+                                }
+                                state.accessibility.record_keyboard_action();
+                                state.last_panel_refresh = Instant::now() - Duration::from_secs(1);
+                                state.publish_accessibility();
+                                return;
+                            }
+                            _ => {}
+                        }
                     }
                     if state.composition_workbench_active {
                         match &event.logical_key {
@@ -2542,6 +3188,16 @@ impl ApplicationHandler for DiagnosticApplication {
                 );
             }
             WindowEvent::Ime(Ime::Commit(text)) => {
+                #[cfg(feature = "joined-runtime")]
+                if let Some(scene) = state.official_runtime_scene.clone() {
+                    state.official_runtime.input_text(text.as_str(), &scene);
+                    state.official_runtime_scene = state
+                        .official_runtime
+                        .scene(state.official_runtime_viewport())
+                        .ok();
+                    state.last_panel_refresh = Instant::now() - Duration::from_secs(1);
+                    return;
+                }
                 state.dispatch(NormalizedInput::ImeCommit { text }, state.focused);
             }
             WindowEvent::Ime(Ime::Enabled) => {}
@@ -3076,7 +3732,7 @@ struct JoinedReport {
     accessibility_updates: u64,
     accessibility_probe: bool,
     scenario_count: usize,
-    visible_panel_controls: [&'static str; 11],
+    visible_panel_controls: [&'static str; 14],
     sand_schema_version: u32,
     sand_abi_version: u32,
     primitive_definition_count: usize,
@@ -3091,6 +3747,25 @@ struct JoinedReport {
     composition_selected_operation: String,
     composition_facts: CompositionRuntimeFacts,
     composition_arrows: Vec<String>,
+    configuration_schema_version: u32,
+    configuration_definition_count: usize,
+    configuration_package_sha256: String,
+    configuration_selected_operation: String,
+    configuration_facts: ConfigurationFacts,
+    configuration_mode: String,
+    configuration_launch_receipts: usize,
+    configuration_persisted_bytes: usize,
+    configuration_probe_applied: bool,
+    configuration_probe_reverted: bool,
+    configuration_probe_cef_load_before: Option<u64>,
+    configuration_probe_cef_load_after: Option<u64>,
+    official_sand_count: usize,
+    official_definition_count: usize,
+    official_package_sha256: String,
+    official_selected: String,
+    official_selected_state: String,
+    official_runtime_facts: SharedOfficialRuntimeFacts,
+    native_domain_facts: NativeDomainFacts,
     token_probe_applied: bool,
     token_probe_cef_load_before: Option<u64>,
     token_probe_cef_load_after: Option<u64>,
@@ -3257,6 +3932,149 @@ impl CefDiagnosticReport {
                         surface.latest_page_status.as_str()
                     })
                 ),
+            },
+            #[cfg(feature = "joined-runtime")]
+            CefAssertion {
+                name: "Configuration Sand edits previews persists and launches through one artifact",
+                passed: {
+                    let workbench = &window.configuration_workbench;
+                    let artifact = workbench.artifact();
+                    let facts = workbench.facts();
+                    let projected = artifact
+                        .configuration
+                        .projected_styles(&artifact.composition, "room-native");
+                    facts.accepted_edits >= 13
+                        && facts.refused_edits > 0
+                        && facts.undo_count > 0
+                        && facts.save_reopens > 0
+                        && facts.live_previews > 0
+                        && facts.definition_publications == 3
+                        && facts.launches_created > 0
+                        && facts.launches_focused > 0
+                        && facts.persisted_bytes > 0
+                        && window.configuration_probe_applied
+                        && window.configuration_probe_reverted
+                        && window.configuration_probe_load_before
+                            == window.configuration_probe_load_after
+                        && artifact.composition.catalog.active.len()
+                            == CONFIGURATION_DEFINITION_COUNT
+                        && artifact
+                            .composition
+                            .document
+                            .placements
+                            .iter()
+                            .any(|placement| placement.instance_uid == "configuration-sand")
+                        && artifact.configuration.launches.len() == 1
+                        && !artifact.configuration.developer_mode
+                        && artifact.configuration.raw_css.is_empty()
+                        && artifact
+                            .configuration
+                            .resolved_for(&artifact.composition, "room-native")
+                            .is_ok_and(|style| {
+                                style
+                                    .origin("--lynx-margin-sand")
+                                    .is_ok_and(|origin| origin.scope == StyleScope::Workspace)
+                                    && style
+                                        .origin("--lynx-gap-content")
+                                        .is_ok_and(|origin| origin.scope == StyleScope::Group)
+                                    && style
+                                        .origin("--lynx-radius-control")
+                                        .is_ok_and(|origin| origin.scope == StyleScope::Instance)
+                            })
+                        && projected.is_ok_and(|projections| {
+                            projections.len() == 4
+                                && projections
+                                    .windows(2)
+                                    .all(|pair| pair[0].declarations == pair[1].declarations)
+                        })
+                },
+                detail: format!(
+                    "schema {}, {} definitions, {:?}, {} launch receipt, {} persisted bytes, CEF loads {:?} to {:?}",
+                    CONFIGURATION_SCHEMA_VERSION,
+                    window
+                        .configuration_workbench
+                        .artifact()
+                        .composition
+                        .catalog
+                        .active
+                        .len(),
+                    window.configuration_workbench.facts(),
+                    window
+                        .configuration_workbench
+                        .artifact()
+                        .configuration
+                        .launches
+                        .len(),
+                    window.configuration_workbench.facts().persisted_bytes,
+                    window.configuration_probe_load_before,
+                    window.configuration_probe_load_after,
+                ),
+            },
+            #[cfg(feature = "joined-runtime")]
+            CefAssertion {
+                name: "official Sand catalog is Rust-owned decomposed and honestly staged",
+                passed: window.official_sand_gallery.package().validate().is_ok()
+                    && OFFICIAL_SANDS.len() == OFFICIAL_SAND_COUNT
+                    && OFFICIAL_SANDS.iter().all(|spec| {
+                        window
+                            .official_sand_gallery
+                            .package()
+                            .graph
+                            .definitions
+                            .get(spec.uid)
+                            .is_some_and(|definition| definition.children.len() >= 2)
+                    })
+                    && OFFICIAL_SANDS
+                        .iter()
+                        .filter(|spec| spec.state == OfficialMigrationState::Landed)
+                        .count()
+                        == 1
+                    && OFFICIAL_SANDS
+                        .iter()
+                        .filter(|spec| spec.state == OfficialMigrationState::NativeBehavior)
+                        .count()
+                        == 7,
+                detail: format!(
+                    "{} official roots, {} Rust definitions, selected {} is {}",
+                    OFFICIAL_SAND_COUNT,
+                    window
+                        .official_sand_gallery
+                        .package()
+                        .graph
+                        .definitions
+                        .len(),
+                    window.official_sand_gallery.selected().uid,
+                    window.official_sand_gallery.selected().state.label(),
+                ),
+            },
+            #[cfg(feature = "joined-runtime")]
+            CefAssertion {
+                name: "shared shell Record Conversation and collection definitions render and operate natively",
+                passed: {
+                    let facts = window.official_runtime.facts(None);
+                    facts.edit_mode
+                        && facts.group_locked
+                        && facts.castle_save_requests > 0
+                        && facts.recenter_actions > 0
+                        && facts.emitted_record_events >= 3
+                        && facts.message_send_requests > 0
+                        && facts.conversation_drafts > 1
+                        && facts.pinned_conversation_drafts > 0
+                        && facts.workflow_action_requests >= 2
+                },
+                detail: format!("{:?}", window.official_runtime.facts(None)),
+            },
+            #[cfg(feature = "joined-runtime")]
+            CefAssertion {
+                name: "configured native domain uses a live Protein subscription",
+                passed: {
+                    let facts = window.native_domain.facts();
+                    facts.endpoint.is_none()
+                        || (facts.connection
+                            == lince_interface::domain::DomainConnectionState::Live
+                            && facts.snapshots >= 3)
+                },
+                detail: format!("{:?}", window.native_domain.facts()),
             },
             CefAssertion {
                 name: "declared installed Action request allowed",
@@ -3559,7 +4377,11 @@ impl CefDiagnosticReport {
                 CefAssertion {
                     name: "joined native and HTML boundaries publish one AccessKit tree",
                     passed: window.accessibility.node_count()
-                        == 8 + PRIMITIVE_COUNT + window.surfaces.len().min(2)
+                        == 10
+                            + PRIMITIVE_COUNT
+                            + ConfigurationOperation::ALL.len()
+                            + OFFICIAL_SAND_COUNT
+                            + window.surfaces.len().min(2)
                         && window.accessibility.published_updates() > 0,
                     detail: format!(
                         "{} nodes, {} updates, {} platform tree requests",
@@ -3622,7 +4444,7 @@ impl CefDiagnosticReport {
         let (visible_interactive_sands, continuously_eligible_bodies, resident_light_nodes) =
             (0, 0, 0);
         Self {
-            schema_version: 7,
+            schema_version: 14,
             gate: if cfg!(feature = "joined-runtime") {
                 "joined native Interface decision"
             } else {
@@ -3762,6 +4584,9 @@ impl CefDiagnosticReport {
                     "F8 report",
                     "F9 primitive visual state",
                     "F10 recursive composition workbench",
+                    "F11 Configuration Sand",
+                    "F12 official Sand migration catalog",
+                    "Enter opens an available official native runtime",
                     "Tab and Enter primitive or composition interaction",
                 ],
                 sand_schema_version: SAND_SCHEMA_VERSION,
@@ -3787,6 +4612,58 @@ impl CefDiagnosticReport {
                     .into(),
                 composition_facts: window.composition_workbench.facts(),
                 composition_arrows: window.composition_workbench.arrow_lines(),
+                configuration_schema_version: CONFIGURATION_SCHEMA_VERSION,
+                configuration_definition_count: window
+                    .configuration_workbench
+                    .artifact()
+                    .composition
+                    .catalog
+                    .active
+                    .len(),
+                configuration_package_sha256: window.configuration_package_sha256.clone(),
+                configuration_selected_operation: window
+                    .configuration_workbench
+                    .selected()
+                    .label()
+                    .into(),
+                configuration_facts: window.configuration_workbench.facts().clone(),
+                configuration_mode: window
+                    .configuration_workbench
+                    .artifact()
+                    .configuration
+                    .mode
+                    .clone(),
+                configuration_launch_receipts: window
+                    .configuration_workbench
+                    .artifact()
+                    .configuration
+                    .launches
+                    .len(),
+                configuration_persisted_bytes: window
+                    .configuration_workbench
+                    .facts()
+                    .persisted_bytes,
+                configuration_probe_applied: window.configuration_probe_applied,
+                configuration_probe_reverted: window.configuration_probe_reverted,
+                configuration_probe_cef_load_before: window.configuration_probe_load_before,
+                configuration_probe_cef_load_after: window.configuration_probe_load_after,
+                official_sand_count: OFFICIAL_SAND_COUNT,
+                official_definition_count: window
+                    .official_sand_gallery
+                    .package()
+                    .graph
+                    .definitions
+                    .len(),
+                official_package_sha256: window.official_sand_package_sha256.clone(),
+                official_selected: window.official_sand_gallery.selected().uid.into(),
+                official_selected_state: window
+                    .official_sand_gallery
+                    .selected()
+                    .state
+                    .label()
+                    .into(),
+                official_runtime_facts: window.official_runtime.facts(None),
+                native_domain_facts: window.native_domain.facts(),
                 token_probe_applied: window.token_probe_applied,
                 token_probe_cef_load_before: window.token_probe_load_before,
                 token_probe_cef_load_after: window.token_probe_load_after,
@@ -3883,7 +4760,7 @@ fn surface_report(shared: &SurfaceShared) -> CefSurfaceReport {
     }
 }
 
-pub fn run_native_interface(website_url: Option<String>) {
+pub fn run_native_interface(website_url: Option<String>, domain_url: Option<String>) {
     let process_started = Instant::now();
     let cef_guard = match initialize_cef() {
         Ok(Some(guard)) => guard,
@@ -3945,6 +4822,7 @@ pub fn run_native_interface(website_url: Option<String>) {
         accessibility_probe,
         process_started,
         website_url: website_url.unwrap_or_else(|| DEFAULT_WEBSITE_URL.into()),
+        domain_url,
     };
     if let Err(error) = event_loop.run_app(&mut application) {
         eprintln!("CEF diagnostic failed: {error}");

@@ -1,7 +1,3 @@
-//! Ephemeral presence lanes (blueprint VII.3): cursors, typing, call signaling.
-//! Scoped to a room, fanned out through the hub, **never written to the
-//! Ledger**. When the last member leaves, the room evaporates.
-
 use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::Mutex;
@@ -12,20 +8,10 @@ pub struct LaneEvent {
     pub room: String,
     pub from: String,
     pub payload: Value,
-    /// The sender's Person/app_user subject, when they have one.
-    ///
-    /// Carried SEPARATELY from `from` (a connection id) because presence has
-    /// two halves with different privacy: WHERE a cursor is, which everyone in
-    /// the room may see, and WHO it belongs to, which only a viewer with read
-    /// permission on that user may see. The receiving side resolves this to a
-    /// name or drops it — see `ws::spawn_lane_forwarder`.
     pub from_subject: Option<String>,
-    /// Which Organ the event's subject lives on; `None` is this Cell. Opaque
-    /// here — the hub carries it, the sands read it.
     pub organ: Option<String>,
 }
 
-/// Shared across all sessions on a host. Cheap to clone the handle via `Arc`.
 #[derive(Default)]
 pub struct LaneHub {
     rooms: Mutex<HashMap<String, broadcast::Sender<LaneEvent>>>,
@@ -36,7 +22,6 @@ impl LaneHub {
         LaneHub::default()
     }
 
-    /// Join (or create) a room; returns a receiver for its events.
     pub fn join(&self, room: &str) -> broadcast::Receiver<LaneEvent> {
         let mut rooms = self.rooms.lock().unwrap();
         rooms
@@ -45,7 +30,6 @@ impl LaneHub {
             .subscribe()
     }
 
-    /// Publish to a room. Returns how many receivers saw it (0 = empty room).
     pub fn send(&self, event: LaneEvent) -> usize {
         let rooms = self.rooms.lock().unwrap();
         rooms
@@ -54,7 +38,6 @@ impl LaneHub {
             .unwrap_or(0)
     }
 
-    /// Drop a room's sender if nobody is listening — keeps the map from growing.
     pub fn prune(&self, room: &str) {
         let mut rooms = self.rooms.lock().unwrap();
         if let Some(tx) = rooms.get(room) {

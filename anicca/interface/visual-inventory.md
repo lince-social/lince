@@ -121,11 +121,16 @@ data.
 ## Canonical replacement contract
 
 `crates/interface/src/style.rs` is the current executable authority.
-Contract version 1 defines 91 standard tokens across palette, surface, ink,
+Contract version 1 defines 92 standard tokens across palette, surface, ink,
 intent, state, spacing, size, border, radius, typography, icon, elevation,
 opacity, density, stacking, motion and truth families. Values are typed as
 color, non-negative pixel length, signed pixel offset, scalar, integer, font
 family, font weight, line style, duration or numeric-figure policy.
+
+C3 added `--lynx-margin-sand` beside the existing gap and padding roles so
+margin can inherit and report provenance without becoming arbitrary layout
+CSS. The generated token reference is derived from this executable table and
+includes both Dark and Light default values for every role.
 
 Signed offsets are deliberately separate from lengths: a shadow may travel
 left or up, while padding, radius, border width, blur and text size cannot be

@@ -21,3 +21,6 @@ rust-sitter-tool = { workspace = true }
 [[bin]]
 name = "lingua"
 path = "src/main.rs"
+
+[lints]
+workspace = true

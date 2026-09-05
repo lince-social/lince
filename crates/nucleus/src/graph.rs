@@ -1,6 +1,3 @@
-//! Link-graph algorithms (blueprint IV.2), shared by the focus queue (topo),
-//! recipes/BOM (derive_needs), trails, and Proof (sccs over the rule graph).
-
 use std::collections::{HashMap, HashSet, VecDeque};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -28,10 +25,6 @@ impl Edge {
     }
 }
 
-/// Topological order restricted to `candidates` (blueprint: the focus queue is
-/// topo(@precedes) over currently-active Needs). Edges whose endpoints are not
-/// both candidates are ignored. Ties keep candidate order (deterministic);
-/// cycles break by candidate order too (members surface in input order).
 pub fn topo_order(candidates: &[String], edges: &[Edge]) -> Vec<String> {
     let index: HashMap<&str, usize> = candidates
         .iter()
@@ -67,7 +60,6 @@ pub fn topo_order(candidates: &[String], edges: &[Edge]) -> Vec<String> {
             }
         }
     }
-    // cycle remnants, in candidate order
     for (i, c) in candidates.iter().enumerate() {
         if !done[i] {
             out.push(c.clone());
@@ -76,9 +68,6 @@ pub fn topo_order(candidates: &[String], edges: &[Edge]) -> Vec<String> {
     out
 }
 
-/// Recipe explosion (blueprint: `derive_needs(@cake, 2)` -> "4 flour, 6 eggs").
-/// Walks edges from `root`, multiplying quantities (missing = 1). Duplicate
-/// descendants merge by sum. Cycles are cut by a path guard.
 pub fn derive_needs(root: &str, qty: f64, edges: &[Edge]) -> Vec<(String, f64)> {
     let mut by_from: HashMap<&str, Vec<&Edge>> = HashMap::new();
     for e in edges {
@@ -117,8 +106,6 @@ fn walk(
     path.remove(node);
 }
 
-/// Strongly connected components with >1 member, plus self-loops.
-/// Powers Proof (blueprint VI.4): "these N rules form a loop".
 pub fn cycles(nodes: &[String], edges: &[(String, String)]) -> Vec<Vec<String>> {
     let index: HashMap<&str, usize> = nodes
         .iter()
@@ -136,7 +123,6 @@ pub fn cycles(nodes: &[String], edges: &[(String, String)]) -> Vec<Vec<String>> 
             }
         }
     }
-    // iterative Tarjan
     #[derive(Clone)]
     struct Frame {
         v: usize,
@@ -215,27 +201,23 @@ mod tests {
 
     #[test]
     fn focus_queue_topo_restricted_to_active_needs() {
-        // morning chain: exercise -> shower -> breakfast ; work chain: standup -> code
         let edges = vec![
             Edge::new("exercise", "shower"),
             Edge::new("shower", "breakfast"),
             Edge::new("standup", "code"),
-            Edge::new("breakfast", "not-a-need-today"), // endpoint outside candidates: ignored
+            Edge::new("breakfast", "not-a-need-today"),
         ];
-        // candidate order encodes the tie-breaker (window/oldest, decided by caller)
         let cands = s(&["standup", "shower", "exercise", "code", "breakfast"]);
         let order = topo_order(&cands, &edges);
         let pos = |x: &str| order.iter().position(|o| o == x).unwrap();
         assert!(pos("exercise") < pos("shower"));
         assert!(pos("shower") < pos("breakfast"));
         assert!(pos("standup") < pos("code"));
-        // disjoint chains merge; head of the sort is the focus
-        assert_eq!(order[0], "standup"); // first indegree-0 in candidate order
+        assert_eq!(order[0], "standup");
     }
 
     #[test]
     fn recurring_and_oneshot_interleave() {
-        // one-shot 'buy-gift' linked before recurring 'gym'
         let edges = vec![Edge::new("buy-gift", "gym")];
         let order = topo_order(&s(&["gym", "buy-gift"]), &edges);
         assert_eq!(order, s(&["buy-gift", "gym"]));
@@ -243,7 +225,6 @@ mod tests {
 
     #[test]
     fn recipe_explosion() {
-        // cake needs 2 flour and 3 eggs; flour needs 0.5 wheat
         let edges = vec![
             Edge::qty("cake", "flour", 2.0),
             Edge::qty("cake", "egg", 3.0),

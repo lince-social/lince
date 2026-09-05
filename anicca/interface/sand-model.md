@@ -9,8 +9,9 @@ Preserved source metadata: `@sands`, order 1, `#chapter`, `#instinct`,
 `#part-of @interface`, `#done`, uid
 `r_14NKDPPS969TPSRGYJBJBJWEGR`.
 
-Status: production schema, ABI, artifact validation, primitive Gallery and
-recursive composition workbench landed; external authoring is next.
+Status: production schema, ABI, artifact validation, primitive Gallery,
+recursive composition and C3 Configuration/external authoring landed; official
+Sand migration is next.
 
 Read when: implementing reusable primitives, Castles, bindings, artifacts, or composition operations.
 
@@ -91,6 +92,35 @@ same 21-definition package. After the save and fork operations the catalog has
 mounted nodes, nine active Behavior handles and 43 retired handles. The
 release parity and joined Wayland reports pass.
 
+### Landed Configuration, external-author and domain-launch layer
+
+`configuration.rs` layers one versioned Configuration artifact over the exact
+composition artifact. It does not add a competing Sand graph. The
+Configuration definition is itself a compound of the same Panel, Title and
+Button definitions; its 16 exported operation ports reach one workbench state
+through keyboard, pointer and AccessKit.
+
+Definition-default, port, Behavior, isolation and capability edits publish new
+exact revisions through the same transactional catalog as F10. Workspace and
+group style stay in Configuration; instance style stays on the composition
+placement. Undo and atomic persistence snapshot both together, so reopening
+cannot combine a new theme choice with stale definition or placement state.
+
+The external-author manifest pins a Sand package uid, normalized graph hash
+and exact root revisions. Its generated kit carries the Sand/package/message,
+Configuration and launch schemas, one accepted ordinary HTML/CSS/JavaScript
+package and a deliberately unknown-version manifest. External authors never
+need Maud. The host validates the existing package graph, closed module/assets,
+capabilities and licenses; the small external manifest selects exact roots and
+fails closed rather than negotiating another contract.
+
+A domain launch recipe is a renderer-neutral authoring input, not another
+compound kind. It names exact definitions, placements, typed Record reads and
+exported Action writes. Materialization creates ordinary composition entries
+plus a durable receipt keyed by domain kind and uid. A repeat launch focuses
+the receipt's existing placements, so Conversation, Transfer and later Fiote
+can open workrooms without bespoke UI constructors or duplicate groups.
+
 ### Model and composition
 
 A **Sand definition** is a reusable interface/Behavior description. A **Sand
@@ -125,6 +155,13 @@ may export selected child ports as its own interface; everything not exported
 stays internal. This lets the same composition be embedded again without its
 parent knowing its internal markup, and lets edit mode draw a complete route
 through nested groups.
+
+Input exports are executable runtime routes, not schema-only annotations. A
+value bound to a compound's public input is forwarded at each recursive level
+until it reaches the declared child input. Defaults are resolved before the
+child mounts. Validation follows those aliases to the terminal input and
+refuses a second direct or exported binding to the same destination. The C2
+video-call fixture proves one Protein value crossing two compound boundaries.
 
 A Protein area's locked result template is one such compound group. Its child
 inputs are wired visibly to fields of one Protein result, and Box repeats the
@@ -238,7 +275,7 @@ struct SandArtifact {
 }
 ```
 
-These authoring-API names remain a C3 sketch, but the pairing may not. Primitive
+These authoring-API names remain a non-normative future convenience, but the pairing may not. Primitive
 constructors such as `button`, `panel`, `dropdown`, and `stack` produce both
 their semantic node and their accessible Maud fragment. Compound constructors
 compose those paired nodes, not bare HTML strings. The final artifact compiler
@@ -269,8 +306,8 @@ three Sands, connects their visible ports, groups them, and saves the group.
 The examples below preserve the intended authoring experience and are
 non-normative sketches, not serialized version-1 fixtures. Exact field
 spelling, serialization and the current port vocabulary come from the
-generated schemas and Rust authority above; C3 may add authoring conveniences
-without creating a second runtime model.
+generated schemas and Rust authority above. Any later authoring convenience
+must still compile to that model rather than creating a second runtime.
 
 ```json
 {
@@ -779,3 +816,57 @@ of associated Karma, or composing Karma and Transfer projections into that
 row automatically, is a preserved later expression rather than part of the
 first area implementation. Configuration is preferred over generating another
 bespoke component when one direct change can meet the Need.
+
+#### A Sand that restates a kernel type, and why its JavaScript is untested
+
+Recorded 2026-08-31, while adding the `set-quantity-where` consequence.
+
+The Karma sand's rule builder does not merely display a rule — it *composes*
+one. `consequencesFrom` in `app/recurrence.js` and `consequenceFrom` in
+`app/builder.js` turn form fields into the tagged JSON that
+`nucleus::karma::Consequence` deserializes: which kinds exist, which fields
+each kind takes, which of them are required, and what a blank amount means.
+Every one of those facts is already stated in Rust, in the enum itself and in
+`Consequence::validate`. The sand states them a second time, in another
+language, with no link between the two.
+
+That duplication is what made a one-variant change touch five files. It is
+also what produced `crates/web/tests/karma_sand_js.{rs,mjs}` — a Rust test
+that shelled out to `node` because the composition logic it needed to check
+was unreachable from Rust. Those two files are deleted. Keeping a Node process
+in the test suite to check a mapping that should not exist was paying twice for
+one mistake, and the suite passed silently when `node` was absent anyway.
+
+The deletion cost more than the consequence mapping, and the rest of it was
+collateral rather than intended. The same file was the only cover for
+`blocksIn`, `activeQuery`, `rankBlocks`, `insertAtCaret`, `completionFor` and
+the canvas card selection — the caret-and-autocomplete machinery in
+`app/blocks.js`, which is genuinely interface logic with no backend it could
+move to and no Rust equivalent to check it against. Around 570 lines of checks
+went with the ~120 that were about consequences. That machinery is now
+unchecked and will stay unchecked; it is the price of not running a Node
+process in the suite, and it should be spent knowingly rather than
+rediscovered.
+
+So the mapping is now unchecked, deliberately. What still holds it honest:
+
+- The sand's Rust tests assert the rendered markup offers a control for every
+  consequence kind (`every_consequence_a_rule_can_carry_is_authorable`), so a
+  kind with no way to author it is still caught.
+- The engine refuses a malformed consequence at the Action boundary. A wrong
+  shape from the sand fails loudly at save time, on the person's screen, rather
+  than being written and discovered later.
+
+The real repair is to stop the sand from knowing the schema at all. Two routes,
+neither attempted here:
+
+- **The backend serves the consequence schema** — kinds, fields, required-ness,
+  and what an omitted field means — and the form renders from it. Adding a
+  variant then reaches the UI with no JavaScript edit, and there is nothing
+  left in JS to test.
+- **Composition moves into WASM**, so the form calls the same Rust the engine
+  validates with.
+
+The first is the smaller change and fits the Configuration layer above. Until
+one of them lands, treat every `Consequence` variant as a thing that must be
+added in both languages, and expect no test to remind you.

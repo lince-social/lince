@@ -1,15 +1,3 @@
-//! What this Cell left with a carrier, and what came back about it.
-//!
-//! The counterpart of `mailbox`: that module is what a box holds FOR other
-//! people, this one is what we handed to somebody else's box. They never meet
-//! in one process except by coincidence — a Cell can be both — and they share
-//! nothing but the bundle uid, which is the carrier's name for the thing.
-//!
-//! Its whole reason for existing is belief. A carrier reporting an expiry is
-//! reporting a failure about mail it was holding, and nothing in that report
-//! is signed; matching the uid against a row here is what separates "your
-//! message was never picked up" from a stranger's assertion.
-
 use chrono::Utc;
 use sqlx::{Row, SqlitePool};
 
@@ -36,7 +24,6 @@ fn map(row: sqlx::sqlite::SqliteRow) -> LeftMail {
     }
 }
 
-/// Record a deposit the carrier accepted.
 pub async fn record(
     pool: &SqlitePool,
     uid: &str,
@@ -59,11 +46,6 @@ pub async fn record(
     Ok(())
 }
 
-/// The carriers worth asking: every box holding something of ours that has
-/// not already been reported expired.
-///
-/// One ask per node, not per bundle. A Cell that left forty batches with the
-/// same box asks it once.
 pub async fn carriers_to_ask(pool: &SqlitePool) -> Result<Vec<String>, StoreError> {
     Ok(
         sqlx::query("SELECT DISTINCT carrier_node FROM mail_left WHERE expired_at IS NULL")
@@ -75,12 +57,6 @@ pub async fn carriers_to_ask(pool: &SqlitePool) -> Result<Vec<String>, StoreErro
     )
 }
 
-/// Mark one of our deposits expired, on a carrier's report.
-///
-/// Scoped to the carrier that is reporting, so a box can only ever speak about
-/// mail it was actually given. Returns whether a row matched — `false` means
-/// the report named something we never left there, and the caller drops it in
-/// silence rather than alarming anybody.
 pub async fn mark_expired(
     pool: &SqlitePool,
     carrier_node: &str,
@@ -100,7 +76,6 @@ pub async fn mark_expired(
         > 0)
 }
 
-/// Everything reported expired, newest first — what a person is shown.
 pub async fn expired(pool: &SqlitePool, limit: i64) -> Result<Vec<LeftMail>, StoreError> {
     Ok(sqlx::query(
         "SELECT * FROM mail_left WHERE expired_at IS NOT NULL
@@ -114,7 +89,6 @@ pub async fn expired(pool: &SqlitePool, limit: i64) -> Result<Vec<LeftMail>, Sto
     .collect())
 }
 
-/// How much is still out with carriers, unreported either way.
 pub async fn outstanding(pool: &SqlitePool) -> Result<i64, StoreError> {
     Ok(
         sqlx::query("SELECT COUNT(*) AS n FROM mail_left WHERE expired_at IS NULL")
@@ -124,14 +98,6 @@ pub async fn outstanding(pool: &SqlitePool) -> Result<i64, StoreError> {
     )
 }
 
-/// Forget rows older than the carrier could possibly still hold, and expiry
-/// reports the person has had ample time to see.
-///
-/// Bounded by age rather than by an acknowledgement, because there is no
-/// acknowledgement to wait for: a bundle that was collected normally produces
-/// no message at all, so an un-expired row past the retention window means it
-/// arrived — the ordinary case — and keeping it would make this table grow
-/// forever with the record of every batch that worked.
 pub async fn prune(pool: &SqlitePool, keep_days: i64) -> Result<u64, StoreError> {
     let cutoff = (Utc::now() - chrono::Duration::days(keep_days)).to_rfc3339();
     Ok(sqlx::query("DELETE FROM mail_left WHERE left_at < ?")

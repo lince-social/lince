@@ -95,7 +95,7 @@ reqwest = { version = "0.12.24", default-features = false, features = ["json", "
 # (pure Rust D-Bus client) with zero GTK/WebKit involvement — see
 # presentation::http::media_assets::pick_image's doc comment for why this
 # specific feature choice matters (a GTK-based picker is what crashes).
-rfd = { version = "0.15", default-features = false, features = ["xdg-portal", "tokio"] }
+rfd = { version = "0.15", default-features = false, features = ["xdg-portal", "async-std"] }
 rhai = "1.24.0"
 ropey = "1.6.1"
 semver = "1.0.27"
@@ -126,6 +126,9 @@ tauri = { version = "2.11.2" }
 tauri-build = { version = "2.6.2" }
 tauri-plugin-single-instance = "2.3.4"
 tauri-plugin-autostart = "2.5.0"
+
+[workspace.lints.rust]
+warnings = "deny"
 
 [profile.release]
 opt-level = 3          # Maximum optimization

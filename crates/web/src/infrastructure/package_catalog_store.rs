@@ -30,9 +30,6 @@ pub struct InstalledPackageSummary {
     pub initial_height: u8,
     pub requires_server: bool,
     pub permissions: Vec<String>,
-    // Sand GROUPS (e.g. kanban ships as board + Record) surface as a single
-    // catalog entry with `is_group = true`; adding it drops the whole group.
-    // `member_count` is how many sub-sands the group carries.
     #[serde(default)]
     pub is_group: bool,
     #[serde(default)]
@@ -75,9 +72,6 @@ impl PackageCatalogStore {
 
             let bytes = std::fs::read(&path)
                 .map_err(|error| format!("Nao consegui ler um widget local: {error}"))?;
-            // Group `.lince` files are workspace archives (a group of sub-sands).
-            // Surface them as a single `is_group` catalog entry instead of a
-            // single sand (Stage 8b, base task 2: kanban adds as a group).
             if crate::domain::workspace_archive::is_workspace_archive_bytes(&bytes) {
                 groups.push(summary_from_group(&filename, &bytes)?);
                 continue;
@@ -86,10 +80,6 @@ impl PackageCatalogStore {
             singles.push(summary_from_package(package));
         }
 
-        // A group named the same as a single sand (kanban.lince vs kanban.html,
-        // both id "kanban") REPLACES that single sand — so "Kanban" in the
-        // catalog is the group, per the add-as-group default. Members that are
-        // reusable on their own (e.g. Record) keep their own single entry.
         let group_ids: std::collections::HashSet<String> =
             groups.iter().map(|group| group.id.clone()).collect();
         singles.retain(|single| !group_ids.contains(&single.id));
@@ -145,16 +135,11 @@ pub fn summary_from_package(package: LincePackage) -> InstalledPackageSummary {
     }
 }
 
-// Build a catalog entry for a sand GROUP (a workspace archive). The group's
-// display metadata comes from the workspace name and its primary (first, lowest
-// z-order) member sand; adding it drops every member as one grouped unit.
 fn summary_from_group(filename: &str, bytes: &[u8]) -> Result<InstalledPackageSummary, String> {
     let imported = crate::domain::workspace_archive::parse_workspace_archive(filename, bytes)?;
     let id = package_id_from_filename(filename);
     let member_count = imported.workspace.cards.len();
 
-    // The primary member is the lowest z-order card (the base layer, e.g. the
-    // kanban board under its Record). Fall back to the first package.
     let primary = imported
         .workspace
         .cards

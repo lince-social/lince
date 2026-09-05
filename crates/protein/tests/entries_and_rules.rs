@@ -1,11 +1,3 @@
-//! The two read sources a surface needs to *control* changes rather than only
-//! display them.
-//!
-//! `Source::Fact` answers what the Ledger holds. These answer what a person
-//! typed and may still fix, and what a rule expects next — which needs `uid`
-//! and `revision`, because a correction has to quote both and a stale one must
-//! lose.
-
 use chrono::{Duration, Utc};
 use engine::Engine;
 use engine::actions::Action;
@@ -101,10 +93,6 @@ async fn an_entry_carries_the_handle_a_correction_has_to_quote() {
 
 #[tokio::test]
 async fn a_corrected_entry_reports_its_new_revision_and_keeps_its_category() {
-    // Edit-then-edit is ordinary. If the second edit read a stale revision the
-    // surface would refuse a change the person is entitled to make; and if the
-    // replacement Fact lost its classification, the category would quietly drop
-    // the change.
     let e = engine().await;
     let food = concept(&e, "food").await;
     let checking = record(&e, "checking").await;
@@ -135,8 +123,6 @@ async fn a_corrected_entry_reports_its_new_revision_and_keeps_its_category() {
 
 #[tokio::test]
 async fn a_voided_entry_is_still_listed() {
-    // An append-only Ledger has no delete. Hiding voided entries would make a
-    // correction look like a disappearance.
     let e = engine().await;
     let checking = record(&e, "checking").await;
     let entry = capture(&e, &checking, "-10", None).await;
@@ -161,9 +147,6 @@ async fn a_voided_entry_is_still_listed() {
 
 #[tokio::test]
 async fn filtering_by_category_searches_past_the_page_limit() {
-    // The bug this pins: applying the caller's limit in SQL takes the newest N
-    // rows and filters those, so a rare category reads as empty while plenty of
-    // matching changes sit just past the cut.
     let e = engine().await;
     let rare = concept(&e, "rare").await;
     let common = concept(&e, "common").await;
@@ -244,8 +227,6 @@ async fn a_rule_and_its_dates_arrive_as_one_query() {
     assert_eq!(rules[0]["revision"], 1, "a pause has to quote this");
     assert_eq!(rules[0]["paused"], false);
     assert_eq!(rules[0]["amount"], "-1200");
-    // The cadence round-trips as the compound shape the sand sends back, with
-    // every component addressable rather than one of a fixed set of presets.
     assert_eq!(rules[0]["cadence"]["every"]["days"], 7);
     assert_eq!(rules[0]["cadence"]["every"]["months"], 0);
     assert_eq!(rules[0]["cadence"]["invalid_day"], "clamp");
@@ -258,8 +239,6 @@ async fn a_rule_and_its_dates_arrive_as_one_query() {
 
 #[tokio::test]
 async fn an_applied_date_leaves_the_pending_inbox() {
-    // The sand's "Expected next" list shows `due` and `planned` only. If an
-    // applied date stayed pending, a person would be invited to pay it twice.
     let e = engine().await;
     let rent = concept(&e, "rent").await;
     let checking = record(&e, "checking").await;
@@ -316,7 +295,6 @@ async fn an_applied_date_leaves_the_pending_inbox() {
         applied[0]["entry"].is_string(),
         "an applied date points at the change it made"
     );
-    // And it is not offered again.
     let pending: Vec<&Value> = rows
         .iter()
         .filter(|r| {
@@ -374,6 +352,5 @@ async fn a_paused_rule_is_listed_with_its_state_so_it_can_be_resumed() {
         .find(|r| r["kind"] == "recurrence" && r["uid"] == rule)
         .expect("a paused rule is still listed");
     assert_eq!(listed["paused"], true);
-    // The revision moved, and resuming must quote the new one.
     assert_eq!(listed["revision"], 2);
 }

@@ -1,22 +1,3 @@
-//! A deactivated Person cannot log in, and cannot keep a session they had.
-//!
-//! The store tests prove the flag; `engine/tests/person_standing.rs` proves it
-//! travels. This is the one that proves it DOES ANYTHING — deactivation whose
-//! only evidence is a row is a checkbox, not a decision.
-//!
-//! Two properties, and the second is the one that is easy to miss:
-//!
-//! 1. **The refusal says exactly what a wrong password says.** "This account is
-//!    deactivated" is username enumeration with a helpful tone — it confirms
-//!    the name is real to anyone who guessed it. The person refused already
-//!    knows why, from whoever deactivated them.
-//! 2. **An OPEN session ends.** Blocking only new logins leaves whoever was
-//!    already signed in acting indefinitely, and the session that matters most
-//!    is precisely the one running when you decided to end it.
-//!
-//! Run against a real bound server rather than the handler, because both
-//! properties are about what reaches the wire.
-
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::time::Duration;
@@ -27,15 +8,11 @@ use web::{HttpServeMode, serve_cell_api_only};
 const ADMIN_PASSWORD: &str = "correct-horse-battery-staple";
 const MARIA_PASSWORD: &str = "she-picked-this-herself";
 
-/// One Cell per test binary: the data-dir override is a process-global
-/// `OnceCell`, same constraint `server_mode.rs` works under.
 async fn boot() -> SocketAddr {
     let data_dir = PathBuf::from(env!("CARGO_TARGET_TMPDIR")).join("person-standing-cell");
     let _ = std::fs::remove_dir_all(&data_dir);
     std::fs::create_dir_all(&data_dir).expect("create the test data dir");
     utils::config::set_lince_data_dir_override(data_dir).expect("set the data dir override");
-    // A test Cell must reach nothing: no node addresses in public DNS, no
-    // directory record on public pkarr relays.
     unsafe { std::env::set_var("LINCE_DISCOVERY_INTERNET", "0") };
 
     let staged = utils::desktop_setup::DesktopInstallSetup {
@@ -65,10 +42,6 @@ async fn boot() -> SocketAddr {
         .expect("the Cell should report its bound address")
 }
 
-/// The same database the running Cell holds. Standing is read from the store on
-/// every request, so writing it from here is exactly what an admin panel on
-/// another Cell would have done — and it keeps this test about the HTTP
-/// behaviour rather than about the action plumbing, which has its own suite.
 async fn store() -> Store {
     Store::open(&web::default_lince_db_url())
         .await
@@ -110,7 +83,6 @@ async fn a_deactivated_person_is_refused_in_the_same_words_and_loses_their_sessi
     .await
     .expect("maria has a login");
 
-    // --- she works to begin with, or nothing below means anything ---------
     let ok = login("maria", MARIA_PASSWORD).await;
     assert_eq!(
         ok.status(),
@@ -138,13 +110,10 @@ async fn a_deactivated_person_is_refused_in_the_same_words_and_loses_their_sessi
         "precondition: her token works while she is active"
     );
 
-    // What a wrong password looks like, recorded BEFORE deactivating so the
-    // comparison below is against a real response and not a guessed string.
     let wrong = login("maria", "not-her-password").await;
     assert_eq!(wrong.status(), reqwest::StatusCode::UNAUTHORIZED);
     let wrong_body = wrong.text().await.unwrap_or_default();
 
-    // --- she stops using Lince --------------------------------------------
     store::people::deactivate(
         &store.pool,
         &maria,
@@ -171,7 +140,6 @@ async fn a_deactivated_person_is_refused_in_the_same_words_and_loses_their_sessi
         "and it must not name the reason: {refused_body}"
     );
 
-    // --- and the session she already had is over --------------------------
     let stale = client
         .get(url("/host/board/state"))
         .bearer_auth(&token)
@@ -184,12 +152,6 @@ async fn a_deactivated_person_is_refused_in_the_same_words_and_loses_their_sessi
         "a token held from before must not outlive the decision"
     );
 
-    // --- the page must not render her either -------------------------------
-    //
-    // The SSR bootstrap resolves a viewer best-effort and never errors, so it
-    // is the quiet one: a chrome showing her name and role while every request
-    // behind it 401s is worse than a logged-out page, because it looks like
-    // Lince is broken rather than like she was turned off.
     let page = client
         .get(url("/"))
         .header("Cookie", format!("lince_auth={token}"))
@@ -203,13 +165,6 @@ async fn a_deactivated_person_is_refused_in_the_same_words_and_loses_their_sessi
         "the bootstrap must carry no viewer for a deactivated Person"
     );
 
-    // --- the socket is the door that matters -------------------------------
-    //
-    // `/host/board/state` is not where a signed-in person does things: the
-    // board and every sand act over this WebSocket, which resolves its subject
-    // ONCE at the upgrade and keeps it for the life of the connection. Without
-    // a per-frame re-read, a deactivated person with an open tab keeps working
-    // until they reload — which is the opposite of what deactivating means.
     store::people::reactivate(&store.pool, &maria)
         .await
         .expect("reactivate");
@@ -254,8 +209,6 @@ async fn a_deactivated_person_is_refused_in_the_same_words_and_loses_their_sessi
         .await
         .expect("send a frame");
 
-    // The connection ends rather than each frame erroring: there is nothing
-    // left for it to do, and a board that reconnects lands on the login screen.
     let closed = tokio::time::timeout(Duration::from_secs(10), async {
         while let Some(message) = socket.next().await {
             match message {
@@ -269,7 +222,6 @@ async fn a_deactivated_person_is_refused_in_the_same_words_and_loses_their_sessi
     .expect("the socket must not simply hang");
     assert!(closed, "an open board tab must not outlive the decision");
 
-    // --- people come back --------------------------------------------------
     store::people::reactivate(&store.pool, &maria)
         .await
         .expect("reactivate");

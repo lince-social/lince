@@ -1,13 +1,3 @@
-//! First-run bootstrap for the new store (the Cell). Seeds the native app tables
-//! (configuration + roles + the full permission catalog granted to `admin`) and,
-//! when auth is required and no admin exists yet, creates the initial admin user.
-//!
-//! On Linux/CLI the admin is created by prompting in the terminal (username +
-//! hidden password). On platforms that ask their own way (an installer form on
-//! Windows/macOS) there is no interactive terminal here, so we skip the prompt
-//! and leave admin creation to that platform flow — same policy as the legacy
-//! boot.
-
 use std::io::{self, IsTerminal, Write};
 
 use crossterm::{
@@ -19,17 +9,6 @@ use utils::auth::hash_password;
 use utils::desktop_setup::DesktopInstallSetup;
 use utils::logging::status;
 
-/// Seed the Cell's app tables and ensure an initial admin exists on first run.
-///
-/// `staged` carries the installer's one-shot setup (initial admin password,
-/// language) when the caller found a staged setup file; it wins over the
-/// interactive prompt so headless installer flows work.
-///
-/// `admin_is_mandatory` turns "could not create an admin" from a warning into
-/// a hard failure. A desktop Cell that comes up account-less is recoverable —
-/// the user is sitting at it. A `lince --server` box is not: it would boot a
-/// login wall with zero accounts and no terminal to fix it from, and look
-/// healthy while doing it.
 pub async fn bootstrap_cell(
     store: &Store,
     auth_required: bool,
@@ -37,8 +16,6 @@ pub async fn bootstrap_cell(
     staged: Option<&DesktopInstallSetup>,
     admin_is_mandatory: bool,
 ) -> Result<(), io::Error> {
-    // The permission catalog is owned by `utils::auth`; store stays
-    // decoupled and just persists whatever pairs it is handed.
     let permissions: Vec<(&str, &str)> = utils::auth::ALL_PERMISSIONS
         .iter()
         .map(|permission| (permission.subject, permission.action))
@@ -70,8 +47,6 @@ pub async fn bootstrap_cell(
         return Ok(());
     }
 
-    // First run with auth on and no admin yet: an installer-staged password
-    // wins; otherwise prompt when a terminal is available.
     let (username, password) = if let Some(password) = staged
         .and_then(|setup| setup.initial_admin_password.as_deref())
         .map(str::trim)
@@ -102,8 +77,6 @@ pub async fn bootstrap_cell(
     let admin_role = store::auth::ensure_role(&store.pool, store::auth::ADMIN_ROLE)
         .await
         .map_err(io::Error::other)?;
-    // The admin is a Person like everyone else; the credential is only how
-    // they prove it over HTTP.
     store::auth::create_person_login(
         &store.pool,
         &username,
@@ -119,8 +92,6 @@ pub async fn bootstrap_cell(
     Ok(())
 }
 
-/// Prompt (blocking, on a terminal) for the initial admin's username and a
-/// confirmed hidden password. Mirrors the legacy CLI bootstrap.
 fn prompt_admin_credentials() -> Result<(String, String), io::Error> {
     println!("Auth is enabled and the new store has no admin user yet.");
     let username = prompt_username()?;

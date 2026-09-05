@@ -142,10 +142,6 @@ mod tests {
         assert!(library.contains("trash:"));
     }
 
-    /// A disclosure's chevron has to move, or open and closed look identical
-    /// and the next author reaches for their own glyph — which then renders
-    /// INSIDE the shared one, because the mark is a bordered box and setting
-    /// `content` only fills it.
     #[test]
     fn the_disclosure_chevron_turns_with_the_section() {
         let css = std::str::from_utf8(LYNX_UI_CSS).expect("LynxUI CSS should be UTF-8");

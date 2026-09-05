@@ -70,13 +70,6 @@ async fn remote_entry(e: &Engine, uid: &str, field: &str) -> record_changes::Cha
         .expect("an overwrite by a remote op left an entry")
 }
 
-/// The property the box is for: correct is not the same as legible. B's edit
-/// loses a last-write-wins race it never saw, and without this it has no way
-/// to find out.
-///
-/// `slug` rather than `head`: head and body travel as Loro `crdt` ops and are
-/// merged character-wise, so they are the fields that do NOT race this way.
-/// The LWW columns are where an edit can be silently displaced.
 #[tokio::test]
 async fn a_losing_local_edit_leaves_an_entry_naming_the_winning_organ() {
     let (a, a_organ, b, _b_organ) = paired().await;
@@ -122,10 +115,6 @@ async fn a_losing_local_edit_leaves_an_entry_naming_the_winning_organ() {
     );
 }
 
-/// A remote op winning over a value the local Cell never authored is an
-/// ordinary update, not a loss. It is still logged — this is a log of recent
-/// changes, not only of losses — but it must not claim a local edit was lost,
-/// or the surface cries wolf on every ordinary sync.
 #[tokio::test]
 async fn an_overwrite_of_a_value_we_never_authored_is_not_marked_local() {
     let (a, _a_organ, b, _b_organ) = paired().await;
@@ -145,9 +134,6 @@ async fn an_overwrite_of_a_value_we_never_authored_is_not_marked_local() {
     );
 }
 
-/// An op that ARRIVES and loses must leave nothing: the local value stands, so
-/// there is no change to report. Without this the log fills with non-events on
-/// every catch-up from a peer running behind.
 #[tokio::test]
 async fn an_arriving_op_that_loses_leaves_no_entry() {
     let (a, _a_organ, b, _b_organ) = paired().await;

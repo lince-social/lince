@@ -1,14 +1,3 @@
-//! Agents: an Actor that is not a Person.
-//!
-//! Several agents work in this codebase at once, and the thing that lets them
-//! do that without coordinating is a task Record that says who holds it. So an
-//! Agent has to be a real assignable subject — not a convention in a comment —
-//! and it has to say whose it is.
-//!
-//! The Person type itself was deliberately NOT renamed to Actor: `actor` is a
-//! Concept with `person` and `agent` beneath it, which the DAG already answers
-//! questions about, and which costs no migration.
-
 use engine::Engine;
 use engine::actions::Action;
 use nucleus::RecordKind;
@@ -61,7 +50,6 @@ async fn an_agent_is_an_actor_beside_a_person_rather_than_a_kind_of_its_own() {
     );
     assert!(row.identity_predicate_uid.is_some(), "@agent is what it IS");
 
-    // The distinction lives in the Concept DAG: asking for Actors finds both.
     let actor = store::concepts::resolve(&e.store.pool, "actor")
         .await
         .unwrap()
@@ -105,8 +93,6 @@ async fn an_agent_says_which_person_is_answerable_for_it() {
                 && a.object_uid.as_deref() == Some(eduardo.as_str())),
         "operator: {assertions:?}"
     );
-    // The Organ half of "whose agent is this" needs nothing new — every Record
-    // already carries where it originated.
     let row = store::records::get(&e.store.pool, &uid)
         .await
         .unwrap()
@@ -117,9 +103,6 @@ async fn an_agent_says_which_person_is_answerable_for_it() {
     );
 }
 
-/// Resolve the operator BEFORE creating anything. Naming something that is not
-/// a Person otherwise leaves an unowned Agent behind — and an Agent nobody is
-/// answerable for is the exact thing the field exists to prevent.
 #[tokio::test]
 async fn an_operator_that_is_not_a_person_creates_no_agent() {
     let e = cell().await;
@@ -169,11 +152,6 @@ async fn an_agent_with_no_name_is_refused() {
     assert!(refused.is_err(), "an assignee list of blanks helps nobody");
 }
 
-/// Lince's own documentation, imported into a store.
-///
-/// The point of the bundle being Records rather than pages: once it is in your
-/// store you can edit it, link to it, and — later — have a chapter about Karma
-/// put real Karma Records in front of you.
 #[tokio::test]
 async fn importing_instinct_puts_the_documentation_in_the_store() {
     let e = cell().await;
@@ -190,9 +168,6 @@ async fn importing_instinct_puts_the_documentation_in_the_store() {
         assert_eq!(row.head, record.head);
     }
 
-    // The tree survived as assertions, not as an import order. `Record` sits
-    // two levels down — under Ontology, under the root — so this also proves
-    // the import carries a link the old one-hop reader could not have made.
     let chapter = bundle
         .iter()
         .find(|r| r.head == "Record")
@@ -201,11 +176,6 @@ async fn importing_instinct_puts_the_documentation_in_the_store() {
     let assertions = store::assertions::for_subjects(&e.store.pool, &uids)
         .await
         .unwrap();
-    // This used to assert that something pointed AT `Record`, which is the
-    // link inverted: `Record` is a child of Ontology, not a parent of
-    // anything. It passed only while the documentation happened to file
-    // something under it, and broke when the tree was reorganised — so it was
-    // testing an accident of the content rather than the property above.
     let parent_of = |child: &str| {
         let uid = bundle
             .iter()
@@ -236,7 +206,6 @@ async fn importing_instinct_puts_the_documentation_in_the_store() {
          the link a one-hop reader could not have made"
     );
     let _ = chapter;
-    // Completion and quantity are independent; this chapter authored zero.
     let level = store::records::quantity(&e.store.pool, chapter.projection.uid.trim())
         .await
         .unwrap()
@@ -244,8 +213,6 @@ async fn importing_instinct_puts_the_documentation_in_the_store() {
     assert_eq!(level.to_string(), "0", "#done does not rewrite quantity");
 }
 
-/// Importing twice must not undo an edit made in between. The whole reason
-/// these ship as Records is that you can change them.
 #[tokio::test]
 async fn a_second_import_leaves_your_edits_alone() {
     let e = cell().await;

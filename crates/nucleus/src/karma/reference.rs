@@ -6,8 +6,6 @@ use super::failure::KarmaBoundaryError;
 
 const CROCKFORD: &[u8] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
-/// Expected semantic kind of a resolved reference. Most Karma objects
-/// are Records and therefore intentionally share the `r_` uid family.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum ReferenceKind {
@@ -107,7 +105,6 @@ impl ReferenceKind {
     }
 }
 
-/// Uid validated against both its Crockford encoding and semantic kind.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TypedUid {
     kind: ReferenceKind,
@@ -179,7 +176,6 @@ impl<'de> Deserialize<'de> for TypedUid {
     }
 }
 
-/// User-owned dot.case slug. Kind namespaces are separate.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Slug(String);
 
@@ -233,7 +229,6 @@ impl<'de> Deserialize<'de> for Slug {
     }
 }
 
-/// Stable program-local name used for nodes and parameters.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct LocalId(String);
 
@@ -277,8 +272,6 @@ impl<'de> Deserialize<'de> for LocalId {
     }
 }
 
-/// Published identity: the uid is authoritative; the slug is retained only so
-/// explanations remain legible after renames.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct ResolvedReference {
     pub target: TypedUid,

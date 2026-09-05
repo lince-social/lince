@@ -9,8 +9,10 @@ Preserved source metadata: `@customization`, order 0, `#chapter`,
 `#instinct`, `#part-of @interface`, `#done`, uid
 `r_4Z5VS9MJNRDHZGXW4KMGRNXMHK`.
 
-Status: typed customization, semantic primitive-Sand and recursive-composition
-kernels landed; Configuration and external authoring are next.
+Status: typed customization, semantic primitive-Sand, recursive-composition
+and C3 Configuration/external-authoring kernels landed; C4 Rust catalog and
+first retained-runtime slice landed while domain Behavior migration remains
+active.
 
 Read when: implementing themes, token resolution, configuration, native visual character, or the Gallery.
 
@@ -22,7 +24,7 @@ Read when: implementing themes, token resolution, configuration, native visual c
 
 ### Landed customization kernel
 
-Contract version 1 is executable in the joined native runtime. It defines 91
+Contract version 1 is executable in the joined native runtime. It defines 92
 canonical `--lynx-*` roles with typed color, non-negative pixel length, signed
 pixel offset, scalar, integer, font, weight, line, duration and numeric-figure
 values. This distinction matters: a shadow offset may be negative, while
@@ -41,9 +43,10 @@ world nodes, borders and retained text. Its F1, F2, F3, F4 and F7 controls
 exercise workspace palette, group density, instance radius, partial-theme and
 mode changes. The Installed CEF fixture receives the same resolved set as CSS
 without a page reload; Website CEF receives neither style authority nor the
-Lince bridge. The release evidence resolved 91 tokens, performed two Installed
+Lince bridge. The first release evidence resolved 91 tokens, performed two Installed
 HTML updates while its document load count remained one, and passed on the
-Wayland/Vulkan host.
+Wayland/Vulkan host. C3 added the Sand-margin role; the generated reference and
+current joined evidence resolve all 92.
 
 The complete source boundary and migration classifications are in
 [Visual inventory](visual-inventory.md). That inventory does not claim the
@@ -76,6 +79,61 @@ new visual subsystem.
 Every value shown in the ordinary configuration surface names its origin and
 offers **inherit**; inherit removes the local value instead of copying the
 currently resolved one.
+
+#### Landed Configuration and external-authoring kernel
+
+`crates/interface/src/configuration.rs` is the executable authority for
+Configuration artifact, external-author manifest and domain-launch recipe
+schema version 1. The Configuration artifact contains the exact composition
+artifact rather than translating it: theme/mode, workspace and group layers,
+developer CSS and launch receipts live above it, while instance style and
+definition edits continue to revise the same placements and catalog.
+
+The Configuration Sand is a 22-definition package made from the landed
+primitives and compounds. F11 opens its native retained surface. Tab and
+Shift-Tab traverse 16 operations; Enter, pointer activation and AccessKit reach
+the same state transitions. The operations cover Dark/Light and content-hash
+theme selection, spacing, margin, gap, thickness, typography, density, group
+and instance overrides, typed extensions, definition configuration defaults,
+ports, declarative Behavior, projection isolation/capabilities, developer CSS,
+safe reset, inherit, undo, domain launch/focus and save/reopen. The panel shows
+representative resolved values with the winning scope and label, and a refused
+edit leaves the last good preview active.
+
+Human runs atomically persist `configuration.json` beneath the Lince
+configuration directory. Automated runs use their report directory. Save
+writes a pending candidate and renames it only after the combined
+Configuration/composition artifact validates. A missing file creates a
+complete default; unreadable bytes, a stale schema, a missing theme identity
+or a mismatched manifest hash opens the complete default without overwriting
+the refused source. An edit is not installed into the live artifact or undo
+history until that atomic rename succeeds, so a disk failure also leaves the
+last good preview intact.
+
+A theme is selected by manifest uid plus SHA-256, never by an arbitrary path or
+remote URL. Manifest assets retain relative path, kind and hash validation.
+Declared `--lynx-local-*` extensions carry a type and participate in the same
+resolver. Native data, shared HTML, isolated Installed HTML and browser roots
+receive identical resolved declarations; the joined probe changes the
+Configuration preview in Installed CEF and returns to the Gallery style
+without reloading its document.
+
+Developer CSS is a bounded declaration list scoped to a declared root. The
+validator refuses selectors and braces, `@import`, URLs, executable and
+extension schemes, dynamic bindings, `!important`, host-security stacking and
+positioning properties, and malformed or unapproved presentation properties.
+The preview therefore cannot restyle the native Configuration Sand, which is
+the always-reachable reset outside the customized root.
+
+The parity diagnostic publishes the generated token reference, Configuration
+and launch schemas, accepted/refused fixtures and a seven-file external-author
+kit under `target/interface-laboratory/sand-contract/`. The kit uses ordinary
+HTML, CSS and native ES modules; Maud remains optional. Unknown versions fail
+closed. A domain recipe contains exact Sand revisions, placements, typed
+Record inputs and exported Action bindings. One operation creates its ordinary
+composition placements and persisted receipt; applying or reopening the same
+domain object focuses the existing placement and increments provenance rather
+than cloning it. Neither recipe nor receipt contains renderer handles.
 
 #### Required visual character
 
@@ -232,13 +290,11 @@ The implementation order is binding and closes behind us:
 7. Recursive composition, group locking, saved compound Sands/Castles,
    overrides, exported ports and explicit teardown have landed in the F10
    composition workbench.
-8. Finish the Configuration Sand and advanced editor so a human can exercise
-   every supported scope without editing files.
-9. Rebuild the native base and every official Sand on the shared pieces under
+8. Rebuild the native base and every official Sand on the shared pieces under
    Plan A, or the base Web surface under Plan B, deleting legacy CSS, copied
    HTML, and old APIs rather than adapting around them. Browser Facades keep
    the renderer adapter selected for their capabilities.
-10. Land author documentation, accessibility and behavior tests, CEF/iframe
+9. Land the remaining official-Sand author documentation, accessibility and behavior tests, CEF/iframe
     and theme tests, runtime validation, and automated design-system checks.
 
 Box canvas, Protein-area, grouping, wiring, and spatial-area implementation

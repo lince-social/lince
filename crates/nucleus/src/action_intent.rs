@@ -1,9 +1,3 @@
-//! Canonical, transport-neutral signed Action intent envelopes.
-//!
-//! Session identity is server-owned. A client proves possession of one Person
-//! key for the session, then signs a strictly ordered stream of exact Action
-//! JSON payloads without ever supplying the action's effective actor.
-
 use serde::{Deserialize, Serialize};
 
 const ACTION_DOMAIN: &str = "lince.action-intent.v1";
@@ -37,8 +31,6 @@ pub struct SignedActionIntent {
     pub session_challenge: String,
     pub sequence: u64,
     pub message_id: String,
-    /// Standard-base64 encoded UTF-8 JSON. Keeping the exact payload bytes in
-    /// the envelope avoids cross-language JSON number and object-order drift.
     pub action_base64: String,
     pub signature: String,
 }
@@ -55,8 +47,6 @@ impl SignedActionIntent {
     }
 }
 
-/// Canonical UTF-8 bytes, with no trailing newline. Inputs are validated by
-/// the engine to exclude CR/LF, making the framing equally simple in browsers.
 pub fn signing_bytes(
     session_id: &str,
     session_challenge: &str,

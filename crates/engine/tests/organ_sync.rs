@@ -1,8 +1,3 @@
-//! Part XV acceptance over the op-batch wire (Ontology §11): introduction,
-//! reactive deltas through the bounded outbox, catch-up by checkpoint,
-//! hardened fact import, per-field LWW convergence, tombstones that cannot
-//! resurrect, and the discovery feed closing the loop into the Decision Queue.
-
 use engine::Engine;
 use engine::actions::{Action, ConceptSeed};
 use engine::sync::Delivery;
@@ -70,8 +65,6 @@ impl PipeBump for String {
     }
 }
 
-/// The reactive wire: drain `from`'s bounded outbox into `to` — what the HTTP
-/// boundary does in production. Returns batches delivered.
 async fn wire_push(from: &Engine, to: &Engine) -> usize {
     from.drain_outbox(|_contact, root, batch| async move {
         match root {
@@ -84,12 +77,6 @@ async fn wire_push(from: &Engine, to: &Engine) -> usize {
     .expect("drain")
 }
 
-/// The same wire, but ADDRESSED: only batches destined for `to_organ` are
-/// delivered, and a batch for anyone else is dropped as if that contact were
-/// offline. `wire_push` above ignores the contact, which is fine while a Cell
-/// has one contact and silently wrong the moment it has two — it hands every
-/// contact's batch to the same receiver. Any test about per-contact policy
-/// must use this one or it proves nothing.
 async fn wire_push_to(from: &Engine, to: &Engine, to_organ: &str) -> usize {
     from.drain_outbox(|contact, root, batch| {
         let addressed = contact.record_uid == to_organ;
@@ -108,8 +95,6 @@ async fn wire_push_to(from: &Engine, to: &Engine, to_organ: &str) -> usize {
     .expect("drain")
 }
 
-/// The catch-up wire: `to` pulls everything past its checkpoint for
-/// `from_organ` and advances it — what the 30s cycle does in production.
 async fn wire_catch_up(from: &Engine, to: &Engine, from_organ: &str) -> usize {
     let checkpoint = store::organs::contact(&to.store.pool, from_organ)
         .await
@@ -130,7 +115,6 @@ async fn wire_catch_up(from: &Engine, to: &Engine, from_organ: &str) -> usize {
     applied
 }
 
-/// Introduce two cells to each other and let `a` push to `b`.
 async fn pair_push(a: &Engine, b: &Engine, b_organ: &str) {
     let a_intro = a.introduction().await.unwrap();
     let b_intro = b.introduction().await.unwrap();
@@ -147,7 +131,6 @@ async fn donation_flows_between_two_cells_and_feeds_the_decision_queue() {
     let (b, b_organ) = cell("http://cell-b").await;
     pair_push(&a, &b, &b_organ).await;
 
-    // Ana's Cell: 10 apples, tagged @apple.
     let apple = store::concepts::create(&a.store.pool, "apple", &[])
         .await
         .unwrap();
@@ -156,10 +139,8 @@ async fn donation_flows_between_two_cells_and_feeds_the_decision_queue() {
         .await
         .unwrap();
 
-    // DONATION over the wire: the bounded outbox drains through the boundary.
     assert_eq!(wire_push(&a, &b).await, 1, "one batch for one contact");
 
-    // B has the record by the SAME uid, deltas applied, signatures verified.
     let imported = store::records::get(&b.store.pool, &apples).await.unwrap();
     assert!(imported.is_some(), "identity replicates by uid");
     assert_eq!(
@@ -177,13 +158,12 @@ async fn donation_flows_between_two_cells_and_feeds_the_decision_queue() {
         "adopted keys verify the origin signatures"
     );
 
-    // Idempotent: importing the same ops twice — the second pass is a no-op.
     let (ops, _) = a.ops_after(0, 100_000).await.unwrap();
     let batch = OpBatch {
         from_organ: a_organ.clone(),
         ops,
     };
-    b.import_op_batch(&batch).await.unwrap(); // catches pre-pairing ops
+    b.import_op_batch(&batch).await.unwrap();
     let replay = b.import_op_batch(&batch).await.unwrap();
     assert_eq!(replay, 0, "duplicate op identity is a no-op");
     assert_eq!(
@@ -194,7 +174,6 @@ async fn donation_flows_between_two_cells_and_feeds_the_decision_queue() {
         Some(10.0)
     );
 
-    // ---- the discovery loop: A's open offer meets B's Need as a decision
     let ana = person(&a, "ana").await;
     store::visibility::grant(&a.store.pool, "organ", Some(&b_organ), &apples)
         .await
@@ -203,7 +182,7 @@ async fn donation_flows_between_two_cells_and_feeds_the_decision_queue() {
         &a.store.pool,
         store::misc::NewPromise {
             record_uid: Some(apples.clone()),
-            delta: 5.0, // an open Contribution
+            delta: 5.0,
             party_uid: Some(ana),
             state: Some(PromiseState::Open),
             ..Default::default()
@@ -212,7 +191,6 @@ async fn donation_flows_between_two_cells_and_feeds_the_decision_queue() {
     .await
     .unwrap();
 
-    // B adopts A's concept (uid + lineage) and has a complementary Need.
     b.act(
         Action::AdoptConcepts {
             concepts: vec![ConceptSeed {
@@ -257,8 +235,6 @@ async fn donation_flows_between_two_cells_and_feeds_the_decision_queue() {
     .await
     .unwrap();
 
-    // B pulls A's visible open promises into its discovery cache (the wire's
-    // pull side; proximity stamped from B's own contact row).
     let fetched = a.open_promise_export(&b_organ).await.unwrap();
     assert_eq!(fetched.len(), 1, "only what visibility allows travels");
     b.refresh_discovery(&a_organ, fetched).await.unwrap();
@@ -266,7 +242,6 @@ async fn donation_flows_between_two_cells_and_feeds_the_decision_queue() {
     let drafts = b.senses_pass().await.unwrap();
     assert_eq!(drafts.len(), 1, "the offer meets the Need in the queue");
 
-    // ---- blocked rejects everything everywhere
     store::organs::set_trust(&b.store.pool, &a_organ, "blocked")
         .await
         .unwrap();
@@ -296,7 +271,7 @@ async fn tampered_facts_are_quarantined_on_import() {
         .iter_mut()
         .find(|op| op.fact.as_ref().is_some_and(|f| !f.delta.is_zero()))
         .expect("a quantity fact travels");
-    tampered.fact.as_mut().unwrap().delta = store::exact::from_f64(500.0); // the tamper
+    tampered.fact.as_mut().unwrap().delta = store::exact::from_f64(500.0);
 
     b.import_op_batch(&OpBatch {
         from_organ: a_organ.clone(),
@@ -321,9 +296,6 @@ async fn tampered_facts_are_quarantined_on_import() {
     );
 }
 
-/// E0.0: a Fact's declared precision must survive the sync wire, not just its
-/// value — the preimage carries the scale, so any f64 round-trip would land
-/// the chain in quarantine.
 #[tokio::test]
 async fn declared_precision_survives_the_sync_wire() {
     let (a, _a_organ) = cell("http://cell-precise-a").await;
@@ -368,7 +340,6 @@ async fn different_field_edits_converge_both_ways() {
     let note = plain(&a, "shared.note", 0.0).await;
     assert!(wire_push(&a, &b).await >= 1);
 
-    // Concurrent edits to DIFFERENT fields of the same record.
     a.act(
         Action::EditRecordText {
             target: note.clone(),
@@ -391,8 +362,6 @@ async fn different_field_edits_converge_both_ways() {
     .unwrap();
     wire_push(&a, &b).await;
     wire_push(&b, &a).await;
-    // Text now merges through the record-doc: settle the echo round so both
-    // cells hold the merged doc.
     wire_push(&a, &b).await;
 
     for e in [&a, &b] {
@@ -424,14 +393,13 @@ async fn older_ops_lose_lww_and_tombstones_cannot_resurrect() {
     .unwrap();
     wire_push(&a, &b).await;
 
-    // (b) an op with an OLDER HLC than the stored field is logged but ignored.
     let stale = engine::sync::WireOp {
         tbl: "record".into(),
         uid: note.clone(),
         field: "head".into(),
         kind: "set".into(),
         value: Some("\"stale\"".into()),
-        hlc: 1, // ancient
+        hlc: 1,
         actor_cell: a_organ.clone(),
         organ_uid: a_organ.clone(),
         fact: None,
@@ -452,7 +420,6 @@ async fn older_ops_lose_lww_and_tombstones_cannot_resurrect() {
         "older set loses LWW"
     );
 
-    // (c) delete, then a LATE older set arrives — the record stays deleted.
     a.act(
         Action::DeleteRecord {
             target: note.clone(),
@@ -475,7 +442,7 @@ async fn older_ops_lose_lww_and_tombstones_cannot_resurrect() {
         field: "head".into(),
         kind: "set".into(),
         value: Some("\"zombie\"".into()),
-        hlc: 2, // older than the tombstone
+        hlc: 2,
         actor_cell: a_organ.clone(),
         organ_uid: a_organ.clone(),
         fact: None,
@@ -494,9 +461,6 @@ async fn older_ops_lose_lww_and_tombstones_cannot_resurrect() {
         "a late older set cannot resurrect a deleted record"
     );
 
-    // A set NEWER than the tombstone undeletes — undelete is a newer write.
-    // The record was collab-edited, so the record-doc owns its text: the op's
-    // undelete power applies, its text payload is log-only.
     let revive = engine::sync::WireOp {
         tbl: "record".into(),
         uid: note.clone(),
@@ -529,7 +493,7 @@ async fn outbox_is_bounded_per_contact_and_field() {
     pair_push(&a, &b, &b_organ).await;
 
     let note = plain(&a, "busy.note", 0.0).await;
-    wire_push(&a, &b).await; // flush creation ops
+    wire_push(&a, &b).await;
     for i in 0..50 {
         a.act(
             Action::EditRecordText {
@@ -542,8 +506,6 @@ async fn outbox_is_bounded_per_contact_and_field() {
         .await
         .unwrap();
     }
-    // Text edits are cumulative crdt ops keyed (record, uid, "") — the burst
-    // coalesces to ONE queued op whose tail carries every edit.
     let queued: Vec<_> = sync_ops::outbox_due(&a.store.pool)
         .await
         .unwrap()
@@ -567,21 +529,10 @@ async fn outbox_is_bounded_per_contact_and_field() {
     );
 }
 
-/// Relaying is OFF (Ontology §11 "Op authenticity"), and this test used to
-/// assert the opposite.
-///
-/// An imported op is stored, so it still rides a catch-up feed to a peer that
-/// asks us for our log — but it is never pushed onward. That is what makes
-/// `op.organ_uid == batch.from_organ` free: with relay on, the Organ on the
-/// other end is a carrier rather than the author, and the receiver cannot tell
-/// a forged attribution from a relayed one without signatures that do not
-/// exist yet.
 #[tokio::test]
 async fn imported_ops_are_not_pushed_onward() {
     let (a, a_organ) = cell("http://cell-a").await;
     let (b, b_organ) = cell("http://cell-b").await;
-    // B pushes to A (so A's outbox has a contact to enqueue for), and B also
-    // has a second contact C to relay to.
     pair_push(&a, &b, &b_organ).await;
     store::organs::set_sync_policy(&b.store.pool, &a_organ, true, false)
         .await
@@ -610,7 +561,6 @@ async fn imported_ops_are_not_pushed_onward() {
         for_c.is_empty(),
         "…and no push onward to other contacts either"
     );
-    // Still in the log, so a peer asking B for its feed receives it.
     let stored = sync_ops::for_field(&b.store.pool, "record", &note, "head")
         .await
         .unwrap();
@@ -637,7 +587,6 @@ async fn extension_keys_merge_across_cells() {
     .unwrap();
     wire_push(&a, &b).await;
 
-    // A bumps the estimate on a laptop; B logs an owner on a phone.
     store::records::set_extension(
         &a.store.pool,
         &task,
@@ -672,8 +621,6 @@ async fn catch_up_finds_ops_written_before_the_pairing() {
     let (a, a_organ) = cell("http://cell-a").await;
     let (b, b_organ) = cell("http://cell-b").await;
 
-    // The record exists BEFORE the contacts pair: the reactive path never saw
-    // it, so only catch-up can deliver it.
     let old = plain(&a, "old.note", 0.0).await;
     pair_push(&a, &b, &b_organ).await;
     assert!(
@@ -693,7 +640,6 @@ async fn catch_up_finds_ops_written_before_the_pairing() {
         "the pre-pairing record lands"
     );
 
-    // Converged: the next cycle is one empty answer.
     let checkpoint = store::organs::contact(&b.store.pool, &a_organ)
         .await
         .unwrap()
@@ -704,20 +650,12 @@ async fn catch_up_finds_ops_written_before_the_pairing() {
     assert_eq!(head, checkpoint);
 }
 
-/// The per-contact scope must hold on the PUSH path, not only on the pull one.
-///
-/// It was built into `FetchOpsSince` first, which is the path a peer takes
-/// when it asks us — while `drain_outbox`, the path the sync runner actually
-/// drives, sent every column regardless. A narrowing that covers one of two
-/// delivery paths is not a narrowing, so this test drives the outbox rather
-/// than the fetch.
 #[tokio::test]
 async fn a_narrowed_contact_is_narrowed_on_the_push_path_too() {
     let (a, _a_organ) = cell("http://cell-a").await;
     let (b, b_organ) = cell("http://cell-b").await;
     pair_push(&a, &b, &b_organ).await;
 
-    // B may see how much of a thing there is, and not what it is called.
     store::organs::set_contact_scope(&a.store.pool, &b_organ, Some(&["quantity".to_string()]))
         .await
         .unwrap();
@@ -742,8 +680,6 @@ async fn a_narrowed_contact_is_narrowed_on_the_push_path_too() {
         .expect("the record itself still arrives — narrowing hides columns, not rows");
     assert_eq!(landed.head, "", "the headline was outside the scope");
     assert_eq!(landed.body, "", "the body rode with it and is outside too");
-    // And the named column DID arrive — without this the test would pass just
-    // as well if the scope had dropped everything.
     assert_eq!(
         store::records::quantity(&b.store.pool, &note)
             .await
@@ -753,8 +689,6 @@ async fn a_narrowed_contact_is_narrowed_on_the_push_path_too() {
         "the one column the scope names travels"
     );
 
-    // And the withheld ops are not left queued forever: an op this contact
-    // will never be sent is not owed, so nothing holds the outbox open.
     assert!(
         sync_ops::outbox_due(&a.store.pool)
             .await
@@ -765,8 +699,6 @@ async fn a_narrowed_contact_is_narrowed_on_the_push_path_too() {
     );
 }
 
-/// Per-record hiding: WHOLE rows kept out of one contact's feed, where the
-/// scope keeps out columns. Both filters run on both delivery paths.
 #[tokio::test]
 async fn a_hidden_record_stays_out_of_that_contacts_feed_only() {
     let (a, _a_organ) = cell("http://cell-a").await;
@@ -812,7 +744,6 @@ async fn a_hidden_record_stays_out_of_that_contacts_feed_only() {
         "per CONTACT: C was never told to hide anything"
     );
 
-    // Unhiding is the same act back, and the feed reopens.
     a.act(
         Action::HideRecordFromContact {
             target: b_organ.clone(),
@@ -844,9 +775,6 @@ async fn a_hidden_record_stays_out_of_that_contacts_feed_only() {
     );
 }
 
-/// A hidden Record's facts and links must not ride either. An op that names a
-/// different table still belongs to a Record, and only that mapping decides
-/// whose policy governs it.
 #[tokio::test]
 async fn hiding_a_record_hides_the_facts_hanging_off_it() {
     let (a, a_organ) = cell("http://cell-a").await;
@@ -864,7 +792,6 @@ async fn hiding_a_record_hides_the_facts_hanging_off_it() {
     )
     .await
     .unwrap();
-    // A quantity fact is its own op on its own table.
     a.append_user(&counted, 42.0).await.expect("bump");
     wire_push(&a, &b).await;
 
@@ -875,8 +802,6 @@ async fn hiding_a_record_hides_the_facts_hanging_off_it() {
             .is_none(),
         "the record never arrives"
     );
-    // Nothing about it reached B, so B cannot have a quantity for a record it
-    // does not hold — the check that would fail if fact ops rode alone.
     assert_eq!(
         store::records::quantity(&b.store.pool, &counted)
             .await
@@ -888,8 +813,6 @@ async fn hiding_a_record_hides_the_facts_hanging_off_it() {
     let _ = a_organ;
 }
 
-/// Hiding refuses a Record that does not exist rather than storing a rule that
-/// hides nothing while reading as applied.
 #[tokio::test]
 async fn hiding_refuses_a_record_and_a_contact_it_cannot_find() {
     let (a, a_organ) = cell("http://cell-a").await;
@@ -925,13 +848,6 @@ async fn hiding_refuses_a_record_and_a_contact_it_cannot_find() {
     );
 }
 
-/// Unhiding is a GRANT, and a grant that does not reach back grants nothing.
-///
-/// The ops this contact missed sit below their version vector, so ordinary
-/// catch-up will never offer them again — without a replay the Record stays
-/// permanently absent while the panel reads as shared. Note there is no edit
-/// after the unhide: an earlier test proved the NEXT change arrives, which is
-/// a much weaker claim and passes even with no replay at all.
 #[tokio::test]
 async fn unhiding_replays_the_record_the_contact_never_received() {
     let (a, _a_organ) = cell("http://cell-a").await;
@@ -978,8 +894,6 @@ async fn unhiding_replays_the_record_the_contact_never_received() {
     )
     .await
     .unwrap();
-    // Two passes: the record-doc settles its text on the echo round, exactly
-    // as it does for an ordinary edit.
     wire_push_to(&a, &b, &b_organ).await;
     wire_push_to(&a, &b, &b_organ).await;
 
@@ -991,9 +905,6 @@ async fn unhiding_replays_the_record_the_contact_never_received() {
         landed.head, "written while hidden",
         "including what changed while they could not see it"
     );
-    // The quantity is a fact chain, and facts are the reason a re-grant cannot
-    // be a snapshot of current state: `quantity` is ADDED on apply, so a
-    // synthesized 'current value' op would have made this 24.
     assert_eq!(
         store::records::quantity(&b.store.pool, &held)
             .await
@@ -1004,16 +915,12 @@ async fn unhiding_replays_the_record_the_contact_never_received() {
     );
 }
 
-/// Widening a scope has to reach back, for the same reason unhiding does: the
-/// ops for a newly-named column are already below the contact's version
-/// vector, so catch-up will never offer them again.
 #[tokio::test]
 async fn widening_a_scope_replays_the_columns_it_adds() {
     let (a, _a_organ) = cell("http://cell-a").await;
     let (b, b_organ) = cell("http://cell-b").await;
     pair_push(&a, &b, &b_organ).await;
 
-    // B may see the quantity and nothing else.
     a.act(
         Action::SetContactScope {
             target: b_organ.clone(),
@@ -1046,8 +953,6 @@ async fn widening_a_scope_replays_the_columns_it_adds() {
         "the text was outside the scope"
     );
 
-    // Widen. Nothing is edited afterwards — an edit would carry the text on
-    // its own and the test would prove nothing about the repair.
     a.act(
         Action::SetContactScope {
             target: b_organ.clone(),
@@ -1069,8 +974,6 @@ async fn widening_a_scope_replays_the_columns_it_adds() {
         "the newly-named column arrives"
     );
     assert_eq!(landed.body, "the body");
-    // The replay walks the whole feed, so the column that was ALREADY shared
-    // rides again — and must not be counted twice.
     assert_eq!(
         store::records::quantity(&b.store.pool, &note)
             .await
@@ -1081,8 +984,6 @@ async fn widening_a_scope_replays_the_columns_it_adds() {
     );
 }
 
-/// Narrowing needs no repair and must not trigger one: it stops sending, it
-/// does not reach back and retract.
 #[tokio::test]
 async fn narrowing_a_scope_queues_nothing() {
     let (a, _a_organ) = cell("http://cell-a").await;
@@ -1102,10 +1003,6 @@ async fn narrowing_a_scope_queues_nothing() {
     )
     .await
     .unwrap();
-    // Checked against the RECORD rather than against the whole outbox: every
-    // contact action annotates the contact's own Record, which is an ordinary
-    // logged write and queues an op of its own. An assertion that the outbox
-    // is empty would be failing on that, not on a replay.
     assert!(
         sync_ops::outbox_due(&a.store.pool)
             .await
@@ -1116,9 +1013,6 @@ async fn narrowing_a_scope_queues_nothing() {
     );
 }
 
-/// A widening queues the DIFFERENCE, not the feed. The repair asks the same
-/// predicate the drain will ask, twice — once with the old scope and once with
-/// the new — so what gets repaired and what gets served cannot disagree.
 #[tokio::test]
 async fn widening_queues_only_what_it_newly_permits() {
     let (a, _a_organ) = cell("http://cell-a").await;
@@ -1170,10 +1064,6 @@ async fn widening_queues_only_what_it_newly_permits() {
             .any(|row| matches!(row.kind.as_str(), "crdt" | "snapshot")),
         "the collaborative document is queued: {queued:?}"
     );
-    // Everything queued is TEXT: the creation-time `head`/`body` sets and the
-    // record-doc ops. Nothing about quantity, which was already in scope — a
-    // widening owes only what it newly permits, and re-sending the rest is
-    // the O(current state) churn the diff exists to avoid.
     assert!(
         queued.iter().all(|row| row.tbl == "record"
             && (row.field == "head" || row.field == "body" || row.field.is_empty())),
@@ -1185,8 +1075,6 @@ async fn widening_queues_only_what_it_newly_permits() {
     );
 }
 
-/// A fact logs under an empty field, and an empty field is not a wildcard. A
-/// contact scoped to the text must not receive our quantity changes.
 #[tokio::test]
 async fn a_scope_without_quantity_does_not_receive_the_facts() {
     let (a, _a_organ) = cell("http://cell-a").await;

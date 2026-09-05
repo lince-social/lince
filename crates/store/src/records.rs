@@ -1,7 +1,3 @@
-//! Record repository. NOTE: `record.quantity` is written ONLY by the engine's
-//! fact appender (`bump_quantity` below is called inside that transaction and
-//! nowhere else — blueprint 0.3).
-
 use chrono::Utc;
 use nucleus::{DecimalValue, RecordKind};
 use sqlx::{Row, Sqlite, SqlitePool, Transaction};
@@ -10,7 +6,6 @@ use crate::StoreError;
 use crate::exact::{decimal_columns, read_decimal};
 use crate::sync_ops::OpKind;
 
-/// Log one local `set` op on the `record` table (Ontology §11 op log).
 async fn log_set(
     pool: &SqlitePool,
     uid: &str,
@@ -35,34 +30,21 @@ pub struct RecordRow {
     pub kind: String,
     pub head: String,
     pub body: String,
-    /// The cache of this record's fact fold — exact, so it can never disagree
-    /// with its chain by a rounding step (blueprint E0.0).
     pub quantity: DecimalValue,
     pub identity_predicate_uid: Option<String>,
     pub unit_uid: Option<String>,
     pub place_uid: Option<String>,
-    /// The organ (a `kind='organ'` record) this record originated from —
-    /// `None` means "no known origin" (e.g. created before this column, or
-    /// never stamped). Lets Protein filter records by organ (`organ_eq` /
-    /// `organ_in`) and lets Sync/File Sync select WHAT travels where by
-    /// pointing at a Protein instead of a hardcoded rule.
     pub organ_uid: Option<String>,
     pub created_at: String,
     pub updated_at: String,
-    /// Creation order that does not depend on any machine's clock. `None` for
-    /// rows written before this column existed — sort those LAST rather than
-    /// treating the absence as a time.
     pub created_hlc: Option<i64>,
 }
 
 impl RecordRow {
-    /// Lossy view of the quantity for display, charts and legacy float math.
-    /// Never write this back to the Ledger.
     pub fn quantity_f64(&self) -> f64 {
         self.quantity.to_f64()
     }
 
-    /// `quantity != 0` — the universal activation knob on non-plain kinds.
     pub fn is_active(&self) -> bool {
         !self.quantity.is_zero()
     }
@@ -102,18 +84,6 @@ pub async fn create(pool: &SqlitePool, new: NewRecord<'_>) -> Result<RecordRow, 
     create_in_root(pool, new, None).await
 }
 
-/// Create a Record under a uid decided OUTSIDE this Cell.
-///
-/// For a folder of `.lingua` files written before any of them is adopted: a
-/// link is `[[Title|uid]]` and a link without a uid is refused, so files that
-/// reference each other must agree on their uids in advance. Minting them into
-/// the files is what makes such a folder self-contained — the alternative is
-/// importing once with no links and adding them in a second pass, which means
-/// the folder is never valid on its own.
-///
-/// Refuses a uid that is malformed or already taken. A collision must never
-/// adopt or overwrite the existing Record: two different things claiming one
-/// identifier is the one failure that cannot be undone afterwards.
 pub async fn create_with_uid(
     pool: &SqlitePool,
     new: NewRecord<'_>,
@@ -132,19 +102,6 @@ pub async fn create_with_uid(
     create_inner(pool, new, None, Some(uid)).await
 }
 
-/// Create a Record inside an individual-replica root (Ontology §11 "Threads").
-///
-/// `root` is written in the SAME INSERT as the row, deliberately: every
-/// `log_set` below resolves the op's `replica_root` from this column, so a
-/// Record that got its root a moment later would have already logged ops onto
-/// the GENERAL feed — and those ops are served to any `sync_in` contact on
-/// their next catch-up. Stamping at creation is what closes that window, and
-/// it is why there is no "make this existing Record private" call here.
-///
-/// Deferred, and not solvable by adding one: adopting an ARBITRARY existing
-/// Record into a root. It needs a backfill decision for ops already logged and
-/// a UI that says plainly that already-sent ops cannot be un-sent. Until then
-/// the only way into a root is to be born in one.
 pub async fn create_in_root(
     pool: &SqlitePool,
     new: NewRecord<'_>,
@@ -169,17 +126,8 @@ async fn create_inner(
         None => nucleus::new_uid("r"),
     };
     let now = Utc::now().to_rfc3339();
-    // One stamp for the record, taken here rather than derived from its ops:
-    // `log_local` mints an HLC per FIELD, so "the record's HLC" would otherwise
-    // be several different values. This is creation order, and like
-    // `replica_root` it is written once and never changes.
     let created_hlc = nucleus::hlc::next();
     let (mantissa, scale) = decimal_columns(new.quantity);
-    // The origin Organ, IN the insert. It used to be stamped by a separate
-    // UPDATE below, which left every new Record briefly unattributable and —
-    // when no local Organ existed — permanently so. `Store::open` mints the
-    // identity, so the `None` arm is unreachable; it is an error rather than a
-    // silent skip because a Record with no origin can no longer be stored.
     let origin = crate::organs::local(pool)
         .await?
         .map(|organ| organ.uid)
@@ -218,8 +166,6 @@ async fn create_inner(
     if let Some(slug) = new.slug {
         log_set(pool, &uid, "slug", serde_json::json!(slug)).await?;
     }
-    // The column is written by the INSERT now; the op is still logged so
-    // contacts learn the origin from the feed like every other field.
     log_set(pool, &uid, "organ_uid", serde_json::json!(&origin)).await?;
     get(pool, &uid).await.map(|r| r.expect("just inserted"))
 }
@@ -239,7 +185,6 @@ pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<RecordRow>, Stor
     .transpose()
 }
 
-/// Resolve `@token`: slug first, uid fallback.
 pub async fn resolve(pool: &SqlitePool, token: &str) -> Result<Option<RecordRow>, StoreError> {
     sqlx::query(
         "SELECT r.*,
@@ -269,10 +214,6 @@ pub async fn quantity(pool: &SqlitePool, uid: &str) -> Result<Option<DecimalValu
     .transpose()
 }
 
-/// Read a live Record's exact quantity while participating in a larger write
-/// transaction (for example, a Kanban state transition that also changes
-/// assertions). Keeping this beside `quantity` prevents callers from opening a
-/// second connection and observing a different level mid-transition.
 pub async fn quantity_in_transaction(
     tx: &mut Transaction<'_, Sqlite>,
     uid: &str,
@@ -288,9 +229,6 @@ pub async fn quantity_in_transaction(
     .transpose()
 }
 
-/// ISO timestamp a record was created — threads/messages surface this so a
-/// Record-style UI can show "when" without RecordRow carrying it
-/// everywhere (most callers never need it).
 pub async fn created_at(pool: &SqlitePool, uid: &str) -> Result<Option<String>, StoreError> {
     Ok(
         sqlx::query("SELECT created_at FROM record WHERE uid = ? AND deleted_at IS NULL")
@@ -301,10 +239,6 @@ pub async fn created_at(pool: &SqlitePool, uid: &str) -> Result<Option<String>, 
     )
 }
 
-/// HARD delete = tombstone (2026-07-17), DISTINCT from `deactivate` (quantity
-/// -> 0). The row stays (uids/provenance stay resolvable in the Ledger's
-/// history) but no read path returns it again; the UNIQUE slug is freed for
-/// reuse. Facts are never touched — the hash chain stays verifiable.
 pub async fn mark_deleted(pool: &SqlitePool, uid: &str) -> Result<bool, StoreError> {
     let now = Utc::now().to_rfc3339();
     let res = sqlx::query(
@@ -323,7 +257,6 @@ pub async fn mark_deleted(pool: &SqlitePool, uid: &str) -> Result<bool, StoreErr
     Ok(deleted)
 }
 
-/// Every record, oldest first — the Protein `source: record` base set.
 pub async fn list_all(pool: &SqlitePool) -> Result<Vec<RecordRow>, StoreError> {
     map_rows(
         sqlx::query(
@@ -338,12 +271,7 @@ pub async fn list_all(pool: &SqlitePool) -> Result<Vec<RecordRow>, StoreError> {
     )
 }
 
-/// Active Needs in stable tie-break order (oldest first) — the focus-queue
-/// candidate set (blueprint Window 1b). Window-based urgency joins in later
-/// with Promises; created_at is the final tie-break already.
 pub async fn active_needs(pool: &SqlitePool) -> Result<Vec<RecordRow>, StoreError> {
-    // A canonical mantissa carries its own sign, so "is negative" is an exact
-    // text test — there is no numeric column left to compare against 0.
     map_rows(
         sqlx::query(
             "SELECT r.*,
@@ -360,7 +288,6 @@ pub async fn active_needs(pool: &SqlitePool) -> Result<Vec<RecordRow>, StoreErro
     )
 }
 
-/// (uid, quantity) of every record — checkpoint sweep input (blueprint II.2).
 pub async fn all_levels(pool: &SqlitePool) -> Result<Vec<(String, DecimalValue)>, StoreError> {
     sqlx::query(
         "SELECT uid, quantity_mantissa, quantity_scale FROM record WHERE deleted_at IS NULL",
@@ -372,17 +299,6 @@ pub async fn all_levels(pool: &SqlitePool) -> Result<Vec<(String, DecimalValue)>
     .collect()
 }
 
-/// Namespaced fds sidecar (blueprint I.2) — also where saved Proteins live
-/// (`namespace = "lince.protein"`).
-/// Write an extension WITHOUT logging an op, for a projection that every
-/// Cell derives for itself rather than replicating.
-///
-/// The roster mirror is the case that forced this: it is display state
-/// derived from a signed blob both sides already hold, and as a logged write
-/// it locked a relay Cell out of publishing its own roster — the relay has no
-/// write capability, so the mirror was refused and the whole publish failed.
-/// A projection nobody needs to receive should not be an op in the first
-/// place.
 pub async fn set_extension_raw(
     pool: &SqlitePool,
     record_uid: &str,
@@ -419,8 +335,6 @@ pub async fn set_extension(
     .bind(fds.to_string())
     .execute(pool)
     .await?;
-    // Ops are per KEY inside the namespace, so two Cells editing different
-    // keys of one namespace never clobber each other's whole blob.
     let empty = serde_json::Map::new();
     match (old.as_ref().and_then(|v| v.as_object()), fds.as_object()) {
         (old_map, Some(new_map)) => {
@@ -452,7 +366,6 @@ pub async fn set_extension(
                 }
             }
         }
-        // A non-object namespace value replicates as one opaque field.
         (_, None) => {
             crate::sync_ops::log_local(
                 pool,
@@ -468,9 +381,6 @@ pub async fn set_extension(
     Ok(())
 }
 
-/// Drops one namespaced extension row without touching the Record itself —
-/// e.g. unpublishing a DNA sand package ("no longer offered") is not the
-/// same act as deleting its Record.
 pub async fn delete_extension(
     pool: &SqlitePool,
     record_uid: &str,
@@ -508,9 +418,6 @@ pub async fn get_extension(
     )
 }
 
-/// Load one extension namespace for every live Record in one query.
-/// Protein uses this when a predicate refers to structured Record metadata;
-/// keeping it batched avoids one database read per candidate Record.
 pub async fn all_extensions(
     pool: &SqlitePool,
     namespace: &str,
@@ -535,14 +442,6 @@ pub async fn all_extensions(
         .collect())
 }
 
-/// Edit a record's text (head/title and/or body). Not the quantity cache, so a
-/// plain `UPDATE` is allowed; provenance/live-refresh is the engine's job via an
-/// annotation fact. `None` leaves a field untouched.
-///
-/// Logs NO ops: text edits sync as `crdt` ops through `engine::collab`
-/// (Ontology §11 "Merge") and this fn is their raw materializer. The create
-/// path still logs head/body `set` ops so a never-collab-edited record's text
-/// travels; import gives crdt history precedence over those.
 pub async fn set_text(
     pool: &SqlitePool,
     uid: &str,
@@ -569,8 +468,6 @@ pub async fn set_text(
     Ok(())
 }
 
-/// Rename a record's slug (uniqueness is enforced by the `record.slug` UNIQUE
-/// index; an empty slug clears it).
 pub async fn set_slug(pool: &SqlitePool, uid: &str, slug: Option<&str>) -> Result<(), StoreError> {
     if let Some(slug) = slug {
         if !nucleus::valid_slug(slug) {
@@ -591,13 +488,6 @@ pub async fn set_slug(pool: &SqlitePool, uid: &str, slug: Option<&str>) -> Resul
     Ok(())
 }
 
-/// Re-stamp the record's origin Organ — carried through Sync, so lineage
-/// survives a relaying intermediate.
-///
-/// No longer clearable. Origin is written by the INSERT now, and a Record with
-/// none is a state the schema refuses: `record_origin_required_update` aborts
-/// a `None` here rather than letting the front door re-create what the
-/// migration deleted.
 pub async fn set_organ_origin(
     pool: &SqlitePool,
     uid: &str,
@@ -616,7 +506,6 @@ pub async fn set_organ_origin(
     Ok(())
 }
 
-/// Set (or clear, with `None`) the record's unit-of-measure concept.
 pub async fn set_unit(
     pool: &SqlitePool,
     uid: &str,
@@ -636,14 +525,6 @@ pub async fn set_unit(
     Ok(())
 }
 
-/// The single writer of the quantity cache — called only from engine::append
-/// inside the fact transaction.
-///
-/// Exact addition cannot be expressed in SQL over a `(mantissa, scale)` pair,
-/// so this reads, adds in Rust as `i128`, and writes back. That is safe
-/// precisely because it runs inside the append transaction that already
-/// serializes writes to this record. The cache takes the finer of the two
-/// scales, which is always `<= 18` — no rounding step can enter here.
 pub async fn bump_quantity(
     tx: &mut Transaction<'_, Sqlite>,
     uid: &str,
@@ -677,10 +558,6 @@ pub async fn bump_quantity(
     Ok(())
 }
 
-/// `uid -> head` for a set of Records, in one query.
-///
-/// Used to render a link as the title a person recognises while the uid stays
-/// in the file as the thing that actually identifies it.
 pub async fn heads_for(
     pool: &SqlitePool,
     uids: &[String],

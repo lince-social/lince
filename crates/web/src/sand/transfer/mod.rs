@@ -163,26 +163,12 @@ fn document(manifest: &PackageManifest) -> String {
 mod tests {
     use super::{APP_DELIVERY_JS, package};
 
-    /// C7 — the delivering-Cell control exists, and says whose Cells it means.
-    ///
-    /// The mechanism landed first: `drain_envelopes` already skips a Cell that
-    /// is not the designated one, which means without this control the skip
-    /// could never be true and the whole thing was dead code nobody could
-    /// reach. So the wiring is what this asserts.
-    ///
-    /// The wording is pinned for the same reason the Karma panel's is. "Pause"
-    /// or "stop delivering" would describe the TRANSFER, and a person reading
-    /// that would expect the recipient to stop receiving — where all that
-    /// changes is which of their own machines does the sending.
     #[test]
     fn the_delivery_panel_can_name_which_cell_delivers() {
         assert!(APP_DELIVERY_JS.contains("designate_executor"));
         assert!(APP_DELIVERY_JS.contains("Delivering Cell"));
         assert!(APP_DELIVERY_JS.contains("Only this Cell"));
         assert!(APP_DELIVERY_JS.contains("Let any Cell deliver"));
-        // The refusal, not just the happy path: a Cell that cannot name itself
-        // must not send a null that CLEARS the designation under a button
-        // labelled "Only this Cell".
         assert!(APP_DELIVERY_JS.contains("cannot identify itself"));
         for forbidden in ["Pause delivery", "Stop delivering", "Disable delivery"] {
             assert!(
@@ -222,9 +208,6 @@ mod tests {
         assert!(assets.contains(&"app/inspection/proof-drawer.js"));
         assert!(assets.contains(&"app/inspection/shared.js"));
         assert!(assets.contains(&"app/inspection/timeline.js"));
-        // The builder normalises permission order, so compare as a set. Written
-        // as a literal list, this asserted the order the sand happened to
-        // declare them in, which is not a property the sand controls.
         let mut permissions = package.manifest.permissions.clone();
         permissions.sort();
         assert_eq!(

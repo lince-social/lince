@@ -1,6 +1,3 @@
-//! Stage 3+ Protein features: aggregates, availability, the visibility gate,
-//! saved Proteins, and the place `near` predicate.
-
 use engine::Engine;
 use engine::actions::Action;
 use nucleus::RecordKind;
@@ -56,8 +53,6 @@ async fn aggregate_sums_by_group() {
     });
     let rows = protein::execute(&e.store, &p).await.unwrap();
     let plain = rows.iter().find(|r| r["group"] == "plain").unwrap();
-    // Exact text, not a float: a Record sum is a sum of levels and must survive
-    // the wire with the precision it was stored at.
     assert_eq!(plain["value"], "2000");
 }
 
@@ -69,7 +64,6 @@ async fn availability_reflects_active_outgoing_promises() {
     store::config::set_transfer_reservation_default(&e.store.pool, "active")
         .await
         .unwrap();
-    // an active outgoing promise reserves 3
     let promise = e
         .act(
             Action::CreatePromise {
@@ -124,16 +118,7 @@ async fn uid_eq_targets_one_record_directly() {
 #[tokio::test]
 async fn organ_eq_and_organ_in_filter_by_record_origin() {
     let e = engine().await;
-    // There is no "created before any local Organ existed" case any more. That
-    // record used to be born with no origin and stay unattributable forever;
-    // `Store::open` now mints the identity, so every Record has one from the
-    // first write and the orphan state this test used to set up is unreachable.
 
-    // A local organ so every record creation from here on stamps origin
-    // (blueprint: Sync/File Sync pick WHAT travels by pointing a Protein at
-    // an organ) — centralized in `store::records::create`, not just the
-    // top-level CreateRecord action, so threads/messages/saved-Proteins get
-    // it too.
     let organ_a = store::organs::ensure_local(&e.store.pool, "http://cell-a")
         .await
         .unwrap()
@@ -149,15 +134,12 @@ async fn organ_eq_and_organ_in_filter_by_record_origin() {
     .await
     .unwrap();
 
-    let _apple = make(&e, "apple", RecordKind::Plain, 1.0).await; // stamped organ_a
+    let _apple = make(&e, "apple", RecordKind::Plain, 1.0).await;
     let mango = make(&e, "mango", RecordKind::Plain, 1.0).await;
     store::records::set_organ_origin(&e.store.pool, &mango, Some(&organ_b))
         .await
         .unwrap();
 
-    // `KindEq` throughout: this Cell's own Organ and Cell Records are ordinary
-    // Records with an origin of their own now, so an unscoped query over the
-    // local Organ legitimately returns them too.
     let a_only = protein::execute(
         &e.store,
         &base(
@@ -190,7 +172,7 @@ async fn organ_eq_and_organ_in_filter_by_record_origin() {
         .map(|r| r["slug"].as_str().unwrap().to_string())
         .collect();
     slugs.sort();
-    assert_eq!(slugs, vec!["apple", "mango"]); // orphan (no origin) never matches
+    assert_eq!(slugs, vec!["apple", "mango"]);
 }
 
 #[tokio::test]
@@ -200,15 +182,6 @@ async fn quantity_lte_and_gte_include_the_boundary() {
     make(&e, "edge", RecordKind::Plain, 0.0).await;
     make(&e, "high", RecordKind::Plain, 1.0).await;
 
-    // What this asserts is BOUNDARY INCLUSION — that `0.0` is on the `lte`
-    // side and on the `gte` side. It is not an ordering test, so it sorts
-    // rather than pinning the row order: every Record Protein has a
-    // deterministic base order by lowercased `head` then uid
-    // (`order_records`), which puts "edge" before "low". The original literal
-    // predated that rule and asserted an order this query never promised.
-    // Scoped to `plain`, because this Cell's Organ and Cell Records are
-    // ordinary Records carrying a quantity of 1 and would otherwise show up in
-    // an unscoped quantity query.
     let lte = base(
         Source::Record,
         vec![
@@ -323,8 +296,6 @@ async fn links_include_is_explicit_and_supports_multiple_kinds() {
     assert_eq!(links.len(), 1);
     assert_eq!(links[0]["kind"], "before");
 
-    // The "*" wildcard includes links of EVERY kind (Record's all-links
-    // view), still honoring direction.
     let mut all = base(Source::Record, vec![Predicate::UidEq(a.clone())]);
     all.include.links = Some(LinksInclude {
         kinds: vec!["*".into()],
@@ -345,9 +316,6 @@ async fn links_include_is_explicit_and_supports_multiple_kinds() {
 
 #[tokio::test]
 async fn relation_filters_by_tag_cluster_with_include_and_exclude() {
-    // Multi-valued cluster tags (Stage 8b, Phase 5): a record is tagged into
-    // clusters by `tag`-kind links to cluster records. `relation` filters on
-    // them; `any`/`not`/`all` compose "Tasks OR ProjectA but NOT ProjectB".
     let e = engine().await;
     e.act(
         Action::CreateConcept {
@@ -359,11 +327,9 @@ async fn relation_filters_by_tag_cluster_with_include_and_exclude() {
     )
     .await
     .unwrap();
-    // Cluster records (the tag targets).
     make(&e, "tasks", RecordKind::Plain, 0.0).await;
     make(&e, "project-a", RecordKind::Plain, 0.0).await;
     make(&e, "project-b", RecordKind::Plain, 0.0).await;
-    // Task records.
     let t1 = make(&e, "t1", RecordKind::Plain, 0.0).await;
     let t2 = make(&e, "t2", RecordKind::Plain, 0.0).await;
     let t3 = make(&e, "t3", RecordKind::Plain, 0.0).await;
@@ -387,13 +353,12 @@ async fn relation_filters_by_tag_cluster_with_include_and_exclude() {
             .unwrap();
         }
     };
-    tag(&t1, "tasks").await; // t1 carries TWO tags
+    tag(&t1, "tasks").await;
     tag(&t1, "project-a").await;
     tag(&t2, "project-a").await;
     tag(&t2, "project-b").await;
     tag(&t3, "tasks").await;
 
-    // (Tasks OR ProjectA) AND NOT ProjectB.
     let filter = vec![Predicate::All(vec![
         Predicate::Any(vec![
             Predicate::Relation {
@@ -426,7 +391,6 @@ async fn relation_filters_by_tag_cluster_with_include_and_exclude() {
         !uids.contains(&t2.as_str()),
         "t2 (has ProjectB) should be excluded"
     );
-    // Cluster records themselves carry no tag link → excluded.
     assert_eq!(uids.len(), 2, "only t1 and t3 match: {uids:?}");
 }
 
@@ -492,6 +456,8 @@ async fn threads_include_returns_nested_record_messages() {
             Action::CreateMessage {
                 thread: thread.clone(),
                 body: "First message".into(),
+                author: None,
+                state: nucleus::MessageState::Finished,
                 parent: None,
                 references: vec![receipt.clone()],
             },
@@ -506,6 +472,8 @@ async fn threads_include_returns_nested_record_messages() {
             Action::CreateMessage {
                 thread,
                 body: "Reply message".into(),
+                author: None,
+                state: nucleus::MessageState::Finished,
                 parent: Some(first.clone()),
                 references: vec![],
             },
@@ -543,17 +511,16 @@ async fn threads_include_returns_nested_record_messages() {
         Some(first.as_str())
     );
     assert_eq!(messages[1]["uid"].as_str(), Some(reply.as_str()));
-    // A thread system UI (Record) needs "when" to feel like a real
-    // conversation — both the thread and each message carry created_at.
     assert!(threads[0]["created_at"].as_str().is_some());
     assert!(messages[0]["created_at"].as_str().is_some());
     assert!(messages[1]["created_at"].as_str().is_some());
-    // No actor (local-no-auth mode, every act() call above passed None) ->
-    // no sender/creator to resolve, not an error.
     assert!(threads[0]["sender"].is_null());
     assert!(messages[0]["sender"].is_null());
     assert!(threads[0]["created_by"].is_null());
     assert!(messages[0]["created_by"].is_null());
+    assert!(messages[0]["author"].as_str().is_some());
+    assert!(messages[0]["operator"].as_str().is_some());
+    assert_eq!(messages[0]["message_state"], "finished");
 }
 
 #[tokio::test]
@@ -595,6 +562,8 @@ async fn threads_include_resolves_sender_name_from_the_actor() {
         Action::CreateMessage {
             thread,
             body: "hi from ana".into(),
+            author: None,
+            state: nucleus::MessageState::Finished,
             parent: None,
             references: vec![],
         },
@@ -636,7 +605,6 @@ async fn visibility_gate_is_the_one_read_boundary() {
     let public_need = make(&e, "public.apples", RecordKind::Plain, -1.0).await;
     make(&e, "private.diary", RecordKind::Plain, -1.0).await;
 
-    // grant only the public need to an outside organ
     e.act(
         Action::GrantVisibility {
             subject_kind: "organ".into(),
@@ -649,15 +617,12 @@ async fn visibility_gate_is_the_one_read_boundary() {
     .unwrap();
 
     let p = base(Source::Record, vec![Predicate::QuantityLt(0.0)]);
-    // local Cell sees both
     assert_eq!(protein::execute(&e.store, &p).await.unwrap().len(), 2);
-    // the neighbor organ sees only what was granted
     let seen = protein::execute_for(&e.store, &p, Some("organ.neighbors"))
         .await
         .unwrap();
     assert_eq!(seen.len(), 1);
     assert_eq!(seen[0]["slug"], "public.apples");
-    // a stranger sees nothing
     assert!(
         protein::execute_for(&e.store, &p, Some("organ.unknown"))
             .await
@@ -701,7 +666,6 @@ async fn near_predicate_uses_the_place_instinct() {
     let market = make(&e, "market.needs", RecordKind::Plain, -1.0).await;
     let far = make(&e, "far.needs", RecordKind::Plain, -1.0).await;
 
-    // home at origin; market ~100m north; far ~10km north
     e.act(
         Action::SetPlace {
             target: home,
@@ -906,7 +870,6 @@ async fn nested_record_filters_cover_text_dates_relations_and_assignee() {
     .await
     .unwrap();
 
-    // (negative design text) OR (has both a parent and a child).
     let query = base(
         Source::Record,
         vec![Predicate::Any(vec![
@@ -995,13 +958,6 @@ fn legacy_filter_field_is_rejected() {
     assert!(result.is_err());
 }
 
-/// Column selection (Ontology §12, cluster C5) — the selector the whole
-/// scoping cluster hangs off.
-///
-/// It matters far beyond trimming a payload: the same Protein that decides a
-/// sand renders `body` is the one that decides `body` TRAVELS to a contact.
-/// One language rather than a query language and a sharing language kept
-/// laboriously in step.
 #[tokio::test]
 async fn fields_narrow_a_row_to_what_was_asked_for() {
     let e = engine().await;
@@ -1017,24 +973,16 @@ async fn fields_narrow_a_row_to_what_was_asked_for() {
         row.get("body").is_none() && row.get("quantity").is_none(),
         "and nothing else is: {row}"
     );
-    // A row nobody can identify is not a narrower answer, it is a useless one —
-    // every surface and the sync path address rows by uid.
     assert!(row.get("uid").is_some(), "uid always survives");
     assert!(row.get("kind").is_some(), "and so does kind");
 }
 
-/// NAME-WHAT-YOU-WANT, never name-what-to-hide. The asymmetry is the whole
-/// security argument: a column added six months from now stays home until some
-/// Protein names it. A deny-list would have leaked it by default, and nobody
-/// would have noticed until it had.
 #[tokio::test]
 async fn a_field_nobody_named_does_not_appear() {
     let e = engine().await;
     make(&e, "unnamed", RecordKind::Plain, 7.0).await;
 
     let mut p = base(Source::Record, vec![Predicate::SlugEq("unnamed".into())]);
-    // A selector naming a column that does not exist yet — which is exactly
-    // what an older Protein looks like after the schema grows.
     p.fields = Some(vec!["head".into(), "a_column_invented_later".into()]);
     let rows = protein::execute(&e.store, &p).await.unwrap();
     let row = rows.first().expect("one row");
@@ -1046,20 +994,9 @@ async fn a_field_nobody_named_does_not_appear() {
     );
 }
 
-/// A withheld column is ABSENT, not blank, and the difference has to survive
-/// as far as the renderer. A sand that draws a missing `body` as an empty one
-/// draws a permission boundary as data — an unassigned task that is really a
-/// task you are not allowed to see the assignee of.
-///
-/// The mechanism is `retain` removing the key, so `undefined` means withheld
-/// and `""` means genuinely empty. Nothing has to be invented to mark it; what
-/// is required is that renderers stop at `row.body === undefined` instead of
-/// collapsing it with `row.body || ""`.
 #[tokio::test]
 async fn a_withheld_column_is_absent_rather_than_blank() {
     let e = engine().await;
-    // A record whose body is genuinely empty, so the two cases are side by
-    // side rather than argued about in the abstract.
     make(&e, "blank-body", RecordKind::Plain, 1.0).await;
 
     let p = base(Source::Record, vec![Predicate::SlugEq("blank-body".into())]);
@@ -1081,8 +1018,6 @@ async fn a_withheld_column_is_absent_rather_than_blank() {
     );
 }
 
-/// No selector means everything, so this is invisible to every caller that
-/// does not use it — which is all of them today.
 #[tokio::test]
 async fn no_selector_returns_the_whole_row() {
     let e = engine().await;

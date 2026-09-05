@@ -1,5 +1,3 @@
-//! Integration tests for the engine (blueprint Stages 1–2 acceptance).
-
 use chrono::{DateTime, TimeDelta, Utc};
 use engine::Engine;
 use nucleus::karma::{Cadence, Consequence};
@@ -12,12 +10,6 @@ async fn engine() -> Engine {
     Engine::open_memory().await.expect("engine opens")
 }
 
-/// A Record seeded through the Ledger, not around it.
-///
-/// Writing a starting level straight into the cache used to be harmless
-/// because rules read the cache. They read the Fact chain now — the Ledger is
-/// the truth and the cache is derived from it — so a fixture that skipped the
-/// chain would set up a world the rule cannot see.
 async fn plain(e: &Engine, slug: &str, quantity: f64) -> String {
     let uid = store::records::create(
         &e.store.pool,
@@ -59,7 +51,6 @@ async fn append_updates_cache_and_is_idempotent() {
         Some(7.0)
     );
 
-    // replaying the same fact uid is a no-op success (sync replay safety)
     let replay = NewFact {
         uid: Some(facts[0].uid.clone()),
         ..facts[0].clone().into_new()
@@ -74,14 +65,12 @@ async fn append_updates_cache_and_is_idempotent() {
         Some(7.0)
     );
 
-    // hash chain holds
     let log = store::facts::for_record(&e.store.pool, &apples, 10)
         .await
         .unwrap();
     assert!(log.iter().all(nucleus::fact::verify_chain_step));
 }
 
-// helper: NewFact from an existing Fact (test-only replay shape)
 trait IntoNew {
     fn into_new(self) -> NewFact;
 }
@@ -99,11 +88,6 @@ impl IntoNew for nucleus::Fact {
     }
 }
 
-/// A rule that reads something, in the one shape rules have.
-///
-/// Anchored just before the moment under test, so exactly one date is due:
-/// these are tests about what a rule decides, not about how many dates a
-/// sixty-day catch-up window contains.
 async fn watching(
     e: &Engine,
     target: &str,
@@ -139,10 +123,6 @@ async fn level(e: &Engine, uid: &str) -> f64 {
 
 #[tokio::test]
 async fn a_rule_fires_the_moment_the_world_changes_and_says_why() {
-    // The reactive half. A rule watching a level must act when the level moves,
-    // not on the next beat — "when stock drops below three" has to mean the
-    // moment it drops. And the Fact it writes has to name the rule, or an
-    // automatic change is a change nobody can account for.
     let e = engine().await;
     let apples = plain(&e, "apples.stock", 8.0).await;
     let alert = plain(&e, "alerts.low-apples", 0.0).await;
@@ -159,11 +139,9 @@ async fn a_rule_fires_the_moment_the_world_changes_and_says_why() {
     )
     .await;
 
-    // Still plenty: the gate blocks and nothing moves.
     e.append_user(&apples, -3.0).await.unwrap();
     assert_eq!(level(&e, &alert).await, 0.0, "a blocked gate must not act");
 
-    // Down to 2, and the alert raises itself with no beat in between.
     e.append_user(&apples, -3.0).await.unwrap();
     assert_eq!(
         level(&e, &alert).await,
@@ -171,10 +149,6 @@ async fn a_rule_fires_the_moment_the_world_changes_and_says_why() {
         "the change itself must fire it"
     );
 
-    // The change is an ordinary entry — deliberately, so a balance reads the
-    // same whether a person or a rule moved it. What makes it accountable is
-    // that the date it answered is now spent: the rule can say which of its
-    // occurrences produced this, and cannot produce it twice.
     let rule = store::recurrence::get(&e.store.pool, &declared)
         .await
         .unwrap()
@@ -198,10 +172,6 @@ async fn a_rule_fires_the_moment_the_world_changes_and_says_why() {
 
 #[tokio::test]
 async fn a_rule_acts_at_most_once_per_period_however_often_it_is_poked() {
-    // What used to be a `debounce` column. It is the cadence now: a rule may
-    // act on its dates, and a date is spent once. So the thing that decides how
-    // often a rule may fire is the same thing that decides when it fires,
-    // declared in one place instead of two that could disagree.
     let e = engine().await;
     let apples = plain(&e, "apples.stock", 10.0).await;
     let counter = plain(&e, "counter", 0.0).await;
@@ -230,17 +200,11 @@ async fn a_rule_acts_at_most_once_per_period_however_often_it_is_poked() {
 
 #[tokio::test]
 async fn a_rule_can_be_read_as_a_named_cell() {
-    // `value(@x)`: one rule computes a number and others read it, instead of
-    // each restating the formula and drifting apart at the first edit. The
-    // gate of the rule being read is deliberately ignored — reading what a
-    // rule computes is not the same as letting it act.
     let e = engine().await;
     let _income = plain(&e, "income", 100.0).await;
     let budget = plain(&e, "budget", 0.0).await;
     let mirror = plain(&e, "mirror", 0.0).await;
 
-    // A cell: half of income. Its own gate would block, and that must not
-    // stop another rule from reading the number.
     watching(
         &e,
         &budget,
@@ -275,9 +239,6 @@ async fn a_rule_can_be_read_as_a_named_cell() {
 
 #[tokio::test]
 async fn the_two_flow_directions_can_be_read_apart() {
-    // `sum_pos` and `sum_neg` over a window. What came in and what went out are
-    // different questions, and a rule that could only see the net would answer
-    // neither.
     let e = engine().await;
     let account = plain(&e, "account", 0.0).await;
     let inflow = plain(&e, "inflow", 0.0).await;
@@ -309,9 +270,6 @@ async fn the_two_flow_directions_can_be_read_apart() {
 
 #[tokio::test]
 async fn a_paused_rule_stops_acting_and_stops_being_read() {
-    // Pausing means "stop acting for me", and it has to be complete: a paused
-    // rule must not fire, and must not have its rhythm counted by somebody
-    // else's arithmetic either.
     let e = engine().await;
     let apples = plain(&e, "apples.stock", 10.0).await;
     let counter = plain(&e, "counter", 0.0).await;
@@ -349,12 +307,8 @@ async fn a_paused_rule_stops_acting_and_stops_being_read() {
     );
 }
 
-// ------------------------------------------------------- outward consequences
-
 #[tokio::test]
 async fn a_rule_can_propose_an_obligation_instead_of_moving_a_number() {
-    // A promise is the honest shape for "this is expected": it projects, it can
-    // be kept or broken, and nothing has moved until it is kept.
     let e = engine().await;
     let rent = plain(&e, "rent", 0.0).await;
 
@@ -389,8 +343,6 @@ async fn a_rule_can_propose_an_obligation_instead_of_moving_a_number() {
 
 #[tokio::test]
 async fn a_rule_can_ask_instead_of_deciding() {
-    // The one consequence that deliberately does not decide. Automation that
-    // can ask is what lets a rule handle the cases it should not settle alone.
     let e = engine().await;
     let stock = plain(&e, "stock", 0.0).await;
 
@@ -419,9 +371,6 @@ async fn a_rule_can_ask_instead_of_deciding() {
 
 #[tokio::test]
 async fn what_leaves_the_cell_is_queued_rather_than_run_mid_evaluation() {
-    // A rule that shelled out inside its own evaluation could change the world
-    // and then have its transaction rolled back, and would leave nowhere to
-    // check a grant. So it commits an effect and a separate worker carries it.
     let e = engine().await;
     let watched = plain(&e, "watched", 0.0).await;
 
@@ -449,7 +398,6 @@ async fn what_leaves_the_cell_is_queued_rather_than_run_mid_evaluation() {
 
 #[tokio::test]
 async fn an_outward_payload_that_is_not_readable_is_refused_where_it_is_written() {
-    // Not at 3am inside a heartbeat with nobody watching.
     let e = engine().await;
     let watched = plain(&e, "watched", 0.0).await;
     let refused = e
@@ -478,10 +426,6 @@ async fn an_outward_payload_that_is_not_readable_is_refused_where_it_is_written(
 
 #[tokio::test]
 async fn a_declared_frequency_is_what_a_condition_reads() {
-    // The end of the loop: a Frequency declared on its own, named by a rule's
-    // condition, and beating on its own step rather than on a cadence copied
-    // into the rule. `freq(@daily)` resolves to the Frequency table now, so one
-    // declaration serves every rule that reads it.
     let e = engine().await;
     let pear = plain(&e, "pear", 0.0).await;
 
@@ -504,8 +448,6 @@ async fn a_declared_frequency_is_what_a_condition_reads() {
     .await
     .unwrap();
 
-    // The rule is anchored back too, so it has a preceding date and therefore a
-    // window to read the beat across.
     support::declare_rule(
         &e,
         &pear,
@@ -522,8 +464,6 @@ async fn a_declared_frequency_is_what_a_condition_reads() {
     .await;
 
     e.fire_due_rules(Utc::now()).await.unwrap();
-    // Not zero is the whole point: before the Frequency table answered,
-    // `freq(@daily)` found no rule on a record called `daily` and read zero.
     assert!(
         level(&e, &pear).await > 0.0,
         "a declared frequency beats, and the condition reads those beats"

@@ -17,3 +17,9 @@ tokio = { workspace = true }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "time"] }
+
+[build-dependencies]
+sensei = { workspace = true }
+
+[lints]
+workspace = true

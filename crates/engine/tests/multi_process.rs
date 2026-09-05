@@ -1,15 +1,3 @@
-//! The multi-process harness (Ontology §11, decision 7 / cluster C0).
-//!
-//! Every other test in this workspace runs its Cells inside ONE process, and
-//! `nucleus::hlc` is a process-wide atomic by design — "one clock per Cell".
-//! So in-process tests share a counter between Cells that would not share one
-//! in deployment, and they therefore prove a weaker statement than the one the
-//! op log relies on. This file spawns real processes.
-//!
-//! It exists before the enrolment client for that reason: enrolment is what
-//! makes a second Cell possible, and shipping it with no way to test what it
-//! arms would undo the whole point of doing the Organ/Cell split first.
-
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -32,11 +20,6 @@ fn temp_db(name: &str) -> PathBuf {
     path
 }
 
-/// Removes the database when it goes out of scope — INCLUDING on panic, which
-/// is exactly when a test database is most likely to be left behind and least
-/// likely to be noticed. `/tmp` is a tmpfs here, so a suite that leaks one file
-/// per failing run eventually fills it and every later test dies with "database
-/// or disk is full" — which looks like anything except the actual cause.
 struct TempDb(PathBuf);
 
 impl Drop for TempDb {
@@ -47,8 +30,6 @@ impl Drop for TempDb {
     }
 }
 
-/// One process at a time, against the same database — the sanity case that
-/// proves the harness itself works before it is used to make claims.
 #[test]
 fn a_worker_process_writes_and_the_next_one_sees_it() {
     let guard = TempDb(temp_db("sequential"));
@@ -79,26 +60,10 @@ fn a_worker_process_writes_and_the_next_one_sees_it() {
     });
 }
 
-/// TWO processes writing the same database at once.
-///
-/// This is not a contrived topology: it is what happens when the CLI touches
-/// the database while the web Cell is running, which SQLite in WAL mode
-/// permits. Both processes resolve to the SAME Cell Record — one database, one
-/// fixed `local-cell` slug — while each runs its own `nucleus::hlc` static.
-/// Op identity is `(actor_cell, hlc)`, so two independent clocks under one
-/// actor is precisely the collision the Organ/Cell split exists to prevent,
-/// arriving by a door the split does not cover.
-///
-/// The assertion is about DATA, not about mechanism: every write either lands
-/// or the process fails. A write that is silently swallowed by
-/// `INSERT OR IGNORE` on a duplicate identity is the failure this harness was
-/// built to make visible.
 #[test]
 fn two_processes_sharing_one_database_lose_no_writes() {
     let guard = TempDb(temp_db("concurrent"));
     let db = &guard.0;
-    // Create the database first, so both workers race on writes rather than on
-    // running migrations.
     assert!(
         worker(db, "seed", 1).status().expect("spawn").success(),
         "seed worker failed"
@@ -131,10 +96,6 @@ fn two_processes_sharing_one_database_lose_no_writes() {
                     missing_rows.push(slug);
                     continue;
                 };
-                // The ROW is written by an ordinary INSERT and would survive a
-                // lost op, so checking rows alone proves nothing. The op is
-                // what syncs, and a dropped op is a write that exists here and
-                // reaches nobody — silent, and permanent.
                 if store::sync_ops::for_field(&engine.store.pool, "record", &row.uid, "head")
                     .await
                     .expect("ops")
@@ -157,7 +118,6 @@ fn two_processes_sharing_one_database_lose_no_writes() {
             &missing_ops[..missing_ops.len().min(5)]
         );
 
-        // And the log agrees with the read model afterwards.
         let audit = engine.audit_read_model().await.expect("audit");
         assert!(
             audit.is_clean(),
@@ -167,14 +127,6 @@ fn two_processes_sharing_one_database_lose_no_writes() {
     });
 }
 
-/// Sibling sync ACROSS OS PROCESSES — the box C3 opened and C0's harness was
-/// built for.
-///
-/// Everything else about siblings is tested in one process with two Engines
-/// and two real endpoints, which is honest as far as it goes and stops exactly
-/// where it matters: `nucleus::hlc` is a process-wide atomic, so those two
-/// Cells share the clock that deployment gives them separately. Here they do
-/// not. Two databases, two endpoints, two processes, two clocks.
 #[test]
 fn a_second_process_enrols_and_converges() {
     let host_db = temp_db("sibling-host");
@@ -193,8 +145,6 @@ fn a_second_process_enrols_and_converges() {
         .arg(&code_file)
         .spawn()
         .expect("the host process starts");
-    // The code file appears only after the endpoint is serving, which is what
-    // makes this a wait for readiness rather than a sleep and a hope.
     let deadline = std::time::Instant::now() + std::time::Duration::from_secs(30);
     while !code_file.exists() {
         if std::time::Instant::now() > deadline {
@@ -220,7 +170,6 @@ fn a_second_process_enrols_and_converges() {
         "the second process failed to join and sync"
     );
 
-    // What the second process now holds, read from its own database.
     let runtime = tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()

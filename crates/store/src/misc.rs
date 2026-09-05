@@ -1,5 +1,3 @@
-//! Promises, effects, and decisions (blueprint V, VI.3, XIII.1).
-
 use chrono::Utc;
 use nucleus::transfer::{OpenPromiseReusePolicy, TransferLocationSnapshot};
 use nucleus::{PromiseState, RecordKind};
@@ -7,8 +5,6 @@ use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;
 use crate::records::{self, NewRecord};
-
-// ------------------------------------------------------------------ promises
 
 #[derive(Debug, Clone)]
 pub struct PromiseRow {
@@ -37,19 +33,16 @@ pub struct NewPromise {
     pub delta: f64,
     pub window_end: Option<String>,
     pub party_uid: Option<String>,
-    pub state: Option<PromiseState>, // None = proposed
+    pub state: Option<PromiseState>,
     pub condition: Option<String>,
     pub transfer_uid: Option<String>,
     pub rule_uid: Option<String>,
-    /// None = inherit Transfer, then Cell default (`none` by default).
     pub reserve_from: Option<String>,
 }
 
 pub async fn insert_promise(pool: &SqlitePool, p: NewPromise) -> Result<String, StoreError> {
     let uid = nucleus::new_uid("p");
     let now = Utc::now().to_rfc3339();
-    // Reservation precedence: promise override, Transfer default, Cell
-    // default, then the schema/code default `none`.
     let mut reserve_from = p.reserve_from;
     if reserve_from.is_none() {
         if let Some(transfer_uid) = &p.transfer_uid {
@@ -88,8 +81,6 @@ pub async fn insert_promise(pool: &SqlitePool, p: NewPromise) -> Result<String, 
     Ok(uid)
 }
 
-/// Promises whose window has passed while still undone (blueprint V.2): the
-/// expiry sweep moves agreed/active → broken, open/proposed → withdrawn.
 pub async fn expired_promises(
     pool: &SqlitePool,
     now_rfc3339: &str,
@@ -164,7 +155,6 @@ fn map_promise(r: sqlx::sqlite::SqliteRow) -> Option<PromiseRow> {
     })
 }
 
-/// Row mapper shared with the transfers repository.
 pub(crate) fn map_promise_pub(r: sqlx::sqlite::SqliteRow) -> Option<PromiseRow> {
     map_promise(r)
 }
@@ -210,8 +200,6 @@ pub async fn promise_state(
         .await?
         .and_then(|r| PromiseState::parse(&r.get::<String, _>("state"))))
 }
-
-// ------------------------------------------------------------------- effects
 
 pub async fn queue_effect(
     pool: &SqlitePool,
@@ -280,16 +268,12 @@ pub async fn finish_effect(
     Ok(())
 }
 
-// ------------------------------------------------------------------- signals
-
-/// Signals sample the world on their own schedule and land as facts
-/// (blueprint VI.1). A signal is a record (kind='signal') with this sidecar.
 pub struct NewSignal<'a> {
     pub slug: &'a str,
     pub head: &'a str,
-    pub source_kind: &'a str, // command | http | sensor | query
+    pub source_kind: &'a str,
     pub source: &'a str,
-    pub schedule: &'a str, // duration literal: '90s', '5m', '1h', '1d'
+    pub schedule: &'a str,
 }
 
 pub async fn create_signal(pool: &SqlitePool, new: NewSignal<'_>) -> Result<String, StoreError> {
@@ -300,7 +284,7 @@ pub async fn create_signal(pool: &SqlitePool, new: NewSignal<'_>) -> Result<Stri
             kind: RecordKind::Signal,
             head: new.head,
             body: "",
-            quantity: crate::exact::zero(), // quantity holds the last sampled value
+            quantity: crate::exact::zero(),
         },
     )
     .await?;
@@ -341,8 +325,6 @@ pub async fn list_signals(pool: &SqlitePool) -> Result<Vec<SignalRow>, StoreErro
             source: r.get("source"),
             schedule: r.get("schedule"),
             last_sampled_at: r.get("last_sampled_at"),
-            // A sampled sensor reading is a float at its origin; this is a
-            // display value, not a Ledger write.
             current_value: crate::exact::read_decimal(&r, "quantity")?.to_f64(),
         })
     })
@@ -362,9 +344,6 @@ pub async fn set_signal_sampled(
     Ok(())
 }
 
-// ----------------------------------------------------------------- decisions
-
-/// A decision is a record (kind='decision') plus its sidecar (blueprint XIII.1).
 pub async fn create_decision(
     pool: &SqlitePool,
     subject_uid: &str,
@@ -379,7 +358,7 @@ pub async fn create_decision(
             kind: RecordKind::Decision,
             head: question,
             body: "",
-            quantity: crate::exact::one(), // 1 = open; deciding sets it to 0 via a fact
+            quantity: crate::exact::one(),
         },
     )
     .await?;
@@ -395,8 +374,6 @@ pub async fn create_decision(
     Ok(rec.uid)
 }
 
-/// Create a decision with a deadline (blueprint XIII.1 `expires_at`); the
-/// heartbeat closes it as 'expired' past that instant.
 pub async fn create_decision_expiring(
     pool: &SqlitePool,
     subject_uid: &str,
@@ -414,7 +391,6 @@ pub async fn create_decision_expiring(
     Ok(uid)
 }
 
-/// Open decisions whose deadline has passed.
 pub async fn expired_open_decisions(
     pool: &SqlitePool,
     now_rfc3339: &str,
@@ -432,7 +408,6 @@ pub async fn expired_open_decisions(
     .collect())
 }
 
-/// Notify effects delivered (not parked) since an instant — the budget meter.
 pub async fn notifies_delivered_since(
     pool: &SqlitePool,
     since_rfc3339: &str,
@@ -448,8 +423,6 @@ pub async fn notifies_delivered_since(
     .get("n"))
 }
 
-/// `(subject_uid, kind)` of every OPEN decision — the dedup key for sweeps
-/// (senses drafts, crossings, expiry) so one situation asks only once.
 pub async fn open_decision_subjects(
     pool: &SqlitePool,
 ) -> Result<std::collections::HashSet<(String, String)>, StoreError> {

@@ -1,7 +1,3 @@
-//! Organ sand contacts manager (blueprint XV, scoped to trust/proximity):
-//! `SetContactTrust`/`SetContactProximity` Actions, the Protein `contact`
-//! include, and the local organ (no `organ_contact` row) staying `null`.
-
 use engine::Engine;
 use engine::actions::Action;
 use nucleus::RecordKind;
@@ -101,9 +97,6 @@ async fn contact_starts_unknown_with_its_seeded_proximity() {
     let (e, _local, contact) = cell_with_contact().await;
     let rows = protein::execute(&e.store, &organs_query()).await.unwrap();
     let row = rows.iter().find(|r| r["uid"] == contact).unwrap();
-    // Recording a contact is not trusting one. `known` opens the sync ALPN, so
-    // it has to be a decision somebody made rather than what happens by
-    // default when an address is written down.
     assert_eq!(row["contact"]["trust"], "unknown");
     assert_eq!(row["contact"]["proximity"], 3);
 }
@@ -210,9 +203,6 @@ async fn set_contact_trust_fires_an_annotation_fact() {
     assert_eq!(fact.record_uid, contact);
 }
 
-/// A contact's Organ record is filed under THEIR uid, so the ordinary record
-/// edit would log a CRDT op and push this Cell's private label for them back
-/// to them and to every other contact. Renaming is local, and logs nothing.
 #[tokio::test]
 async fn renaming_a_contact_is_local_and_logs_no_op() {
     let (e, _local, contact) = cell_with_contact().await;
@@ -240,8 +230,6 @@ async fn renaming_a_contact_is_local_and_logs_no_op() {
     );
 }
 
-/// The same action must not become a back door for editing this Cell's own
-/// Organ record without logging — that one IS ours and replicates normally.
 #[tokio::test]
 async fn renaming_refuses_a_record_that_is_not_a_contact() {
     let (e, local, _contact) = cell_with_contact().await;
@@ -258,9 +246,6 @@ async fn renaming_refuses_a_record_that_is_not_a_contact() {
     assert!(format!("{err}").contains("not a contact"), "{err}");
 }
 
-/// Every Cell calls itself the same thing out of the box, so the surface has
-/// nothing to tell a contact from this Cell's own row by unless the NodeId
-/// travels with the contact sidecar.
 #[tokio::test]
 async fn the_contact_include_carries_the_node_id() {
     let (e, _local, contact) = cell_with_contact().await;
@@ -272,9 +257,6 @@ async fn the_contact_include_carries_the_node_id() {
     assert_eq!(row["contact"]["node_id"], "beadbeef00");
 }
 
-/// Blocking is not removal, so a contact still has to be droppable — but
-/// `delete-record` on their uid would log a tombstone against THEIR Organ
-/// record and push it to them and every other contact.
 #[tokio::test]
 async fn forgetting_a_contact_is_local_and_logs_no_op() {
     let (e, _local, contact) = cell_with_contact().await;
@@ -307,10 +289,6 @@ async fn forgetting_a_contact_is_local_and_logs_no_op() {
     assert_eq!(before, after, "forgetting must not enter the op log");
 }
 
-/// Direction is a switch on an enforced boundary: the outbox drops ops for a
-/// contact with `sync_out` off, and delivery refuses a feed from one with
-/// `sync_in` off. Both start closed, so the surface has to be able to open
-/// them one at a time.
 #[tokio::test]
 async fn sync_policy_sets_each_direction_independently() {
     let (e, _local, contact) = cell_with_contact().await;
@@ -336,10 +314,6 @@ async fn sync_policy_sets_each_direction_independently() {
     assert_eq!(row["contact"]["sync_in"], true, "inbound alone is openable");
 }
 
-/// The scope's three states have to survive the whole round trip — action in,
-/// column out — as three, not as two. `null` is unnarrowed and `[]` is
-/// narrowed to nothing, and anything that maps them together maps the strict
-/// one onto the wide one.
 #[tokio::test]
 async fn a_scope_keeps_absent_and_empty_apart_end_to_end() {
     let (e, _local, contact) = cell_with_contact().await;
@@ -401,9 +375,6 @@ async fn a_scope_keeps_absent_and_empty_apart_end_to_end() {
     );
 }
 
-/// Every change to the scope has to move `scope_version`, because that is the
-/// only thing a widening leaves behind. The columns alone cannot be compared
-/// after the fact — the old value is gone by then.
 #[tokio::test]
 async fn every_scope_change_moves_the_version() {
     let (e, _local, contact) = cell_with_contact().await;
@@ -446,9 +417,6 @@ async fn every_scope_change_moves_the_version() {
     );
 }
 
-/// A column name that is blank matches nothing, so it narrows to nothing
-/// while looking configured. The usual way one appears is a trailing comma in
-/// a text field, which is exactly the input a surface hands over.
 #[tokio::test]
 async fn a_scope_refuses_a_blank_column_name() {
     let (e, _local, contact) = cell_with_contact().await;
@@ -474,10 +442,6 @@ async fn a_scope_refuses_a_blank_column_name() {
     );
 }
 
-/// The two directions are two settings, and setting one must not move the
-/// other. They are a privacy control and an integrity control over the same
-/// vocabulary, with no reason to agree — a contact we tell everything is
-/// routinely one we accept little from.
 #[tokio::test]
 async fn the_two_directions_of_a_scope_are_independent() {
     let (e, _local, contact) = cell_with_contact().await;
@@ -512,9 +476,6 @@ async fn the_two_directions_of_a_scope_are_independent() {
     );
 }
 
-/// The inbound scope refuses the same expressions the outbound one does,
-/// through the same validator. Two copies of these rules is how one direction
-/// quietly starts accepting something the other refuses.
 #[tokio::test]
 async fn accepting_is_validated_like_sending() {
     let (e, _local, contact) = cell_with_contact().await;
@@ -537,10 +498,6 @@ async fn accepting_is_validated_like_sending() {
     }
 }
 
-/// `head` and `body` are one Loro document whose ops carry no field, so a
-/// scope naming one of them would silently deliver the other. Serve time
-/// cannot enforce the difference; configuration time can at least report it,
-/// which is the only place there is anybody to tell.
 #[tokio::test]
 async fn a_scope_refuses_to_split_the_collaborative_document() {
     let (e, _local, contact) = cell_with_contact().await;
@@ -558,7 +515,6 @@ async fn a_scope_refuses_to_split_the_collaborative_document() {
             "naming {one} alone must be refused, not quietly widened"
         );
     }
-    // Both together is the expressible request, and it is allowed.
     e.act(
         Action::SetContactScope {
             target: contact.clone(),
@@ -568,7 +524,6 @@ async fn a_scope_refuses_to_split_the_collaborative_document() {
     )
     .await
     .unwrap();
-    // So is neither — that is the scope that withholds the document entirely.
     e.act(
         Action::SetContactScope {
             target: contact.clone(),
@@ -580,16 +535,12 @@ async fn a_scope_refuses_to_split_the_collaborative_document() {
     .unwrap();
 }
 
-/// This Cell's own Organ has no feed and so no scope on it — the same guard
-/// the direction switch uses, for the same reason.
 #[tokio::test]
 async fn a_scope_refuses_the_local_organ() {
     let (e, local, _contact) = cell_with_contact().await;
     assert!(
         e.act(
             Action::SetContactScope {
-                // A scope that would be VALID on a contact, so the refusal
-                // can only be about the local organ.
                 target: local,
                 fields: Some(vec!["quantity".into()]),
             },
@@ -600,8 +551,6 @@ async fn a_scope_refuses_the_local_organ() {
     );
 }
 
-/// This Cell's own Organ is not a peer, so there is no feed to point in a
-/// direction — and the sand never offers it.
 #[tokio::test]
 async fn sync_policy_refuses_the_local_organ() {
     let (e, local, _contact) = cell_with_contact().await;
@@ -619,8 +568,6 @@ async fn sync_policy_refuses_the_local_organ() {
     assert!(format!("{err}").contains("not a contact"), "{err}");
 }
 
-/// A contact that has actually been paired carries adopted keys, a NodeId and
-/// a record the local user renamed — forgetting has to survive all of it.
 #[tokio::test]
 async fn forgetting_a_paired_contact_with_keys_succeeds() {
     let (e, _local, contact) = cell_with_contact().await;
@@ -656,10 +603,6 @@ async fn forgetting_a_paired_contact_with_keys_succeeds() {
     );
 }
 
-/// Touching a contact's trust, proximity or feed direction commits a Fact
-/// against its record, and `fact.record_uid` is a foreign key — so a contact
-/// anyone has actually configured could not be forgotten at all: the delete
-/// came back as `FOREIGN KEY constraint failed` and the button looked broken.
 #[tokio::test]
 async fn a_configured_contact_can_still_be_forgotten() {
     let (e, _local, contact) = cell_with_contact().await;
@@ -697,11 +640,6 @@ async fn a_configured_contact_can_still_be_forgotten() {
     );
 }
 
-/// A stored scope that will not parse is read as UNNARROWED — the choice is
-/// legibility over strictness, because failing closed would stop a contact's
-/// sync with no error at all. What it must NOT do is look like an ordinary
-/// unnarrowed scope: it is a WIDER setting than anyone asked for, so the raw
-/// text survives to the surface and the panel says so.
 #[tokio::test]
 async fn an_unreadable_scope_reads_as_unnarrowed_and_says_it_is_unreadable() {
     let (e, _local, contact) = cell_with_contact().await;
@@ -731,8 +669,6 @@ async fn an_unreadable_scope_reads_as_unnarrowed_and_says_it_is_unreadable() {
         "the other direction is a separate setting and is not reported as broken"
     );
 
-    // A GENUINELY absent scope is not an unreadable one, and the two must not
-    // be confused: one is the ordinary case and the other is a fault.
     store::organs::set_contact_scope(&e.store.pool, &contact, None)
         .await
         .unwrap();

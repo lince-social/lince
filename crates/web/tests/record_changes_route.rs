@@ -1,10 +1,3 @@
-//! The recent-changes diff, over the wire.
-//!
-//! `store` proves the log fills and ages out and `engine` proves a losing edit
-//! is recorded with its winner. This is the one that proves a PERSON can reach
-//! it — a log nobody can see is exactly the silent merge the whole thing was
-//! built to end, just moved one layer down.
-
 use std::net::SocketAddr;
 use std::path::PathBuf;
 use std::time::Duration;
@@ -135,7 +128,6 @@ async fn a_person_can_read_what_recently_happened_to_a_record() {
          full history"
     );
 
-    // The endpoint is behind the same door as everything else on /host.
     let refused = client
         .get(format!("http://{addr}/host/records/{uid}/changes"))
         .send()

@@ -15,13 +15,10 @@ const RECORD_UID: &str = "r_01ARZ3NDEKTSV4RRFFQ69G5FAW";
 const UNIT_UID: &str = "c_01ARZ3NDEKTSV4RRFFQ69G5FAV";
 const OTHER_UNIT_UID: &str = "c_01ARZ3NDEKTSV4RRFFQ69G5FAW";
 
-/// Absence of a limit is unlimited, so adding one narrows and removing one
-/// widens. Nothing may raise a limit that was already agreed.
 #[test]
 fn budget_narrowing_accepts_only_strictly_smaller_limits() {
     let open = grant(GrantBudget::default());
 
-    // Adding any limit to an unlimited budget is a narrowing.
     let capped = grant(GrantBudget {
         max_intents: Some(5),
         ..GrantBudget::default()
@@ -30,7 +27,6 @@ fn budget_narrowing_accepts_only_strictly_smaller_limits() {
         open.compare_replacement(&capped).unwrap(),
         GrantRevisionChange::Narrowing
     );
-    // Removing it again is a widening.
     assert_eq!(
         capped.compare_replacement(&open).unwrap(),
         GrantRevisionChange::Widening
@@ -49,7 +45,6 @@ fn budget_narrowing_accepts_only_strictly_smaller_limits() {
         GrantRevisionChange::Widening
     );
 
-    // Windows narrow by allowing fewer events, or the same events over longer.
     let window = |count, duration| {
         grant(GrantBudget {
             per_window: Some(GrantWindowLimit {
@@ -83,8 +78,6 @@ fn budget_narrowing_accepts_only_strictly_smaller_limits() {
             .unwrap(),
         GrantRevisionChange::Widening
     );
-    // A lower rate carrying a larger burst is not a narrowing: 100 per 20s
-    // permits a spike of 100 that 5 per 1s never allowed.
     assert_ne!(
         window(5, 1_000)
             .compare_replacement(&window(100, 20_000))
@@ -92,7 +85,6 @@ fn budget_narrowing_accepts_only_strictly_smaller_limits() {
         GrantRevisionChange::Narrowing
     );
 
-    // Quantity narrows only within the same unit and scale.
     let quantity = |unit, scale, mantissa| {
         grant(GrantBudget {
             quantity_limit: Some(GrantQuantityLimit {
@@ -121,7 +113,6 @@ fn budget_narrowing_accepts_only_strictly_smaller_limits() {
         GrantRevisionChange::Narrowing
     );
 
-    // Tightening one dimension while loosening another is refused outright.
     let mixed = grant(GrantBudget {
         max_intents: Some(2),
         per_window: Some(GrantWindowLimit {
@@ -246,8 +237,6 @@ fn every_budget_dimension_denies_on_its_own() {
         vec![BudgetDenial::QuantityExhausted]
     );
 
-    // A quantity-limited grant cannot authorize an amountless request, and it
-    // never converts between units or scales to make one fit.
     for (amount, expected) in [
         (None, BudgetDenial::QuantityRequired),
         (
@@ -274,8 +263,6 @@ fn every_budget_dimension_denies_on_its_own() {
     }
 }
 
-/// The window a request falls in is a pure function of the revision, so a
-/// replay of the same instant reserves against the same window.
 #[test]
 fn windows_tumble_deterministically_from_valid_from() {
     let budget = GrantBudget {
@@ -290,10 +277,8 @@ fn windows_tumble_deterministically_from_valid_from() {
     assert_eq!(budget.window_index(at(0), at(1_000)), Some(1));
     assert_eq!(budget.window_index(at(500), at(1_400)), Some(0));
     assert_eq!(budget.window_index(at(500), at(1_500)), Some(1));
-    // Before the grant is valid there is no window to spend from.
     assert_eq!(budget.window_index(at(500), at(0)), None);
 
-    // Usage counted for a different window cannot be spent in this one.
     let revision = grant(budget);
     let outcome = authorize_intent(
         &revision,
@@ -313,8 +298,6 @@ fn windows_tumble_deterministically_from_valid_from() {
     );
 }
 
-/// Authority and budget are reported together, and an intent can never freeze
-/// a decision that was not allowed.
 #[test]
 fn a_refused_request_can_never_become_an_intent() {
     let revision = grant(GrantBudget {
@@ -378,9 +361,6 @@ fn a_refused_request_can_never_become_an_intent() {
     );
 }
 
-/// Budget accounting is stated once, over the whole frozen vocabulary: an
-/// intent that could still cause work holds its reservation, and one that never
-/// will releases it.
 #[test]
 fn only_intents_that_could_still_act_hold_their_reservation() {
     for status in [
@@ -401,7 +381,6 @@ fn only_intents_that_could_still_act_hold_their_reservation() {
     ] {
         assert!(!status.holds_reservation(), "{status:?} releases budget");
     }
-    // K5.2 may only ever write the two states it can actually reach.
     assert_eq!(
         K5_2_INTENT_STATES,
         [IntentStatus::Authorized, IntentStatus::Cancelled]

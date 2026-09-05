@@ -1,6 +1,8 @@
 use std::path::Path;
 
 fn main() {
+    sensei::teach(env!("CARGO_MANIFEST_DIR"));
+
     let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../anicca");
     println!("cargo:rerun-if-changed={}", dir.display());
 

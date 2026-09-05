@@ -8,10 +8,16 @@ authoritative where linked; no separate Customization, Sands, or
 Interoperability Record currently exists.
 
 Status: native foundation promoted to the favored Linux interface;
-customization, semantic primitive-Sand and recursive-composition runtimes
-accepted. The focused runtime study is complete. It selected no Pulsar,
-Helio, GPUI or SceneDB production dependency and added no waterfall stage. C3
-Configuration and external authoring remains next.
+customization, semantic primitive-Sand, recursive-composition and C3
+Configuration/external-authoring runtimes accepted. C4 has begun with its
+Rust-owned official-Sand structure catalog and native F12 inspection surface.
+Record, Conversation, Table, Todo and Kanban now read the running domain
+through live Protein subscriptions. Message lifecycle, durable private-draft
+Actions, stable repeated Record placements, Todo completion and default
+quantity-lane movement are implemented, while the remaining Behavior
+migrations and richer collection configuration stay active. The focused
+runtime study is complete. It selected no Pulsar, Helio, GPUI or SceneDB
+production dependency and added no waterfall stage.
 
 [Corpus map](README.md)
 
@@ -49,30 +55,32 @@ interface entry points without weakening Website authority.
 The production desktop release builds and packages. The pinned CEF payload is
 copied into a writable content-versioned development cache because
 `cef-dll-sys` copies runtime files during Cargo builds and cannot use an
-immutable Nix store path directly. The 2026-08-29 live release run reached the
-current owner corpus, but the local server refused startup because
-`@first-steps` no longer resolves after that root Record was removed.
-`lingua check anicca` reports the same six references in Karma, Lince and
-Ontology.
-Markdown and the interface launchers do not repair or bypass owner Records.
-Rerun `mise run interface-desktop-report` once the owner chooses their new
-parent; until then the production launch is not claimed human-usable.
+immutable Nix store path directly. On 2026-08-30 the owner authorized the
+minimum Record repair: Ailuros gained its required quantity, the six chapters
+stopped pointing at the intentionally non-ingested First Steps draft, and
+Ailuros was left as a root rather than assigned a guessed parent. `lingua
+check anicca` now validates all 16 Records. The draft remains
+`First Steps.linguai` until its native tutorial is true.
 
-The promoted runtime itself remains live-validated independently of that
-Record gate. Its 2026-08-29 release joined report passed on Wayland at
-1920×1052 with 200 visible interactive Sands, 1,000 continuously eligible
+The first production rerun then exposed a combined-graph async-backend defect:
+the legacy file picker enabled zbus's Tokio backend while AccessKit owned an
+async-I/O executor. The root `rfd` feature now selects `async-std`, leaving one
+zbus async-I/O family and keeping the native event loop independent of an
+ambient Tokio reactor. This is a correctness repair to the landed runtime,
+not C3 work. The corrected 2026-08-30 production desktop report passed on
+Wayland at 1920×1052 with 200 visible Sands, 1,000 continuously eligible
 120 Hz bodies, 10,000 resident nodes and two accelerated CEF surfaces. It
-measured 10.958 ms frame p95, 12.448 ms p99, 1.172 ms fixed-step p95, zero
-fixed-step backlog and no CPU CEF paints. The source fingerprint is
-`73f4855f4b38cc95ec8550cf1480a009f2680d8472a566168a19e622503b487f`.
+measured 10.861 ms frame p95, 11.967 ms p99, 1.098 ms fixed-step p95 and zero
+backlog. The source fingerprint is
+`1fd02aec9ca85626bc4cd33685c80b23da84f205bd23c0fe6c825022641ab97b`.
 
-The exact landed evidence and remaining report are in
+The exact landed evidence and remaining waterfall are in
 [plans/interface.md](plans/interface.md#landed-native-interface-foundation).
 The architecture and test contract are in
 [architecture.md](architecture.md) and [laboratory.md](laboratory.md).
 
 The first product kernel after the laboratory has landed. Contract version 1
-defines 91 typed canonical style roles, Dark and Light Lynx, partial themes,
+defines 92 typed canonical style roles, Dark and Light Lynx, partial themes,
 safe local theme assets and a seven-scope cascade with per-value provenance.
 The joined Gallery applies it to native WGPU nodes, borders, background and
 retained text and projects the same result into Installed CEF without reload.
@@ -104,6 +112,157 @@ save/reopen, save as definition, fork and remount. It draws separate Protein
 is consumed by Rust, recursive Maud output and Installed HTML; the live report
 passed with five final placements, 17 nodes and collision-free scoped DOM ids.
 
+The fourth kernel has landed. Configuration artifact schema version 1 keeps
+theme/mode, workspace and group layers, developer CSS and domain-launch
+receipts beside the exact composition artifact. Instance overrides and
+definition revisions remain in the composition model rather than being copied
+into a second editor state. The 22-definition Configuration package composes
+the same primitives. F11 exposes 16 operations through keyboard, pointer and
+AccessKit: typed global/group/instance edits with origins and inheritance,
+definition defaults, ports, Behavior, isolation/capabilities, developer CSS,
+safe reset, undo, launch/focus and save/reopen. Human runs persist atomically
+under the Lince configuration directory; the live artifact and undo history
+advance only after the rename succeeds. Unreadable or invalid state opens a
+safe complete default without overwriting the refused bytes.
+
+Theme manifests are selected by uid and content hash, standard roles now total
+92 after adding the Sand-margin role, and typed local extensions remain open.
+Raw CSS accepts scoped presentation declarations only and refuses imports,
+URLs, executable schemes, selectors that escape the root and security-layer
+properties; its reset is the native Configuration Sand outside the customized
+root. One resolved cascade projects to native, shared HTML, isolated Installed
+HTML and browser roots. The parity gate generates a seven-file external-author
+kit with schemas, ordinary HTML/CSS/ES-module package, valid and unknown-version
+manifests, token reference and renderer-neutral domain launch recipe. The
+recipe materializes exact definitions, placements, Record inputs and Action
+exports idempotently; its persisted receipt focuses the existing placement on
+reopen and contains no renderer handle.
+
+The 2026-09-01 real joined report passed at 1920×1052 with the accepted
+200/1,000/10,000 workload and two accelerated CEF surfaces. Configuration
+applied and restored its live preview without changing the Installed
+document's one-load count. The run measured 10.879 ms frame p95, 6.986 ms
+CPU-frame p95, 0.752 ms fixed-step p95 with zero backlog and 5.619 ms
+input-to-present-call p95. Its source fingerprint is
+`577dc8b13f1e2b00822f0e97ecd1722fc0672b3edf0295f1f3a06532391c439c`.
+
+The first C4 structure boundary and operational slice have landed without
+disabling legacy behavior. A Rust-owned catalog describes all 25 official
+roots through 72 validated Sand definitions. Reusable property, field, Action,
+toolbar, status, Record, Kanban, table, Message, Conversation and private-draft
+pieces remain separate; specialized renderer leaves are bounded beneath
+compound roots. Configuration is landed. Edit controls, zoom controls, Record,
+Conversation, Table, Todo and Kanban carry native retained Behavior. In the
+production desktop, a
+bounded background client subscribes to the existing WebSocket transport for
+general Records, Conversation trees and private message drafts. It binds
+returned Record fields, nested Messages and durable drafts into the retained
+scene without clobbering local edits. Connection failure is visible and
+reconnects without blocking the frame loop. The other 17 roots visibly report
+that their runtime Behavior is pending. F12 exposes
+the catalog and opens the available runtimes through keyboard, pointer and
+AccessKit. The same package is emitted by the parity diagnostic.
+
+The retained projection walks exact recursive definitions and exported inputs
+into stable semantic node paths. WGPU geometry, Glyphon text, hit testing,
+focus and the dynamic AccessKit subtree all consume that one scene. Generic
+toolbar controls carry generic Boolean intent, while only the deliberately
+Record-bearing control can emit `record-clicked`. The operational surface can
+toggle edit mode, lock a group, emit a Castle-save request, zoom/recenter,
+change Record property presentation, edit a local Record draft and send it
+through an acknowledged Action. Conversation displays live author/operator and
+writing/finished/interrupted state. Its private draft queue persists routing,
+pin, timing and order through typed create/revise/delete/send Actions; writes
+are debounced, unacknowledged drafts remain, unpinned sends consume only after
+success, pinned presets survive and newer edits are not cleared by an older
+receipt. With no turn running, timing is visibly and behaviorally “send now.”
+
+The 2026-09-02 schema-10 Wayland/Vulkan report passed at 1920×1052. All 72
+interface tests and release parity pass. Under the accepted 200 visible Sands,
+1,000 continuously eligible bodies, 10,000 resident nodes and two accelerated
+CEF surfaces it measured 10.090 ms frame p95, 11.378 ms p99, 5.364 ms
+CPU-frame p95, 0.686 ms fixed-step p95 with zero backlog and 4.058 ms
+input-to-present-call p95. The exact 72-definition official package hash is
+`sha256:15d668d8add7ba5bbca6bc81f91c17d9c18c2d464c453a89273a24d17f69b3c5`;
+the source fingerprint is
+`f019e733a26680d92ab208d448a3adf94424e5d22b7c7de350abdacb41ba54fd`.
+
+The 2026-09-05 production desktop rerun passed report schema 11 on
+Wayland/Vulkan at 1920×1052. It started the real local Lince server, connected
+the native runtime to `ws://127.0.0.1:6174/host/transport/ws`, received one
+Protein snapshot containing one Record and reported no domain refusals or
+errors. All 76 joined-runtime tests pass. Under the same accepted
+200/1,000/10,000 workload and two accelerated CEF surfaces it measured
+10.612 ms frame p95, 12.427 ms p99, 5.722 ms CPU-frame p95, 0.674 ms
+fixed-step p95 with zero backlog and 4.563 ms input-to-present-call p95. Its
+source fingerprint is
+`142351d20470f8fc05cfcc802dfa8762b13efd1d34c696a91c1532ae2c69de22`.
+
+The next 2026-09-05 production Conversation checkpoint passed report schema 12
+on Wayland/Vulkan at 1920×1052. Record and Conversation subscriptions were
+live with two accepted snapshots, no refusal and no error; representative
+Conversation operations were exercised without sending their drained intents
+to production. The same 200/1,000/10,000 workload and two CEF surfaces measured
+13.047 ms frame p95, 16.384 ms p99, 7.791 ms CPU-frame p95, 0.511 ms fixed-step
+p95 with zero backlog and 7.916 ms input-to-present-call p95. The official
+package hash is
+`sha256:c06be5a4c17ab85d590e96a87bea45b1b0a48544b37f2dde0e69a39522630347`;
+the source fingerprint is
+`013bc0510eeb888e6fa6b08de793b992487e5698acb42a03d3708d60ec1bd951`.
+The final 2026-09-05 Conversation checkpoint passed report schema 13 on the
+same Wayland/Vulkan host at 1920×1052. It received all three live Protein
+snapshots—Record, Conversation and private drafts—with no refusal or error, and
+exercised durable draft creation, revision, ordering, pinning and send intent
+without mutating production data. At 200 visible Sands, 1,000 continuously
+eligible bodies, 10,000 resident nodes and two accelerated CEF surfaces it
+measured 9.897 ms frame p95, 11.460 ms p99, 4.721 ms CPU-frame p95, 0.535 ms
+fixed-step p95 with zero backlog and 3.936 ms input-to-present-call p95. The
+report is `target/interface-laboratory/c4-conversation-drafts/report.json`;
+the official package hash remains
+`sha256:c06be5a4c17ab85d590e96a87bea45b1b0a48544b37f2dde0e69a39522630347`
+and its source fingerprint is
+`9301dd1860aca967c3af225dbcf1c959c72f6019bccf940bed0e8e77a22e572b`.
+
+The 2026-09-05 Record-collection checkpoint passed report schema 14 on
+Wayland/Vulkan at 1920×1052. One reusable retained-placement seam now repeats
+the exact Table row or Record-summary definition for each stable Protein row;
+Table pages through rows and creates a Record, Todo filters plain
+negative-quantity Records and creates/completes them, and Kanban displays five
+default quantity lanes and moves the selected Record through acknowledged
+`SetQuantity` Actions. Duplicate placement and expanded retained-node paths
+fail closed, and Todo's Open selected control reuses the card's typed
+`record-clicked` Behavior. The diagnostic exercised three `record-clicked`
+events and two write intents; live replacement correctly cleared its stale
+fixture selection. At the accepted 200/1,000/10,000 workload and two
+accelerated CEF surfaces it measured 10.463 ms frame p95, 12.006 ms p99,
+5.369 ms CPU-frame p95, 0.559 ms fixed-step p95 with zero backlog and 4.535 ms
+input-to-present-call p95. The report is
+`target/interface-laboratory/c4-record-collections/report.json`; its
+72-definition package hash is
+`sha256:80caab5ec2fe1a3637b7eeff0ce628b264162363e29d64994cabdd1c575142d7`
+and source fingerprint is
+`bac13fd4ab01078bc7f93221374d4a38c9a265d898bb1164190806af4c5321f2`.
+
+This is a core collection slice, not the end of those migrations. Table inline
+editing and deletion, configurable/saved Kanban lanes and concepts, richer
+Protein drivers, selection/bulk operations, swimlanes and the full Record
+editing surface remain explicit C4 work.
+
+Building that catalog repaired an earlier composition defect at its C2 owner:
+a public compound input now forwards through arbitrarily nested input exports,
+defaults reach the mounted child, and a root and deep binding cannot both feed
+the same eventual input. The video-call fixture now proves a Protein binding
+crossing two compound boundaries instead of bypassing them.
+
+The earlier 2026-09-01 joined report schema 9 passed at 1920×1052 with 72 AccessKit
+nodes, 25 official roots and 70 Rust definitions. Under the same
+200/1,000/10,000 workload it measured 10.807 ms frame p95, 12.870 ms p99,
+5.837 ms CPU-frame p95, 0.598 ms fixed-step p95 with zero backlog and 4.056 ms
+input-to-present-call p95. The exact official package hash is
+`sha256:77bcd0e9402eba6b4c136042191f565b9e8bbf2a75c29241d253b5b25fdfbcc1`;
+the report source fingerprint is
+`96ed221508394d3dd9856205e99c785b194681d0e5085fa2aba6528674abee31`.
+
 The 30-entry Pulsar/Helio study is complete. Its active result is deliberately
 small: preserve stable Lince identities above disposable runtime handles; keep
 one explicit frame coordinator; move bounded revisions and dirty changes
@@ -116,28 +275,29 @@ the complete positive and negative evidence remains in [links.md](links.md).
 
 ## Active sequence
 
-1. Owner resolves the six remaining `@first-steps` references after removing
-   that root Record; rerun the production desktop report. Isolated foundation
-   work can continue while this independent gate is open.
-2. Build C3: Configuration and external authoring on the landed composition
-   primitives.
-3. Build C4: rebuild the first-party interface and official Sands.
-4. Pass C5: visual, accessibility, theme, authoring, lifecycle, runtime-health
+1. Continue C4 from the proven shell, Record, Conversation and first
+   Record-collection slice: finish data-workflow behavior, migrate bounded
+   specialized adapters and finally delete the legacy implementation.
+2. Pass C5: visual, accessibility, theme, authoring, lifecycle, runtime-health
    and scale gate.
-5. Only then open Box navigation, layers, anchors, base pattern and input.
-6. Build current-Protein result templates and visible field-to-port wiring.
-7. Build force, sorting, mutation and immunity Areas through typed Actions.
-8. Build topology brushes, filtered potential effects, admission policies,
+3. Only then open Box navigation, layers, anchors, base pattern and input.
+4. Build current-Protein result templates and visible field-to-port wiring.
+5. Build force, sorting, mutation and immunity Areas through typed Actions.
+6. Build topology brushes, filtered potential effects, admission policies,
    surface-bound Top/Perspective views, free-space Area volumes and the
    previewable collapse/expand operation; make the Avian/SoA decision from this
    measured workload.
-9. Build Box durability, the operation/snapshot model and coalesced spatial
+7. Build Box durability, the operation/snapshot model and coalesced spatial
    checkpoints; prove that Area/topology movement survives restart.
-10. Finish Installed HTML/Website administration and runtime health.
-11. Build live-only host-authoritative workspace collaboration in Protein's
+8. Finish Installed HTML/Website administration and runtime health.
+9. Build live-only host-authoritative workspace collaboration in Protein's
     Synchronization surface, reusing contact infrastructure but not Record or
     File projection operation semantics.
-12. Build the public read-only Live Facade.
+10. Build the public read-only Live Facade.
+
+Fiote Phase 0 can proceed beside C4-C5. Its Phase 2 prototype opens after C5
+and consumes the general domain-compound and Conversation foundation; it is
+not an Interface prerequisite and does not delay Box.
 
 The active detailed checklist is
 [plans/customization.md](plans/customization.md). The Sand contract that it
@@ -187,11 +347,11 @@ are not another implementation checklist.
 
 Read:
 
-- [customization.md](customization.md)
 - [visual-inventory.md](visual-inventory.md)
 - [architecture.md](architecture.md)
 - [sand-model.md](sand-model.md)
 - [plans/customization.md](plans/customization.md)
+- [official-sands.md](official-sands.md)
 
 Consult [legacy-web-ui.md](legacy-web-ui.md), [behavior.md](behavior.md), or
 [html-and-websites.md](html-and-websites.md) only for the part being changed.

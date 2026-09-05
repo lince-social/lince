@@ -1,7 +1,3 @@
-//! Part IV completion: cycle warning on link creation for order-like kinds
-//! (`@precedes`, `@before`, `@order`, or their descendants). The action still
-//! succeeds — the loop is surfaced as a warning, not an error.
-
 use engine::Engine;
 use engine::actions::Action;
 use nucleus::RecordKind;
@@ -70,12 +66,10 @@ async fn descendants_of_precedes_are_order_like_and_other_kinds_are_not() {
         .await
         .unwrap();
 
-    // needs-loops are legal structure (a recipe may be mutual): no warning.
     e.act(add_link("a", "needs", "b"), None).await.unwrap();
     let out = e.act(add_link("b", "needs", "a"), None).await.unwrap();
     assert!(out.warnings.is_empty(), "non-order kinds never warn");
 
-    // a child of @precedes inherits order-likeness through the DAG.
     e.act(add_link("a", "blocks-softly", "b"), None)
         .await
         .unwrap();

@@ -1,10 +1,3 @@
-//! iroh transport acceptance (Ontology §11 "Transport: iroh"): two Cells bind
-//! endpoints, one pushes op batches to the other over ALPN `lince/sync/1`, and
-//! the accept-side gate refuses an Organ it holds no contact row for.
-//!
-//! Everything here runs on `Reach::Local` — no relays, no DNS, no pkarr — so
-//! the test exercises the protocol without touching anyone's infrastructure.
-
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
@@ -32,8 +25,6 @@ fn secret(seed: u8) -> SecretKey {
     SecretKey::from_bytes(&[seed; 32])
 }
 
-/// A dialable address for an endpoint bound on this machine. `bound_sockets()`
-/// reports the wildcard bind, so point the port at loopback explicitly.
 fn loopback(wire: &Wire) -> EndpointAddr {
     let port = wire
         .endpoint()
@@ -46,11 +37,6 @@ fn loopback(wire: &Wire) -> EndpointAddr {
         .with_ip_addr(SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), port))
 }
 
-/// Register `them` as a KNOWN contact of `us`, reachable at `node_id`.
-///
-/// `set_trust` is explicit because `add_contact` deliberately does not imply
-/// it: recording an address is not a decision to trust, and `known` is exactly
-/// what opens the sync ALPN. A helper named `know` has to do the knowing.
 async fn know(us: &Engine, organ_uid: &str, node_id: &str) {
     store::organs::add_contact(&us.store.pool, organ_uid, None, "peer", "", 0)
         .await
@@ -75,14 +61,12 @@ async fn known_peer_pushes_ops_over_iroh() {
         .await
         .expect("b binds");
 
-    // Each side knows the other by NodeId — the only routing input.
     know(&a, &b_organ, &b_wire.node_id().to_string()).await;
     know(&b, &a_organ, &a_wire.node_id().to_string()).await;
 
     let b_addr = loopback(&b_wire);
     let serving = tokio::spawn(async move { b_wire.serve().await });
 
-    // A writes something, then ships its op log to B.
     store::records::create(
         &a.store.pool,
         NewRecord {
@@ -123,7 +107,6 @@ async fn known_peer_pushes_ops_over_iroh() {
         .expect("resolve");
     assert!(landed.is_some(), "the record must exist on B after sync");
 
-    // And the introduction round-trips on the same authenticated connection.
     let response = a_wire
         .request(b_addr, ALPN_SYNC, &WireRequest::Introduction)
         .await
@@ -139,7 +122,6 @@ async fn known_peer_pushes_ops_over_iroh() {
 #[tokio::test]
 async fn unknown_node_id_cannot_reach_the_sync_protocol() {
     let (b, _b_organ) = cell("http://b.test").await;
-    // A stranger: B holds no contact row bound to this NodeId.
     let (stranger, stranger_organ) = cell("http://stranger.test").await;
 
     let b_wire = Wire::bind(b.clone(), secret(3), Reach::Local)
@@ -166,18 +148,12 @@ async fn unknown_node_id_cannot_reach_the_sync_protocol() {
     .expect("record");
     let (ops, _) = stranger.ops_after(0, 500).await.expect("ops");
 
-    // Assert the two halves SEPARATELY, so a bug that broke dialing outright
-    // cannot leave this test green by producing an indistinguishable error.
-    //
-    // Half one: the handshake succeeds. Anyone holding a NodeId can open a
-    // connection — exactly the new surface a published key creates.
     let connection = s_wire
         .endpoint()
         .connect(b_addr.clone(), ALPN_SYNC)
         .await
         .expect("the handshake itself must succeed for this test to mean anything");
 
-    // Half two: the GATE is what refuses, with its own reason.
     let closed = connection.closed().await.to_string();
     assert!(
         closed.contains("unknown organ"),
@@ -211,9 +187,6 @@ async fn unknown_node_id_cannot_reach_the_sync_protocol() {
     serving.abort();
 }
 
-/// Having a contact ROW is not having trust. `add_contact` deliberately writes
-/// `unknown`, which means the grant-checked thread door only — never the
-/// general sync protocol.
 #[tokio::test]
 async fn a_contact_who_is_not_known_cannot_reach_the_sync_protocol() {
     let (b, _b_organ) = cell("http://b.test").await;
@@ -248,8 +221,6 @@ async fn a_contact_who_is_not_known_cannot_reach_the_sync_protocol() {
     serving.abort();
 }
 
-/// `blocked` is terminal (Ontology §2) and is checked BEFORE the ALPN split, so
-/// a blocked Organ cannot reach the thread door either.
 #[tokio::test]
 async fn blocked_organ_is_closed_on_every_alpn() {
     let (b, _b_organ) = cell("http://b.test").await;
@@ -287,9 +258,6 @@ async fn blocked_organ_is_closed_on_every_alpn() {
     serving.abort();
 }
 
-/// The thread door is CLOSED by default: publishing a NodeId advertises
-/// reachability to people who already know you and grants nothing to anyone
-/// else. Turning it on is what opens the invite door.
 #[tokio::test]
 async fn thread_door_is_closed_to_unknown_organs_by_default() {
     let (b, _b_organ) = cell("http://b.test").await;
@@ -321,9 +289,6 @@ async fn thread_door_is_closed_to_unknown_organs_by_default() {
     serving.abort();
 }
 
-/// With the door open, an unknown Organ may fetch an Introduction — that is
-/// what makes pairing from a nearby list possible — and NOTHING else. It must
-/// not be able to push ops.
 #[tokio::test]
 async fn open_thread_door_serves_introduction_but_not_general_sync() {
     let (b, b_organ) = cell("http://b.test").await;
@@ -350,7 +315,6 @@ async fn open_thread_door_serves_introduction_but_not_general_sync() {
     let b_addr = loopback(&b_wire);
     let serving = tokio::spawn(async move { b_wire.serve().await });
 
-    // Introduction is served: this is what pairing needs.
     let response = s_wire
         .request(
             b_addr.clone(),
@@ -364,7 +328,6 @@ async fn open_thread_door_serves_introduction_but_not_general_sync() {
         other => panic!("expected Introduction, got {other:?}"),
     }
 
-    // Ops are NOT: an open invite door is not sync reach.
     store::records::create(
         &stranger.store.pool,
         NewRecord {
@@ -407,9 +370,6 @@ async fn open_thread_door_serves_introduction_but_not_general_sync() {
     serving.abort();
 }
 
-/// The LIVE path: `sync_once` is what the background runner calls, so this is
-/// the test that says the iroh transport is actually wired up rather than
-/// merely present. Two Cells converge with no HTTP anywhere.
 #[tokio::test]
 async fn sync_once_converges_two_cells() {
     let (a, a_organ) = cell("http://a.test").await;
@@ -463,10 +423,6 @@ async fn sync_once_converges_two_cells() {
     serving.abort();
 }
 
-/// First contact is an individual replica, not friendship: a discovered
-/// NodeId can offer one conversation, the receiver accepts it, and that root
-/// syncs while both contact rows remain `unknown` and the general feed stays
-/// closed.
 #[tokio::test]
 async fn unknown_nearby_peers_can_accept_and_sync_one_conversation() {
     let (a, a_organ) = cell("http://a.test").await;
@@ -563,6 +519,8 @@ async fn unknown_nearby_peers_can_accept_and_sync_one_conversation() {
             engine::actions::Action::CreateMessage {
                 thread: thread.clone(),
                 body: "hey, I'm here".into(),
+                author: None,
+                state: nucleus::MessageState::Finished,
                 parent: None,
                 references: vec![],
             },
@@ -623,8 +581,6 @@ async fn unknown_nearby_peers_can_accept_and_sync_one_conversation() {
     b_serving.abort();
 }
 
-/// The offline send queue, which is not a separate mechanism: a peer that is
-/// down leaves ops QUEUED rather than dropped, and a later pass delivers them.
 #[tokio::test]
 async fn ops_for_an_unreachable_peer_stay_queued_and_flush_later() {
     let (a, a_organ) = cell("http://a.test").await;
@@ -645,7 +601,6 @@ async fn ops_for_an_unreachable_peer_stay_queued_and_flush_later() {
 
     a_wire.remember_addr(loopback(&b_wire));
 
-    // B is NOT serving yet — the closed-laptop case.
     store::records::create(
         &a.store.pool,
         NewRecord {
@@ -668,7 +623,6 @@ async fn ops_for_an_unreachable_peer_stay_queued_and_flush_later() {
         "undelivered ops must stay queued, not be dropped"
     );
 
-    // They come home.
     let serving = {
         let b_wire = b_wire.clone();
         tokio::spawn(async move { b_wire.serve().await })
@@ -705,8 +659,6 @@ fn fingerprint_is_derived_from_the_key_and_stable() {
 
 #[test]
 fn node_key_is_stable_across_calls() {
-    // The node key is created once at mode 0600 and reused forever after —
-    // a Cell whose NodeId changed on restart would strand every saved contact.
     let dir = std::env::temp_dir().join(format!("lince-wire-{}", uuid::Uuid::new_v4()));
     let path = dir.join("node_key");
     let first = engine::wire::node_secret(&path).expect("first");
@@ -715,18 +667,11 @@ fn node_key_is_stable_across_calls() {
     let _ = std::fs::remove_dir_all(&dir);
 }
 
-/// Adding a contact from a pasted code cannot learn their uid, so the row is
-/// held under an invented one. This is the repair: the next sync pass dials
-/// them, takes their Introduction, and re-files the row under the uid they
-/// declare — without which every batch they ever push is refused as belonging
-/// to a different Organ, and paste-to-add is a silent dead end.
 #[tokio::test]
 async fn a_contact_added_by_code_is_refiled_under_the_uid_they_declare() {
     let (a, _a_organ) = cell("http://a.test").await;
     let (b, b_organ) = cell("http://b.test").await;
 
-    // B answers strangers: the thread door is where an Introduction is served
-    // to someone who holds no row for you, which is exactly A's situation.
     store::records::set_extension(
         &b.store.pool,
         &b_organ,
@@ -749,7 +694,6 @@ async fn a_contact_added_by_code_is_refiled_under_the_uid_they_declare() {
         tokio::spawn(async move { b_wire.serve().await })
     };
 
-    // What `add-known-organ` leaves behind: a row under an invented uid.
     let placeholder = format!("o-{b_node}");
     a.act(
         engine::actions::Action::AddKnownOrgan {
@@ -781,7 +725,6 @@ async fn a_contact_added_by_code_is_refiled_under_the_uid_they_declare() {
         "one row reconciled"
     );
 
-    // The invented uid is gone and B's own uid is the contact.
     assert!(
         store::organs::contact(&a.store.pool, &placeholder)
             .await
@@ -797,16 +740,11 @@ async fn a_contact_added_by_code_is_refiled_under_the_uid_they_declare() {
     assert!(!real.pending_introduction);
     assert_eq!(real.trust, "known");
     assert_eq!(real.node_id.as_deref(), Some(b_node.as_str()));
-    // The name the LOCAL user typed survives the swap — it was never theirs
-    // to declare.
     assert_eq!(real.head, "Bea");
 
     serving.abort();
 }
 
-/// The root key TOFU'd from the code is the one thing adding by code actually
-/// verifies. If the Organ answering at that address presents a different one,
-/// reconciliation must refuse rather than quietly adopt the new key.
 #[tokio::test]
 async fn a_root_key_that_does_not_match_the_code_leaves_the_contact_pending() {
     let (a, _a_organ) = cell("http://a.test").await;
@@ -836,7 +774,6 @@ async fn a_root_key_that_does_not_match_the_code_leaves_the_contact_pending() {
         tokio::spawn(async move { b_wire.serve().await })
     };
 
-    // A code carrying somebody ELSE's root key for B's address.
     let placeholder = format!("o-{b_node}");
     a.act(
         engine::actions::Action::AddKnownOrgan {
@@ -880,15 +817,6 @@ async fn a_root_key_that_does_not_match_the_code_leaves_the_contact_pending() {
     serving.abort();
 }
 
-/// The paste path with the code the Profile panel ACTUALLY renders — a real
-/// `pairing_invite()`, root key and addresses and all — rather than one built
-/// by hand in a test. Every other test here hand-builds a bare invite, which
-/// is why this never showed up.
-///
-/// And the case that matters in practice: you already met them. You found each
-/// other on the LAN, you have a conversation open, and then one of you pastes
-/// the code to make it official. The NodeId is already bound to their real
-/// contact row, and `organ_contact.node_id` is UNIQUE.
 #[tokio::test]
 async fn pasting_the_code_of_someone_already_met_upgrades_that_contact() {
     let (a, a_organ) = cell("http://a.test").await;
@@ -901,10 +829,8 @@ async fn pasting_the_code_of_someone_already_met_upgrades_that_contact() {
         .expect("a binds");
     let a_node = a_wire.node_id().to_string();
 
-    // The exact string in A's "Your pairing code" field.
     let code = a_wire.pairing_invite().await.expect("invite").encode();
 
-    // B already knows A the way discovery leaves them: real uid, bound NodeId.
     know(&b, &a_organ, &a_node).await;
 
     b.act(
@@ -917,7 +843,6 @@ async fn pasting_the_code_of_someone_already_met_upgrades_that_contact() {
     .await
     .expect("pasting the code of someone you already met must not fail");
 
-    // One row, theirs, still under their real uid — not a second placeholder.
     let placeholder = format!("o-{a_node}");
     assert!(
         store::organs::contact(&b.store.pool, &placeholder)
@@ -942,9 +867,6 @@ async fn pasting_the_code_of_someone_already_met_upgrades_that_contact() {
     );
 }
 
-/// `blocked` is terminal, and the paste path must not be the one door that
-/// walks it back. Blocking someone and then adding their code — theirs by
-/// accident, or handed over by them a second time — has to refuse.
 #[tokio::test]
 async fn pasting_the_code_of_a_blocked_organ_is_refused() {
     let (a, a_organ) = cell("http://a.test").await;
@@ -984,18 +906,6 @@ async fn pasting_the_code_of_a_blocked_organ_is_refused() {
     );
 }
 
-/// Pairing is MUTUAL, or the doors it is supposed to open stay shut.
-///
-/// `pair_with` used to send only `Introduction`: the dialer learned who the
-/// far side was and adopted it, and the far side kept nothing. That looked
-/// like success on the only screen anyone was watching — the dialer's contact
-/// list — while `lince/sync/1` and `lince/live/1` both gate on
-/// `contact_by_node_id` on the ACCEPTING side, so the freshly paired Cell was
-/// still a stranger there. This is the case that made a `--server` box
-/// impossible to reach: pair from the laptop, then get closed on.
-///
-/// What the accepting side must NOT do is trust them. The row lands `unknown`;
-/// promoting it is a separate, deliberate act.
 #[tokio::test]
 async fn pairing_leaves_a_contact_row_on_both_sides() {
     let (host, host_organ) = cell("http://host.test").await;
@@ -1033,7 +943,6 @@ async fn pairing_leaves_a_contact_row_on_both_sides() {
         .expect("pairing succeeds");
     assert_eq!(paired, host_organ, "the guest adopted the host's Organ");
 
-    // The half that used to be missing.
     let on_host = store::organs::contact_by_node_id(&host.store.pool, &guest_node)
         .await
         .expect("query")
@@ -1050,11 +959,6 @@ async fn pairing_leaves_a_contact_row_on_both_sides() {
     serving.abort();
 }
 
-/// Transfer over iroh (2026-08-08). Until this, Transfer was the last
-/// subsystem POSTing to `contact.base_url` — an address the peer wrote down
-/// about itself, routinely a loopback URL, and never something a contact on
-/// another network could dial. It now rides `lince/sync/1` like everything
-/// else, so a delivery reaches an identity rather than a hostname.
 struct EchoTransfer;
 
 #[async_trait::async_trait]
@@ -1064,8 +968,6 @@ impl engine::wire::TransferPeer for EchoTransfer {
         verb: engine::wire::TransferVerb,
         body: serde_json::Value,
     ) -> Result<serde_json::Value, String> {
-        // Stands in for the real delivery handler, which lives in `web`. What
-        // is under test here is the pipe, not what Transfer does with it.
         Ok(serde_json::json!({ "saw": format!("{verb:?}"), "echo": body }))
     }
 }
@@ -1084,8 +986,6 @@ async fn a_transfer_envelope_reaches_a_contact_over_iroh() {
     know(&a, &b_organ, &b_wire.node_id().to_string()).await;
     know(&b, &a_organ, &a_wire.node_id().to_string()).await;
 
-    // The dial resolves the contact's NodeId itself, so the test has to make
-    // the endpoint findable the same way `loopback()` does for the others.
     a_wire.remember_addr(loopback(&b_wire));
     b_wire.set_transfer_handler(Arc::new(EchoTransfer));
     let serving = tokio::spawn(async move { b_wire.serve().await });
@@ -1108,10 +1008,6 @@ async fn a_transfer_envelope_reaches_a_contact_over_iroh() {
     serving.abort();
 }
 
-/// Riding the sync ALPN means inheriting its gate, and that is a tightening
-/// worth pinning: the HTTP path delivered to any contact that was not blocked,
-/// including one nobody had vetted. Value transfer is exactly where "there is
-/// a row for them" must not be enough.
 #[tokio::test]
 async fn a_transfer_is_not_delivered_to_an_unvetted_contact() {
     let (a, a_organ) = cell("http://a.test").await;
@@ -1124,7 +1020,6 @@ async fn a_transfer_is_not_delivered_to_an_unvetted_contact() {
         .await
         .expect("b binds");
 
-    // A row and a NodeId, but never promoted to `known`.
     store::organs::add_contact(&a.store.pool, &b_organ, None, "peer", "", 0)
         .await
         .expect("contact");
@@ -1152,19 +1047,6 @@ async fn a_transfer_is_not_delivered_to_an_unvetted_contact() {
     serving.abort();
 }
 
-/// The dial RACE (Ontology §11, "Dial policy").
-///
-/// Sequential dialing made a dead Cell cost the FULL `DIAL_TIMEOUT` before the
-/// next candidate was tried — per contact, per pass — so one shut laptop
-/// listed first delayed everything behind it. Here the candidates are, in
-/// order: a NodeId pointed at a port nothing listens on (hangs), a NodeId with
-/// no address anywhere (fails fast), and a live Cell. The connection must come
-/// back in well under one dial timeout, which sequential dialing could not do
-/// by construction.
-///
-/// Both failure shapes on purpose. The fast one completes FIRST, before the
-/// staggered live candidate has even started, so it also pins that a finished
-/// failure falls through and keeps waiting rather than ending the race.
 #[tokio::test]
 async fn a_dead_cell_does_not_delay_the_live_one() {
     let (a, a_organ) = cell("http://race-a.test").await;
@@ -1178,8 +1060,6 @@ async fn a_dead_cell_does_not_delay_the_live_one() {
         .expect("b binds");
     know(&b, &a_organ, &a_wire.node_id().to_string()).await;
 
-    // A port nothing is listening on: the dial hangs rather than failing fast,
-    // which is what makes this a timing test rather than a lucky ordering.
     let dead_port = {
         let socket = std::net::UdpSocket::bind("127.0.0.1:0").expect("probe socket");
         socket.local_addr().expect("probe addr").port()
@@ -1191,13 +1071,8 @@ async fn a_dead_cell_does_not_delay_the_live_one() {
     );
     a_wire.remember_addr(loopback(&b_wire));
 
-    // A NodeId with no address anywhere: this one fails FAST rather than
-    // hanging, which is the commoner shape (an expired roster naming a Cell
-    // whose key was rotated). It must not end the race — a completed failure
-    // has to fall through and keep waiting on the others.
     let unreachable = secret(44).public();
 
-    // The saved node id is the dead one; the roster adds the live Cell.
     know(&a, &b_organ, &dead.to_string()).await;
     let b_root = Signer::generate(&b_organ, engine::roster::ROOT_KEY_ID);
     a.publish_roster(
@@ -1256,13 +1131,6 @@ async fn a_dead_cell_does_not_delay_the_live_one() {
     serving.abort();
 }
 
-/// The per-peer connection cap (Ontology §11, C4), which exists from the first
-/// deploy rather than after the first incident.
-///
-/// An always-on Cell is a bandwidth donation with no natural ceiling, and an
-/// unbounded one takes down the operator's other services before it takes down
-/// Lince. Per PEER rather than global, so one noisy contact cannot lock
-/// everyone else out — which is exactly what a global cap would let it do.
 #[tokio::test]
 async fn one_peer_cannot_hold_unlimited_connections() {
     let (a, a_organ) = cell("http://capped-a.test").await;
@@ -1279,7 +1147,6 @@ async fn one_peer_cannot_hold_unlimited_connections() {
     let b_addr = loopback(&b_wire);
     let serving = tokio::spawn(async move { b_wire.serve().await });
 
-    // Hold connections open, past the cap.
     let mut held = Vec::new();
     for _ in 0..engine::wire::MAX_CONNECTIONS_PER_PEER {
         match tokio::time::timeout(
@@ -1297,12 +1164,8 @@ async fn one_peer_cannot_hold_unlimited_connections() {
         engine::wire::MAX_CONNECTIONS_PER_PEER,
         "the cap must admit everything up to it"
     );
-    // Let the server finish admitting them before asking for one more.
     tokio::time::sleep(std::time::Duration::from_millis(200)).await;
 
-    // The next one is accepted at the QUIC layer and then closed by us, so the
-    // refusal shows up as the connection going away rather than as a dial
-    // failure — which is why this asserts on the closed reason.
     let extra = tokio::time::timeout(
         engine::wire::DIAL_TIMEOUT,
         a_wire.endpoint().connect(b_addr, ALPN_SYNC),

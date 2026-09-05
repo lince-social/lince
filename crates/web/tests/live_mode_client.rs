@@ -1,12 +1,3 @@
-//! The board reaching OTHER Linces (Ontology §11 "live mode"), guest half.
-//!
-//! Each sand binds a host — our own Cell, or a contact's, reached through our
-//! Cell's iroh relay. Sand A may be looking at Organ A while sand B looks at
-//! Organ B, so the board holds one connection PER ORGAN rather than one socket
-//! switched between them. This runs the SHIPPED `transport.js` in node to prove
-//! the routing and, more importantly, the ways it could silently corrupt
-//! someone else's Organ or borrow the wrong identity.
-
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
@@ -20,10 +11,6 @@ fn node_available() -> bool {
         .unwrap_or(false)
 }
 
-/// Stage the real module beside a harness that fakes only the browser globals
-/// it touches. Copying the shipped file (never a transcription of it) is the
-/// whole point — a divergence between this and what is served makes the test
-/// worthless.
 fn run(label: &str, body: &str) {
     if !node_available() {
         eprintln!("SKIP live mode client test `{label}`: node is not on PATH");
@@ -117,9 +104,6 @@ globalThis.clearTimeout = fakeClearTimeout;
     }
 }
 
-/// Two sands on two different hosts get two sockets, each pointed at its own
-/// Cell — and a third sand on a host already open reuses that one socket
-/// rather than opening a second.
 #[test]
 fn each_bound_host_gets_its_own_connection() {
     run(
@@ -165,12 +149,6 @@ console.log("ok");
     );
 }
 
-/// Frames queued for one Cell must never be delivered to another.
-///
-/// The outbox holds whatever had not been flushed when a sand's binding
-/// changed. Replaying it onto a different host would apply someone's half-sent
-/// Action to the wrong Organ's store — a silent cross-Cell write, with no error
-/// anywhere. Separate outboxes are what make that structurally impossible.
 #[test]
 fn work_queued_for_one_cell_is_never_flushed_into_another() {
     run(
@@ -216,13 +194,6 @@ console.log("ok");
     );
 }
 
-/// Signing sessions must not be shared between hosts.
-///
-/// This is the failure that would matter most. Each Cell binds its own Person
-/// to its own challenge, and two sands routinely authenticate as DIFFERENT
-/// Persons at the same time. A single shared session would sign an Action for
-/// one Cell with the identity proved to another — the Ledger would record the
-/// wrong author, and no error would be raised anywhere.
 #[test]
 fn each_host_keeps_its_own_signing_session() {
     run(
@@ -275,13 +246,6 @@ console.log("ok");
     );
 }
 
-/// A websocket to our OWN Cell opening says nothing about whether the far Cell
-/// let us in — the relay confirms that separately, and only then is the session
-/// live.
-///
-/// Reporting the upgrade as "live" is what made the status light flicker green
-/// on every failed attempt, and worse, flushed the board's subscriptions into a
-/// socket that was about to be closed, destroying them once per retry.
 #[test]
 fn a_relay_that_never_confirms_is_not_reported_live() {
     run(
@@ -321,8 +285,6 @@ console.log("ok");
     );
 }
 
-/// A host that will not answer is dialled with a growing delay, not once a
-/// second forever.
 #[test]
 fn a_host_that_keeps_failing_is_dialled_with_a_growing_delay() {
     run(
@@ -358,12 +320,6 @@ console.log("ok");
     );
 }
 
-/// A host that lets us in and then immediately drops us backs off too.
-///
-/// The dangerous half of the backoff. Clearing the failure count the moment a
-/// session opens would leave this case dialling once a second and flashing the
-/// status light green/red on every round — the original symptom exactly, just
-/// one handshake further along.
 #[test]
 fn a_session_that_dies_on_arrival_does_not_earn_a_prompt_retry() {
     run(
@@ -398,8 +354,6 @@ console.log("ok");
     );
 }
 
-/// A session that DOES last resets the backoff, so a single blip does not
-/// leave a healthy host being dialled every thirty seconds.
 #[test]
 fn a_session_that_lasts_earns_a_prompt_retry_again() {
     run(
@@ -438,8 +392,6 @@ console.log("ok");
     );
 }
 
-/// A host that wants a login we do not hold stops being dialled entirely —
-/// and starts again the moment the user logs in.
 #[test]
 fn a_host_that_wants_a_login_we_do_not_have_stops_being_dialled() {
     run(
@@ -481,8 +433,6 @@ console.log("ok");
     );
 }
 
-/// Dropping a host binding must not leave a caller waiting on a promise that
-/// can never settle: the session those Actions were signed against is gone.
 #[test]
 fn an_action_in_flight_when_a_host_is_released_is_rejected_not_stranded() {
     run(

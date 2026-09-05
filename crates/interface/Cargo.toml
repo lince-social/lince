@@ -21,6 +21,10 @@ joined-runtime = [
     "dep:accesskit",
     "dep:accesskit_winit",
     "dep:bytemuck",
+    "dep:engine",
+    "dep:futures",
+    "dep:tokio-tungstenite",
+    "dep:transport",
 ]
 semantic-spatial = [
     "physics-preflight",
@@ -38,6 +42,9 @@ ash = { version = "=0.38.0", optional = true }
 bevy = { version = "=0.19.1", default-features = false, features = ["async_executor", "bevy_asset", "bevy_log", "bevy_render", "multi_threaded", "std"], optional = true }
 bytemuck = { version = "=1.25.2", features = ["derive"], optional = true }
 cef = { version = "=151.8.0", default-features = false, features = ["resources", "sandbox"], optional = true }
+dirs = "=6.0.0"
+engine = { path = "../engine", optional = true }
+futures = { workspace = true, optional = true }
 glyphon = "=0.11.0"
 libc = { version = "=0.2.189", optional = true }
 maud = { version = "=0.27.0", optional = true }
@@ -49,7 +56,9 @@ serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.149"
 sha2 = "0.10.9"
 store = { path = "../store", optional = true }
-tokio = { version = "=1.49.0", features = ["macros", "rt-multi-thread"], optional = true }
+tokio = { version = "=1.49.0", features = ["macros", "net", "rt-multi-thread", "sync", "time"], optional = true }
+tokio-tungstenite = { version = "=0.28.0", optional = true }
+transport = { workspace = true, optional = true }
 url = "=2.5.8"
 wgpu = "=29.0.4"
 winit = { version = "=0.30.12", default-features = false, features = ["rwh_06", "wayland", "wayland-csd-adwaita", "wayland-dlopen"] }
@@ -76,3 +85,9 @@ required-features = ["semantic-spatial"]
 name = "lince-interface-parity-diagnostic"
 path = "src/parity_diagnostic.rs"
 required-features = ["browser-parity"]
+
+[build-dependencies]
+sensei = { workspace = true }
+
+[lints]
+workspace = true

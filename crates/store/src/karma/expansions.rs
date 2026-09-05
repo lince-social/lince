@@ -124,10 +124,6 @@ pub async fn has_pending_schedule_occurrences(pool: &SqlitePool) -> Result<bool,
     .await
 }
 
-/// Expands one immutable schedule batch into at most `page_limit` semantic
-/// occurrences. Occurrence insertion and cursor advancement share a database
-/// transaction: replaying a page after any process failure is exact and does
-/// not consume additional Cell sequence numbers.
 pub async fn expand_schedule_occurrence(
     pool: &SqlitePool,
     schedule_occurrence_hash: &CanonicalHash,
@@ -221,9 +217,6 @@ pub async fn expand_schedule_occurrence(
     })
 }
 
-/// Performs one bounded recovery sweep. Both the number of source batches and
-/// the number of semantic occurrences per source are explicit, so startup and
-/// background repair cannot turn a large backlog into an unbounded task.
 pub async fn expand_pending_schedule_occurrences(
     pool: &SqlitePool,
     source_limit: NonZeroU32,

@@ -1,8 +1,3 @@
-//! The session state machine (blueprint VII.3). Transport-agnostic: a real
-//! socket driver calls `handle` for inbound client messages and `on_fact` for
-//! each fact off the engine's `fact_bus`, forwarding every returned
-//! `ServerMessage` to the client. No socket is needed to test it.
-
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
@@ -18,19 +13,11 @@ use crate::protocol::{ClientMessage, ServerMessage};
 pub struct Session {
     engine: Arc<Engine>,
     hub: Arc<LaneHub>,
-    /// This connection's identity — used as the Protein visibility subject
-    /// (None = the local Cell, sees everything) and the lane `from` label.
     subject: Option<String>,
     connection_id: String,
-    /// Active subscriptions: subscription id -> the Protein to re-run.
     subscriptions: HashMap<String, Protein>,
-    /// The rows last sent for each ephemeral subscription, so the tick can
-    /// push only when the answer actually changed. Without this, a nearby
-    /// panel would resend an identical list every few seconds forever.
     last_ephemeral: HashMap<String, Vec<serde_json::Value>>,
     joined_rooms: Vec<String>,
-    /// Records this connection collab-edits: a committed fact touching one of
-    /// them pushes a fresh `CollabChange` snapshot (Ontology §11 "Collab").
     collab_records: HashSet<String>,
     action_intent: Option<ActionIntentSession>,
     action_intent_initialization_error: Option<(String, Option<String>)>,
@@ -63,18 +50,6 @@ impl Session {
         &self.joined_rooms
     }
 
-    /// May this connection's Person still act here (Ontology C3)?
-    ///
-    /// The socket resolves its subject ONCE, at the upgrade, and then keeps it
-    /// for the life of the connection — which is right for a long-lived
-    /// session and wrong for a deactivation. Every HTTP route re-reads standing
-    /// per request; this is the equivalent for the path that actually matters,
-    /// because the board and every sand act over this socket rather than over
-    /// `/host/board/state`. Without it, a deactivated person with an open tab
-    /// keeps working until they reload.
-    ///
-    /// `None` is the local Cell and is always active: there is no Person to
-    /// deactivate, and answering otherwise would close the owner's own board.
     pub async fn subject_may_act(&self) -> bool {
         let Some(subject) = self.subject.as_deref() else {
             return true;
@@ -84,10 +59,6 @@ impl Session {
             .unwrap_or(true)
     }
 
-    /// Initialize remote Action authentication and return the connection's
-    /// first application frame. The mapped Person comes only from the engine's
-    /// authenticated app_user lookup. Local Cell sessions remain an explicit
-    /// trusted mode and may continue to use raw `Act` frames.
     pub async fn initialize_action_intent(&mut self) -> ServerMessage {
         if !self.action_intent_initialized {
             self.action_intent_initialized = true;
@@ -128,7 +99,6 @@ impl Session {
         }
     }
 
-    /// Handle one inbound client message, producing the responses to send back.
     pub async fn handle(&mut self, msg: ClientMessage) -> Vec<ServerMessage> {
         match msg {
             ClientMessage::Subscribe { id, protein } => self.subscribe(id, protein).await,
@@ -196,7 +166,7 @@ impl Session {
                 if !self.joined_rooms.contains(&room) {
                     self.joined_rooms.push(room);
                 }
-                vec![] // the driver wires the room receiver into the outbound loop
+                vec![]
             }
             ClientMessage::LaneLeave { room } => {
                 self.joined_rooms.retain(|r| r != &room);
@@ -217,12 +187,9 @@ impl Session {
                         organ,
                     });
                 }
-                vec![] // presence is fire-and-forget; senders don't echo to self
+                vec![]
             }
             ClientMessage::CollabJoin { id, record_uid } => {
-                // The read gate. Refused BEFORE the snapshot is produced, and
-                // the message says only "not visible" — a distinct "no such
-                // record" would let a caller probe which uids exist.
                 if !self
                     .engine
                     .may_read_record(self.subject.as_deref(), &record_uid)
@@ -263,10 +230,6 @@ impl Session {
                 record_uid,
                 update_base64,
             } => {
-                // Writing is gated too, and not merely by having joined:
-                // `collab_records` is client-driven state, so trusting it here
-                // would let a session that never passed the join gate edit by
-                // sending an update directly.
                 if !self
                     .engine
                     .may_read_record(self.subject.as_deref(), &record_uid)
@@ -279,12 +242,6 @@ impl Session {
                         code: Some("collab_not_visible".into()),
                     }];
                 }
-                // Success answers with an ack, and the merge also commits a
-                // refresh fact so `on_fact` echoes the merged doc back as a
-                // `CollabChange` to every joined session (including this one —
-                // Loro dedupes by version vector, so the echo is harmless).
-                // The two are not interchangeable: the echo says "the document
-                // changed", the ack says "YOUR update is in it".
                 match self
                     .engine
                     .apply_client_crdt_update(&record_uid, &update_base64)
@@ -312,11 +269,6 @@ impl Session {
                 message: "terminal capability requires a host transport driver".into(),
                 code: None,
             }],
-            // A login is the FIRST frame of a live session or it is nothing.
-            // Once a session is running, its Person is settled and every read
-            // already made was gated by it — accepting a credential here would
-            // let a session change who it is halfway through, which is the one
-            // thing the whole subject-resolution design exists to prevent.
             ClientMessage::LiveLogin { .. } => vec![ServerMessage::Error {
                 id: "-".into(),
                 message: "this session is already authenticated".into(),
@@ -325,17 +277,11 @@ impl Session {
         }
     }
 
-    /// Run a Protein with everything this process knows that the database
-    /// cannot answer. The single execution path for every subscription, so a
-    /// context-reading source behaves the same on the first snapshot as on
-    /// every refresh.
     async fn execute(
         &self,
         protein: &Protein,
     ) -> Result<Vec<serde_json::Value>, protein::ProteinError> {
         let signer_actor = self.available_signer_actor().await;
-        // Only fetched when the Protein can use it: taking the wire's lock on
-        // every record query would be a cost paid by everything.
         let nearby = protein::is_ephemeral(protein).then(|| self.engine.nearby_peers());
         protein::execute_for_with_context(
             &self.engine.store,
@@ -366,19 +312,10 @@ impl Session {
         }
     }
 
-    /// Whether anything here needs the ephemeral tick. The driver arms no
-    /// timer while this is false, so a session that never asks about the
-    /// network costs nothing.
     pub fn has_ephemeral_subscriptions(&self) -> bool {
         self.subscriptions.values().any(protein::is_ephemeral)
     }
 
-    /// Re-run subscriptions whose sources commit no Facts, pushing an Update
-    /// only where the rows differ from what this connection was last sent.
-    ///
-    /// This is what makes a nearby list live without a client-side poll, and
-    /// the comparison is what keeps it quiet: an unchanging network produces
-    /// no traffic at all.
     pub async fn tick_ephemeral(&mut self) -> Vec<ServerMessage> {
         let mut out = Vec::new();
         let ephemeral: Vec<(String, Protein)> = self
@@ -407,9 +344,6 @@ impl Session {
     }
 
     async fn subscribe_saved(&mut self, id: String, name: String) -> Vec<ServerMessage> {
-        // Materialize the saved AST first, then run it through the same path
-        // an inline Protein takes: a saved Protein is not a different kind of
-        // question, and executing it separately is how the two drift.
         let protein = match load_saved(&self.engine, &name).await {
             Ok(protein) => protein,
             Err(e) => {
@@ -526,16 +460,8 @@ impl Session {
         self.engine.signer_actor_uid().await
     }
 
-    /// A fact was committed (off `fact_bus`): push an Update for every
-    /// subscription it may have changed (blueprint VII.1 live subscriptions).
-    /// v1 invalidation is coarse via `protein::affects`; re-execution is a full
-    /// re-send, correct if not yet minimal.
     pub async fn on_fact(&self, fact: &Fact) -> Vec<ServerMessage> {
         let mut out = Vec::new();
-        // Live collab: any fact touching a joined record means its record-doc
-        // may have changed (this client's own update, a sibling session, or a
-        // peer Organ's sync import — all commit a refresh fact). Push the
-        // merged doc; client-side Loro imports dedupe by version vector.
         if self.collab_records.contains(&fact.record_uid) {
             if let Ok(snapshot_base64) = self.engine.collab_snapshot(&fact.record_uid).await {
                 out.push(ServerMessage::CollabChange {

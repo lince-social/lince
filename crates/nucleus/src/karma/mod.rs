@@ -1,8 +1,3 @@
-//! Pure, deterministic vocabulary shared by every Karma layer.
-//!
-//! This module owns the wire atoms and state names. It intentionally has no
-//! clock, randomness, SQL, async runtime, or host integration.
-
 pub mod ast;
 pub mod authority;
 pub mod cadence;

@@ -1,8 +1,3 @@
-//! Stage 8b foundation: the record-metadata Actions the table sand and record
-//! editor need — `edit-record-text`, `set-slug`, `set-identity`, `set-unit`,
-//! `set-extension`. Each must apply the store mutation AND drop an annotation
-//! fact so live subscriptions refresh (blueprint VII.4).
-
 use engine::Engine;
 use engine::actions::Action;
 use nucleus::RecordKind;
@@ -51,7 +46,6 @@ async fn edit_record_text_sets_fields_and_annotates() {
         .unwrap();
     assert_eq!(row.head, "New Title");
     assert_eq!(row.body, "Long body");
-    // exactly one annotation fact so subscriptions refresh, and it is zero-delta
     assert_eq!(out.facts.len(), 1);
     assert_eq!(out.facts[0].delta, store::exact::from_f64(0.0));
     assert_eq!(out.facts[0].record_uid, uid);
@@ -72,7 +66,6 @@ async fn edit_record_text_leaves_absent_field_untouched() {
     .await
     .unwrap();
 
-    // body: None must not clobber the existing body
     e.act(
         Action::EditRecordText {
             target: uid.clone(),
@@ -114,7 +107,6 @@ async fn set_slug_renames_and_clears() {
         Some(uid.clone())
     );
 
-    // empty string clears the slug
     e.act(
         Action::SetSlug {
             target: uid.clone(),
@@ -133,7 +125,6 @@ async fn set_slug_renames_and_clears() {
             .is_none()
     );
 
-    // invalid slug is rejected
     assert!(
         e.act(
             Action::SetSlug {
@@ -190,7 +181,6 @@ async fn set_identity_and_unit_classify_and_clear() {
     assert_eq!(row.identity_predicate_uid, fruit);
     assert_eq!(row.unit_uid, kg);
 
-    // unknown concept name is an error
     assert!(
         e.act(
             Action::SetIdentity {
@@ -203,7 +193,6 @@ async fn set_identity_and_unit_classify_and_clear() {
         .is_err()
     );
 
-    // None clears
     e.act(
         Action::SetIdentity {
             subject: uid.clone(),
@@ -228,7 +217,6 @@ async fn compensate_reverses_a_quantity_fact() {
     let e = engine().await;
     let uid = plain(&e, "stock").await;
 
-    // a quantity change to undo
     let out = e
         .act(
             Action::AddQuantity {
@@ -248,7 +236,6 @@ async fn compensate_reverses_a_quantity_fact() {
     );
     let fact_uid = out.facts[0].uid.clone();
 
-    // undo it: an inverse (-5) compensation fact restores the level
     let comp = e
         .act(Action::Compensate { fact: fact_uid }, None)
         .await
@@ -269,7 +256,6 @@ async fn compensate_zero_delta_fact_is_a_noop() {
     let e = engine().await;
     let uid = plain(&e, "note").await;
 
-    // a text edit produces a zero-delta annotation fact
     let out = e
         .act(
             Action::EditRecordText {
@@ -283,7 +269,6 @@ async fn compensate_zero_delta_fact_is_a_noop() {
         .unwrap();
     assert_eq!(out.facts[0].delta, store::exact::from_f64(0.0));
 
-    // compensating it changes nothing (nothing to reverse) and errors on unknown
     let comp = e
         .act(
             Action::Compensate {
@@ -352,6 +337,8 @@ async fn record_threads_and_messages_are_records_plus_links() {
             Action::CreateMessage {
                 thread: thread.clone(),
                 body: "First message".into(),
+                author: None,
+                state: nucleus::MessageState::Finished,
                 parent: None,
                 references: vec![receipt.clone()],
             },
@@ -366,6 +353,8 @@ async fn record_threads_and_messages_are_records_plus_links() {
             Action::CreateMessage {
                 thread: thread.clone(),
                 body: "Reply message".into(),
+                author: None,
+                state: nucleus::MessageState::Finished,
                 parent: Some(first.clone()),
                 references: vec![],
             },
@@ -392,6 +381,8 @@ async fn record_threads_and_messages_are_records_plus_links() {
             Action::CreateMessage {
                 thread: other_thread,
                 body: "Cross-thread reply".into(),
+                author: None,
+                state: nucleus::MessageState::Finished,
                 parent: Some(first.clone()),
                 references: vec![],
             },
@@ -455,6 +446,8 @@ async fn record_threads_and_messages_are_records_plus_links() {
             Action::CreateMessage {
                 thread,
                 body: String::new(),
+                author: None,
+                state: nucleus::MessageState::Finished,
                 parent: None,
                 references: vec![receipt.clone(), receipt],
             },
@@ -464,6 +457,358 @@ async fn record_threads_and_messages_are_records_plus_links() {
         .is_err(),
         "all references are validated and deduplicated before message creation"
     );
+}
+
+#[tokio::test]
+async fn writing_message_lifecycle_persists_and_final_states_are_terminal() {
+    let e = engine().await;
+    let subject = plain(&e, "stream-subject").await;
+    let thread = e
+        .act(
+            Action::CreateThread {
+                target: subject,
+                head: "Live response".into(),
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    let message = e
+        .act(
+            Action::CreateMessage {
+                thread,
+                body: String::new(),
+                author: None,
+                state: nucleus::MessageState::Writing,
+                parent: None,
+                references: Vec::new(),
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    let initial = store::records::get_extension(&e.store.pool, &message, "lince.message")
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(initial["state"], "writing");
+    assert_eq!(initial["author"], initial["operator"]);
+
+    e.act(
+        Action::ReviseMessage {
+            message: message.clone(),
+            body: "Growing".into(),
+            state: nucleus::MessageState::Writing,
+        },
+        None,
+    )
+    .await
+    .unwrap();
+    e.act(
+        Action::ReviseMessage {
+            message: message.clone(),
+            body: "Complete".into(),
+            state: nucleus::MessageState::Finished,
+        },
+        None,
+    )
+    .await
+    .unwrap();
+    let finished = store::records::get_extension(&e.store.pool, &message, "lince.message")
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(finished["state"], "finished");
+    assert_eq!(
+        store::records::get(&e.store.pool, &message)
+            .await
+            .unwrap()
+            .unwrap()
+            .body,
+        "Complete"
+    );
+    assert!(
+        e.act(
+            Action::ReviseMessage {
+                message,
+                body: "Too late".into(),
+                state: nucleus::MessageState::Writing,
+            },
+            None,
+        )
+        .await
+        .is_err()
+    );
+}
+
+#[tokio::test]
+async fn delegated_message_authorship_requires_the_agents_operator() {
+    let e = engine().await;
+    let operator = user_with(
+        &e,
+        "Operator",
+        "message-operator",
+        &["record:create", "record:update"],
+    )
+    .await;
+    let other = user_with(
+        &e,
+        "Other",
+        "other-operator",
+        &["record:create", "record:update"],
+    )
+    .await;
+    let agent = e
+        .act(
+            Action::CreateAgent {
+                head: "Writer".into(),
+                operated_by: Some(operator.clone()),
+            },
+            Some(operator.clone()),
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    let subject = plain(&e, "delegated-subject").await;
+    let thread = e
+        .act(
+            Action::CreateThread {
+                target: subject,
+                head: "Delegation".into(),
+            },
+            Some(operator.clone()),
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    let message = e
+        .act(
+            Action::CreateMessage {
+                thread: thread.clone(),
+                body: "Authored by an Agent".into(),
+                author: Some(agent.clone()),
+                state: nucleus::MessageState::Finished,
+                parent: None,
+                references: Vec::new(),
+            },
+            Some(operator.clone()),
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    let metadata = store::records::get_extension(&e.store.pool, &message, "lince.message")
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(metadata["author"], agent);
+    assert_eq!(metadata["operator"], operator);
+    assert!(
+        e.act(
+            Action::CreateMessage {
+                thread,
+                body: "Impersonation".into(),
+                author: Some(metadata["author"].as_str().unwrap().into()),
+                state: nucleus::MessageState::Finished,
+                parent: None,
+                references: Vec::new(),
+            },
+            Some(other),
+        )
+        .await
+        .is_err()
+    );
+}
+
+#[tokio::test]
+async fn message_drafts_are_private_restart_safe_and_consumed_only_after_send() {
+    let database = std::env::temp_dir().join(format!(
+        "lince-message-drafts-{}.sqlite",
+        nucleus::new_uid("test")
+    ));
+    std::fs::File::create(&database).unwrap();
+    let database_url = format!("sqlite://{}", database.display());
+    let operator;
+    let observer;
+    let draft;
+
+    {
+        let e = Engine::open(&database_url).await.unwrap();
+        operator = user_with(
+            &e,
+            "Draft owner",
+            "draft-owner",
+            &[
+                "record:read",
+                "record:create",
+                "record:update",
+                "record:delete_own",
+            ],
+        )
+        .await;
+        observer = user_with(
+            &e,
+            "Observer",
+            "draft-observer",
+            &[
+                "record:read",
+                "record:create",
+                "record:update",
+                "record:delete_own",
+            ],
+        )
+        .await;
+        let conversation = store::records::create(
+            &e.store.pool,
+            NewRecord {
+                slug: Some("draft-conversation"),
+                kind: RecordKind::Conversation,
+                head: "Draft conversation",
+                body: "",
+                quantity: store::exact::zero(),
+            },
+        )
+        .await
+        .unwrap()
+        .uid;
+        let thread = e
+            .act(
+                Action::CreateThread {
+                    target: conversation.clone(),
+                    head: "Draft thread".into(),
+                },
+                Some(operator.clone()),
+            )
+            .await
+            .unwrap()
+            .created
+            .unwrap();
+        draft = e
+            .act(
+                Action::CreateMessageDraft {
+                    conversation,
+                    thread,
+                    body: "Restart-safe preset".into(),
+                    pinned: true,
+                    timing: nucleus::MessageDraftTiming::AfterTurn,
+                    position: 3,
+                },
+                Some(operator.clone()),
+            )
+            .await
+            .unwrap()
+            .created
+            .unwrap();
+        let query = protein::Protein {
+            source: protein::Source::Record,
+            filter: vec![protein::Predicate::KindEq("message_draft".into())],
+            fields: None,
+            include: protein::Include {
+                extension: Some(protein::ExtensionInclude {
+                    namespace: "lince.message-draft".into(),
+                }),
+                ..protein::Include::default()
+            },
+            aggregate: None,
+            order: vec![],
+            limit: None,
+        };
+        assert_eq!(
+            protein::execute_for(&e.store, &query, Some(&operator))
+                .await
+                .unwrap()
+                .len(),
+            1
+        );
+        assert!(
+            protein::execute_for(&e.store, &query, Some(&observer))
+                .await
+                .unwrap()
+                .is_empty()
+        );
+        assert!(
+            e.act(
+                Action::ReviseMessageDraft {
+                    draft: draft.clone(),
+                    body: "Not yours".into(),
+                    pinned: false,
+                    timing: nucleus::MessageDraftTiming::Now,
+                    position: 0,
+                },
+                Some(observer.clone()),
+            )
+            .await
+            .is_err()
+        );
+    }
+
+    {
+        let e = Engine::open(&database_url).await.unwrap();
+        let metadata = store::records::get_extension(&e.store.pool, &draft, "lince.message-draft")
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(metadata["pinned"], true);
+        assert_eq!(metadata["timing"], "after_turn");
+        assert_eq!(metadata["position"], 3);
+        let message = e
+            .act(
+                Action::SendMessageDraft {
+                    draft: draft.clone(),
+                },
+                Some(operator.clone()),
+            )
+            .await
+            .unwrap()
+            .created
+            .unwrap();
+        assert!(
+            store::records::get(&e.store.pool, &draft)
+                .await
+                .unwrap()
+                .is_some()
+        );
+        assert_eq!(
+            store::records::get_extension(&e.store.pool, &message, "lince.message")
+                .await
+                .unwrap()
+                .unwrap()["state"],
+            "finished"
+        );
+        e.act(
+            Action::ReviseMessageDraft {
+                draft: draft.clone(),
+                body: "Consume once".into(),
+                pinned: false,
+                timing: nucleus::MessageDraftTiming::Now,
+                position: 0,
+            },
+            Some(operator.clone()),
+        )
+        .await
+        .unwrap();
+        e.act(
+            Action::SendMessageDraft {
+                draft: draft.clone(),
+            },
+            Some(operator),
+        )
+        .await
+        .unwrap();
+        assert!(
+            store::records::get(&e.store.pool, &draft)
+                .await
+                .unwrap()
+                .is_none()
+        );
+    }
+    std::fs::remove_file(database).unwrap();
 }
 
 #[tokio::test]
@@ -487,6 +832,8 @@ async fn thread_and_message_deletion_use_normal_record_delete_permission() {
             Action::CreateMessage {
                 thread: thread.clone(),
                 body: "Protected message".into(),
+                author: None,
+                state: nucleus::MessageState::Finished,
                 parent: None,
                 references: vec![],
             },
@@ -746,7 +1093,6 @@ async fn delete_record_is_distinct_from_deactivate() {
     .await
     .expect("give it a quantity");
 
-    // Deactivate ONLY zeroes the quantity — the record stays readable.
     e.act(
         Action::Deactivate {
             target: uid.clone(),
@@ -762,8 +1108,6 @@ async fn delete_record_is_distinct_from_deactivate() {
     assert_eq!(row.quantity, store::exact::from_f64(0.0));
     assert_eq!(row.slug.as_deref(), Some("doomed"));
 
-    // HARD delete tombstones it: gone from get/resolve/list, slug freed,
-    // Ledger facts untouched (the deletion annotation is the last one).
     let out = e
         .act(
             Action::DeleteRecord {
@@ -805,7 +1149,6 @@ async fn delete_record_is_distinct_from_deactivate() {
         "creation-era + deactivate + deletion facts stay in the Ledger"
     );
 
-    // The freed slug is reusable by a NEW record.
     let reused = e
         .act(
             Action::CreateRecord {
@@ -895,7 +1238,6 @@ async fn delete_own_permission_allows_only_the_creator() {
     .await
     .expect("owner's first fact establishes creator_uid");
 
-    // A stranger holding only delete_own cannot delete someone else's record.
     let err = e
         .act(
             Action::DeleteRecord {
@@ -907,7 +1249,6 @@ async fn delete_own_permission_allows_only_the_creator() {
         .expect_err("delete_own does not cover records the actor didn't create");
     assert!(err.to_string().contains("forbidden"));
 
-    // The creator can delete it.
     e.act(
         Action::DeleteRecord {
             target: mine.clone(),

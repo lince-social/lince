@@ -18,12 +18,14 @@
 /** What each kind of block spells like once it is accepted. */
 export function completionFor(kind, slug) {
   if (kind === "frequency") return `freq(@${slug})`;
+  if (kind === "concept") return `#${slug}`;
   return `@${slug}`;
 }
 
 const OPENERS = [
   { text: "record(", kind: "record" },
   { text: "freq(", kind: "frequency" },
+  { text: "#", kind: "concept" },
   { text: "@", kind: null },
 ];
 
@@ -142,7 +144,8 @@ export function insertAtCaret(source, caret, kind, slug) {
   return { text: text.slice(0, at) + inserted + text.slice(at), caret: at + inserted.length };
 }
 
-const TOKEN = /freq\(\s*@([A-Za-z0-9_][\w.-]*)\s*\)|@([A-Za-z0-9_][\w.-]*)/g;
+const TOKEN =
+  /freq\(\s*@([A-Za-z0-9_][\w.-]*)\s*\)|@([A-Za-z0-9_][\w.-]*)|#([A-Za-z0-9_][\w.-]*)/g;
 
 /**
  * Every block a condition names, in the order it names them.
@@ -158,10 +161,17 @@ export function blocksIn(source, catalog) {
   }
   const found = [];
   for (const match of String(source ?? "").matchAll(TOKEN)) {
-    const isFreq = match[1] !== undefined;
-    const slug = isFreq ? match[1] : match[2];
-    const kind = isFreq ? "frequency" : "record";
-    const block = known.get(`${kind}:${slug}`);
+    const [kind, slug] =
+      match[1] !== undefined
+        ? ["frequency", match[1]]
+        : match[2] !== undefined
+          ? ["record", match[2]]
+          : ["concept", match[3]];
+    const block =
+      known.get(`${kind}:${slug}`) ||
+      (kind === "concept"
+        ? (catalog || []).find((item) => item?.kind === "concept" && item.uid === slug)
+        : undefined);
     found.push({
       kind: block ? kind : "unknown",
       slug,
@@ -179,7 +189,30 @@ export function blocksIn(source, catalog) {
  * Frequency table exists — the section renders its empty state honestly rather
  * than dressing up rules-that-are-secretly-schedules as frequencies.
  */
-export function catalogFrom(records, frequencies) {
+const CONCEPT_TOKEN = /#([A-Za-z0-9_][\w.\-/]*)/g;
+
+export function readable(source, catalog) {
+  const names = new Map();
+  for (const block of catalog || []) {
+    if (block?.kind === "concept" && block.uid) names.set(block.uid, block.slug);
+  }
+  if (names.size === 0) return String(source ?? "");
+  return String(source ?? "").replace(CONCEPT_TOKEN, (whole, token) =>
+    names.has(token) ? `#${names.get(token)}` : whole,
+  );
+}
+
+export function conceptName(token, catalog) {
+  const wanted = String(token ?? "");
+  for (const block of catalog || []) {
+    if (block?.kind === "concept" && (block.uid === wanted || block.slug === wanted)) {
+      return block.slug;
+    }
+  }
+  return wanted;
+}
+
+export function catalogFrom(records, frequencies, concepts) {
   const blocks = [];
   for (const record of records || []) {
     if (!record?.slug) continue;
@@ -199,6 +232,11 @@ export function catalogFrom(records, frequencies) {
       head: frequency.head || frequency.slug,
       uid: frequency.uid,
     });
+  }
+  for (const concept of concepts || []) {
+    const name = concept?.name || concept?.canonical_name;
+    if (!name) continue;
+    blocks.push({ kind: "concept", slug: name, head: name, uid: concept.uid });
   }
   return blocks;
 }

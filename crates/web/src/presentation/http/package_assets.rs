@@ -1,7 +1,3 @@
-//! Serving a sand package's assets (entry HTML, manifest, bundled files) with
-//! the host bootstrap injected. Extracted from the retired legacy packages API;
-//! this is the only piece the Cell surface needs.
-
 use {
     crate::domain::lince_package::{LincePackage, normalize_asset_path},
     crate::presentation::http::api_error::{ApiResult, api_error},
@@ -57,10 +53,6 @@ pub(crate) fn serve_package_asset(
 }
 
 fn inject_package_html(raw_html: &str, entry_path: &str, content_root_url: &str) -> String {
-    // New-way sands host themselves through frame.js; injecting the legacy
-    // bootstrap would run after it and clobber `window.LinceWidgetHost` with
-    // the legacy API (no onLive/onLane/joinRoom). Same skip rule as the
-    // client-side `enhancePackageHtml`.
     if raw_html.contains("window.__LINCE_WIDGET_HOST__")
         || raw_html.contains("widget-frame-bootstrap.js")
         || raw_html.contains("/board/frame.js")

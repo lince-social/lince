@@ -1,7 +1,46 @@
-//! Record kinds (blueprint Part I). Everything is a Record; `kind` selects the
-//! sidecar table. `quantity` is the universal activation knob on non-plain kinds.
-
 use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum MessageState {
+    Writing,
+    #[default]
+    Finished,
+    Interrupted,
+}
+
+impl MessageState {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Writing => "writing",
+            Self::Finished => "finished",
+            Self::Interrupted => "interrupted",
+        }
+    }
+
+    pub fn is_finished(&self) -> bool {
+        *self == Self::Finished
+    }
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum MessageDraftTiming {
+    #[default]
+    Now,
+    NextSafePoint,
+    AfterTurn,
+}
+
+impl MessageDraftTiming {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Now => "now",
+            Self::NextSafePoint => "next_safe_point",
+            Self::AfterTurn => "after_turn",
+        }
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -16,25 +55,14 @@ pub enum RecordKind {
     Person,
     Protein,
     Sand,
-    /// One relationship, one grant (Ontology §11 "Threads"): the
-    /// individually-replicated root that Threads and Messages live inside.
-    /// Sharing one is granting exactly one contact sync access to it.
     Conversation,
     Thread,
     Message,
-    /// A request to open a conversation, before anyone has agreed to one.
-    ///
-    /// Deliberately NOT a Conversation: an invite is what an Organ you may not
-    /// know can put in front of you, so it must be a thing you can decline
-    /// without ever having held a copy of anything. One pending per Organ, so
-    /// a declined conversation cannot become a spam channel.
+    MessageDraft,
     ThreadInvite,
     Program,
     Frequency,
     Grant,
-    /// One occupancy of a conversation's audio/video room (Communication
-    /// sand). A child Record linked `call-session-of` → conversation; carries
-    /// the `communication.session.v1` sidecar. See `notes/institute/Communication.md`.
     CallSession,
 }
 
@@ -54,6 +82,7 @@ impl RecordKind {
             Self::Conversation => "conversation",
             Self::Thread => "thread",
             Self::Message => "message",
+            Self::MessageDraft => "message_draft",
             Self::ThreadInvite => "thread_invite",
             Self::Program => "program",
             Self::Frequency => "frequency",
@@ -77,6 +106,7 @@ impl RecordKind {
             "conversation" => Self::Conversation,
             "thread" => Self::Thread,
             "message" => Self::Message,
+            "message_draft" => Self::MessageDraft,
             "thread_invite" => Self::ThreadInvite,
             "program" => Self::Program,
             "frequency" => Self::Frequency,

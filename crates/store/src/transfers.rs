@@ -1,6 +1,3 @@
-//! Transfer repository (blueprint VIII.1): a transfer is a record
-//! (kind='transfer', quantity = active) whose items ARE promises.
-
 use chrono::{DateTime, Utc};
 pub use nucleus::transfer::TransferLocationSnapshot;
 use nucleus::transfer::{
@@ -26,8 +23,6 @@ use crate::records::{self, NewRecord};
 #[derive(Debug, Clone)]
 pub struct TransferRow {
     pub record_uid: String,
-    /// Zero identifies a legacy transfer whose public terms were never sealed
-    /// as one canonical revision Fact.
     pub revision: i64,
     pub agreement_type: String,
     pub agreement_pct: Option<i64>,
@@ -39,7 +34,6 @@ pub struct TransferRow {
     pub source_uid: Option<String>,
     pub reserve_default: Option<String>,
     pub active: bool,
-    /// Settlement demands delivery+receipt confirmation facts (VIII.3).
     pub require_confirmation: bool,
     pub default_place: Option<TransferLocationSnapshot>,
 }
@@ -51,10 +45,7 @@ pub struct NewTransfer<'a> {
     pub agreement_pct: Option<i64>,
     pub satiation: Option<&'a str>,
     pub source_uid: Option<&'a str>,
-    /// Default `reserve_from` for promises bundled into this transfer (V.3);
-    /// None = the global default ('active').
     pub reserve_default: Option<&'a str>,
-    /// Settlement demands delivery+receipt confirmation facts (VIII.3).
     pub require_confirmation: bool,
 }
 
@@ -101,14 +92,11 @@ pub struct TransferCorrectionLinkRow {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TransferDependencyInput {
-    /// None creates a stable dependency identity; Some replaces that existing
-    /// dependency's complete current terms.
     pub uid: Option<String>,
     pub scope: TransferDependencyScope,
     pub promise_uid: Option<String>,
     pub upstream_kind: TransferDependencyUpstreamKind,
     pub upstream_uid: String,
-    /// Empty input is normalized to `kept` before it enters signed terms.
     pub required_state: String,
 }
 
@@ -156,15 +144,11 @@ pub struct TransferDraftTermsInput {
 
 #[derive(Debug, Clone)]
 pub struct DraftPromiseRevisionInput {
-    /// None adds a promise; Some keeps and replaces the current public terms
-    /// of an uncommitted promise belonging to this Transfer.
     pub uid: Option<String>,
     pub source_promise_uid: Option<String>,
     pub record_uid: Option<String>,
     pub concept_uid: Option<String>,
     pub unit_uid: Option<String>,
-    /// Owner of these terms. OPEN promises still carry their proposer here;
-    /// only the counterparty is unnamed.
     pub person_uid: Option<String>,
     pub open: bool,
     pub delta: f64,
@@ -182,15 +166,10 @@ pub struct WholeDraftRevisionInput {
     pub expected_revision: u64,
     pub idempotency_key: String,
     pub creator_person_uid: String,
-    /// Person signing this complete revision and therefore owning any newly
-    /// introduced OPEN proposal.
     pub proposal_author_person_uid: String,
     pub terms: TransferDraftTermsInput,
-    /// Existing pending invitations omitted from this set are withdrawn.
     pub retained_invitation_uids: Vec<String>,
-    /// Existing editable promises omitted from this collection are withdrawn.
     pub promises: Vec<DraftPromiseRevisionInput>,
-    /// Complete replacement set for the structured signed dependency terms.
     pub dependencies: Vec<TransferDependencyInput>,
     pub successor: Option<PromiseSuccessorInput>,
     pub authorization_intent_uid: Option<String>,
@@ -273,8 +252,6 @@ pub async fn revision_for_request(
     .transpose()?)
 }
 
-/// Replace the complete current draft projection with one revision. Public
-/// terms omitted from the submitted snapshot are withdrawn, not deleted.
 pub async fn revise_whole_draft<F>(
     pool: &SqlitePool,
     input: WholeDraftRevisionInput,
@@ -298,9 +275,6 @@ where
     .await
 }
 
-/// Explicitly review and seal a legacy revision-0 Transfer. Normal revision
-/// cannot perform this transition, so old mutable rows never acquire signed
-/// authority merely because a client opened and edited them.
 pub async fn adopt_legacy_draft<F>(
     pool: &SqlitePool,
     input: WholeDraftRevisionInput,
@@ -329,9 +303,6 @@ where
     .await
 }
 
-/// A counteroffer replaces the one current proposal. It deliberately uses the
-/// same whole-draft transaction as a creator edit, but its signed action makes
-/// the proposing party's authorship explicit and discoverable.
 pub async fn counteroffer_whole_draft<F>(
     pool: &SqlitePool,
     input: WholeDraftRevisionInput,
@@ -400,8 +371,6 @@ where
     let expected_revision = i64::try_from(input.expected_revision)
         .map_err(|_| sqlx::Error::Protocol("transfer revision exceeds SQLite range".into()))?;
     validate_revision_request(&input)?;
-    // These collision checks use the pool, so complete them before holding the
-    // single connection used by in-memory Stores.
     ensure_request_not_used_by_invitation_event(pool, request_key).await?;
     let mut tx = crate::write_tx(pool).await?;
 
@@ -778,8 +747,6 @@ where
 
     replace_dependencies(&mut tx, &input.transfer_uid, revision, &input.dependencies).await?;
 
-    // Agreement rows are a mutable cache. Every public draft revision,
-    // including windows and locations, resets all levels for the new terms.
     sqlx::query(
         "UPDATE transfer_agreement SET level = 0, revision = ?, at = ?
          WHERE transfer_uid = ?",
@@ -1301,10 +1268,7 @@ pub struct InvitationTransitionInput {
     pub invitation_uid: String,
     pub expected_revision: u64,
     pub idempotency_key: String,
-    /// None is reserved for automatic expiry. User transitions must supply the
-    /// actual Person responsible for the signed event.
     pub actor_person_uid: Option<String>,
-    /// Reopen may replace the deadline. Other transitions ignore this value.
     pub expires_at: Option<DateTime<Utc>>,
 }
 
@@ -1390,8 +1354,6 @@ pub struct AgreementTransitionInput {
     pub transfer_uid: String,
     pub expected_revision: u64,
     pub idempotency_key: String,
-    /// The authenticated/local acting Person. The repository resolves this to
-    /// exactly that Person's party and never accepts a caller-supplied party.
     pub person_uid: String,
     pub to_level: u8,
     pub authorization_intent_uid: Option<String>,
@@ -1462,8 +1424,6 @@ pub struct AgreementPromiseReadinessRow {
     pub revision: u64,
 }
 
-/// Store-owned, deterministic inputs for engine/Protein readiness derivation.
-/// It contains no inferred authority and no frontend state.
 #[derive(Debug, Clone)]
 pub struct TransferAgreementReadinessInput {
     pub transfer_uid: String,
@@ -1676,13 +1636,8 @@ pub struct OccurrenceSettlementInput {
     pub canonical_quantity: f64,
     pub local_record_uid: String,
     pub local_delta: f64,
-    /// The evaluated cumulative private quantity after this canonical slice.
-    /// The repository verifies that this minus prior local slices equals
-    /// `local_delta`, making partial settlement independent of partitioning.
     pub local_cumulative_after: f64,
     pub application_formula: String,
-    /// Zero identifies an inherited Cell/code formula; occurrence overrides
-    /// use their positive, append-only application-policy version.
     pub application_formula_version: u64,
     pub remainder_policy: TransferRemainderPolicy,
     pub authorization_intent_uid: Option<String>,
@@ -1706,7 +1661,6 @@ pub struct OccurrenceSettlementSliceRow {
     pub local_delta: f64,
     pub local_cumulative_before: f64,
     pub local_cumulative_after: f64,
-    /// Private Cell data. Do not include this row in public Protein projections.
     pub application_formula: String,
     pub application_formula_hash: String,
     pub application_formula_version: u64,
@@ -1847,9 +1801,6 @@ fn fact_has_transfer_revision_action(fact: &Fact, expected_action: &str) -> bool
         .is_some_and(|evidence| evidence.action == expected_action)
 }
 
-/// Commit a fully validated draft, its creator visibility, and its creation
-/// Fact as one database unit. `sign` keeps key material in the engine while
-/// preserving the same signed hash-chain contract as the normal Fact path.
 pub async fn create_draft<F>(
     pool: &SqlitePool,
     draft: NewTransferDraft,
@@ -1867,8 +1818,6 @@ where
             "transfer draft request key must contain 1 to 200 characters".into(),
         ));
     }
-    // This guard uses the pool, so run it before holding the single connection
-    // used by in-memory Stores.
     ensure_request_not_used_by_invitation_event(pool, request_key).await?;
     let now_string = now.to_rfc3339();
     let mut tx = crate::write_tx(pool).await?;
@@ -2257,9 +2206,6 @@ where
     })
 }
 
-/// Atomically replace every public term of one bundled promise, invalidate
-/// agreements, and seal the complete resulting Transfer revision. Retrying the
-/// same request key returns its first Fact without advancing the revision.
 pub async fn revise_promise<F>(
     pool: &SqlitePool,
     input: PromiseRevisionInput,
@@ -2597,8 +2543,6 @@ pub async fn create(pool: &SqlitePool, new: NewTransfer<'_>) -> Result<String, S
             kind: RecordKind::Transfer,
             head: new.head,
             body: "",
-            // The engine appends the activation/creation fact after the
-            // sidecar exists. Quantity remains a fact-derived cache.
             quantity: crate::exact::zero(),
         },
     )
@@ -2620,7 +2564,6 @@ pub async fn create(pool: &SqlitePool, new: NewTransfer<'_>) -> Result<String, S
     Ok(rec.uid)
 }
 
-/// A transfer with its record's identity — the `source: transfer` Protein feed.
 #[derive(Debug, Clone)]
 pub struct TransferListRow {
     pub transfer: TransferRow,
@@ -2628,7 +2571,6 @@ pub struct TransferListRow {
     pub head: String,
 }
 
-/// Every transfer joined to its record, oldest first.
 pub async fn list_all(pool: &SqlitePool) -> Result<Vec<TransferListRow>, StoreError> {
     Ok(sqlx::query(
         "SELECT t.*, r.slug, r.head, r.quantity_mantissa, r.quantity_scale FROM transfer t
@@ -2723,8 +2665,6 @@ pub async fn creator_party_actor(
     .await
 }
 
-/// (party_uid, actor_uid, agreement level) for every party; level 0 when the
-/// party never agreed or was invalidated.
 pub async fn party_levels(
     pool: &SqlitePool,
     transfer_uid: &str,
@@ -2747,8 +2687,6 @@ pub async fn party_levels(
     .collect())
 }
 
-/// Resolve one transfer-party row to its Person record uid, only when that
-/// party belongs to the requested transfer.
 pub async fn party_actor(
     pool: &SqlitePool,
     transfer_uid: &str,
@@ -2761,7 +2699,6 @@ pub async fn party_actor(
         .await
 }
 
-/// The transfer-party row representing a particular Person, if present.
 pub async fn party_for_actor(
     pool: &SqlitePool,
     transfer_uid: &str,
@@ -2942,7 +2879,6 @@ pub async fn open_claim_pair_for_request(
         .transpose()
 }
 
-/// Immutable target identity for an already committed OPEN claim.
 pub async fn open_claim_target_for_request(
     pool: &SqlitePool,
     request_id: &str,
@@ -3260,8 +3196,6 @@ async fn reset_agreements_for_revision(
     .bind(transfer_uid)
     .execute(&mut **tx)
     .await?;
-    // Agreement-derived promise state is invalidated with the signatures.
-    // Activated or terminal promises are occurrence history and stay intact.
     sqlx::query(
         "UPDATE promise SET state = 'proposed', updated_at = ?
          WHERE transfer_uid = ? AND state = 'agreed'",
@@ -3270,8 +3204,6 @@ async fn reset_agreements_for_revision(
     .bind(transfer_uid)
     .execute(&mut **tx)
     .await?;
-    // Unchanged dependency terms remain part of the newly signed snapshot.
-    // Revision-changing draft replacement writes its complete set separately.
     sqlx::query("UPDATE transfer_dependency SET revision = ? WHERE transfer_uid = ?")
         .bind(revision)
         .bind(transfer_uid)
@@ -4351,10 +4283,6 @@ where
     }))
 }
 
-/// Address a pending invitation to a Person without making that Person a
-/// transfer party. Authorization to invite is an engine concern; persistence
-/// only guarantees that both identities are Person records and that the
-/// addressee is not already participating.
 pub async fn create_invitation(
     pool: &SqlitePool,
     new: NewTransferInvitation<'_>,
@@ -4421,9 +4349,6 @@ pub async fn create_invitation(
     map_invitation(row)
 }
 
-/// Accept a still-pending invitation and create the addressed Person's party
-/// in the same transaction. `None` means the invitation does not exist or is
-/// no longer pending; callers can read it separately when they need details.
 pub async fn accept_invitation(
     pool: &SqlitePool,
     uid: &str,
@@ -4638,9 +4563,6 @@ async fn agreement_outcome_for_request(
     }))
 }
 
-/// Move exactly the acting Person's agreement one adjacent level on one exact
-/// revision. The immutable Fact/event, mutable cache, owned promise states and
-/// first percentage quorum are committed atomically.
 pub async fn transition_agreement<F>(
     pool: &SqlitePool,
     input: AgreementTransitionInput,
@@ -4864,9 +4786,6 @@ where
     .await?;
 
     if from_level == 2 && to_level == 1 {
-        // Retraction governs future activation through the level cache. Work
-        // already materialized remains immutable but is visibly disputed by
-        // this signed agreement Fact.
         sqlx::query(
             "UPDATE transfer_occurrence
              SET disputed = 1, system_disputed = 1,
@@ -5416,9 +5335,6 @@ async fn ensure_phase4_request_unused(
     Ok(())
 }
 
-/// Atomically materialize one or more policy-ready promises. Phase 4 Actions
-/// submit one item; accepting a vector keeps the repository transaction safe
-/// for later reviewed bulk labor without exposing that workflow prematurely.
 pub async fn activate_occurrences<F>(
     pool: &SqlitePool,
     input: ActivateOccurrencesInput,
@@ -6116,9 +6032,6 @@ pub async fn phase6_bulk_request_for_request(
     }))
 }
 
-/// Atomically assert one Person's missing role across an exact reviewed set.
-/// Preflight completes before the first request, Fact, event, or claim bit is
-/// written, so one stale item rejects the complete batch.
 pub async fn complete_occurrence_claims_bulk<F>(
     pool: &SqlitePool,
     mut input: BulkOccurrenceClaimInput,
@@ -6450,8 +6363,6 @@ pub async fn occurrence_application_event_for_request(
     )
 }
 
-/// Private receiver-only policy read. Callers must supply the viewer's derived
-/// Person identity; a different viewer receives no formula row.
 pub async fn occurrence_application_policy(
     pool: &SqlitePool,
     occurrence_uid: &str,
@@ -6880,9 +6791,6 @@ pub async fn effective_occurrence_remainder_policy(
     })
 }
 
-/// Store a private occurrence-specific remainder preference. This does not
-/// create a draft; it only records whether a later settlement workflow may do
-/// so after explicit review.
 pub async fn set_occurrence_remainder_policy(
     pool: &SqlitePool,
     occurrence_uid: &str,
@@ -7106,9 +7014,6 @@ where
     Ok(())
 }
 
-/// Append one immutable canonical fulfillment slice and its private local
-/// Record application atomically. A client-signed Action intent authorizes the
-/// resulting unsigned Facts without being copied into `Fact.signature`.
 pub async fn settle_occurrence<F>(
     pool: &SqlitePool,
     input: OccurrenceSettlementInput,
@@ -7550,8 +7455,6 @@ pub async fn occurrence_settlement_compensation_for_request(
     occurrence_settlement_compensation_outcome_for_request(pool, request_id).await
 }
 
-/// Reverse one settlement's private Record application exactly once. The
-/// canonical/public fulfillment evidence is deliberately left untouched.
 pub async fn compensate_occurrence_settlement<F>(
     pool: &SqlitePool,
     input: OccurrenceSettlementCompensationInput,
@@ -7753,8 +7656,6 @@ pub async fn occurrence_dispute_for_request(
     occurrence_dispute_outcome_for_request(pool, request_id).await
 }
 
-/// Append one participant's dispute assertion and recompute the occurrence's
-/// current projection from each participant's latest immutable event.
 pub async fn set_occurrence_dispute<F>(
     pool: &SqlitePool,
     input: OccurrenceDisputeInput,
@@ -7922,7 +7823,6 @@ where
     Ok(OccurrenceDisputeCommit::Committed(outcome))
 }
 
-/// Fetch the authoritative Fact for a numbered Transfer revision.
 pub async fn revision_fact(
     pool: &SqlitePool,
     transfer_uid: &str,
@@ -7956,7 +7856,6 @@ pub async fn promises_of(
         .collect())
 }
 
-/// Sibling transfers duplicated from the same source (satiation, VIII.3).
 pub async fn siblings_of_source(
     pool: &SqlitePool,
     source_uid: &str,
@@ -8136,7 +8035,6 @@ pub async fn source_group_state_for_transfer(
     }))
 }
 
-/// Promises with a condition that are waiting to activate (chains/spectators).
 pub async fn conditional_pending(
     pool: &SqlitePool,
 ) -> Result<Vec<crate::misc::PromiseRow>, StoreError> {

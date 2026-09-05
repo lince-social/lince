@@ -1,75 +1,21 @@
-//! The `.lingua` file shape: a Record's Lingua state above its body.
-//!
-//! ```text
-//! ---
-//! uid: rec_01J...
-//! @@task
-//! @chapter 1
-//! @references [[Project A|rec_01K...]]
-//! quantity: 12 @hour
-//! ---
-//!
-//! Write the project brief.
-//! ```
-//!
-//! **This is a PROJECTION, not a second database.** Records, Concepts and
-//! Assertions stay authoritative; the prelude is generated from them on every
-//! tick and compared against what is on disk. The delimiters look like front
-//! matter and deliberately are NOT YAML — every line is Lingua.
-//!
-//! Three shapes that are easy to get wrong and are settled here:
-//!
-//! - **`@@` is the IDENTITY concept, `@` is an ordinary assertion.** A Record
-//!   carries `identity_predicate_uid` naming which of its assertions says what
-//!   the Record *is*, as opposed to what is merely true of it. Rendering both
-//!   as `@task` would make the format silently lossy — a round trip would turn
-//!   an identity into an ordinary tag, and nobody would notice for months.
-//! - **A link carries the title AND the uid** (`[[Title|uid]]`). The title is
-//!   for the person reading the file; the uid is what identifies the Record.
-//!   Titles collide and get renamed, so a title-only link would retarget
-//!   itself the day two Records share a name.
-//! - **Rendering is DETERMINISTIC** — assertions come back ordered by
-//!   predicate name, then object, then uid. Not for tidiness: a render that
-//!   reorders between ticks rewrites the file, the disk half reads its own
-//!   rewrite back as an edit, and that becomes an op that travels to every
-//!   peer. Stable order is what keeps a no-op tick silent.
-//!
-//! **Everything here round-trips, the `quantity:` line included.** A level is
-//! a fold of Ledger Facts rather than a column, so setting it from a file
-//! appends the exact DIFFERENCE between the file and the fold as an ordinary
-//! user-caused Fact: you write 12, it is 12, and the Ledger still explains how
-//! it got there. Assertion quantities (`@chapter 1`) are ordinary exact
-//! columns. An edit to the block is a real retract and assert, and applies in
-//! full or not at all — a file must never invent a meaning, so one unknown
-//! Concept refuses the whole block rather than applying the readable half.
-
 use nucleus::DecimalValue;
 
 pub const LINGUA_EXTENSION: &str = "lingua";
 const FENCE: &str = "---";
 
-/// A Record's Lingua state, as it appears between the delimiters.
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Projection {
-    /// The Record this file is. Empty when a person wrote the file by hand and
-    /// Lince has not adopted it yet.
     pub uid: String,
     pub assertions: Vec<Line>,
-    /// Exact decimal text plus the unit's concept name.
     pub quantity: Option<(String, Option<String>)>,
 }
 
-/// One assertion line.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Line {
-    /// Canonical concept name of the predicate, without the `@`.
     pub predicate: String,
-    /// `true` for `@@` — this assertion is what the Record IS.
     pub identity: bool,
     pub object: Option<Link>,
-    /// Exact decimal text, never a float.
     pub quantity: Option<String>,
-    /// Unit concept name.
     pub unit: Option<String>,
 }
 
@@ -81,9 +27,7 @@ pub struct Link {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum LinguaError {
-    /// No opening or no closing `---`.
     NoPrelude,
-    /// A line inside the delimiters that is not Lingua.
     BadLine(String),
 }
 
@@ -96,10 +40,6 @@ impl std::fmt::Display for LinguaError {
     }
 }
 
-/// Split a file into its prelude text and its body.
-///
-/// A file with no prelude is all body — that is how a plain note someone
-/// dropped into the folder is read, and it must not be an error.
 pub fn split(text: &str) -> (Option<&str>, &str) {
     let Some(rest) = text.strip_prefix(FENCE) else {
         return (None, text);
@@ -114,12 +54,9 @@ pub fn split(text: &str) -> (Option<&str>, &str) {
         }
         offset += line.len();
     }
-    // An opening fence with no closing one is not a prelude at all. Treating
-    // it as one would swallow the whole file into metadata and lose the text.
     (None, text)
 }
 
-/// Render a projection plus a body into the file a Record wants on disk.
 pub fn render_file(projection: &Projection, body: &str) -> String {
     let mut out = String::from(FENCE);
     out.push('\n');
@@ -166,7 +103,6 @@ pub fn render_file(projection: &Projection, body: &str) -> String {
     out
 }
 
-/// Read the delimited block back into a projection.
 pub fn parse_prelude(prelude: &str) -> Result<Projection, LinguaError> {
     let mut out = Projection::default();
     for raw in prelude.lines() {
@@ -192,7 +128,6 @@ pub fn parse_prelude(prelude: &str) -> Result<Projection, LinguaError> {
     Ok(out)
 }
 
-/// Convenience: the whole file in one call.
 pub fn parse_file(text: &str) -> Result<(Option<Projection>, String), LinguaError> {
     let (prelude, body) = split(text);
     match prelude {
@@ -220,8 +155,6 @@ fn parse_assertion(rest: &str) -> Result<Line, LinguaError> {
             return Err(LinguaError::BadLine(format!("@{rest}")));
         };
         let target = &inner[..close];
-        // `Title|uid`. A link with no uid half is not addressed at all — it
-        // names a title, and titles are not identity.
         let Some((title, uid)) = target.rsplit_once('|') else {
             return Err(LinguaError::BadLine(format!("@{rest}")));
         };
@@ -246,7 +179,6 @@ fn parse_assertion(rest: &str) -> Result<Line, LinguaError> {
     })
 }
 
-/// `12 @hour` -> `("12", Some("hour"))`.
 fn split_amount(text: &str) -> (&str, Option<&str>) {
     match text.split_once(" @") {
         Some((amount, unit)) => (amount.trim(), Some(unit.trim())),
@@ -254,9 +186,6 @@ fn split_amount(text: &str) -> (&str, Option<&str>) {
     }
 }
 
-/// Exact decimal text for a projection. Never `to_f64`: the whole point of
-/// storing `(mantissa, scale)` is that a projection cannot disagree with the
-/// Ledger by a rounding step.
 pub fn decimal_text(value: DecimalValue) -> String {
     value.to_string()
 }
@@ -311,8 +240,6 @@ mod tests {
 
     #[test]
     fn identity_survives_the_round_trip_as_identity() {
-        // The lossy version of this format renders `@@task` as `@task`, and
-        // then a round trip quietly demotes what the Record IS to a tag.
         let file = render_file(
             &Projection {
                 uid: "rec_1".to_string(),
@@ -343,8 +270,6 @@ mod tests {
 
     #[test]
     fn an_unclosed_fence_is_body_rather_than_swallowed_metadata() {
-        // Losing the text would be the expensive failure here, so an opening
-        // fence with no closing one is not treated as a prelude at all.
         let text = "---\n@task\nstill writing";
         let (prelude, body) = split(text);
         assert_eq!(prelude, None);

@@ -10,8 +10,6 @@ use super::{
 
 pub const MAX_VALUE_TYPE_DEPTH: usize = 32;
 
-/// The requested destination of an inert candidate. A route is not authority:
-/// even `Act` must pass the later policy, grant, intent, and effect boundaries.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum CandidateRoute {
@@ -22,33 +20,15 @@ pub enum CandidateRoute {
     Act,
 }
 
-/// How an exact operation resolves when its true result has no representation
-/// at the target scale — no scale represents `1/3`, so division and unit
-/// conversion must each say what they do about it.
-///
-/// This is named in the AST and frozen in the revision hash rather than picked
-/// by the implementation, because an implicit rounding mode is how exactness
-/// silently dies: the numbers still look exact, and they are wrong.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Rounding {
-    /// Ties go away from zero. What people mean by "round".
     HalfUp,
-    /// Ties go to the even digit. Bias-free over many roundings, which is why
-    /// accounting standards ask for it.
     HalfEven,
-    /// Always truncate. `-1.9` becomes `-1`.
     TowardZero,
-    /// Always inflate. `1.1` becomes `2`.
     AwayFromZero,
 }
 
-/// The result of an inexact exact-decimal operation: the value at the declared
-/// scale, plus whether anything had to be discarded to get there.
-///
-/// `exact == false` is not an error — it is the thing the caller must be able
-/// to see. A remainder that is dropped without being reported is precisely the
-/// silent loss this type exists to prevent.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct RoundedDecimal {
     pub value: DecimalValue,
@@ -59,13 +39,6 @@ fn pow10(exponent: u32) -> Option<i128> {
     10_i128.checked_pow(exponent)
 }
 
-/// The one rounding implementation in the system: `numer / denom` rendered as a
-/// mantissa at `scale`.
-///
-/// Every inexact operation — unit conversion, percentage, division, product at
-/// a narrower scale — reduces to a single rational quotient, so they all land
-/// here. Two implementations would be one too many: the second would drift from
-/// the first exactly at the tie cases nobody tests.
 fn round_ratio(
     mut numer: i128,
     mut denom: i128,
@@ -75,14 +48,12 @@ fn round_ratio(
     if denom == 0 || scale > MAX_DECIMAL_SCALE {
         return None;
     }
-    // Normalise the sign onto the numerator so the rounding cases below only
-    // ever reason about the sign of one operand.
     if denom < 0 {
         numer = numer.checked_neg()?;
         denom = denom.checked_neg()?;
     }
 
-    let quotient = numer / denom; // Rust divides toward zero
+    let quotient = numer / denom;
     let remainder = numer % denom;
     if remainder == 0 {
         return Some(RoundedDecimal {
@@ -125,8 +96,6 @@ fn round_ratio(
     })
 }
 
-/// Runtime-scale exact decimal for typed AST literals. Unlike a computation's
-/// `FixedDecimal<S>`, the AST needs to carry `S` as data.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct DecimalValue {
     scale: u8,
@@ -192,9 +161,6 @@ impl DecimalValue {
         canonical_decimal_string(self.scale, self.mantissa)
     }
 
-    /// The canonical decimal text — exactly `scale` fractional digits. This is
-    /// what goes in a hash preimage or a payload; it is the value, not a
-    /// rendering of it.
     pub fn canonical(self) -> String {
         self.canonical_string()
     }
@@ -211,9 +177,6 @@ impl DecimalValue {
         self.mantissa > 0
     }
 
-    /// Restate at a different scale without changing the value. Scaling up is
-    /// always exact (mantissa overflow aside); scaling down succeeds only when
-    /// the dropped digits are zeros — this type never rounds silently.
     pub fn rescale(self, scale: u8) -> Option<Self> {
         if scale > MAX_DECIMAL_SCALE {
             return None;
@@ -228,7 +191,7 @@ impl DecimalValue {
             std::cmp::Ordering::Less => {
                 let factor = 10_i128.checked_pow(u32::from(self.scale - scale))?;
                 if self.mantissa % factor != 0 {
-                    return None; // would lose a digit that is not a zero
+                    return None;
                 }
                 Some(Self {
                     scale,
@@ -238,42 +201,26 @@ impl DecimalValue {
         }
     }
 
-    /// Add two decimals of any scales by first aligning both to the finer of
-    /// the two. Every scale is `<= MAX_DECIMAL_SCALE` by construction, so the
-    /// common scale is always representable and no rounding step can enter.
     pub fn aligned_add(self, rhs: Self) -> Option<Self> {
         let scale = self.scale.max(rhs.scale);
         self.rescale(scale)?.checked_add(rhs.rescale(scale)?)
     }
 
-    /// Subtract at the finer of the two scales. Reaching a target level is
-    /// `target - current`, so this is the exact form of "set the quantity".
     pub fn aligned_sub(self, rhs: Self) -> Option<Self> {
         let scale = self.scale.max(rhs.scale);
         self.rescale(scale)?.checked_sub(rhs.rescale(scale)?)
     }
 
-    /// Lossy view for display, charts, and legacy float projections. Never
-    /// write the result of this back into the Ledger.
     pub fn to_f64(self) -> f64 {
         self.canonical_string().parse::<f64>().unwrap_or(f64::NAN)
     }
 
-    /// The one inbound door from `f64`, deliberately named so every legacy
-    /// producer that still computes in floats is greppable. Uses Rust's
-    /// shortest round-trip formatting, so `0.1_f64` becomes exactly `0.1` at
-    /// scale 1 rather than the float's true binary expansion.
-    ///
-    /// Karma-computed amounts are exact already and must NOT pass through
-    /// here — they would acquire a float's error before reaching the Ledger.
     pub fn from_f64_lossy(value: f64) -> Result<Self, KarmaBoundaryError> {
         if !value.is_finite() {
             return Err(KarmaBoundaryError::invalid_input(format!(
                 "cannot represent non-finite quantity {value}"
             )));
         }
-        // `{}` on f64 is shortest-round-trip, but yields exponent form for
-        // extremes; `{:.*}` gives a plain fixed-point fallback.
         let text = format!("{value}");
         let text = if text.contains(['e', 'E']) {
             format!("{value:.*}", usize::from(MAX_DECIMAL_SCALE))
@@ -283,17 +230,6 @@ impl DecimalValue {
         Self::parse_inferred(&text)
     }
 
-    /// Multiply by the rational `numerator / denominator` and state the result
-    /// at `scale`, resolving anything that does not fit with `rounding`.
-    ///
-    /// This is the one place inexactness is allowed to enter, and it reports
-    /// itself: a unit conversion (`kg → g` is `1000/1`, `kg → lb` is a ratio
-    /// that does not terminate in decimal), a percentage, or a division all
-    /// reduce to this. Keeping it rational rather than pre-dividing is what
-    /// makes `kg → g` exact instead of exact-looking.
-    ///
-    /// Returns `None` on a zero denominator or on `i128` overflow — never a
-    /// saturated or wrapped value.
     pub fn mul_ratio(
         self,
         numerator: i128,
@@ -304,8 +240,6 @@ impl DecimalValue {
         if denominator == 0 || scale > MAX_DECIMAL_SCALE {
             return None;
         }
-        // Work at the target scale directly: shift by the difference rather
-        // than scaling up and back down, which would overflow much sooner.
         let shift = i32::from(scale) - i32::from(self.scale);
         let mut numer = self.mantissa.checked_mul(numerator)?;
         let mut denom = denominator;
@@ -317,23 +251,10 @@ impl DecimalValue {
         round_ratio(numer, denom, scale, rounding)
     }
 
-    /// Multiply two exact decimals at a declared scale and rounding.
-    ///
-    /// The exact product carries `self.scale + other.scale` digits, which two
-    /// scale-9 operands already push to the 18-digit ceiling, so the result
-    /// scale is the author's declaration rather than something inferred.
-    ///
-    /// Returns `None` on `i128` overflow — never a saturated or wrapped value.
     pub fn mul_exact(self, other: Self, scale: u8, rounding: Rounding) -> Option<RoundedDecimal> {
         if scale > MAX_DECIMAL_SCALE {
             return None;
         }
-        // The product at `scale` is `m1 * m2 * 10^scale / 10^(s1 + s2)`.
-        // Cancelling those two powers of ten BEFORE multiplying is what keeps a
-        // product that fits in `i128` from overflowing on the way to a scale it
-        // also fits in: routing this through `mul_ratio` would inflate the
-        // numerator by `10^other.scale` and then divide the same factor back
-        // out, failing on values that are perfectly representable.
         let shift = i32::from(scale) - i32::from(self.scale) - i32::from(other.scale);
         let mut left = self.mantissa;
         let mut right = other.mantissa;
@@ -348,11 +269,6 @@ impl DecimalValue {
             );
         }
         if shift < 0 {
-            // Divide the operands down before multiplying them up, but only by
-            // the factors of ten they actually contain: dropping a digit that
-            // is not a zero would discard a remainder that still decides the
-            // final rounding. Whatever cannot be cancelled this way stays in
-            // the denominator, where `round_ratio` handles it exactly.
             let mut remaining = shift.unsigned_abs();
             while remaining > 0 && left % 10 == 0 && left != 0 {
                 left /= 10;
@@ -367,14 +283,10 @@ impl DecimalValue {
         round_ratio(left.checked_mul(right)?, denom, scale, rounding)
     }
 
-    /// Divide by another decimal at a declared scale and rounding. Expressed
-    /// through `mul_ratio` so there is one rounding implementation, not two.
     pub fn div_exact(self, divisor: Self, scale: u8, rounding: Rounding) -> Option<RoundedDecimal> {
         if divisor.mantissa == 0 {
-            return None; // division by zero is a typed failure, not an infinity
+            return None;
         }
-        // self / divisor == self * (10^divisor.scale / divisor.mantissa) / 10^self.scale,
-        // and the trailing 10^self.scale is what `mul_ratio`'s shift handles.
         self.mul_ratio(
             pow10(u32::from(divisor.scale))?,
             divisor.mantissa,
@@ -383,8 +295,6 @@ impl DecimalValue {
         )
     }
 
-    /// Parse canonical decimal text whose scale is whatever it happens to
-    /// carry, rather than a scale known in advance.
     pub fn parse_inferred(value: &str) -> Result<Self, KarmaBoundaryError> {
         let fraction_digits = value.split_once('.').map_or(0, |(_, f)| f.len());
         if fraction_digits > usize::from(MAX_DECIMAL_SCALE) {
@@ -394,7 +304,6 @@ impl DecimalValue {
         }
         #[allow(clippy::cast_possible_truncation)]
         let scale = fraction_digits as u8;
-        // `-0` and `-0.00` are legitimate float outputs but not canonical.
         let value = if value.bytes().all(|b| matches!(b, b'-' | b'0' | b'.')) {
             value.trim_start_matches('-')
         } else {
@@ -439,7 +348,6 @@ impl<'de> Deserialize<'de> for DecimalValue {
     }
 }
 
-/// Closed semantic type system for graph ports.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
 pub enum ValueType {
@@ -587,8 +495,6 @@ fn validate_scale(scale: u8) -> Result<(), KarmaBoundaryError> {
     }
 }
 
-/// Exact values that can appear in immutable definitions and parameter
-/// defaults. Missing/denied datum states are typed rather than magic values.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
 pub enum LiteralValue {
@@ -710,8 +616,6 @@ impl LiteralValue {
         }
     }
 
-    /// Compare values using their semantic scalar identity. Proof calls this
-    /// only after exact type equality has been established.
     pub(crate) fn semantic_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         match (self, other) {
             (Self::I64 { value: left }, Self::I64 { value: right }) => Some(left.cmp(right)),
@@ -742,8 +646,6 @@ impl LiteralValue {
     }
 }
 
-/// Static confidentiality lattice. Runtime visibility/purpose further narrows
-/// access; this class prevents obvious definition-time downgrades.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Sensitivity {

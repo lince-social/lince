@@ -1,26 +1,3 @@
-//! One Cell, in its own OS process, for the multi-process harness
-//! (Ontology §11, decision 7 / cluster C0).
-//!
-//! Exists because the properties that matter most cannot be tested in one
-//! process. `nucleus::hlc` is a process-wide atomic — that is its documented
-//! design, "one clock per Cell" — so two Cells sharing a test process also
-//! share a counter, which is exactly what masks the collisions the op log is
-//! supposed to survive. Every in-process test therefore proves a WEAKER
-//! statement than the one deployment relies on.
-//!
-//! Three modes:
-//!
-//! - `cell_worker <db-path> <slug-prefix> <writes>` — write N Records and
-//!   exit. The original mode, and the one that found the data-loss bug.
-//! - `cell_worker host <db> <root-key> <code-out>` — become an Organ, write
-//!   one Record, publish an enrolment code to `<code-out>`, then serve until
-//!   killed.
-//! - `cell_worker join <db> <code-file>` — enrol into that Organ from the
-//!   code, run ONE sync pass, and exit.
-//!
-//! The last two are what make sibling sync testable for real: two databases,
-//! two endpoints, two `hlc` clocks that genuinely do not share an atomic.
-
 use std::process::ExitCode;
 use std::sync::Arc;
 
@@ -85,9 +62,6 @@ async fn run(db: &str, prefix: &str, writes: usize) -> Result<(), String> {
     Ok(())
 }
 
-/// Loopback addresses for a bound endpoint. `bound_sockets()` reports the
-/// wildcard bind, so the port is pointed at 127.0.0.1 explicitly — the same
-/// thing the in-process tests do, and what makes this work with no discovery.
 fn loopback_addrs(wire: &engine::wire::Wire) -> Vec<String> {
     wire.endpoint()
         .bound_sockets()
@@ -96,8 +70,6 @@ fn loopback_addrs(wire: &engine::wire::Wire) -> Vec<String> {
         .collect()
 }
 
-/// Become an Organ of one Cell, write something worth syncing, and publish an
-/// enrolment code. Serves until killed.
 async fn host(db: &str, root_key: &str, code_out: &str) -> Result<(), String> {
     let engine = Arc::new(
         engine::Engine::open(&format!("sqlite://{db}"))
@@ -138,7 +110,6 @@ async fn host(db: &str, root_key: &str, code_out: &str) -> Result<(), String> {
                 node_id: wire.node_id().to_string(),
                 label: "the host".into(),
                 operational_key: "k-host".into(),
-                // This worker exercises convergence, not mail.
                 sealing_key: None,
                 front_door: false,
                 capabilities: engine::roster::full_capabilities(),
@@ -147,8 +118,6 @@ async fn host(db: &str, root_key: &str, code_out: &str) -> Result<(), String> {
         .await
         .map_err(|e| e.to_string())?;
 
-    // Written BEFORE the sibling joins, so what the test proves is that a
-    // second process converges on history it was not present for.
     store::records::create(
         &engine.store.pool,
         store::records::NewRecord {
@@ -173,8 +142,6 @@ async fn host(db: &str, root_key: &str, code_out: &str) -> Result<(), String> {
         token,
         addrs: loopback_addrs(&wire),
     };
-    // Written LAST and atomically-ish: the harness waits for this file to
-    // exist, so it must not appear before the endpoint is actually serving.
     let temporary = format!("{code_out}.partial");
     std::fs::write(&temporary, invite.encode()).map_err(|e| e.to_string())?;
     let serving = tokio::spawn(async move { wire.serve().await });
@@ -183,7 +150,6 @@ async fn host(db: &str, root_key: &str, code_out: &str) -> Result<(), String> {
     Ok(())
 }
 
-/// Enrol into the Organ named by the code, then run one sync pass.
 async fn join(db: &str, code_file: &str) -> Result<(), String> {
     let engine = Arc::new(
         engine::Engine::open(&format!("sqlite://{db}"))
@@ -202,8 +168,6 @@ async fn join(db: &str, code_file: &str) -> Result<(), String> {
         .await
         .map_err(|e| e.to_string())?;
     wire.enrol(&invite).await.map_err(|e| e.to_string())?;
-    // The point of the exercise: a sibling pass, across a process boundary,
-    // pulling ops written by a Cell whose `hlc` really is a separate atomic.
     wire.sync_once().await.map_err(|e| e.to_string())?;
     Ok(())
 }

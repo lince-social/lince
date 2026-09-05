@@ -56,27 +56,11 @@ struct PreparedStateMutation {
     state: Option<PersistedProgramNodeState>,
 }
 
-/// The seam for boundary sources this layer cannot reach on its own.
-///
-/// `protein` is built on top of `store`, so the run path cannot execute a saved
-/// Protein — calling upward would be a dependency cycle Rust refuses to
-/// compile. Rather than invert the layering, `store` declares the hole and
-/// `engine`, which sits above both, fills it. This layer never learns what a
-/// Protein is; it only knows that something can answer.
-///
-/// A resolver is optional: with none supplied, a Program that reads an external
-/// source blocks with a named code instead of silently reading a zero.
 #[async_trait::async_trait]
 pub trait ExternalInputResolver: Send + Sync {
-    /// Resolve a saved Protein to one boundary value.
-    ///
-    /// `Ok(None)` means the view exists but does not reduce to a single value —
-    /// a refusal, not an absence, and the run blocks rather than guessing.
     async fn saved_protein(&self, view_uid: &str) -> Result<Option<LiteralValue>, StoreError>;
 }
 
-/// Processes at most one bounded page of the next Cell-ordered occurrence.
-/// `None` means ingress has no occurrence at the durable processing cursor.
 pub async fn process_next_occurrence(
     pool: &SqlitePool,
     limits: EvaluationLimits,
@@ -189,43 +173,12 @@ async fn freeze_next_epoch(
         return Ok(Some((occurrence, epoch)));
     }
 
-    // C7 axis 2 — does THIS Cell execute it. The filter belongs HERE, at epoch
-    // freezing, rather than at the point a run would write its effect: the
-    // epoch is the frozen list of what this turn will evaluate, so excluding a
-    // Program here means it is never evaluated, never consumes fuel, and never
-    // reaches a Program-state event. Filtering later would let a dormant rule
-    // advance its own state on a Cell that is not supposed to be running it,
-    // and that state is what the executing Cell's next run depends on.
-    //
-    // A LEFT JOIN with `IS NOT 0`, never `= 1`: absence is the default and the
-    // default is to execute, so an inner join here would stop every Program on
-    // every Organ that has never opened the setting.
-    // This Cell's own uid, for the designation test below. `None` is not a
-    // reason to skip the turn — a store with no Cell Record cannot have been
-    // opened — but it does mean no designation can match, so a designated
-    // Program correctly stays put rather than running on an unidentifiable
-    // Cell.
     let this_cell: Option<String> =
         sqlx::query_scalar("SELECT uid FROM record WHERE slug = ? AND kind = 'device' LIMIT 1")
             .bind(crate::cells::LOCAL_CELL_SLUG)
             .fetch_optional(&mut *tx)
             .await?;
 
-    // Two independent filters, and they are not the same question.
-    //
-    // `karma_program_execution` is axis 2: this machine's own answer, local,
-    // never synced. The executor designation is the shared one — a Record
-    // extension, so every Cell reads the same value — and it is a VALUE rather
-    // than a lock: a last-writer-wins register that converges by construction
-    // instead of a claim needing renewal. Designated elsewhere means this Cell
-    // does not run it, and an undesignated Program runs everywhere, which is
-    // the behaviour every existing Organ already has.
-    //
-    // Both are vetoes and neither is a precedence: ANDed, either one can
-    // withhold this Cell and neither can compel it. So a rule switched off
-    // locally stays off however it is designated, and a rule designated
-    // elsewhere stays off however the local flag reads — there is no ordering
-    // between them to get wrong.
     let rows = sqlx::query(
         "SELECT program.record_uid, program.active_revision_hash, program.handle_revision
          FROM karma_program program
@@ -334,22 +287,14 @@ async fn evaluate_member(
         );
     }
 
-    // E0.1: fill the boundary values the Program's Input nodes read. These go
-    // into `boundary_values`, which is exactly what `capture_evaluation_replay`
-    // freezes — so a Fact appended after this moment cannot change what the run
-    // saw, and the replay stays byte-identical.
     let mut blocked_input = None;
     for (node_id, node) in &revision.program.nodes {
         let NodeOperation::Input { source, .. } = &node.operation else {
             continue;
         };
         match source {
-            // Parameters are frozen in the epoch, not resolved from the world.
             InputSource::Parameter { .. } => {}
             InputSource::RecordQuantity { record } => {
-                // A storage failure propagates; only a genuine refusal becomes
-                // a block code. Collapsing the two would let a broken database
-                // read as "this Record has no unit".
                 match record_quantity_value(pool, record.target.as_str()).await? {
                     Ok(value) => {
                         boundary_values.insert(node_id.clone(), value);
@@ -357,8 +302,6 @@ async fn evaluate_member(
                     Err(code) => blocked_input = Some(code),
                 }
             }
-            // `saved-protein` resolves through the seam, because `protein` is
-            // built on top of `store` and this layer cannot call upward.
             InputSource::SavedProtein { view } => match resolver {
                 Some(resolver) => match resolver.saved_protein(view.target.as_str()).await? {
                     Some(value) => {
@@ -366,10 +309,8 @@ async fn evaluate_member(
                     }
                     None => blocked_input = Some(ProgramRunBlockCode::InputSourceUnresolved),
                 },
-                // No resolver wired: block by name rather than read a zero.
                 None => blocked_input = Some(ProgramRunBlockCode::InputSourceUnresolved),
             },
-            // Signals and secrets belong to K6.
             InputSource::Signal { .. }
             | InputSource::SecretMetadata { .. }
             | InputSource::CapturedFact { .. } => {
@@ -432,20 +373,6 @@ async fn evaluate_member(
     })
 }
 
-/// Resolve a `record-quantity` input (blueprint E0.1).
-///
-/// The outer `Result` is storage failure; the inner one is the Program's own
-/// outcome — a refusal is a value here, not an error, so the two can never be
-/// confused for one another.
-///
-/// The amount is folded from the Fact chain, never read from the
-/// `record.quantity` cache: the cache is a cache, and it is the chain that a
-/// rule's decision has to stand on.
-///
-/// A Record carrying a `unit_uid` arrives as `Quantity { amount, unit }` so the
-/// unit is part of the static type Proof checks at every node boundary; one
-/// with no unit arrives as a plain `Decimal`. The two are deliberately not
-/// interchangeable — that is what stops a rule adding litres to kilograms.
 async fn record_quantity_value(
     pool: &SqlitePool,
     record_uid: &str,

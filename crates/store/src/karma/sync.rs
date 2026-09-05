@@ -1,38 +1,3 @@
-//! Karma definitions crossing between an Organ's own Cells (Ontology C7, axis 1).
-//!
-//! Axis 1 is "is this rule synced", and until now the answer was no for
-//! everyone: `op_in_scope` names the tables that travel — `record`, `fact`,
-//! `record_assertion`, `record_extension`, `concept`, `crdt`/`snapshot` — and no
-//! `karma_*` table is among them. Nor did the Program's Record row stand in for
-//! it: `programs::create` inserts that row RAW, with no `log_local` and so no
-//! op, which means not even the NAME of a rule reached another Cell. So axis 2
-//! could say "the always-on Cell runs the common Karma" about an arrangement no
-//! Organ could reach at all.
-//!
-//! **The definition rides as a Record extension**, following the executor
-//! designation rather than inventing a second mechanism. Namespace `lince.karma`
-//! with one key per kind, so the whole definition is ONE op: a hash and the
-//! thing it hashes cannot arrive separately and disagree, which matters because
-//! the receiver verifies one against the other.
-//!
-//! **Active state only, not history.** Extension ops have no snapshot to become
-//! prunable under — that is `crdt`'s mechanism and a C10 box — so a key per
-//! revision hash would carry every draft a rule ever had to every Cell forever.
-//! Revision history stays local to the Cell that authored it, where it is
-//! written and where it is read. What crosses is the rule that runs.
-//!
-//! **Programs AND Frequencies, together, because either alone does nothing.**
-//! Every active Program is a member of every frozen occurrence epoch, so a Cell
-//! holding a synced Program with no Frequency has nothing to schedule it and
-//! the Program never runs. Shipping one without the other would be a feature
-//! that syncs and does not work.
-//!
-//! **Nothing here writes an op or a Fact.** Publishing is the one exception and
-//! it writes exactly one extension op through `records::set_extension`; the
-//! import side materialises rows directly and never calls `programs::create` or
-//! `frequencies::activate`, which would re-log ops, re-mint request ids and
-//! append evidence Facts describing a decision this Cell did not make.
-
 use chrono::Utc;
 use nucleus::karma::{
     CanonicalHash, DefinitionStatus, FrequencyActivationEpoch, FrequencyAst, ProgramAst,
@@ -44,31 +9,14 @@ use sqlx::SqlitePool;
 
 use crate::StoreError;
 
-/// The extension namespace Karma definitions travel in.
-///
-/// One dot, and the key carries the kind: `lince.karma.program`,
-/// `lince.karma.frequency`. The wire splits the op field with `rsplit_once`, so
-/// the namespace may hold dots and the key may not — see
-/// `engine/tests/sync_ops.rs::the_executor_designation_survives_the_wire`.
 pub const NAMESPACE: &str = "lince.karma";
 pub const KEY_PROGRAM: &str = "program";
 pub const KEY_FREQUENCY: &str = "frequency";
 
-/// Whether an op field belongs to this mechanism, for the import hook to test.
 pub fn is_definition_field(field: &str) -> bool {
     field == format!("{NAMESPACE}.{KEY_PROGRAM}") || field == format!("{NAMESPACE}.{KEY_FREQUENCY}")
 }
 
-/// Publish this Cell's view of a Program to the Organ's other Cells.
-///
-/// Derived from the STORE rather than from the action that prompted it, so it
-/// cannot drift from what this Cell actually holds: called after a create, a
-/// revise, an activate or a pause, it always publishes the same thing — the
-/// currently active definition, or `null` when there is none.
-///
-/// `null` is how a pause travels. Without it, pausing a rule on the laptop
-/// would leave the always-on Cell running the last definition it heard about,
-/// which is the failure mode that makes people distrust sync.
 pub async fn publish_program(pool: &SqlitePool, program_uid: &str) -> Result<(), StoreError> {
     let handle = super::programs::get_handle(pool, program_uid).await?;
     let payload = match handle.and_then(|handle| handle.active_revision_hash) {
@@ -84,13 +32,6 @@ pub async fn publish_program(pool: &SqlitePool, program_uid: &str) -> Result<(),
     set_key(pool, program_uid, KEY_PROGRAM, payload).await
 }
 
-/// Publish this Cell's view of a Frequency, definition and activation together.
-///
-/// The activation epoch rides with the AST because it is what a schedule is
-/// actually driven by: the compiled cadence plus the effective parameters. Two
-/// Cells given the same epoch compute the same occurrence hashes independently,
-/// which is why no occurrence has to travel — the schedule converges by
-/// construction and each Cell decides for itself which Programs it runs.
 pub async fn publish_frequency(pool: &SqlitePool, frequency_uid: &str) -> Result<(), StoreError> {
     let handle = super::frequencies::get_handle(pool, frequency_uid).await?;
     let payload = match handle {
@@ -114,20 +55,6 @@ pub async fn publish_frequency(pool: &SqlitePool, frequency_uid: &str) -> Result
     set_key(pool, frequency_uid, KEY_FREQUENCY, payload).await
 }
 
-/// Materialise whatever a peer Cell published for this Record.
-///
-/// **The caller decides whether to call this at all**, and that decision is the
-/// security boundary: only a batch authenticated as one of THIS Organ's own
-/// Cells may reach here. A definition arriving from a contact is stored as an
-/// extension like any other data and never becomes a row `freeze_next_epoch`
-/// can join, because code that arrives over a socket and runs on receipt is the
-/// whole failure mode. See `engine::sync::import_ops`.
-///
-/// Everything is re-derived locally and checked against what arrived. The hash
-/// is not taken on trust — it is recomputed from the AST, and a mismatch
-/// refuses the definition rather than storing a row whose content-address is a
-/// lie. The proof is re-run for the same reason: a Program this Cell cannot
-/// prove does not become active here, whatever the sender believed.
 pub async fn import_definition(pool: &SqlitePool, record_uid: &str) -> Result<(), StoreError> {
     let Some(fds) = crate::records::get_extension(pool, record_uid, NAMESPACE).await? else {
         return Ok(());
@@ -148,9 +75,6 @@ async fn import_program(
 ) -> Result<(), StoreError> {
     let at = Utc::now().to_rfc3339();
     let Some(object) = payload.as_object() else {
-        // Published as null: paused, or never activated. Pausing must travel,
-        // so this is a real state rather than a no-op — but only for a Program
-        // we already hold. A null for an unknown uid says nothing to record.
         sqlx::query(
             "UPDATE karma_program SET status = 'paused', active_revision_hash = NULL,
                     handle_revision = handle_revision + 1, updated_at = ?
@@ -180,11 +104,6 @@ async fn import_program(
         .clone()
         .ok_or_else(|| protocol("published Karma Program cannot be canonically hashed"))?;
     if derived.as_str() != claimed {
-        // Not quarantine-worthy noise: a peer Cell of our own Organ sending a
-        // definition whose hash does not match its content is either corruption
-        // or something wearing that Cell's identity, and either way the honest
-        // move is to refuse the row rather than store a content-address that
-        // does not address its content.
         return Err(protocol(
             "published Karma Program hash disagrees with its definition",
         ));
@@ -219,10 +138,6 @@ async fn import_program(
     .bind(&at)
     .execute(&mut *tx)
     .await?;
-    // The handle's `handle_revision` is this Cell's own optimistic-concurrency
-    // counter and is deliberately NOT taken from the sender: it guards local
-    // edits against each other, and adopting a peer's number would make two
-    // Cells' counters collide in a way neither can detect.
     sqlx::query(
         "INSERT INTO karma_program
             (record_uid, handle_revision, status, head_revision_hash,
@@ -278,9 +193,6 @@ async fn import_frequency(
             .ok_or_else(|| protocol("published Karma Frequency has no definition"))?,
     )
     .map_err(|error| protocol(format!("published Karma Frequency is unreadable: {error}")))?;
-    // Deserialising the epoch validates it — `FrequencyActivationEpoch` has a
-    // hand-written `Deserialize` that runs the same boundary checks its
-    // constructor does, so a malformed epoch cannot get in by the back door.
     let activation: FrequencyActivationEpoch = serde_json::from_value(
         object
             .get("activation")
@@ -392,20 +304,6 @@ async fn import_frequency(
     Ok(())
 }
 
-/// Give the definition a Record row of the right KIND, creating it if the only
-/// thing that arrived was the extension.
-///
-/// Necessary because a Program's Record row does not sync either: `programs
-/// ::create` inserts it RAW, with no `log_local`, so no op — the name never
-/// travelled any more than the rule did. So the definition is the source of
-/// truth for its own Record, which is the better arrangement anyway: slug and
-/// purpose live in the AST, and deriving the row from them cannot leave the two
-/// disagreeing.
-///
-/// The kind matters beyond tidiness. `karma_program`'s trigger refuses a handle
-/// whose Record is not `kind = 'program'`, so a stub left as `plain` by the
-/// arriving extension op is not a cosmetic wart — it is a rule that silently
-/// never becomes runnable.
 async fn ensure_definition_record(
     tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
     record_uid: &str,
@@ -420,19 +318,6 @@ async fn ensure_definition_record(
     .bind(crate::organs::LOCAL_ORGAN_SLUG)
     .fetch_optional(&mut **tx)
     .await?;
-    // `record.slug` is UNIQUE, and a slug is a convenience where the uid is the
-    // identity. Two Cells that each authored a rule called `run.daily` before
-    // they ever synced is an ORDINARY situation, not an attack, and letting the
-    // insert fail there would quarantine the definition and leave the rule
-    // silently never running — the exact failure mode this whole cluster is
-    // about. So a taken slug is dropped rather than fought over: the rule
-    // arrives under a DISAMBIGUATED name and runs, which is recoverable and
-    // visible, instead of being absent, which is visible nowhere.
-    //
-    // Not `NULL`: a trigger requires a Karma Record to keep a slug, and it is
-    // right to — a nameless rule in a list is barely better than a missing one.
-    // The suffix comes from the uid, so it is stable across re-imports rather
-    // than growing a new tail every time the definition is republished.
     let taken: Option<String> = sqlx::query_scalar("SELECT uid FROM record WHERE slug = ?")
         .bind(slug)
         .fetch_optional(&mut **tx)
@@ -470,12 +355,6 @@ async fn ensure_definition_record(
     Ok(())
 }
 
-/// Write one key of the namespace without disturbing the other.
-///
-/// `set_extension` takes the whole namespace and logs one op per CHANGED key,
-/// so reading the current value first is what keeps a Program's key from
-/// vanishing when a Frequency's is written. In practice a Record is one or the
-/// other, and this is the cheap insurance against the day it is not.
 async fn set_key(
     pool: &SqlitePool,
     record_uid: &str,

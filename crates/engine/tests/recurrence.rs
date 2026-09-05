@@ -1,10 +1,3 @@
-//! Recurrence through the Actions a surface actually calls.
-//!
-//! A recurring rule declares; it does not move anything. What these defend is
-//! the boundary between the two: applying a date writes an ordinary entry that
-//! nothing downstream can tell apart from a hand-typed one, and applying it
-//! twice is impossible.
-
 use chrono::{DateTime, Utc};
 use engine::Engine;
 use engine::actions::Action;
@@ -14,8 +7,6 @@ use nucleus::karma::{Cadence, CadenceStep, CivilWeekday, WeekdaySet};
 use store::records::NewRecord;
 use store::recurrence::{OccurrenceState, occurrence_request_id};
 
-/// The one-consequence shape every rule had before a rule could do more than
-/// move a number.
 fn capture(amount: &str, concept: Option<&str>) -> Vec<Consequence> {
     vec![Consequence::CaptureEntry {
         amount: nucleus::DecimalValue::parse_inferred(amount).expect("exact amount"),
@@ -31,8 +22,6 @@ async fn engine() -> Engine {
     engine
 }
 
-/// A resource and a concept. The scenario reads as a running balance because
-/// that is legible; nothing under test knows what it is counting.
 async fn setup(e: &Engine) -> (String, String) {
     let rent = store::concepts::create(&e.store.pool, "rent", &[])
         .await
@@ -109,8 +98,6 @@ async fn declaring_a_rule_moves_nothing() {
         .await
         .unwrap();
 
-    // A declaration is not a change. If this ever appends a Fact, every
-    // balance in the system starts counting a quantity nobody has moved yet.
     assert!(outcome.facts.is_empty(), "declaring must append no Fact");
     assert_eq!(level(&e, &checking).await, "0");
     assert!(outcome.created.is_some());
@@ -138,7 +125,6 @@ async fn applying_an_occurrence_writes_an_ordinary_entry() {
     assert_eq!(outcome.facts.len(), 1, "applying appends exactly one Fact");
     assert_eq!(level(&e, &checking).await, "-1200");
 
-    // The entry is a normal entry: revisable and voidable like any other.
     let entry_uid = outcome.created.expect("an entry is created");
     let entry = store::entries::get(&e.store.pool, &entry_uid)
         .await
@@ -146,14 +132,11 @@ async fn applying_an_occurrence_writes_an_ordinary_entry() {
         .unwrap();
     assert_eq!(entry.revision, 1);
     assert_eq!(entry.record_uid, checking);
-    // The Fact carries the rule's classification, so it lands in the same
-    // total a hand-typed rent would.
     let fact = &outcome.facts[0];
     let classification = store::ledger::fact_concept(&e.store.pool, &fact.uid)
         .await
         .unwrap();
     assert_eq!(classification.as_deref(), Some(rent.as_str()));
-    // Occurred-at is the due date, not the moment somebody clicked.
     assert_eq!(
         entry.occurred_at,
         store::facts::instant(at("2026-02-01T00:00:00Z"))
@@ -162,8 +145,6 @@ async fn applying_an_occurrence_writes_an_ordinary_entry() {
 
 #[tokio::test]
 async fn the_same_occurrence_cannot_be_applied_twice() {
-    // The failure this prevents is the expensive one: a double-click, a retried
-    // request, or two open surfaces paying one month's rent twice.
     let e = engine().await;
     let (checking, rent) = setup(&e).await;
     let rule = monthly(&e, &checking, &rent, "-1200").await;
@@ -225,8 +206,6 @@ async fn two_different_dates_of_one_rule_are_two_different_changes() {
 
 #[tokio::test]
 async fn a_date_the_rule_does_not_produce_is_refused() {
-    // Otherwise "apply" is just a capture wearing a rule's name, and the
-    // timeline would show an applied date no cadence explains.
     let e = engine().await;
     let (checking, rent) = setup(&e).await;
     let rule = monthly(&e, &checking, &rent, "-1200").await;
@@ -248,8 +227,6 @@ async fn a_date_the_rule_does_not_produce_is_refused() {
 
 #[tokio::test]
 async fn one_occurrence_can_come_in_higher_than_the_standing_rule() {
-    // The bill that was 1200 every month and is 1350 this month. Overriding one
-    // date must not silently rewrite the rule for every future month.
     let e = engine().await;
     let (checking, rent) = setup(&e).await;
     let rule = monthly(&e, &checking, &rent, "-1200").await;
@@ -318,7 +295,6 @@ async fn an_applied_date_reports_what_it_actually_carried() {
         .find(|item| item.due_at == at("2026-02-01T00:00:00Z"))
         .expect("February is a date this rule produces");
     assert_eq!(february.state, OccurrenceState::Applied);
-    // What moved is what is reported — not the rule's standing figure.
     assert_eq!(
         february
             .amount
@@ -425,8 +401,6 @@ async fn revising_a_rule_leaves_what_already_ran_alone() {
     .await
     .unwrap();
 
-    // February already happened at 1200 and is a Fact. The rule now expects
-    // 1300 from here on; neither statement corrects the other.
     assert_eq!(level(&e, &checking).await, "-1200");
     let stored = store::recurrence::get(&e.store.pool, &rule)
         .await
@@ -441,7 +415,6 @@ async fn revising_a_rule_leaves_what_already_ran_alone() {
         "-1300"
     );
     assert_eq!(stored.revision, 2);
-    // The anchor was not silently reset, so future dates keep their phase.
     assert_eq!(
         stored.anchor_at,
         store::facts::instant(at("2026-01-01T00:00:00Z"))
@@ -487,8 +460,6 @@ async fn a_stale_rule_edit_is_refused() {
 
 #[tokio::test]
 async fn a_rule_applied_change_is_correctable_like_any_other() {
-    // The point of applying through the ordinary capture path: nothing
-    // downstream needs to know a rule was involved.
     let e = engine().await;
     let (checking, rent) = setup(&e).await;
     let rule = monthly(&e, &checking, &rent, "-1200").await;
@@ -537,8 +508,6 @@ async fn a_rule_applied_change_is_correctable_like_any_other() {
 
 #[tokio::test]
 async fn the_occurrence_key_is_what_makes_applying_idempotent() {
-    // Documents the mechanism the design leans on, so a future change to the
-    // key format cannot quietly remove the protection.
     let e = engine().await;
     let (checking, rent) = setup(&e).await;
     let rule = monthly(&e, &checking, &rent, "-1200").await;
@@ -565,9 +534,6 @@ async fn the_occurrence_key_is_what_makes_applying_idempotent() {
 
 #[tokio::test]
 async fn a_compound_rule_that_lands_on_a_weekday_applies_end_to_end() {
-    // The fine control asked for, proven through the Action a surface calls
-    // rather than only in the pure kernel: a step summed from four units, then
-    // rolled forward onto a chosen weekday.
     let e = engine().await;
     let (checking, rent) = setup(&e).await;
 
@@ -602,7 +568,6 @@ async fn a_compound_rule_that_lands_on_a_weekday_applies_end_to_end() {
         .await
         .unwrap()
         .expect("the rule is readable");
-    // 1 January 2026 is a Thursday; the anchor itself rolls to the Friday.
     let due = at("2026-01-02T00:00:00Z");
     let found = store::recurrence::occurrences(
         &e.store.pool,
@@ -628,9 +593,7 @@ async fn a_compound_rule_that_lands_on_a_weekday_applies_end_to_end() {
     .await
     .unwrap();
 
-    // It moved the resource, exactly and once.
     assert_eq!(level(&e, &checking).await, "-1200.50");
-    // And the occurrence key names the landed instant, not the unlanded one.
     let replay = e
         .act(
             Action::ApplyRecurrenceOccurrence {
@@ -652,9 +615,6 @@ async fn a_compound_rule_that_lands_on_a_weekday_applies_end_to_end() {
 
 #[tokio::test]
 async fn a_date_the_landing_rule_moved_past_is_not_applicable() {
-    // The base date a landing rule rolled off is no longer a date the rule
-    // produces. Accepting it would let one occurrence be applied twice, once
-    // under each instant.
     let e = engine().await;
     let (checking, rent) = setup(&e).await;
     let rule = e
@@ -678,7 +638,6 @@ async fn a_date_the_landing_rule_moved_past_is_not_applicable() {
         .created
         .unwrap();
 
-    // The Thursday the step landed on before the roll.
     let refused = e
         .act(
             Action::ApplyRecurrenceOccurrence {
@@ -698,10 +657,6 @@ async fn a_date_the_landing_rule_moved_past_is_not_applicable() {
 
 #[tokio::test]
 async fn a_rule_that_never_advances_is_refused_before_it_is_written() {
-    // The sand guards this in the form, but the form is not the boundary. A
-    // cleared-out step deserializes fine — `{"every":{}}` is a valid Cadence
-    // shape — so if the Action wrote first and validated later, the result
-    // would be a rule that persists and then errors on every read of it.
     let e = engine().await;
     let (checking, rent) = setup(&e).await;
 
@@ -725,19 +680,10 @@ async fn a_rule_that_never_advances_is_refused_before_it_is_written() {
         .await;
     assert!(refused.is_err(), "a step with no components is not a rule");
 
-    // And nothing was written on the way to refusing.
     let rules = store::recurrence::all(&e.store.pool).await.unwrap();
     assert!(rules.is_empty(), "a refused rule must leave no row behind");
 }
 
-// ---- rules that change state, not just numbers
-//
-// The original rule could only add a number to a Record, which is the first
-// caller's shape rather than a statement about rules. These prove the shapes
-// that shape could not express.
-
-/// A task Record and two status concepts, the vocabulary a kanban column or a
-/// relation trail buckets by.
 async fn board(e: &Engine) -> (String, String, String) {
     let wip = store::concepts::create(&e.store.pool, "wip", &[])
         .await
@@ -801,8 +747,6 @@ async fn a_rule_can_re_arm_a_task_without_carrying_an_amount() {
     let e = engine().await;
     let (task, _, _) = board(&e).await;
 
-    // "Set to -1" is what makes a task a Need again. Unlike a capture it is not
-    // cumulative, which is the whole reason it is a separate consequence.
     let rule = rule_with(
         &e,
         &task,
@@ -815,14 +759,10 @@ async fn a_rule_can_re_arm_a_task_without_carrying_an_amount() {
     apply(&e, &rule, "2026-01-02T00:00:00Z").await;
     assert_eq!(level(&e, &task).await, "-1");
 
-    // A second day sets it to -1 again rather than to -2.
     apply(&e, &rule, "2026-01-03T00:00:00Z").await;
     assert_eq!(level(&e, &task).await, "-1");
 }
 
-// ---- rules that act without anybody pressing anything
-
-/// Build a rule on `target` with a chosen cadence and anchor.
 async fn rule_every(
     e: &Engine,
     target: &str,
@@ -852,9 +792,6 @@ async fn rule_every(
 
 #[tokio::test]
 async fn a_weekly_habit_re_arms_itself_with_nobody_pressing_apply() {
-    // The whole point of the pillar. A person declares "every week this becomes
-    // a Need again" once; the wheel does it every week after that. Needing a
-    // click each Monday would mean the declaration said nothing.
     let e = engine().await;
     let (task, _, _) = board(&e).await;
 
@@ -869,10 +806,8 @@ async fn a_weekly_habit_re_arms_itself_with_nobody_pressing_apply() {
     )
     .await;
 
-    // Declaring moves nothing, exactly as before.
     assert_eq!(level(&e, &task).await, "0");
 
-    // The first Monday arrives and nobody is here.
     e.fire_due_rules(at("2026-03-02T07:00:00Z")).await.unwrap();
     assert_eq!(
         level(&e, &task).await,
@@ -880,7 +815,6 @@ async fn a_weekly_habit_re_arms_itself_with_nobody_pressing_apply() {
         "a declared rule must act on its own"
     );
 
-    // The person ticks it off.
     e.act(
         Action::SetQuantity {
             target: task.clone(),
@@ -892,12 +826,9 @@ async fn a_weekly_habit_re_arms_itself_with_nobody_pressing_apply() {
     .unwrap();
     assert_eq!(level(&e, &task).await, "0");
 
-    // Same beat again: the date already ran, so nothing repeats it. Without
-    // this the wheel would undo the person's tick on the very next heartbeat.
     e.fire_due_rules(at("2026-03-02T09:00:00Z")).await.unwrap();
     assert_eq!(level(&e, &task).await, "0");
 
-    // Next week it re-arms by itself.
     e.fire_due_rules(at("2026-03-09T07:00:00Z")).await.unwrap();
     assert_eq!(level(&e, &task).await, "-1");
     let _ = rule;
@@ -905,8 +836,6 @@ async fn a_weekly_habit_re_arms_itself_with_nobody_pressing_apply() {
 
 #[tokio::test]
 async fn a_cell_that_slept_owes_every_date_it_missed() {
-    // Three missed rents are three rents. Collapsing them to one would quietly
-    // decide that time spent asleep costs nothing.
     let e = engine().await;
     let (task, _, _) = board(&e).await;
 
@@ -921,16 +850,13 @@ async fn a_cell_that_slept_owes_every_date_it_missed() {
     )
     .await;
 
-    // Woken on the fourth day: the 1st, 2nd, 3rd and 4th are all owed.
     e.fire_due_rules(at("2026-03-04T08:00:00Z")).await.unwrap();
     assert_eq!(level(&e, &task).await, "-8");
 
-    // And a second beat in the same window owes nothing further.
     e.fire_due_rules(at("2026-03-04T09:00:00Z")).await.unwrap();
     assert_eq!(level(&e, &task).await, "-8");
 }
 
-/// A rule with an *if*: cadence, condition, gate, carry, consequences.
 #[allow(clippy::too_many_arguments)]
 async fn conditional_rule(
     e: &Engine,
@@ -964,9 +890,6 @@ async fn conditional_rule(
 
 #[tokio::test]
 async fn a_rule_can_look_before_it_acts() {
-    // "Every day, but only when stock is low." The date arriving is half a
-    // reason; the condition is the other half, and it is asked against the
-    // world as it stands at the moment of firing.
     let e = engine().await;
     let stock = store::records::create(
         &e.store.pool,
@@ -1005,12 +928,9 @@ async fn a_rule_can_look_before_it_acts() {
     )
     .await;
 
-    // Stock is 8, so the gate blocks and every date passes untouched.
     e.fire_due_rules(at("2026-03-04T08:00:00Z")).await.unwrap();
     assert_eq!(level(&e, &stock).await, "8", "a blocked gate must not act");
 
-    // A blocked date is not spent: the answer can change without the rule
-    // changing, so it is asked again rather than being marked done.
     e.act(
         Action::SetQuantity {
             target: stock.clone(),
@@ -1031,10 +951,6 @@ async fn a_rule_can_look_before_it_acts() {
 
 #[tokio::test]
 async fn the_carry_decides_what_the_consequence_receives() {
-    // The canonical rule, ported off f64: `-1 * freq(...)` used to carry -1
-    // into a Record. Here the same separation shows without a timer — the
-    // condition computes 8, the gate passes, and the carry hands over -1
-    // instead, because what to test and what to write are two decisions.
     let e = engine().await;
     let (task, _, _) = board(&e).await;
     e.act(
@@ -1062,14 +978,12 @@ async fn the_carry_decides_what_the_consequence_receives() {
     )
     .await;
 
-    // One date fires and the carried -1 is what moves, not the 8 it tested.
     e.fire_due_rules(at("2026-03-01T08:00:00Z")).await.unwrap();
     assert_eq!(level(&e, &task).await, "7");
 }
 
 #[tokio::test]
 async fn a_condition_that_cannot_be_read_is_refused_when_it_is_written() {
-    // Not at 3am inside a heartbeat with nobody watching.
     let e = engine().await;
     let (task, _, _) = board(&e).await;
     let refused = e
@@ -1092,8 +1006,6 @@ async fn a_condition_that_cannot_be_read_is_refused_when_it_is_written() {
         .await;
     assert!(refused.is_err(), "an unreadable condition must not store");
 
-    // And a gate with nothing to gate is refused too: dropping it silently
-    // would turn a rule that fires sometimes into one that fires always.
     let refused = e
         .act(
             Action::CreateRecurrence {
@@ -1117,9 +1029,6 @@ async fn a_condition_that_cannot_be_read_is_refused_when_it_is_written() {
 
 #[tokio::test]
 async fn a_skipped_date_is_not_applied_by_the_wheel() {
-    // Skipping ahead of the beat is how a person says "not this one" now that
-    // due dates apply themselves. If the wheel ignored a skip, declining would
-    // be a button that does nothing but relabel what happens anyway.
     let e = engine().await;
     let (task, _, _) = board(&e).await;
 
@@ -1144,7 +1053,6 @@ async fn a_skipped_date_is_not_applied_by_the_wheel() {
     .await
     .unwrap();
 
-    // The 1st and 3rd are owed; the 2nd was declined.
     e.fire_due_rules(at("2026-03-03T08:00:00Z")).await.unwrap();
     assert_eq!(
         level(&e, &task).await,
@@ -1152,7 +1060,6 @@ async fn a_skipped_date_is_not_applied_by_the_wheel() {
         "the declined date must not run"
     );
 
-    // Taking the decision back makes it owed again.
     e.act(
         Action::UnskipRecurrenceOccurrence {
             recurrence: rule.clone(),
@@ -1168,9 +1075,6 @@ async fn a_skipped_date_is_not_applied_by_the_wheel() {
 
 #[tokio::test]
 async fn a_paused_rule_acts_for_nobody() {
-    // Pausing means "stop acting for me", including for dates that already fell
-    // due. A pause that only hid the future while the wheel kept firing would
-    // be the most surprising possible reading of the word.
     let e = engine().await;
     let (task, _, _) = board(&e).await;
 
@@ -1242,7 +1146,6 @@ async fn moving_a_card_between_columns_is_one_rule() {
         .unwrap();
     assert!(!concepts.contains(&wip), "the old column is left");
     assert!(concepts.contains(&done), "the new column is entered");
-    // Nothing about a quantity was declared, so nothing moved one.
     assert_eq!(level(&e, &task).await, "0");
 }
 
@@ -1259,10 +1162,6 @@ async fn a_rule_that_moves_no_quantity_still_records_that_it_ran() {
     )
     .await;
 
-    // Applying is recorded by an entry carrying the occurrence's request id.
-    // A concept-only rule appends no amount, so without a zero-delta entry
-    // nothing would mark the date done: it would read as due forever and
-    // re-apply every time somebody pressed the button.
     apply(&e, &rule, "2026-01-02T00:00:00Z").await;
     let applied = store::recurrence::applied(
         &e.store.pool,
@@ -1280,9 +1179,6 @@ async fn a_rule_that_moves_no_quantity_still_records_that_it_ran() {
 async fn applying_a_state_changing_rule_twice_changes_nothing_the_second_time() {
     let e = engine().await;
     let (task, _, _) = board(&e).await;
-    // `add-quantity` is the consequence that would actually double, which is
-    // why the guard has to run before any consequence rather than relying on
-    // the entry's UNIQUE request id to refuse the capture afterwards.
     let rule = rule_with(
         &e,
         &task,
@@ -1338,15 +1234,12 @@ async fn deleting_a_rule_removes_its_future_and_keeps_what_it_already_did() {
     .await
     .unwrap();
 
-    // The rule is gone from every read surface.
     assert!(
         store::recurrence::get(&e.store.pool, &rule)
             .await
             .unwrap()
             .is_none()
     );
-    // What it already applied is an ordinary entry and an ordinary Fact. The
-    // rule proposed that change; it never owned it.
     assert_eq!(level(&e, &checking).await, "-1200");
 }
 
@@ -1364,7 +1257,6 @@ async fn deleting_a_rule_that_is_not_there_is_an_error_not_a_silence() {
     assert!(refused.is_err());
 }
 
-/// A plain Record, ready to be given a rhythm or acted on.
 async fn record(e: &Engine, slug: &str) -> String {
     store::records::create(
         &e.store.pool,
@@ -1383,19 +1275,10 @@ async fn record(e: &Engine, slug: &str) -> String {
 
 #[tokio::test]
 async fn a_rhythm_is_a_number_a_rule_can_multiply() {
-    // The unification, in one rule. A schedule is not a separate kind of object
-    // a rule can only *be* — it is a reading a rule can *do arithmetic on*.
-    //
-    // `-1 * freq(@payday)` is worth zero on the six days nothing lands and -1
-    // on the seventh. So a rule that is looked at every single day acts exactly
-    // weekly, using nothing but the threshold every rule already has. No second
-    // trigger, no timer object, no separate table: the gate does it.
     let e = engine().await;
     let payday = record(&e, "payday").await;
     let habit = record(&e, "habit").await;
 
-    // The rhythm: every seven days from a Monday. It is an ordinary rule, which
-    // is the point — there is nothing else a schedule could be.
     rule_every(
         &e,
         &payday,
@@ -1405,8 +1288,6 @@ async fn a_rhythm_is_a_number_a_rule_can_multiply() {
     )
     .await;
 
-    // The reader: looked at daily, one day earlier, so its dates and the
-    // rhythm's are deliberately out of phase.
     conditional_rule(
         &e,
         &habit,
@@ -1419,7 +1300,6 @@ async fn a_rhythm_is_a_number_a_rule_can_multiply() {
     )
     .await;
 
-    // Four days in, one payday has passed.
     e.fire_due_rules(at("2026-03-05T12:00:00Z")).await.unwrap();
     assert_eq!(
         level(&e, &habit).await,
@@ -1427,7 +1307,6 @@ async fn a_rhythm_is_a_number_a_rule_can_multiply() {
         "the daily rule must have acted once, on the payday"
     );
 
-    // Three more days, still the same week: the gate keeps blocking.
     e.fire_due_rules(at("2026-03-08T12:00:00Z")).await.unwrap();
     assert_eq!(
         level(&e, &habit).await,
@@ -1435,7 +1314,6 @@ async fn a_rhythm_is_a_number_a_rule_can_multiply() {
         "a day with no payday in it must leave the record alone"
     );
 
-    // The next Monday lands and it acts again.
     e.fire_due_rules(at("2026-03-09T12:00:00Z")).await.unwrap();
     assert_eq!(
         level(&e, &habit).await,
@@ -1446,13 +1324,6 @@ async fn a_rhythm_is_a_number_a_rule_can_multiply() {
 
 #[tokio::test]
 async fn a_rhythm_a_sleeping_cell_missed_is_counted_once_per_date() {
-    // The failure this rules out is the one that makes catch-up untrustworthy:
-    // a Cell offline for three weeks wakes up and either forgets two paydays or
-    // counts twenty-one of them.
-    //
-    // Neither can happen, because each date a rule owes reads over the gap back
-    // to *its own* previous date. Those windows tile the timeline exactly — no
-    // instant falls in two of them, and none falls in none.
     let e = engine().await;
     let payday = record(&e, "payday").await;
     let habit = record(&e, "habit").await;
@@ -1477,7 +1348,6 @@ async fn a_rhythm_a_sleeping_cell_missed_is_counted_once_per_date() {
     )
     .await;
 
-    // Asleep from the first of March to the twenty-second: three Mondays.
     e.fire_due_rules(at("2026-03-22T12:00:00Z")).await.unwrap();
     assert_eq!(
         level(&e, &habit).await,
@@ -1485,7 +1355,6 @@ async fn a_rhythm_a_sleeping_cell_missed_is_counted_once_per_date() {
         "three paydays passed, so three is the only honest answer"
     );
 
-    // And waking again changes nothing: every date it owed is spent.
     e.fire_due_rules(at("2026-03-22T18:00:00Z")).await.unwrap();
     assert_eq!(
         level(&e, &habit).await,
@@ -1496,9 +1365,6 @@ async fn a_rhythm_a_sleeping_cell_missed_is_counted_once_per_date() {
 
 #[tokio::test]
 async fn a_rhythm_nobody_declared_is_zero_rather_than_a_refusal() {
-    // A condition may name a Record that has no rule on it yet. That is not a
-    // typo to refuse — it is "that rhythm has not happened", which is true, and
-    // it lets the arithmetic be written before the schedule it will watch.
     let e = engine().await;
     let quiet = record(&e, "quiet").await;
     let habit = record(&e, "habit").await;
@@ -1521,8 +1387,6 @@ async fn a_rhythm_nobody_declared_is_zero_rather_than_a_refusal() {
         "0",
         "a Record with no rhythm on it must read as zero, not fire"
     );
-    // The Record exists; nothing was refused. Prove the reference resolved by
-    // giving it a rhythm and watching the same rule start acting.
     rule_every(
         &e,
         &quiet,
@@ -1541,15 +1405,6 @@ async fn a_rhythm_nobody_declared_is_zero_rather_than_a_refusal() {
 
 #[tokio::test]
 async fn a_date_applied_by_hand_moves_the_record_once() {
-    // The same date, pressed rather than fired. A rule whose condition reads
-    // the Record it acts on is the shape that catches a double-apply: the
-    // change it makes comes straight back round to it, and while the apply is
-    // still running the entry marking the date done does not exist yet.
-    //
-    // Both roads to an apply must therefore be one firing. When only the
-    // heartbeat was guarded, pressing apply in the inbox moved the number
-    // twice, and it was the *manual* path — the one a person watches — that
-    // was wrong.
     let e = engine().await;
     let stock = record(&e, "apples.stock").await;
     e.act(
@@ -1598,14 +1453,6 @@ async fn a_date_applied_by_hand_moves_the_record_once() {
 
 #[tokio::test]
 async fn a_rule_can_set_a_record_to_a_figure_its_own_arithmetic_worked_out() {
-    // The sentence this whole merge exists for: "the quantity of a record
-    // changes according to a frequency, automatically, forever."
-    //
-    // `-1 * freq(@payday)` is the reading. On a payday it is worth -1, on every
-    // other day exactly zero — so the ordinary `!=0` gate makes a rule that is
-    // looked at daily act weekly, and `set-quantity` with no figure of its own
-    // receives the number the reading worked out. No timer object, no second
-    // table, no second kind of trigger.
     let e = engine().await;
     let payday = record(&e, "payday").await;
     let habit = record(&e, "habit").await;
@@ -1630,7 +1477,6 @@ async fn a_rule_can_set_a_record_to_a_figure_its_own_arithmetic_worked_out() {
     )
     .await;
 
-    // Monday: the reading is -1, so the Record is set to -1.
     e.fire_due_rules(at("2026-03-02T12:00:00Z")).await.unwrap();
     assert_eq!(
         level(&e, &habit).await,
@@ -1638,7 +1484,6 @@ async fn a_rule_can_set_a_record_to_a_figure_its_own_arithmetic_worked_out() {
         "the payday must set the level"
     );
 
-    // The person answers it: back to zero.
     e.act(
         Action::SetQuantity {
             target: habit.clone(),
@@ -1650,8 +1495,6 @@ async fn a_rule_can_set_a_record_to_a_figure_its_own_arithmetic_worked_out() {
     .unwrap();
     assert_eq!(level(&e, &habit).await, "0");
 
-    // The rest of the week the reading is zero, so nothing touches it — which
-    // is the difference between a habit and a nag.
     e.fire_due_rules(at("2026-03-06T12:00:00Z")).await.unwrap();
     assert_eq!(
         level(&e, &habit).await,
@@ -1659,11 +1502,370 @@ async fn a_rule_can_set_a_record_to_a_figure_its_own_arithmetic_worked_out() {
         "a day with no payday must be quiet"
     );
 
-    // Next Monday it re-arms itself, with nobody pressing anything.
     e.fire_due_rules(at("2026-03-09T12:00:00Z")).await.unwrap();
     assert_eq!(
         level(&e, &habit).await,
         "-1",
         "and the next week it comes back on its own"
     );
+}
+
+async fn plain(e: &Engine, slug: &str, quantity: f64) -> String {
+    let uid = store::records::create(
+        &e.store.pool,
+        NewRecord {
+            slug: Some(slug),
+            kind: RecordKind::Plain,
+            head: slug,
+            body: "",
+            quantity: store::exact::zero(),
+        },
+    )
+    .await
+    .unwrap()
+    .uid;
+    e.act(
+        Action::SetQuantity {
+            target: uid.clone(),
+            value: quantity,
+        },
+        None,
+    )
+    .await
+    .unwrap();
+    uid
+}
+
+async fn assert_concept(e: &Engine, subject: &str, concept: &str) {
+    e.act(
+        Action::AssertRecord {
+            subject: subject.to_string(),
+            predicate: concept.to_string(),
+            object: None,
+            quantity: None,
+            unit: None,
+        },
+        None,
+    )
+    .await
+    .unwrap();
+}
+
+#[tokio::test]
+async fn an_assertion_reads_as_the_sum_of_its_members_and_writes_to_all_of_them() {
+    let e = engine().await;
+    store::concepts::create(&e.store.pool, "foo", &[])
+        .await
+        .unwrap();
+    store::concepts::create(&e.store.pool, "bar", &[])
+        .await
+        .unwrap();
+
+    let left = plain(&e, "left", 3.0).await;
+    let right = plain(&e, "right", 4.0).await;
+    assert_concept(&e, &left, "foo").await;
+    assert_concept(&e, &right, "foo").await;
+
+    let first = plain(&e, "first", 0.0).await;
+    let second = plain(&e, "second", 99.0).await;
+    assert_concept(&e, &first, "bar").await;
+    assert_concept(&e, &second, "bar").await;
+
+    let ticker = plain(&e, "ticker", 0.0).await;
+    let rule = conditional_rule(
+        &e,
+        &ticker,
+        Cadence::every_days(1),
+        "2026-03-01T07:00:00Z",
+        "#foo * 2",
+        "always",
+        "value",
+        vec![Consequence::SetQuantityWhere {
+            assertion: "foo".to_string(),
+            value: None,
+        }],
+    )
+    .await;
+    let _ = rule;
+
+    e.fire_due_rules(at("2026-03-01T08:00:00Z")).await.unwrap();
+
+    assert_eq!(
+        level(&e, &left).await,
+        "14",
+        "3 + 4 doubled, written to every member of the set the rule names"
+    );
+    assert_eq!(level(&e, &right).await, "14");
+    assert_eq!(
+        level(&e, &first).await,
+        "0",
+        "a Record outside the named assertion is untouched"
+    );
+    assert_eq!(level(&e, &second).await, "99");
+}
+
+#[tokio::test]
+async fn an_assertion_nobody_has_declared_blocks_the_rule() {
+    let e = engine().await;
+    let ticker = plain(&e, "ticker", 0.0).await;
+    let refused = e
+        .act(
+            Action::CreateRecurrence {
+                target: ticker.clone(),
+                consequences: vec![Consequence::SetQuantityWhere {
+                    assertion: "nosuch".to_string(),
+                    value: None,
+                }],
+                condition: Some("@ticker".to_string()),
+                gate: Some("always".to_string()),
+                carry: Some("value".to_string()),
+                note: None,
+                cadence: Cadence::every_days(1),
+                anchor_at: Some("2026-03-01T07:00:00Z".to_string()),
+                request_id: Some(nucleus::new_uid("req")),
+            },
+            None,
+        )
+        .await;
+    assert!(
+        refused.is_err(),
+        "a consequence naming a concept nothing answers to must be refused when written"
+    );
+}
+
+#[tokio::test]
+async fn an_assertion_with_no_members_reads_as_zero_rather_than_refusing() {
+    let e = engine().await;
+    store::concepts::create(&e.store.pool, "empty", &[])
+        .await
+        .unwrap();
+    let ticker = plain(&e, "ticker", 5.0).await;
+    conditional_rule(
+        &e,
+        &ticker,
+        Cadence::every_days(1),
+        "2026-03-01T07:00:00Z",
+        "#empty",
+        "!=0",
+        "value",
+        vec![Consequence::AddQuantity {
+            delta: Some(nucleus::DecimalValue::parse_inferred("1").unwrap()),
+        }],
+    )
+    .await;
+
+    e.fire_due_rules(at("2026-03-01T08:00:00Z")).await.unwrap();
+    assert_eq!(
+        level(&e, &ticker).await,
+        "5",
+        "a declared concept with nothing asserted on it is zero, and zero blocks the gate"
+    );
+}
+
+#[tokio::test]
+async fn renaming_a_concept_leaves_the_rules_that_name_it_pointing_at_it() {
+    let e = engine().await;
+    let first = store::concepts::create(&e.store.pool, "target", &[])
+        .await
+        .unwrap();
+    let held = plain(&e, "held", 0.0).await;
+    assert_concept(&e, &held, "target").await;
+
+    let ticker = plain(&e, "ticker", 7.0).await;
+    conditional_rule(
+        &e,
+        &ticker,
+        Cadence::every_days(1),
+        "2026-03-01T07:00:00Z",
+        "@ticker",
+        "always",
+        "value",
+        vec![Consequence::SetQuantityWhere {
+            assertion: "target".to_string(),
+            value: None,
+        }],
+    )
+    .await;
+
+    store::concepts::rename(&e.store.pool, &first, "renamed")
+        .await
+        .unwrap();
+    store::concepts::create(&e.store.pool, "target", &[])
+        .await
+        .unwrap();
+    let impostor = plain(&e, "impostor", 0.0).await;
+    assert_concept(&e, &impostor, "target").await;
+
+    e.fire_due_rules(at("2026-03-01T08:00:00Z")).await.unwrap();
+
+    assert_eq!(
+        level(&e, &held).await,
+        "7",
+        "the rule follows the concept it was pointed at, whatever it is now called"
+    );
+    assert_eq!(
+        level(&e, &impostor).await,
+        "0",
+        "a different concept that later takes the old name must not inherit the rule"
+    );
+}
+
+#[tokio::test]
+async fn any_name_a_concept_answers_to_reaches_the_same_concept() {
+    let e = engine().await;
+    let fruit = store::concepts::create(&e.store.pool, "fruit", &[])
+        .await
+        .unwrap();
+    store::concepts::add_name(&e.store.pool, &fruit, "pt", "fruta")
+        .await
+        .unwrap();
+    let apple = plain(&e, "apple", 3.0).await;
+    assert_concept(&e, &apple, "fruit").await;
+
+    let ticker = plain(&e, "ticker", 0.0).await;
+    conditional_rule(
+        &e,
+        &ticker,
+        Cadence::every_days(1),
+        "2026-03-01T07:00:00Z",
+        "#fruta * 2",
+        "always",
+        "value",
+        vec![Consequence::SetQuantityWhere {
+            assertion: "fruta".to_string(),
+            value: None,
+        }],
+    )
+    .await;
+
+    e.fire_due_rules(at("2026-03-01T08:00:00Z")).await.unwrap();
+    assert_eq!(
+        level(&e, &apple).await,
+        "6",
+        "a rule written in one language reads and writes the same concept as one written in another"
+    );
+}
+
+#[tokio::test]
+async fn a_name_two_concepts_answer_to_is_refused_rather_than_guessed() {
+    let e = engine().await;
+    let colour = store::concepts::create(&e.store.pool, "orange.colour", &[])
+        .await
+        .unwrap();
+    let fruit = store::concepts::create(&e.store.pool, "orange.fruit", &[])
+        .await
+        .unwrap();
+    store::concepts::add_name(&e.store.pool, &colour, "en", "orange")
+        .await
+        .unwrap();
+    store::concepts::add_name(&e.store.pool, &fruit, "en", "orange")
+        .await
+        .unwrap();
+
+    let ticker = plain(&e, "ticker", 1.0).await;
+    let refused = e
+        .act(
+            Action::CreateRecurrence {
+                target: ticker.clone(),
+                consequences: vec![Consequence::SetQuantityWhere {
+                    assertion: "orange".to_string(),
+                    value: None,
+                }],
+                condition: Some("@ticker".to_string()),
+                gate: Some("always".to_string()),
+                carry: Some("value".to_string()),
+                note: None,
+                cadence: Cadence::every_days(1),
+                anchor_at: Some("2026-03-01T07:00:00Z".to_string()),
+                request_id: Some(nucleus::new_uid("req")),
+            },
+            None,
+        )
+        .await;
+    assert!(
+        refused.is_err(),
+        "a name two concepts answer to must be refused at authoring, not resolved by luck"
+    );
+}
+
+#[tokio::test]
+async fn a_capture_files_under_a_concept_named_rather_than_identified() {
+    let e = engine().await;
+    store::concepts::create(&e.store.pool, "groceries", &[])
+        .await
+        .unwrap();
+    let wallet = plain(&e, "wallet", 0.0).await;
+    let rule = e
+        .act(
+            Action::CreateRecurrence {
+                target: wallet.clone(),
+                consequences: vec![Consequence::CaptureEntry {
+                    amount: nucleus::DecimalValue::parse_inferred("-12").unwrap(),
+                    concept: Some("groceries".to_string()),
+                }],
+                condition: None,
+                gate: None,
+                carry: None,
+                note: None,
+                cadence: Cadence::every_days(1),
+                anchor_at: Some("2026-03-01T07:00:00Z".to_string()),
+                request_id: Some(nucleus::new_uid("req")),
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .expect("a rule is created");
+    let _ = rule;
+
+    e.fire_due_rules(at("2026-03-01T08:00:00Z")).await.unwrap();
+    assert_eq!(
+        level(&e, &wallet).await,
+        "-12",
+        "a concept given by name must reach the capture, not be stored as a token nothing resolves"
+    );
+}
+
+#[tokio::test]
+async fn a_canonical_name_wins_over_another_concepts_alias_for_the_same_word() {
+    let e = engine().await;
+    store::concepts::create(&e.store.pool, "bank", &[])
+        .await
+        .unwrap();
+    let river = store::concepts::create(&e.store.pool, "riverside", &[])
+        .await
+        .unwrap();
+    store::concepts::add_name(&e.store.pool, &river, "en", "bank")
+        .await
+        .unwrap();
+
+    let money = plain(&e, "money", 4.0).await;
+    let shore = plain(&e, "shore", 0.0).await;
+    assert_concept(&e, &money, "bank").await;
+    assert_concept(&e, &shore, "riverside").await;
+
+    let ticker = plain(&e, "ticker", 9.0).await;
+    conditional_rule(
+        &e,
+        &ticker,
+        Cadence::every_days(1),
+        "2026-03-01T07:00:00Z",
+        "@ticker",
+        "always",
+        "value",
+        vec![Consequence::SetQuantityWhere {
+            assertion: "bank".to_string(),
+            value: None,
+        }],
+    )
+    .await;
+
+    e.fire_due_rules(at("2026-03-01T08:00:00Z")).await.unwrap();
+    assert_eq!(
+        level(&e, &money).await,
+        "9",
+        "a word that is one concept's canonical name means that concept, alias or no alias"
+    );
+    assert_eq!(level(&e, &shore).await, "0");
 }

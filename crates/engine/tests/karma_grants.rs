@@ -1,7 +1,3 @@
-//! K5.1 through the Engine boundary: typed grant Actions, the principal derived
-//! from the installed key rather than from any payload, and the Protein
-//! projection a Karma sand would render.
-
 use std::collections::{BTreeMap, BTreeSet};
 
 use chrono::{TimeZone, Utc};
@@ -32,7 +28,6 @@ async fn typed_grant_actions_walk_the_lifecycle_and_hold_cas() {
     let created = engine.act_at(create.clone(), None, now(0)).await.unwrap();
     let grant_uid = created.created.clone().unwrap();
     assert_eq!(created.facts.len(), 1);
-    // The Fact is attributed to the Person who signed it, not to a payload field.
     assert_eq!(created.facts[0].actor_uid.as_deref(), Some(PERSON_UID));
 
     let replay = engine.act_at(create, None, now(0)).await.unwrap();
@@ -46,7 +41,6 @@ async fn typed_grant_actions_walk_the_lifecycle_and_hold_cas() {
     assert_eq!(handle.status, GrantStatus::Draft);
     assert_eq!(handle.principal_person_uid, PERSON_UID);
 
-    // A stale expectation is a typed conflict, shared with the Program family.
     let stale = engine
         .act_at(
             Action::ActivateKarmaGrant {
@@ -132,8 +126,6 @@ async fn typed_grant_actions_walk_the_lifecycle_and_hold_cas() {
     );
 }
 
-/// Nothing may sign a grant except an installed Person key, and an authenticated
-/// session may not borrow that key to grant authority to someone else.
 #[tokio::test]
 async fn a_grant_can_only_be_signed_by_its_own_principal() {
     let engine = Engine::open_memory().await.unwrap();
@@ -144,7 +136,6 @@ async fn a_grant_can_only_be_signed_by_its_own_principal() {
         grant: spec(&program_uid, two_capabilities()),
     };
 
-    // No installed key: nothing can be signed, so nothing is granted.
     let unsigned = engine.act_at(create(), None, now(0)).await.unwrap_err();
     assert!(
         format!("{unsigned:?}").contains("installed signing key"),
@@ -156,7 +147,6 @@ async fn a_grant_can_only_be_signed_by_its_own_principal() {
         .await
         .unwrap();
 
-    // A session bound to a different Person cannot use this Cell's key.
     let intruder = privileged_user(&engine, OTHER_PERSON_UID, "intruder").await;
     let borrowed = engine
         .act_at(create(), Some(intruder.to_string()), now(1))
@@ -167,7 +157,6 @@ async fn a_grant_can_only_be_signed_by_its_own_principal() {
         "expected a principal mismatch refusal, got {borrowed:?}"
     );
 
-    // The Person who owns the key may act through their own session.
     let owner = privileged_user(&engine, PERSON_UID, "owner").await;
     let committed = engine
         .act_at(create(), Some(owner.to_string()), now(2))
@@ -185,7 +174,6 @@ async fn a_grant_can_only_be_signed_by_its_own_principal() {
     );
 }
 
-/// A session without the Karma permission is refused before any signing happens.
 #[tokio::test]
 async fn grant_actions_require_the_karma_permission() {
     let engine = signed_engine().await;
@@ -194,7 +182,6 @@ async fn grant_actions_require_the_karma_permission() {
     let bystander = store::auth::ensure_role(&engine.store.pool, "grant-bystander")
         .await
         .unwrap();
-    // The Person already exists; a credential is what lets them log in.
     let user_id = store::auth::create_credential(
         &engine.store.pool,
         PERSON_UID,
@@ -255,7 +242,6 @@ async fn protein_projects_grants_with_provenance_and_ready_actions() {
         row["signature_provenance"]["signer_person_uid"]["uid"].as_str(),
         Some(PERSON_UID)
     );
-    // A draft grant offers activation; an authority grant never offers widening.
     assert_eq!(row["capabilities"]["activate"].as_bool(), Some(true));
     assert_eq!(row["capabilities"]["narrow"].as_bool(), Some(true));
     assert!(row["action_templates"].get("widen").is_none());
@@ -267,16 +253,13 @@ async fn protein_projects_grants_with_provenance_and_ready_actions() {
         row["action_templates"]["activate"]["expected_handle_revision"].as_u64(),
         Some(1)
     );
-    // The whole point of K5.1: authority exists and still causes nothing.
     assert_eq!(row["authorizes_effects"].as_bool(), Some(false));
 
-    // K5.2: the grant carries its budget, and authority still executes nothing.
     assert!(row["budget"].is_object(), "the budget is projected");
     assert_eq!(
         row["effect_blocking_reasons"][0].as_str(),
         Some("karma_execution_not_implemented")
     );
-    // No intent exists until someone accepts an `act` proposal against a grant.
     assert!(karma_rows(&engine, "intent").await.is_empty());
 
     let revisions = karma_rows(&engine, "grant_revision").await;
@@ -289,10 +272,6 @@ async fn protein_projects_grants_with_provenance_and_ready_actions() {
     );
 }
 
-/// The accept-time authorization bridge fails closed at the Engine boundary:
-/// naming a grant for a candidate that does not exist authorizes nothing. The
-/// bridge's committing path is proven end-to-end in the store tests, where the
-/// Program/occurrence/run fixture that produces a real `act` candidate lives.
 #[tokio::test]
 async fn authorizing_an_unknown_candidate_creates_no_intent() {
     let engine = signed_engine().await;
@@ -358,7 +337,6 @@ async fn signed_engine() -> Engine {
     engine
 }
 
-/// A Person Record with a chosen uid, so a session can be bound to it.
 async fn person_record(engine: &Engine, person_uid: &str, slug: &str) {
     let organ = store::organs::local(&engine.store.pool)
         .await
@@ -380,7 +358,6 @@ async fn person_record(engine: &Engine, person_uid: &str, slug: &str) {
     .unwrap();
 }
 
-/// An app user with `karma:create` and `karma:update`, bound to one Person.
 async fn privileged_user(engine: &Engine, person_uid: &str, username: &str) -> String {
     person_record(engine, person_uid, username).await;
     let role_id = store::auth::ensure_role(&engine.store.pool, &format!("{username}-role"))

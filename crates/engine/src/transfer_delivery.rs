@@ -1,9 +1,3 @@
-//! Origin-authoritative cross-Cell Transfer delivery.
-//!
-//! This module deliberately does not use generic Sync. Transfer envelopes are
-//! recipient-specific, Organ-signed, and retain Person-authored proof without
-//! inserting remote Facts into the local Ledger chain.
-
 use std::collections::HashMap;
 
 use base64::Engine as _;
@@ -105,7 +99,6 @@ impl Engine {
         })
     }
 
-    /// Reject canonical Transfer work anywhere except the Cell that created it.
     pub async fn require_transfer_origin_authority(
         &self,
         transfer_uid: &str,
@@ -130,7 +123,6 @@ impl Engine {
         Ok(local.uid)
     }
 
-    /// Finish a recipient-redacted envelope with the dedicated local Organ key.
     pub async fn sign_transfer_envelope(
         &self,
         mut envelope: TransferEnvelopeV1,
@@ -247,8 +239,6 @@ impl Engine {
         Ok(())
     }
 
-    /// Verify transport authority and every included Person proof before an
-    /// isolated hosted/replica store is allowed to retain an envelope.
     pub async fn verify_transfer_envelope(
         &self,
         envelope: &TransferEnvelopeV1,
@@ -437,9 +427,6 @@ impl Engine {
         ))
     }
 
-    /// Build and durably enqueue one current recipient projection. Replaying
-    /// the same request id returns the original outbox row without rebuilding
-    /// bytes with a different timestamp.
     pub async fn enqueue_transfer_delivery(
         &self,
         transfer_uid: &str,
@@ -856,8 +843,6 @@ impl Engine {
         Ok(action)
     }
 
-    /// Verify, deduplicate and execute a Person-signed command without
-    /// entering trusted-local mode or substituting the origin Cell's identity.
     pub async fn accept_transfer_remote_command(
         &self,
         command: &TransferRemoteCommandV1,

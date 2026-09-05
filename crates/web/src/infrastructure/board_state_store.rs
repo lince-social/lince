@@ -63,9 +63,6 @@ fn load_state_from_disk(path: &PathBuf) -> Result<BoardState, String> {
     }
 }
 
-/// Non-destructive top-up for boards persisted before the Record pin existed:
-/// inject it into any workspace that doesn't already have one, leaving
-/// everything else (positions, other cards) untouched.
 fn ensure_record_pin(state: &mut BoardState) {
     for workspace in &mut state.workspaces {
         let already_present = workspace.cards.iter().any(|card| card.id == RECORD_PIN_ID);

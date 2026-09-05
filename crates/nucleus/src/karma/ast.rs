@@ -49,19 +49,6 @@ pub struct InputBinding {
 }
 
 impl ProgramAst {
-    /// Does this Program have a consequence anyone outside this Cell can
-    /// observe? (C7: the axis that decides whether running it on three Cells
-    /// means doing the thing three times.)
-    ///
-    /// The dividing line is NOT recurring vs reactive — reactive rules are the
-    /// worse case, since every Cell sees every change and so they fire more
-    /// often. It is whether the consequence leaves the machine. `Act` is the
-    /// only route that proceeds without a person: the other four end in
-    /// something someone reads and answers, and a person answering the same
-    /// proposal on one Cell is one answer however many Cells proposed it.
-    ///
-    /// A Program with no `RouteCandidate` at all answers `false` — it computes
-    /// and stops, which is the case where running everywhere is the point.
     pub fn is_externally_observable(&self) -> bool {
         self.nodes.values().any(|node| {
             matches!(
@@ -211,11 +198,6 @@ pub enum ExpressionAst {
         operator: BinaryOperator,
         left: Box<ExpressionAst>,
         right: Box<ExpressionAst>,
-        /// Present exactly when this is a multiply or divide over exact values.
-        /// Proof enforces that as an `iff`: a `precision` on an operation that
-        /// cannot use one is refused rather than ignored, because a field that
-        /// changes the revision hash without changing behaviour would give one
-        /// program two identities.
         #[serde(default, skip_serializing_if = "Option::is_none")]
         precision: Option<DecimalPrecision>,
     },
@@ -264,41 +246,19 @@ pub enum UnaryOperator {
     Negate,
 }
 
-/// How a multiply or divide lands on a representable decimal.
-///
-/// Neither operation is closed over fixed-point decimals — no scale represents
-/// `1/3`, and multiplying two scale-9 values needs 18 digits — so the author
-/// declares where the result sits instead of the implementation guessing. This
-/// rides in the AST, which means it is inside the revision hash: changing a
-/// rounding mode is a visible revision, not a silent change of answer.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DecimalPrecision {
     pub scale: u8,
     pub rounding: Rounding,
-    /// Required exactly when both sides carry a dimension, and forbidden
-    /// otherwise. See [`DeclaredUnit`].
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub result_unit: Option<DeclaredUnit>,
 }
 
-/// The unit an author assigns to a product or quotient of two dimensioned
-/// values.
-///
-/// Unit algebra is declared, never inferred. Scaling a quantity by a plain
-/// decimal — the percentage and rate cases, which is what most rules need —
-/// keeps its unit and needs nothing here. But `kg × kg` and `kg ÷ m` have no
-/// unit this system can name, and inventing `kg²` or quietly keeping the
-/// left-hand unit are both worse than asking: one fabricates a dimension, the
-/// other drops one.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
 pub enum DeclaredUnit {
-    /// The dimensions cancel. `total ÷ budget` is a ratio, and saying so is a
-    /// real statement about the rule, not an absence of one.
     Dimensionless,
-    Unit {
-        unit: TypedUid,
-    },
+    Unit { unit: TypedUid },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]

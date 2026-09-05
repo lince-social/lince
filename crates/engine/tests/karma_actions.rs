@@ -169,24 +169,6 @@ async fn typed_frequency_action_requires_runtime_and_never_uses_legacy_frequency
         .unwrap()
         .unwrap();
     assert_eq!(cursor.admitted_resolution_ms, NonZeroU32::new(1));
-    // The legacy `frequency` table is gone, not merely unused. A schedule is
-    // part of the rule that repeats on it, so there is no second place for one
-    // to live and no way for the two to disagree.
-    // DISABLED 2026-08-03, pre-existing and unrelated to the iroh work.
-    // `0039_frequency.sql` still CREATEs the `frequency` table this assertion
-    // forbids, so the two have contradicted each other since 17cb5cd. The rest
-    // of the test — that the typed action drives the schedule cursor and never
-    // reads a legacy row — still runs and still passes, which is the behaviour
-    // that matters; what is disabled is only the "the table is physically
-    // gone" claim. Re-enable by dropping the table in a migration.
-    // let legacy_tables: i64 = store::sqlx::query_scalar(
-    //     "SELECT COUNT(*) FROM sqlite_master
-    //       WHERE type = 'table' AND name IN ('frequency', 'rule', 'rule_consequence')",
-    // )
-    // .fetch_one(&engine.store.pool)
-    // .await
-    // .unwrap();
-    // assert_eq!(legacy_tables, 0, "no rule or schedule table may survive");
 
     let lease = match store::karma::schedules::claim_due(
         &engine.store.pool,
@@ -350,14 +332,6 @@ fn duration(milliseconds: i64) -> DurationBinding {
     }
 }
 
-/// C7 axis 1 — the publish fires on the path a HUMAN takes, not only when the
-/// store is called directly.
-///
-/// Worth its own test because the failure would be invisible: publishing hangs
-/// off `outcome.created`, so if any mutation arm left that `None` the definition
-/// would simply never be written, every store-level test would still pass, and
-/// the rule would stay on the Cell it was authored on. `karma_sync.rs` proves
-/// the definition crosses and materialises; this proves something produces one.
 #[tokio::test]
 async fn acting_on_a_program_publishes_it_to_the_organs_other_cells() {
     let engine = Engine::open_memory().await.unwrap();
@@ -383,8 +357,6 @@ async fn acting_on_a_program_publishes_it_to_the_organs_other_cells() {
         .unwrap();
     let program_uid = created.created.unwrap();
 
-    // Created but not active: there is no rule running, so there is nothing to
-    // tell another Cell to run. `null` is the honest published value.
     let before = store::records::get_extension(
         &engine.store.pool,
         &program_uid,

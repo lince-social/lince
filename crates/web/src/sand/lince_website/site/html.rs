@@ -20,8 +20,6 @@ pub fn page(
 ) -> String {
     let suffix = lang_suffix(t.lang_code);
 
-    // Prepare language suffixes and page links so generated pages point
-    // to the actual files produced by `main.rs` (e.g. `index.pt-br.html`).
     let home_href = format!("index{}.html", suffix);
     let blog_href = format!("blog{}.html", suffix);
     let link_en = format!("{}{}.html", current_page, "");

@@ -7,8 +7,6 @@ use super::failure::KarmaBoundaryError;
 pub const MAX_DECIMAL_SCALE: u8 = 18;
 const PARTS_PER_BILLION: u32 = 1_000_000_000;
 
-/// Exact fixed-scale decimal. The scale is part of the Rust type and its wire
-/// value always contains exactly `SCALE` fractional digits.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct FixedDecimal<const SCALE: u8> {
     mantissa: i128,
@@ -249,15 +247,3 @@ macro_rules! unit_interval_type {
 
 unit_interval_type!(Probability, "probability");
 unit_interval_type!(Confidence, "confidence");
-
-// There is deliberately no currency type here.
-//
-// A currency is a unit like any other. `Quantity { amount, unit }` already says
-// "this many of that thing", and a unit is an ordinary Record, so `10.00 @brl`
-// and `2.5 @kg` are the same shape and travel the same code path. A separate
-// money type bought nothing but a second spelling of the same idea, plus a
-// three-uppercase-letters rule that only ISO 4217 cares about.
-//
-// Converting between two units is a rule — multiply by a rate — not a kernel
-// feature. That is what makes "my ledger's own token is worth five of theirs"
-// expressible as someone's data instead of requiring a change here.

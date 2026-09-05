@@ -1,56 +1,17 @@
-//! First contact (Ontology §11, settled 2026-08-03).
-//!
-//! Only the ACQUISITION of a NodeId is ever at risk. Once you hold one,
-//! dialing it reaches that keypair or nothing — under iroh the address IS the
-//! key, so there is no wire left to substitute on. That single fact is what
-//! decides the whole shape of this module.
-//!
-//! So the ranked flows are:
-//!   a. **A QR code scanned in person.** The visual channel cannot be relayed
-//!      and you can see who you are handing it to. Best available.
-//!   b. **Pasted into a messaging app you already trust.** Equally strong —
-//!      that channel is already authenticated to that human.
-//!   c. Discovery plus a conversation — weakest, because a live relay passes
-//!      a conversational challenge unharmed. Acceptable only because (a) and
-//!      (b) cover the flows this product actually has.
-//!
-//! The verification code is deliberately NOT in any of these. It defended
-//! remote first contact with no other trusted channel, and a security step
-//! users are taught to click past is worse than no step. It survives as an
-//! optional panel; see `peers::verification_code`.
-//!
-//! An invite carries ADDRESSES as well as the NodeId, which is what makes an
-//! in-person exchange work with no discovery mechanism at all — the case that
-//! matters on guest wifi, in hotels, and on corporate networks where mDNS is
-//! blocked.
-
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD as B64;
 
 use crate::error::EngineError;
 
-/// Version tag. A future format bumps this and old readers refuse rather than
-/// guess — failing closed on the unknown, as everywhere else.
 const INVITE_PREFIX: &str = "lince1";
 
-/// Field separator. `|` cannot occur in a NodeId (base32), in standard base64,
-/// or in an `ip:port`, and the label is base64-encoded precisely so that a
-/// name containing one cannot break the framing.
 const SEP: char = '|';
 
-/// Everything one Organ needs to reach and recognise another.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PairingInvite {
     pub node_id: String,
-    /// The Organ ROOT public key. Adopting it here is the ONE
-    /// trust-on-first-use in the design — every later roster and succession
-    /// must chain from it. That is why it belongs in the QR: acquiring it
-    /// over an unrelayable channel is what the whole chain rule rests on.
     pub root_key: Option<String>,
-    /// A self-declared label. UNTRUSTED, and the receiving UI must let the
-    /// local user type their own name rather than adopting this one.
     pub label: Option<String>,
-    /// Direct addresses, so an in-person scan needs no discovery at all.
     pub addrs: Vec<String>,
 }
 
@@ -72,9 +33,6 @@ impl PairingInvite {
         let text = text.trim();
         let parts: Vec<&str> = text.split(SEP).collect();
         if parts.len() != 5 || parts[0] != INVITE_PREFIX {
-            // Name the field they most likely copied from instead. The Profile
-            // panel shows two strings and only this one is pasteable, so "not a
-            // pairing code" alone leaves them re-pasting the same wrong one.
             return Err(EngineError::Consequence(
                 "not a Lince pairing code. It must be the whole line starting `lince1|` \
                  from under their QR code — an identity key on its own carries no \
@@ -106,11 +64,6 @@ impl PairingInvite {
         })
     }
 
-    /// The invite as an SVG QR code, for showing on screen.
-    ///
-    /// Rendered server-side because the sand runs under a CSP that blocks
-    /// every external script — vendoring a QR encoder into the browser would
-    /// be a second implementation of something already needed here.
     pub fn qr_svg(&self) -> Result<String, EngineError> {
         use qrcode::QrCode;
         use qrcode::render::svg;
@@ -125,19 +78,8 @@ impl PairingInvite {
     }
 }
 
-/// Version tag for a MAILBOX invite. A third prefix, for the same reason there
-/// is a second: these three codes are shown in the same shape and scanned by
-/// the same camera, and they grant wildly different things — a contact, a
-/// device of your own identity, and the right to leave sealed bytes on
-/// somebody's disk. None may ever be read as another by accident.
 const MAILBOX_PREFIX: &str = "lincemail1";
 
-/// "You may leave your mail with me."
-///
-/// Two fields and no more: whom to ask, and the single-use token that says the
-/// operator meant it. No root key, unlike the enrolment code — the redeemer is
-/// not joining an identity and has nothing to verify about the carrier beyond
-/// its node id, which iroh authenticates by construction.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MailboxInviteCode {
     pub node_id: String,
@@ -172,36 +114,14 @@ impl MailboxInviteCode {
     }
 }
 
-/// Version tag for an ENROLMENT code. A separate prefix from `lince1`, and
-/// that separation is the point: a pairing code adds a contact, an enrolment
-/// code adds a device to your own identity. They are shown in the same shape,
-/// scanned by the same camera, and one of them grants strictly more than the
-/// other, so neither may ever be read as the other by accident.
 const ENROLMENT_PREFIX: &str = "lincecell1";
 
-/// Everything a NEW DEVICE needs to join an existing Organ.
-///
-/// Enrolling is pairing with YOURSELF, and it earns its own flow rather than
-/// reusing contact pairing (Ontology §11). The single-use, short-lived token
-/// is what makes it safe to show on a screen: it grants membership in an
-/// identity, which is strictly more than a contact code grants, so it expires
-/// in minutes and works exactly once.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EnrolmentInvite {
-    /// The enrolling Cell — an existing member that holds the root.
     pub node_id: String,
-    /// The Organ being joined. Carried so the new Cell knows what identity it
-    /// is about to become part of BEFORE it connects, and so the roster it
-    /// gets back can be checked against what it was offered.
     pub organ_uid: String,
-    /// The Organ root public key, adopted by the joining Cell as its own
-    /// identity's root. Same trust-on-first-use as pairing, over the same
-    /// unrelayable visual channel.
     pub root_key: String,
-    /// Single-use, minutes-long. `roster::ENROLMENT_TOKEN_TTL_MINUTES`.
     pub token: String,
-    /// Direct addresses, so enrolment works with no discovery at all — the
-    /// case that matters on guest wifi and in hotels, exactly as for pairing.
     pub addrs: Vec<String>,
 }
 
@@ -227,9 +147,6 @@ impl EnrolmentInvite {
                     .into(),
             ));
         }
-        // Every field is load-bearing: without the node id there is nobody to
-        // ask, without the uid and key there is no identity to verify the
-        // answer against, and without the token the ask is refused.
         for (index, what) in [(1, "node id"), (2, "organ"), (3, "root key"), (4, "token")] {
             if parts[index].is_empty() {
                 return Err(EngineError::Consequence(format!(
@@ -250,8 +167,6 @@ impl EnrolmentInvite {
         })
     }
 
-    /// The invite as an SVG QR code, for showing on the enrolling Cell's
-    /// screen. Same reasoning as [`PairingInvite::qr_svg`].
     pub fn qr_svg(&self) -> Result<String, EngineError> {
         use qrcode::QrCode;
         use qrcode::render::svg;
@@ -266,26 +181,12 @@ impl EnrolmentInvite {
     }
 }
 
-/// Read a QR code out of a captured camera frame.
-///
-/// The mirror of [`PairingInvite::qr_svg`], and here for the same reason plus
-/// one more. The same: a sand runs under a CSP that blocks every external
-/// script, so a decoder in the browser would be a second implementation of
-/// something already needed on this side. The one more: what comes out of a
-/// decoder is a PAIRING CODE — a thing that decides who this Cell trusts — so
-/// it belongs in one audited place rather than in every sand that scans.
-///
-/// `Ok(None)` means "no code in this frame", which is the ORDINARY answer
-/// while a camera is pointed at a wall and must not be an error. `Err` is
-/// reserved for a frame that could not be read as an image at all.
 pub fn decode_qr(frame: &[u8]) -> Result<Option<String>, EngineError> {
     let image = image::load_from_memory(frame)
         .map_err(|error| EngineError::Consequence(format!("unreadable image: {error}")))?
         .to_luma8();
     let mut prepared = rqrr::PreparedImage::prepare(image);
     for grid in prepared.detect_grids() {
-        // A grid that fails to decode is a partial or damaged sighting, not a
-        // failure of the request: keep looking at the others.
         if let Ok((_meta, text)) = grid.decode() {
             return Ok(Some(text));
         }
@@ -339,13 +240,6 @@ mod tests {
         }
     }
 
-    /// Rasterize a QR the way a camera would see one: each module a solid
-    /// block, with the quiet zone the spec requires — a decoder given a code
-    /// cropped flush to its edge finds nothing.
-    ///
-    /// Hand-rolled rather than using `qrcode`'s `image` feature, which pins an
-    /// older `image` than the decoder uses and would put two copies of it in
-    /// the tree.
     fn rasterize(text: &str) -> Vec<u8> {
         use image::{GrayImage, Luma};
         const SCALE: u32 = 8;
@@ -379,8 +273,6 @@ mod tests {
         png.into_inner()
     }
 
-    /// The scan path end to end: what this Cell renders is what a camera
-    /// pointed at it decodes back, and what comes out is a usable invite.
     #[test]
     fn a_rendered_invite_survives_being_photographed_and_read_back() {
         let invite = PairingInvite {

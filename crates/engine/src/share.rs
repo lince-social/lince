@@ -281,9 +281,6 @@ pub async fn feed_carries(
                 (feed.held.contains(record) || feed.sends(record))
                     && !feed.moving_to_them.contains(record)
             } else {
-                // A handover outranks the selection. They are about to OWN
-                // this Record, and a Record cannot be filtered out of its own
-                // handover by a rule about what they are usually sent.
                 feed.sends(record) || feed.moving_to_them.contains(record)
             }
         })

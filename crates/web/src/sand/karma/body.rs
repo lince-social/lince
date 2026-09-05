@@ -3,14 +3,6 @@ use maud::{Markup, html};
 pub(super) fn body() -> Markup {
     html! {
         main class="karmaApp" {
-            // ------------------------------------------------------- main view
-            //
-            // A static deck: one card per record any rule touches, whether
-            // named in the condition's own reading or as the target the
-            // consequence writes to. Cards never move on their own — the
-            // camera does, panned and zoomed by d3-zoom over a plain canvas.
-            // There is deliberately no force simulation: nothing here needs
-            // to settle, because nothing here is connected to anything else.
             div class="canvasView" {
                 canvas id="karma-canvas" aria-label="Records a rule touches" {}
                 p id="canvas-empty" class="empty canvasEmpty" hidden {
@@ -20,10 +12,6 @@ pub(super) fn body() -> Markup {
 
             p id="notice" class="notice" role="status" hidden {}
 
-            // Controls stay out of the working surface until the lower-right
-            // corner is hovered, same as the kanban sand — the corner itself
-            // carries the connection state, and hovering swaps it for the row
-            // it was hiding.
             div class="sand-tools" {
                 span id="live-dot" class="page-corner" data-live="false" role="status"
                     aria-label="Connection status" title="Connection status" {}
@@ -34,12 +22,6 @@ pub(super) fn body() -> Markup {
                 }
             }
 
-            // -------------------------------------------------------- panel
-            //
-            // Every rule-authoring and history control this sand has ever
-            // had, unchanged — just no longer the first thing the sand shows.
-            // The canvas is the sand's face; this is where a person goes to
-            // change what it's showing.
             aside id="rules-panel" class="sidePanel" hidden {
                 div class="sidePanelHead" {
                     h2 { "Rules" }
@@ -49,26 +31,10 @@ pub(super) fn body() -> Markup {
                 }
                 div class="sidePanelBody" {
 
-            // ----------------------------------------------------- rule builder
-            //
-            // A rule is three parts, so it is authored as three parts: what it
-            // reads, when that reading counts, and what it then does. The
-            // cadence grid that used to sit in the middle of this is gone — a
-            // schedule is a `freq(@x)` block inside the condition now, declared
-            // once in Frequencies below and reused by every rule that wants it.
             section class="panel builderPanel" aria-labelledby="builder-heading" {
                 h2 id="builder-heading" { "New rule" }
 
                 form id="rule-builder-form" class="stackForm" {
-                    // ------------------------------------------------ condition
-                    //
-                    // A plain input, not a contenteditable: the caret is the
-                    // whole interaction here — blocks land where it sits — and
-                    // `selectionStart` answers that exactly, where a rich
-                    // editor's caret has to be reconstructed from a selection
-                    // range every time the text is re-rendered. The blocks are
-                    // drawn as chips beneath instead, a view of the same source
-                    // rather than a second copy of it.
                     div class="builderStep" {
                         div class="builderStepHead" {
                             h3 { "Condition" }
@@ -97,7 +63,6 @@ pub(super) fn body() -> Markup {
                         }
                     }
 
-                    // ------------------------------------------------ threshold
                     div class="builderStep" {
                         h3 { "Threshold" }
                         label class="field" {
@@ -119,7 +84,6 @@ pub(super) fn body() -> Markup {
                         }
                     }
 
-                    // ---------------------------------------------- consequence
                     div class="builderStep" {
                         div class="builderStepHead" {
                             h3 { "Consequence" }
@@ -136,14 +100,12 @@ pub(super) fn body() -> Markup {
                                 option value="capture-entry" selected { "Capture an amount" }
                                 option value="add-quantity" { "Add to the quantity" }
                                 option value="set-quantity" { "Set the quantity to" }
+                                option value="set-quantity-where" { "Set the quantity of everything with a concept" }
                                 option value="add-concept" { "Add a concept" }
                                 option value="remove-concept" { "Remove a concept" }
                                 option value="run-command" { "Run a shell command" }
                             }
                         }
-                        // Empty means "whatever the condition carried", which is
-                        // the whole point of the carry — a rule that computes a
-                        // figure should not have to restate it as a constant.
                         label class="field" id="builder-amount-field" {
                             span { "Amount" }
                             input id="builder-amount" type="text" inputmode="decimal"
@@ -165,11 +127,6 @@ pub(super) fn body() -> Markup {
                         }
                     }
 
-                    // -------------------------------------------- record picker
-                    //
-                    // Searchable by head or slug, because a person remembers one
-                    // or the other and should not have to know which the system
-                    // filed it under. Clicking drops the block at the caret.
                     div class="builderStep" {
                         h3 { "Records" }
                         label class="field" {
@@ -194,12 +151,6 @@ pub(super) fn body() -> Markup {
                 }
             }
 
-            // -------------------------------------------------------- frequency
-            //
-            // Declared once, read by any condition. A Frequency is a slug and a
-            // step and nothing else — the same `Cadence` the engine already
-            // computes dates from, which is why the same object can fire a rule
-            // and draw a calendar without a second description of "when".
             section class="panel frequencyPanel" aria-labelledby="frequency-heading" {
                 div class="panelHead" {
                     h2 id="frequency-heading" { "Frequencies" }
@@ -289,18 +240,8 @@ pub(super) fn body() -> Markup {
                 }
             }
 
-            // ------------------------------------------------------------- slop
-            //
-            // Everything below is the pre-rewrite surface, kept working while
-            // the parts above take over. It is labelled honestly rather than
-            // quietly left to look like a peer of the sections above it.
             div class="slopDivider" role="separator" { span { "slop down here" } }
 
-            // ---------------------------------------------------------- capture
-            //
-            // One line. Pick what moved, by how much, and what it was for.
-            // There is deliberately no direction control — the sign of the
-            // amount carries it — and nothing asks which total to affect.
             section class="panel capturePanel" aria-labelledby="capture-heading" {
                 h2 id="capture-heading" { "Capture" }
                 form id="capture-form" class="lineForm" {
@@ -336,7 +277,6 @@ pub(super) fn body() -> Markup {
             }
 
             div class="columns" {
-                // ------------------------------------------------------ entries
                 section class="panel" aria-labelledby="entries-heading" {
                     div class="panelHead" {
                         h2 id="entries-heading" { "Changes" }
@@ -350,7 +290,6 @@ pub(super) fn body() -> Markup {
                     p id="entries-empty" class="empty" hidden { "Nothing captured yet." }
                 }
 
-                // --------------------------------------------------- recurrence
                 section class="panel" aria-labelledby="recurrence-heading" {
                     div class="panelHead" {
                         h2 id="recurrence-heading" { "Recurring" }
@@ -364,9 +303,6 @@ pub(super) fn body() -> Markup {
                             span { "Resource" }
                             select id="rule-record" required {}
                         }
-                        // The *if* half. Empty means unconditional — the date
-                        // arriving is the whole reason to act, which is what
-                        // every rule was before conditions existed.
                         fieldset class="thenGroup" {
                             legend { "Only if" }
                             label class="field" {
@@ -374,12 +310,6 @@ pub(super) fn body() -> Markup {
                                 input id="rule-condition" type="text" autocomplete="off"
                                     placeholder="-1 * freq(@payday)";
                             }
-                            // A schedule is a term in the arithmetic, not a
-                            // second kind of trigger. `freq(@x)` is how often
-                            // the rule on `@x` came round since this rule last
-                            // looked — zero on every other day — so multiplying
-                            // by it is what makes a rule that is checked daily
-                            // act weekly, using only the threshold below.
                             p class="hint" id="rule-condition-hint" {
                                 "Readings: "
                                 code { "@record" } ", "
@@ -405,9 +335,6 @@ pub(super) fn body() -> Markup {
                                 input id="rule-gate-value" type="text" inputmode="decimal"
                                     placeholder="3" autocomplete="off";
                             }
-                            // What to test and what to write are two decisions.
-                            // Fusing them would only ever let a consequence
-                            // receive the number the gate happened to check.
                             label class="field" id="rule-carry-field" hidden {
                                 span { "And the amount is" }
                                 select id="rule-carry" {
@@ -428,11 +355,6 @@ pub(super) fn body() -> Markup {
                             }
                         }
 
-                        // What the rule does when one of its dates is applied.
-                        // Two independent halves — a number and a concept —
-                        // because the useful rules are pairs: "add 1 and mark
-                        // it @done" is one intention, and splitting it across
-                        // two rules hides that they are joined.
                         fieldset class="thenGroup" {
                             legend { "Then" }
                             label class="field" {
@@ -441,6 +363,7 @@ pub(super) fn body() -> Markup {
                                     option value="capture-entry" selected { "Capture an amount" }
                                     option value="add-quantity" { "Add to the quantity" }
                                     option value="set-quantity" { "Set the quantity to" }
+                                    option value="set-quantity-where" { "Set the quantity of everything with a concept" }
                                     option value="none" { "Nothing" }
                                 }
                             }
@@ -449,9 +372,6 @@ pub(super) fn body() -> Markup {
                                 input id="rule-amount" type="text" inputmode="decimal"
                                     placeholder="-1200" autocomplete="off";
                             }
-                            // Only a capture files its amount under a concept.
-                            // Setting or adding a quantity moves the Record's
-                            // own number, which no concept qualifies.
                             label class="field" id="rule-concept-field" {
                                 span { "For" }
                                 input id="rule-concept" type="text" list="concept-options"
@@ -491,9 +411,6 @@ pub(super) fn body() -> Markup {
                             }
                         }
 
-                        // The components are the rule. A preset only fills these
-                        // in, so there is exactly one description of a cadence
-                        // rather than a mode that disagrees with its fields.
                         fieldset class="stepGrid" {
                             legend { "Repeats every" }
                             label class="stepUnit" {
@@ -538,8 +455,6 @@ pub(super) fn body() -> Markup {
                             }
                         }
 
-                        // Applied after the step, never folded back into it, so
-                        // a monthly rule that lands on Friday is still monthly.
                         fieldset class="weekdayGrid" {
                             legend { "Then move forward to" }
                             @for (value, label) in [
@@ -570,10 +485,6 @@ pub(super) fn body() -> Markup {
                             input id="rule-anchor" type="datetime-local" step="0.001";
                         }
 
-                        // Where the rule stops. "Once, on that day" is this
-                        // control set to one, not a different kind of rule —
-                        // which is why a promise and a standing order are the
-                        // same object all the way down.
                         label class="field" id="rule-bound-field" {
                             span { "Repeating" }
                             select id="rule-bound" {
@@ -618,17 +529,6 @@ pub(super) fn body() -> Markup {
                 }
             }
 
-            // ---------------------------------------------------- where it runs
-            //
-            // C7 axis 2. An Organ with one Cell never needs this and is told so
-            // rather than shown an empty list, because an empty box reads as a
-            // broken feature in exactly the case that is fine.
-            //
-            // The wording is about THIS Cell throughout — "runs here", not
-            // "enabled" — because the setting is local and the same rule may be
-            // running on another Cell at the same moment. "Enabled" would read
-            // as a property of the rule and make the other Cell's behaviour
-            // look like a bug.
             section class="panel executionPanel" aria-labelledby="execution-heading" {
                 div class="panelHead" {
                     h2 id="execution-heading" { "Where rules run" }
@@ -645,7 +545,6 @@ pub(super) fn body() -> Markup {
                 p id="execution-notice" class="hint" role="status" aria-live="polite" hidden {}
             }
 
-            // --------------------------------------------------------- timeline
             section class="panel graphPanel" aria-labelledby="graph-heading" {
                 div class="panelHead" {
                     h2 id="graph-heading" { "Concept over time" }
@@ -678,8 +577,6 @@ pub(super) fn body() -> Markup {
                     }
                 }
 
-                // The chart is decorative; the table beneath carries the same
-                // numbers and is what a screen reader and a keyboard use.
                 div id="timeline-graph" class="graph" role="img"
                     aria-describedby="timeline-table-caption" {}
 

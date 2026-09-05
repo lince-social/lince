@@ -2,7 +2,6 @@ use crate::domain::lince_package::{LincePackage, PackageManifest};
 
 pub(crate) const FEATURE_FLAG: &str = "sand.view_table_editor";
 
-// Live records table as a self-contained HTML string over Protein + Actions.
 const HTML: &str = include_str!("table.html");
 
 pub(crate) fn manifest() -> PackageManifest {

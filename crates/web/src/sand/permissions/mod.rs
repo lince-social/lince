@@ -2,16 +2,6 @@ use crate::domain::lince_package::{LincePackage, PackageManifest};
 
 pub(crate) const FEATURE_FLAG: &str = "sand.permissions";
 
-// Roles/users/permission-grant CRUD, driven through Protein (sources "auth"
-// and Person records) + Actions (create-role, create-user, assign-role,
-// assign-user-person, set-person-standing, grant-permission, revoke-permission). The auth system
-// predates and is deliberately NOT a Ledger record type (`store::auth`'s own
-// doc comment),
-// but reads/writes it the same way every other sand does. The engine
-// enforces every one of those actions against the matching permission key
-// (role:create, user:create, user:update, user:assign_role,
-// permission:assign); this sand is a UI on top, not a second enforcement
-// point.
 const HTML: &str = include_str!("permissions.html");
 
 pub(crate) fn manifest() -> PackageManifest {

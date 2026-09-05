@@ -308,9 +308,6 @@ fn render_board_base_controls() -> Markup {
                         path d="m12.8 5.3 5.9 5.9" {}
                     }
                 }
-                // Notifications live on the base rail (not the topbar) because
-                // they are a workspace-wide inbox — chat requests from Organs
-                // seen on the network arrive here, not only while editing.
                 button
                     id="notifications-toggle"
                     class="lynx-button lynx-icon-button board-base-tools__button notification-button"
@@ -915,13 +912,6 @@ fn render_widget_config_form() -> Markup {
                         div class="import-modal__details-label" { "Host" }
                         p class="import-modal__details-copy" { "Escolha o servidor, conecte se preciso e selecione uma view." }
                     }
-                    // Reaching a Lince that is NOT already a contact. This is
-                    // the device-independent way in: paste the public value
-                    // that Cell shows, give a username and password, and you
-                    // are in — from a machine that has never held a key of
-                    // theirs, on any network. Pairing cannot serve this: it
-                    // needs the far side to open a door and then trust this
-                    // device.
                     details id="widget-config-add-host" class="widget-config-add-host" {
                         summary { "Entrar em outra Lince pelo codigo" }
                         label class="startup-field" for="widget-config-add-code" {
@@ -1028,8 +1018,6 @@ fn render_widget_config_form() -> Markup {
                         p id="widget-config-auth-help" class="startup-error-message" hidden="" {}
                     }
                 }
-                // Views (legacy table-CRUD) is DELETED (2026-07-17): data
-                // comes from the Data (Protein) section.
                 section id="widget-config-protein-section" class="widget-config-section" {
                     div class="widget-config-section__head" {
                         div class="import-modal__details-label" { "Data" }

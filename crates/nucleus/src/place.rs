@@ -1,6 +1,3 @@
-//! Place: Lince's first Instinct (blueprint IX) — a concept the engine ships
-//! functions for. Pure math over passed-in data; map data loads elsewhere.
-
 use serde::{Deserialize, Serialize};
 use std::collections::{BinaryHeap, HashMap};
 
@@ -12,7 +9,6 @@ pub struct Place {
 
 const EARTH_RADIUS_M: f64 = 6_371_000.0;
 
-/// Haversine distance in meters.
 pub fn distance(a: Place, b: Place) -> f64 {
     let (la1, la2) = (a.lat.to_radians(), b.lat.to_radians());
     let dlat = (b.lat - a.lat).to_radians();
@@ -25,12 +21,9 @@ pub fn near(p: Place, center: Place, radius_m: f64) -> bool {
     distance(p, center) <= radius_m
 }
 
-/// A loaded routing graph (OSM extract or anything else): nodes are places,
-/// edges are traversable segments with lengths in meters.
 #[derive(Debug, Clone, Default)]
 pub struct MapGraph {
     pub nodes: Vec<Place>,
-    /// adjacency: node index -> [(neighbor index, meters)]
     pub edges: HashMap<usize, Vec<(usize, f64)>>,
 }
 
@@ -41,7 +34,6 @@ pub struct Route {
 }
 
 impl Route {
-    /// Seconds at an average speed (m/s) — `route_eta` in Karma/Protein.
     pub fn eta_seconds(&self, speed_m_s: f64) -> f64 {
         if speed_m_s <= 0.0 {
             f64::INFINITY
@@ -51,7 +43,6 @@ impl Route {
     }
 }
 
-/// A* over the graph, haversine heuristic (admissible for ground travel).
 pub fn route(graph: &MapGraph, from: usize, to: usize) -> Option<Route> {
     #[derive(PartialEq)]
     struct Open(f64, usize);
@@ -63,7 +54,7 @@ pub fn route(graph: &MapGraph, from: usize, to: usize) -> Option<Route> {
     }
     impl Ord for Open {
         fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-            other.0.total_cmp(&self.0) // min-heap
+            other.0.total_cmp(&self.0)
         }
     }
 
@@ -111,7 +102,6 @@ mod tests {
 
     #[test]
     fn haversine_sanity() {
-        // ~111km per degree of latitude at the equator
         let d = distance(p(0.0, 0.0), p(1.0, 0.0));
         assert!((d - 111_195.0).abs() < 200.0, "got {d}");
         assert!(near(p(0.0, 0.0), p(0.001, 0.0), 200.0));
@@ -120,7 +110,6 @@ mod tests {
 
     #[test]
     fn a_star_picks_the_shorter_road() {
-        // 0 -> 1 -> 3 is shorter than 0 -> 2 -> 3
         let g = MapGraph {
             nodes: vec![p(0.0, 0.0), p(0.0, 0.001), p(0.002, 0.0), p(0.0, 0.002)],
             edges: HashMap::from([

@@ -1,7 +1,3 @@
-//! Stage 8b: a saved Protein is a `kind='protein'` record (its AST in the
-//! `lince.protein` extension) — the successor to a named SQL view. `SaveProtein`
-//! is a full-CRUD upsert so the sand-settings Protein editor can create AND edit.
-
 use engine::Engine;
 use engine::actions::Action;
 use nucleus::RecordKind;
@@ -22,7 +18,6 @@ async fn ast(e: &Engine, uid: &str) -> serde_json::Value {
 async fn save_protein_creates_updates_deletes_and_reactivates() {
     let e = engine().await;
 
-    // create
     let created = e
         .act(
             Action::SaveProtein {
@@ -44,7 +39,6 @@ async fn save_protein_creates_updates_deletes_and_reactivates() {
     assert_eq!(row.head, "Stock");
     assert_eq!(ast(&e, &created).await, json!({ "source": "record" }));
 
-    // update by same slug: SAME record (upsert), new head + AST
     let updated = e
         .act(
             Action::SaveProtein {
@@ -71,14 +65,11 @@ async fn save_protein_creates_updates_deletes_and_reactivates() {
         ast(&e, &created).await,
         json!({ "source": "record", "limit": 10 })
     );
-    // the AST is mirrored into body so a records Protein can list saved Proteins
-    // with their query text for the editor.
     assert_eq!(
         serde_json::from_str::<serde_json::Value>(&updated_row.body).unwrap(),
         json!({ "source": "record", "limit": 10 })
     );
 
-    // delete = deactivate (append-only: hide, don't erase)
     e.act(
         Action::Deactivate {
             target: "views.stock".into(),
@@ -95,7 +86,6 @@ async fn save_protein_creates_updates_deletes_and_reactivates() {
         Some(0.0)
     );
 
-    // saving again reactivates the same record
     let back = e
         .act(
             Action::SaveProtein {

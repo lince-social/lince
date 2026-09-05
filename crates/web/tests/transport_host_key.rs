@@ -1,14 +1,3 @@
-//! Run the board transport's host-resolution test.
-//!
-//! The Rust side of this crate cannot see which Cell a card's binding reaches
-//! — that decision is made in `transport.js`, and getting it wrong is how
-//! every write from an ordinary local card came back "not a contact" while the
-//! host picker sat on "Local Lince".
-//!
-//! Skipped when no `node` is on PATH rather than failing, because a missing
-//! JavaScript engine is a property of the machine, not of the code under test.
-//! Reported loudly so a green run is never mistaken for a checked one.
-
 use std::process::Command;
 
 #[test]

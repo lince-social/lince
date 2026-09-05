@@ -1,15 +1,3 @@
-//! One classified axis through time: what settled, where it stands, what is
-//! declared ahead.
-//!
-//! The claim under test is that these are one query, not three panels. A client
-//! that had to stitch them would have to add exact decimals in JavaScript, and
-//! the running cumulative is precisely the number that must not be computed
-//! there.
-//!
-//! Nothing here is domain-specific. The scenario reads as a running balance
-//! because that is legible; the same query answers "how much flour is
-//! committed" unchanged.
-
 use chrono::{Duration, Months, Utc};
 use engine::Engine;
 use engine::actions::Action;
@@ -91,8 +79,6 @@ fn context(rows: &[Value]) -> &Value {
     rows.first().expect("a timeline always has a context row")
 }
 
-/// A window wide enough to hold the fixtures, expressed around now so the
-/// "present" split is exercised rather than hard-coded to a date.
 fn window() -> (String, String) {
     let now = Utc::now();
     (
@@ -118,8 +104,6 @@ async fn a_timeline_needs_to_be_a_timeline_of_something() {
         },
     )
     .await;
-    // A timeline of everything is just the Ledger, and answering that here
-    // would quietly produce a line nobody asked for.
     assert!(refused.is_err(), "a timeline without a concept is refused");
 }
 
@@ -131,9 +115,6 @@ async fn the_past_is_bucketed_and_carries_a_running_position() {
     let now = Utc::now();
     let (since, before) = window();
 
-    // Whole calendar months back, not 90/60/30 days: day offsets collapse into
-    // two buckets whenever the run date makes two of them land in one month,
-    // which turns a real assertion into a calendar lottery.
     for offset in [3_u32, 2, 1] {
         capture(
             &e,
@@ -151,8 +132,6 @@ async fn the_past_is_bucketed_and_carries_a_running_position() {
     let points = rows_of(&rows, "timeline_point");
     assert!(points.len() >= 3, "each month is its own bucket");
 
-    // The cumulative is the whole reason this is one source: it must arrive
-    // computed, exact, and as text.
     let last = points.last().unwrap();
     assert_eq!(last["cumulative"], "-3600");
     assert_eq!(context(&rows)["current"], "-3600");
@@ -160,8 +139,6 @@ async fn the_past_is_bucketed_and_carries_a_running_position() {
 
 #[tokio::test]
 async fn the_line_starts_where_the_concept_already_stood() {
-    // A cumulative that restarted at zero on the window's edge would draw a
-    // position the person has never actually been in.
     let e = engine().await;
     let rent = concept(&e, "rent", &[]).await;
     let checking = record(&e, "checking").await;
@@ -195,7 +172,6 @@ async fn the_line_starts_where_the_concept_already_stood() {
     );
     let points = rows_of(&rows, "timeline_point");
     assert_eq!(points.last().unwrap()["cumulative"], "-6200");
-    // "Current state" counts everything settled, inside the window or before it.
     assert_eq!(context(&rows)["current"], "-6200");
 }
 
@@ -240,8 +216,6 @@ async fn the_future_is_declared_by_recurring_rules() {
         "an active rule puts declared amounts ahead of now"
     );
 
-    // Every projected point names what produced it, so a number on a chart is
-    // never one nobody can explain.
     let sources = rows_of(&rows, "timeline_source");
     assert!(!sources.is_empty());
     assert!(sources.iter().all(|s| s["origin"] == "recurrence"));
@@ -250,8 +224,6 @@ async fn the_future_is_declared_by_recurring_rules() {
 
 #[tokio::test]
 async fn an_applied_date_is_counted_once_as_history_not_twice() {
-    // The double-count this prevents is the one that would make every
-    // rule-driven month look twice as expensive as it was.
     let e = engine().await;
     let rent = concept(&e, "rent", &[]).await;
     let checking = record(&e, "checking").await;
@@ -302,7 +274,6 @@ async fn an_applied_date_is_counted_once_as_history_not_twice() {
         .await
         .unwrap();
 
-    // It moved once, so the settled position reflects exactly one payment.
     assert_eq!(context(&rows)["current"], "-1200");
     let sources = rows_of(&rows, "timeline_source");
     assert!(
@@ -430,8 +401,6 @@ async fn a_paused_rule_stops_declaring_a_future() {
 
 #[tokio::test]
 async fn the_concept_dag_is_respected_on_both_halves_of_the_line() {
-    // `@rent` sits under `@cost`, so a `@cost` timeline must contain the rent
-    // that settled AND the rent that is coming.
     let e = engine().await;
     let cost = concept(&e, "cost", &[]).await;
     let rent = concept(&e, "rent", &[cost.as_str()]).await;
@@ -502,7 +471,6 @@ async fn an_unclassified_change_is_not_quietly_adopted() {
     let rows = protein::execute(&e.store, &timeline(&rent, since, before))
         .await
         .unwrap();
-    // "How is rent going" must not include a change nobody said was rent.
     assert_eq!(context(&rows)["current"], "0");
 }
 
@@ -518,9 +486,6 @@ async fn an_unknown_concept_returns_nothing_rather_than_everything() {
 
 #[tokio::test]
 async fn two_units_under_one_concept_never_contaminate_each_other() {
-    // Flour in kilograms and coins counted as coins can both be `@stock`. Adding
-    // them produces a number that means nothing, and the running total is the
-    // most prominent number on the screen — so it must refuse to be one scalar.
     let e = engine().await;
     let stock = concept(&e, "stock", &[]).await;
     let kg = concept(&e, "kg", &[]).await;
@@ -559,8 +524,6 @@ async fn two_units_under_one_concept_never_contaminate_each_other() {
         .unwrap();
     let context = context(&rows);
 
-    // No single "current" exists, and the source says so rather than inventing
-    // one by adding -3 kg to -100 coins.
     assert!(
         context["current"].is_null(),
         "a concept spanning two units has no one running total"
@@ -569,7 +532,6 @@ async fn two_units_under_one_concept_never_contaminate_each_other() {
     assert_eq!(by_unit[&kg], "-3");
     assert_eq!(by_unit[&coin], "-100");
 
-    // Each line is seeded from its own unit's history, not the other's.
     let points = rows_of(&rows, "timeline_point");
     let kg_points: Vec<&Value> = points.iter().copied().filter(|p| p["unit"] == kg).collect();
     let coin_points: Vec<&Value> = points
@@ -611,8 +573,6 @@ async fn one_unit_still_gets_a_plain_running_total() {
 
 #[tokio::test]
 async fn exactness_survives_the_whole_line() {
-    // The reason this source exists rather than a client-side stitch: cents
-    // must still be cents after a cumulative fold.
     let e = engine().await;
     let rent = concept(&e, "rent", &[]).await;
     let checking = record(&e, "checking").await;
@@ -636,6 +596,5 @@ async fn exactness_survives_the_whole_line() {
     assert_eq!(context(&rows)["current"], "-30.31");
     let points = rows_of(&rows, "timeline_point");
     assert_eq!(points.last().unwrap()["cumulative"], "-30.31");
-    // Never a float on the wire.
     assert!(points.iter().all(|p| p["cumulative"].is_string()));
 }

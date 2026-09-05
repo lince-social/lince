@@ -20,7 +20,12 @@ import {
   setHidden,
   signOf,
 } from "./format.js";
+import { catalogFrom, readable } from "./blocks.js";
 import { act, conceptToken, state, setNotice } from "./state.js";
+
+function conceptCatalog() {
+  return catalogFrom([], [], state.concepts);
+}
 
 /**
  * The step components, largest first.
@@ -137,6 +142,16 @@ export function consequencesFrom(elements) {
         amount,
         concept: conceptToken(elements.ruleConcept.value),
       });
+    } else if (numberAction === "set-quantity-where") {
+      const assertion = conceptToken(elements.ruleConcept.value);
+      if (!assertion) {
+        return { error: "Setting everything with a concept needs the concept." };
+      }
+      list.push(
+        carries
+          ? { kind: "set-quantity-where", assertion }
+          : { kind: "set-quantity-where", assertion, value: amount },
+      );
     } else {
       // `set-quantity` names a level and `add-quantity` names a movement, so
       // the field is spelled differently on purpose: assigning -1 is not a
@@ -212,7 +227,7 @@ export function conditionFrom(elements) {
 
 /** Put a stored condition back into the fields that describe it. */
 export function fillCondition(elements, rule) {
-  elements.ruleCondition.value = rule.condition || "";
+  elements.ruleCondition.value = readable(rule.condition || "", conceptCatalog());
   const gate = rule.gate || "!=0";
   if (gate === "!=0" || gate === "always") {
     elements.ruleGate.value = gate;
@@ -245,7 +260,7 @@ export function conditionLabel(rule) {
         : `is ${{ "<=": "at most", ">=": "at least", "==": "exactly", "<": "under", ">": "over" }[
             ["<=", ">=", "==", "<", ">"].find((o) => gate.startsWith(o))
           ] || gate} ${gate.replace(/^[<>=]+/, "")}`;
-  return `only when ${rule.condition} ${said}`;
+  return `only when ${readable(rule.condition, conceptCatalog())} ${said}`;
 }
 
 /** Say back what a rule does, in the same words the form asked for it. */
@@ -470,7 +485,10 @@ export function wireRecurrenceForm(elements) {
   const updateThen = () => {
     const numberAction = elements.ruleNumberAction.value;
     setHidden(elements.ruleAmountField, numberAction === "none");
-    setHidden(elements.ruleConceptField, numberAction !== "capture-entry");
+    setHidden(
+      elements.ruleConceptField,
+      !["capture-entry", "set-quantity-where"].includes(numberAction),
+    );
     const conceptAction = elements.ruleConceptAction.value;
     setHidden(elements.ruleConceptFromField, conceptAction !== "move");
     setHidden(elements.ruleConceptToField, conceptAction === "none");

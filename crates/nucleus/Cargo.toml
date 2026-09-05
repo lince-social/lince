@@ -13,3 +13,9 @@ serde_json = { workspace = true }
 chrono = { workspace = true, features = ["serde"] }
 sha2 = { workspace = true }
 uuid = { workspace = true }
+
+[build-dependencies]
+sensei = { workspace = true }
+
+[lints]
+workspace = true

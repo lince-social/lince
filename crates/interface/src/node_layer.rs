@@ -1,5 +1,7 @@
 use crate::{
     primitive_gallery::{GalleryVisualState, PRIMITIVE_COUNT},
+    retained_ui::RetainedScene,
+    sand::SandElement,
     style::{ResolvedStyle, StyleError},
 };
 use bytemuck::{Pod, Zeroable};
@@ -228,5 +230,62 @@ impl NodeLayer {
 
     pub fn count(&self) -> u32 {
         self.count
+    }
+
+    pub fn update_retained(
+        &mut self,
+        queue: &wgpu::Queue,
+        scene: &RetainedScene,
+        viewport: [u32; 2],
+        style: &ResolvedStyle,
+    ) -> Result<(), StyleError> {
+        let canvas = style.color_linear("--lynx-surface-canvas")?;
+        let raised = style.color_linear("--lynx-surface-raised")?;
+        let input = style.color_linear("--lynx-surface-input")?;
+        let hover = style.color_linear("--lynx-surface-hover")?;
+        let accent = style.color_linear("--lynx-accent")?;
+        let border = style.color_linear("--lynx-border")?;
+        let focus = style.color_linear("--lynx-focus")?;
+        let radius = (style.length_px("--lynx-radius-control")? / 12.0).clamp(0.02, 0.96);
+        let width = viewport[0].max(1) as f32;
+        let height = viewport[1].max(1) as f32;
+        let instances = scene
+            .nodes
+            .iter()
+            .take(MAX_NODES)
+            .map(|node| {
+                let color = match node.element {
+                    SandElement::Compound => canvas,
+                    SandElement::Card | SandElement::Panel | SandElement::Stack => raised,
+                    SandElement::Field
+                    | SandElement::Textarea
+                    | SandElement::Select
+                    | SandElement::Checkbox
+                    | SandElement::Radio => input,
+                    SandElement::Button | SandElement::Icon if node.focused => accent,
+                    SandElement::Button | SandElement::Icon => hover,
+                    SandElement::ValidationMessage => {
+                        style.color_linear("--lynx-danger").unwrap_or(accent)
+                    }
+                    _ => raised,
+                };
+                let center_x = node.rect.x + node.rect.width * 0.5;
+                let center_y = node.rect.y + node.rect.height * 0.5;
+                NodeInstance {
+                    center_half: [
+                        center_x * 2.0 / width - 1.0,
+                        1.0 - center_y * 2.0 / height,
+                        node.rect.width / width,
+                        node.rect.height / height,
+                    ],
+                    color,
+                    style: [radius, 0.0, 0.0, 0.0],
+                    border_color: if node.focused { focus } else { border },
+                }
+            })
+            .collect::<Vec<_>>();
+        queue.write_buffer(&self.buffer, 0, bytemuck::cast_slice(&instances));
+        self.count = instances.len() as u32;
+        Ok(())
     }
 }

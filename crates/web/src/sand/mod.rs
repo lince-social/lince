@@ -103,9 +103,6 @@ impl OfficialWidgetBuilder {
     }
 }
 
-// Only current frame.js sands are wired for construction, plus `shell` (the
-// board's own chrome). Legacy sources may remain under `sand/`, but stay
-// unwired until rebuilt on the current bridge and explicitly added here.
 const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 25] = [
     OfficialWidgetBuilder::Html {
         feature_flag: shell::FEATURE_FLAG,
@@ -119,8 +116,6 @@ const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 25] = [
         feature_flag: shell::FEATURE_FLAG,
         source_builder: shell::ai_source,
     },
-    // The old flat `shell::tutorial_source` sand, rebuilt as a chaptered
-    // package so it can carry mermaid diagrams (2026-08-01).
     OfficialWidgetBuilder::Package {
         feature_flag: instinct::FEATURE_FLAG,
         package_builder: instinct::package,

@@ -84,7 +84,6 @@ struct Token {
     column: usize,
 }
 
-/// Format the current `ProgramAst` as the strict, stable Karma DSL projection.
 pub fn format_program(program: &ProgramAst) -> String {
     let mut output = String::new();
     writeln!(&mut output, "karma 1;").expect("writing to String cannot fail");
@@ -180,7 +179,6 @@ pub fn parse_program(source: &str) -> Result<ProgramAst, KarmaDslError> {
     Parser::new(tokens, source).parse_program()
 }
 
-/// Format a Frequency revision independently from Program DSL/versioning.
 pub fn format_frequency(frequency: &FrequencyAst) -> String {
     let mut output = String::new();
     writeln!(&mut output, "karma-frequency 1;").expect("String write");
@@ -343,13 +341,6 @@ fn format_positive_integer_binding(binding: &PositiveIntegerBinding) -> String {
     }
 }
 
-/// One canonical spelling for every schedule.
-///
-/// The three former spellings — `daily(...)`, `weekly(...)`, `monthly(...)` —
-/// were three grammars for one idea, and the compound step they could not
-/// express was the whole reason to unify them. Time of day and day of month are
-/// gone from here too: both come from the anchor now, which is the only place
-/// they were ever allowed to disagree from.
 fn format_cadence_ast(cadence: &CadenceAst) -> String {
     let mut components = Vec::new();
     for (name, binding) in [
@@ -1922,9 +1913,6 @@ impl<'source> Parser<'source> {
                 let left = Box::new(self.parse_expression(depth + 1)?);
                 self.expect_symbol(',')?;
                 let right = Box::new(self.parse_expression(depth + 1)?);
-                // A trailing argument, present only for exact multiply and
-                // divide. Proof decides whether it belongs; the parser only
-                // decides whether it was written.
                 let precision = if self.consume_symbol(',') {
                     Some(self.parse_precision()?)
                 } else {
@@ -2422,10 +2410,6 @@ impl<'source> Parser<'source> {
         }
     }
 
-    /// Whether the next token is this exact word, without consuming it.
-    ///
-    /// One lookahead is enough for every optional clause in this grammar, and
-    /// keeping it to one is what keeps the parser a single pass.
     fn peek_word_is(&self, expected: &str) -> bool {
         self.tokens
             .get(self.index)

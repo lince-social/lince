@@ -1,13 +1,3 @@
-//! Communication sand store layer (S2 of `notes/institute/Communication.md`).
-//!
-//! A conversation is an ordinary Record discovered by a tag link, never a
-//! dedicated table. This module is the thin store surface the Communication
-//! sand needs: read/write the `communication.v1` extension, list the
-//! conversations carrying a tag (newest activity first, with a last-message
-//! preview and resolved participants), and open/close `call_session` child
-//! Records as the room's occupancy transitions. No call-intent / Karma
-//! machinery lives here — that is deferred to the Far-Future part (F2).
-
 use chrono::Utc;
 use nucleus::RecordKind;
 use serde::{Deserialize, Serialize};
@@ -18,13 +8,9 @@ use crate::{
     records::{self, NewRecord, RecordRow},
 };
 
-/// Namespace of the room-control extension on a conversation Record.
 pub const NAMESPACE: &str = "communication.v1";
-/// Namespace of the per-occupancy sidecar on a `call_session` Record.
 pub const SESSION_NAMESPACE: &str = "communication.session.v1";
 
-// Link kinds (canonical concept names). Threads/messages keep their own
-// kinds (`thread-of`, `message-in`) owned by the Record surface.
 pub const KIND_PARTICIPANT: &str = "participant";
 pub const KIND_GROUP_OF: &str = "group-of";
 pub const KIND_CALL_SESSION_OF: &str = "call-session-of";
@@ -48,9 +34,6 @@ fn recording_idle() -> String {
     "idle".to_string()
 }
 
-/// Live room state mirrored into the conversation's `communication.v1`
-/// extension. `occupants` is an advisory mirror; the durable truth is the
-/// links + session Records.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct RoomState {
     #[serde(default = "room_idle")]
@@ -74,8 +57,6 @@ impl Default for RoomState {
     }
 }
 
-/// The `communication.v1` extension: everything about a conversation's room
-/// that is not a link or a message. Never holds credentials.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct CommunicationExt {
     #[serde(default = "provider_native")]
@@ -102,7 +83,6 @@ impl Default for CommunicationExt {
     }
 }
 
-/// Recording state of one occupancy.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct RecordingState {
     #[serde(default = "recording_idle")]
@@ -117,8 +97,6 @@ impl Default for RecordingState {
     }
 }
 
-/// The `communication.session.v1` sidecar on a `call_session` Record: one
-/// occupancy of the room, from first join to last leave.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct SessionSidecar {
     pub started_at: String,
@@ -132,9 +110,6 @@ pub struct SessionSidecar {
     pub recording: RecordingState,
 }
 
-/// A conversation's row in the list view: the Record itself, resolved
-/// participants, a last-message preview, and the timestamp used to sort the
-/// list (newest activity first).
 #[derive(Debug, Clone)]
 pub struct ConversationSummary {
     pub record: RecordRow,
@@ -150,10 +125,6 @@ pub struct MessagePreview {
     pub created_at: Option<String>,
 }
 
-// --- extension read/write ---------------------------------------------------
-
-/// Read the `communication.v1` extension of a conversation, or `None` if it
-/// has never carried a room.
 pub async fn get_ext(
     pool: &SqlitePool,
     record_uid: &str,
@@ -163,7 +134,6 @@ pub async fn get_ext(
         .and_then(|fds| serde_json::from_value(fds).ok()))
 }
 
-/// Write the `communication.v1` extension of a conversation.
 pub async fn set_ext(
     pool: &SqlitePool,
     record_uid: &str,
@@ -174,7 +144,6 @@ pub async fn set_ext(
     records::set_extension(pool, record_uid, NAMESPACE, &fds).await
 }
 
-/// Read the `communication.session.v1` sidecar of a `call_session` Record.
 pub async fn get_session(
     pool: &SqlitePool,
     session_uid: &str,
@@ -184,10 +153,6 @@ pub async fn get_session(
         .and_then(|fds| serde_json::from_value(fds).ok()))
 }
 
-// --- tagging & participants -------------------------------------------------
-
-/// Resolve (or create) the Record that stands for a tag `@slug` — the target
-/// every conversation carrying that tag links to.
 pub async fn ensure_tag_record(pool: &SqlitePool, slug: &str) -> Result<RecordRow, StoreError> {
     if let Some(existing) = records::resolve(pool, slug).await? {
         return Ok(existing);
@@ -205,7 +170,6 @@ pub async fn ensure_tag_record(pool: &SqlitePool, slug: &str) -> Result<RecordRo
     .await
 }
 
-/// Link a conversation to a tag Record (`conversation --tagged--> tag`).
 pub async fn tag(
     pool: &SqlitePool,
     conversation_uid: &str,
@@ -228,8 +192,6 @@ pub async fn tag(
     Ok(())
 }
 
-/// Link a participant (person/user Record) into a conversation
-/// (`conversation --participant--> person`).
 pub async fn add_participant(
     pool: &SqlitePool,
     conversation_uid: &str,
@@ -252,7 +214,6 @@ pub async fn add_participant(
     Ok(())
 }
 
-/// Resolve the participant Records of a conversation.
 pub async fn participants(
     pool: &SqlitePool,
     conversation_uid: &str,
@@ -263,14 +224,6 @@ pub async fn participants(
     }
 }
 
-// --- list query -------------------------------------------------------------
-
-/// Conversations carrying `tag_uid`, newest activity first, each with its
-/// participants and a last-message preview resolved for the list view.
-///
-/// v0 composes existing link/message queries per conversation rather than one
-/// hand-tuned SQL join; correct and testable, optimizable later once the list
-/// grows.
 pub async fn conversations_by_tag(
     pool: &SqlitePool,
     tag_uid: &str,
@@ -285,7 +238,7 @@ pub async fn conversations_by_tag(
     let mut out = Vec::new();
     for conv in assertions::subjects_pointing_to(pool, &tagged, tag_uid).await? {
         if !conv.quantity.is_positive() {
-            continue; // deactivated conversation drops out of the list
+            continue;
         }
         let participants = match &participant {
             Some(kind) => assertions::objects_from_subject(pool, &conv.uid, kind).await?,
@@ -294,8 +247,6 @@ pub async fn conversations_by_tag(
         let last_message =
             newest_message(pool, &conv.uid, thread_of.as_deref(), message_in.as_deref()).await?;
         let conv_created = records::created_at(pool, &conv.uid).await?;
-        // Newest activity is the newer of the last message and the
-        // conversation's own creation (an empty conversation still sorts).
         let last_activity_at = [
             last_message.as_ref().and_then(|m| m.created_at.clone()),
             conv_created,
@@ -311,13 +262,10 @@ pub async fn conversations_by_tag(
         });
     }
 
-    // Newest first; conversations without a timestamp sink to the bottom.
     out.sort_by(|a, b| b.last_activity_at.cmp(&a.last_activity_at));
     Ok(out)
 }
 
-/// The single newest message across all of a conversation's threads (for the
-/// list-row preview). RFC3339 timestamps compare lexicographically.
 async fn newest_message(
     pool: &SqlitePool,
     conversation_uid: &str,
@@ -355,11 +303,6 @@ async fn newest_message(
     Ok(best.map(|(_, preview)| preview))
 }
 
-// --- session lifecycle ------------------------------------------------------
-
-/// Open a room occupancy: create a `call_session` child Record with its
-/// sidecar, link it `call-session-of` → conversation, and flip the
-/// conversation's room to `active`. Returns the session Record.
 pub async fn open_session(
     pool: &SqlitePool,
     conversation_uid: &str,
@@ -414,8 +357,6 @@ pub async fn open_session(
     Ok(session)
 }
 
-/// Close a room occupancy: stamp the session sidecar's `ended_at` and peak
-/// participant count, and flip the conversation's room back to `idle`.
 pub async fn close_session(
     pool: &SqlitePool,
     conversation_uid: &str,
@@ -439,8 +380,6 @@ pub async fn close_session(
     Ok(())
 }
 
-/// The sessions of a conversation (child Records linked `call-session-of`),
-/// oldest first.
 pub async fn sessions_of(
     pool: &SqlitePool,
     conversation_uid: &str,

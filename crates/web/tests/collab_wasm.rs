@@ -1,18 +1,3 @@
-//! The vendored loro-wasm, actually executed (Ontology §11 "Collab").
-//!
-//! The client collab code was written blind and only ever type-checked. This
-//! runs the SHIPPED artifact — the same `.wasm` and `.js` served under
-//! `/board/vendor/` — in real node, and proves the two things the editor sand
-//! depends on:
-//!
-//!   1. the vendored bundle initializes and produces a working `LoroDoc`;
-//!   2. the DELTA protocol converges — export-since-version, not
-//!      export-everything, which is what the sand sends on each keystroke.
-//!
-//! What this does NOT prove: that a sand IFRAME may load it. That depends on
-//! the frame's CSP and sandbox flags at runtime, and no header asserted here
-//! can stand in for a browser.
-
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
@@ -43,14 +28,10 @@ fn run(label: &str, body: &str) {
     ));
     fs::create_dir_all(&dir).expect("create dir");
 
-    // Copy the vendored bundle verbatim. Rewriting it would mean testing
-    // something other than what is served.
     let vendor = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(VENDOR);
     for name in ["loro-index.js", "loro_wasm.js", "loro_wasm_bg.wasm"] {
         fs::copy(vendor.join(name), dir.join(name)).unwrap_or_else(|e| panic!("stage {name}: {e}"));
     }
-    // The SHIPPED editor module, not a copy of its logic. If this file and the
-    // served one ever diverge, the test is worthless.
     let editor = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .join("static/presentation/board/collab-editor.js");
     fs::copy(&editor, dir.join("collab-editor.js")).expect("stage collab-editor.js");
@@ -74,8 +55,6 @@ fn run(label: &str, body: &str) {
     }
 }
 
-/// The bundle loads and the containers the engine materializes from — `head`
-/// and `body` — behave as text.
 #[test]
 fn the_vendored_bundle_initializes_and_exposes_the_engines_containers() {
     run(
@@ -100,13 +79,6 @@ assert.equal(doc.getText("body").toString(), "Hello");
     );
 }
 
-/// The protocol the editor sand speaks: export only what changed since the
-/// last send, and converge.
-///
-/// Sending a whole snapshot per keystroke would also converge, which is why
-/// this is worth pinning — it works in a two-document test and degrades with
-/// document size, the kind of fault that stays invisible until it is
-/// expensive.
 #[test]
 fn a_delta_since_the_last_send_is_enough_to_converge() {
     run(
@@ -160,14 +132,6 @@ assert.equal(
     );
 }
 
-/// The real editor module, driven the way a sand drives it, against the real
-/// wasm — two clients typing through a stand-in Cell that behaves like the
-/// engine does.
-///
-/// This is what the structural assertions in the sand's own tests cannot
-/// reach: the delta bookkeeping, the guard that stops a remote change being
-/// echoed back as if a person typed it, and the caret-preserving write. Those
-/// are where the bugs live.
 #[test]
 fn two_editors_converge_through_a_relay_that_behaves_like_the_cell() {
     run(
@@ -283,14 +247,6 @@ assert.equal(bob.state.body, before, "an edit that changed nothing changes nothi
     );
 }
 
-/// An edit made while the socket is down must still reach the Cell.
-///
-/// This is the failure the ack exists for, and it is silent without one: the
-/// delta is exported relative to the version the client believes the Cell
-/// holds, so if that version advances on SEND rather than on confirmation, an
-/// update lost in flight is excluded from every future export. The text stays
-/// on the author's screen and never exists anywhere else — which looks exactly
-/// like success until someone else opens the record.
 #[test]
 fn work_sent_while_the_socket_was_down_survives_the_reconnect() {
     run(
@@ -380,13 +336,6 @@ assert.equal(server.getText("body").toString(), "hello, offline work");
     );
 }
 
-/// One update failing on its own must not let a LATER ack confirm it.
-///
-/// A permission refusal answers with an Error rather than an ack while the
-/// socket stays up, so there is no reconnect to clear the hole. If a later
-/// ack were treated as cumulative, the confirmed frontier would move past work
-/// the Cell never accepted and that work could never be re-exported — the same
-/// silent loss the ack exists to prevent, arriving through the recovery path.
 #[test]
 fn a_later_ack_does_not_confirm_an_update_that_was_refused() {
     run(
@@ -469,11 +418,6 @@ assert.equal(
     );
 }
 
-/// Save state reports CONFIRMED, not merely sent.
-///
-/// A surface rendering "saved" the moment it hands bytes to the socket tells
-/// the user something it cannot know. The pending count empties only on an
-/// ack, so this is the one signal a UI may honestly render as "saved".
 #[test]
 fn save_state_flips_to_saved_only_when_the_cell_confirms() {
     run(
@@ -530,12 +474,6 @@ assert.ok(states[states.length - 1].saved, "the surface was told it landed");
     );
 }
 
-/// A map-key field binds through the ordinary extension write, not the doc.
-///
-/// Two authorities over one value can only disagree, and extension keys are
-/// already per-key LWW ops carrying their own HLC — so the binding drives that
-/// path rather than adding a Loro map beside it. Only the edited KEY travels;
-/// sending the whole namespace would clobber sibling keys another Cell changed.
 #[test]
 fn a_map_key_field_writes_one_key_through_the_normal_action() {
     run(

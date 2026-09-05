@@ -1,7 +1,3 @@
-//! Protein + Actions end-to-end (blueprint Stage 3 acceptance): writes go
-//! through typed Actions, reads come back through Proteins, and the two never
-//! trade places.
-
 use engine::Engine;
 use engine::actions::Action;
 use nucleus::{PromiseState, RecordKind};
@@ -10,8 +6,6 @@ use protein::{FactsInclude, Include, Order, Predicate, Protein, Source};
 
 async fn engine() -> Engine {
     let engine = Engine::open_memory().await.expect("engine opens");
-    // An open promise is an offer somebody makes, so publishing one needs a
-    // Person to make it.
     store::records::create(
         &engine.store.pool,
         store::records::NewRecord {
@@ -47,11 +41,10 @@ async fn create(e: &Engine, slug: &str, quantity: f64) -> String {
 #[tokio::test]
 async fn focus_queue_is_a_protein() {
     let e = engine().await;
-    // three active Needs; order lives on the records, arrival on quantity
     create(&e, "exercise", -1.0).await;
     create(&e, "shower", -1.0).await;
     create(&e, "breakfast", -1.0).await;
-    create(&e, "someday", 0.0).await; // not a Need: never appears
+    create(&e, "someday", 0.0).await;
 
     e.act(
         Action::CreateConcept {
@@ -94,7 +87,6 @@ async fn focus_queue_is_a_protein() {
     let slugs: Vec<&str> = queue.iter().map(|r| r["slug"].as_str().unwrap()).collect();
     assert_eq!(slugs, vec!["exercise", "shower", "breakfast"]);
 
-    // completing the focus (a SetQuantity Action -> fact) promotes the next
     e.act(
         Action::SetQuantity {
             target: "@exercise".into(),
@@ -117,7 +109,6 @@ async fn concept_dag_filter_and_provenance_include() {
     let apples = create(&e, "apples.stock", -2.0).await;
     create(&e, "hammer", -1.0).await;
 
-    // Lingua: apple -> fruit -> food
     e.act(
         Action::CreateConcept {
             lingua: "g_local".into(),
@@ -172,10 +163,8 @@ async fn concept_dag_filter_and_provenance_include() {
         limit: None,
     };
     let rows = protein::execute(&e.store, &p).await.unwrap();
-    // `concept_in @food` matches @apple through the DAG; the hammer does not
     assert_eq!(rows.len(), 1);
     assert_eq!(rows[0]["slug"], "apples.stock");
-    // provenance is one include away: the creation fact with its cause
     let facts = rows[0]["facts"].as_array().unwrap();
     assert!(!facts.is_empty());
     assert_eq!(facts[0]["cause_kind"], "user_edit");
@@ -204,7 +193,7 @@ async fn decision_queue_protein_and_decide_action() {
     )
     .await
     .unwrap();
-    e.append_user(&apples, -1.0).await.unwrap(); // fires the ask
+    e.append_user(&apples, -1.0).await.unwrap();
 
     let queue = protein::execute(&e.store, &protein::decision_queue())
         .await
@@ -212,7 +201,6 @@ async fn decision_queue_protein_and_decide_action() {
     assert_eq!(queue.len(), 1);
     assert_eq!(queue[0]["question"], "send reorder proposal?");
 
-    // answering is an Action; the queue empties; the answer is Ledger-visible
     let decision_uid = queue[0]["uid"].as_str().unwrap().to_string();
     e.act(
         Action::Decide {
@@ -241,7 +229,7 @@ async fn promise_lifecycle_through_actions() {
                 delta: 5.0,
                 window_end: Some("2026-07-10T18:00:00Z".into()),
                 party: Some("me".to_string()),
-                open: true, // a published Need: unfilled party slot
+                open: true,
             },
             None,
         )
@@ -250,7 +238,6 @@ async fn promise_lifecycle_through_actions() {
         .created
         .unwrap();
 
-    // open -> proposed -> agreed -> active: each transition validated
     for state in [
         PromiseState::Proposed,
         PromiseState::Agreed,
@@ -266,7 +253,6 @@ async fn promise_lifecycle_through_actions() {
         .await
         .unwrap();
     }
-    // kept is settlement-only: the state machine refuses it here
     let err = e
         .act(
             Action::PromiseTransition {
@@ -278,7 +264,6 @@ async fn promise_lifecycle_through_actions() {
         .await;
     assert!(err.is_err(), "active -> open is not a legal transition");
 
-    // the promise is visible through the promise-source Protein
     let p = Protein {
         source: Source::Promise,
         filter: vec![Predicate::StateIn(vec!["active".into()])],
@@ -295,7 +280,6 @@ async fn promise_lifecycle_through_actions() {
 
 #[tokio::test]
 async fn the_wire_format_is_json_all_the_way() {
-    // a sand ships this JSON; the host parses it into a Protein — the contract
     let json = serde_json::json!({
         "source": "record",
         "where": [ { "quantity_lt": 0.0 }, { "kind_eq": "plain" } ],

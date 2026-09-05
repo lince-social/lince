@@ -125,10 +125,6 @@ pub struct FrequencyTimerAst {
     pub coalesce_window: DurationBinding,
 }
 
-/// A compound step as authored: a sum of components, any of which may be a
-/// bound parameter. Absent means zero, which is why every field is optional
-/// rather than defaulted — an omitted component and a component set to zero are
-/// the same statement and should serialize the same way.
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(default)]
 pub struct CadenceStepAst {
@@ -151,9 +147,6 @@ pub struct CadenceStepAst {
 }
 
 impl CadenceStepAst {
-    /// Every component, largest first, paired with the path a compile error
-    /// should point at. Ordering is the authored ordering, so a message about a
-    /// bad step reads in the same direction the person typed it.
     fn components(&self) -> [(&'static str, &Option<PositiveIntegerBinding>); 8] {
         [
             ("years", &self.years),
@@ -168,12 +161,6 @@ impl CadenceStepAst {
     }
 }
 
-/// A schedule as authored, before its parameters are bound.
-///
-/// The shape mirrors [`Cadence`] exactly, one layer up: every component may be
-/// a literal or a named parameter, and everything else is already the compiled
-/// vocabulary. There is no second set of rule shapes here, because there is no
-/// second idea of what a schedule is.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CadenceAst {
     pub every: CadenceStepAst,
@@ -520,11 +507,6 @@ impl FrequencyAst {
         })
     }
 
-    /// Bind every parameter and hand back the same [`Cadence`] a read path uses.
-    ///
-    /// The whole compile step is now this: resolve numbers, copy the rest. There
-    /// is no translation between an authored shape and a runtime shape, because
-    /// there is only one shape.
     fn compile_cadence(
         &self,
         cadence: &CadenceAst,
@@ -557,9 +539,6 @@ impl FrequencyAst {
             invalid_day: cadence.invalid_day,
             bound: cadence.bound,
         };
-        // A step that does not advance is caught here rather than at the first
-        // wake-up, where it would present as a schedule that fires forever on
-        // one instant.
         compiled.validate().map_err(|error| {
             FrequencyCompileError::new(
                 FrequencyCompileErrorKind::InvalidBinding,

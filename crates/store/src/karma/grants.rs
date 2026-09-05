@@ -516,9 +516,6 @@ where
         next,
         selected_revision.as_ref(),
         current.status == GrantStatus::Active,
-        // No intent may outlive the consent that authorized it. Cancelling in
-        // the same transaction makes revocation deterministic rather than a race
-        // against whoever reads the intent next, and releases the budget.
         status == GrantStatus::Revoked,
         now,
         &sign,
@@ -559,9 +556,6 @@ where
         principal_person_uid: person(&handle.principal_person_uid)?,
     };
     let previous = crate::facts::last_hash(&mut tx).await?;
-    // Quantity tracks live authority, exactly as a Program's quantity tracks live
-    // activation: the transition moves it, not the action name. Revoking a draft that
-    // never authorized anything is a no-op, so it must not push the Record negative.
     let delta = crate::exact::integer(match (was_active, handle.status == GrantStatus::Active) {
         (false, true) => 1,
         (true, false) => -1,
@@ -583,8 +577,6 @@ where
         &previous,
         now,
     );
-    // The lifecycle Fact is signed by the same Person who signed the revision, over the
-    // Fact's own chain hash. Fact hashes are bare hex, not canonical `sha256:` handles.
     fact.signature =
         Some(require_signature(sign, &fact.hash, &evidence.principal_person_uid)?.signature);
     crate::facts::insert(&mut tx, &fact).await?;
@@ -604,9 +596,6 @@ where
     )
     .await?;
     if cancel_intents {
-        // Deliberately after the request row exists: a cancelled intent points at
-        // the request that caused it, and a cause must be recorded before the
-        // transitions that cite it.
         crate::karma::intents::cancel_for_grant_tx(
             &mut tx,
             grant_uid,

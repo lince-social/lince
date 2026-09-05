@@ -1,15 +1,3 @@
-//! K5.1 — the signed delegation-grant boundary.
-//!
-//! Authority is durable data here and nothing more: this module creates, narrows,
-//! activates, and revokes grants, and answers one frozen authority question. It
-//! never creates an intent and never dispatches an effect.
-//!
-//! The principal is never taken from an Action payload. It is the Person whose
-//! private key this Engine currently holds, because that same key must sign both
-//! the revision and its lifecycle Fact. An authenticated session may act only for
-//! its own Person, so a session cannot borrow the Cell's key to grant authority to
-//! somebody else.
-
 use chrono::{DateTime, Utc};
 use nucleus::karma::{
     CanonicalHash, DelegationGrantSpec, DelegationSignature, GrantAuthorityRequest, ReferenceKind,
@@ -23,7 +11,6 @@ use store::karma::grants::{
 use crate::trust::Signer;
 use crate::{Engine, EngineError};
 
-/// The Person who can sign, together with the key that will sign for them.
 pub(crate) struct GrantPrincipal {
     person: TypedUid,
     signer: Signer,
@@ -34,8 +21,6 @@ impl GrantPrincipal {
         self.person.as_str().to_string()
     }
 
-    /// Every signature this Engine produces for a grant names the principal
-    /// explicitly, so the store can refuse anything the principal did not sign.
     fn sign(&self) -> impl Fn(&str) -> Option<DelegationSignature> + Send + Sync + '_ {
         move |hash: &str| {
             Some(DelegationSignature {
@@ -48,7 +33,6 @@ impl GrantPrincipal {
 }
 
 impl Engine {
-    /// The whole grant Action family, kept out of `act_at`'s state machine.
     pub(crate) async fn apply_karma_grant_action(
         &self,
         action: crate::actions::Action,
@@ -220,9 +204,6 @@ impl Engine {
         self.finish_grant_mutation(commit, now).await
     }
 
-    /// Answer one frozen authority question against one named grant. This is a
-    /// read: it is deliberately not an Action, because deciding that something is
-    /// permitted must never itself be a way to cause anything.
     pub async fn evaluate_karma_grant(
         &self,
         grant_uid: &str,
@@ -246,8 +227,6 @@ impl Engine {
         Ok(store::karma::grants::get_revision(&self.store.pool, grant_uid, revision_hash).await?)
     }
 
-    /// Fail closed: without an installed Person key nothing can be signed, and an
-    /// authenticated session may never sign as a different Person.
     async fn karma_grant_principal(
         &self,
         actor: Option<&str>,
@@ -280,8 +259,6 @@ impl Engine {
         commit: GrantMutationCommit,
         now: DateTime<Utc>,
     ) -> Result<GrantMutationCommit, EngineError> {
-        // Grants change who may later ask for something; they schedule no work and
-        // wake no deadline director.
         if let GrantMutationCommit::Committed { fact, .. } = &commit {
             let _ = self.observe_committed_fact(fact.clone(), now).await?;
         }

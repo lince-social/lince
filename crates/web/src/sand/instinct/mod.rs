@@ -2,70 +2,21 @@ use crate::domain::lince_package::{LincePackage, PackageManifest};
 
 pub(crate) const FEATURE_FLAG: &str = "sand.instinct";
 
-// Instinct: the sand you read to learn Lince. Replaces the old flat "Tutorial"
-// sand (shell::tutorial_source, removed) with one tree rooted at "First Steps"
-// — the practical frontend walkthrough — which branches into why Lince exists,
-// then the model underneath it, then Links, Concepts, Cells & Organs,
-// Transfers and Karma.
-//
-// Diagrams came from the earlier First Steps source, whose typst `visual-text`
-// blocks were already mermaid-shaped. They are NOT copy-pasted: that source
-// uses single-dash `->`/`<-` edges and unquoted parentheses in labels, both of
-// which mermaid rejects, so every graph was converted (`-->`, quoted labels).
-//
-// mermaid loads from the embedded `/board/vendor/mermaid.min.js` (LICENSE
-// served beside it). Diagrams render lazily, on chapter activation: mermaid
-// measures text to size nodes, so rendering one inside a `display:none`
-// chapter produces a mis-sized graph. Each chapter renders once, then caches.
-//
-// **The chapters are RECORDS now** (2026-08-16). `chapters/*.html` is deleted;
-// the source is root `anicca/*.lingua`, embedded once by `engine::instinct`
-// and read by both this sand and `Action::ImportInstinct`, so what a reader
-// sees and what the import button would put in their store cannot drift apart.
-// `instinct.html` is still the shell (head, styles, nav, script) and the
-// generated chapters are spliced in at `<!--CHAPTERS-->`. Chapter ORDER comes
-// from the assertions, not from an array here — the nav, the prev/next footer
-// and the saved reading position are all derived from the DOM at runtime, so
-// adding a chapter means adding a declaration to `anicca/` and nothing else.
 mod render;
 
 const SHELL: &str = include_str!("instinct.html");
 
 const CHAPTERS_MARKER: &str = "<!--CHAPTERS-->";
 
-/// The chapters, built from the RECORDS rather than from seven HTML files.
-///
-/// Root `anicca/*.lingua` is the source, and
-/// `engine::instinct` is the one embedded copy that both this sand and
-/// `Action::ImportInstinct` read — so the chapter you are reading and the
-/// Record the button would put in your store cannot drift apart.
-///
-/// **The Records are one tree now.** Everything hangs off `First Steps` by
-/// `@part-of [[Idea|uid]] n`, at any depth, and the number on that link is the
-/// order among siblings. So reading order is a depth-first walk that the
-/// engine has already done — this only has to decide where one entry in the
-/// navigation ends and the next begins, which is what `is_entry` answers.
-///
-/// The shell script is untouched by this: it builds the nav, the prev/next
-/// footer and the saved reading position from `.chapter` elements in the DOM,
-/// so it neither knows nor cares that they are now generated.
 fn chapters() -> String {
     let records = engine::instinct::records();
     let mut out = String::new();
     for entry in records.iter().filter(|r| r.is_entry()) {
-        // Depth travels with the entry so the navigation can show the TREE.
-        // Without it the nav is a flat list of every chapter at every level,
-        // which reads as thirty-odd peers and hides the one structure the
-        // Records exist to carry.
         out.push_str(&format!(
             "<article class=\"chapter\" data-chapter=\"{}\" data-depth=\"{}\">\n",
             entry.head.replace('"', "&quot;"),
             entry.path(&records).len().saturating_sub(1)
         ));
-        // The records already arrive depth-first, so everything that reads
-        // under this entry is simply everything that names it — in order,
-        // however deep it sits. The entry's own body comes first because a
-        // Record's path is a prefix of its children's.
         for record in records
             .iter()
             .filter(|r| r.entry_uid(&records) == entry.projection.uid)
@@ -107,10 +58,6 @@ pub(crate) fn package() -> LincePackage {
 mod tests {
     use super::*;
 
-    /// Every chapter fragment has to actually land in the document. A typo in
-    /// the marker, or a fragment dropped from `CHAPTERS`, otherwise ships a
-    /// tutorial that is silently missing a chapter — the nav is built from the
-    /// DOM, so a missing chapter looks intentional rather than broken.
     #[test]
     fn every_chapter_is_spliced_into_the_document() {
         let html = document();
@@ -136,9 +83,6 @@ mod tests {
                 chapter.head
             );
         }
-        // And every IDEA landed in a chapter too. The nav is built from
-        // `.chapter` elements, so an idea whose chapter link went nowhere
-        // would vanish from the document without the nav looking wrong.
         for idea in records.iter().filter(|r| !r.is_entry()) {
             let first = idea
                 .body
@@ -151,7 +95,7 @@ mod tests {
                 .take(24)
                 .collect();
             if probe.len() < 12 || probe.contains(['*', '_', '`', '<', '&', '[']) {
-                continue; // inline markup is rewritten; those are covered elsewhere
+                continue;
             }
             assert!(
                 html.contains(&probe),
@@ -161,11 +105,6 @@ mod tests {
         }
     }
 
-    /// The tutorial teaches users to click filters by name in the Data panel.
-    /// Those names live in `protein-config.js`, so nothing stops the panel from
-    /// being renamed and the tutorial from quietly going stale — which is
-    /// exactly what happened when `linked to` became `Relation`. Pin the names
-    /// the chapters spell out to the ones the panel actually offers.
     #[test]
     fn filter_names_the_tutorial_teaches_still_exist_in_the_data_panel() {
         const PROTEIN_CONFIG: &str =
@@ -185,11 +124,6 @@ mod tests {
             );
         }
 
-        // The pre-rename spellings. Matched only where the tutorial presents
-        // them as a control name (`<strong>`/`<code>`), because "linked to" and
-        // "concept in" are also ordinary English that legitimately appears in
-        // prose and in comments — asserting on the bare phrase fails on
-        // sentences like "records linked to many others".
         for stale in ["linked to", "concept in", "Assignee is"] {
             for markup in [format!("<strong>{stale}"), format!("<code>{stale}")] {
                 assert!(

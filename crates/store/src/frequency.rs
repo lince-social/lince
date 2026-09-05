@@ -1,21 +1,3 @@
-//! Frequencies: named beats, declared once and read by any condition.
-//!
-//! A Frequency is a slug and a step. A condition reads it as `freq(@daily)`,
-//! and every rule naming it shares this one definition rather than each
-//! restating the schedule and drifting apart the first time one is edited.
-//!
-//! ## Beats are derived, never stored
-//!
-//! [`nucleus::karma::Cadence`] is pure: given the anchor and the step it
-//! enumerates dates with no database and no cursor. That one function answers
-//! both questions a Frequency is ever asked —
-//!
-//! - *when does this fire next* — [`Cadence::next_on_or_after`]
-//! - *what do the next twelve months look like* — [`Cadence::between`]
-//!
-//! — which is why a calendar and a graph need no storage of their own, and why
-//! there is deliberately no beat table here to keep in sync with anything.
-
 use chrono::{DateTime, Utc};
 use nucleus::karma::{Cadence, CadenceStep};
 use sqlx::{Row, SqlitePool};
@@ -30,7 +12,6 @@ fn protocol(message: &str) -> StoreError {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Frequency {
     pub uid: String,
-    /// What a condition calls it: the `daily` in `freq(@daily)`.
     pub slug: String,
     pub head: String,
     pub every: CadenceStep,
@@ -41,11 +22,6 @@ pub struct Frequency {
 }
 
 impl Frequency {
-    /// The beat as a cadence, which is the only form anything downstream wants.
-    ///
-    /// A Frequency has no bound: it is a rhythm, not a run of dates. Rules stop
-    /// by being paused or deleted, and a beat nobody reads simply costs
-    /// nothing.
     pub fn cadence(&self) -> Cadence {
         Cadence::every(self.every)
     }
@@ -82,10 +58,6 @@ fn row_to_frequency(row: &sqlx::sqlite::SqliteRow) -> Result<Frequency, StoreErr
     })
 }
 
-/// Declare a frequency.
-///
-/// Idempotent on `request_id`: a retry returns the frequency the first attempt
-/// made rather than declaring a second one under a new uid.
 pub async fn create(
     pool: &SqlitePool,
     new: NewFrequency<'_>,
@@ -95,9 +67,6 @@ pub async fn create(
     if slug.is_empty() {
         return Err(protocol("a frequency needs a name to be read by"));
     }
-    // The slug is what a condition types. Letting it hold anything the
-    // expression lexer treats as an operator would make a reading that cannot
-    // be written down.
     if !slug
         .chars()
         .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '.')
@@ -106,7 +75,6 @@ pub async fn create(
             "a frequency name may hold letters, digits, dot, dash and underscore",
         ));
     }
-    // A step that advances nothing would name a beat that never comes.
     if new.every.is_zero() {
         return Err(protocol("a frequency needs a component to repeat by"));
     }
@@ -177,8 +145,6 @@ pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<Frequency>, Stor
     row.as_ref().map(row_to_frequency).transpose()
 }
 
-/// Resolve what a condition wrote: `freq(@daily)` finds the frequency called
-/// `daily`. A uid is accepted too, so a caller holding one need not look it up.
 pub async fn resolve(pool: &SqlitePool, name: &str) -> Result<Option<Frequency>, StoreError> {
     let name = name.trim().trim_start_matches('@');
     let row = sqlx::query("SELECT * FROM frequency WHERE slug = ? OR uid = ?")
@@ -208,11 +174,6 @@ async fn by_request(pool: &SqlitePool, request_id: &str) -> Result<Option<Freque
     row.as_ref().map(row_to_frequency).transpose()
 }
 
-/// Forget a frequency.
-///
-/// Refused while a rule still reads it: a condition naming a beat that no
-/// longer exists would evaluate to nothing and quietly stop firing, which reads
-/// exactly like a rule whose reading is simply false.
 pub async fn delete(pool: &SqlitePool, uid: &str) -> Result<(), StoreError> {
     let frequency = get(pool, uid)
         .await?

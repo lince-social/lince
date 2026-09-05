@@ -19,3 +19,9 @@ serde_json = { workspace = true }
 dirs = { workspace = true }
 toml = { workspace = true }
 uuid = { workspace = true, features = ["v4"] }
+
+[build-dependencies]
+sensei = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,16 +1,3 @@
-//! This device (Ontology §11 "Profile vs device surfaces").
-//!
-//! The Organ is the published identity — what a contact saves, what a QR
-//! encodes, what survives every device change. The Cell is one machine of it.
-//! Before the split one row did both jobs, which is why `organs::local()` read
-//! as "who am I" and "who authored this" interchangeably at every call site.
-//!
-//! A Cell is a `device`-kind Record so surfaces and Protein can see it without
-//! a second mechanism, and it is inserted RAW — no `log_local`, so no op, so
-//! it never travels. A Cell reaches other people exactly one way: as an entry
-//! in the signed roster. Local-only settings (File Sync paths, cache sizes,
-//! storage config) belong on this Record precisely because it does not sync.
-
 use chrono::Utc;
 use nucleus::RecordKind;
 use sqlx::{Row, SqlitePool};
@@ -22,7 +9,6 @@ pub const LOCAL_CELL_SLUG: &str = "local-cell";
 #[derive(Debug, Clone, PartialEq)]
 pub struct CellRecord {
     pub uid: String,
-    /// The Organ this Cell is a member of.
     pub organ_uid: String,
     pub label: String,
 }
@@ -35,9 +21,6 @@ fn map(row: sqlx::sqlite::SqliteRow) -> CellRecord {
     }
 }
 
-/// This Cell, creating it on first call. `organ_uid` is the Organ it belongs
-/// to, which must already exist — a Cell with no Organ has nothing to be a
-/// member OF, and its ops would have no published identity to carry.
 pub async fn ensure_local(
     pool: &SqlitePool,
     organ_uid: &str,
@@ -76,8 +59,6 @@ pub async fn local(pool: &SqlitePool) -> Result<Option<CellRecord>, StoreError> 
     )
 }
 
-/// Rename this device. The label is what a roster entry shows a contact, and
-/// what the owner picks a Cell out of a list by.
 pub async fn set_label(pool: &SqlitePool, label: &str) -> Result<(), StoreError> {
     sqlx::query("UPDATE record SET head = ?, updated_at = ? WHERE slug = ? AND kind = ?")
         .bind(label)
@@ -89,15 +70,6 @@ pub async fn set_label(pool: &SqlitePool, label: &str) -> Result<(), StoreError>
     Ok(())
 }
 
-/// Read a LOCAL-ONLY config namespace off this Cell's Record.
-///
-/// Cell config never syncs and never logs an op, which is what makes it
-/// usable by a Cell that may not write (Ontology §11, C4). A relay holds
-/// `relay_capabilities()` and the database refuses any op it authors — so if
-/// its own discovery settings were an ordinary logged write on the shared
-/// Organ Record, a relay could not configure itself at all. That is not a
-/// hypothetical: it is what the write-capability trigger surfaced the day it
-/// was added.
 pub async fn config(
     pool: &SqlitePool,
     namespace: &str,
@@ -115,8 +87,6 @@ pub async fn config(
     Ok(raw.and_then(|raw| serde_json::from_str(&raw).ok()))
 }
 
-/// Write a local-only config namespace. RAW — no op, so it never travels and
-/// never needs a write capability.
 pub async fn set_config(
     pool: &SqlitePool,
     namespace: &str,

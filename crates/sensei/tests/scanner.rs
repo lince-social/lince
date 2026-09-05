@@ -49,3 +49,69 @@ fn a_word_ending_in_r_before_a_string_is_not_a_raw_string() {
     let source = "fn a() { let colour = \"red\"; }\n// found\n";
     assert_eq!(lines(source), vec![2]);
 }
+
+use sensei::rules::no_comments::strip;
+
+#[test]
+fn a_comment_on_its_own_line_leaves_no_blank_behind() {
+    let source = "fn a() {}\n// gone\nfn b() {}\n";
+    assert_eq!(strip(source), "fn a() {}\nfn b() {}\n");
+}
+
+#[test]
+fn a_trailing_comment_leaves_the_code_and_no_stray_space() {
+    let source = "let x = 1; // why\nlet y = 2;\n";
+    assert_eq!(strip(source), "let x = 1;\nlet y = 2;\n");
+}
+
+#[test]
+fn a_block_comment_across_lines_takes_all_of_its_lines() {
+    let source = "fn a() {}\n/* one\n   two */\nfn b() {}\n";
+    assert_eq!(strip(source), "fn a() {}\nfn b() {}\n");
+}
+
+#[test]
+fn a_padded_comment_does_not_leave_two_blank_lines_where_there_was_one() {
+    let source = "fn a() {}\n\n// gone\n\nfn b() {}\n";
+    assert_eq!(strip(source), "fn a() {}\n\nfn b() {}\n");
+}
+
+#[test]
+fn a_doc_comment_at_the_top_does_not_leave_the_file_starting_blank() {
+    let source = "//! the module\n//! keeps talking\n\nfn a() {}\n";
+    assert_eq!(strip(source), "fn a() {}\n");
+}
+
+#[test]
+fn a_string_that_looks_like_a_comment_survives_untouched() {
+    let source = "fn a() -> &'static str { \"https://lince.social // not a comment\" }\n";
+    assert_eq!(strip(source), source);
+}
+
+#[test]
+fn a_raw_string_with_slashes_survives_untouched() {
+    let source = "fn a() -> &'static str { r#\"a \" and // inside\"# }\n";
+    assert_eq!(strip(source), source);
+}
+
+#[test]
+fn a_file_with_nothing_to_say_is_returned_byte_for_byte() {
+    let source = "fn a() {}\n\nfn b() {}\n";
+    assert_eq!(strip(source), source);
+}
+
+#[test]
+fn multibyte_text_beside_a_comment_is_not_mangled() {
+    let source = "let s = \"café — ação\"; // gone\nlet t = \"日本\";\n";
+    assert_eq!(
+        strip(source),
+        "let s = \"café — ação\";\nlet t = \"日本\";\n"
+    );
+}
+
+#[test]
+fn stripping_twice_changes_nothing_the_second_time() {
+    let source = "//! head\n\nfn a() {} // tail\n\n/* block */\nfn b() {}\n";
+    let once = strip(source);
+    assert_eq!(strip(&once), once);
+}

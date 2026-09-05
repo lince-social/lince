@@ -1,7 +1,3 @@
-//! Imagination, engine side (blueprint XII): builds the Snapshot from the
-//! store and hands it to the pure fold in `nucleus::imagination`. Also the
-//! deterministic confidence formula over verified promise history.
-
 use chrono::{DateTime, Utc};
 use nucleus::PromiseState;
 use nucleus::imagination::{ProjMove, ProjPromise, ProjRule, Snapshot, Timeline};
@@ -11,12 +7,6 @@ use store::sqlx::Row;
 use crate::Engine;
 use crate::error::EngineError;
 
-/// Build the projection snapshot: quantity levels, slug map, agreed/active
-/// promises with windows, and every active rule with its own cadence.
-///
-/// There is no separate frequency list any more. A rule carries the schedule
-/// it repeats on, so "what fires when" is one question with one answer here and
-/// in the heartbeat.
 pub async fn build_snapshot(store: &Store, now: DateTime<Utc>) -> Result<Snapshot, EngineError> {
     let mut quantities = std::collections::HashMap::new();
     let mut slugs = std::collections::HashMap::new();
@@ -45,8 +35,6 @@ pub async fn build_snapshot(store: &Store, now: DateTime<Utc>) -> Result<Snapsho
         });
     }
 
-    // Every active rule, with the schedule it repeats on. A paused rule offers
-    // no future, which is what pausing means.
     let mut slug_of: std::collections::HashMap<String, String> = Default::default();
     for (slug, uid) in &slugs {
         slug_of.insert(uid.clone(), slug.clone());
@@ -59,9 +47,6 @@ pub async fn build_snapshot(store: &Store, now: DateTime<Utc>) -> Result<Snapsho
         let Ok(anchor) = crate::actions::parse_instant_field(&rule.anchor_at) else {
             continue;
         };
-        // What the rule does to a number, in the only two shapes a timeline can
-        // fold: a movement, and an assignment. A rule that only touches
-        // concepts contributes no point, which is honest — nothing moved.
         let movement = rule
             .consequences
             .iter()
@@ -82,9 +67,6 @@ pub async fn build_snapshot(store: &Store, now: DateTime<Utc>) -> Result<Snapsho
         let condition = match rule.condition.as_ref() {
             None => None,
             Some(stored) => {
-                // A stored condition that no longer parses simply does not
-                // project; it is refused at write time, so this is the
-                // belt-and-braces case rather than the expected one.
                 match nucleus::imagination::proj_condition(
                     &stored.source,
                     stored.gate.clone(),
@@ -115,8 +97,6 @@ pub async fn build_snapshot(store: &Store, now: DateTime<Utc>) -> Result<Snapsho
     })
 }
 
-/// Deterministic confidence for a promise (blueprint XII.2): the party's
-/// kept ratio with Laplace smoothing; 0.5 for strangers with no history.
 pub async fn confidence(store: &Store, promise_uid: &str) -> Result<f64, EngineError> {
     let Some(p) = store::misc::get_promise(&store.pool, promise_uid).await? else {
         return Ok(0.0);
@@ -138,9 +118,6 @@ pub async fn confidence(store: &Store, promise_uid: &str) -> Result<f64, EngineE
     Ok((kept as f64 + 1.0) / ((kept + broken) as f64 + 2.0))
 }
 
-/// Demand curve sample (blueprint XII.2): the share (0..1) of the trailing
-/// 30 days' facts on the concept's records that happened in `now`'s
-/// hour-of-day. Pure over the Ledger — same inputs, same number.
 pub async fn demand(
     store: &Store,
     concept_token: &str,
@@ -184,11 +161,9 @@ pub async fn demand(
     })
 }
 
-/// The crossing sweep's default horizon: a week ahead.
 pub const CROSSING_HORIZON_SECS: i64 = 7 * 86_400;
 
 impl Engine {
-    /// Project the Cell's state forward to `until` — the scrubbable future.
     pub async fn project(
         &self,
         now: DateTime<Utc>,
@@ -198,18 +173,10 @@ impl Engine {
         Ok(nucleus::imagination::project(&snapshot, until))
     }
 
-    /// Build the projection Snapshot for branching (blueprint XII.1): mutate
-    /// the returned snapshot (toggle a rule, drag a promise) and fold it with
-    /// `nucleus::imagination::project` — diffing two timelines is the compare
-    /// view.
     pub async fn snapshot(&self, now: DateTime<Utc>) -> Result<Snapshot, EngineError> {
         build_snapshot(&self.store, now).await
     }
 
-    /// The Imagination heartbeat arm (blueprint XII.1 → XIII, decision 4):
-    /// every plain record currently at-or-above zero whose projection crosses
-    /// below zero within the horizon enqueues a `crossing` decision — "apples
-    /// hit 0 on Thursday". Deduped per record; returns created decision uids.
     pub async fn crossings_pass(&self, now: DateTime<Utc>) -> Result<Vec<String>, EngineError> {
         let timeline = self
             .project(now, now + chrono::TimeDelta::seconds(CROSSING_HORIZON_SECS))

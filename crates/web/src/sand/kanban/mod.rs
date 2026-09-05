@@ -2,9 +2,6 @@ use crate::domain::lince_package::{LincePackage, PackageManifest};
 
 pub(crate) const FEATURE_FLAG: &str = "sand.kanban_record_view";
 
-// The sand IS this HTML string (Stage 8b): a self-contained document that talks
-// to the board host (`window.LinceWidgetHost`) over Protein reads + typed
-// Actions. Emitted as a single `.html` package like the other sands.
 const HTML: &str = include_str!("kanban.html");
 
 pub(crate) fn manifest() -> PackageManifest {

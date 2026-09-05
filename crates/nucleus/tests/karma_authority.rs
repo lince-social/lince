@@ -96,9 +96,6 @@ fn authority_wire_has_a_golden_hash() {
     let digest = canonical_hash("karma.authority-golden.v1", &fixture).unwrap();
     assert_eq!(
         digest.as_str(),
-        // Updated 2026-07-26: the fixture's template slug moved from the
-        // domain-specific `economy.add` to the generic `record.add-quantity`.
-        // The wire format is unchanged; only the test data is.
         "sha256:b48813e1435afc82fde9f6c59a967cfd7462721901ccf123989f0cc9b2930461",
         "an authority wire change requires a deliberate golden update"
     );

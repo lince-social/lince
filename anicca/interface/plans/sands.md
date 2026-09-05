@@ -5,8 +5,9 @@ Purpose: Define production Sand schema, authoring, composition, package, HTML, W
 Owner source: no dedicated Sands Record currently exists;
 [Interface in Lince](../../Lince.lingua) governs shared interface decisions.
 
-Status: Coordinated with Customization C3-C5; semantic kernel, primitive
-Gallery and recursive composition landed, and Box follows the gate.
+Status: Coordinated with Customization C4-C5; semantic kernel, primitive
+Gallery, recursive composition and C3 external-authoring layer landed, and Box
+follows the gate.
 
 Read when: implementing the Sand contract or external runtime surface.
 
@@ -48,7 +49,65 @@ recursive Maud output and workbench artifacts agree in the release parity
 report, and the joined Wayland report passes. Castle remains only a human name
 for a saved compound.
 
+## Landed C3 boundary
+
+Configuration schema version 1 wraps the exact composition artifact without
+creating another definition graph. The 22-definition Configuration Sand uses
+the same primitives and exposes global/group/instance style, definition,
+Behavior, port, isolation/capability, developer-CSS, undo, inherit, launch and
+persistence operations through F11, pointer, keyboard and AccessKit. One
+resolved cascade reaches native, Installed HTML, shared HTML and browser roots.
+
+The versioned external-author manifest pins package uid, normalized graph hash
+and exact roots. The generated seven-file kit includes schemas, a valid
+ordinary HTML/CSS/ES-module package, an unknown-version refusal, token
+reference, launch recipe and guide. The renderer-neutral recipe materializes
+ordinary placements, typed Record reads and Action exports and persists a
+domain receipt so reopen focuses instead of cloning. These completed entries
+are prose and generated evidence rather than remaining tasks.
+
 ## What is left
+
+### Landed first C4 structure boundary
+
+The official migration catalog now validates 25 root Sands and 72 total
+definitions built in Rust. It decomposes common workflow structure into
+placeable primitives and compounds and makes the remaining specialized
+renderer boundary explicit. F12 exposes root selection, typed ports, legacy
+source, readiness and the recursive tree through keyboard, pointer and
+AccessKit. Configuration reports landed. Edit controls, zoom controls, Record,
+Conversation, Table, Todo and Kanban report native retained Behavior. An isolated laboratory run
+uses deliberately representative Protein-shaped input, while the production
+desktop binds Record, Conversation and private-draft results through three live
+Protein subscriptions. Message, draft and Record-quantity writes use
+acknowledged Actions; the other 17 roots truthfully keep runtime Behavior
+pending. The collection roots remain active C4 work beyond their landed core.
+
+The first operational slice projects the exact recursive definitions into a
+renderer-neutral retained scene with stable semantic paths, canonical style
+roles, Glyphon text, WGPU rectangles, hit testing and a dynamic AccessKit
+subtree. F12 then Enter/Space opens the seven available roots. Their pointer,
+keyboard and accessibility actions operate edit/group/Castle state, zoom and
+recenter state, Record property presentation, local draft text, message-send requests
+and a typed `record-clicked` identity. Generic toolbar actions use a generic
+Boolean trigger; only the deliberately Record-bearing action can emit the
+Record event. Domain failure is visible and reconnecting. Conversation keeps
+author/operator and lifecycle state, coalesces durable private-draft edits and
+does not consume draft state before a successful Action reply.
+
+The first collection slice adds a renderer-neutral repeated-placement seam:
+each stable Protein uid creates an instance of the same Table-row or
+Record-summary definition. Table paging and creation, Todo creation/completion
+and default Kanban quantity-lane movement are operable through the same scene,
+focus, AccessKit and Action boundaries. Table inline editing/deletion,
+user-selected Protein, saved Kanban lane/concept presets, selection/bulk work
+and swimlanes remain explicit work in this stage.
+
+The composition host was repaired before this catalog could rely on it.
+Protein or fixed values bound to a public compound input now flow through
+nested input exports to the eventual child, declared defaults participate in
+mounting, and two routes to the same terminal input are refused. This is C2
+correctness, not a C4 workaround.
 
 ### Sand
 
@@ -98,6 +157,19 @@ for a saved compound.
   edit mode. A code-owned native or Maud definition is never rewritten; Box
   edits a visibly forked user definition and preserves lineage and revision
   inspection.
+- [ ] In the same edit mode, let a person inspect the selected Sand's typed
+  inputs, outputs, configuration and child tree; attach a Protein field or a
+  fixed value to an input; add an independently placeable presentation Sand
+  for a property; remove or disable that child to stop showing the property;
+  and reconnect emitted events to declared Box events or typed Actions.
+  Property visibility is semantic composition, never CSS-only hiding that
+  leaves an interactive or accessible node alive.
+- [ ] Let a person select arbitrary Sand instances, preserve their relative
+  transforms and connections, glue them into one locally locked compound
+  group, unlock and rearrange its children, expose selected child ports, and
+  save or fork the exact group as a reusable Castle. Grouping creates one
+  recursive definition and one placement rather than copying HTML or storing
+  group membership redundantly on every child.
 - [ ] Write concise author documentation that starts with composing existing
   pieces and progresses to HTML, Protein, Actions, ports, permissions, and
   packaged assets.
@@ -150,8 +222,6 @@ for a saved compound.
   `frame-ancestors` or `X-Frame-Options`. In Plan A CEF mode, detect sites,
   authentication, protected media, or browser policies that still reject the
   embedded runtime and offer the same fallback.
-- [ ] Package the authoring documentation and a minimal bridge test kit so
-  external HTML can integrate without copying an official Sand as folklore.
 - [ ] Remove the legacy nested-payload frame and old Lynx component API during
   the rebuild. Route `.lince` imports by inspected content rather than a
   legacy filename suffix; unknown shapes fail closed.
@@ -162,26 +232,41 @@ for a saved compound.
 
 - [ ] Later on, some form of creation of data, similar to ontology's trail should exist and be able to see it in this sand, to input in some dsl or lingua the creation of data to make this demo of paradigms of intelligence: https://paradigms-of-intelligence.github.io/morpho/.
 
-## Task-bound terminal Sand (Fiote)
+## Conversation and task surfaces carried for Fiote
 
 Owner ask, 2026-08-29: "we should be able to have in the end a libghostty or
 equivalent sand so we can attach properties to that specific sand which can be
 the record of the task we are trying to do in such terminal."
 
 The design reasoning lives in [Fiote build notes](../../Karma.md) (D1, D13,
-D14); only the interface consequence belongs here.
+D14, D31-D33); only the shared interface consequence belongs here. Phase 1 is
+split across the existing pre-Box waterfall rather than inserted as another
+framework or milestone:
 
-**The binding needs no schema change.** `BoardCard` already carries
-`widget_state: Value` — arbitrary per-instance JSON persisted with the card. A
-terminal pane bound to a task is `widget_state.record_uid`, set when the pane
-is opened from a task and read back on reload. What the instance carries is a
-*binding*, never a copy: the Record is the truth, the pane displays it.
+- landed C3 owns renderer-neutral domain launch recipes and typed Record bindings;
+- C4 owns Conversation authorship, live message state, private drafts and the
+  official Conversation/Record/Terminal projections;
+- C5 proves those general surfaces through keyboard, pointer and AccessKit;
+- Fiote Phase 2 then adds the agent-specific session permission, tool timeline
+  and session-control Sands without blocking Box.
 
-- [ ] Let a Ghostty terminal instance carry a bound Record uid in
-  `widget_state`, shown in the pane's own chrome (title, status control) so a
-  board of several terminals is readable at a glance. The honest empty case is
-  "not bound to a task", distinct from "task deleted" and from "no permission
-  to see it".
+Fiote's natural-language and later speech surface is an additional route to
+the same authorized Actions. It does not replace keyboard navigation,
+semantics or assistive-technology support in the native Sands.
+
+### Task-bound terminal Sand
+
+The legacy `BoardCard.widget_state`, `groupId` and JavaScript grouping path is
+not part of Plan A. The landed contract already has the correct primitive: a
+`SandInstance` or `CompositionPlacement` receives a typed `Record` input and
+the composition document persists the binding, while the Record remains the
+truth. C3 added the launch recipe and provenance around that primitive; it does
+not add an arbitrary shared state bag.
+
+- [ ] Let the native Terminal definition expose a typed task-Record input,
+  shown in the Sand's own chrome so several terminals remain distinguishable.
+  The honest empty cases are separate: not bound, Record deleted, and not
+  permitted to read it.
 - [ ] Open a bound terminal *from* a Record — the inverse direction is what
   makes the binding worth having, because a person starts from the task, not
   from a pane.
@@ -193,19 +278,20 @@ is opened from a task and read back on reload. What the instance carries is a
 - [ ] Show the same binding on whatever pane a Fiote cub runs in, so the
   terminal view and the Fiote view are two projections of one task rather than
   two unrelated surfaces.
-- [ ] Decide whether `widget_state` bindings are workspace-local or travel
-  with an exported workspace/archive. A shared board that references a Record
-  the recipient cannot see must degrade to the honest empty case above rather
-  than a dead uid.
+- [ ] Keep the placement and its binding in Box host state. Exporting or
+  sharing a workspace preserves the typed reference and provenance, but a
+  recipient who cannot resolve or read it gets the honest unavailable state
+  rather than a dead uid or copied Record.
 
 ### Fiote sessions stream into the interface
 
 Owner, 2026-08-30, marked high priority for the interface refactor: whatever
 Fiote and its cubs are doing must be watchable here, live.
 
-This is the same surface as the task-bound terminal above — a pane bound to a
-Record — with a different source behind it. The harness design lives in
-[Fiote build notes](../../Karma.md); only the surface consequence belongs here.
+This reuses the same typed Record binding and Terminal renderer as the
+task-bound terminal, but it is a compound rather than one overloaded pane. The
+harness design lives in [Fiote build notes](../../Karma.md); only the surface
+consequence belongs here.
 
 - [ ] Stream a Fiote or cub session into a pane as it runs: assistant text,
   thinking, tool calls and their results, and the bytes of any command it ran.
@@ -220,20 +306,27 @@ Record — with a different source behind it. The harness design lives in
 - [ ] Several sessions on one board at once, each labelled by which Fiote owns
   it and which task it is on, since a board of unlabelled panes stops being
   readable at about four.
-- [ ] Decide whether a raw terminal view of a session is a separate pane kind
-  or a mode of the same one. The Ghostty sand already renders VT bytes; a
-  session that ran a command has bytes worth rendering that way.
+- [ ] Render command bytes through the Terminal Sand's reusable VT renderer
+  inside the read-only tool-timeline view. The person's real Terminal remains
+  a separate interactive Sand; renderer reuse does not merge their authority.
 
 ### Pinned and queued messages, one list
 
 Owner, 2026-08-30. The reasoning is in [Fiote build notes](../../Karma.md) D32;
 this is the surface.
 
-A draft message is a Record only its author can see, carrying assertions for
-what it will do: `#pinned` (a preset, copied on send, survives), `#steer`
-(delivered at the next safe point in a running turn), `#next` (delivered when
-the turn finishes). A queued draft without `#pinned` is consumed when it sends.
-One list holds both, and the tags say what each entry will do.
+A draft message is a Record only its author can see. The landed C4 storage
+keeps Conversation/thread routing, `pinned`, timing and position together in
+the private `lince.message-draft` extension rather than creating public
+ontology assertions for queue mechanics. `pinned` is a preset copied on send;
+`next_safe_point` delivers when the current tool returns; `after_turn` delivers
+when the turn finishes. A queued draft without `pinned` is consumed only after
+an acknowledged send. One list holds both, and the controls say what each entry
+will do. The native runtime debounces edits for 250 ms, preserves edits made
+while an older revision is in flight and restores Protein-materialized drafts
+after restart. Actual next-safe-point/after-turn delivery begins when Fiote
+attaches its running-turn state; without one, the same control says and behaves
+as “send now · no turn running.”
 
 - [ ] One drafts list per conversation, private to its author, holding presets
   and queued messages together. Reorder by dragging; promote an entry to go
@@ -251,17 +344,12 @@ One list holds both, and the tags say what each entry will do.
   honest maximum is when that tool returns. Abort-and-send is a separate
   control and looks destructive.
 
-### The terminal and the thread are two views of one session
+### Session input boundaries
 
-- [ ] A session's pane can show the thread (messages, durable) or the terminal
-  (raw bytes of what it ran, ephemeral), and switching between them does not
-  restart or interrupt anything. The terminal is the uncollapsed form of what
-  a folded tool result already shows.
-- [ ] Decide whether the terminal is read-only or interactive. If interactive,
-  typing into it **bypasses the model** — it is not a message and the agent
-  does not know it happened unless the output returns to its context. That must
-  be visibly distinct from steering: a different pane state, and a line in the
-  thread recording that a person typed directly.
+- [ ] Keep three distinct paths: durable thread Messages, ephemeral read-only
+  tool output, and the person's interactive shell. If intervention in the
+  agent's command stream is ever allowed, it visibly bypasses the model and
+  writes that fact into the thread; it never masquerades as steering.
 - [ ] Ctrl-C in the terminal stops the running command; a stop control on the
   session cancels the whole turn. An interrupted turn must be marked as
   interrupted where the model can see it, or it reads its half-finished work as
@@ -309,30 +397,35 @@ Owner, 2026-08-30: when we have a session with an agent we have a Sand group —
 the thread, what the agent ran, and possibly the terminal — reusing existing
 Sands and inventing the few that are missing.
 
-The board already has the mechanism: `BoardCard` carries `groupId` and a
-nested `groupIds` stack, and `group-logic.js` has `wrapInGroup`. Nothing new is
-needed to make a session a group; what is new is what goes in it and where the
-group comes from.
+The landed C2 mechanism is a compound Sand definition plus a
+`CompositionDocument`; children are not cards carrying copied membership or a
+stack of group ids. C3 added the general mechanism: a versioned domain
+launch recipe instantiates that definition with stable placements, typed
+Record inputs, provenance and undo. Reopening is idempotent, and user layout
+changes remain Box placement overrides rather than mutations to the session or
+the code-owned definition.
 
 **What is reused, and what is actually new.**
 
 | View | Sand |
 | --- | --- |
-| The thread | **`conversation`**, unchanged. It already reads Conversation → Thread → Message over Protein and sends with `create-message` / `open-thread`. A session thread is an ordinary thread. |
-| The task | **`record`**, unchanged, bound to the Record the session hangs off. |
-| A real terminal | **`terminal`**, unchanged. |
+| The thread | **`conversation`**, rebuilt in C4. It reads Conversation → Thread → Message over Protein and sends through ordinary Actions. A session thread is an ordinary thread. |
+| The task | **`record`**, rebuilt in C4 and bound through its typed Record input. |
+| A real terminal | **`terminal`**, rebuilt as a specialized native Sand while preserving its task input and terminal semantics. |
 | What the agent ran | **New.** A tool timeline: each call with its arguments, its result, diffs it produced, folded by default. Command output renders through the same VT path the terminal Sand already uses, read-only. |
 | Session control | **New.** The cub tree, spawn and stop, model and thinking level, tokens / context / cost, compaction. |
 | Drafts and queue | Part of the composer, not its own Sand. |
 
-- [ ] Bind every member of a session group to the same session Record through
-  `widget_state`, and give the group one lane room so its members coordinate
-  without going through the Ledger.
+- [ ] Give the root compound typed Fiote and active-session Record inputs;
+  route those inputs only to children that declare them. Give the group one
+  ephemeral lane room for live coordination without turning lane traffic into
+  Ledger data.
 - [ ] Opening a session reconstructs its group; closing it destroys nothing,
   because the session is host-owned and outlives every view of it (Fiote D2).
-  *Where the layout itself lives — a recipe on the session Record versus loose
-  cards on one board — is deferred to the v2 interface refactor (owner,
-  2026-08-30), along with anything mobile.*
+  The earlier Web-era note that layout had to wait for v2 is superseded by the
+  C2 composition artifact: reusable layout lives in the compound definition,
+  its placement and overrides live in Box state, and the domain launch recipe
+  only joins them idempotently.
 - [ ] **One group per Fiote, not per cub.** Three or four Sands per session
   multiplied by several cubs is a board nobody can read — the same failure as
   unlabelled panes. Cubs are rows in the session-control Sand, and any one of

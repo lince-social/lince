@@ -14,7 +14,7 @@ pub fn run() {
     let args = std::env::args().collect::<Vec<_>>();
     #[cfg(target_os = "linux")]
     if args.iter().any(|argument| argument.starts_with("--type=")) {
-        lince_interface::run_native_interface(None);
+        lince_interface::run_native_interface(None, None);
         return;
     }
     if args
@@ -40,7 +40,7 @@ pub fn run() {
             Ok(runtime) => {
                 eprintln!("Legacy Lince interface available at {}", runtime.url);
                 let _runtime_guard = tokio_runtime.enter();
-                lince_interface::run_native_interface(None);
+                lince_interface::run_native_interface(None, Some(runtime.url));
             }
             Err(error) => {
                 eprintln!("Failed to start Lince desktop server: {error}");

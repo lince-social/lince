@@ -1,8 +1,3 @@
-//! Trust (blueprint XI): make every delta verifiable. Ed25519 signatures over
-//! the fact hash; the private key lives OUTSIDE the database (caller supplies
-//! the bytes — file, keychain, or test fixture); the public key is published
-//! in `identity_key` so any Cell can verify authorship.
-
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD as B64;
 use ed25519_dalek::{Signature, Signer as _, SigningKey, Verifier as _, VerifyingKey};
@@ -22,7 +17,6 @@ pub struct Signer {
 }
 
 impl Signer {
-    /// Key material comes from the caller — never from the db (blueprint XI.1).
     pub fn from_bytes(actor_uid: &str, key_id: &str, secret: [u8; 32]) -> Signer {
         Signer {
             key: SigningKey::from_bytes(&secret),
@@ -31,7 +25,6 @@ impl Signer {
         }
     }
 
-    /// Fresh key from non-deterministic entropy (uuid-backed; no rand dep).
     pub fn generate(actor_uid: &str, key_id: &str) -> Signer {
         let mut secret = [0u8; 32];
         secret[..16].copy_from_slice(uuid::Uuid::new_v4().as_bytes());
@@ -55,9 +48,6 @@ impl Signer {
         self.key.to_bytes()
     }
 
-    /// Load a private key from the Cell data directory, creating it once when
-    /// absent. Key bytes stay outside SQLite and are never returned by a read
-    /// API or cross-Cell envelope.
     pub fn load_or_create(path: &Path, actor_uid: &str, key_id: &str) -> Result<Self, EngineError> {
         Ok(Self::from_bytes(
             actor_uid,
@@ -67,12 +57,6 @@ impl Signer {
     }
 }
 
-/// The 32 raw secret bytes at `path`, generated at mode 0600 on first call.
-///
-/// Factored out of `Signer::load_or_create` so the iroh NODE key can reuse the
-/// exact same on-disk discipline without being a `Signer` — a node key
-/// authenticates a live connection and must never be installed as something
-/// that signs Facts or op batches (Ontology §11: node key ≠ identity key).
 pub fn load_or_create_secret(path: &Path) -> Result<[u8; 32], EngineError> {
     match std::fs::read(path) {
         Ok(bytes) => bytes.try_into().map_err(|_| {
@@ -99,8 +83,6 @@ pub fn load_or_create_secret(path: &Path) -> Result<[u8; 32], EngineError> {
                     file.sync_all()?;
                     Ok(secret)
                 }
-                // Another process won the race and wrote first — read theirs,
-                // so two Cells never disagree about which key this file holds.
                 Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
                     load_or_create_secret(path)
                 }
@@ -112,8 +94,6 @@ pub fn load_or_create_secret(path: &Path) -> Result<[u8; 32], EngineError> {
 }
 
 impl Engine {
-    /// Install the Cell's signer: publishes the public key, signs every fact
-    /// sealed from now on.
     pub async fn set_signer(&self, signer: Signer) -> Result<(), EngineError> {
         store::sqlx::query(
             "INSERT INTO identity_key (actor_uid, key_id, public_key) VALUES (?, ?, ?)
@@ -135,9 +115,6 @@ impl Engine {
         Ok(())
     }
 
-    /// The actor whose private key is currently available to this Engine.
-    /// Published identity keys are verification material and do not imply
-    /// that this process can author a Fact for their actor.
     pub async fn signer_actor_uid(&self) -> Option<String> {
         self.signer
             .lock()
@@ -146,8 +123,6 @@ impl Engine {
             .map(|signer| signer.actor_uid.clone())
     }
 
-    /// Install the Cell Organ key used only for cross-Cell transport envelopes.
-    /// It is deliberately separate from the Person signer used for Facts.
     pub async fn set_organ_signer(&self, signer: Signer) -> Result<(), EngineError> {
         let organ = store::organs::local(&self.store.pool)
             .await?
@@ -179,7 +154,6 @@ impl Engine {
     }
 }
 
-/// A peer's published keys, for the introduction export.
 pub async fn keys_of(store: &Store, actor_uid: &str) -> Result<Vec<(String, String)>, EngineError> {
     Ok(store::sqlx::query_as::<_, (String, String)>(
         "SELECT key_id, public_key FROM identity_key WHERE actor_uid = ?",
@@ -189,9 +163,6 @@ pub async fn keys_of(store: &Store, actor_uid: &str) -> Result<Vec<(String, Stri
     .await?)
 }
 
-/// One published key of an actor, by key id. `None` when we hold none — which
-/// for `ROOT_KEY_ID` means we never paired with them, so there is nothing to
-/// check a roster or a directory record against.
 pub async fn key_of(
     store: &Store,
     actor_uid: &str,
@@ -206,8 +177,6 @@ pub async fn key_of(
     .await?)
 }
 
-/// Store a foreign actor's public key (introduction, blueprint XI.1) so their
-/// signed facts verify on import.
 pub async fn adopt_key(
     store: &Store,
     actor_uid: &str,
@@ -249,9 +218,6 @@ async fn require_published_key(
     Ok(())
 }
 
-/// Verify either a direct Fact-hash signature or a distinct, committed signed
-/// Action intent linked to this Fact. The two evidence types are never
-/// relabeled: `fact.signature` remains exclusively a Fact-hash signature.
 pub async fn verify_fact(store: &Store, fact: &Fact) -> Result<bool, EngineError> {
     if let (Some(signature), Some(actor)) = (&fact.signature, &fact.actor_uid) {
         if let Ok(sig_bytes) = B64.decode(signature) {

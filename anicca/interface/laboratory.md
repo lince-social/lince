@@ -612,8 +612,8 @@ desktop fallback.
 The first post-laboratory kernel now uses the same joined scenario as its human
 and machine surface. `mise run interface-lab-joined` exposes F1 workspace
 palette, F2 group density, F3 instance radius, F4 partial theme and F7 mode;
-F8 exports the report. The 2026-08-27 release run resolved all 91 contract-v1
-tokens, retained provenance from the seven scopes, updated native nodes,
+F8 exports the report. The 2026-08-27 release run resolved the then-complete 91
+contract-v1 tokens, retained provenance from the seven scopes, updated native nodes,
 borders, background and text, and sent two declaration updates to the
 Installed CEF root. Its load count remained one before and after the probe.
 Website still had no bridge, and the overall gate passed on Wayland/Vulkan at
@@ -660,12 +660,158 @@ The production desktop release binary completed a cold build when the offline
 desktop environment reused the already validated CEF distribution. After the
 Interface material moved into `Lince.lingua`, the bundled Instinct consumer was
 updated to mint omitted declaration UIDs before projection, matching Lingua's
-current contract without writing owner files. A 2026-08-29 release run then
-reached the current corpus and stopped before the window because the removed
-First Steps root leaves six `@first-steps` references unresolved across Karma,
-Lince and Ontology. `lingua check anicca` reports the same references. This is
-an independent production-entry gate; no Markdown or interface adapter repairs
-or bypasses owner Records.
+current contract without writing owner files. On 2026-08-30 the owner
+authorized the narrow corpus repair: one malformed Ailuros subject gained its
+required quantity, the six chapters stopped pointing at the deliberately
+non-ingested First Steps tutorial, and Ailuros remained a root rather than
+receiving a guessed parent. `lingua check anicca` now validates 16 Records.
+
+The first production rerun generated a passing joined report but exposed a
+background AccessKit/zbus panic after CEF initialization. The combined desktop
+graph had unified zbus onto Tokio through the legacy `rfd` file picker while
+AccessKit was configured for its async-I/O executor. Selecting `rfd`'s
+`async-std` portal backend restores one zbus async-I/O family without placing a
+Tokio runtime inside the native compositor loop. The desktop crate then passed
+`cargo check`. The corrected production report passed on Wayland at 1920×1052
+with two accelerated CEF surfaces, 200 visible Sands, 1,000 continuously
+eligible bodies and 10,000 resident nodes: 10.861 ms frame p95, 11.967 ms p99,
+1.098 ms fixed-step p95 and zero backlog. No AccessKit/zbus panic recurred.
+Its source fingerprint is
+`1fd02aec9ca85626bc4cd33685c80b23da84f205bd23c0fe6c825022641ab97b`.
+
+The fourth post-laboratory kernel adds Configuration artifact, external-author
+manifest and renderer-neutral domain-launch recipe schema version 1. F11 opens
+the native Configuration Sand; its 16 keyboard, pointer and AccessKit
+operations exercise theme identity, typed workspace/group/instance layers,
+inheritance and value origins, definition defaults, ports and Behavior,
+isolation and capabilities, safe developer CSS, refusal, undo, launch/focus
+and atomic save/reopen. The same validated artifact owns composition state, so
+instance edits and published definition revisions never acquire a second
+configuration model. Its Sand-margin role brings the standard table to 92
+typed tokens. A generated seven-file author kit proves the ordinary
+HTML/CSS/ES-module path and refuses an unknown manifest version.
+
+The 2026-09-01 joined release report passed on Wayland/Vulkan at 1920×1052
+with the accepted 200 visible Sands, 1,000 continuously eligible bodies,
+10,000 resident nodes and two accelerated CEF surfaces. It measured 10.879 ms
+frame p95, 6.986 ms CPU-frame p95, 0.752 ms fixed-step p95 with zero backlog,
+and 5.619 ms input-to-present-call p95. The Configuration probe applied and
+restored a live native/Installed-HTML preview while the Installed document's
+load count remained one. Its workbench accepted 14 edits, refused one unsafe
+edit without losing the last good state, undid once, saved and reopened once,
+published three definition revisions, created then focused one idempotent
+domain launch and atomically persisted 110,709 bytes. The package contains 22
+definitions with hash
+`sha256:62fb6ad41280ed7353b8494518ba2328ac929333615f2f1575741c0807527aa3`;
+the report source fingerprint is
+`577dc8b13f1e2b00822f0e97ecd1722fc0672b3edf0295f1f3a06532391c439c`.
+
+The first C4 report extends that same laboratory rather than adding a second
+runtime. F12 opens a Rust-owned official-Sand catalog through keyboard,
+pointer and AccessKit. Its current package contains 25 official roots and 72
+definitions. Configuration is landed; edit controls, zoom controls, Record,
+Conversation, Table, Todo and Kanban have a native retained runtime, and the production desktop binds
+Record, Conversation and private-draft input through live Protein
+subscriptions; the other 17 roots are explicitly structure-only. Enter/Space
+opens the available roots. Their exact recursive
+scene drives WGPU geometry, Glyphon text, pointer hit testing, keyboard focus
+and a dynamic AccessKit subtree. The parity report schema is 6 and emits the
+exact package at
+`target/interface-laboratory/sand-contract/official-sands.json`; the joined
+report schema is 14 and records the exercised retained-runtime and native
+domain facts.
+
+The passing Wayland/Vulkan run kept the accepted 200 visible Sands, 1,000
+continuously eligible bodies, 10,000 resident nodes and two accelerated CEF
+surfaces. It measured 10.807 ms frame p95, 12.870 ms p99, 5.837 ms CPU-frame
+p95, 0.598 ms fixed-step p95 with zero backlog and 4.056 ms
+input-to-present-call p95. The official graph hash is
+`sha256:77bcd0e9402eba6b4c136042191f565b9e8bbf2a75c29241d253b5b25fdfbcc1`
+and the source fingerprint is
+`96ed221508394d3dd9856205e99c785b194681d0e5085fa2aba6528674abee31`.
+
+The 2026-09-02 operational C4 rerun passed report schema 10 on
+Wayland/Vulkan at 1920×1052. Its diagnostic exercised edit mode, group lock,
+Castle-save request, zoom/recenter, typed Record event, property presentation
+and draft/send request Behavior, and then returned to the catalog. All assertions passed.
+At the same 200/1,000/10,000 workload with two accelerated CEF surfaces it
+measured 10.090 ms frame p95, 11.378 ms p99, 5.364 ms CPU-frame p95, 0.686 ms
+fixed-step p95 with zero backlog and 4.058 ms input-to-present-call p95. The
+72-definition official package hash is
+`sha256:15d668d8add7ba5bbca6bc81f91c17d9c18c2d464c453a89273a24d17f69b3c5`;
+the source fingerprint is
+`f019e733a26680d92ab208d448a3adf94424e5d22b7c7de350abdacb41ba54fd`.
+
+The 2026-09-05 production desktop rerun passed joined report schema 11 on
+Wayland/Vulkan at 1920×1052. Unlike the isolated laboratory default, this run
+started the real local Lince server and configured the native domain adapter.
+The adapter connected to `ws://127.0.0.1:6174/host/transport/ws`, sent an
+ordinary Protein subscription, accepted one snapshot containing one Record
+and reported zero refusals and no last error. Incoming work crosses a bounded
+channel and each frame drains a bounded number of messages, so reconnect and
+domain traffic cannot take over the render loop.
+
+All 76 joined-runtime tests pass. At the accepted 200 visible Sands, 1,000
+continuously eligible bodies, 10,000 resident nodes and two accelerated CEF
+surfaces, the run presented 823 frames and measured 10.612 ms frame p95,
+12.427 ms p99, 5.722 ms redraw-to-present-call CPU p95, 0.674 ms fixed-step
+p95 with zero backlog and 4.563 ms input-to-present-call p95. The report is
+`target/interface-laboratory/c4-domain/report.json`; its source fingerprint is
+`142351d20470f8fc05cfcc802dfa8762b13efd1d34c696a91c1532ae2c69de22`.
+
+The next 2026-09-05 Conversation checkpoint passed joined report schema 12 at
+1920×1052. It subscribed to live Record and Conversation results and exercised
+the retained Conversation structure, authorship/state projection, private
+draft creation, pinning and send requests. The diagnostic deliberately drained
+those representative write intents, so this performance run changed no domain
+data. At the same 200 visible Sands, 1,000 continuously eligible 120 Hz bodies,
+10,000 resident nodes and two CEF surfaces it measured 13.047 ms frame p95,
+16.384 ms p99, 7.791 ms CPU-frame p95, 0.511 ms fixed-step p95 with zero backlog
+and 7.916 ms input-to-present-call p95. The report is
+`target/interface-laboratory/c4-conversation/report.json`; the exact official
+package hash is
+`sha256:c06be5a4c17ab85d590e96a87bea45b1b0a48544b37f2dde0e69a39522630347`
+and its source fingerprint is
+`013bc0510eeb888e6fa6b08de793b992487e5698acb42a03d3708d60ec1bd951`.
+
+The final 2026-09-05 Conversation checkpoint passed report schema 13. Its third
+Protein subscription received private `message_draft` Records alongside the
+Record and Conversation snapshots with three accepted snapshots, zero refusal
+and no last error. The durable create/revise/delete/send path was exercised
+without dispatching representative diagnostic writes into production.
+Eighty-five joined-runtime tests pass, including the real socket subscription,
+lifecycle/authorship materialization, acknowledgement ordering, pin survival,
+draft ordering and honest no-turn timing. At 200 visible Sands, 1,000
+continuously eligible bodies, 10,000 resident nodes and two accelerated CEF
+surfaces, the production run measured 9.897 ms frame p95, 11.460 ms p99, 4.721
+ms CPU-frame p95, 0.535 ms fixed-step p95 with zero backlog and 3.936 ms
+input-to-present-call p95. The report is
+`target/interface-laboratory/c4-conversation-drafts/report.json`; its source
+fingerprint is
+`9301dd1860aca967c3af225dbcf1c959c72f6019bccf940bed0e8e77a22e572b`.
+
+The 2026-09-05 Record-collection checkpoint passed report schema 14. The
+renderer-neutral retained-placement seam repeated exact Table-row and
+Record-summary definitions under stable encoded Protein-row paths. The
+diagnostic exercised Table selection, Todo creation and Kanban selection and
+movement as three typed `record-clicked` events and two acknowledged-boundary
+write intents; it did not dispatch fixture writes to production. Duplicate
+retained placement and expanded-node identities fail closed, and Todo's Open
+selected control reuses the card's typed Record event. The live Record,
+Conversation and private-draft subscriptions again delivered three snapshots
+with no refusal or error. Ninety-two joined-runtime tests pass, including
+repeated identity, current Engine Action payloads, Todo receipt ordering and
+Kanban lane quantities.
+
+At 200 visible Sands, 1,000 continuously eligible bodies, 10,000 resident
+nodes and two accelerated CEF surfaces the run measured 10.463 ms frame p95,
+12.006 ms p99, 5.369 ms CPU-frame p95, 0.559 ms fixed-step p95 with zero
+backlog and 4.535 ms input-to-present-call p95. The report is
+`target/interface-laboratory/c4-record-collections/report.json`; its official
+package hash is
+`sha256:80caab5ec2fe1a3637b7eeff0ce628b264162363e29d64994cabdd1c575142d7`
+and source fingerprint is
+`bac13fd4ab01078bc7f93221374d4a38c9a265d898bb1164190806af4c5321f2`.
 
 The post-promotion joined release report passed independently at 1920×1052
 with source fingerprint

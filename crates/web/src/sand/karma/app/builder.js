@@ -13,8 +13,10 @@ import {
   applyCompletion,
   blocksIn,
   catalogFrom,
+  conceptName,
   insertAtCaret,
   rankBlocks,
+  readable,
 } from "./blocks.js";
 import { el, replaceChildren, requestId, setHidden } from "./format.js";
 import { act, setNotice, state } from "./state.js";
@@ -27,7 +29,7 @@ let offered = [];
 let offeredFor = null;
 
 function catalog() {
-  return catalogFrom(state.records, state.frequencies);
+  return catalogFrom(state.records, state.frequencies, state.concepts);
 }
 
 // ------------------------------------------------------------- the condition
@@ -42,7 +44,7 @@ function renderChips(elements) {
         class: "tokenChip",
         text: block.head,
         "data-kind": block.kind,
-        title: block.kind === "unknown" ? `Nothing is called @${block.slug}` : block.source,
+        title: block.kind === "unknown" ? `Nothing is called ${block.source}` : block.source,
       }),
     ),
   );
@@ -51,7 +53,7 @@ function renderChips(elements) {
   const unknown = found.filter((block) => block.kind === "unknown");
   setHidden(elements.conditionError, unknown.length === 0);
   if (unknown.length) {
-    const names = unknown.map((block) => `@${block.slug}`).join(", ");
+    const names = unknown.map((block) => block.source).join(", ");
     elements.conditionError.textContent = `Nothing here is called ${names}.`;
   }
 }
@@ -92,7 +94,12 @@ function renderSuggestions(elements) {
       item.appendChild(
         el("span", {
           class: "suggestMeta",
-          text: block.kind === "frequency" ? `freq(@${block.slug})` : `@${block.slug}`,
+          text:
+            block.kind === "frequency"
+              ? `freq(@${block.slug})`
+              : block.kind === "concept"
+                ? `#${block.slug}`
+                : `@${block.slug}`,
         }),
       );
       // mousedown, not click: the input must not lose focus and close the list
@@ -251,6 +258,8 @@ function consequenceLabel(consequence) {
       return `add ${amount ?? "what it carried"}`;
     case "set-quantity":
       return `set to ${amount ?? "what it carried"}`;
+    case "set-quantity-where":
+      return `set everything #${conceptName(consequence.assertion, catalog())} to ${amount ?? "what it carried"}`;
     case "add-concept":
       return `add @${consequence.concept}`;
     case "remove-concept":
@@ -269,7 +278,8 @@ function renderBanks(elements) {
     conditions.map((entry) => {
       const item = el("li");
       const button = el("button", { class: "bankItem", type: "button" });
-      button.appendChild(el("span", { text: entry.source }));
+      const shown = readable(entry.source, catalog());
+      button.appendChild(el("span", { text: shown }));
       button.appendChild(
         el("span", {
           class: "bankItemSource",
@@ -277,7 +287,7 @@ function renderBanks(elements) {
         }),
       );
       button.addEventListener("click", () => {
-        elements.conditionInput.value = entry.source;
+        elements.conditionInput.value = shown;
         renderChips(elements);
         elements.conditionInput.focus();
       });
@@ -313,7 +323,10 @@ function applyConsequence(elements, consequence) {
   elements.builderConsequence.value = consequence.kind;
   const amount = consequence.amount ?? consequence.delta ?? consequence.value;
   elements.builderAmount.value = amount ?? "";
-  elements.builderConcept.value = consequence.concept || "";
+  elements.builderConcept.value = conceptName(
+    consequence.concept || consequence.assertion || "",
+    catalog(),
+  );
   elements.builderCommand.value = consequence.command || "";
   updateConsequenceFields(elements);
 }
@@ -325,11 +338,11 @@ function updateConsequenceFields(elements) {
   const kind = elements.builderConsequence.value;
   setHidden(
     elements.builderAmountField,
-    !["capture-entry", "add-quantity", "set-quantity"].includes(kind),
+    !["capture-entry", "add-quantity", "set-quantity", "set-quantity-where"].includes(kind),
   );
   setHidden(
     elements.builderConceptField,
-    !["capture-entry", "add-concept", "remove-concept"].includes(kind),
+    !["capture-entry", "add-concept", "remove-concept", "set-quantity-where"].includes(kind),
   );
   setHidden(elements.builderCommandField, kind !== "run-command");
 }
@@ -361,6 +374,9 @@ export function consequenceFrom(kind, { amount, concept, command } = {}) {
       return { consequence: { kind, delta: parsed } };
     case "set-quantity":
       return { consequence: { kind, value: parsed } };
+    case "set-quantity-where":
+      if (!concept) return { error: "That consequence needs a concept to act on." };
+      return { consequence: { kind, assertion: concept, value: parsed } };
     case "add-concept":
     case "remove-concept":
       if (!concept) return { error: "That consequence needs a concept." };

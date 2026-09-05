@@ -8,6 +8,13 @@ use lince_interface::{
         DefinitionCatalog, NodeAddress, composition_schema, composition_workbench_fixture,
         composition_workbench_package, dom_identity,
     },
+    configuration::{
+        CONFIGURATION_DEFINITION_COUNT, CONFIGURATION_SCHEMA_VERSION, ConfigurationArtifact,
+        ConfigurationOperation, ConfigurationWorkbenchState, EXTERNAL_AUTHOR_CONTRACT_VERSION,
+        configuration_sand_package, external_author_fixture, external_author_schemas,
+        launch_recipe_fixture, token_reference, write_external_author_kit,
+    },
+    official_sands::{OFFICIAL_SAND_COUNT, OFFICIAL_SANDS, official_sand_package},
     primitive_gallery::{
         INSTALLED_GALLERY_ABI_JS, INSTALLED_GALLERY_ABI_JS_PATH, INSTALLED_GALLERY_COMPOSITION_JS,
         INSTALLED_GALLERY_COMPOSITION_JS_PATH, INSTALLED_GALLERY_CSS, INSTALLED_GALLERY_CSS_PATH,
@@ -34,6 +41,16 @@ root.addEventListener('click',event=>{
 root.addEventListener('lince-output',event=>{
   if(root.dataset.authority==='facade')return;
   root.dataset.latestEvent=event.detail.event;
+});
+"#;
+
+const CONFIGURATION_BEHAVIOR_MODULE: &str = r#"
+const root=document.querySelector('[data-lince-root="configuration-browser"]');
+const status=root.querySelector('[data-configuration-status]');
+root.addEventListener('click',event=>{
+  const operation=event.target.closest('[data-configuration-operation]');
+  if(!operation)return;
+  status.textContent=`Browser-local preview: ${operation.dataset.configurationOperation}`;
 });
 "#;
 
@@ -70,6 +87,19 @@ struct ParityReport {
     invalid_composition_path: String,
     composition_definition_count: usize,
     composition_package_sha256: String,
+    configuration_path: String,
+    configuration_browser_path: String,
+    configuration_schema_path: String,
+    valid_configuration_path: String,
+    invalid_configuration_path: String,
+    configuration_definition_count: usize,
+    configuration_package_sha256: String,
+    external_author_kit_path: String,
+    official_sand_package_path: String,
+    official_sand_count: usize,
+    official_definition_count: usize,
+    official_package_sha256: String,
+    token_count: usize,
     assertions: Vec<Assertion>,
 }
 
@@ -135,12 +165,34 @@ fn run() -> Result<ParityReport, Box<dyn std::error::Error>> {
     let composition_package_sha256 = composition_package.graph_sha256()?;
     let mut workbench = CompositionWorkbenchState::new()?;
     workbench.exercise()?;
+    let configuration_path = root.join("configuration.json");
+    let configuration_browser_path = root.join("configuration.html");
+    let configuration_tokens_path = root.join("configuration-tokens.css");
+    let configuration_behavior_path = root.join("configuration.js");
+    let mut configuration_workbench =
+        ConfigurationWorkbenchState::fixture(configuration_path.clone())?;
+    configuration_workbench.exercise()?;
+    let configuration_artifact = configuration_workbench.artifact();
+    let configuration_browser = configuration_document(configuration_artifact).into_string();
+    let configuration_style = configuration_artifact
+        .configuration
+        .resolved_for(&configuration_artifact.composition, "room-native")?;
+    let configuration_tokens = format!(
+        "[data-lince-root=\"configuration-browser\"]{{{}}}",
+        configuration_style.css_declarations()
+    );
+    let configuration_package = configuration_sand_package();
+    configuration_package.validate()?;
+    let configuration_package_sha256 = configuration_package.graph_sha256()?;
     let replay = replay_fixture(&instances);
     fs::write(&browser_path, &browser)?;
     fs::write(&facade_path, &facade)?;
     fs::write(&style_path, STYLE)?;
     fs::write(&behavior_path, BEHAVIOR_MODULE)?;
     fs::write(&composition_path, &composition)?;
+    fs::write(&configuration_browser_path, &configuration_browser)?;
+    fs::write(&configuration_tokens_path, &configuration_tokens)?;
+    fs::write(&configuration_behavior_path, CONFIGURATION_BEHAVIOR_MODULE)?;
     fs::write(&replay_path, serde_json::to_vec_pretty(&replay)?)?;
     let contract_root = PathBuf::from("target/interface-laboratory/sand-contract");
     fs::create_dir_all(&contract_root)?;
@@ -150,9 +202,17 @@ fn run() -> Result<ParityReport, Box<dyn std::error::Error>> {
     let composition_schema_path = contract_root.join("composition-schema.json");
     let valid_composition_path = contract_root.join("valid-composition.json");
     let invalid_composition_path = contract_root.join("invalid-composition.json");
+    let configuration_schema_path = contract_root.join("configuration-schema.json");
+    let valid_configuration_path = contract_root.join("valid-configuration.json");
+    let invalid_configuration_path = contract_root.join("invalid-configuration.json");
+    let external_author_kit_path = contract_root.join("external-author-kit");
+    let official_sand_package_path = contract_root.join("official-sands.json");
     let primitive_package = primitive_gallery_package();
     primitive_package.validate()?;
     let primitive_package_sha256 = primitive_package.graph_sha256()?;
+    let official_package = official_sand_package();
+    official_package.validate()?;
+    let official_package_sha256 = official_package.graph_sha256()?;
     let mut invalid_package = primitive_package.clone();
     invalid_package.assets[0].sha256 = "sha256:stale".into();
     let invalid_refused = invalid_package.validate().is_err();
@@ -168,6 +228,10 @@ fn run() -> Result<ParityReport, Box<dyn std::error::Error>> {
         &invalid_package_path,
         serde_json::to_vec_pretty(&invalid_package)?,
     )?;
+    fs::write(
+        &official_sand_package_path,
+        serde_json::to_vec_pretty(&official_package)?,
+    )?;
     let valid_composition = composition_artifact.to_json()?;
     let mut invalid_composition = serde_json::to_value(&composition_artifact)?;
     invalid_composition["unknown"] = serde_json::Value::Bool(true);
@@ -179,6 +243,25 @@ fn run() -> Result<ParityReport, Box<dyn std::error::Error>> {
     )?;
     fs::write(&valid_composition_path, valid_composition)?;
     fs::write(&invalid_composition_path, invalid_composition)?;
+    let valid_configuration = configuration_artifact.to_json()?;
+    let mut invalid_configuration = serde_json::to_value(configuration_artifact)?;
+    invalid_configuration["schema_version"] =
+        serde_json::Value::from(CONFIGURATION_SCHEMA_VERSION.saturating_add(1));
+    let invalid_configuration = serde_json::to_vec_pretty(&invalid_configuration)?;
+    let invalid_configuration_refused =
+        ConfigurationArtifact::from_json(&invalid_configuration).is_err();
+    fs::write(
+        &configuration_schema_path,
+        serde_json::to_vec_pretty(&external_author_schemas()?.configuration)?,
+    )?;
+    fs::write(&valid_configuration_path, valid_configuration)?;
+    fs::write(&invalid_configuration_path, invalid_configuration)?;
+    let external_author_files = write_external_author_kit(&external_author_kit_path)?;
+    let token_reference = token_reference()?;
+    let (external_package, external_manifest) = external_author_fixture()?;
+    external_manifest.validate(&external_package)?;
+    let launch_recipe = launch_recipe_fixture();
+    launch_recipe.validate(&configuration_artifact.composition)?;
     for (path, source) in [
         (INSTALLED_GALLERY_HTML_PATH, INSTALLED_GALLERY_HTML),
         (INSTALLED_GALLERY_CSS_PATH, INSTALLED_GALLERY_CSS),
@@ -280,6 +363,87 @@ fn run() -> Result<ParityReport, Box<dyn std::error::Error>> {
             ),
         },
         Assertion {
+            name: "Configuration Sand is composed from primitives and persists accepted authoring",
+            passed: configuration_package.graph.definitions.len()
+                == CONFIGURATION_DEFINITION_COUNT
+                && configuration_artifact
+                    .composition
+                    .document
+                    .placements
+                    .iter()
+                    .any(|placement| placement.instance_uid == "configuration-sand")
+                && configuration_workbench.facts().accepted_edits >= 13
+                && configuration_workbench.facts().refused_edits > 0
+                && configuration_workbench.facts().undo_count > 0
+                && configuration_workbench.facts().save_reopens > 0
+                && configuration_workbench.facts().definition_publications == 3
+                && configuration_workbench.facts().launches_created > 0
+                && configuration_workbench.facts().launches_focused > 0
+                && configuration_workbench.facts().persisted_bytes > 0
+                && invalid_configuration_refused
+                && configuration_package_sha256.starts_with("sha256:"),
+            detail: format!(
+                "schema {}, {} definitions, {:?}, {}",
+                CONFIGURATION_SCHEMA_VERSION,
+                configuration_package.graph.definitions.len(),
+                configuration_workbench.facts(),
+                configuration_package_sha256
+            ),
+        },
+        Assertion {
+            name: "one resolved cascade projects to native isolated HTML shared HTML and Plan B roots",
+            passed: configuration_artifact
+                .configuration
+                .projected_styles(&configuration_artifact.composition, "room-native")
+                .is_ok_and(|projections| {
+                    projections.len() == 4
+                        && projections
+                            .windows(2)
+                            .all(|pair| pair[0].declarations == pair[1].declarations)
+                })
+                && configuration_browser.contains("configuration-tokens.css")
+                && configuration_browser.contains("configuration.js")
+                && !configuration_browser.contains("<style")
+                && !configuration_browser.contains("<script>")
+                && !configuration_browser.contains("onclick=")
+                && configuration_tokens.contains("--lynx-margin-sand"),
+            detail: "generated browser root uses the native resolved values through external CSS and JavaScript"
+                .into(),
+        },
+        Assertion {
+            name: "external author kit is versioned complete and fails closed",
+            passed: EXTERNAL_AUTHOR_CONTRACT_VERSION == 1
+                && external_author_files.len() == 7
+                && token_reference.tokens.len()
+                    == lince_interface::style::STYLE_TOKEN_SPECS.len()
+                && external_manifest.contract_version == EXTERNAL_AUTHOR_CONTRACT_VERSION
+                && launch_recipe.schema_version == 1,
+            detail: format!(
+                "{} files, {} tokens, contract {}",
+                external_author_files.len(),
+                token_reference.tokens.len(),
+                EXTERNAL_AUTHOR_CONTRACT_VERSION
+            ),
+        },
+        Assertion {
+            name: "official workflow structure is decomposed into Rust-owned Sand definitions",
+            passed: OFFICIAL_SANDS.len() == OFFICIAL_SAND_COUNT
+                && OFFICIAL_SANDS.iter().all(|spec| {
+                    official_package
+                        .graph
+                        .definitions
+                        .get(spec.uid)
+                        .is_some_and(|definition| definition.children.len() >= 2)
+                })
+                && official_package_sha256.starts_with("sha256:"),
+            detail: format!(
+                "{} roots, {} definitions, {}",
+                OFFICIAL_SAND_COUNT,
+                official_package.graph.definitions.len(),
+                official_package_sha256
+            ),
+        },
+        Assertion {
             name: "browser exposes typed output behavior",
             passed: browser.contains("data-output=\"record-clicked\"")
                 && BEHAVIOR_MODULE.contains("lince-output"),
@@ -306,7 +470,7 @@ fn run() -> Result<ParityReport, Box<dyn std::error::Error>> {
         "failed"
     };
     let report = ParityReport {
-        schema_version: 4,
+        schema_version: 6,
         gate: "browser and Facade parity",
         status,
         git_revision: raw_git_revision(),
@@ -330,6 +494,19 @@ fn run() -> Result<ParityReport, Box<dyn std::error::Error>> {
         invalid_composition_path: invalid_composition_path.display().to_string(),
         composition_definition_count: composition_package.graph.definitions.len(),
         composition_package_sha256,
+        configuration_path: configuration_path.display().to_string(),
+        configuration_browser_path: configuration_browser_path.display().to_string(),
+        configuration_schema_path: configuration_schema_path.display().to_string(),
+        valid_configuration_path: valid_configuration_path.display().to_string(),
+        invalid_configuration_path: invalid_configuration_path.display().to_string(),
+        configuration_definition_count: configuration_package.graph.definitions.len(),
+        configuration_package_sha256,
+        external_author_kit_path: external_author_kit_path.display().to_string(),
+        official_sand_package_path: official_sand_package_path.display().to_string(),
+        official_sand_count: OFFICIAL_SAND_COUNT,
+        official_definition_count: official_package.graph.definitions.len(),
+        official_package_sha256,
+        token_count: token_reference.tokens.len(),
         assertions,
     };
     fs::write(&report_path, serde_json::to_vec_pretty(&report)?)?;
@@ -376,6 +553,58 @@ fn composition_document(artifact: &CompositionArtifact) -> Markup {
                     }
                 }
                 script type="module" src="parity.js" {}
+            }
+        }
+    }
+}
+
+fn configuration_document(artifact: &ConfigurationArtifact) -> Markup {
+    let resolved = artifact
+        .configuration
+        .resolved_for(&artifact.composition, "room-native");
+    html! {
+        (DOCTYPE)
+        html lang="en" {
+            head {
+                meta charset="utf-8";
+                meta name="viewport" content="width=device-width, initial-scale=1";
+                title { "Lince Configuration Sand parity" }
+                link rel="stylesheet" href="parity.css";
+                link rel="stylesheet" href="configuration-tokens.css";
+            }
+            body {
+                main data-lince-root="configuration-browser" data-schema-version=(CONFIGURATION_SCHEMA_VERSION) data-authority="browser" {
+                    header {
+                        span class="eyebrow" { "SAME CONFIGURATION ARTIFACT · BROWSER PROJECTION" }
+                        h1 { "Configuration" }
+                        p { "Every value keeps its origin. Browser interaction remains local in this parity surface." }
+                    }
+                    section class="workspace" aria-label="Configuration operations" {
+                        @for operation in ConfigurationOperation::ALL {
+                            button type="button" data-configuration-operation=(operation.uid()) {
+                                (operation.label())
+                            }
+                        }
+                    }
+                    section class="event" aria-label="Resolved value origins" {
+                        h2 { "Resolved origins" }
+                        @match &resolved {
+                            Ok(style) => {
+                                @for name in ["--lynx-accent", "--lynx-gap-content", "--lynx-margin-sand", "--lynx-radius-control"] {
+                                    p {
+                                        code {
+                                            (name) " · "
+                                            (style.origin(name).map(|origin| format!("{:?} / {}", origin.scope, origin.label)).unwrap_or_else(|error| format!("REFUSED {error}")))
+                                        }
+                                    }
+                                }
+                            }
+                            Err(error) => { p role="alert" { "REFUSED: " (error) } }
+                        }
+                        p data-configuration-status role="status" { "No browser-local preview yet" }
+                    }
+                }
+                script type="module" src="configuration.js" {}
             }
         }
     }

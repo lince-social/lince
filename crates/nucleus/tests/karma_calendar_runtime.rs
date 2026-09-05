@@ -210,8 +210,6 @@ struct CalendarRuntimeFixture {
 fn schedule(missed: MissedPolicy) -> CalendarSchedule {
     CalendarSchedule {
         anchor: local("2026-01-01T08:00:00.000"),
-        // The anchor already carries 08:00, which is where the time of day now
-        // comes from: one statement, not two that could disagree.
         cadence: Cadence::every_days(1),
         timezone: TimeZoneId::new("America/Sao_Paulo").unwrap(),
         tzdb: revision(),

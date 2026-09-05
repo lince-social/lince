@@ -4,8 +4,10 @@ Purpose: Retain the landed foundation statement and detailed remaining Box, Area
 
 Owner source: [Interface in Lince](../../Lince.lingua).
 
-Status: native foundation, customization, C1 semantic primitive-Sand and C2
-recursive-composition runtimes accepted; C3 Configuration is next.
+Status: native foundation, customization, C1 semantic primitive-Sand, C2
+recursive-composition and C3 Configuration/external-authoring runtimes
+accepted; C4 official-Sand migration has begun with its Rust structure catalog
+and native inspection surface.
 
 Read when: closing the production report or implementing a Box-and-after cluster.
 
@@ -73,22 +75,33 @@ zero-authority Website Sand.
 The exact pinned CEF distribution is materialized as a writable derived cache
 inside `target/` for development because `cef-dll-sys` copies its files during
 Cargo builds. The production package still bundles the immutable Nix payload.
-The 2026-08-29 release run compiled the current merged owner corpus and fixed
-the bundled consumer to mint Lingua's optional declaration UIDs before
-projection. It now stops before the window because the removed First Steps
-root leaves six `@first-steps` references unresolved in Karma, Lince and
-Ontology. This Markdown does not repair or bypass any Record. After the owner
-chooses those Records' new parent, rerun `mise run interface-desktop-report`;
-until then the production launch is not claimed as human-usable evidence.
+The bundled consumer mints Lingua's optional declaration UIDs before
+projection. The 2026-08-30 owner-authorized repair removed the six dangling
+parent assertions while keeping the editable First Steps tutorial outside
+Instinct, fixed Ailuros's required subject quantity, and left its unresolved
+parent choice as a root rather than guessing. `lingua check anicca` validates
+all 16 Records.
+
+The first production rerun reached the window and wrote a passing report, then
+revealed an AccessKit/zbus background panic caused by mixed Tokio and async-I/O
+features in the combined desktop graph. The file picker now uses its
+async-std/async-I/O portal backend, matching AccessKit and leaving only one
+zbus executor family. This is a landed-foundation correctness repair; it does
+not become C3 work. The corrected production report passed on Wayland at
+1920×1052 with the accepted 200/1,000/10,000 workload and two accelerated CEF
+surfaces: 10.861 ms frame p95, 11.967 ms p99, 1.098 ms fixed-step p95 and zero
+backlog. No AccessKit/zbus panic recurred; the source fingerprint is
+`1fd02aec9ca85626bc4cd33685c80b23da84f205bd23c0fe6c825022641ab97b`.
 
 The same promoted release runtime passed its direct joined report on
 2026-08-29 at 1920×1052. Under the accepted 200/1,000/10,000 workload and two
 accelerated CEF surfaces it measured 10.958 ms frame p95, 12.448 ms p99,
 1.172 ms fixed-step p95 and zero backlog. This closes the crate-promotion and
-runtime seam; it does not bypass the separate owner-reference launch gate.
+runtime seam; the production desktop report separately proves integration
+with the current owner corpus.
 
 The customization kernel is also landed. Its versioned typed contract resolves
-91 canonical roles through seven inspectable scopes into native WGPU/retained
+92 canonical roles through seven inspectable scopes into native WGPU/retained
 UI and Installed CEF CSS. The live Gallery proved workspace, group, instance,
 partial-theme and mode changes without reloading Installed HTML or granting a
 Website authority. The completed task is prose rather than a stale checklist;
@@ -119,6 +132,29 @@ and Installed HTML agree on the same normalized package. Release parity and
 the joined Wayland report pass; the completed entries and exact evidence are
 in [Customization plan](customization.md#landed-c2-recursive-composition-workbench).
 
+The C3 Configuration/external-authoring kernel is landed as Configuration
+artifact schema version 1. It persists theme/mode, workspace/group layers,
+developer CSS and domain launch receipts with the exact composition artifact;
+instance and definition edits therefore keep one source of truth. The
+22-definition Configuration Sand exposes 16 F11 operations through keyboard,
+pointer and AccessKit with live preview, origins, inherit, undo, safe reset,
+refused states and atomic save/reopen. Invalid or unreadable persisted state
+cannot block the complete default.
+
+Theme selection uses uid plus manifest hash, the generated reference covers
+all 92 typed roles, and one cascade projects to native, shared HTML, isolated
+Installed HTML and browser roots. Scoped developer CSS refuses imports, URLs,
+executable schemes, escaping selectors and host-security imitation. The parity
+diagnostic publishes a seven-file ordinary HTML/CSS/JavaScript external-author
+kit and unknown-version fixture. Renderer-neutral launch recipes create exact
+placements, typed Record reads and Action exports idempotently; their durable
+receipt focuses an existing domain group after reopen. The parity gate, joined
+61-test suite and real Wayland/WGPU/CEF report pass. The 2026-09-01 report
+applied and restored Configuration without reloading Installed CEF under the
+accepted 200/1,000/10,000 workload; frame p95 was 10.879 ms, fixed-step p95
+was 0.752 ms with no backlog, and its source fingerprint is
+`577dc8b13f1e2b00822f0e97ecd1722fc0672b3edf0295f1f3a06532391c439c`.
+
 #### Completed engine study and its place in the waterfall
 
 The 30-entry Pulsar/Helio study is complete. It selected no GPUI, Pulsar,
@@ -133,7 +169,7 @@ The accepted ideas attach to work that already exists:
 
 | Existing stage | Study constraint carried into it |
 | --- | --- |
-| C3–C4 Configuration and official Sands | Stable semantic ids and renderer-neutral definitions remain above retained nodes, Bevy entities, DOM nodes, CEF ids and GPU handles. Focused UI crates or bounded techniques may assist projections without creating another application model. |
+| C4 official Sands | Stable semantic ids and renderer-neutral definitions remain above retained nodes, Bevy entities, DOM nodes, CEF ids and GPU handles. Focused UI crates or bounded techniques may assist projections without creating another application model. |
 | C5 completion gate | Runtime health relates input and semantic revisions to simulation, CEF and presentation work. Frame coordination, recovery, accessibility and visual quality remain human-tested. |
 | Box navigation | The Lince coordinator owns the frame; culling removes only extraction and drawing. Coordinate frames, displayed-revision picking and bounded adapter snapshots are correct before scale optimization. |
 | Protein and Areas | Typed events and Actions cross ownership boundaries. Neither camera visibility nor renderer residency changes Protein, Behavior or physics meaning. |
@@ -148,46 +184,60 @@ not claim them merely because the study found them interesting.
 
 #### V1 master waterfall
 
-The owner-authored unresolved-reference repair is an independent production
-launch gate. It does not block isolated foundation work, but it must pass
-before any production desktop stage is called human-usable.
+The current C4 boundary catalogs all 25 official roots as 72 validated
+Rust-owned definitions and exposes them through F12, pointer and AccessKit.
+Configuration is marked landed; edit controls, zoom controls, Record,
+Conversation, Table, Todo and Kanban have native retained Behavior. The production runtime binds
+Records, Conversation trees and private drafts through live Protein
+subscriptions and sends Message/draft writes through acknowledged Actions; the
+other 17 roots retain an explicit runtime-Behavior-pending state. The three
+collection roots have core projection and Action behavior but retain explicit
+C4 follow-up for inline editing, configured Protein/lane rules and bulk work. This does not
+advance the master waterfall past step 1 because remaining workflows,
+specialized adapters and legacy deletion still remain. It proves recursive
+retained projection, interaction and accessibility, fixes nested input
+forwarding and establishes the renderer-neutral read/write seam before the
+rest of behavior migration depends on it.
 
-1. Build Configuration and external authoring on the landed primitives. The gate is
-   human control of every supported scope, inheritance, theme assets,
-   Behavior, ports, capabilities and safe reset without file editing.
-2. Rebuild the base and official Sands on the shared definitions, deleting the
+The owner-authorized Record repair has closed the former production-entry
+gate. `First Steps.linguai` remains the editable future tutorial rather than an
+ingested Record; the six chapters temporarily stand as roots until that draft
+becomes owner-reviewed Instinct.
+
+1. Rebuild the base and official Sands on the shared definitions, deleting the
    parallel LynxUI vocabulary, copied HTML, token aliases and replaced APIs as
-   callers move.
-3. Pass the C5 visual, accessibility, theme, authoring, lifecycle, runtime
+   callers move. Conversation includes its general authorship, live-message
+   state and private draft/preset queue here; those are not deferred to Fiote.
+2. Pass the C5 visual, accessibility, theme, authoring, lifecycle, runtime
    health and scale gate. Only this closes the pre-Box foundation.
-4. Build Box navigation, unbounded logical coordinates, layers, anchors,
+3. Build Box navigation, unbounded logical coordinates, layers, anchors,
    recursive base pattern and direct input. The human surface includes
    recenter, locate and honest empty cases.
-5. Build current-Protein result templates, schema visualization and visible
+4. Build current-Protein result templates, schema visualization and visible
    field-to-port arrows. The gate is stable row reconciliation and inspectable
    source identity without implicit write authority.
-6. Build force, sorting, mutation, immunity and Why-is-it-here Areas. The gate
+5. Build force, sorting, mutation, immunity and Why-is-it-here Areas. The gate
    is deterministic overlap, typed Actions, complete-group behavior and
    visible failure/recovery.
-7. Build topology stamps/brushes, filtered effective fields, Protein admission
+6. Build topology stamps/brushes, filtered effective fields, Protein admission
    controls, surface-bound top/perspective views, free-space volume physics and
    the previewable collapse/expand operation between them. Compare Avian with
    a narrow SoA solver here under the accepted workload; choose or optimize
    compute only from measurements. The gate is the reproducible surface
    circuit, free-space clustering and collapse, and flat Kanban-like
    configuration.
-8. Build the readable Box snapshot, typed operation journal, semantic commit
+7. Build the readable Box snapshot, typed operation journal, semantic commit
    and spatial-checkpoint policy, recovery, compaction and agent/program
    operation API. Prove that a Sand moved by Areas/topology restores at its
    last durable position after restart.
-9. Finish Installed HTML and Website administration, capability review,
+8. Finish Installed HTML and Website administration, capability review,
    storage/network controls, admission budgets, crash/recovery and runtime
    health on the actual Box.
-10. Build live-only host-authoritative workspace collaboration through the
+9. Build live-only host-authoritative workspace collaboration through the
     shared Synchronization surface. Reuse contact identity, grants and delivery
     infrastructure while keeping Box transactions distinct from Record sync
     and File projection operations.
-11. Build the public read-only Live Facade from the same semantic definitions,
+10. Build the public read-only Live Facade from the same semantic definitions,
     Protein stream and browser adapters, with local-only interactions and no
     Actions.
 
@@ -196,6 +246,13 @@ stage; later work does not add a workaround or silently reopen an earlier
 contract. Detailed pre-Box work lives in
 [Customization](customization.md) and [Sands](sands.md); the sections below own
 Box and after.
+
+Fiote is not another stage in this waterfall. Its Phase 0 cleanup can proceed
+independently; its prototype lane opens after C5, consuming the domain-derived
+compound recipe and Conversation foundation without becoming a prerequisite
+for Box. The shared requirements and the Fiote-only boundary are mapped in
+[the Sand plan](sands.md#conversation-and-task-surfaces-carried-for-fiote) and
+[Fiote build notes](../../Karma.md#carry-into-the-interface-refactor).
 
 #### Long-horizon world foundation — future, not in the current cluster
 
@@ -252,6 +309,11 @@ Box and after.
   implicit field assignment or write authority.
 - [ ] Let a person compose and lock one result-template group containing bound
   and unbound Sands, then unlock and edit that shared template deliberately.
+- [ ] Make field presentation ordinary composition: dragging a schema field
+  onto the template may create or bind a Text, Quantity, Badge, Record link or
+  another compatible Sand; hiding that field removes or disables its child
+  presentation without deleting the field binding itself. Allow several
+  presentations of one field and one child fed by several compatible fields.
 - [ ] Reconcile live Protein results into one stable group instance per row,
   preserving row identity and local Box state without duplicating or deleting
   underlying Records; refuse persistent repetition when a source declares no
@@ -532,3 +594,86 @@ Box and after.
   explains that a direct live server observes connection metadata while a
   content-addressed cached archive can avoid contacting the author; neither
   mode claims privacy it cannot provide.
+
+### Ontology surfaces this interface owes
+
+Moved here from `anicca/Ontology.md` on 2026-09-01. Every one of these has its
+MECHANISM already built and shipping in `store`/`engine`; what is missing is
+only a way for a person to reach it, which is this plan's job. None of them
+needs new backend work, and each names the call it renders. The project rule is
+that a capability ships with the surface that reaches it — these are the debts
+that rule already accrued, collected in one place so they are not rediscovered
+one at a time.
+
+Two rules apply to all of them. **State the honest empty case**: a panel
+showing nothing has several meanings ("none yet", "not switched on", "cannot
+reach anyone") and must say which. And **absent is not blank**: render
+`undefined` as "withheld" and `""` as empty, so a narrowed view never draws a
+permission boundary as data.
+
+- [ ] **A summary of what each contact can see of you.** The single most-wanted
+  read here, and the one a per-contact panel can never answer, because each
+  contact's sharing level is set one at a time in its own panel and nothing
+  answers "who can see what of mine right now". A read-only aggregate over the
+  existing `organ_contact` rows — direction, both scopes, hide-list count, and
+  the unreadable-scope flag `store::organs` already derives. No new storage, no
+  sync change. One screen, every contact side by side, each row saying
+  everything / only these columns / nothing but which Record, with the broken
+  ones called out; clicking a row opens the contact panel that owns the change.
+- [ ] **Per-device sharing limits.** A device is all-or-nothing today: full
+  access to your Organ, or logged out. Give roster entries the `scope_fields`
+  column the per-contact scope already has (migration `0056_contact_scope`) and
+  evaluate it in the same predicate so the two cannot drift. **A different axis
+  from capabilities** — capabilities say what a device may DO, this says what it
+  may SEE. One scope control per device, beside Remove.
+- [ ] **A capability editor per Cell, so a stolen phone can be NARROWED rather
+  than revoked.** The mechanism is signed into the roster and enforced —
+  `CellEntry.capabilities` (`engine/src/roster.rs:105`) and `cell_may`
+  (`roster.rs:690`), which `wire.rs:1828` already calls. No Action edits one
+  Cell's capabilities; `roster-status` only reads them to decide whether to show
+  a relay badge. An editor that republishes the roster, needing the root like
+  every roster change, beside Remove. "This phone may no longer write, but stays
+  in the roster" as one control.
+- [ ] **The succession chain, rendered.** `store/src/roster.rs:245-304` stores
+  and reads the `identity_succession` chain. Nothing shows it.
+- [ ] **A reach control per contact.** `contact.mode` decides mailbox versus
+  direct delivery and is load-bearing in `engine/src/wire.rs` — and NOTHING
+  SETS IT: `organs::set_mode` has exactly one caller and it is a test. One
+  control on the contact panel. Note the two enums no longer share a name: the
+  contact-side one is `store::organs::Delivery`.
+- [ ] **A Move button.** Move is built end to end — `Action::MoveRecordTo` and
+  `Action::CancelRecordMove`, `store/src/record_move.rs`, and the exactly-once
+  hand-over in `engine/src/share.rs`. The dangerous half is the half that
+  exists; there is simply no way to reach it. "Place this project in the family
+  Organ" as a consented offer the other side accepts.
+- [ ] **The rate-limit line on the contact panel.** `store::contact_rate` backs
+  off a contact that spends its hourly allowance of refused ops or whole-log
+  serves. `states()` gives count, allowance, window and backoff per kind, and
+  `clear()` lifts one by hand. The panel says "we are now answering them less
+  often" WITH THE REASON. Empty is "nothing has counted against them", never a
+  blank.
+- [ ] **"No device list yet — reconnect to finish", per contact.** A contact
+  paired before rosters travelled has `awaiting_roster_since` set (migration
+  `0074`); after a seven-day grace their batches are refused. A state a person
+  cannot act on is worse than no state, so this is a line plus a button that
+  reconnects, not a passive label. Cleared automatically once a roster arrives.
+- [ ] **One pending-offers list.** `store::offers::pending` returns all four
+  handshakes in one vocabulary — kind, direction, subject, title, other party,
+  when — over `invites`, `replica_grant`, `record_move` and
+  `transfer_invitation`. Every kind side by side, accept and refuse on the row
+  routed to that kind's own verb, one honest delivery state per row rather than
+  receipts in one place and checkpoints in another. **A refusal must not look
+  like an offer that was never answered**: three of the four kinds deliberately
+  do not remember a refusal, and the thread invite's silence is a privacy
+  decision (a sender must not be able to tell declined from ignored).
+- [ ] **A Trash, and Restore.** Deletion is a hard tombstone with no way back.
+  The undelete RULE already exists and works — "undelete is a newer write" is
+  enforced on the import path, and a tombstone does not destroy a Record's Loro
+  doc, it only makes the doc refuse new updates while the tombstone is the
+  latest word. So this is a list of tombstoned Records plus a Restore that
+  emits such a write, landing together as one task. It is deliberately NOT a
+  second lifecycle layer in the op log.
+- [ ] **The read-model health line.** `Engine::read_model_health()` returns when
+  the read model was last checked against the log and what was found. **`None`
+  means no pass has run yet on this Cell and must not be drawn as a tick** — it
+  is the difference between "healthy" and "never looked".

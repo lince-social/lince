@@ -1,23 +1,9 @@
-//! Record bodies (Markdown) -> the chapter markup the Instinct shell expects.
-//!
-//! Deliberately NOT a general Markdown implementation, and deliberately not a
-//! dependency. It renders exactly the subset root `anicca/*.lingua` uses, and
-//! anything outside that subset is escaped and shown as text rather than
-//! guessed at. The bodies came from this repository's own HTML through a
-//! mechanical conversion, so the subset is known rather than hoped for — and a
-//! body that grows a construct this does not handle shows up as visible
-//! literal text in the sand, which is how the person who wrote it finds out.
-//!
-//! The one shape that must survive untouched is a ```mermaid fence: the shell
-//! finds `pre.mermaid` in the DOM and renders it on chapter activation.
-
 fn escape(text: &str) -> String {
     text.replace('&', "&amp;")
         .replace('<', "&lt;")
         .replace('>', "&gt;")
 }
 
-/// `**bold**`, `_em_` and `` `code` ``, on already-escaped text.
 fn inline(text: &str) -> String {
     let mut out = escape(text);
     for (marker, tag) in [("**", "strong"), ("`", "code")] {
@@ -25,8 +11,6 @@ fn inline(text: &str) -> String {
         let mut rest = out.as_str();
         let mut open = true;
         while let Some(at) = rest.find(marker) {
-            // An unmatched marker stays literal rather than swallowing the
-            // rest of the paragraph into a tag that never closes.
             if open && !rest[at + marker.len()..].contains(marker) {
                 break;
             }
@@ -43,15 +27,6 @@ fn inline(text: &str) -> String {
     emphasis(&out)
 }
 
-/// `_em_`, but only where an underscore is a MARKER rather than a letter.
-///
-/// This corpus is full of `file_sync`, `record.body`, `mantissa TEXT` — an
-/// underscore between two word characters is part of an identifier and nothing
-/// else. Emphasis therefore has to open on a word boundary and close on one:
-/// `_second_` is emphasis, `file_sync` is a name. Counting underscores instead
-/// (the old rule) only survived because paragraphs were one line long; joining
-/// wrapped lines back together would let `record_editor` on one line pair with
-/// `file_sync` three lines down and italicise everything between them.
 fn emphasis(text: &str) -> String {
     let bytes = text.as_bytes();
     let word = |index: usize| -> bool {
@@ -59,15 +34,12 @@ fn emphasis(text: &str) -> String {
             .get(index)
             .is_some_and(|byte| byte.is_ascii_alphanumeric() || *byte == b'_')
     };
-    // Not an underscore: a run of them is a blank to be signed on a form.
     let letter = |index: usize| word(index) && bytes.get(index) != Some(&b'_');
     let mut out = String::with_capacity(text.len());
     let mut at = 0;
     while let Some(offset) = text[at..].find('_') {
         let open = at + offset;
         out.push_str(&text[at..open]);
-        // An opener has a non-word character (or nothing) before it, and the
-        // emphasised run has to start with one.
         let opens = (open == 0 || !word(open - 1)) && letter(open + 1);
         let close = opens
             .then(|| {
@@ -94,26 +66,10 @@ fn emphasis(text: &str) -> String {
     out
 }
 
-/// One Record body as chapter markup.
-///
-/// **The body on screen is the body in the file, line for line.** Where the
-/// writer broke a line, the reader sees a break — the Record is the document,
-/// and how it is set is theirs to decide by editing it, not this renderer's to
-/// decide by reflowing it.
-///
-/// A wrapped line is still not a BLOCK, though, and that is the difference from
-/// emitting one element per source line: consecutive lines are one paragraph,
-/// or one bullet, or one quote, parsed as a whole and then broken with `<br>`.
-/// Read line by line instead, a `**` opened before a wrap point could never
-/// close after it and stayed on screen as literal asterisks, a wrapped bullet
-/// became a new `<ul>` per line, and — because every line was its own `<p>` —
-/// the gap between two lines of one paragraph was the same as the gap between
-/// two paragraphs, so the file's paragraphs were invisible.
 pub fn body_to_html(body: &str) -> String {
     let mut out = String::new();
     let mut lines = body.lines().peekable();
     let mut list: Option<&'static str> = None;
-    // The block being accumulated: its lines, and what kind of block it is.
     let mut buffer: Vec<&str> = Vec::new();
     let mut kind = Block::Prose;
 
@@ -128,10 +84,6 @@ pub fn body_to_html(body: &str) -> String {
         if buffer.is_empty() {
             return;
         }
-        // Read as ONE block, so a `**` opened on one line closes on the next —
-        // then broken again exactly where the writer broke it. The newline
-        // survives `escape()` untouched, so this order is what lets the two be
-        // true at the same time.
         let text = buffer.join("\n");
         buffer.clear();
         let markup = |text: &str| inline(text).replace('\n', "<br>\n");
@@ -146,8 +98,6 @@ pub fn body_to_html(body: &str) -> String {
             Block::Prose => {}
         }
         if text.starts_with('_') && text.ends_with('_') && text.len() > 2 {
-            // A figure caption: a whole block in emphasis, which is what the
-            // mechanical conversion produced for `figure__caption`.
             out.push_str(&format!(
                 "<p class=\"figure__caption\">{}</p>\n",
                 markup(&text[1..text.len() - 1])
@@ -201,8 +151,6 @@ pub fn body_to_html(body: &str) -> String {
             close_list(&mut out, &mut list);
             out.push_str(&format!("<h1>{}</h1>\n", inline(rest)));
         } else if let Some(rest) = trimmed.strip_prefix('>') {
-            // A quote wraps like everything else, and its continuation lines
-            // carry the `>` too — so it accumulates rather than emitting.
             if kind != Block::Quote {
                 flush(&mut out, &mut buffer, &mut kind);
                 close_list(&mut out, &mut list);
@@ -210,9 +158,6 @@ pub fn body_to_html(body: &str) -> String {
             kind = Block::Quote;
             buffer.push(rest.trim_start());
         } else if let Some(rest) = trimmed.trim_start().strip_prefix("- ") {
-            // A `- ` at the start of a line opens a bullet even when the
-            // previous one is still open; an indented continuation of a bullet
-            // never starts with one, so this is not ambiguous.
             flush(&mut out, &mut buffer, &mut kind);
             if list.is_none() {
                 out.push_str("<ul>\n");
@@ -221,9 +166,6 @@ pub fn body_to_html(body: &str) -> String {
             kind = Block::Item;
             buffer.push(rest);
         } else {
-            // Prose. Inside an open bullet this is the rest of that bullet;
-            // otherwise it is the rest of the paragraph. Either way it is a
-            // continuation, never a new block — only a blank line ends one.
             buffer.push(trimmed.trim_start());
         }
     }
@@ -236,9 +178,6 @@ pub fn body_to_html(body: &str) -> String {
 mod tests {
     use super::*;
 
-    /// The shell finds `pre.mermaid` in the DOM and renders it on chapter
-    /// activation. A fence that came out as a paragraph is a diagram that
-    /// silently becomes a wall of graph syntax.
     #[test]
     fn a_mermaid_fence_becomes_a_pre_the_shell_can_find() {
         let html = body_to_html("text\n\n```mermaid\ngraph LR\n  A[\"Need\"] --> B\n```\n");
@@ -260,8 +199,6 @@ mod tests {
         assert!(html.contains("</ul>"));
     }
 
-    /// An unmatched marker must stay literal. Swallowing the rest of a
-    /// paragraph into a tag that never closes breaks every element after it.
     #[test]
     fn a_lone_marker_stays_text() {
         let html = body_to_html("2 ** 3 is not emphasis\n");
@@ -269,10 +206,6 @@ mod tests {
         assert!(!html.contains("<strong>"), "{html}");
     }
 
-    /// The writer's line breaks are the writer's. What a wrapped line must NOT
-    /// do is become its own block: one `<p>` per line spaced the lines of a
-    /// paragraph as far apart as the paragraphs themselves, and one `<ul>` per
-    /// line turned a three-line bullet into three lists.
     #[test]
     fn wrapped_lines_break_where_the_file_breaks_but_stay_one_block() {
         let html = body_to_html(
@@ -295,9 +228,6 @@ mod tests {
         );
     }
 
-    /// Emphasis that spans a wrap point used to come out as literal asterisks,
-    /// because each line was closed off on its own. It pairs across the break
-    /// without swallowing it.
     #[test]
     fn emphasis_spanning_a_wrap_point_still_pairs() {
         let html =
@@ -309,9 +239,6 @@ mod tests {
         assert!(!html.contains("**"), "{html}");
     }
 
-    /// An underscore between two word characters is an identifier, not a
-    /// marker. Joining lines makes this load-bearing: `record_editor` in one
-    /// line would otherwise pair with `file_sync` in the next.
     #[test]
     fn an_underscore_inside_a_name_is_not_emphasis() {
         let html = body_to_html(
@@ -322,17 +249,12 @@ mod tests {
         assert!(html.contains("store_state"), "{html}");
     }
 
-    /// The Institute's founding minutes are a form with blanks to sign in. A
-    /// run of underscores is not emphasis, however many of them there are.
     #[test]
     fn a_blank_to_be_filled_in_is_not_emphasis() {
         let html = body_to_html("Aos ___ dias do mês de __________ de ________, na cidade.\n");
         assert!(!html.contains("<em>"), "{html}");
     }
 
-    /// A blockquote is hard-wrapped like everything else, and each of its lines
-    /// carries the `>`. Emitted one at a time, the bold that opened on the
-    /// first line never closed.
     #[test]
     fn a_wrapped_quote_is_one_quote() {
         let html = body_to_html(

@@ -8,7 +8,6 @@ use super::failure::KarmaBoundaryError;
 const MIN_RFC3339_MILLIS: i64 = -62_167_219_200_000;
 const MAX_RFC3339_MILLIS: i64 = 253_402_300_799_999;
 
-/// Signed elapsed duration in exact milliseconds.
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Default,
 )]
@@ -31,7 +30,6 @@ impl DurationMs {
     }
 }
 
-/// Canonical UTC instant with millisecond precision.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TimestampMs(i64);
 

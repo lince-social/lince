@@ -1,7 +1,3 @@
-//! Lingua repository (blueprint Part III): concepts with multilingual names,
-//! a parent DAG, and equivalences. One vocabulary, four jobs — record concepts,
-//! units, link kinds, and the Instinct tier all live here.
-
 use chrono::Utc;
 use sqlx::{Row, SqlitePool};
 use std::collections::{HashSet, VecDeque};
@@ -180,7 +176,6 @@ pub async fn delete(pool: &SqlitePool, concept_uid: &str) -> Result<bool, StoreE
     Ok(deleted)
 }
 
-/// Resolve `@name`: canonical first, then any language name, then uid.
 pub async fn resolve(pool: &SqlitePool, token: &str) -> Result<Option<String>, StoreError> {
     if let Some(row) = sqlx::query("SELECT uid FROM concept WHERE canonical_name = ? OR uid = ?")
         .bind(token)
@@ -190,17 +185,24 @@ pub async fn resolve(pool: &SqlitePool, token: &str) -> Result<Option<String>, S
     {
         return Ok(Some(row.get("uid")));
     }
-    Ok(
-        sqlx::query("SELECT concept_uid FROM concept_name WHERE name = ? LIMIT 1")
-            .bind(token)
-            .fetch_optional(pool)
-            .await?
-            .map(|r| r.get("concept_uid")),
+    let mut answering: Vec<String> = sqlx::query(
+        "SELECT DISTINCT concept_uid FROM concept_name WHERE name = ? ORDER BY concept_uid",
     )
+    .bind(token)
+    .fetch_all(pool)
+    .await?
+    .into_iter()
+    .map(|row| row.get("concept_uid"))
+    .collect();
+    if answering.len() > 1 {
+        return Err(sqlx::Error::Protocol(format!(
+            "`{token}` is a name several concepts answer to ({}); say which one",
+            answering.join(", ")
+        )));
+    }
+    Ok(answering.pop())
 }
 
-/// The root plus every descendant in the parent DAG — powers `concept_in @food`
-/// matching `@apple` via `apple -> fruit -> food` (blueprint III.1).
 pub async fn descendants_including(
     pool: &SqlitePool,
     root_uid: &str,
@@ -224,10 +226,6 @@ pub async fn descendants_including(
     Ok(out)
 }
 
-/// Adopt a foreign concept preserving its uid and lineage (blueprint III.2):
-/// importing = inserting concept rows; re-adoption is a no-op. Parent edges
-/// are added for parents that exist locally (they usually ride the same
-/// package).
 pub async fn adopt(
     pool: &SqlitePool,
     uid: &str,
@@ -257,9 +255,6 @@ pub async fn adopt(
     Ok(())
 }
 
-/// Declare two concepts the same thing across dialects (blueprint III.1):
-/// `concept_equivalence` lets Senses match `@apple` against a stranger's
-/// `@maçã-fuji` without a central authority.
 pub async fn declare_equivalence(
     pool: &SqlitePool,
     a_uid: &str,
@@ -277,7 +272,6 @@ pub async fn declare_equivalence(
     Ok(())
 }
 
-/// One Lingua concept row for the `source: concept` Protein.
 #[derive(Debug, Clone)]
 pub struct ConceptRow {
     pub uid: String,
@@ -286,7 +280,6 @@ pub struct ConceptRow {
     pub parents: Vec<String>,
 }
 
-/// Every concept with its direct parents — the Lingua surface.
 pub async fn list_all(pool: &SqlitePool) -> Result<Vec<ConceptRow>, StoreError> {
     let mut parents: std::collections::HashMap<String, Vec<String>> =
         std::collections::HashMap::new();
@@ -317,7 +310,6 @@ pub async fn list_all(pool: &SqlitePool) -> Result<Vec<ConceptRow>, StoreError> 
     )
 }
 
-/// A concept's canonical (snake_case) name, when the uid exists.
 pub async fn canonical_name(
     pool: &SqlitePool,
     concept_uid: &str,
@@ -331,8 +323,6 @@ pub async fn canonical_name(
     )
 }
 
-/// The concept plus every ancestor in the parent DAG, breadth-first — nearest
-/// ancestors come earlier in the result.
 pub async fn ancestors_including(
     pool: &SqlitePool,
     concept_uid: &str,
@@ -356,10 +346,6 @@ pub async fn ancestors_including(
     Ok(out)
 }
 
-/// Fallback semantics (blueprint III.1): an engine that doesn't know
-/// `@blocks-softly` treats it as its parent `@blocks`. Returns `concept_uid`
-/// itself when it is already known, else the nearest ancestor present in
-/// `known` (breadth-first up the parent DAG), else `None`.
 pub async fn nearest_ancestor_in(
     pool: &SqlitePool,
     concept_uid: &str,
@@ -373,14 +359,6 @@ pub async fn nearest_ancestor_in(
     Ok(None)
 }
 
-/// Unit conversion (blueprint III.1/E0.1): declare `1 a = numerator/denominator
-/// b` exactly. One authoritative row per unordered pair — the inverse direction
-/// is derived at read time by swapping the two halves, so an existing reverse
-/// row is removed on upsert to keep the pair consistent.
-///
-/// Both halves must be positive: `kg -> g` is `1000/1`, and `g -> kg` is read
-/// as `1/1000` rather than stored. A ratio is kept unreduced-but-exact instead
-/// of pre-divided precisely so that `kg -> g` multiplies rather than rounds.
 pub async fn set_conversion_exact(
     pool: &SqlitePool,
     a_uid: &str,
@@ -413,10 +391,6 @@ pub async fn set_conversion_exact(
     Ok(())
 }
 
-/// Declare a conversion from an `f64` factor. The float is turned into an exact
-/// ratio at its own shortest decimal representation — `2.2` becomes `22/10`,
-/// not a binary approximation — so nothing downstream inherits float error.
-/// Prefer `set_conversion_exact` when the true ratio is known.
 pub async fn set_conversion(
     pool: &SqlitePool,
     a_uid: &str,
@@ -435,11 +409,6 @@ pub async fn set_conversion(
     set_conversion_exact(pool, a_uid, b_uid, exact.mantissa(), denominator).await
 }
 
-/// Convert `quantity` from one unit concept to another. `None` unless a
-/// declared conversion (direct or derived inverse) exists AND the two concepts
-/// share a dimension — at least one common ancestor in the parent DAG
-/// (blueprint III.1: "only within a shared parent dimension"). Same-uid
-/// conversion is the identity.
 pub async fn convert(
     pool: &SqlitePool,
     from_uid: &str,
@@ -452,20 +421,10 @@ pub async fn convert(
     let Some((numerator, denominator)) = conversion_ratio(pool, from_uid, to_uid).await? else {
         return Ok(None);
     };
-    // The legacy float path derives from the same exact ratio the exact path
-    // uses, so the two can never disagree about what a conversion means.
     #[allow(clippy::cast_precision_loss)]
     Ok(Some(quantity * (numerator as f64) / (denominator as f64)))
 }
 
-/// Convert an exact amount between unit concepts, stating the scale and
-/// rounding of the result (blueprint E0.1).
-///
-/// Conversion is never implicit: it does not happen to make an expression
-/// type-check, and it does not pick a rounding rule for the caller. `kg -> g`
-/// comes back `exact: true`; a ratio that cannot terminate at the requested
-/// scale comes back `exact: false`, and the caller can see that it rounded
-/// rather than discovering it later in a total that does not balance.
 pub async fn convert_exact(
     pool: &SqlitePool,
     from_uid: &str,
@@ -493,9 +452,6 @@ pub async fn convert_exact(
         })
 }
 
-/// The exact `from -> to` ratio, direct or derived by inverting the stored
-/// pair, gated on the two concepts sharing a dimension. `None` means "no
-/// declared conversion", which is a different answer from "converted to zero".
 async fn conversion_ratio(
     pool: &SqlitePool,
     from_uid: &str,
@@ -504,8 +460,6 @@ async fn conversion_ratio(
     let direct = read_ratio(pool, from_uid, to_uid).await?;
     let ratio = match direct {
         Some((numerator, denominator)) => (numerator, denominator),
-        // `a -> b` of n/d is exactly `b -> a` of d/n; inverting a rational is
-        // lossless, which is the point of not storing a float.
         None => match read_ratio(pool, to_uid, from_uid).await? {
             Some((numerator, denominator)) => (denominator, numerator),
             None => return Ok(None),

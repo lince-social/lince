@@ -1,10 +1,3 @@
-//! Storage for the identity floor: signed Cell rosters, key successions and
-//! revocation certificates (Ontology §11).
-//!
-//! This module STORES; it does not verify. Every signature check lives in
-//! `engine::roster`, so there is exactly one place that decides whether a key
-//! is allowed to speak for an Organ.
-
 use chrono::Utc;
 use sqlx::{Row, SqlitePool};
 
@@ -41,8 +34,6 @@ pub async fn get(pool: &SqlitePool, organ_uid: &str) -> Result<Option<StoredRost
     )
 }
 
-/// Store a roster the caller has ALREADY verified. Monotonic by version, so a
-/// replayed older roster cannot re-add a device that was revoked.
 pub async fn put(pool: &SqlitePool, roster: &StoredRoster) -> Result<(), StoreError> {
     sqlx::query(
         "INSERT INTO organ_roster
@@ -69,20 +60,6 @@ pub async fn put(pool: &SqlitePool, roster: &StoredRoster) -> Result<(), StoreEr
     Ok(())
 }
 
-/// Which Organ, of those whose signed roster we hold, names this Cell —
-/// `None` when no roster we hold mentions it.
-///
-/// The reverse of the membership question, and it exists because the dedup key
-/// on the op log is `(actor_cell, hlc)`: an op claiming a Cell that belongs to
-/// somebody ELSE can pre-occupy that key and make the real op arrive later and
-/// be dropped as an already-seen duplicate. Knowing who a Cell belongs to is
-/// what turns that into a refusal.
-///
-/// Scanned in Rust rather than with SQLite's JSON functions: the rosters we
-/// hold number one per contact, the payload is the SIGNED blob and must stay
-/// exactly as signed, and an unparseable one is skipped rather than failing
-/// the whole question — a roster we cannot read tells us nothing about who
-/// owns a Cell, which is the same position as holding no roster at all.
 pub async fn organ_holding_cell(
     pool: &SqlitePool,
     cell_uid: &str,
@@ -110,16 +87,6 @@ pub async fn organ_holding_cell(
     Ok(None)
 }
 
-/// Flatten THIS Cell's capabilities out of a roster, so the database can
-/// enforce them (Ontology §11, C4).
-///
-/// Called whenever a roster for our OWN Organ is stored, from either
-/// direction: publishing one here, or adopting one signed elsewhere. A Cell
-/// that is not named in it ends up with an empty set, which is the correct
-/// reading — an absent capability set grants nothing, and a Cell removed from
-/// the roster has been revoked.
-///
-/// A projection, never the source of truth. The signed blob is.
 pub async fn project_local_capabilities(
     pool: &SqlitePool,
     capabilities: &[String],
@@ -138,9 +105,6 @@ pub async fn project_local_capabilities(
     Ok(())
 }
 
-/// Store the signed public directory record, replacing any earlier one.
-///
-/// The caller has already signed it; this module still only stores.
 pub async fn put_public_packet(
     pool: &SqlitePool,
     organ_uid: &str,
@@ -173,9 +137,6 @@ pub async fn public_packet(
     )
 }
 
-/// Stop publishing. Called when the last front door goes away, so switching a
-/// Cell off the public tier stops the broadcast instead of leaving the timer
-/// re-announcing an address that is no longer meant to be public.
 pub async fn clear_public_packet(pool: &SqlitePool, organ_uid: &str) -> Result<(), StoreError> {
     sqlx::query("DELETE FROM organ_public_record WHERE organ_uid = ?")
         .bind(organ_uid)
@@ -184,7 +145,6 @@ pub async fn clear_public_packet(pool: &SqlitePool, organ_uid: &str) -> Result<(
     Ok(())
 }
 
-/// Issue an enrolment token by storing only its hash.
 pub async fn put_enrolment_token(
     pool: &SqlitePool,
     token_hash: &str,
@@ -202,9 +162,6 @@ pub async fn put_enrolment_token(
     Ok(())
 }
 
-/// Consume a token: valid only if it exists, has not expired, and has not been
-/// used. The UPDATE is the claim, so two devices racing the same token cannot
-/// both succeed — `rows_affected` is the winner's answer.
 pub async fn redeem_enrolment_token(
     pool: &SqlitePool,
     token_hash: &str,
@@ -223,14 +180,6 @@ pub async fn redeem_enrolment_token(
     Ok(affected > 0)
 }
 
-/// Whether an enrolment token is outstanding: issued, unused, unexpired.
-///
-/// This is a DOOR POLICY, not a lookup. A device being enrolled is not yet a
-/// contact of anything, so it arrives at the thread door as a stranger — and
-/// requiring the owner to also switch on "accept unknown Organs" just to add
-/// their own phone would conflate two unrelated decisions and leave a door
-/// open long after the phone was added. Instead the door opens exactly while
-/// the owner has asked for a code, and closes when it is used or expires.
 pub async fn enrolment_is_open(pool: &SqlitePool) -> Result<bool, StoreError> {
     let now = Utc::now().to_rfc3339();
     let outstanding: i64 = sqlx::query_scalar(
@@ -265,8 +214,6 @@ pub async fn record_succession(
     Ok(())
 }
 
-/// Every `(old_key, new_key)` edge held for an Organ — the succession chain a
-/// new key must connect to.
 pub async fn successions(
     pool: &SqlitePool,
     organ_uid: &str,
@@ -282,9 +229,6 @@ pub async fn successions(
     )
 }
 
-/// One succession edge with everything a peer needs to verify it for itself:
-/// the signature and the `created_at` are both inside the signed payload, so
-/// neither can be dropped on the way out.
 pub struct SuccessionRow {
     pub old_key: String,
     pub new_key: String,
@@ -292,9 +236,6 @@ pub struct SuccessionRow {
     pub created_at: String,
 }
 
-/// Every succession an Organ has signed about its OWN keys, for publishing.
-/// `successions()` above is the local chain-walk view and deliberately carries
-/// no signature — nothing verifies a chain it already holds.
 pub async fn published_successions(
     pool: &SqlitePool,
     organ_uid: &str,
@@ -347,7 +288,6 @@ pub async fn is_revoked(pool: &SqlitePool, organ_uid: &str, key: &str) -> Result
         > 0)
 }
 
-/// Revocation certificates this Organ has published about its own keys.
 pub async fn revocations_of(
     pool: &SqlitePool,
     organ_uid: &str,

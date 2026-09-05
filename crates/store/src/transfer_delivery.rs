@@ -1,8 +1,3 @@
-//! Persistent cross-Cell Transfer delivery state.
-//!
-//! Origin policies/outbox and recipient references/replicas are deliberately
-//! separate. Replica payloads never enter the canonical Transfer tables.
-
 use chrono::{DateTime, Duration, Utc};
 use nucleus::transfer_delivery::{
     SignedOrganRequestV1, TransferApplicationAttestationV1, TransferApplicationHandoffState,
@@ -500,11 +495,8 @@ pub async fn outbox_mark_failed(
     .bind(uid)
     .fetch_one(pool)
     .await?;
-    let exponent = u32::try_from(attempts).unwrap_or(u32::MAX).min(20);
-    let delay = u64::from(base_delay_seconds.max(1))
-        .saturating_mul(1_u64 << exponent)
-        .min(u64::from(max_delay_seconds.max(base_delay_seconds.max(1))));
-    let next = now + Duration::seconds(i64::try_from(delay).unwrap_or(i64::MAX));
+    let next =
+        crate::backoff::next_attempt_at(now, attempts, base_delay_seconds, max_delay_seconds);
     let next_string = next.to_rfc3339();
     sqlx::query(
         "UPDATE transfer_delivery_outbox
@@ -653,8 +645,6 @@ pub struct NewRemoteReference<'a> {
     pub delivery_policy_uid: &'a str,
     pub recipient_person_uid: &'a str,
     pub recipient_organ_uid: &'a str,
-    /// A replicated initial policy is accepted only after the caller verifies
-    /// the origin's explicit signed policy event.
     pub mode: TransferDeliveryMode,
     pub policy_revision: u64,
     pub hosted_url: Option<&'a str>,
@@ -993,9 +983,6 @@ pub async fn pull_mark_completed(
     Ok(())
 }
 
-/// Applies a verified origin policy event. Replication therefore cannot be
-/// enabled by an unverified first reference: callers create hosted first, then
-/// apply the explicit next revision.
 pub async fn apply_remote_policy(
     pool: &SqlitePool,
     reference_uid: &str,
@@ -1187,7 +1174,6 @@ pub async fn accept_replica_envelope(
     Ok(ReplicaCommit::Applied(updated))
 }
 
-/// Advances a verified hosted reference without retaining replica history.
 pub async fn accept_hosted_snapshot(
     pool: &SqlitePool,
     reference_uid: &str,
@@ -1722,8 +1708,6 @@ pub async fn finish_remote_command(
     Ok(())
 }
 
-/// Consumes one authenticated Organ request nonce. Every reuse is rejected;
-/// command/envelope ids provide semantic idempotency above this transport gate.
 pub async fn consume_organ_request_nonce(
     pool: &SqlitePool,
     request: &SignedOrganRequestV1,
@@ -2182,9 +2166,6 @@ pub async fn remote_application_handoff(
     )
 }
 
-/// Retain an origin-authenticated public proposal beside the isolated remote
-/// projection. Exact replay is a no-op; changed bytes under the same handoff
-/// identity are rejected.
 pub async fn accept_remote_application_handoff(
     pool: &SqlitePool,
     input: NewRemoteApplicationHandoff<'_>,
@@ -2366,9 +2347,6 @@ pub struct LocalTransferApplicationCommit {
     pub replayed: bool,
 }
 
-/// Append the participant's private quantity effect and its private audit row
-/// atomically. The caller supplies either a matching Person signer or a
-/// previously verified local Action intent.
 pub async fn apply_remote_transfer_locally<F>(
     pool: &SqlitePool,
     input: NewLocalTransferApplication,

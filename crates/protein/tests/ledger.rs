@@ -1,15 +1,3 @@
-//! Aggregating the Ledger: exact signed totals over a window, grouped by what
-//! each change was classified as.
-//!
-//! Nothing here is domain-specific, and the tests prove it by asking the same
-//! question of a balance and of flour. What a sand calls "spending by category" and
-//! "stock consumed by reason" are one query over one set of primitives: signed
-//! deltas, classified by concept, bounded by a half-open window.
-//!
-//! The claim being defended is that no total object exists anywhere. Every
-//! number here is computed from the Facts on demand, which is why a refund
-//! reduces its own category without anyone rewriting a sum.
-
 use engine::Engine;
 use engine::actions::Action;
 use nucleus::RecordKind;
@@ -97,8 +85,6 @@ fn bucket<'a>(rows: &'a [serde_json::Value], group: &str) -> &'a serde_json::Val
         .unwrap_or_else(|| panic!("no `{group}` bucket in {rows:#?}"))
 }
 
-/// A month of balance changes: rent, two food purchases, a food refund, and one
-/// change outside the window.
 async fn spending_month(e: &Engine) {
     let cost = store::concepts::create(&e.store.pool, "cost", &[])
         .await
@@ -117,10 +103,7 @@ async fn spending_month(e: &Engine) {
     capture(e, "checking", "-1000", "rent", "2026-03-01T09:00:00Z").await;
     capture(e, "checking", "-10.50", "food", "2026-03-05T12:00:00Z").await;
     capture(e, "checking", "-20.25", "food", "2026-03-06T12:00:00Z").await;
-    // A refund is the SAME concept with a positive amount. Direction is the
-    // sign of the delta and nothing else.
     capture(e, "checking", "10.50", "food", "2026-03-07T12:00:00Z").await;
-    // Outside the window: must not appear in March.
     capture(e, "checking", "-999", "food", "2026-04-02T12:00:00Z").await;
 }
 
@@ -133,9 +116,6 @@ async fn totals_are_exact_and_come_back_as_text_not_floats() {
         .await
         .unwrap();
     let total = bucket(&rows, "(total)");
-    // -1000 - 10.50 - 20.25 + 10.50 = -1020.25, and April is out of the window.
-    // As TEXT: a JSON number is an IEEE double, and letting one in here would
-    // undo the Ledger's exactness at the very last step.
     assert_eq!(total["net"], "-1020.25");
     assert!(total["net"].is_string());
     assert_eq!(total["gains"], "10.50");
@@ -157,8 +137,6 @@ async fn grouping_by_classification_says_what_the_changes_were_for() {
         .await
         .unwrap();
     let food_row = bucket(&rows, &food);
-    // -10.50 - 20.25 + 10.50 = -20.25. The refund landed back on food, not in
-    // a separate income bucket that would leave food overstated forever.
     assert_eq!(food_row["net"], "-20.25");
     assert_eq!(food_row["gains"], "10.50");
     assert_eq!(food_row["count"], 3);
@@ -173,17 +151,12 @@ async fn the_record_axis_and_the_change_axis_are_different_questions() {
         .unwrap()
         .unwrap();
 
-    // `concept` groups by what the RECORD is: every change sits under @balance,
-    // because that is the thing that moved.
     let rows = protein::execute(&e.store, &march(GroupBy::Concept))
         .await
         .unwrap();
     assert_eq!(rows.len(), 1);
     assert_eq!(bucket(&rows, &balance)["count"], 4);
 
-    // `classification` groups by what each change was FOR. Same facts, two
-    // buckets, a different question. Conflating the axes would silently answer
-    // one when the caller asked the other.
     let rows = protein::execute(&e.store, &march(GroupBy::Classification))
         .await
         .unwrap();
@@ -195,14 +168,11 @@ async fn classified_in_walks_down_the_lingua_dag() {
     let e = engine().await;
     spending_month(&e).await;
 
-    // @cost was never applied to any change directly — rent and food were.
-    // Asking for @cost still reaches both, with no list to maintain.
     let mut q = march(GroupBy::Total);
     q.filter.push(Predicate::ClassifiedIn("cost".into()));
     let rows = protein::execute(&e.store, &q).await.unwrap();
     assert_eq!(bucket(&rows, "(total)")["net"], "-1020.25");
 
-    // Narrowing to @food excludes rent.
     let mut q = march(GroupBy::Total);
     q.filter.push(Predicate::ClassifiedIn("food".into()));
     let rows = protein::execute(&e.store, &q).await.unwrap();
@@ -217,7 +187,6 @@ async fn concept_in_reads_what_a_record_counts_as_not_only_what_it_is() {
         .await
         .unwrap();
     record(&e, "rainy-day", "savings-pot", None).await;
-    // Its identity is a savings pot; it also counts as a balance.
     e.act(
         Action::AssertRecord {
             subject: "rainy-day".into(),
@@ -232,8 +201,6 @@ async fn concept_in_reads_what_a_record_counts_as_not_only_what_it_is() {
     .unwrap();
     capture(&e, "rainy-day", "100", "rent", "2026-03-10T10:00:00Z").await;
 
-    // A Record that COUNTS AS @balance must answer a @balance question about its
-    // changes, exactly as it does about itself.
     let mut q = march(GroupBy::Total);
     q.filter.push(Predicate::ConceptIn("balance".into()));
     let rows = protein::execute(&e.store, &q).await.unwrap();
@@ -272,9 +239,6 @@ async fn unclassified_changes_get_a_named_bucket_and_are_never_dropped() {
 #[tokio::test]
 async fn the_same_query_answers_a_question_that_has_nothing_to_do_with_a_balance() {
     let e = engine().await;
-    // Stock consumed by reason. Same primitives, same predicates, same
-    // aggregation — only the vocabulary differs. This is the whole point of
-    // keeping the Ledger domain-neutral.
     let reason = store::concepts::create(&e.store.pool, "consumption", &[])
         .await
         .unwrap();
@@ -332,8 +296,6 @@ async fn records_of_different_units_are_separated_rather_than_added() {
     capture(&e, "flour", "-2.5", "used", "2026-03-02T10:00:00Z").await;
     capture(&e, "milk", "-1.5", "used", "2026-03-03T10:00:00Z").await;
 
-    // One group, two units, two rows. Adding litres to kilograms would produce
-    // a confident -4.0 that means nothing.
     let rows = protein::execute(&e.store, &march(GroupBy::Total))
         .await
         .unwrap();
@@ -366,7 +328,6 @@ async fn adjacent_windows_tile_without_double_counting() {
         }
     };
 
-    // The boundary instant belongs to the later window and to only one of them.
     let whole = count_between("2026-03-01T00:00:00Z", "2026-04-01T00:00:00Z").await;
     let first = count_between("2026-03-01T00:00:00Z", "2026-03-06T00:00:00Z").await;
     let second = count_between("2026-03-06T00:00:00Z", "2026-04-01T00:00:00Z").await;
@@ -387,8 +348,6 @@ async fn a_count_aggregate_does_not_invent_a_net() {
     let rows = protein::execute(&e.store, &q).await.unwrap();
     for row in &rows {
         assert!(row["count"].is_i64());
-        // A count has no direction. Emitting `net: "0"` would state something
-        // false rather than omit it.
         assert!(row["net"].is_null());
         assert!(row["gains"].is_null());
     }
@@ -432,8 +391,6 @@ async fn re_tagging_a_change_moves_the_total_without_touching_the_fact() {
     .await
     .unwrap();
 
-    // Nothing moved, so the Fact — hash and all — is untouched. A
-    // classification is an assertion ABOUT a change, never part of it.
     let after = store::facts::get(&e.store.pool, &mistagged.uid)
         .await
         .unwrap()
@@ -441,7 +398,6 @@ async fn re_tagging_a_change_moves_the_total_without_touching_the_fact() {
     assert_eq!(after.hash, before);
     assert_eq!(after.delta.to_string(), "-1000");
 
-    // But the totals follow, with the audit trail behind them.
     let rows = protein::execute(&e.store, &march(GroupBy::Classification))
         .await
         .unwrap();
@@ -459,8 +415,6 @@ async fn totals_never_leave_the_cell_for_a_remote_subject() {
     let e = engine().await;
     spending_month(&e).await;
 
-    // Facts are visibility-gated per Record, so an ungranted subject sums
-    // nothing rather than seeing a partial total that looks complete.
     let rows = protein::execute_for(&e.store, &march(GroupBy::Total), Some("org_somebody"))
         .await
         .unwrap();

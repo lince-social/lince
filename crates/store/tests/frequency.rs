@@ -1,7 +1,3 @@
-//! A Frequency is a slug and a step. What has to hold is that the slug stays
-//! the one way to reach it, that a retry does not declare a second one, and
-//! that the beats it implies are computed rather than stored.
-
 use chrono::{DateTime, Utc};
 use nucleus::karma::CadenceStep;
 use store::Store;
@@ -47,12 +43,10 @@ async fn a_frequency_is_reached_by_the_name_a_condition_writes() {
         .await
         .unwrap();
 
-    // `freq(@daily)` writes the slug with an @; resolving must not care.
     for token in ["daily", "@daily"] {
         let found = resolve(&store.pool, token).await.unwrap().unwrap();
         assert_eq!(found.uid, made.uid, "resolving {token}");
     }
-    // A head nobody supplied falls back to the slug rather than being blank.
     assert_eq!(made.head, "daily");
 }
 
@@ -77,8 +71,6 @@ async fn two_frequencies_cannot_answer_to_one_name() {
     create(&store.pool, new("daily", daily(), "req-1"), now)
         .await
         .unwrap();
-    // A different declaration under the same name: a reading that could mean
-    // two beats is not a reading.
     let clash = create(
         &store.pool,
         new(
@@ -110,8 +102,6 @@ async fn a_beat_that_never_comes_is_refused() {
         "a step advancing nothing is not a frequency"
     );
 
-    // The slug is typed into an expression, so it may not hold anything the
-    // lexer would read as an operator.
     let operator = create(&store.pool, new("a+b", daily(), "req-2"), now).await;
     assert!(operator.is_err(), "a name an expression cannot spell");
 }
@@ -124,8 +114,6 @@ async fn the_beats_are_computed_from_the_step_not_stored() {
         .await
         .unwrap();
 
-    // Nothing wrote a beat anywhere; the cadence enumerates them on demand,
-    // which is the same call that draws a calendar and fires a rule.
     let beats = made
         .cadence()
         .between(
@@ -145,9 +133,6 @@ async fn a_frequency_a_rule_still_reads_cannot_be_forgotten() {
         .await
         .unwrap();
 
-    // A rule whose condition names the beat. Forgetting it underneath would
-    // leave the condition reading nothing, which fires exactly like a reading
-    // that is merely false — the rule would quietly stop and say nothing.
     let record = store::records::create(
         &store.pool,
         store::records::NewRecord {
@@ -184,7 +169,6 @@ async fn a_frequency_a_rule_still_reads_cannot_be_forgotten() {
         "it is still there"
     );
 
-    // Once nothing reads it, it goes.
     sqlx::query("DELETE FROM recurrence WHERE uid = 'rule-1'")
         .execute(&store.pool)
         .await

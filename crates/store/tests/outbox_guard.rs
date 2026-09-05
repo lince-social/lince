@@ -7,14 +7,6 @@ async fn cell() -> Store {
     Store::open_memory().await.expect("in-memory store")
 }
 
-/// The guard `outbox_delete` carries, tested directly rather than only through
-/// the drain that relies on it.
-///
-/// The bounded outbox keeps ONE row per (contact, tbl, uid, field): a second
-/// edit to the same field replaces the queued row's seq rather than adding a
-/// row. So a delete that matched on identity alone would, on a drain that
-/// raced an edit, remove a row pointing at an op the peer never received —
-/// losing that edit silently and forever, because nothing re-queues it.
 #[tokio::test]
 async fn an_op_superseded_while_in_flight_is_not_dropped_by_the_delete() {
     let store = cell().await;
@@ -47,8 +39,6 @@ async fn an_op_superseded_while_in_flight_is_not_dropped_by_the_delete() {
         .expect("the create queued a slug op")
         .clone();
 
-    // The drain is now "in flight" holding `in_flight`. A second edit lands
-    // before it finishes and REPLACES that queued row with a newer seq.
     store::records::set_slug(&store.pool, &uid, Some("edited-mid-flight"))
         .await
         .expect("edit");
@@ -63,7 +53,6 @@ async fn an_op_superseded_while_in_flight_is_not_dropped_by_the_delete() {
         "the edit replaced the queued row rather than adding one"
     );
 
-    // The drain returns and deletes what IT sent.
     sync_ops::outbox_delete(&store.pool, &in_flight)
         .await
         .expect("delete");
@@ -76,8 +65,6 @@ async fn an_op_superseded_while_in_flight_is_not_dropped_by_the_delete() {
     assert_eq!(survivor.seq, superseding.seq);
 }
 
-/// Deleting what WAS sent, unraced, must still work — otherwise the guard
-/// would be indistinguishable from a delete that never fires.
 #[tokio::test]
 async fn an_unraced_delivered_row_is_deleted() {
     let store = cell().await;

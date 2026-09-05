@@ -1,14 +1,12 @@
-use std::{path::Path, sync::Arc};
+use std::{collections::BTreeMap, path::Path, sync::Arc};
 
 use nucleus::karma::{
-    ArtifactTimeZoneProvider, MAX_TZDB_ARTIFACT_BYTES, TimeZoneProvider, TzdbRevision,
+    ArtifactTimeZoneProvider, KarmaBoundaryError, MAX_TZDB_ARTIFACT_BYTES, TimeZoneArtifact,
+    TimeZoneDefinition, TimeZoneId, TimeZoneProvider, TzdbRevision, TzdbVersion, UtcOffsetSegment,
 };
 
 use crate::EngineError;
 
-/// Load a pinned timezone artifact at process/configuration startup. The file
-/// is bounded before allocation, must contain canonical JSON, and must hash to
-/// the exact revision named by the Frequency/runtime configuration.
 pub fn load_time_zone_artifact(
     path: &Path,
     expected: &TzdbRevision,
@@ -37,4 +35,34 @@ pub fn load_time_zone_artifact(
             message: error.to_string(),
         })?;
     Ok(Arc::new(provider))
+}
+
+pub const UTC_TZDB_VERSION: &str = "lince-utc.1";
+
+pub const UTC_TIME_ZONE_IDS: [&str; 4] = ["Etc/GMT", "Etc/UTC", "GMT", "UTC"];
+
+pub fn utc_time_zone_provider() -> Result<Arc<dyn TimeZoneProvider>, EngineError> {
+    let fixed = TimeZoneDefinition::new(vec![
+        UtcOffsetSegment::new(None, None, 0).map_err(utc_boundary)?,
+    ])
+    .map_err(utc_boundary)?;
+    let mut zones = BTreeMap::new();
+    for name in UTC_TIME_ZONE_IDS {
+        zones.insert(TimeZoneId::new(name).map_err(utc_boundary)?, fixed.clone());
+    }
+    let artifact = TimeZoneArtifact::new(
+        TzdbVersion::new(UTC_TZDB_VERSION).map_err(utc_boundary)?,
+        zones,
+    )
+    .map_err(utc_boundary)?;
+    Ok(Arc::new(
+        ArtifactTimeZoneProvider::from_artifact(artifact).map_err(utc_boundary)?,
+    ))
+}
+
+fn utc_boundary(error: KarmaBoundaryError) -> EngineError {
+    EngineError::Conflict {
+        code: "karma_tzdb_utc_invalid",
+        message: error.to_string(),
+    }
 }

@@ -1,10 +1,3 @@
-//! The Organ/Cell split (Ontology §11 "Profile vs device surfaces").
-//!
-//! An Organ is the published identity; a Cell is one device of it. Before the
-//! split one row did both jobs, and nothing checked the invariant `hlc.rs`
-//! states in its own module comment — which is how the two drifted apart. This
-//! file is that check.
-
 use engine::Engine;
 use engine::sync::{OpBatch, WireOp};
 use engine::trust::Signer;
@@ -29,13 +22,6 @@ async fn cell(base_url: &str) -> (Engine, String, String) {
     (e, organ, this_cell)
 }
 
-/// The bug the split exists to fix, stated as a test.
-///
-/// `nucleus::hlc` is a per-PROCESS counter, so two Cells of one Organ mint
-/// identical HLC values as a matter of course. With the Organ in the identity
-/// column the second Cell's op collides on `UNIQUE(actor_cell, hlc)`, import
-/// treats it as an already-seen duplicate, and it never applies — no error, no
-/// log. The op identity has to be the DEVICE for that not to happen.
 #[tokio::test]
 async fn two_cells_of_one_organ_mint_distinct_op_identities() {
     let (e, organ, cell_a) = cell("http://split.test").await;
@@ -57,8 +43,6 @@ async fn two_cells_of_one_organ_mint_distinct_op_identities() {
     )
     .await
     .expect("append");
-    // Same Organ, same stamp, DIFFERENT device: this is the ordinary case, and
-    // it must land.
     let two = sync_ops::append(
         &e.store.pool,
         "record",
@@ -80,14 +64,6 @@ async fn two_cells_of_one_organ_mint_distinct_op_identities() {
         "a second Cell of the same Organ must not be swallowed as a duplicate"
     );
 
-    // Same DEVICE, same stamp, arriving from a CONTACT: that IS the same op,
-    // and re-importing it is a quiet no-op rather than an error.
-    //
-    // The `from_contact` argument is what makes this the import path, and it
-    // matters: a LOCAL write with a taken identity means another PROCESS is
-    // writing as this Cell, so it re-mints its stamp rather than skipping —
-    // see `insert_local`. Idempotency-by-identity is an import property, and
-    // this is where it is asserted.
     let again = sync_ops::append(
         &e.store.pool,
         "record",
@@ -106,8 +82,6 @@ async fn two_cells_of_one_organ_mint_distinct_op_identities() {
     assert!(again.is_none(), "op identity is (actor_cell, hlc)");
 }
 
-/// Local writes are attributed to the Cell and to the Organ, and the two are
-/// not the same value. If they ever are again, the collision above is back.
 #[tokio::test]
 async fn a_local_write_carries_both_identities() {
     let (e, organ, this_cell) = cell("http://split.test").await;
@@ -137,8 +111,6 @@ async fn a_local_write_carries_both_identities() {
     );
 }
 
-/// Every Record has an origin Organ, enforced by the schema rather than by
-/// every caller remembering.
 #[tokio::test]
 async fn a_record_cannot_be_stored_without_an_origin() {
     let (e, _organ, _cell) = cell("http://split.test").await;
@@ -171,9 +143,6 @@ async fn a_record_cannot_be_stored_without_an_origin() {
     );
 }
 
-/// An op may not claim an Organ other than the one on the other end of the
-/// connection. `op.organ_uid` is stamped straight onto `record.organ_uid`, so
-/// an unchecked one lets any sync contact author records in anyone's name.
 #[tokio::test]
 async fn an_op_claiming_another_organ_is_quarantined() {
     let (e, _organ, _cell) = cell("http://receiver.test").await;
@@ -209,9 +178,6 @@ async fn an_op_claiming_another_organ_is_quarantined() {
     );
 }
 
-/// A stamp far in the future is refused rather than believed. Without the
-/// bound it would drag this Cell's clock there permanently, and every later
-/// local write would be stamped in that same future.
 #[tokio::test]
 async fn an_op_stamped_far_in_the_future_is_quarantined() {
     let (e, _organ, _cell) = cell("http://receiver.test").await;
@@ -248,13 +214,6 @@ async fn an_op_stamped_far_in_the_future_is_quarantined() {
     );
 }
 
-/// Quarantine is bounded per contact (Ontology §11 "Quarantine needs a
-/// lifecycle").
-///
-/// Before this the reject path was CHEAPER for a hostile contact than the
-/// valid one — every malformed op was stored verbatim and nothing aged it out,
-/// so filling a disk cost them nothing. C1 and C2 each added new ways in
-/// without adding a way out, which is what made it urgent.
 #[tokio::test]
 async fn quarantine_is_a_bounded_ring_per_contact() {
     let (e, _organ, _cell) = cell("http://receiver.test").await;
@@ -290,8 +249,6 @@ async fn quarantine_is_a_bounded_ring_per_contact() {
         "and it did not evict a different contact's evidence"
     );
 
-    // The ring keeps the NEWEST, which is what someone diagnosing a live
-    // problem needs.
     let kept = store::organs::quarantined_for(&e.store.pool, noisy, 1)
         .await
         .expect("read");
@@ -303,11 +260,6 @@ async fn quarantine_is_a_bounded_ring_per_contact() {
     assert_eq!(cleared, store::organs::QUARANTINE_PER_CONTACT as u64);
 }
 
-/// The inbound half of the per-contact scope: `sync_in` said whether to accept
-/// their feed at all, and this says WHICH columns of it are applied. Dropped
-/// silently rather than quarantined — an out-of-scope op is our own policy
-/// working, not the peer misbehaving, and quarantining it would fill the ring
-/// on the first sync with any contact wider than our acceptance.
 #[tokio::test]
 async fn an_accept_scope_drops_the_columns_it_does_not_name() {
     let (e, _organ, _cell) = cell("http://receiver.test").await;
@@ -349,17 +301,12 @@ async fn an_accept_scope_drops_the_columns_it_does_not_name() {
             "a column outside the acceptance must not reach our copy"
         );
     }
-    // The quarantine ring stays empty: this is policy, not misbehaviour, and
-    // burying real reports under it is the failure being avoided.
     let held = store::organs::quarantined_for(&e.store.pool, sender, 10)
         .await
         .expect("quarantine");
     assert!(held.is_empty(), "dropping by policy is not a report");
 }
 
-/// A DELETE is accepted under every acceptance scope there is, including the
-/// empty one. Refusing one would leave us holding a Record they removed —
-/// exactly the mirror of the outbound rule, for the same reason.
 #[tokio::test]
 async fn a_delete_arrives_under_the_narrowest_acceptance() {
     let (e, _organ, _cell) = cell("http://receiver.test").await;
@@ -392,22 +339,12 @@ async fn a_delete_arrives_under_the_narrowest_acceptance() {
     assert_eq!(applied, 1, "the delete is applied even accepting nothing");
 }
 
-/// Store a roster for `organ` naming `cells`, without signing it.
-///
-/// The lookup this exercises reads the payload and nothing else — signature
-/// checking lives in `engine::roster` and has its own tests — so putting one
-/// here keeps the test about the admissibility gate rather than about key
-/// handling, and lets it stand up a third Organ we have never talked to.
 async fn hold_roster(e: &Engine, organ: &str, cells: &[&str]) {
     let payload = serde_json::json!({
         "organ_uid": organ,
         "root_key": "k-root",
         "version": 1,
         "not_after": "2099-01-01T00:00:00Z",
-        // Every field, not only the uid the ownership check reads: this
-        // payload is also parsed as a whole roster on the import path, and a
-        // partial one fails there for a reason that has nothing to do with
-        // what the test is about.
         "cells": cells
             .iter()
             .map(|uid| serde_json::json!({
@@ -436,18 +373,6 @@ async fn hold_roster(e: &Engine, organ: &str, cells: &[&str]) {
     .expect("hold a roster");
 }
 
-/// Dedup poisoning, and the case the roster check alone cannot reach.
-///
-/// The op log is idempotent by `(actor_cell, hlc)`. A contact that may name
-/// any Cell it likes can therefore pre-occupy a Cell uid belonging to somebody
-/// ELSE with a stamp slightly in the future; when that Organ's real op arrives
-/// later it is dropped as an already-seen duplicate, silently and permanently.
-///
-/// The positive check — is this Cell in the SENDER's roster — needs a roster
-/// we may not hold, and refusing every rosterless sender is not available: a
-/// refusal is quarantined, the ring is bounded and nothing replays it, so it
-/// would permanently drop an Organ that legitimately has not published one.
-/// So the question is asked the other way round, against what we already hold.
 #[tokio::test]
 async fn an_op_claiming_a_cell_we_know_belongs_to_someone_else_is_refused() {
     let (e, _organ, _cell) = cell("http://receiver.test").await;
@@ -457,8 +382,6 @@ async fn an_op_claiming_a_cell_we_know_belongs_to_someone_else_is_refused() {
     store::organs::add_contact(&e.store.pool, sender, None, "Sender", "", 1)
         .await
         .expect("contact");
-    // We hold the victim's roster — we know that Cell is theirs — but none for
-    // the sender, which is the state this branch exists for.
     hold_roster(&e, victim, &[victim_cell]).await;
 
     let applied = e
@@ -470,11 +393,6 @@ async fn an_op_claiming_a_cell_we_know_belongs_to_someone_else_is_refused() {
                 field: "head".into(),
                 kind: "set".into(),
                 value: Some("\"pre-occupying the dedup key\"".into()),
-                // Everything else about this op is admissible: the Organ it
-                // claims IS the sending one, and the stamp is inside the drift
-                // window. Only the authorship is a lie — which is what makes
-                // this test fail when the branch is deleted rather than being
-                // caught by one of the other refusals.
                 hlc: nucleus::hlc::next(),
                 actor_cell: victim_cell.into(),
                 organ_uid: sender.into(),
@@ -503,14 +421,6 @@ async fn an_op_claiming_a_cell_we_know_belongs_to_someone_else_is_refused() {
     );
 }
 
-/// The same attack aimed at us, which is the form the plan describes: a
-/// contact pre-occupying OUR Cell's dedup key so our next real op is dropped
-/// as a duplicate everywhere it lands.
-///
-/// Checked by name rather than only through the lookup above, because a Cell
-/// on a first boot that has not published a roster yet would not be found by
-/// it — and being unable to protect our own identity until we have published
-/// is the wrong order of dependency.
 #[tokio::test]
 async fn an_op_claiming_this_cell_as_its_author_is_refused() {
     let (e, _organ, this_cell) = cell("http://receiver.test").await;
@@ -548,11 +458,6 @@ async fn an_op_claiming_this_cell_as_its_author_is_refused() {
     );
 }
 
-/// The control, and the reason the two above are not simply "refuse anything
-/// from a sender with no roster": an ordinary contact who has published
-/// nothing still syncs. Rosterless is a LEGITIMATE state — a Cell that has
-/// never had an endpoint, or whose root key is deliberately offline — and the
-/// migration that enforces write capability says so in its own comment.
 #[tokio::test]
 async fn a_rosterless_sender_naming_a_cell_nobody_claims_still_syncs() {
     let (e, _organ, _cell) = cell("http://receiver.test").await;
@@ -581,13 +486,6 @@ async fn a_rosterless_sender_naming_a_cell_nobody_claims_still_syncs() {
     assert_eq!(applied, 1, "a contact with no published roster still syncs");
 }
 
-/// The other half of "the anchor moves rather than disappearing" (C4).
-///
-/// Over a connection, `from_organ` is tied to a real peer by the authenticated
-/// stream. Out of a mailbox there is no stream, so the tie has to be made
-/// again from the bundle signature — which names a CELL — against the signed
-/// roster that says who owns that Cell. Without this, a mailed batch would be
-/// checked by comparing two fields the same sender wrote.
 #[tokio::test]
 async fn a_mailed_batch_must_be_signed_by_a_cell_the_claimed_organ_owns() {
     let (e, _organ, _cell) = cell("http://receiver.test").await;
@@ -617,7 +515,6 @@ async fn a_mailed_batch_must_be_signed_by_a_cell_the_claimed_organ_owns() {
         },
     };
 
-    // The honest case: signed by a Cell the claimed Organ actually owns.
     let honest = e
         .import_mailed_batch(&opened("cell-friend", "organ-friend"))
         .await;
@@ -626,8 +523,6 @@ async fn a_mailed_batch_must_be_signed_by_a_cell_the_claimed_organ_owns() {
         "mail from a contact whose roster we hold must apply: {honest:?}"
     );
 
-    // Signed by someone else's Cell while claiming to be your friend. This is
-    // the whole reason the bundle is signed at all.
     let wrong = e
         .import_mailed_batch(&opened("cell-stranger", "organ-friend"))
         .await;
@@ -636,27 +531,12 @@ async fn a_mailed_batch_must_be_signed_by_a_cell_the_claimed_organ_owns() {
         "a batch claiming an Organ that does not own the signing Cell must refuse"
     );
 
-    // Signed by a Cell no roster we hold names. REFUSED here, unlike on the
-    // connection path where an unplaceable Cell is admitted — mail is only
-    // ever sealed to a roster we already hold, so an unknown signer is not a
-    // relationship starting, it is a stranger using a carrier.
     let unknown = e
         .import_mailed_batch(&opened("cell-nobody", "organ-friend"))
         .await;
     assert!(unknown.is_err(), "an unplaceable signer must refuse");
 }
 
-/// This device's address is on this device's Record, and there is nothing on
-/// the Organ Record for it to travel in.
-///
-/// The Organ Record SYNCS. While `baseUrl`, `aliases` and `local` sat on it —
-/// in its body and in a `lince.organ` extension — one machine's local address
-/// reached every sibling Cell and the last writer won. A migration cleaned
-/// both and `ensure_local` wrote them back on the next boot, so the cleanup
-/// only ever looked done.
-///
-/// The assertion that matters is the NEGATIVE one: not that the surface reads
-/// back, but that the syncing Record carries no surface at all.
 #[tokio::test]
 async fn this_cells_address_never_reaches_the_organ_record() {
     let (e, organ, this_cell) = cell("http://one-machine.test").await;
@@ -671,13 +551,12 @@ async fn this_cells_address_never_reaches_the_organ_record() {
         "the Organ Record's body is not an address any more"
     );
 
-    let on_the_organ: i64 = store::sqlx::query_scalar(
-        "SELECT COUNT(*) FROM record_extension WHERE record_uid = ?",
-    )
-    .bind(&organ)
-    .fetch_one(&e.store.pool)
-    .await
-    .expect("count");
+    let on_the_organ: i64 =
+        store::sqlx::query_scalar("SELECT COUNT(*) FROM record_extension WHERE record_uid = ?")
+            .bind(&organ)
+            .fetch_one(&e.store.pool)
+            .await
+            .expect("count");
     assert_eq!(
         on_the_organ, 0,
         "nothing local may sit on the Record that travels"
@@ -701,12 +580,6 @@ async fn this_cells_address_never_reaches_the_organ_record() {
     assert_eq!(owner, this_cell, "and it is THIS Cell's Record it sits on");
 }
 
-/// Joining another Organ keeps this device's address, and still puts nothing
-/// on the identity it joined.
-///
-/// `adopt_identity` deletes the old Organ Record and every extension hanging
-/// off it. The surface config survives because it was never there — it is on
-/// the Cell Record, which the swap only repoints.
 #[tokio::test]
 async fn joining_an_organ_keeps_the_address_on_the_device() {
     let (e, _minted, this_cell) = cell("http://joiner.test").await;
@@ -726,13 +599,12 @@ async fn joining_an_organ_keeps_the_address_on_the_device() {
         "the device kept its own address across the swap"
     );
 
-    let on_the_joined_organ: i64 = store::sqlx::query_scalar(
-        "SELECT COUNT(*) FROM record_extension WHERE record_uid = ?",
-    )
-    .bind(joined)
-    .fetch_one(&e.store.pool)
-    .await
-    .expect("count");
+    let on_the_joined_organ: i64 =
+        store::sqlx::query_scalar("SELECT COUNT(*) FROM record_extension WHERE record_uid = ?")
+            .bind(joined)
+            .fetch_one(&e.store.pool)
+            .await
+            .expect("count");
     assert_eq!(
         on_the_joined_organ, 0,
         "an enrolled device publishes nothing of itself onto the Organ it joined"

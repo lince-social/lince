@@ -1,5 +1,3 @@
-//! Phase 4 occurrence claims and the Transfer's generic conversation surface.
-
 pub mod support;
 
 use engine::actions::{Action, TransferOccurrenceClaimRole, TransferReservePoint};
@@ -458,6 +456,8 @@ fn balance_is_advisory_and_conversation_uses_generic_threads() {
                 Action::CreateMessage {
                     thread,
                     body: "can we do saturday?".into(),
+                    author: None,
+                    state: nucleus::MessageState::Finished,
                     parent: None,
                     references: Vec::new(),
                 },

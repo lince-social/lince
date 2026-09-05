@@ -90,10 +90,6 @@ pub fn build_workspace_archive(
     Ok(cursor.into_inner())
 }
 
-/// True if `bytes` is a workspace/group archive (a zip containing
-/// `workspace.json`) rather than a single-sand package. Lets callers that scan
-/// the sand dir (e.g. the package catalog) skip group `.lince` files, which
-/// otherwise share the `.lince`/`.sand` extension with single packages.
 pub fn is_workspace_archive_bytes(bytes: &[u8]) -> bool {
     match ZipArchive::new(Cursor::new(bytes)) {
         Ok(mut archive) => archive.by_name(WORKSPACE_FILE_NAME).is_ok(),
@@ -218,9 +214,6 @@ fn is_workspace_archive_filename(filename: &str) -> bool {
     lowercase.ends_with(WORKSPACE_ARCHIVE_EXTENSION)
         || lowercase.ends_with(LEGACY_WORKSPACE_ARCHIVE_EXTENSION)
         || lowercase.ends_with(GROUP_ARCHIVE_EXTENSION)
-        // Sand groups also ship as `.lince` (a group of sub-sands). The archive
-        // content (presence of `workspace.json`) is the real discriminator; the
-        // caller only reaches the group path for actual group archives.
         || lowercase.ends_with(crate::domain::lince_package::LEGACY_PACKAGE_ARCHIVE_EXTENSION)
 }
 

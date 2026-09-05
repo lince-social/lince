@@ -4,8 +4,6 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 
 use super::{DurationMs, KarmaBoundaryError, TimestampMs};
 
-/// Reduced non-negative rational used for semantic/admission rates. It avoids
-/// rounding `1000 / interval_ms` through a float.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct RationalRate {
     numerator: u64,
@@ -105,7 +103,6 @@ const fn gcd(mut left: u64, mut right: u64) -> u64 {
     if left == 0 { 1 } else { left }
 }
 
-/// Requested wake service. This is independent from cadence.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TimerPolicy {
     required_resolution_ms: u32,
@@ -218,7 +215,6 @@ pub enum OverloadPolicy {
     DegradeWithinGrant,
 }
 
-/// Immutable elapsed cadence revision. Every boundary is `anchor + n*interval`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ElapsedSchedule {
     anchor: TimestampMs,

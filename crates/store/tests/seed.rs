@@ -1,6 +1,3 @@
-//! Stage 8b: the Cell's native app tables — configuration singleton + the
-//! permission/role/user workflow, seeded idempotently.
-
 use store::Store;
 
 const PERMS: &[(&str, &str)] = &[
@@ -14,17 +11,14 @@ const PERMS: &[(&str, &str)] = &[
 async fn seed_is_idempotent_and_grants_admin_everything() {
     let store = Store::open_memory().await.unwrap();
 
-    // seeding twice must not error or duplicate.
     store::seed::seed(&store.pool, PERMS).await.unwrap();
     store::seed::seed(&store.pool, PERMS).await.unwrap();
 
-    // configuration singleton exists with the column-DEFAULT policy.
     let config = store::config::get(&store.pool).await.unwrap().unwrap();
     assert_eq!(config.language, "en");
     assert_eq!(config.style, "catppuccin_macchiato");
     assert_eq!(config.delete_confirmation, true);
 
-    // admin role holds EVERY seeded permission, exactly once.
     let mut admin_perms = store::auth::role_permission_keys(&store.pool, "admin")
         .await
         .unwrap();
@@ -39,7 +33,6 @@ async fn seed_is_idempotent_and_grants_admin_everything() {
         ]
     );
 
-    // the `lince` role exists but was granted nothing.
     assert!(
         store::auth::role_permission_keys(&store.pool, "lince")
             .await
@@ -53,7 +46,6 @@ async fn admin_bootstrap_flips_admin_exists() {
     let store = Store::open_memory().await.unwrap();
     store::seed::seed(&store.pool, PERMS).await.unwrap();
 
-    // fresh store: no admin user yet (first run would prompt).
     assert!(!store::auth::admin_exists(&store.pool).await.unwrap());
 
     let admin_role = store::auth::ensure_role(&store.pool, store::auth::ADMIN_ROLE)
@@ -66,12 +58,6 @@ async fn admin_bootstrap_flips_admin_exists() {
     assert!(store::auth::admin_exists(&store.pool).await.unwrap());
 }
 
-/// Turning auth on must not make a Cell look empty to the person using it.
-///
-/// Every read is gated by `visible_targets`, so before creators were included
-/// there, a record you had just made and shared with nobody was invisible to
-/// you — an authenticated board rendered nothing at all. This is the intrinsic
-/// half of visibility, the same idea as a Transfer's own parties.
 #[tokio::test]
 async fn you_can_see_what_you_made_without_sharing_it_with_yourself() {
     let store = store::Store::open("sqlite::memory:").await.unwrap();
@@ -90,7 +76,6 @@ async fn you_can_see_what_you_made_without_sharing_it_with_yourself() {
     .await
     .unwrap();
 
-    // A fact is what carries authorship, so authorship is what this reads.
     sqlx::query(
         "INSERT INTO fact
             (uid, record_uid, delta_mantissa, delta_scale, at, actor_uid,

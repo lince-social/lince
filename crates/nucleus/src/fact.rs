@@ -1,7 +1,3 @@
-//! Facts (blueprint Part II). The Fact is the truth; the quantity is the cache.
-//! `seal` is pure: it takes the previous hash and the clock's `at` from the caller,
-//! so DST can replay a log byte-for-byte.
-
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -89,8 +85,6 @@ impl Cause {
     }
 }
 
-/// A fact not yet sealed into the chain. `uid`/`at` may be preset (sync import
-/// replays foreign facts verbatim); otherwise the sealer assigns them.
 #[derive(Debug, Clone)]
 pub struct NewFact {
     pub uid: Option<String>,
@@ -103,8 +97,6 @@ pub struct NewFact {
 }
 
 impl NewFact {
-    /// An exact movement. This is the constructor a Karma-computed amount uses:
-    /// the decimal it evaluated is the decimal that lands in the chain.
     pub fn quantity(record_uid: impl Into<String>, delta: DecimalValue, cause: Cause) -> Self {
         Self {
             uid: None,
@@ -117,24 +109,16 @@ impl NewFact {
         }
     }
 
-    /// The legacy-producer door: a caller that still computes its delta in
-    /// `f64` (transfers, senses, the old rule fold) converts here, visibly.
-    /// Every use of this is a site E0.2/E0.3 still has to make exact — that is
-    /// why it is a separate name rather than a `From` impl.
     pub fn quantity_f64(record_uid: impl Into<String>, delta: f64, cause: Cause) -> Self {
         Self::quantity(record_uid, decimal_from_f64(delta), cause)
     }
 }
 
-/// Convert a legacy `f64` amount for the Ledger. Non-finite input cannot be a
-/// quantity; it becomes zero rather than poisoning a chain, since the callers
-/// are infallible constructors.
 pub fn decimal_from_f64(value: f64) -> DecimalValue {
     DecimalValue::from_f64_lossy(value)
         .unwrap_or_else(|_| DecimalValue::from_mantissa(0, 0).expect("scale 0 is always valid"))
 }
 
-/// The zero movement — checkpoints and anchors carry no quantity.
 pub fn zero_delta() -> DecimalValue {
     DecimalValue::from_mantissa(0, 0).expect("scale 0 is always valid")
 }
@@ -153,15 +137,6 @@ pub struct Fact {
     pub signature: Option<String>,
 }
 
-/// Canonical serialization hashed into the chain. Field order is normative;
-/// changing it breaks every existing chain.
-///
-/// The delta enters as `scale:canonical-text`, so the exact pair is covered by
-/// the Fact's hash and signature rather than annotated beside them. Carrying
-/// the scale distinguishes a declared `1.5` from a declared `1.50`; carrying
-/// the text rather than a float removes the old hazard where `0.1 + 0.2`
-/// hashed as `0.30000000000000004` and chain determinism depended on the
-/// float formatter.
 fn canonical(f: &Fact) -> String {
     format!(
         "{}|{}|{}:{}|{}|{}|{}|{}|{}",
@@ -177,8 +152,6 @@ fn canonical(f: &Fact) -> String {
     )
 }
 
-/// Seal a NewFact into the chain: assign uid/at when absent, chain the hash.
-/// Signatures are applied by Trust (Part XI) after sealing; None until then.
 pub fn seal(new: NewFact, prev_hash: &str, now: DateTime<Utc>) -> Fact {
     let mut fact = Fact {
         uid: new.uid.unwrap_or_else(|| crate::id::new_uid("f")),
@@ -199,7 +172,6 @@ pub fn seal(new: NewFact, prev_hash: &str, now: DateTime<Utc>) -> Fact {
     fact
 }
 
-/// Verify one chain step: recompute the hash from prev_hash + canonical form.
 pub fn verify_chain_step(fact: &Fact) -> bool {
     let mut hasher = Sha256::new();
     hasher.update(fact.prev_hash.as_bytes());
@@ -215,8 +187,6 @@ fn hex(bytes: &[u8]) -> String {
     s
 }
 
-/// SHA-256 of arbitrary bytes as lowercase hex — used by compaction to anchor
-/// an archive file's content into the Ledger (blueprint II.2).
 pub fn sha256_hex(bytes: &[u8]) -> String {
     let mut hasher = Sha256::new();
     hasher.update(bytes);
@@ -251,8 +221,6 @@ mod tests {
 
     #[test]
     fn declared_precision_is_part_of_the_chain() {
-        // `1.5` and `1.50` are the same number and different declarations; the
-        // hash preimage carries the scale, so they are different Facts.
         let now = Utc::now();
         let mk = |delta: DecimalValue| {
             seal(
@@ -277,8 +245,6 @@ mod tests {
 
     #[test]
     fn float_hazards_do_not_reach_the_chain() {
-        // The old preimage interpolated an f64, so this pair hashed as
-        // "0.30000000000000004" and chain bytes depended on the formatter.
         let sum = decimal_from_f64(0.1)
             .aligned_add(decimal_from_f64(0.2))
             .expect("0.1 + 0.2 is exact at scale 1");

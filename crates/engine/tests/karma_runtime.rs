@@ -147,6 +147,111 @@ async fn tickless_runner_reconciles_sleeps_claims_and_rearms_without_heartbeat()
     runner.abort();
 }
 
+#[tokio::test]
+async fn host_default_runtime_serves_utc_and_fires_without_any_configuration() {
+    let engine = Arc::new(Engine::open_memory().await.unwrap());
+    let now = Utc::now();
+    let anchor = TimestampMs::from_millis(now.timestamp_millis()).unwrap();
+    let runtime = KarmaDeadlineDirectorConfig::for_host("engine-host-default".to_string()).unwrap();
+
+    let revision = runtime.provider_revisions().next().cloned().unwrap();
+    assert_eq!(
+        revision.version.as_str(),
+        engine::karma_timezone::UTC_TZDB_VERSION
+    );
+    let provider = runtime.provider(&revision).unwrap();
+    for name in engine::karma_timezone::UTC_TIME_ZONE_IDS {
+        assert_eq!(
+            provider
+                .resolve_local(
+                    &TimeZoneId::new(name).unwrap(),
+                    CivilDateTime::parse_canonical("2026-09-02T09:00:00.000").unwrap(),
+                )
+                .unwrap(),
+            LocalTimeResolution::Unique {
+                instant: TimestampMs::parse_canonical("2026-09-02T09:00:00.000Z").unwrap()
+            }
+        );
+    }
+
+    let created = committed(
+        engine
+            .create_karma_frequency(
+                CreateFrequencyInput {
+                    request_id: "host-default-create".to_string(),
+                    frequency: host_paced_frequency(anchor),
+                    owner_person_uid: None,
+                    actor_person_uid: None,
+                },
+                now,
+            )
+            .await
+            .unwrap(),
+    );
+    let runner = engine
+        .clone()
+        .start_karma_deadline_director(runtime.clone());
+    tokio::task::yield_now().await;
+    let active = committed(
+        engine
+            .activate_karma_frequency(
+                ActivateFrequencyInput {
+                    request_id: "host-default-activate".to_string(),
+                    frequency_uid: created.record_uid,
+                    expected_handle_revision: 1,
+                    revision_hash: created.head_revision_hash,
+                    parameter_overrides: BTreeMap::new(),
+                    actor_person_uid: None,
+                },
+                &runtime,
+                now,
+            )
+            .await
+            .unwrap(),
+    );
+    let activation_hash = active.active_activation_hash.unwrap();
+
+    tokio::time::timeout(Duration::from_secs(5), async {
+        loop {
+            let count: i64 = store::sqlx::query_scalar(
+                "SELECT COUNT(*) FROM karma_schedule_occurrence WHERE activation_hash = ?",
+            )
+            .bind(activation_hash.as_str())
+            .fetch_one(&engine.store.pool)
+            .await
+            .unwrap();
+            if count >= 2 {
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .expect("the host default runtime should fire an ordinary Frequency");
+    runner.abort();
+}
+
+fn host_paced_frequency(anchor: TimestampMs) -> FrequencyAst {
+    FrequencyAst {
+        slug: Slug::new("runtime.host-default").unwrap(),
+        purpose: "Prove the host default runtime configuration".to_string(),
+        parameters: BTreeMap::from([(
+            LocalId::new("interval").unwrap(),
+            FrequencyParameterDefinition::Duration {
+                default: DurationMs::new(100),
+                minimum: DurationMs::new(100),
+                maximum: DurationMs::new(10_000),
+            },
+        )]),
+        timer: FrequencyTimerAst {
+            required_resolution: duration(100),
+            max_lateness: duration(1_000),
+            coalesce_window: duration(0),
+        },
+        ..frequency(anchor)
+    }
+}
+
 fn frequency(anchor: TimestampMs) -> FrequencyAst {
     FrequencyAst {
         schema: FrequencySchema::V1,

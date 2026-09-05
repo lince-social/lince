@@ -1,17 +1,3 @@
-//! Axis 1 (Ontology C7): a rule authored on one Cell runs on another.
-//!
-//! Before this, `op_in_scope` named the tables that travel and no `karma_*`
-//! table was among them — and the Program's Record row did not stand in for
-//! it either, because `programs::create` inserts that row raw, with no op. Not
-//! even the NAME of a rule reached another Cell. "Karma
-//! not synced" was not a supported second mode; it was the only one, by
-//! accident.
-//!
-//! The two tests that matter here are the round trip and the REFUSAL. The
-//! refusal is the load-bearing one: a Program is executable content, and the
-//! difference between "my other laptop published this" and "a contact pushed
-//! this at me" is the difference between sync and remote code execution.
-
 use engine::sync::Delivery;
 use std::collections::{BTreeMap, BTreeSet};
 use std::num::NonZeroU32;
@@ -36,7 +22,6 @@ use store::karma::programs::{
     activate as activate_program, create as create_program,
 };
 
-/// A Cell of a brand-new Organ.
 async fn cell() -> (Engine, String) {
     let engine = Engine::open_memory().await.expect("engine opens");
     let organ = store::organs::ensure_local(&engine.store.pool, "http://cell.test")
@@ -50,19 +35,6 @@ async fn cell() -> (Engine, String) {
     (engine, organ)
 }
 
-/// Make an already-paired Cell a SECOND CELL OF `organ_uid` — the arrangement
-/// axis 1 is about.
-///
-/// Enrolment (C3) is what will produce this for real. Until it exists the local
-/// Organ uid is rewritten here, and it is done AFTER pairing on purpose: pairing
-/// two Cells of one Organ through the contact path would have each of them
-/// holding a contact row for itself, which is a shape the sync policy code has
-/// no reason to support and would make the test pass or fail for reasons that
-/// have nothing to do with Karma. Pair as strangers, then become siblings.
-///
-/// Foreign keys go off for the rewrite because the Organ uid is referenced from
-/// several tables; this is a fixture standing in for enrolment, not a supported
-/// operation.
 async fn become_sibling_of(engine: &Engine, organ_uid: &str) {
     let existing = store::organs::local(&engine.store.pool)
         .await
@@ -74,9 +46,6 @@ async fn become_sibling_of(engine: &Engine, organ_uid: &str) {
         .execute(&mut *connection)
         .await
         .unwrap();
-    // Pairing left a contact Record for the other Organ. Becoming that Organ
-    // means the two rows are now one identity, so the contact copy goes: an
-    // Organ is not its own contact.
     for statement in [
         "DELETE FROM organ_contact WHERE record_uid = ?",
         "DELETE FROM record WHERE uid = ?",
@@ -118,14 +87,6 @@ async fn pair(from: &Engine, from_organ: &str, to: &Engine, to_organ: &str) {
         .unwrap();
 }
 
-/// Deliver to a SIBLING — another Cell of the same Organ.
-///
-/// Not `drain_outbox`, and that is a fact about the architecture rather than a
-/// shortcut: `organ_contact` is keyed by the contact's Organ uid and a
-/// sibling's is OUR OWN, so the contact table cannot represent a sibling and
-/// never will (`wire.rs` says so where it resolves one). The roster is the
-/// sibling list, and a sibling catches up by PULLING the log — which is what
-/// `ops_after` serves and what this mirrors.
 async fn deliver_to_sibling(from: &Engine, to: &Engine, organ: &str) {
     let (ops, _head) = from.ops_after(0, 1_000).await.unwrap();
     to.import_op_batch(&engine::sync::OpBatch {
@@ -149,12 +110,6 @@ async fn deliver(from: &Engine, to: &Engine) {
     .expect("drain");
 }
 
-/// The whole point of axis 1: the rule itself crosses, not merely its name.
-///
-/// Asserted through the tables `freeze_next_epoch` joins rather than through
-/// the extension it arrived in — an extension nothing materialises is a rule
-/// the receiving Cell can display and never run, which is the state this test
-/// exists to distinguish from success.
 #[tokio::test]
 async fn a_rule_authored_on_one_cell_becomes_runnable_on_another() {
     let (a, organ) = cell().await;
@@ -171,9 +126,6 @@ async fn a_rule_authored_on_one_cell_becomes_runnable_on_another() {
         instant(),
     )
     .await;
-    // The engine publishes on mutation; these fixtures write through the store
-    // directly, so publishing is explicit here for the same reason the store
-    // tests call the store — the action layer is exercised by its own suite.
     store::karma::sync::publish_frequency(&a.store.pool, &frequency.record_uid)
         .await
         .unwrap();
@@ -183,8 +135,6 @@ async fn a_rule_authored_on_one_cell_becomes_runnable_on_another() {
 
     deliver_to_sibling(&a, &b, &organ).await;
 
-    // Separates "the op never arrived" from "it arrived and did not
-    // materialise" — two different bugs that look identical from the handle.
     assert!(
         store::records::get_extension(
             &b.store.pool,
@@ -224,13 +174,6 @@ async fn a_rule_authored_on_one_cell_becomes_runnable_on_another() {
     );
 }
 
-/// Layer one: a rule definition never LEAVES for a contact.
-///
-/// It rides the ordinary extension op path, and `op_in_scope` returns true for
-/// an un-narrowed contact before it looks at the field at all — so without the
-/// outbound filter, adding sync between your own Cells would have handed every
-/// sync contact the full text of every rule you run. A privacy regression
-/// introduced by a sync feature is still a privacy regression.
 #[tokio::test]
 async fn a_contacts_feed_never_carries_a_rule_definition() {
     let (a, a_organ) = cell().await;
@@ -268,15 +211,6 @@ async fn a_contacts_feed_never_carries_a_rule_definition() {
     );
 }
 
-/// Layer two: if a definition arrives ANYWAY, it is stored and inert.
-///
-/// The batch is assembled by hand from the sender's log, which is exactly what
-/// a peer that ignores our outbound filter would send — the filter is our
-/// policy on our side and proves nothing about what can arrive. What decides
-/// here is the batch's AUTHENTICATED origin, not the Record's `organ_uid`,
-/// which is a column the sender fills in and can therefore say whatever the
-/// sender wants. A Program that materialises on receipt is remote code
-/// execution wearing a sync mechanism.
 #[tokio::test]
 async fn a_rule_arriving_from_a_contact_is_stored_but_never_becomes_runnable() {
     let (a, a_organ) = cell().await;
@@ -334,9 +268,6 @@ async fn a_rule_arriving_from_a_contact_is_stored_but_never_becomes_runnable() {
     );
 }
 
-/// A pause travels. Otherwise turning a rule off here leaves the always-on Cell
-/// running the last definition it heard about — the failure that makes people
-/// stop trusting sync.
 #[tokio::test]
 async fn pausing_a_rule_stops_it_on_the_other_cell_too() {
     let (a, organ) = cell().await;
@@ -397,9 +328,6 @@ async fn pausing_a_rule_stops_it_on_the_other_cell_too() {
     );
 }
 
-/// The hash is re-derived, never believed. A definition whose content does not
-/// match its content-address is refused rather than stored under a name that
-/// lies about it.
 #[tokio::test]
 async fn a_definition_whose_hash_does_not_match_its_content_is_refused() {
     let (a, organ) = cell().await;
@@ -419,8 +347,6 @@ async fn a_definition_whose_hash_does_not_match_its_content_is_refused() {
     store::karma::sync::publish_program(&a.store.pool, &program.record_uid)
         .await
         .unwrap();
-    // Rewrite the published hash to one that does not address this AST — the
-    // shape of a corrupted or forged publication.
     let mut fds = store::records::get_extension(
         &a.store.pool,
         &program.record_uid,
@@ -449,8 +375,6 @@ async fn a_definition_whose_hash_does_not_match_its_content_is_refused() {
         "a hash that does not address its content must not become a runnable rule"
     );
 }
-
-// ---- fixtures, mirroring `store/tests/karma_runs.rs` ----
 
 async fn active_frequency(store: &Store, now: DateTime<Utc>) -> FrequencyHandleRow {
     let created = committed_frequency(
@@ -640,14 +564,6 @@ fn instant() -> DateTime<Utc> {
         .unwrap()
 }
 
-/// A slug already taken on the receiver costs the NAME, never the rule.
-///
-/// `record.slug` is UNIQUE, and two Cells that each authored a rule called
-/// `run.matching` before they ever synced is an ordinary situation rather than
-/// an attack. Letting the insert fail there would quarantine the definition and
-/// leave the rule silently not running, which is the failure this whole cluster
-/// is about — so the arriving rule lands nameless and runs. A missing name is
-/// visible on the surface; a missing rule is visible nowhere.
 #[tokio::test]
 async fn a_slug_already_taken_costs_the_name_and_not_the_rule() {
     let (a, organ) = cell().await;
@@ -671,7 +587,6 @@ async fn a_slug_already_taken_costs_the_name_and_not_the_rule() {
         .await
         .unwrap();
 
-    // An unrelated Record on the receiver is already holding that slug.
     store::sqlx::query(
         "INSERT INTO record (uid, slug, kind, head, body, quantity_mantissa, quantity_scale,
                              organ_uid, created_at, updated_at)

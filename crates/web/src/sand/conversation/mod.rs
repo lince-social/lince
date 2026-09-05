@@ -2,10 +2,6 @@ use crate::domain::lince_package::{LincePackage, PackageManifest};
 
 pub(crate) const FEATURE_FLAG: &str = "sand.conversation";
 
-// Reading and answering conversations (Ontology §11 "Threads"). Nothing here
-// is a messaging subsystem: a conversation, a topic, and a message are all
-// Records. Invites are mirrored here and in board notifications; both answer
-// through the host boundary so the remote grant is acknowledged too.
 const HTML: &str = include_str!("conversation.html");
 
 pub(crate) fn manifest() -> PackageManifest {
@@ -58,17 +54,12 @@ mod tests {
         assert!(HTML.contains("action: \"open-thread\""));
         assert!(HTML.contains("/host/notifications/${encodeURIComponent(invite.uid)}/accept"));
         assert!(HTML.contains("/host/notifications/${encodeURIComponent(invite.uid)}/decline"));
-        // No camera or terminal: the host calls are same-origin acknowledgement
-        // of the remote grant, while ordinary conversation data remains Protein.
         assert_eq!(
             manifest().permissions,
             vec!["bridge_state", "protein_subscribe", "act"]
         );
     }
 
-    /// An invite must render the Organ uid the connection PROVED, never a
-    /// display name the sender chose. Showing a claim as a name is how the
-    /// wrong person gets trusted.
     #[test]
     fn an_invite_shows_the_organ_that_asked_not_a_name_it_chose() {
         assert!(HTML.contains("from_organ"));

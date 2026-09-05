@@ -2,8 +2,6 @@ use std::fmt;
 
 use serde::{Deserialize, Deserializer, Serialize, Serializer, de};
 
-/// Stable machine-readable classes. Human messages may improve; these values
-/// may never be repurposed because policies and clients branch on them.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum FailureCode {
@@ -27,7 +25,6 @@ pub enum FailureCode {
     EngineFault,
 }
 
-/// Retry behavior is data, not a guess based on an error message.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum RetryDisposition {
@@ -40,8 +37,6 @@ pub enum RetryDisposition {
     OperatorRequired,
 }
 
-/// RFC 6901 JSON pointer naming the exact failing field; the empty string is
-/// the document root.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct FailurePath(String);
 
@@ -112,7 +107,6 @@ impl<'de> Deserialize<'de> for FailurePath {
     }
 }
 
-/// Failure returned through Actions/Protein and stored with runs.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct KarmaFailure {
     pub code: FailureCode,
@@ -122,7 +116,6 @@ pub struct KarmaFailure {
     pub retry: RetryDisposition,
 }
 
-/// Pure boundary error used while constructing validated Karma atoms.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct KarmaBoundaryError {
     pub code: FailureCode,

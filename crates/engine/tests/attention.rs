@@ -1,6 +1,3 @@
-//! Parts XII–XIII completion: the projected-crossing sweep, decision expiry,
-//! the notify budget/digest, and branching (compare two futures).
-
 use chrono::{DateTime, Utc};
 use engine::Engine;
 use nucleus::karma::{Cadence, Consequence};
@@ -14,12 +11,6 @@ async fn engine() -> Engine {
     Engine::open_memory().await.expect("engine opens")
 }
 
-/// A Record seeded through the Ledger, not around it.
-///
-/// Writing a starting level straight into the cache used to be harmless
-/// because rules read the cache. They read the Fact chain now — the Ledger is
-/// the truth and the cache is derived from it — so a fixture that skipped the
-/// chain would set up a world the rule cannot see.
 async fn plain(e: &Engine, slug: &str, quantity: f64) -> String {
     let uid = store::records::create(
         &e.store.pool,
@@ -50,9 +41,8 @@ fn at(s: &str) -> DateTime<Utc> {
 async fn projected_crossings_enqueue_decisions_once() {
     let e = engine().await;
     let apples = plain(&e, "apples.stock", 2.0).await;
-    plain(&e, "hammer", 5.0).await; // no commitments: never crosses
+    plain(&e, "hammer", 5.0).await;
 
-    // an active commitment takes 5 apples in three days -> projected -3
     store::misc::insert_promise(
         &e.store.pool,
         NewPromise {
@@ -78,7 +68,6 @@ async fn projected_crossings_enqueue_decisions_once() {
     assert_eq!(crossing.len(), 1);
     assert!(crossing[0].2.contains("apples.stock"), "{}", crossing[0].2);
 
-    // heartbeat is idempotent about it
     e.heartbeat(now).await.unwrap();
     assert_eq!(
         store::misc::open_decisions(&e.store.pool)
@@ -150,9 +139,6 @@ async fn notify_budget_parks_overflow_in_the_digest() {
     )
     .await;
 
-    // A second rule watching the same Record. Two rules rather than one rule
-    // fired twice, because a rule may now act only once per period — which is
-    // the debounce, and is not what this test is about.
     support::declare_rule(
         &e,
         &x,
@@ -167,7 +153,6 @@ async fn notify_budget_parks_overflow_in_the_digest() {
     )
     .await;
 
-    // One change, two rules, two notifications — and a budget of one.
     e.append_user(&x, 1.0).await.unwrap();
     let delivered = e.run_due_effects().await.unwrap();
     assert_eq!(delivered.len(), 2, "both rules queued a notification");
@@ -261,11 +246,9 @@ async fn branching_compares_two_futures() {
     let now = at("2026-07-11T00:00:00Z");
     let until = at("2026-07-20T00:00:00Z");
 
-    // branch A: the world as it is
     let base = e.snapshot(now).await.unwrap();
     let a = nucleus::imagination::project(&base, until);
 
-    // branch B: drag the promise away (withdrawn) and re-fold
     let mut branched = base.clone();
     branched.promises.clear();
     let b = nucleus::imagination::project(&branched, until);

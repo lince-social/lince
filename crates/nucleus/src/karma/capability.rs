@@ -24,8 +24,6 @@ pub enum CapabilityFamily {
     IrreversibleSafetyCritical,
 }
 
-/// Capabilities are intentionally granular. In particular there is no
-/// `transfer.automatic` umbrella that could erase stage-specific consent.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum Capability {
     #[serde(rename = "karma.read")]
@@ -153,7 +151,6 @@ impl Capability {
     }
 }
 
-/// Deterministically ordered capability envelope.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(transparent)]
 pub struct CapabilitySet(BTreeSet<Capability>);

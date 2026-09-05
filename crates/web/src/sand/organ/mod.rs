@@ -2,10 +2,6 @@ use crate::domain::lince_package::{LincePackage, PackageManifest};
 
 pub(crate) const FEATURE_FLAG: &str = "sand.organ";
 
-// Protein-first list of `kind=organ` records (this Cell + its contacts) with
-// File Sync and a friends-list contact manager (trust/proximity/block) as
-// first-class per-organ features. Nearby Cells can either be deliberately
-// promoted to known or receive a one-conversation offer without promotion.
 const HTML: &str = include_str!("organ.html");
 
 pub(crate) fn manifest() -> PackageManifest {
@@ -53,8 +49,6 @@ pub(crate) fn manifest() -> PackageManifest {
             "bridge_state".into(),
             "protein_subscribe".into(),
             "act".into(),
-            // Scanning a pairing code. The host owns the camera and hands back
-            // only the decoded text — this sand never receives an image.
             "media_capture".into(),
         ],
     }
@@ -91,12 +85,6 @@ mod tests {
         );
     }
 
-    /// Scanning is declared as a permission and stops at filling the field.
-    ///
-    /// The second half is the part worth pinning: pointing a camera at a
-    /// screen is a strong story about where a code came from, but it is still
-    /// a story and not a verification, so the human still presses Add. A scan
-    /// wired straight to `add-known-organ` would quietly erase that.
     #[test]
     fn scanning_a_code_needs_the_camera_permission_and_only_fills_the_field() {
         assert!(
@@ -114,10 +102,6 @@ mod tests {
         );
     }
 
-    /// Every Cell ships calling itself "Local Lince", so a contact row and
-    /// this Cell's own row carry the same name and the same-looking loopback
-    /// URL. Without something in the row itself saying which is which, the
-    /// list looks like it is showing the same organ twice.
     #[test]
     fn the_list_says_which_row_is_this_cell() {
         assert!(
@@ -134,10 +118,6 @@ mod tests {
         );
     }
 
-    /// A contact's Organ record is filed under THEIR uid. `edit-record-text`
-    /// logs a CRDT op and `delete-record` a tombstone — both replicate, so
-    /// renaming a contact the ordinary way would publish the private label
-    /// this Cell chose for them.
     #[test]
     fn renaming_a_contact_never_goes_through_the_logged_record_edit() {
         assert!(
@@ -150,11 +130,6 @@ mod tests {
         );
     }
 
-    /// There is exactly ONE string a user has to think about sending: the
-    /// pairing code. The identity key lives inside it and is refused by
-    /// `add-known-organ` on its own, so presenting it as a second sendable
-    /// thing was the whole confusion — it stays, as a fingerprint to read
-    /// aloud and compare.
     #[test]
     fn one_string_is_for_sending_and_the_key_is_only_for_comparing() {
         assert!(
@@ -175,10 +150,6 @@ mod tests {
         );
     }
 
-    /// The sand's iframe is sandboxed WITHOUT `allow-modals`, so the browser
-    /// ignores `confirm()`/`prompt()`: confirm returns false and the action
-    /// never runs. That is why Delete appeared to do nothing. Every ask is
-    /// inline instead.
     #[test]
     fn nothing_asks_through_a_browser_modal() {
         assert!(
@@ -189,15 +160,6 @@ mod tests {
         assert!(HTML.contains("form.className = \"inline-ask\""));
     }
 
-    /// Adding an Organ and managing this identity's devices are errands, not
-    /// properties of whichever row is selected. Registering used to sit on top
-    /// of every organ you opened, and the device list appeared under contacts
-    /// where it means nothing.
-    /// A pairing code is the ONLY way to add an Organ. Registering one by
-    /// hostname was removed 2026-08-05: nothing in the transport can dial a
-    /// URL — pairing parses a NodeId, the outbox dials a NodeId, and inbound
-    /// authorises by `contact_by_node_id` — so the form could only ever make
-    /// a row that looked reachable and was not.
     #[test]
     fn an_organ_is_added_by_pairing_code_and_by_nothing_else() {
         assert!(
@@ -224,9 +186,6 @@ mod tests {
         );
     }
 
-    /// Each group of related properties carries its explanation on the
-    /// heading, in a tooltip, rather than as prose under the controls: a hint
-    /// below is read after the mistake, a heading before it.
     #[test]
     fn every_group_explains_itself_through_a_heading_tooltip() {
         for id in [
@@ -238,23 +197,14 @@ mod tests {
             "pf-info",
             "pf-key-info",
             "dc-info",
-            // On the network list's summary, which is a heading of its own —
-            // it just lives in the side column rather than in a panel.
             "nb-info",
             "sync-info",
             "fs-info",
-            // The front door queue and the out-of-date device list, both added
-            // with the surfaces C3 owed (2026-08-13).
             "door-info",
             "stale-info",
         ] {
             assert!(HTML.contains(&format!("id=\"{id}\"")), "missing {id}");
         }
-        // The PROPERTY, not a count of it. This used to assert a magic 11 and
-        // had drifted to 16 groups without anyone noticing, so the tripwire
-        // that was supposed to catch an unexplained group was itself the
-        // thing that was broken. Checking each heading carries its tooltip
-        // says the same thing and cannot go stale as groups are added.
         let groups: Vec<&str> = HTML.split("class=\"group-head\"").skip(1).collect();
         assert!(
             groups.len() >= 13,
@@ -275,11 +225,6 @@ mod tests {
         );
     }
 
-    /// Who is on the network is not a property of the Organ you happen to
-    /// have selected — it is the other half of the same column. It shares the
-    /// side panel through a split whose divider the user drags, and it closes
-    /// down to its summary rather than holding a third of the column open
-    /// around nothing.
     #[test]
     fn the_network_list_shares_the_side_column_through_a_split() {
         assert!(HTML.contains("class=\"lynx-split\" id=\"side-split\""));
@@ -298,8 +243,6 @@ mod tests {
         );
     }
 
-    /// A row can carry four status labels at once, and side by side they leave
-    /// the name nowhere to go in a column this narrow.
     #[test]
     fn a_rows_status_labels_stack() {
         assert!(
@@ -313,9 +256,6 @@ mod tests {
         );
     }
 
-    /// Offering a conversation to someone you already have one with mints a
-    /// second one beside it. The panel asks Protein whether one exists —
-    /// a grant is neither a link nor a Fact, so nothing else can answer.
     #[test]
     fn an_existing_conversation_is_opened_rather_than_offered_again() {
         assert!(HTML.contains("conversations: true"));
@@ -327,8 +267,6 @@ mod tests {
         );
     }
 
-    /// Sync is one section with both axes: the per-contact feed direction,
-    /// which the engine already enforces, and file mirroring to local disk.
     #[test]
     fn synchronisation_shows_direction_next_to_file_sync() {
         assert!(HTML.contains("action: \"set-sync-policy\""));
@@ -342,12 +280,6 @@ mod tests {
         assert!(HTML.contains("id=\"fs-path\""));
     }
 
-    /// The scope has three stored states and two of them are opposites:
-    /// unnarrowed sends every column, the empty list sends none. A surface
-    /// with one text field collapses them, and it collapses toward the wide
-    /// one — someone asking to share nothing would end up sharing everything.
-    /// So the mode is picked explicitly and the list only exists inside the
-    /// middle state.
     #[test]
     fn the_scope_offers_all_three_states_and_never_confuses_two_of_them() {
         assert!(HTML.contains("action: \"set-contact-scope\""));
@@ -368,11 +300,6 @@ mod tests {
         );
     }
 
-    /// Both directions exist, and they are two settings rather than one with
-    /// two ends. Outbound is a privacy control, inbound an integrity one; a
-    /// single control would invite keeping them equal, which is the one thing
-    /// they are not for. A panel offering only the outbound half cannot
-    /// honestly claim to be the whole pairing.
     #[test]
     fn the_pairing_panel_has_both_directions_and_keeps_them_separate() {
         assert!(HTML.contains("action: \"set-contact-accept-scope\""));
@@ -385,10 +312,6 @@ mod tests {
         );
     }
 
-    /// Widening reaches backwards and narrowing does not, so the two are
-    /// confirmed differently. The wording changed when the replay landed: it
-    /// used to say the older changes kept their shape, which was true of the
-    /// mechanism at the time and is not true of this one.
     #[test]
     fn widening_says_it_reaches_back_and_narrowing_does_not() {
         assert!(HTML.contains("function isWidening("));
@@ -401,9 +324,6 @@ mod tests {
             "the old wording described a mechanism that no longer exists"
         );
     }
-    /// Per-record hiding is the ROW half of the same cluster, and it is a
-    /// separate control with a separate save: batching it with the scope
-    /// would let an accidental widening ride along with a deliberate hide.
     #[test]
     fn hiding_records_is_its_own_control_with_its_own_save() {
         assert!(HTML.contains("action: \"hide-record-from-contact\""));
@@ -418,19 +338,12 @@ mod tests {
         );
     }
 
-    /// The two directions are NOT symmetric and the surface says which is
-    /// which. Unhiding REACHES BACK — the record's history is replayed,
-    /// because ordinary catch-up never would. Hiding does not, because no
-    /// delete is sent: sending one would confirm the record exists.
     #[test]
     fn hiding_and_unhiding_say_which_one_reaches_back() {
         assert!(HTML.contains("Anything they already received stays with them."));
         assert!(HTML.contains("including what changed while it was hidden"));
     }
 
-    /// The empty state has to say WHICH nothing it means. An unloaded list and
-    /// a genuinely empty one are both blank boxes otherwise, and one of them
-    /// reads as a broken feature while the other is a policy.
     #[test]
     fn the_hide_list_distinguishes_empty_from_unloaded() {
         assert!(HTML.contains("Not loaded."));
@@ -440,9 +353,6 @@ mod tests {
             "the two states are told apart by the shape of the value, not by falsiness"
         );
     }
-    /// A stored scope that cannot be read is being IGNORED, and ignoring it
-    /// means the widest setting there is. Showing "everything" without saying
-    /// why would report a corrupt row as somebody's decision.
     #[test]
     fn an_unreadable_scope_says_it_is_being_ignored() {
         assert!(HTML.contains("function showBrokenScopes("));
@@ -457,9 +367,6 @@ mod tests {
             "both directions are separate settings and are reported separately"
         );
     }
-    /// The quarantine ring is per contact and bounded, and nothing displayed
-    /// it — which is the same as not keeping it. It belongs on the panel for
-    /// the contact it accuses.
     #[test]
     fn refused_changes_are_listed_on_the_contact_that_sent_them() {
         assert!(HTML.contains("function showQuarantine("));
@@ -474,8 +381,6 @@ mod tests {
         );
     }
 
-    /// A refusal payload is JSON written by a peer — the least trustworthy
-    /// text on the page. It goes in as text and never as markup.
     #[test]
     fn a_refused_payload_is_never_treated_as_markup() {
         assert!(
@@ -485,17 +390,10 @@ mod tests {
         assert!(HTML.contains("reason.title = item.payload"));
     }
 
-    /// Ops dropped by our own acceptance scope are NOT refusals. Listing them
-    /// would fill the ring on the first sync with any contact wider than our
-    /// acceptance and bury the reports that mean something.
     #[test]
     fn the_refusal_list_says_it_excludes_our_own_policy() {
         assert!(HTML.contains("are NOT here"));
     }
-    /// File Sync selection is a Protein predicate in the SAME vocabulary as
-    /// every other filter — that is what "one selector language" means. The
-    /// picker covers the shapes people actually want; anything else gets the
-    /// language itself rather than a second, smaller one.
     #[test]
     fn file_sync_selection_uses_the_one_selector_language() {
         assert!(HTML.contains("id=\"fs-filter-mode\""));
@@ -510,9 +408,6 @@ mod tests {
         );
     }
 
-    /// A filter that cannot be read is IGNORED, so everything from the organ
-    /// syncs. Saying only "invalid" would leave the owner guessing whether
-    /// files are being written right now.
     #[test]
     fn an_unreadable_file_sync_filter_says_what_is_happening_instead() {
         assert!(HTML.contains("could not be read and is being ignored, so everything"));
@@ -522,9 +417,6 @@ mod tests {
         );
     }
 
-    /// A filter the picker cannot express is shown as itself. Flattening
-    /// somebody's `any` to the nearest menu option and then saving it would
-    /// silently delete their filter.
     #[test]
     fn a_filter_the_picker_cannot_express_is_not_flattened() {
         assert!(HTML.contains("JSON.stringify(parsed)"));

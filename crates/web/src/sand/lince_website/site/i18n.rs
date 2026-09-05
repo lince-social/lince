@@ -9,23 +9,17 @@ pub const LATEST_MACOS_DOWNLOAD_URL: &str =
     "https://github.com/lince-social/lince/releases/latest/download/lince-aarch64-apple-darwin";
 pub const LATEST_WINDOWS_DOWNLOAD_URL: &str = "https://github.com/lince-social/lince/releases/latest/download/lince-x86_64-pc-windows-msvc.exe";
 
-/// Image configuration for content blocks
 #[derive(Clone, Default)]
 pub struct ContentImage {
-    /// Path to the image file (relative to output directory)
     pub src: &'static str,
-    /// Alt text for accessibility
     pub alt: &'static str,
-    /// CSS class for styling (e.g., "img-rounded", "img-shadow", "img-small")
     pub class: &'static str,
 }
 
-/// A content block that can have text and optionally an image
 #[derive(Clone)]
 pub struct ContentBlock {
     pub title: &'static str,
     pub text: &'static str,
-    /// Optional image - when present, text wraps on left, image on right
     pub image: Option<ContentImage>,
 }
 
@@ -54,12 +48,10 @@ impl ContentBlock {
     }
 }
 
-/// A link item for navigation, footer, or quick links sections
 #[derive(Clone)]
 pub struct LinkItem {
     pub href: &'static str,
     pub text: &'static str,
-    /// Optional CSS class (e.g., "btn btn-primary")
     pub class: &'static str,
 }
 
@@ -77,23 +69,16 @@ impl LinkItem {
     }
 }
 
-/// A group of links with a title (for footer sections, etc.)
 #[derive(Clone)]
 pub struct LinkGroup {
     pub title: &'static str,
     pub links: Vec<LinkItem>,
 }
 
-/// Translation structure for easy AI agent updates
-/// To update translations:
-/// 1. Modify the English (en) text as the source of truth
-/// 2. Ask an AI agent to update pt_br and zh translations to match
-/// 3. Each field is clearly labeled for context
 #[derive(Clone)]
 pub struct Translations {
     pub lang_code: &'static str,
 
-    // Navigation
     pub nav_home: &'static str,
     pub nav_blog: &'static str,
     pub nav_github: &'static str,
@@ -101,7 +86,6 @@ pub struct Translations {
     pub nav_youtube: &'static str,
     pub nav_theme: &'static str,
 
-    // Hero Section
     pub hero_tagline: &'static str,
     pub hero_title: &'static str,
     pub hero_subtitle: &'static str,
@@ -114,16 +98,10 @@ pub struct Translations {
     pub hero_windows_executable: &'static str,
     pub hero_doc_buttons: Vec<LinkItem>,
 
-    // Index Page - Quick Links
-    // quick_links removed - merged into `footer_sections` as a LinkGroup
-
-    // Index Page - Main Content (between hero and quicklinks)
     pub index_content: Vec<ContentBlock>,
 
-    // Footer
     pub footer_sections: Vec<LinkGroup>,
 
-    // Blog
     pub blog_title: &'static str,
     pub blog_back_to_posts: &'static str,
     pub blog_watch_video: &'static str,
@@ -132,14 +110,10 @@ pub struct Translations {
 pub fn get_translations() -> HashMap<&'static str, Translations> {
     let mut map = HashMap::new();
 
-    // ============================================================
-    // ENGLISH (Source of Truth)
-    // ============================================================
     map.insert("en", Translations {
         lang_code: "en",
 
 
-        // Navigation
         nav_home: "Home",
         nav_blog: "Blog",
         nav_github: "GitHub",
@@ -147,7 +121,6 @@ pub fn get_translations() -> HashMap<&'static str, Translations> {
         nav_youtube: "YouTube",
         nav_theme: "Theme",
 
-        // Hero Section
         hero_tagline: "Open Source • Non-Profit • Local First • Data-Powered",
         hero_title: "Lince",
         hero_subtitle: "A tool for registry, interconnection, and automation of Needs and Contributions with open scope",
@@ -164,7 +137,6 @@ pub fn get_translations() -> HashMap<&'static str, Translations> {
             "btn btn-primary",
         )],
 
-        // Index Page - Main Content
         index_content: vec![
             ContentBlock::text_only(
                 "The Lince Institute",
@@ -212,7 +184,6 @@ pub fn get_translations() -> HashMap<&'static str, Translations> {
             ),
         ],
 
-        // Footer (includes quick links merged as a group)
         footer_sections: vec![
             LinkGroup {
                 title: "Resources",
@@ -242,21 +213,16 @@ pub fn get_translations() -> HashMap<&'static str, Translations> {
             },
         ],
 
-        // Blog
         blog_title: "Blog",
 
         blog_back_to_posts: "← Back to Blog Posts",
         blog_watch_video: "Watch on YouTube",
     });
 
-    // ============================================================
-    // BRAZILIAN PORTUGUESE
-    // ============================================================
     map.insert("pt-br", Translations {
         lang_code: "pt-br",
 
 
-        // Navigation
         nav_home: "Início",
         nav_blog: "Blog",
         nav_github: "GitHub",
@@ -264,7 +230,6 @@ pub fn get_translations() -> HashMap<&'static str, Translations> {
         nav_youtube: "YouTube",
         nav_theme: "Tema",
 
-        // Hero Section
         hero_tagline: "Código Aberto • Sem Fins Lucrativos • Local First • Impulsionado por Dados",
         hero_title: "Lince",
         hero_subtitle: "Uma ferramenta para registro, interconexão e automação de Necessidades e Contribuições com escopo aberto",
@@ -279,7 +244,6 @@ pub fn get_translations() -> HashMap<&'static str, Translations> {
             LinkItem::with_class(INSTINTO_URL, "Instinto: Documentação Técnica", "btn btn-primary"),
         ],
 
-        // Index Page - Main Content
         index_content: vec![
             ContentBlock::text_only(
                 "O Instituto Lince",
@@ -326,7 +290,6 @@ pub fn get_translations() -> HashMap<&'static str, Translations> {
             ),
         ],
 
-        // Footer (matches English structure)
         footer_sections: vec![
             LinkGroup {
                 title: "Recursos",
@@ -356,7 +319,6 @@ pub fn get_translations() -> HashMap<&'static str, Translations> {
             },
         ],
 
-        // Blog
         blog_title: "Blog",
 
 
@@ -364,14 +326,10 @@ pub fn get_translations() -> HashMap<&'static str, Translations> {
         blog_watch_video: "Ver no YouTube",
     });
 
-    // ============================================================
-    // MANDARIN CHINESE (Simplified)
-    // ============================================================
     map.insert("zh", Translations {
         lang_code: "zh",
 
 
-        // Navigation
         nav_home: "首页",
         nav_blog: "博客",
         nav_github: "GitHub",
@@ -379,7 +337,6 @@ pub fn get_translations() -> HashMap<&'static str, Translations> {
         nav_youtube: "YouTube",
         nav_theme: "主题",
 
-        // Hero Section
         hero_tagline: "开源 • 非营利 • 本地优先 • 数据驱动",
         hero_title: "Lince",
         hero_subtitle: "用于需求与贡献的登记、互联和自动化的工具，开放范围",
@@ -394,7 +351,6 @@ pub fn get_translations() -> HashMap<&'static str, Translations> {
             LinkItem::with_class(INSTINTO_URL, "Instinto：技术文档", "btn btn-primary"),
         ],
 
-        // Index Page - Main Content
         index_content: vec![
             ContentBlock::text_only(
                 "Lince 研究所",
@@ -441,7 +397,6 @@ pub fn get_translations() -> HashMap<&'static str, Translations> {
             ),
         ],
 
-        // Footer (matches English structure)
         footer_sections: vec![
             LinkGroup {
                 title: "资源",
@@ -471,7 +426,6 @@ pub fn get_translations() -> HashMap<&'static str, Translations> {
             },
         ],
 
-        // Blog
         blog_title: "博客",
 
 

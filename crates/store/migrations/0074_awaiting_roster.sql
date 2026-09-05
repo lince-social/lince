@@ -1,0 +1,19 @@
+-- Ontology, cluster 3: close the no-roster gap in the Cell check.
+--
+-- An op's author is a CELL, and the signed roster is the only thing that says
+-- which Cells an Organ owns. Until now a batch from an Organ we hold no roster
+-- for was admitted anyway, because refusing would have dropped every contact
+-- paired before rosters travelled. That left dedup poisoning open against
+-- exactly those contacts: op identity is (actor_cell, hlc) on a unique index,
+-- so a hostile peer that pre-inserts (your_cell, some_future_hlc) makes your
+-- own later op arrive everywhere as already-seen.
+--
+-- Both halves the fix needed are now in place — pairing fetches the roster in
+-- the same breath as the introduction, and every sync pass refreshes it — so
+-- the gate can refuse. What this column carries is the HONEST STATE for the
+-- one legitimate case left: a contact paired before any of that existed, or a
+-- peer mid-first-boot that has no roster to give yet. Their batch is dropped
+-- as OUR policy rather than quarantined as their misbehaviour, and this is
+-- what lets the contact panel say so instead of the sync looking merely
+-- broken. Cleared the moment a roster for them is adopted.
+ALTER TABLE organ_contact ADD COLUMN awaiting_roster_since TEXT;

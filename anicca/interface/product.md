@@ -64,7 +64,7 @@ Read when: changing what v1 exposes to a person or how the base interface should
   an explicit advanced developer mode permits deeper Sand- and workspace-level
   freedom.
 - [ ] [Interoperability](interoperability.md#interoperability): Lince coexists with other systems
-  through [Blood](../Ontology.lingua#9-federation-and-blood-talking-to-other-systems),
+  through [Blood](../Lince.lingua),
   external Sands, and portable representations. A future open canvas format may
   be adopted only after Lince's own canvas schema and capabilities are stable;
   no external specification may constrain Box features.

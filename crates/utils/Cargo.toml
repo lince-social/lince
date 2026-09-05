@@ -17,3 +17,9 @@ dirs.workspace = true
 jsonwebtoken.workspace = true
 serde = { workspace = true, features = ["derive"] }
 toml.workspace = true
+
+[build-dependencies]
+sensei = { workspace = true }
+
+[lints]
+workspace = true

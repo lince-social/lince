@@ -7,6 +7,9 @@ repository.workspace = true
 homepage.workspace = true
 description = "Native desktop shell for Lince."
 
+[build-dependencies]
+sensei = { workspace = true }
+
 [target.'cfg(not(target_os = "linux"))'.build-dependencies]
 tauri-build = { workspace = true }
 
@@ -37,3 +40,6 @@ lince-interface = { path = "../interface", features = ["joined-runtime"] }
 [[bin]]
 name = "lince-desktop"
 path = "src/main.rs"
+
+[lints]
+workspace = true

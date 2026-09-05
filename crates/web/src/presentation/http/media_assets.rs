@@ -1,16 +1,3 @@
-//! Locally-hosted images for a record body (2026-07-17). There is
-//! deliberately NO route that serves an arbitrary disk path (that would let
-//! any web page open in the same browser read files off this machine through
-//! a bare `<img src>` — see the maneirisms doc). Instead: an upload endpoint
-//! sniffs the bytes against an allowlist of raster formats (never trusting
-//! the client's filename or extension), writes them under
-//! `<lince_data_dir>/web/media/` with an OPAQUE generated name, and the
-//! serving route only ever answers that exact name shape back — no
-//! client-controlled path component reaches the filesystem in either
-//! direction.
-
-/// Magic-byte sniff, not filename/extension trust. Returns the extension the
-/// file will be stored/served under.
 pub(crate) fn sniff_image_ext(bytes: &[u8]) -> Option<&'static str> {
     if bytes.starts_with(b"\x89PNG\r\n\x1a\n") {
         Some("png")
@@ -27,10 +14,6 @@ pub(crate) fn sniff_image_ext(bytes: &[u8]) -> Option<&'static str> {
 
 pub(crate) const MAX_MEDIA_UPLOAD_BYTES: usize = 12 * 1024 * 1024;
 
-/// Sniffs `bytes`, generates an opaque name, and writes it under
-/// `media_dir()`. Returns the servable `/host/media/<name>` path. Shared by
-/// the multipart upload endpoint and the native-picker endpoint below — same
-/// allowlist, same opaque naming, regardless of which surface it came from.
 pub(crate) async fn store_media_bytes(
     pool: &store::sqlx::SqlitePool,
     bytes: &[u8],
@@ -67,9 +50,6 @@ pub(crate) async fn store_media_bytes(
     Ok(format!("/host/media/{name}"))
 }
 
-/// Bring the media directory back inside its fixed share of this Cell's
-/// storage budget. Newest access wins; an image larger than the whole share is
-/// evicted too, because keeping it would make the stated ceiling untrue.
 pub(crate) async fn enforce_budget(
     pool: &store::sqlx::SqlitePool,
 ) -> Result<(), (axum::http::StatusCode, String)> {
@@ -93,9 +73,6 @@ async fn enforce_budget_preserving(
         .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))
 }
 
-/// The filesystem is the media index: size is the charged amount and mtime is
-/// last use. Eviction and recency updates are serialized; every upload enforces
-/// after its own write, so the last concurrent writer also closes the budget.
 static MEDIA_STORE: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
 
 async fn evict_dir_to_quota(
@@ -128,8 +105,6 @@ async fn evict_dir_to_quota(
                 .unwrap_or(std::time::SystemTime::UNIX_EPOCH),
         ));
     }
-    // `evict_plan` consumes newest first. The path tiebreak keeps eviction
-    // deterministic on filesystems whose timestamp resolution is coarse.
     entries.sort_by(|left, right| {
         (newest == Some(right.0.as_path()))
             .cmp(&(newest == Some(left.0.as_path())))
@@ -151,7 +126,6 @@ async fn evict_dir_to_quota(
     Ok(())
 }
 
-/// Mark a successfully served image as recently used for the next eviction.
 pub(crate) async fn touch(path: std::path::PathBuf) {
     let _guard = MEDIA_STORE.lock().await;
     let _ = tokio::task::spawn_blocking(move || {
@@ -161,34 +135,6 @@ pub(crate) async fn touch(path: std::path::PathBuf) {
     .await;
 }
 
-/// The `/image` slash block's file picker (2026-07-18). Runs the system file
-/// dialog RIGHT HERE in the plain web server process via `rfd`'s
-/// "xdg-portal" feature (ashpd — a pure-Rust D-Bus client to
-/// xdg-desktop-portal, ZERO GTK/WebKit involvement), then stores the pick
-/// exactly like an upload. This assumes the browser and the Cell are on the
-/// same machine — the same "local cell" assumption this codebase already
-/// documents for local-disk images — so the dialog opens where the SERVER
-/// runs, which is correct for the local desktop/single-user case this
-/// feature targets.
-///
-/// Why not go through WebKitGTK's own `<input type=file>` / Tauri's IPC
-/// instead: WebKitGTK has no custom file-chooser handler registered in this
-/// app, so `<input type=file>.click()` fell back to WebKitGTK's OWN built-in
-/// `GtkFileChooserWidget`, which aborts the whole process on teardown if the
-/// `org.gtk.Settings.FileChooser` GSettings schema isn't on the launching
-/// environment's `XDG_DATA_DIRS` (confirmed via `coredumpctl`: SIGABRT in
-/// `_gtk_file_chooser_get_settings_for_widget` → `g_settings_set_property` →
-/// a GLib FATAL log → `abort()`, cascading into the WebKitWebProcess crashing
-/// ~3s later). Tauri's own dialog plugin / a custom Tauri command hits a
-/// DIFFERENT wall instead: the webview loads a real `http://` URL, not
-/// `tauri://`, so Tauri v2's capability/ACL system blocks IPC to it without
-/// an explicit remote-domain capability grant. Running the picker here, as a
-/// plain HTTP endpoint the sand already knows how to call, avoids both.
-///
-/// Feature-gated (`native-picker`, only enabled by `lince-desktop`): `rfd`'s
-/// xdg-portal backend pulls in `wayland-sys`, which needs pkg-config +
-/// wayland dev headers at build time — the plain `lince` CLI must keep
-/// building with just cargo + rustc.
 #[cfg(feature = "native-picker")]
 pub(crate) async fn pick_and_store_image(
     pool: &store::sqlx::SqlitePool,
@@ -214,9 +160,6 @@ pub(crate) fn content_type_for_ext(ext: &str) -> &'static str {
     }
 }
 
-/// A generated media filename is always `<uuid-v4>.<ext>`. Reject anything
-/// else before it ever touches the filesystem — this is the traversal guard:
-/// no `/`, no `..`, no client-chosen name, structurally (not just checked).
 pub(crate) fn valid_media_filename(name: &str) -> bool {
     let Some((stem, ext)) = name.rsplit_once('.') else {
         return false;
@@ -326,11 +269,6 @@ mod tests {
         assert!(!tokio::fs::try_exists(&old).await.expect("old"));
         std::fs::remove_dir_all(dir).expect("cleanup");
     }
-    /// The other half of "each area evicts within its share": filling and
-    /// evicting MEDIA must leave quarantine exactly as it was. A single global
-    /// cap is what this rules out — under one, whichever area grew fastest
-    /// would evict the others, and the evidence a peer is misbehaving is the
-    /// thing you least want a burst of images to delete.
     #[tokio::test]
     async fn evicting_media_leaves_quarantine_untouched() {
         let store = store::Store::open_memory().await.expect("store");

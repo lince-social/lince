@@ -1,73 +1,3 @@
-//! Sealing a batch for a carrier that must not read it (Ontology C4, the
-//! blind mailbox).
-//!
-//! # What this is for
-//!
-//! Every other sync path in Lince hands bytes to the Cell that will apply
-//! them, over an authenticated QUIC connection. A mailbox is the one path
-//! where a THIRD PARTY holds the bytes, at rest, for as long as the recipient
-//! is away. That is the only place where encrypting payloads earns its cost,
-//! and the scope stops exactly there: this seals what TRAVELS through a
-//! carrier. The local store stays plaintext at rest.
-//!
-//! # The construction, stated so it can be audited without reading the code
-//!
-//! One [`SealedBundle`] carries one [`OpBatch`](crate::sync::OpBatch), serialized
-//! as JSON, for one recipient Organ.
-//!
-//! * **Unit.** The BATCH is sealed, never the individual op. Taken from
-//!   Keyhive's published reasoning: per-op sealing destroys compression, and
-//!   it leaks the shape of everything — op count, field boundaries and timing
-//!   are a usable picture of activity even when every value is opaque.
-//! * **AEAD.** ChaCha20-Poly1305. A fresh 32-byte content key and a fresh
-//!   12-byte nonce per bundle, always; no key or nonce is ever reused across
-//!   bundles.
-//! * **KEM.** X25519. One ephemeral keypair per bundle, one Diffie-Hellman
-//!   per recipient Cell. The ephemeral private key is dropped as soon as the
-//!   wraps are built, which is what makes the bundle unopenable by its own
-//!   sender afterwards.
-//! * **KDF.** HKDF-SHA256 over the DH output.
-//!   `salt = ephemeral_pub || recipient_pub`, and
-//!   `info = "lince.seal.v1 wrap" || key_id`, so every recipient of the same
-//!   bundle derives a different wrapping key and no wrap can be replayed
-//!   against a different key of the same Cell.
-//! * **AAD.** The content AEAD is bound to `v || from_organ || to_organ`, so a
-//!   bundle cannot be re-labelled for a different recipient and still open.
-//!   Each wrap is bound to its own `key_id`.
-//! * **Sender authentication.** An ed25519 signature by the SENDING CELL's
-//!   operational key over the whole transcript (see [`transcript`]).
-//!
-//! # Why the signature is not optional
-//!
-//! `crate::sync::inadmissible` says it plainly: there is no signature on a
-//! `WireOp`, and what stands in for one is the connection — an op arrives over
-//! an authenticated stream from a known Organ, and everything it claims about
-//! itself must agree with who is on the other end. That comment also names the
-//! condition under which it stops working: *"with relay on, `from_organ` is a
-//! carrier and this check has to become a signature."* A mailbox IS relaying.
-//! A bundle collected from one has no connection to anchor it, and an
-//! ephemeral-X25519 seal on its own proves only that the sender knew a public
-//! sealing key — which everyone holding the recipient's roster does. Without
-//! the signature `from_organ` would be attacker-chosen, and every check that
-//! compares against it (including the Cell-ownership guard) would be
-//! comparing against a value the attacker picked.
-//!
-//! So the anchor moves rather than disappearing: over a connection it is the
-//! connection, out of a mailbox it is this signature, and
-//! [`OpenedBundle::from_cell`] is what the import path may believe.
-//!
-//! # Sealing keys are PER CELL
-//!
-//! Published in the signed roster beside `operational_key`
-//! (see [`crate::roster::CellEntry`]). Per-Organ was the obvious reading of
-//! "a per-Organ sealing key", and it forces a mechanism nothing else in the
-//! design needs: one private key shared by every Cell of an Organ has to reach
-//! each new device at enrolment and be re-distributed on every rotation.
-//! Per-Cell deletes that problem outright — no sealing private key ever
-//! leaves the Cell that generated it — and costs one extra wrap per Cell,
-//! about eighty bytes. The content key is wrapped to EVERY current Cell of the
-//! recipient, so mail is collectable from whichever device comes online first.
-
 use base64::Engine as _;
 use chacha20poly1305::aead::{Aead, KeyInit, Payload};
 use chacha20poly1305::{ChaCha20Poly1305, Key, Nonce};
@@ -77,9 +7,6 @@ use serde::{Deserialize, Serialize};
 use sha2::Sha256;
 use x25519_dalek::{PublicKey, StaticSecret};
 
-/// The construction version. Bumped whenever any of the primitives, the KDF
-/// inputs or the transcript change. There is no negotiation and no fallback
-/// branch: an unknown version refuses (`AGENTS.md`, fail closed).
 pub const SEAL_VERSION: u8 = 1;
 
 const WRAP_INFO: &[u8] = b"lince.seal.v1 wrap";
@@ -90,26 +17,13 @@ fn b64() -> base64::engine::general_purpose::GeneralPurpose {
     base64::engine::general_purpose::STANDARD
 }
 
-/// Everything that can go wrong opening or building a bundle.
-///
-/// Deliberately coarse on the failure side: `Undecipherable` covers a wrong
-/// key, a truncated bundle and a tampered one alike, because distinguishing
-/// them tells an attacker which part of a forgery was accepted.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum SealError {
-    /// A version this build does not implement.
     UnknownVersion(u8),
-    /// No recipients were supplied, or a recipient's published key is not a
-    /// 32-byte X25519 point.
     BadRecipients(String),
-    /// The bundle is not addressed to any key this Cell holds.
     NotForUs,
-    /// The signature is absent, malformed, or does not verify against the key
-    /// the caller supplied for the sending Cell.
     Unauthenticated,
-    /// Decryption failed. No further detail, on purpose.
     Undecipherable,
-    /// The plaintext opened but is not a batch.
     Malformed(String),
 }
 
@@ -128,29 +42,13 @@ impl std::fmt::Display for SealError {
 
 impl std::error::Error for SealError {}
 
-/// A published sealing key: the identifier a wrap names, and the point.
-///
-/// `key_id` is `x25519:cell:<cell_uid>:<generation>`, mirroring the shape
-/// `roster::cell_key_id` already uses for operational keys. The generation is
-/// what makes rotation expressible — two keys of the same Cell are two
-/// entries, not one entry that changed underneath a sender.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SealingKey {
     pub key_id: String,
-    /// Base64 X25519 public key, 32 bytes.
     pub public: String,
-    /// When the private half is deleted.
-    ///
-    /// Carried per key rather than inherited from the roster's own
-    /// `not_after`, because the failure it prevents is silent: a sender
-    /// holding a stale roster would otherwise seal to a key whose private
-    /// half is already gone, and produce a bundle nobody can ever open. With
-    /// an expiry on the key the sender refuses to seal and stays in its retry
-    /// window instead.
     pub not_after: String,
 }
 
-/// One recipient Cell's copy of the content key.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SealedTo {
     pub key_id: String,
@@ -158,20 +56,12 @@ pub struct SealedTo {
     pub wrapped: String,
 }
 
-/// A batch sealed for one recipient Organ.
-///
-/// The metadata that is NOT sealed is exactly what a carrier needs to hold and
-/// hand back the bundle: who it is for, who left it, and which Cell signed it.
-/// That is the metadata cost the design states out loud — a mailbox learns who
-/// writes to you, when, and how much, while reading nothing — and it is why
-/// the recipient, never the sender, chooses the mailbox.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SealedBundle {
     pub v: u8,
     pub to_organ: String,
     pub from_organ: String,
     pub from_cell: String,
-    /// Base64 X25519 ephemeral public key for this bundle.
     pub ephemeral: String,
     pub nonce: String,
     pub ciphertext: String,
@@ -179,43 +69,18 @@ pub struct SealedBundle {
     pub signature: String,
 }
 
-/// What actually gets encrypted: a batch, and WHICH CHANNEL it belongs to.
-///
-/// A batch alone was not enough. Ops flow on two channels — the general Organ
-/// feed and one per individually-replicated root — and the receiving side
-/// refuses a conversation op that arrives on the general feed, by design
-/// (`import_ops`, "the general feed may not touch an individually-replicated
-/// Record"). Over a connection the channel is the request verb; out of a
-/// mailbox there is no verb, so the channel has to travel.
-///
-/// It travels INSIDE the ciphertext, not beside it, because which conversation
-/// someone is writing to is exactly the metadata a carrier is not entitled to.
-/// And it costs nothing to carry it in the payload: the root is authorized on
-/// arrival against our OWN accepted-grant table, so naming a root buys a
-/// sender nothing they were not already granted.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct MailedBatch {
-    /// The individually-replicated root this batch belongs to, or `None` for
-    /// the general feed.
     #[serde(default)]
     pub root: Option<String>,
     pub batch: crate::sync::OpBatch,
 }
 
-/// A bundle that opened AND authenticated.
-///
-/// The two facts travel together because neither is usable alone: bytes that
-/// decrypted but were signed by nobody are attacker-chosen, and a signature
-/// over bytes that did not decrypt says nothing about what they were.
 #[derive(Debug, Clone)]
 pub struct OpenedBundle {
-    /// The Cell whose operational key signed this bundle. THIS is what the
-    /// import path may believe about the sender — not `SealedBundle::from_cell`,
-    /// which is an unverified label until the signature check has run.
     pub from_cell: String,
     pub from_organ: String,
     pub batch: crate::sync::OpBatch,
-    /// The channel the sender sealed this on. `None` is the general feed.
     pub root: Option<String>,
 }
 
@@ -233,17 +98,6 @@ fn decode_point(value: &str) -> Result<[u8; 32], SealError> {
         .map_err(|_| SealError::BadRecipients(format!("{value} is not 32 bytes")))
 }
 
-/// The bytes both sides sign and verify.
-///
-/// Length-prefixed field by field rather than concatenated, so no two
-/// different bundles can produce the same transcript by moving a boundary —
-/// the classic way a signature over "everything joined together" turns out to
-/// cover something other than what was read.
-///
-/// Public because a forgery test has to be able to re-sign: several of the
-/// attacks worth checking are ones the SENDER can mount, and against those a
-/// signature check proves nothing, so the test must get past it to reach the
-/// property actually being tested.
 pub fn transcript(bundle: &SealedBundle) -> Vec<u8> {
     let mut out = Vec::new();
     let mut push = |part: &[u8]| {
@@ -275,7 +129,6 @@ fn content_aad(v: u8, from_organ: &str, to_organ: &str) -> Vec<u8> {
     aad
 }
 
-/// Derive the wrapping key for one recipient from the DH output.
 fn wrap_key(shared: &[u8; 32], ephemeral: &[u8; 32], recipient: &[u8; 32], key_id: &str) -> Key {
     let mut salt = Vec::with_capacity(64);
     salt.extend_from_slice(ephemeral);
@@ -289,11 +142,6 @@ fn wrap_key(shared: &[u8; 32], ephemeral: &[u8; 32], recipient: &[u8; 32], key_i
     *Key::from_slice(&out)
 }
 
-/// Seal a batch for `to_organ`, readable by every Cell in `recipients`.
-///
-/// `signing` is the sending Cell's OPERATIONAL key — the same key its roster
-/// entry publishes, so the recipient can verify with what it already holds and
-/// no new key type has to be distributed to make sealing authentic.
 pub fn seal(
     mail: &MailedBatch,
     from_cell: &str,
@@ -353,8 +201,6 @@ pub fn seal(
             wrapped: b64().encode(wrapped),
         });
     }
-    // The ephemeral private key dies here. Nothing retains it, which is what
-    // makes the bundle unopenable by its own sender the moment this returns.
     drop(ephemeral_secret);
 
     let mut bundle = SealedBundle {
@@ -372,20 +218,6 @@ pub fn seal(
     Ok(bundle)
 }
 
-/// Open a bundle with one of this Cell's sealing private keys, verifying the
-/// sender first.
-///
-/// `sender_key` is the ed25519 operational key of `bundle.from_cell`, looked
-/// up in the SIGNED ROSTER of `bundle.from_organ` by the caller. The signature
-/// is checked BEFORE any decryption is attempted, so a bundle from nobody
-/// never reaches the AEAD at all.
-///
-/// `ours` is `(key_id, x25519 private)` for every sealing key this Cell still
-/// retains, current and within-window old ones alike — retaining them for the
-/// window plus grace is what stops a rotation from stranding mail that was
-/// already sealed and not yet collected.
-/// A published operational key, as `open` wants it. `None` for anything that
-/// is not 32 base64 bytes — an unusable key is not an authenticated sender.
 pub fn verifying_key(published: &str) -> Option<VerifyingKey> {
     let raw = b64().decode(published).ok()?;
     VerifyingKey::from_bytes(&<[u8; 32]>::try_from(raw.as_slice()).ok()?).ok()
@@ -466,9 +298,6 @@ pub fn open(
     let mail: MailedBatch =
         serde_json::from_slice(&plaintext).map_err(|why| SealError::Malformed(format!("{why}")))?;
     let MailedBatch { root, batch } = mail;
-    // The sealed batch must agree with the label the carrier routed on.
-    // Disagreement is not a decryption failure — it is a sender that signed
-    // one thing and addressed another — but it refuses just the same.
     if batch.from_organ != bundle.from_organ {
         return Err(SealError::Malformed(
             "sealed batch names a different Organ than the bundle".into(),
@@ -482,10 +311,6 @@ pub fn open(
     })
 }
 
-/// Generate a sealing keypair, returning `(private, published)`.
-///
-/// The private half never leaves the Cell that called this; the published half
-/// goes into that Cell's roster entry, which the root signs.
 pub fn generate(cell_uid: &str, generation: u32, not_after: &str) -> ([u8; 32], SealingKey) {
     let secret = StaticSecret::from(random_bytes::<32>());
     let public = PublicKey::from(&secret);
@@ -499,68 +324,29 @@ pub fn generate(cell_uid: &str, generation: u32, not_after: &str) -> ([u8; 32], 
     )
 }
 
-/// How long a mailbox holds an uncollected bundle, and — the same number —
-/// how long past its expiry a sealing private key must survive.
-///
-/// They are ONE number by design, not by coincidence. A bundle sealed at the
-/// last moment a key was still publishable can be collected up to this long
-/// afterwards, so a private key deleted any earlier would strand mail that
-/// was accepted in good faith. Change one and the other has to move with it.
 pub const RETENTION_DAYS: i64 = 30;
 
-/// How long a key stays publishable before the next generation takes over.
-///
-/// Half its lifetime, so the published key always has at least
-/// `ROTATE_AFTER_DAYS` of validity left. A sender that seals against a cached
-/// roster is therefore never racing an expiry it cannot see, and the sender's
-/// own refusal on an expired key stays a real error rather than an everyday
-/// occurrence nobody looks at.
 pub const ROTATE_AFTER_DAYS: i64 = 30;
 
-/// Slack past the point where nothing openable can remain, for clocks that
-/// disagree and for a Cell that was switched off across its own rotation.
 pub const GRACE_DAYS: i64 = 3;
 
-/// One retained sealing key: what was published, and the private half.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct KeyringEntry {
     pub key_id: String,
-    /// Base64 X25519 private key. This file is the reason the keyring is
-    /// written 0600 and never leaves the Cell.
     pub secret: String,
     pub public: String,
-    /// After this, senders must stop sealing to it.
     pub not_after: String,
-    /// After this, the private half is deleted and anything still sealed to
-    /// this key is unopenable by everyone, including us. That is the forward
-    /// secrecy a separate rotated key was chosen for.
     pub delete_after: String,
 }
 
-/// This Cell's sealing keys: the current one and the retired-but-retained.
-///
-/// Rotation is a property of a KEYRING, not of a key, which is why this type
-/// exists rather than a single file holding 32 bytes like the identity keys
-/// next to it. It is also why a rotation is visible in the roster: the
-/// published entry changes, so `roster::needs_publishing` re-signs on its own
-/// without rotation needing to know anything about publishing.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Keyring {
     pub entries: Vec<KeyringEntry>,
-    /// The highest generation ever issued, kept separately from the entries.
-    ///
-    /// It has to outlive them. Derived from the entries instead, the counter
-    /// restarts at 1 once the last old key is pruned, and a fresh key is then
-    /// published under an identifier some sender may still hold in a cached
-    /// roster — pointing at a DIFFERENT point. Nothing opens either way, but
-    /// the failure changes from "no such key of mine" to "could not decrypt",
-    /// which is the confusing kind. Monotonic here, forever.
     #[serde(default)]
     pub generation: u32,
 }
 
 impl Keyring {
-    /// The key to publish: the newest one still within its sealing window.
     pub fn current(&self) -> Option<SealingKey> {
         let moment = now();
         self.entries
@@ -574,10 +360,6 @@ impl Keyring {
             })
     }
 
-    /// Every private key still retained, for [`open`].
-    ///
-    /// Includes retired ones on purpose: a bundle is opened with the key it
-    /// was sealed to, which is whatever the sender's roster said at the time.
     pub fn open_keys(&self) -> Vec<(String, [u8; 32])> {
         self.entries
             .iter()
@@ -589,8 +371,6 @@ impl Keyring {
             .collect()
     }
 
-    /// Delete every key nothing can still be sealed to and nothing uncollected
-    /// can still need. Returns how many were dropped.
     pub fn prune(&mut self) -> usize {
         let before = self.entries.len();
         let moment = now();
@@ -598,22 +378,13 @@ impl Keyring {
         before - self.entries.len()
     }
 
-    /// Rotate if there is no publishable key, or the current one is past its
-    /// rotation point. Returns whether anything changed.
-    ///
-    /// Idempotent and cheap to call on every boot, which is how it is meant to
-    /// run: there is no timer, because a Cell that was off for a year must
-    /// rotate when it comes back, not a year later.
     pub fn ensure_current(&mut self, cell_uid: &str) -> bool {
         let dropped = self.prune();
         if let Some(current) = self.current() {
-            // Still inside its window and not yet due for replacement.
             if current.not_after > days_from_now(ROTATE_AFTER_DAYS) {
                 return dropped > 0;
             }
         }
-        // Recovered from the entries as well, so a keyring written before the
-        // counter existed still moves forward rather than starting over.
         let seen = self
             .entries
             .iter()
@@ -635,8 +406,6 @@ impl Keyring {
     }
 }
 
-/// Compared as strings throughout: RFC3339 in UTC sorts lexicographically,
-/// which is the same reason the rest of the codebase stores stamps this way.
 fn now() -> String {
     chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
 }
@@ -646,13 +415,6 @@ fn days_from_now(days: i64) -> String {
         .to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
 }
 
-/// Load this Cell's keyring, rotating and pruning, and write it back if
-/// anything changed.
-///
-/// Written 0600 like every other key file. There is no recovery path if it is
-/// lost: uncollected mail becomes unopenable, which is the correct failure —
-/// the alternative is a copy of it somewhere, and a sealing key with a backup
-/// has no forward secrecy.
 pub fn load_keyring(path: &std::path::Path, cell_uid: &str) -> std::io::Result<Keyring> {
     let mut keyring: Keyring = match std::fs::read(path) {
         Ok(raw) => serde_json::from_slice(&raw).unwrap_or_default(),
@@ -678,8 +440,6 @@ pub fn load_keyring(path: &std::path::Path, cell_uid: &str) -> std::io::Result<K
             file.write_all(&body)?;
             file.sync_all()?;
         }
-        // Replaced atomically: a keyring truncated by a crash mid-write would
-        // lose retained keys, and losing those silently strands mail.
         std::fs::rename(&temporary, path)?;
     }
     Ok(keyring)

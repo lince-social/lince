@@ -1,14 +1,13 @@
-Lince, the philosophy (@philosophy: 1, is #chapter, #instinct, #part-of @first-steps, #done) { 
+Lince, the philosophy (@philosophy: 1, is #chapter, #instinct, #done) {
 It is possible to find many different philosophies to divide life. The Lince tool separates it into Needs and Contributions to Needs. The Lince philosophy is to meet your Needs and Contribute to the Needs of those you care about; using the Lince tool or not. The maximum point of the Lince philosophy is all Needs deemed fair being met, and in the void of unmet Needs... We don't know yet.
 }
 
-Lince, the tool (@tool: 1, is #chapter, #instinct, #part-of @first-steps, #done) { r_YJQ36ETAKE8J7F8Y65DG7V43MB
-
+Lince, the tool (@tool: 1, is #chapter, #instinct, #done) { r_YJQ36ETAKE8J7F8Y65DG7V43MB
 > **Everything is a Record. Every change is a Fact. Every intended change is a Promise.**
 
 Lince models everything with a Record, it has title and description as text columns and a quantity, the quantity is thought to be the most changed field, representing state that can be affected by math in automations and Transfers. Lince thinks by default that when a quantity of a record is negative, it means an Actor Needs that much of the Record in question, so '-1 Apple' is the Need of 1 apple, if it is positive it's a possible Contribution, to oneself or others, if it's zero, its neither a resource we can use nor a Need.
 
-Recors can have a long title, and can also be given a slug (nickname), like @my-record for easy referencing. We can also give #tags to records, called Assertions. We can tag something as '#done', or link it to another like '#needs @my-other-record'. These can be anything you want #needs-testing, #food, #v1 #part-of @my-record...
+Records can have a long title, and can also be given a slug (nickname), like @my-record for easy referencing. We can also give #tags to records, called Assertions. We can tag something as '#done', or link it to another like '#needs @my-other-record'. These can be anything you want #needs-testing, #food, #v1 #part-of @my-record...
 
 These Assertions are done by you, and they mean something to you. Other people may have different meanings, so when you apply an Assertion, you can say it is the #apple from a Vocabulary, coming from someone's Lince. So when both users use the same #apple from the same Vocabulary, they mean the same thing. This is useful for setting equal units so people can trade things.
 
@@ -151,7 +150,6 @@ An assertion can have the place of the Identity of a Record, being the concept t
 Apple is #apple
 }
 
-
 Organ (@organ: 0, #instinct, #part-of @ontology, #done) { r_VAX3HA21RXF9AENHMCJTSEF1AT
 Every Record so far lived alone on one machine. This is about what happens when
 people show up: your own Cell, other people’s Cells, and the Organs that let
@@ -238,176 +236,7 @@ If your Lince is a Cell, we call Blood the capability of interacting with other 
 This is a good step in interoperability of systems, less isolation and complex APIs and more common formats easy to deal with, allowing for extraction of data in a simple, readable and continuous way.
 }
 
-
-
-Ontology (@ontology: 0, is #chapter, #instinct, #part-of @first-steps, #done) { r_S8PQ17MQ3WBWM53ZN700K89V9F
-
-## Visibility: what a logged-in Organ may see
-
-When someone logs into your Organ and can read your records, they see everything by default. You choose to hide things instead of choosing to share them.
-
-- [ ] Summary of what others see of your data.
-- [ ] Protein for users related to Actor's role/permissions, you can limit the permissions for creating/updating/deleting data, but read is all. We could make Protein control per person that has login into your Organ: You may see this data filtered, and when you edit it will only be able to affect data through this filter. Do that for Actors and devices (Cells) on your Organ.
-
-## Sync and the log
-- [ ] Nothing recomputes the read model from the log on a schedule — a divergence found by `audit_read_model` doesn't self-heal without someone running `audit_and_repair`.
-- [ ] The local surface config (`baseUrl`, `aliases`, `local`) still lives on the syncing Organ Record; belongs on the Cell Record.
-- [ ] `RosterStatus`/succession UI for the stored `identity_succession` / `record_succession` chain — data exists, no surface yet.
-- [ ] Ordinary HTTPS login path (hostname, cert, reverse proxy) — no longer on the critical path (live-over-iroh replaced it) but still the only way a plain browser reaches a Cell that isn't its own.
-- [ ] Live sessions do not resume after a real connection loss (only network-path migration is handled); needs a session id + replay policy.
-- [ ] `contact.mode` (replica vs live) column is unused — wire it or drop it.
-- [ ] Per-contact rate limiting against an empty-vector "send me everything" catch-up abuse (filed under Scoping).
-- [ ] Running `iroh-relay` on the VPS as a deployed instance.
-- [ ] A Cell on the VPS as a live roster member (always-on device).
-- [ ] The relay-only-costs-nothing conclusion, observed rather than argued — moved to Resenha as a simulated-network scenario (needs a second machine to be true rather than assumed).
-- [ ] `Engine::cell_may` capability check (write/karma/represent) is defined and signed into the roster but **nothing calls it yet** — no decision point consumes it.
-
-- [ ] Replica bootstrap for a *new* contact receiving history that predates the connection (today: ops flow from the moment you connect, nothing earlier). Needs: snapshot vs replay-the-log, paging, honest partial-copy presentation.
-- [ ] Collapse `create-message` vs `send-message` into one Action (both correct, just duplicated).
-- [ ] Unify the four repeated consent-handshake implementations (thread invites, replica agreement, tree acceptance, transfer acceptance) into one.
-
-- [ ] Gossip cache / delegated ask-around search with hop/TTL limits, for "there is a Need three hops away I've never heard of." Only the hop-limit reasoning is written down; no mechanism exists.
-- [ ] World-reach discovery beyond gossip — named as a distinct mechanism, not designed.
-
-- [ ] **A database-level guard for the import sequence, across PROCESSES.** *Why:* `Engine::import_lock` serializes read-compare-append-materialise in-process (`sync.rs:415`, `collab.rs:167`), but two Cells sharing a database in separate processes — which is what happens whenever the CLI touches the store while the web Cell runs, and WAL mode permits it — can still interleave and leave a lower-HLC value in the read model while the log keeps the higher one. It does not self-heal. *How:* a conditional `UPDATE … WHERE field_hlc < ?` on the materialise step, so the database refuses the stale write rather than the process remembering not to make it. *How used:* invisible when right; when wrong, `audit_read_model` (`engine/src/rebuild.rs:165`) is what reports it. The multi-process harness it needs now exists — `engine/tests/multi_process.rs` drives the `cell_worker` binary and already calls `audit_read_model` — so this is no longer blocked on being untestable.
-
-- [ ] **Per-contact rate limiting on the reject path.** *Why:* the quarantine ring bounds storage, but a hostile contact can still make us do the work of refusing, every pass, for free — and an empty version vector legitimately means "send me everything", so a peer sending one every pass makes us serve the whole log repeatedly. *How:* a per-contact budget on refused ops and on full-log serves, backing off the contact rather than the queue. `store::budget` already holds the shape (a named budget kind plus `evict_plan`); this adds a rate dimension the byte quotas do not have. *How used:* the contact panel gains "and we are now answering them less often", with the reason.
-
-## Live sessions
-
-- [ ] **Server-side live sessions do not resume; the browser's reconnect is already there.** *Why:* the board's own socket layer reconnects with backoff and replays (`board/transport.js`, `scheduleReconnect`), and `session_id` already travels on the wire (`transport/src/protocol.rs`). What does not exist is the server half: `transport::Session` is constructed fresh per connection, so its `subscriptions`, `joined_rooms` and `collab_records` are gone the moment the socket ends. A guest whose connection is genuinely lost — laptop asleep, peer restarts — is dropped mid-sentence and comes back as a stranger. *How:* let a reconnecting client present its prior session id and have the server rebuild that state, plus an explicit decision about what may be replayed (collab already re-exports from its last ACKED version; subscriptions would re-run). *How used:* the board reconnects into the same room rather than an empty one.
-
-- [ ] **The ordinary HTTPS login path** (hostname, certificate, reverse proxy). *Why:* it is no longer on the critical path — live-over-iroh replaced it for the workflow that motivated it — but it remains the only way a browser reaches a Cell that is not its own, and it is what closes the off-LAN camera gap: `getUserMedia` needs a secure context, so QR scanning does not work over plain HTTP to a LAN hostname, which is exactly how a second device reaches this Cell. *How:* a documented reverse-proxy deployment with a real certificate, and the Cell knowing its own external name. *How used:* the chrome stops saying "camera needs a secure context" and the scan works from the phone.
-
-## Identity and devices
-
-- [ ] **A stolen phone can be NARROWED as well as revoked.** *Why:* losing a device should not require reissuing an identity, and narrowing is the humane version of revocation. **The mechanism is built** — `CellEntry.capabilities` (`engine/src/roster.rs:105`) is signed into the roster and `cell_may` (`roster.rs:690`) evaluates it — but the act of editing one Cell's capabilities is exposed nowhere. *How:* a capability editor on the Devices panel that republishes the roster, which needs the root like every roster change. *How used:* "this phone may no longer write, but stays in the roster" as one control, beside Remove.
-
-- [ ] **Close the no-roster gap in the Cell check.** *Why:* when we hold no roster for the sending Organ the op is admitted, because refusing would drop every contact paired before rosters travelled — `wire.rs` says so at the admit site, and the mid-first-boot case is the one that makes it load-bearing. Until it closes, the dedup-poisoning attack (pre-inserting `(your_cell, future_hlc)` so your real op is dropped everywhere as already-seen) is open against exactly those contacts. *How:* make roster exchange part of pairing, then refuse an op from an Organ whose roster we do not hold. *How used:* nothing visible when it works; the contact panel would say "no device list yet" for a contact still on the old path.
-
-- [ ] **Per-Cell surface config still lives on the Organ Record.** *Why:* `baseUrl`, `aliases` and `local` describe one machine, but `store::organs` writes all three into the Organ Record body (`organs.rs:89`, and again at `organs.rs:200` on identity adoption) — and that Record SYNCS, so one device's local URL can travel to every sibling. Writing it raw during enrolment stops it travelling *from there*; that is a patch over the wrong home rather than a fix. *How:* move them to the Cell Record beside the discovery settings, which are already there for this exact reason. *How used:* invisible; it stops a laptop's `baseUrl` appearing on the phone.
-
-- [ ] **Per-device sharing limits.** *Why:* a device you have logged in from either has full access to your Organ or is logged out entirely. There is no in-between where a device sees less than everything, which is the humane answer to a phone you are not sure about and the natural companion to narrowing its capabilities. *How:* roster membership is all-or-nothing today (an entry plus revocation); give it the same `scope_fields` column narrowing the per-contact scope already has (`store::organs`, migration `0056_contact_scope`), applied to roster entries instead of contact rows and evaluated in the same predicate so the two cannot drift. This is a DIFFERENT axis from the capability set above: capabilities say what a device may DO, this says what it may SEE. *How used:* one scope control per device in the Devices panel, beside Remove and beside the capability editor, worded the way the contact scope is.
-
-## Visibility and sharing
-
-- [ ] **A summary view of what each contact can see of you.** *Why:* each contact's sharing level is set one at a time in that contact's own panel, so there is nowhere to answer "who can see what of mine right now" — the question someone asks after a year of adding people, and the one a per-contact panel can never answer. Disclosure surfaces are where a person most needs a whole-picture read rather than a tour. *How:* a read-only aggregate over the existing `organ_contact` rows — direction, both scopes, hide-list count, and the unreadable-scope flag `store::organs` already derives — with no new storage and no sync change. *How used:* one screen listing every contact side by side, each row saying everything / only these columns / nothing but which Record, with the broken ones called out; clicking a row opens the contact panel that owns the change.
-
-## Cleanups that are real
-
-- [ ] **Two names for one act: `create-message` and `send-message`.** *Why:* still both live — the Conversation sand posts `send-message` (`sand/conversation/conversation.html:283`) while the Record sand and the Transfer sand post `create-message` (`sand/record/record.html:2100`, `sand/transfer/app/negotiation.js:219`). Both are correct, but two names for one act is worth collapsing before a third appears. *How:* keep `create-message`, which is the superset — it carries parent/references and tolerates a thread with no root — and repoint the Conversation sand. *How used:* no visible change.
-
-- [ ] **`file_sync.rs`'s module doc claims Protein selection is not configurable.** *Why:* the line is still there (`engine/src/file_sync.rs:9`) and it is still false — `configured_filter` at `file_sync.rs:1485` deserializes a `protein::Predicate` out of the sync config. A doc comment that contradicts the function forty lines of the same file away is worse than no doc. *How:* delete it. *How used:* no visible change. (This item used to justify itself with "source files carry no comments at all". That is not true of the tree today — `file_sync.rs`, `transport/src/session.rs` and `board/transport.js` all open with comment blocks. The tree-wide comment question is its own decision and should not ride on this one-line fix.)
-
-- [ ] **Byte accounting for the relay bandwidth cap.** *Why:* a relay operator who wants a hard bandwidth ceiling has to set one at the machine. **Anchor to re-decide before starting:** the old text claimed a per-peer connection cap already ships under `services.lince.relay.*`, and neither is true — the Nix options are `services.iroh-relay.*` (hostname, TLS, STUN, `extraConfig`) and `services.lince.*` (mode, ports), and no per-peer cap of either kind appears in `scripts/deploy/nixos/`. So this is not "the second half of a shipped feature"; it is the whole feature, and it belongs with the Relay Cells work below rather than on its own. *How used:* the operator sets one number, and the Discovery panel says when a peer is being throttled.
-
-- [ ] **The absent-not-blank rule needs a renderer sweep — when there is something to sweep.** *Why:* `row.body || ""` collapses "withheld" and "empty" (five of them in `sand/kanban/kanban.html` alone), so a sand that draws a missing `assignee` as unassigned draws a permission boundary as data. Deliberately not swept today, and this still checks out: **no shipped sand narrows** — `Protein.fields` is set to anything other than `None` only in `engine/tests/organ_contact.rs` — so there are zero live instances and a sweep would be a large diff against a hypothetical. *How:* when the first sand narrows, render `undefined` as "withheld" and `""` as empty at every site. *How used:* a narrowed view says which fields you are not being shown.
-
-## Deployments (need a second machine)
-
-These are deployments, not features. They belong with Resenha's scenarios. **The file they used to point at, `anicca/Resenha.md`, no longer exists** — it and `Resenha.lingua` were removed in the recent docs pass, so this needs a live pointer or the scenarios need a home again.
-
-- [ ] **`iroh-relay` on the VPS.** *Why:* from then on the Organ's own machine carries its own connection metadata instead of n0's boxes, and self-hosting is what moves the relay operator's view of your IP and hours to you. *How:* a public IP, a DNS name and TLS — the relay speaks HTTPS/WebSocket to nodes — then point the Cells at it. The module exists and is complete on this axis (`scripts/deploy/nixos/iroh-relay-module.nix` generates the TOML, `vps-module.nix` opens the ports and asserts the relay and Lince run as different users). *How used:* `lince.discovery.relays` names it, and the Discovery panel's "where this Cell is reachable from" line becomes true.
-
-- [ ] **A Cell on the VPS as a member of the Organ roster.** *Why:* the always-on device is what makes offline delivery work without either laptop being up, and what makes the front door and the two-tier directory record mean anything. *How:* `mode = "server"` in `lince-module.nix`, enrolled like any device, on a different machine from the relay's user and state. *How used:* "edited on the phone all day, walk in the door, laptop converges" without both being awake at once.
-
-- [ ] **Then: relay-only mode costs nothing that matters**, because the relay being depended on is your own. Depending on your own machine is not a dependency problem. This is the conclusion that turns the safe default into a free one, not a task of its own.
-
-- [ ] **The blind mailbox actually deployed.** *Why:* it is the one shape where a box holds your traffic and cannot read it, and the only case where sealing op payloads earns its cost. **Naming, corrected:** this was `mode = "relay"` and is now `mode = "front-door"` — the rename landed 2026-08-15 and `lince-module.nix` carries the reason in full (one word named three different boxes, and someone reading "relay" got a box holding their data in the clear). The mode is wired end to end in the module; what is missing is a deployment.
-
-- [ ] **"Where this Cell is reachable from" in the Discovery panel.** *Why:* a Nix module with no way to see whether it is working is a config file, not a feature. *How:* name the relay, whose it is, and state plainly what relay-only costs. *How used:* the operator can tell at a glance whether the box they set up is the one carrying their traffic.
-
-## Design work with no code yet
-
-- [ ] **Tree sync and the Move verb.** *Why:* it absorbs "move a selection of my data to live in a chosen Organ" and lands the old Karma synctree idea where it belongs — in sync, configured with Protein rather than a bespoke bundle format. *How:* the unit that travels is a **Record tree from a root**, plus the aggregate rows keyed by record uid that come along without being enumerated. A Protein selects what within that tree travels — the same selector used for per-contact narrowing, so there is one language for "what a sand shows", "what a contact receives" and "what a tree carries". A single Record is the degenerate case, and anything not expressible as a tree from a root is OUT of scope rather than a reason to invent a bundle table: the point is that it needs no new tables. **Copy is an incoming sync of a tree and is nearly free; Move is the genuinely new and dangerous verb** — exactly-once with an acknowledgement, where delivering twice means two copies and losing the ack destroys or duplicates data, and it never self-heals. It must NOT be folded into machinery whose every reflex assumes at-least-once is harmless. *How used:* "place this project in the family Organ" as a consented offer the other side accepts.
-
-- [ ] **One consent handshake, three surfaces.** *Why:* thread invites, replica agreement, accepting a tree and transfer acceptance spell the same handshake four ways — an offer lands, it sits pending, the receiver accepts or refuses, nothing moves before, and a refusal is remembered. *How:* unify the handshake, the retry/backoff scheduler (the transfer delivery worker and the outbox drain are two schedulers with two policies and two chances to mishandle an offline peer), and the "did it arrive?" surface (receipts and checkpoints answer one user question two ways). **Keep the delivery semantics and the domain objects apart.** *How used:* one pending-offers list, one honest delivery state, wherever an offer comes from.
-
-- [ ] **A per-contact predicate on the feed.** *Why:* speculative rather than blocked. The concrete need — "keep these Records from this contact" — is already met by the hide list. Closing it honestly needs three things nothing asks for: a per-contact predicate, evaluating it per Record per op on the serve path, and a **served-set table** so a Record CROSSING the predicate can be told from one that always matched — crossing detection is the whole point, and without stored state a serve pass cannot know whether a match is new. The hazard it must answer first: a Record entering is a grant and one leaving is a revoke, both fired by a change nobody meant as an act of sharing, so a rule must answer "what are you sharing right now" BEFORE it can be switched on. Live references and Karma rules both put predicates near the serve path; either will say what shape this wants. Building it first would be guessing at an interface with no caller.
-
-- [ ] **Naming links in a scope.** *Why:* `record_assertion` is a relationship BETWEEN Records, which the column vocabulary cannot name, so a narrowed contact currently receives no links at all — fail-closed and correct, but it means narrowing costs the whole graph. *How:* a vocabulary extension for the scope language, rather than a reserved word smuggled into the column list. *How used:* "share the head and the `@part-of` links" as a scope.
-
-- [ ] **A mention in a body becomes a link.** *Why:* `[[Title|uid]]` in body text is how a person actually writes a link. Two rules, both about the op log: the **uid is authoritative and the title is decoration**, and renaming a Record must NOT rewrite the bodies that mention it — a rename that rewrote bodies would be an op storm across every peer for a cosmetic change. *How:* first mention of each other Record per file becomes a link, later mentions stay plain — a rule for whoever GENERATES the text, never for the parser. *How used:* typing `[[Project A]]` in a body makes a real assertion-backed link.
-
-- [ ] **`Undelete` and `Restore`.** *Why:* deletion today is a hard tombstone with no way back, and a record tombstone freezes its Loro doc. *How:* a newer lifecycle op above the tombstone, landing before edits resume on a frozen doc. The lifecycle action does not exist yet. *How used:* a deleted Record can be brought back from the Record sand rather than only from a backup.
-
-- [ ] **Exact multiply and divide.** *Why:* quantities are exact decimals and arithmetic over them must not acquire a float's habits. *How:* multiplication states its result scale, division states its rounding, scale overflow is a publish-time refusal and a zero divisor a runtime one. Unit algebra is explicit, never inferred. *How used:* a Karma expression multiplying a rate by hours either states its scale or refuses to publish.
-
-- [ ] **Every new public wire type extends the golden fixture in the same commit.** *Why:* a type that ships without one is how the format drifts. *How used:* a failing test at the moment of the omission, not months later.
-
-- [ ] **The release train.** *Why:* wire changes were to be held and released as one numbered epoch per train, so a hard cut happens on a schedule people can plan around. The protective half is built — `ALPN_HELLO` is `lince/hello/1` in `engine/src/wire.rs`. What is deferred is the SCHEDULING, and it buys nothing yet: nobody is running Lince, there is no stale peer to strand and no app store review to wait out, and a cut costs one rebuild. It becomes real the day someone else's device depends on this one.
-
-## The Organ Profile in three tiers
-
-The largest thing left. It needs the identity floor under it (built) and somewhere always-on to run (a deployment). **Richness is the Organ's publishing choice, never a function of distance** — the tiers are cut by SIZE, because a 245-byte mDNS record and an HTML page are different budgets, not different audiences. A stranger three hops out must never see MORE because they are far away. **Surface, whenever it lands:** a profile editor per tier showing what each tier reveals and to whom, BEFORE anything is published; its whole risk is people publishing more than they meant to.
-
-Defaults and consents:
-
-- [ ] **The two-tier roster is not a setting.** No configuration lists more than the front door in the public tier; the movement profile it prevents is too large a loss to leave to a checkbox someone can be talked into.
-- [ ] **Gossiping your card is opt-in, per tier.** T0 announcement, T1 card propagation and T2 Facade availability are three separate consents and none implies the next. A card that has travelled cannot be recalled, so this is the consent hardest to undo and must be the most explicit.
-- [ ] **Coarse area defaults to unset**, and when set defaults to its COARSEST granularity, so finer is always a deliberate step down.
-- [ ] **The seen-set, the per-source budget and the age expiry are mandatory, not tunables.** A relay that forwards without dedup harms the whole network, not only itself.
-- [ ] **Publishing into a directory is a separate explicit act** from gossiping, and joining one is never automatic on discovering it.
-- [ ] **The invite door stays default-closed** — making yourself describable is not making yourself contactable.
-
-The tiers:
-
-- [ ] **T0 — the announcement. 245 bytes, text only, forever.** iroh's `UserData` caps there and today carries a bare clipped display name; it must instead carry a structured pair, display name and profile version. No image ever reaches this tier.
-- [ ] **The published organ key must NOT ride T0.** The Cell's NodeId is exposed by mDNS as a matter of how mDNS works and that is unavoidable; the ORGAN key is additive and avoidable, and it is the value linking every one of your Cells to each other and to your public profile. Broadcast on café wifi, a passive listener who needed no connection and no permission keeps a permanent handle that resolves your addresses anywhere afterwards. The key arrives AFTER connect; the cost is that a nearby row shows no card until then, consistent with the rule that the nearby list renders claims only.
-- [ ] **The T1 card DOES carry the key, and the difference is consent, not readability.** A gossiped card is more widely readable, not less. What separates them is that gossiping is opt-in and time-unbounded by nature, while mDNS was incidental to standing in a room. The key must also stay in T1 or the card signature has nothing to verify against.
-- [ ] **T1 — the card. A few KB, and the only tier that gossips.** Name, description, organ key, coarse area if set, and a SMALL inline avatar (128px webp, 4–8KB). Over long-range low-bandwidth radio even this is large, so the card must degrade to its text half rather than fail to send.
-- [ ] **T2 — the Facade. An HTML page, fetched on demand, never gossiped.** A person builds a sand describing themselves from their real data, exports it, and that file IS the Facade. `crates/web/static/presentation/board/archive.js` already exports a workspace as one self-contained file with a four-layer no-network guarantee.
-- [ ] **"JavaScript disabled" is not the property that makes this safe.** Plain scripts-off HTML still beacons through `<img src>`, CSS `url()`, `<link>`, webfonts and form actions, and every one tells the AUTHOR who opened their page and when — the online-times leak pointed at whoever was merely curious. The CSP and the empty sandbox are what close it.
-- [ ] **SANITISE ON RECEIPT, not on export.** A hostile author simply does not use the exporter and hand-writes the HTML with scripts intact, which voids every export-side guarantee. The receiving Cell must run the strip/inline/neutralise pass itself, treating the sender's file as raw untrusted input. **A Facade that fails sanitisation is refused, not cleaned** — rendering the stripped remainder turns a partial-strip miss into a live bypass.
-- [ ] **Rendering a STRANGER's Facade is a threat model `archive.js` was never built for.** Its layers are anti-exfiltration, not anti-deception: sandboxed static HTML can still imitate Lince's chrome and phish a password. A Facade renders inside a bounded card that visibly belongs to someone else — never fullscreen, never chrome-shaped, never able to present anything reading as a Lince prompt.
-- [ ] **Fetch only on an explicit click.** A Facade pulled because its card scrolled into view is a passive beacon in everything but name.
-- [ ] **Links inside a Facade are INERT by default**, rendered as visible URL text that does not navigate — navigation out reaches the author's server with timing and referrer, which is the read receipt returning by hand. Click-to-confirm showing the full URL is an explicit per-viewer setting.
-- [ ] **Who serves T2, decided for the private answer:** fetched BY HASH from any holder, and **never from the origin Organ, not even as a fallback**. An origin fetch offered on a cache miss would be taken almost every time a Facade is new — precisely when the author most wants to know who is looking. **A cache miss renders nothing and says so.** Bound the storage instead: a per-Facade size cap shown before the fetch, and relay-side eviction.
-- [ ] **Render-side leakage is solved; fetch-side remains.** A rendered Facade cannot phone home, so its author learns nothing — provided the fetch was content-addressed from whoever happened to hold the bytes. What cannot be hidden is the fetch from whoever SERVES it. The mitigation is not anonymity, it is choosing a server who already knows you: fetch through the relay you already use for everything else.
-- [ ] **Sign the card with the organ key — for integrity, not identity.** Without it any relay can rewrite your description or swap your photo before passing it on. A valid signature is a precondition for DISPLAYING the card, never a mark drawn beside it: a card whose signature fails is dropped silently, because a badge that can be absent is a badge, and a badge is the verification checkmark coming back through the side door.
-- [ ] **Content-address every image and every Facade.** A relay that already holds it re-forwards for free, two Organs using one picture store it once, and fetching by hash does not tell the author you looked.
-- [ ] **A version number and a card TTL** (monotonic, highest-wins, so an edit supersedes rather than races; the TTL stops relays re-spreading forever), plus **cache eviction as a SEPARATE lifetime** — a content-addressed image outlives the card that referenced it unless its eviction is specified on its own, and the deleted-photo-returns-forever problem otherwise survives the fix aimed at it. Plus **a last-updated timestamp**, so a stale card visibly looks stale.
-- [ ] **Card fields worth having:** pronouns and language as first-class fields (tiny, and genuinely what a stranger needs to decide whether to speak to you); a **reachability hint** — direct / relay-only / an always-on Cell exists — which says a door exists and never names the Cells behind it; and **what you are offering or looking for**, which is the actual reason to gossip and whose payload is OPEN promises.
-- [ ] **A self-declared coarse area, and nothing finer** — country, region, city or neighbourhood, the Organ's choice, NEVER derived from IP geolocation or GPS. The transport leak is involuntary and precise; this is voluntary and as vague as its owner wants, and a "precise location" default-on would collapse the two.
-- [ ] **Stays OUT of every tier:** the Cell roster (device count and online-time leak), the contact list, and any link rendered as anything other than plain unverified text.
-- [ ] **Reach defaults, restated for this work:** relay-only stays the default and mDNS stays OFF and time-bounded. Both are built; they are listed here so the profile work does not quietly reverse them.
-
-## Multi-hop discovery, gossip and the directory
-
-Everything built finds a peer you already hold a key for, or one within mDNS/BLE range. Neither answers "there is a Need three hops away that I could meet, and I have never heard of that Organ."
-
-**Gossip cannot reach the world, and the TTL is not the reason why.** A flood with no hop limit means every participating Cell eventually stores every profile and every OPEN promise on Earth; that is arithmetic, not policy. The TTL exists first to keep the network from melting and only second to limit exposure — reading it as a privacy knob invites someone to raise it "because I don't mind being seen", which is the one change that breaks everyone else's storage.
-
-- [ ] **OPEN promises are already the payload.** The route exists — `GET /organ/open-promises` is served by `organ_open_promises` in `crates/web/src/lib.rs` and already exports what a subject may publicly see. The missing piece is letting it propagate past direct contacts, hop by hop, with a TTL and a per-hop visibility check so a hop never sees more than the Organ that sent it allowed. Gossip here means OPEN promises spreading through willing relay Cells — not a new message type.
-- [ ] **A seen-set matters more than the TTL.** Dedup on the card's content hash and drop anything already forwarded. TTL bounds DEPTH, not fan-out multiplicity: in any graph with cycles the same card arrives by many paths and is re-forwarded each time, so cost explodes well inside the hop limit. TTL alone is the classic Gnutella flood failure.
-- [ ] **Forward to a random subset, not to everyone.** Epidemic/push-pull gossip converges with dramatically less traffic than full flooding.
-- [ ] **A per-source rate budget**, or one Organ republishing in a loop is indistinguishable from an attack and costs every relay downstream.
-- [ ] **Age-based expiry independent of remaining hops**, or a slow corner of the network keeps thirty-day-old copies alive forever.
-- [ ] **Hop count is sender-spoofable and nothing may depend on it.** A sender chooses the counter's starting value, so "three hops away" is a claim, not a measurement. A relay drops anything past the limit IT chose rather than the limit the sender asked for. Hop count is a network-topology fact, never a nearness claim and never a closeness one — it, `nearness` and `proximity` are three different things and none may be conflated in the UI.
-- [ ] **A directory Cell** — a relay keeping a QUERYABLE INDEX an Organ publishes into and others search, instead of forwarding in the hope the right person is downstream. Push versus pull, and the reach an index gives is the reach the wish was actually asking for.
-- [ ] **The directory's trust story is its own, and it is worse.** A forwarding relay sees what passes through it; an index sees every QUERY — who is looking for what, when, from where. That disclosure lands on the SEARCHER, and it must be stated on the surface where someone searches. Several independent directories are the mitigation; one blessed directory is a naming authority in everything but name.
-- [ ] **Searching an area resolves against the self-declared coarse area and nothing else.** A search never asks a Cell where it is, never derives an answer from IP geolocation, and never returns anything finer than the Organ published.
-
-## Relay Cells
-
-A relay and a townsquare must stay separate in configuration and in the interface, so an operator never believes moderating a townsquare gives them power over what a relay forwards. There is no middle option — a box that holds plaintext "just to help" is a full Cell with none of a full Cell's accountability. The choice is readable-and-yours, or unreadable-and-anyone's.
-
-The first box is the new role; the rest are shaped by it and cannot land first.
-
-- [ ] **Relay Cells, not just `iroh-relay`.** `iroh-relay` only rendezvouses and falls back for two Cells that already know each other's NodeId — `iroh-relay-module.nix` says as much in its own header. A discovery relay is a different role: a Cell willing to carry OTHER Organs' discovery/gossip traffic onward over the internet. New infrastructure, not a mode switch.
-- [ ] **Consent to relay is explicit per Cell** — a Cell opts in to spending its own bandwidth and battery carrying a stranger's traffic. Test: a Cell that never opted in forwards nothing.
-- [ ] **Relay mode uses `relay_capabilities()`.** The empty set exists (`engine/src/roster.rs:177`) and is enforced by `cell_may`; the enrolment tests already publish a Cell with it, but nothing in the running app does. Test: a published relay Cell is refused capabilities outside that set.
-- [ ] **A relayed batch carries a SIGNED BATCH envelope** from the original author, verified on arrival and passed along intact — one signature per batch, never per op. Per-op signing is the version that hurts: a burst of keystrokes is a burst of `crdt` ops, and a signature on each puts asymmetric crypto in the typing path. Batch signing is invisible (~50µs sign, ~100µs verify, amortised over a drain). This belongs with relay work, never as a tax on ordinary sync.
-- [ ] **Relaying a contact's ops is a per-contact setting defaulting to the quiet way.** Forwarding a contact's ops to your other contacts is a disclosure nobody in that chain consented to, independent of whether it is cryptographically sound. Test: the default forwards nothing.
-- [ ] **The bandwidth ceiling belongs here, and none of it exists yet.** A relay operator who wants a hard ceiling has nothing but the machine's own limits. Both halves are unbuilt — a per-peer connection cap and byte accounting against a configurable ceiling — and they want one Nix option namespace decided alongside the role above rather than bolted on after. *How used:* the operator sets one number, and the Discovery panel says when a peer is being throttled.
-- [ ] **A relay over long-range low-bandwidth radio**, for the case with no internet at all. **LoRa is its own transport, not a variant of iroh/QUIC** — its own framing, a tiny payload budget, and almost certainly store-and-forward rather than a live connection, closer in spirit to the durable outbox than to a socket. Its own transport adapter from the start.
-
-## The public face of an Organ
-
-- [ ] **The public face is an Organ you share a subset with**, and its narrowing is the outbound per-field scoping, which is built. What it still waits on is the Facade it serves.
-- [ ] **A published-subset view**: what the public Organ actually holds, shown as data rather than promised in a settings screen — the same honest-empty-state rule as everywhere else, applied where the consequence of getting it wrong is a disclosure rather than an awkwardness.
-- [ ] **The Facade is generated by the PUBLIC Organ, not the internal one** (2026-08-15). Not a deployment preference: a generator running where everything is visible is TRUSTED to omit the right things, while one running on a box that only ever received the published subset cannot leak what it does not have. This is why the public face is a separate Organ rather than a Cell.
-
+Ontology (@ontology: 0, is #chapter, #instinct, #done) { r_S8PQ17MQ3WBWM53ZN700K89V9F
 } r_S8PQ17MQ3WBWM53ZN700K89V9F
 
 Trail (@trail: 0, is #chapter, #instinct, #part-of @ontology, #done) { r_Q46Z5FZHZFACPNSNPJP2GEDC1D
@@ -522,9 +351,7 @@ Here are the subjects wanted to create Trails for:
   - TBCA/USP food composition database: https://www.tbca.net.br/
 } r_Q46Z5FZHZFACPNSNPJP2GEDC1D
 
-
-
-Transfer (@transfer: 0, is #chapter, #instinct, #part-of @first-steps, #done) { r_00ECACY50NWQQ3S0YH37V8KMK6
+Transfer (@transfer: 0, is #chapter, #instinct, #done) { r_00ECACY50NWQQ3S0YH37V8KMK6
 
 A Transfer is a well structured process for Contributing to other's Needs and having yours met. It might be a way of exchanging physical resources, buying services, exchanging information, proposing the assignment of tasks... It has a few steps: a proposal, an agreement and an action. It is designed to work best with Record's quantities between different Lince Cells.
 
@@ -564,7 +391,15 @@ That can extend to several different Transfers, many people agreeing to many thi
 When interacting with other parties, it is important to know how much you can trust them. If the transfers are public and hard to fake and i can prove this party is the same of those transfers I might filter better my interactions by going to certain Actors. Your public actions start building a portfolio for Trust.
 } r_00ECACY50NWQQ3S0YH37V8KMK6
 
-Interface (@interface: 1, is #chapter, #instinct, #part-of @first-steps, #done) { r_99NWECF19VKV94HQQ3G3ASMC4M
+Interface (@interface: 1, is #chapter, #instinct, #done) { r_99NWECF19VKV94HQQ3G3ASMC4M
+
+The brand is black and white by default, with purple as the supporting color.
+
+Purple Cobalt — CMYK: 66, 71, 0, 36; HEX: `#3730A3`; RGB: 55, 48, 163.
+Nocturnal Purple — CMYK: 59, 58, 0, 5; HEX: `#6366F1`; RGB: 99, 102, 241.
+Deep Lead — CMYK: 10, 10, 0, 92; HEX: `#121214`; RGB: 18, 18, 20.
+Gray — CMYK: 10, 5, 0, 12; HEX: `#A7B4C2`; RGB: 167, 180, 194.
+Ice White — CMYK: 2, 1, 0, 1; HEX: `#F8FAFC`; RGB: 248, 250, 252.
 
 # The Zen on Interfaces.
 
@@ -580,17 +415,12 @@ Interface (@interface: 1, is #chapter, #instinct, #part-of @first-steps, #done) 
 - [ ] Interfaces should ask for as little attention as possible throughout the user's life. The best interface is Interfaceless.
 	- [ ] Interoperability.
 
-# UI Guidelines
-
-The brand is black and white by default, with purple as the supporting color.
-
-Purple Cobalt — CMYK: 66, 71, 0, 36; HEX: `#3730A3`; RGB: 55, 48, 163.
-Nocturnal Purple — CMYK: 59, 58, 0, 5; HEX: `#6366F1`; RGB: 99, 102, 241.
-Deep Lead — CMYK: 10, 10, 0, 92; HEX: `#121214`; RGB: 18, 18, 20.
-Gray — CMYK: 10, 5, 0, 12; HEX: `#A7B4C2`; RGB: 167, 180, 194.
-Ice White — CMYK: 2, 1, 0, 1; HEX: `#F8FAFC`; RGB: 248, 250, 252.
+# Tasks
+- [ ] We may embed the LICENSE and credits to the sand, ethical. We should have an easy to access part of Lince, not a hidden one, that is talking about the interface and is saying that we use such and such dependencies (the ones that ask us to give the LICENSE, users dont care). In that part we include the LICENSES, if we put it in the sand it's going to be work to take only the rust of it, and drop the LICENSE from the queried bytes.
 
 Components are flat by default, preffering 2D forces us to convey information only with flat data, not layers and composition, constraining the space forces minimalism. Shadows and hints can be used for subtle differentiation of areas, components and data.
+
+- [ ] The interface must keep it's state in memory, and backup to a file with a frequency per configuration.
 
 } r_99NWECF19VKV94HQQ3G3ASMC4M
 
@@ -609,23 +439,10 @@ For that a system that allows for maximum control of the scenes, is needed, the 
 - [ ] View the future simulation of such world based on the possible Automations and Transfers that will happen, as transformations and scenarios of the Space, versions of it, mixed in a same scene, like if 50% transparency, some house that can be built, as if i'm planning a farm in a property and i'm putting down in the simulation where each resource will be, and after setting them, taking the unfinished work, exploding it into each tiny part and Assigning it to contrActors in Lince and doing it myself too.
 }
 
-
-Karma (@karma: 0, is #chapter, #instinct, #part-of @first-steps, #done) { r_K7T3ZG08G5EBWRSTF8NBWMTZYV
-
+Karma (@karma: 0, is #chapter, #instinct, #done) { r_K7T3ZG08G5EBWRSTF8NBWMTZYV
 Karma means 'action' in Sanskrit. In Lince it is the sum of all automations and intelligence. Without Karma in Lince, all the data is like still water if not touched by the user. Karma is the scheduler, the automatic action taker, it changes quantites, fires computer commands, receives requests from other systems and saves the result to be used in the Rules. All of it is optional, it can be set to take every Fact as an evidence that a certain Karma Rule should happen in such and such way. A pattern can be understood and have a growth function, so that after 3 months of buying apples every week you create an automation around posting a need for apples and a transfer proposal for such, all with hands-on control or complete automation. 
 
 Rules are meant to be math equations that pull valus from your data and other systems to compute Conditions. These Conditions are checked to see if they pass a Threshold, if they do they enact a Consequence.
-
-
-- [ ] What if the actions people do on board, are events, like moving things around are Karma Consequences? That way karma can control the appearance/disappearance of sands the interaction with them. It could even control the position of records with some properties. Like moving them up and down. Agents doing actions in board can also fire these events so Fiote can move sands around to tidy them, add things it thinks you need for your workflows, call people (activating the Communication of a Record-message with someone). So when you interact with the board as a user you are not calling js directly, you are interacting with things that fire events and these events have consequences, Karma once again in frontend.
-
-
-One type of code in the rule can be of using assertions to query and modify data:
-
-#foo * 2 = #bar
-
-Can take all the quantities of all records with #foo, multiply by 2, and put that quantity in all Records with #bar assertion.
-
 
 Everything up to here you do by hand. **Karma** is the part of Lince that does things without you — it watches Records, does arithmetic on them, and changes them, on a beat or when something moves, with your permission and a readable trail. Records model the world and Transfer coordinates change between people; Karma turns evidence into action.
 
@@ -686,46 +503,13 @@ graph TD
 
 _The same rule, resolved one step at a time against the world as it is._
 
-#### In detail
+# Tasks
 
-**Purpose:** Compute one exact number from named blocks, so that what a rule watches is readable as arithmetic rather than assembled from form fields.
 
-**How it works:** An expression over three kinds of block and nothing else. `@slug` is a Record's quantity, and is also how a Command is read. `freq(@slug)` is a Frequency's beat. `sum(@slug, 30d)` / `sum_pos` / `sum_neg` are windowed totals. Anything else is refused at parse time and never defaulted to zero — a typo must not read as "the stock is empty" and fire for the most alarming possible reason.
-
-**Interacts:** `Engine::rule_reads` turns a condition into the set of Records whose movement wakes it, and already skips `freq` tokens so a rule is not woken by the Frequency Record itself moving.
-
-**Implementation:** `nucleus::karma::Condition` over `nucleus/src/expr.rs`, resolved by `read_for_condition` in `crates/engine/src/actions.rs`. Exact decimals end to end, no binary floating point in a decision. A Record's unit and its other numbers are readable alongside its quantity, and a missing one is an error rather than a silent zero.
-
-- [x] **`freq(@daily)` is the token form and the grammar does not change.** It
-      already parses in `nucleus/src/expr.rs`; the `@freq(dai`+Tab typing
-      experience is the editor's job. If the namespaced spelling still reads
-      better later it is a lexer change plus a rewrite of every stored
-      `condition_src` — decide then, not now.
-
-### What is left
-
-#### 1.2 — Condition
-
-- [ ] **At most one Frequency per condition, refused at parse time.**
-      `Condition::parse` fails on a second `func == "freq"`. Parse-time, not
-      runtime, so each rule belongs to exactly one timer task unambiguously.
-- [ ] **A condition that reads nothing is refused.** No blocks means no trigger.
-- [ ] **Drop `value(@slug)` and `derived_value`.** Reading another rule's number
-      without running it needs recursion, a depth cap, cycle detection and
-      transitive wake-up that `reads()` cannot express. Chaining through
-      committed Facts already does the useful half.
-- [ ] **Refuse a unit mismatch at publish time**, not at first run. Conversion is
-      exact and explicit, never an implicit coercion to make an expression
-      type-check.
-- [ ] **Persist rounding notes** so a Why lens can show them.
-- [ ] **Read a number out of a namespaced Record extension**, so a rule can use
-      a Record's weight, price and count and not only its quantity. A missing
-      one is an error, never a silent zero.
-- [ ] **A saved Protein view is a block**, reducing to exactly one number from
-      exactly one row. A view that fails to execute blocks its rule as a
-      refusal, never as an error to be logged. The legacy engine had this; §1.2
-      currently does not.
-- [ ] **A deleted Record blocks the rule; it does not read as zero.**
+- [ ] **Drop `value(@slug)` and `derived_value`.** Reading another rule's number without running it needs recursion, a depth cap, cycle detection and transitive wake-up that `reads()` cannot express. Chaining through committed Facts already does the useful half.
+- [ ] **Refuse a unit mismatch at publish time**, not at first run. Conversion is exact and explicit, never an implicit coercion to make an expression type-check.
+- [ ] **Read a number out of a namespaced Record extension**, so a rule can use a Record's weight, price and count and not only its quantity. A missing one is an error, never a silent zero.
+- [ ] **A saved Protein view is a block**, reducing to exactly one number from exactly one row. A view that fails to execute blocks its rule as a refusal, never as an error to be logged. The legacy engine had this; §1.2 currently does not.
 
 ## Threshold
 
@@ -745,32 +529,18 @@ _This is why a Frequency returning 0 is enough to keep a whole rule quiet._
 
 #### In detail
 
-**Purpose:** Decide whether the number the Condition produced means *fire*, kept
-deliberately small so the interesting part stays in the arithmetic.
+**Purpose:** Decide whether the number the Condition produced means *fire*, kept deliberately small so the interesting part stays in the arithmetic.
 
-**How it works:** *only non-zero*, *anything*, or a comparison against a number.
-That is the whole vocabulary. When it passes, the Condition's value is carried
-into the Consequence.
-
-**Interacts:** Nothing but the Condition above it and the Consequence below it.
-
-**Implementation:** `nucleus::karma::Gate` and `nucleus::karma::Carry`, built and
-tested. The sand renders it as one select.
+**How it works:** *only non-zero*, *anything*, or a comparison against a number. That is the whole vocabulary. When it passes, the Condition's value is carried into the Consequence.
 
 ### What is left
 
 #### 1.3 — Threshold
 
-- [ ] **Specify each gate's transition behaviour** — edge or level trigger,
-      hysteresis, and what a re-fire on an unchanged reading means. A threshold
-      exposes *entered* and *left* as two distinct events, not one boolean.
-- [ ] **Debounce:** a reading must hold for a declared span before it counts, so
-      a value flickering across the line does not fire ten times.
+- [ ] **Specify each gate's transition behaviour** — edge or level trigger, hysteresis, and what a re-fire on an unchanged reading means. A threshold exposes *entered* and *left* as two distinct events, not one boolean.
+- [ ] **Debounce:** a reading must hold for a declared span before it counts, so a value flickering across the line does not fire ten times.
 - [ ] **Cooldown:** after firing, refuse for a declared span.
-- [ ] **Rate limit:** at most `max` firings in a rolling window.
-      These three are temporal controls on the Threshold, not new rule kinds,
-      and each needs its state persisted so a restart does not forget a
-      cooldown.
+- [ ] **Rate limit:** at most `max` firings in a rolling window. These three are temporal controls on the Threshold, not new rule kinds, and each needs its state persisted so a restart does not forget a cooldown.
 
 ## Consequence
 
@@ -794,47 +564,23 @@ _Nobody wired these two rules together. They meet in the data._
 
 #### In detail
 
-**Purpose:** The thing that actually happens, receiving the number the Condition
-carried.
+**Purpose:** The thing that actually happens, receiving the number the Condition carried.
 
-**How it works:** An ordered, non-empty list — capture an entry, set or add a
-quantity, assert or retract an ordinary Record assertion, or set an identity
-assertion. A list rather than one, because `@wip → @done` is one intention and
-must be one rule.
+**How it works:** An ordered, non-empty list — capture an entry, set or add a quantity, assert or retract an ordinary Record assertion, or set an identity assertion. A list rather than one, because `@wip → @done` is one intention and must be one rule.
 
-**Interacts:** A consequence appends an ordinary signed Fact on the target
-Record, which is a Record moving, which wakes any rule reading it. Anything
-leaving the Cell goes through §5's grant and §6's intent instead of firing
-directly.
-
-**Implementation:** `nucleus::karma::Consequences`, stored as
-`consequences_json`, each entry dispatching to the typed Action that already
-existed. Assertion semantics are `docs/Ontology.md`'s.
-
-- [x] **`set-quantity` is not a delta.** Assigning `-1` is not a movement of
-      `-1`, and applying a beat writes one entry marking it done which never
-      carries the value as well — letting it would move an `add-quantity` rule's
-      figure twice.
-- [x] **Changing an assertion moves a card between Kanban columns**, since
-      columns bucket by value, range or assertion. Removing a Record's identity
-      assertion stays refused.
+**Interacts:** A consequence appends an ordinary signed Fact on the target Record, which is a Record moving, which wakes any rule reading it. Anything leaving the Cell goes through §5's grant and §6's intent instead of firing directly.
 
 ### What is left
 
 #### 1.4 — Consequence
 
-- [ ] **Shell Command as a consequence** — declared executable identity and
-      hash, typed arguments, no string interpolation, timeout, output capture.
-- [ ] **A computed Record refuses conflicting writes.** If a Record's quantity
-      is defined by a rule, a manual write is a refusal with a reason, not a
-      silent overwrite.
-- [ ] **Cycles are refused at proof time**, not discovered at runtime.
-- [ ] **A consequence has a route: none, propose, or apply.** *Propose* puts a
-      draft in front of a person; *apply* must name a narrow grant (§5).
-      Without one, time never changes a quantity by itself. The route is a field
-      on the consequence, not a different kind of rule.
-- [ ] **Ask, notify and emit-promise** as consequences, so a rule can raise a
-      question (§10) or open a Promise instead of only moving a number.
+- [x] **Shell Command as a consequence** — declared executable identity and hash, typed arguments, no string interpolation, timeout, output capture.
+- [/] **A computed Record refuses conflicting writes.** If a Record's quantity is defined by a rule, a manual write is a refusal with a reason, not a silent overwrite.
+- [x] **Cycles are discovered at proof time**, not at runtime.
+      - [ ] After interface refactor the karma sand should give the user the notice about the cycle when they eventually create one.
+- [/] **A consequence has a route: none, propose, or apply.** *Propose* puts a draft in front of a person; *apply* must name a narrow grant (§5). Without one, time never changes a quantity by itself. The route is a field on the consequence, not a different kind of rule. Five routes exist as a field on the node — observe, recommend, draft, ask, act — and the gate is real: a candidate is inert until a person responds, and only an accepted one naming an active grant becomes an intent. What is missing is the other side of the gate: an authorized intent never runs, so *apply* is a door with nothing behind it.
+      - [ ] **Execute an authorized intent.** Until this lands, `karma_intent_not_implemented` and `karma_execution_not_implemented` are what the capability list reports, and time changes no quantity by any route.
+- [ ] **Ask, notify and emit-promise** as consequences, so a rule can raise a question (§10) or open a Promise instead of only moving a number. This needs more explanation.
 
 ## Frequency
 
@@ -845,76 +591,30 @@ graph LR
 
 For most of the month the Frequency is `0`, so the whole equation is `0`, so the threshold stops it and nothing happens. On the scheduled day the Frequency becomes `1`, the equation takes the value of the first record, and that amount moves into the second. A monthly bill, with no scheduler and no special "recurring" feature — just a number that is zero most of the time.
 
-#### In detail
-
-**Purpose:** Repeating time, as a named object a condition can reference. It is
-three things and no more: **you set it** ("every day"), **it fires** the
-conditions that read it when the time comes, and **it projects** — running it
-forward without firing anything is the calendar and the graph. Nothing further
-is needed for calendar or recurrence features.
-
-**How it works:** A Frequency is a slug and a step — `uid, slug, every,
-anchor_at`, where `every` is a `CadenceStep`. It is a block *inside* a
-condition, never a property of the Rule.
-
-**Interacts:** `nucleus::karma::Cadence` enumerates its beats purely —
-`between(anchor, from, to)`, `next_on_or_after`, `civil_at(anchor, index)` — with
-no database and no cursor. **Firing a rule and projecting it forward are the
-same call**; only running the consequences differs. That is why the calendar and
-the graph need no storage.
-
-**Implementation:** `0039_frequency.sql`, `store/src/frequency.rs`,
-`CreateFrequency`/`DeleteFrequency`, `Source::Frequency`, and `freq(@x)`
-resolving the table in `read_for_condition`. `Cadence` is untouched and stays
-that way.
-
-- [x] **A step is a sum of components** applied largest unit first — years and
-      months against the anchor's own day-of-month (a too-short month clamps or
-      skips per `invalid_day`), then weeks through milliseconds as an exact
-      duration, optionally rolled forward onto an allowed weekday. So `1 month +
-      1 day + 1 second + 10 milliseconds, then forward to Friday` is one step,
-      and every component is typeable in the sand.
-- [x] **The slug is the only way in.** Charset validated, zero step refused,
-      creation idempotent by `request_id`, deletion refused while a rule's
-      `condition_src` still names it.
-- [x] **`freq(@x)` reads the table with `(since, at]` edges**, falling back to
-      the old rule-carried rhythm so rules written before it keep working.
+- [x] **A step is a sum of components** applied largest unit first — years and months against the anchor's own day-of-month (a too-short month clamps or skips per `invalid_day`), then weeks through milliseconds as an exact duration, optionally rolled forward onto an allowed weekday. So `1 month + 1 day + 1 second + 10 milliseconds, then forward to Friday` is one step, and every component is typeable in the sand.
+- [x] **The slug is the only way in.** Charset validated, zero step refused, creation idempotent by `request_id`, deletion refused while a rule's `condition_src` still names it.
+- [x] **`freq(@x)` reads the table with `(since, at]` edges**, falling back to the old rule-carried rhythm so rules written before it keep working.
 
 ### What is left
 
 #### 1.5 — Frequency
 
-- [ ] **One tokio task per distinct Frequency read by an active rule.** Not one
-      loop over all frequencies, and not one task per frequency that merely
-      exists. Each task: `next_on_or_after(now)`, `sleep_until` it, wake,
-      evaluate every rule whose condition reads it, repeat. A `1s` and a `1d`
-      frequency then cost one wake each per their own period, which is the
-      entire point.
-- [ ] **Lifecycle.** Spawn when a rule reading it becomes active; abort when the
-      last one stops or the step changes, then respawn. `JoinHandle`s in a map
-      keyed by frequency uid on the Engine.
-- [ ] **Missed beats on boot.** `between(anchor, last_fired, now)` gives them;
-      fire those, then enter the sleep loop. Safe every boot because firing is
-      keyed `<rule_uid>:<frequency_uid>:<beat_at>` on `entry_revision`'s
-      existing `UNIQUE(request_id)`.
-- [ ] **`freq(@x)` becomes a beat indicator** — 1 on the beat, 0 otherwise —
-      once the timer tasks land, and the `since` plumbing goes with it.
-- [ ] **Civil resolution at fire time.** Wire the read path to a timezone
-      provider so a rule that must land on a local Friday does.
-- [ ] **Projection is bounded.** Five years of a monthly Frequency is sixty
-      evaluations; a `1s` Frequency over the same span is not a query. Refuse
-      with the count rather than hanging.
-- [ ] **The missed policy is declared, not assumed** — fire every missed beat,
-      coalesce them into one, take only the latest, or skip to the next anchor.
-      A Cell asleep three weeks owes three Mondays only if it said so.
-- [ ] **Changing a step declares its rephase policy** — keep the anchor, or
-      re-anchor from now. Silently doing either is a bug in one direction or the
-      other.
-- [ ] **Admission: a Frequency the Cell cannot serve is refused at activation,
-      not discovered at runtime.** A `1ms` beat is a real request and a real
-      cost; say no with the arithmetic, and offer a shadow run.
-- [ ] **Reuse is the point** — ten rules reading one Frequency wake from one
-      timer, not ten.
+There are two schedulers in the tree, and every box below is about the second one. The first is the one a person can actually reach: a rule is a Recurrence carrying a `condition_src`, the sand writes it with `create-recurrence`, `freq(@x)` reads the `frequency` table the sand fills with `create-frequency`, and the whole thing is looked at by `fire_due_rules` inside a sixty-second heartbeat poll. The second is the Program: a proven graph of nodes, its own Frequency object with a compiled cadence, armed cursors, a deadline director, occurrences, epochs, runs and candidates. The second is where the work below landed. Nothing in the interface authors a Program or its Frequency, and until that changes the director wakes for schedules only a test can create, while every rule a person writes is still polled once a minute.
+
+- [x] **One director, one sleep, one wake per earliest deadline.** Not one loop that polls every frequency, and not one task per frequency that merely exists. Every active Frequency arms a cursor in a deadline index; the director sleeps to the earliest of them, wakes, claims and completes exactly the cursors that came due, rearms them, and sleeps again. A `1s` and a `1d` frequency still cost one wake each per their own period, which is the entire point, and one task rather than a task each is what makes ten thousand of them a wake and not ten thousand threads. This is in line with Resenha, that can push time over many years: the clock is a trait the runtime is handed, so Resenha drives the same director with its own, and every next instant is computed `next_on_or_after` from the cadence anchor rather than accumulated from the last wake, so advancing 100 years lands exactly where a second-by-second run would. Drift cannot accumulate because nothing adds up; a wake that arrives late is still measured against the anchor, and a clock that jumps is a typed discontinuity that rebuilds the index rather than a silently skewed schedule. It runs on a real Cell now — it was reachable only from tests before, so every activation failed for want of an installed runtime.
+- [x] **Lifecycle.** A cursor is armed when an activation becomes active and superseded when its revision changes or it stops; the director rebuilds its index on a change signal rather than holding a handle per frequency. Leases are persisted and expire, so a Cell that dies mid-beat is recovered by the next one rather than losing the beat.
+- [x] **Reuse is the point** — ten rules reading one Frequency wake from one timer, not ten. One cursor per Frequency, and one beat opens one epoch that every active Program is a member of.
+- [/] **Civil resolution at fire time.** The read path takes a timezone provider, content-addressed by tzdb revision, and a Frequency naming a revision no installed provider serves is refused when it is activated rather than silently never firing. But the only provider shipped is an in-process UTC one (`lince-utc.1`), so a rule that must land on a local Friday still cannot be activated at all.
+      - [ ] **Ship a real tzdb artifact**, or generate one at build time, so civil time is a choice and not a refusal.
+- [ ] **Put the rules people write on the director.** A beat proves out end to end as far as a candidate — occurrence, epoch, run, proposal — and stops there, for Programs nobody can author. The sixty-second heartbeat stays until a Recurrence either becomes a Program or reads the same cursors.
+- [ ] **The interface authors none of this.** No sand calls create-karma-program, create-karma-frequency, activate-karma-frequency, respond-karma-candidate, or any of the grant actions; the Karma sand's frequency form writes the old table instead. Everything in §1.5 and §1.4's route is API-only until a Sand reaches it.
+
+- [ ] **Missed beats on boot.** `between(anchor, last_fired, now)` gives them; fire those, then enter the sleep loop. Safe every boot because firing is keyed `<rule_uid>:<frequency_uid>:<beat_at>` on `entry_revision`'s existing `UNIQUE(request_id)`.
+- [ ] **`freq(@x)` becomes a beat indicator** — 1 on the beat, 0 otherwise — once the timer tasks land, and the `since` plumbing goes with it.
+- [ ] **Projection is bounded.** Five years of a monthly Frequency is sixty evaluations; a `1s` Frequency over the same span is not a query. Refuse with the count rather than hanging.
+- [ ] **The missed policy is declared, not assumed** — fire every missed beat, coalesce them into one, take only the latest, or skip to the next anchor. A Cell asleep three weeks owes three Mondays only if it said so.
+- [ ] **Changing a step declares its rephase policy** — keep the anchor, or re-anchor from now. Silently doing either is a bug in one direction or the other.
+- [ ] **Admission: a Frequency the Cell cannot serve is refused at activation, not discovered at runtime.** A `1ms` beat is a real request and a real cost; say no with the arithmetic, and offer a shadow run.
 
 ## The whole picture
 
@@ -934,63 +634,6 @@ _The same kinds of thing go in and come out — which is exactly why rules compo
 
 Notice what is missing: there is no list of automations Lince supports. There is one shape — if, and, then — pointed at records you already have. A budget that refills, a habit that nags, a stock level that reorders, and a Transfer that settles itself are the same machine with different numbers in it.
 
-### 14.1 — Which Cell executes
-
-**Purpose:** An Organ may hold several Cells, and every one of them has the
-whole rule set. Three Cells means each rule fires three times, schedules three
-Transfers and mints three Records — so this section decides which Cell acts,
-and bounds what a rule may cost when it feeds itself.
-
-**How it works:** Two INDEPENDENT axes, not one setting. First, *is the Rule
-synced?* — a Rule is a Record, so this is ordinary per-Record sync, default on.
-Second, *does THIS Cell execute it?* — a local, per-Cell, per-rule flag that
-never travels, because executing is a property of a machine and not of the
-rule. Every useful arrangement falls out: all Cells running the same synced
-Karma; one Cell running the common Karma while the others hold it without
-executing; each Cell running different unsynced Karma over the same shared
-Records; and any mixture per rule. A lease is how "exactly one executes" gets
-implemented, not the model itself.
-
-The dividing line for the default is **not** recurring vs reactive — reactive
-rules are the worse case, since every Cell sees every change and so they fire
-more often than scheduled ones. What divides them is whether the consequence is
-*local* (recompute a view, refresh a projection — safe everywhere, and running
-everywhere is the point) or *externally observable* (creates a Record, schedules
-a Transfer, sends a message — must happen exactly once). Cycles are a FEATURE
-and are bounded rather than forbidden: two rules settling into a converging
-exchange is a legitimate program, and forbidding it outlaws a whole class of
-design to prevent a failure the author may have chosen. What is not acceptable
-is an UNBOUNDED cycle, because every iteration writes an op that enters the log,
-the outbox and the feed of every contact — freedom for the author, yes;
-unbounded cost to third parties, no.
-
-**Interacts:** §14's Cell modes and per-rule limits are the same machinery seen
-from the resource side. The duplication problem itself is described in
-Ontology's "Who does the recurring work when an Organ has several Cells", which
-also owns the non-Karma schedulers that inherit it.
-
-**Implementation:** none yet. **The tasks for this section live in
-`Ontology.md` under "Scheduling across Cells, Karma included", not here** —
-deliberately, because the lease they describe is the same lease the pruning
-schedule, the Organ polling scheduler and transfer delivery retries need, and
-tracking the Rule half separately is how it would get built twice. This section
-is the specification; that list is the plan. Nothing in it is done until the surface exists that says which
-Cell holds the lease right now and what fired where.
-
-## 15 — Shared and collective Karma
-
-**Purpose:** Let a household, a team or a neighbourhood compute something
-together without any of them handing over their raw history.
-
-**How it works:** A Cell publishes one of four typed products: visible raw
-evidence, a signed aggregate, a content-hashed rule definition, or a
-recommendation. Visibility applies *before* aggregation and taint is tracked
-through every derived value.
-
-**Interacts:** Rides §11's trust scopes and Transfer's existing visibility.
-
-**Implementation:** none.
-
 ## 18 — What this must be able to do
 
 **Purpose:** The list of things a person should be able to build with the
@@ -1003,661 +646,55 @@ feature. None require domain-specific backend code; they differ only in which
 Records exist and what they are called. **These are bullets, not checkboxes:
 they are what to test §1–§16 against, not work to schedule on their own.**
 
-- **Economy** — one-off and recurring gains and losses, categories,
-      budgets as queries, currency as a Unit Record.
-- **Pantry / inventory** — consumption grows a decayed estimate, a
-      threshold proposes a restock.
-- **Habit** — a daily beat re-arms a task; completing it is an ordinary
-      user Action and the rule never owns a private "completed" flag.
-- **Todo and knowledge base** — completing a task posts a Fact another rule
-      reads.
-- **Recurring tasks** — a monthly beat fires exactly once, including after
-      a three-week outage.
-- **Adaptive Frequency** — a rule tunes another rule's Frequency inside a
-      declared range, under a grant that permits only that parameter.
-- **Command flow** — a Signal triggers a rule which runs a leased effect
-      chain, the n8n-shaped case.
-- **CRM** — a birthday whisper arrives at the chosen moment.
-- **Calendar and time budgeting** — the projected week renders, and moving
-      one thing re-projects the rest.
-- **Health and IoT** — a scale posts Facts, a streak rule reacts, a device
-      effect fires under its own capability.
-- **Delegated recurring Transfer** — one named rule may drive one Transfer
-      to one counterparty, and nothing else.
-- **Neighborhood matching** — a scoped match rule plus a visibility grant
-      produce a draft, never an action.
-- **Shared family pattern** — two People publish permitted evidence and get
-      a joint aggregate neither could compute alone.
-- **Chat and calls** — "when this Transfer reaches agreed, ask the
-      controller to open a channel".
-- **Interface policy** — a rule may present or focus a Record on a chosen
-      surface.
-- **Games** — Records hold state, a rule holds the loop.
-- **Garden and farm** — watering and threshold rules over device readings.
-- **Operations research** — a week scheduler combining tasks, promises,
-      travel and constraints into a plan set.
-- **Monthly recap** — a rule selects the month's Facts and drafts the
-      summary for review.
-
-## 19 — Proof gates
-
-**Purpose:** What "built" means, stated once, so a feature is not called done
-because it demonstrated once by hand.
-
-These are cross-cutting: each one spans several sections and none is satisfied
-by a unit test on a single function. **Bullets, not checkboxes** — they are the
-bar each section's own boxes have to clear.
-
-- **Replay is byte-identical.** The same capsule produces the same run,
-      candidates and effects, twice.
-- **No crash loses work.** Interrupt at every persistence, lease and
-      dispatch boundary; nothing is lost and nothing is applied twice.
-- **Duplicates are absorbed.** Facts, samples, sync packages, beats,
-      decisions and Actions all deduplicate on their declared key.
-- **Revocation has teeth mid-flight.** Narrowing a grant while runs are
-      staged or leased stops them, and says so.
-- **Exactness holds end to end** — decimals, probabilities, decay,
-      conversions and rounding, with no float on any durable path.
-- **Simultaneous `3ms`, `5h`, daily and monthly Frequencies** each keep
-      their own beat, and a slow one does not starve a fast one or vice versa.
-- **Millisecond boundaries** preserve exact intended times.
-- **A learned pattern can stay observed, become one explained suggestion,
-      and be refused** — without ever acting on its own.
-- **Every Transfer capability is tested denied-by-default and granted.**
-- **Human, CLI and agent perform the same authorized rule identically**,
-      through the same Actions.
-- **Emergency-stop, observe-only and stage-effects survive reboot.**
-- **Every vertical in §18 runs end to end** on a fresh Cell.
-
 ### What is left
 
-#### 14.1 — Which Cell executes
-
-- [ ] **A percentage always includes numerator, denominator and cohort
-      definition.** A bare percentage is not a shareable product.
-- [ ] **Sharing a live rule means sharing a content-hashed definition**, not a
-      running process.
-- [ ] **Revocation stops future export and use and cancels eligible queued
-      work.**
-
-- [ ] **Enumerate every declared source port and every reachable outcome path**
-      before it happens.
-- [ ] **Make every "why" navigable in both directions** — changed Fact → the run
-      that changed it → the rule → the grant, and back down.
-- [ ] **Make data scope and authority visible on the graph** — taint paths and
-      ceilings drawn, not documented.
+- [ ] **A percentage always includes numerator, denominator and cohort definition.** A bare percentage is not a shareable product.
+- [ ] **Sharing a live rule means sharing a content-hashed definition**, not a running process.
+- [ ] **Revocation stops future export and use and cancels eligible queued work.**
+- [ ] **Enumerate every declared source port and every reachable outcome path** before it happens.
+- [ ] **Make every "why" navigable in both directions** — changed Fact → the run that changed it → the rule → the grant, and back down.
+- [ ] **Make data scope and authority visible on the graph** — taint paths and ceilings drawn, not documented.
 - [ ] **Dry-run one node or a whole rule** against current or simulated inputs.
 - [ ] **Store canvas layout as host state**, never as a Ledger Fact.
 - [ ] **Large graphs** use server-projected dependency slices and stable ids.
 - [ ] **Installable templates are ordinary disabled rules**, not a second format.
-- [ ] **Every control is also a typed Action**, and Protein exposes capability
-      booleans with stable blocking reasons beside every one of them, so an
-      agent can do exactly what a person can do and nothing more.
-- [ ] **Keyboard and screen-reader reachable**, authoring and emergency controls
-      alike.
-
-- [ ] **Delete `fire_due_rules` from `heartbeat`** (`engine/src/lib.rs:460`).
-      This is the live 60-second sweep, running in production through
-      `web/src/lib.rs:726` (`HEARTBEAT_PERIOD_SECS = 60`). The heartbeat keeps
-      promise expiry, decisions and effects; it stops being how rules run.
-      `RECURRENCE_CATCH_UP_DAYS` goes with it.
-- [ ] **Delete the old Frequency apparatus.** `0027_karma_frequencies.sql` is
-      three tables — `karma_frequency`, `karma_frequency_revision`,
-      `karma_frequency_activation` — with revision hashes, activation epochs,
-      effective-parameter hashes and immutability triggers, for an object whose
-      content is "every 1 day". `0039_frequency.sql` already replaced it.
-- [ ] **Delete the occurrence machinery:** `0028_karma_schedule_cursors.sql`,
-      `0029_karma_occurrence_ingress.sql`, and the cursor, dispatcher, epoch,
-      deadline-fabric, dense-batching and admission code that serves them. §1.5
-      needs no cursor because `Cadence` is pure.
-- [ ] **Migrations `0026`–`0035` all fold away** into what §1 keeps.
-- [ ] **Delete the second schedule vocabulary.** `ElapsedSchedule`,
-      `CalendarSchedule` and the legacy `store::freqs` are three spellings of
-      `Cadence`.
-- [ ] **Reduce `nucleus/src/karma/` to six files:** `condition.rs`,
-      `consequence.rs`, `cadence.rs`, `exact.rs`, `value.rs`, `time.rs`.
-      Everything else there — `ast.rs`, `dispatcher.rs`, `dsl.rs`, `durable.rs`,
-      `evaluate.rs`, `execution.rs`, `occurrence.rs`, `proof.rs`, `replay.rs`,
-      `schedule.rs`, `state.rs`, `frequency.rs` and the rest — is unreachable
-      once §1 lands.
-- [ ] **Do not build a legacy import path.** The local database was deleted
-      deliberately so this would be free.
-
-
-## Appendix B — the old vocabulary, mapped
-
-| Old word | Now |
-| --- | --- |
-| Program, graph, node | Rule |
-| Recurrence, `karma_frequency`, `ElapsedSchedule`, `CalendarSchedule`, `freqs` | Frequency + `Cadence` |
-| Occurrence, cursor, tick | A beat, computed on demand |
-| Recognizer | Condition (§1.2), or a Sense (§8) when it only proposes |
-| Gate | Threshold (§1.3) |
-| Carry | the value a Condition carries |
-| Economy | a preset of the Karma sand |
-| Rebirth | retired, unused |
-
-This file absorbed `Sand: Karma.md`, `Central: Rule.md`, `Central: Command.md`
-and `Central: Senses.md` on 2026-08-01 — all four deleted, history in git. It is
-now the whole of Karma: Rule, Command, Senses, Trust and the sand all live here.
-Siblings it leans on: `docs/Ontology.md` for the modelling vocabulary,
-`docs/Tool.md` for Protein and Actions, `docs/Transfer.md` for the counterparty
-half of §11, `docs/Simulation.md` for §13.
-
-## What is left
-
-### Karma — what is left
-
-#### Scheduling across Cells
-
-- [ ] **Make single-executor the DEFAULT for those rules** — blocked on a Cell
-  having a ROLE to be defaulted to (the always-on Cell, or the §9 reachability
-  hint), not on the lease. When it lands: a per-Organ default executor read as a
-  FALLBACK at freeze time, not a designation copied onto each rule at
-  activation. The fallback writes no op, so it has no ordering race against the
-  activation it would otherwise ride alongside, and changing the default moves
-  every un-pinned rule rather than only future ones. It must apply to OUTWARD
-  rules only — a default applied to every rule would silently stop non-outward
-  rules on every other Cell, which is the "quietly stopped, visible nowhere"
-  direction absence-means-execute exists to prevent. That constraint is what
-  sizes the box: `is_externally_observable` is an AST property the freeze SQL
-  cannot see, so it must first be stored on the revision at the single place
-  revisions are written (so it cannot drift from the AST) or the freeze needs a
-  Rust-side second pass.
-  Until then the warning is the whole of it: a person is told, and chooses.
-
-- [ ] **A per-rule override of sync — a PRIVATE rule.** Default-ON is built;
-  what remains is letting one Rule opt out, since the axes are independent and
-  the useful cases are mixed. The override suppresses emission, so it is a
-  decision at CREATE time: ops already sent cannot be recalled, and a rule
-  switched to private after the fact would be private on this Cell while still
-  running on another. **Surface:** the choice at the moment of writing the rule,
-  and a visible mark on rules that do not leave this Cell.
-
-- [ ] **Rule-produced ops carry provenance** — enough to say which rule
-  produced them. Provenance exists to ATTRIBUTE and COUNT, and breaking a cycle
-  is a policy on top of it that the author selects, including "let it run".
-  **Blocked on intent dispatch**, not on design: the moment a rule can write
-  without a person, `Cause::rule(program_uid)` is what it must write with, and
-  the type is already there waiting.
-
-- [ ] **A generation counter on rule-triggered ops, plus a per-rule budget
-  over a window.** A cycle that converges finishes well inside the budget and
-  nobody notices. One that does not hits the ceiling, PAUSES, and says which
-  rule and which cycle — visible and resumable, never silently killed and never
-  silently infinite. Same shape as the gossip TTL and seen-set, applied to rules.
-
-- [ ] **The budget is not a per-contact tunable.** An unbounded loop harms the
-  network rather than only its author, so the ceiling exists on every Cell and
-  is not something a config can remove.
-
-- [ ] **Surface: which Cell holds the lease, and what fired where.** None of the
-  boxes above are done until that view exists, and it must cover the three
-  non-Rule schedulers too.
-
-- [ ] **Organ polling scheduler** (§2, tracked under Transfer T1).
-
-- [ ] **Rate-limit a contact that keeps filling it.** The ring bounds
-  storage; it does not stop the work. A contact producing a steady stream of
-  rejected ops is reporting either a bug or an attack and both warrant backing
-  off — but a backoff that is too eager becomes a way for a peer to get itself
-  ignored, so it wants the per-contact sync policy the scoping work builds.
-
-- [ ] **Lease takeover and TTL grace use the SAME constant.** Neither exists
-  yet — they arrive with the scheduling and discovery work below. The point of writing the constant down now is that they
-  find it rather than inventing their own tolerance.
-
-- [ ] **Every cross-Cell time decision is tolerant by construction.** A lease
-  is a duration measured by its holder; takeover requires observing
-  non-renewal for lease + drift. A TTL is evaluated by the RECEIVER against a
-  timestamp inside the signed card. Nothing anywhere assumes two clocks agree.
-
-**Scheduling across Cells is filed in [[Ontology|r_S8PQ17MQ3WBWM53ZN700K89V9F]]**, under "-- Not Planned For Now --", to be taken up when Karma is tackled. The tasks in this file are Karma's own and stay here.
+- [ ] **Every control is also a typed Action**, and Protein exposes capability booleans with stable blocking reasons beside every one of them, so an agent can do exactly what a person can do and nothing more.
 
 # 1 — Rule
 
-**Purpose:** A Rule is the whole of Karma's authoring surface. It is three parts
-and nothing else, and it is one object so a person never has to learn where the
-schedule went.
+**Purpose:** A Rule is the whole of Karma's authoring surface. It is three parts and nothing else, and it is one object so a person never has to learn where the schedule went.
 
-**How it works:** The Condition computes a number from blocks referenced by
-slug. The Threshold decides whether that number means *fire*. The Consequence
-happens and receives the number the Condition carried.
+**How it works:** The Condition computes a number from blocks referenced by slug. The Threshold decides whether that number means *fire*. The Consequence happens and receives the number the Condition carried.
 
 ```
 -1 * freq(@daily) + @apple    →  !=0  →  add-quantity @pear
 └──────── Condition ────────┘    Thresh.   └── Consequence ──┘
 ```
 
-**Interacts:** Reads Record quantities and Frequencies; writes through Actions,
-which append Facts, which wake other Rules — that chain is deliberate and is how
-one Rule's consequence feeds another's condition.
+**Interacts:** Reads Record quantities and Frequencies; writes through Actions, which append Facts, which wake other Rules — that chain is deliberate and is how one Rule's consequence feeds another's condition.
 
-**Implementation:** `nucleus::karma::{Condition, Gate, Carry, Consequence}` are
-the four types and are already right — `Gate` *is* the Threshold in the drawing,
-`Carry` *is* "the value carried over by the condition". Storage is
-`0038_recurrence.sql` + `store/src/recurrence.rs`; evaluation is
-`Engine::react_to` in `crates/engine/src/actions.rs`, with a
-`MAX_REACTIONS_PER_CHANGE` cascade guard.
+With #fruit, a rule keeps catching Records asserted after it was written — you don't revisit the rule. Renaming a concept is free: rules keep working and show the new name at once. #fruta and #Frucht write the same rule — each person reads it in their own name for it, and naming two aliases of one concept twice in one rule is refused as the duplicate it is. Writing a rule with a name that means two concepts is refused there and then, so you say which. (And: reusing a deleted @slug points old rules at the new Record.)
 
-## Later, still Rule
+- [ ] Right now a rule only produces a suggestion sitting in a list, waiting for you to press a button. Default to all created rules by People be always picked up from the list automatically.
+- [ ] Timeline: Facts are the past, Protein is the present, the future must be some gradient between past statistics and future projections with Frequency simulating what will happen.
+- [ ] Instead of Commands immediatelly being the calling of some bash and putting it's value in some Condition we save it as a Signal, only then it is used in the Conditon.
+- [ ] Being able to accept commands over some endpoint, with some form of access control. so /command/slug is not callable by anyone.
 
-**Purpose:** Rule capabilities that are real intent but do not block the rename
-and rewire above. They are parked here rather than in §1 so §1's list stays the
-work of this week.
-
-# 2 — Command
-
-**Purpose:** Let something outside the Cell — an API request, a person, a
-device — become an input a rule can condition on, and let a rule run a shell
-Command as a consequence. Both halves are useful and both are missing.
-
-**How it works:** A Command is a Record. An inbound request appends a Fact
-carrying a number, which is a Record moving, so it wakes the rules that read it
-through the ordinary change path. No new reading form, no signal table. For
-one-shot semantics, give the rule a consequence that sets the Command back to
-zero.
-
-**Interacts:** Read side is §1.2's `@slug`. Write side is §1.4's shell
-consequence. Anything richer is §7 Signals, which is the same idea with an
-adapter contract and health in front of it.
-
-**Implementation:** none yet.
-
-# 3 — Entries and classification
-
-**Purpose:** Individual changes a person types, classified so they can be
-totalled without a second ledger.
-
-**How it works:** One-line capture, correction and voiding, plus re-tagging.
-Classification attaches to the Fact rather than the Record and is derived, so a
-Record's meaning can change without rewriting its history. Aggregation is a
-query over classified Facts, never over a stored running total.
-
-**Interacts:** Everything a rule reads is a Fact an entry produced. The Ledger
-carries exact `DecimalValue` deltas; history stays queryable after compaction.
-
-**Implementation:** `0036_classification.sql`, `0037_entries.sql`,
-`store/src/entries.rs`, `store/src/ledger.rs`, the `CaptureEntry` /
-`ReviseEntry` / `VoidEntry` Actions, `Source::Entry`. Shipped and tested.
-
-# 4 — Timeline, calendar and graph
-
-**Purpose:** Draw one Record through settled past, current position and declared
-future, so a person can see what a rule will do before it does it.
-
-**How it works:** Past is a query over Facts. Future is §1.5's Frequency run
-forward, with each projected beat evaluated against the rule's condition. One
-evaluator serves both — projection substitutes ports rather than running a
-second interpreter.
-
-**Interacts:** The graph and the calendar in §1.1 are two renderings of this one
-query. §13's replay and simulation are the same kernel with a different clock.
-
-**Implementation:** `Source::Timeline`, shipped for the past and present halves.
-
-# 5 — Authority
-
-**Purpose:** Nothing automatic acts without a named, revocable permission, and
-every automatic change is attributable to a person.
-
-**How it works:** A grant is a typed record signed by the delegating Person,
-scoping a capability family, a selector, a budget and a window. A rule that
-wants to act proposes a durable intent; a worker leases it, applies it, records
-a typed attempt, and appends an ordinary signed Fact. Revocation cancels
-unclaimed work immediately.
-
-**Interacts:** Gates §1.4's consequences whenever they leave the Cell, §6's
-effects, and §11's Transfer driving. A likelihood is never permission.
-
-**Implementation:** `0034_karma_grants.sql`, `0035_karma_intents.sql`,
-`store::karma::intents`. Durable but inert — **the effect worker does not
-exist**, so today "apply this" is a person pressing apply, and the sand's inbox
-is the real mechanism rather than a placeholder for one.
-
-# 6 — Effects
-
-**Purpose:** Let a rule reach outside the Cell — a shell Command, an HTTP call,
-a device, the interface itself — without any of that becoming a special case in
-the kernel.
-
-**How it works:** Every effect is a durable typed intent carrying target, exact
-payload, idempotency key and deadline. A microcontroller is not a category: it
-is HTTP. Interface control goes through registered host Actions, and durable
-desired interface state is a Record, not a transient command.
-
-**Interacts:** Every effect passes §5's grant. §13's simulation replaces every
-adapter with a deterministic double.
-
-**Implementation:** the intent table exists; no adapter does.
-
-# 7 — Signals
-
-**Purpose:** Turn the outside world into evidence a rule can read, with the
-honesty that it came from outside.
-
-**How it works:** Every capture and integration source is an off-switchable
-Signal record. Push, polling and streaming share one adapter contract. Raw
-capture is preserved separately from normalized evidence, so a normalization bug
-is recoverable.
-
-**Interacts:** Signals feed §1.2's conditions and §8's Senses. AI enters here
-and only here — as a visible captured model Signal or an ordinary inert
-candidate, never as a privileged path.
-
-**Implementation:** partial; the observation envelope is not defined.
-
-# 8 — Senses
-
-**Purpose:** A pure named recognizer over current Facts, Signals and discovery
-data that emits evidence-backed candidates.
-
-**How it works:** A Sense proposes; a person decides. **It cannot write state or
-contact another Cell by itself** — that restriction is the whole definition, and
-a recognizer that could act would be a rule. In the authoring vocabulary it is
-`sense:@slug`, written `sense name = …`, and it appears in a rule as an input,
-never as an outcome.
-
-**Interacts:** Its output routes through §9's recommendation contract and §10's
-attention policy. **A likelihood is not permission, and a threshold is a routing
-policy rather than a truth** — a Sense only has to know it produces evidence.
-`confidence(@p)` is a counterparty's Laplace-smoothed kept-promise ratio and
-`demand(@concept)` is the current hour's share of trailing 30-day activity —
-**neither is a global reputation score**, both are local, purpose-specific, and
-computed from visible signed history.
-
-**Implementation:** `create-match-rule { watch_concept, max_proximity,
-min_confidence, auto }` is a Record and activates through its quantity;
-`max_proximity` is a hard ceiling matching never expands past. `senses_pass`
-joins local OPEN promises against the discovery cache each heartbeat using
-sign-opposite deltas, aligned meanings, overlapping windows and a confidence
-floor, and places ranked drafts in the Decision Queue
-(`crates/store/src/senses.rs`).
-
-# 9 — Learning and recommendations
-
-**Purpose:** Notice a pattern a person has not written down, and offer it as
-something they can accept, edit or refuse — never as something that happened.
-
-**How it works:** Evidence is admitted by a versioned policy, learned into a
-deterministic model, and turned into one lifecycle-managed recommendation per
-subject. **A learner never mutates a rule or its own evidence policy.** A high
-score never skips a route: routing is policy, not a consequence of confidence.
-
-**Interacts:** Reads §8's Senses and §3's classified Facts; writes only inert
-candidates that §10 delivers and a person accepts. Reaction always takes
-priority over background learning, which may compute in parallel from immutable
-snapshots.
-
-**Implementation:** none. The first model is specified but unbuilt.
-
-# 10 — Attention
-
-**Purpose:** Ask a person something without pestering them.
-
-**How it works:** A decision is durable work requiring a choice; a whisper is its
-calm delivery. A decision freezes the question, subject, evidence and options at
-the moment it is raised, so answering it later answers the same question.
-Ranking is by explicit user priority, urgency, confidence and safety.
-
-**Interacts:** Delivery routes through device Records. Feedback is a first-class
-result that §9 learns from.
-
-**Implementation:** the Decision Queue exists and `senses_pass` fills it.
-
-# 11 — Automation Trust
-
-**Purpose:** Say how far automation may go with a given counterparty, in tiers
-rather than a boolean.
-
-**How it works:** A higher tier includes willingness for lower stages and
-confers none of their authority by itself. The scope is an immutable revision
-holding an owner, a selector AST and a ceiling; an explicit deny list is
-evaluated first and always vetoes. Transfer parties remain People — an Organ
-selector says which Cell, never who.
-
-**Interacts:** Gates §5's grants when the counterparty is another Cell, and
-drives Transfer stage by stage.
-
-**Implementation:** none. Transfer's side of it is `docs/Transfer.md`.
-
-# 12 — Workflows and optimization
-
-# 13 — Imagination
-
-**Purpose:** Four products from one kernel — replay a past run, project a
-future, simulate a hypothetical, and prove an invariant.
-
-**How it works:** Replay reproduces a past run from captured inputs. Projection
-folds rules forward. Simulation runs on an isolated snapshot with a virtual
-clock and mocked adapters. Proof has three honest result classes: proved within
-a stated bound, counterexample found, or unknown.
-
-**Interacts:** Shares §4's evaluator and §1.5's Cadence exactly. Anything that
-would need a second interpreter is a design error.
-
-**Implementation:** the replay capsule is partially specified; nothing runs.
-
-# 14 — Runtime operations
-
-## What is left
-
-### 1 — Rule
-
-- [ ] **Rename `recurrence` → `rule` everywhere.** Table, `recurrence_revision`
-      → `rule_revision`, `recurrence_skip` → `rule_skip`,
-      `store/src/recurrence.rs` → `store/src/rule.rs`, every Action name. Edit
-      `0038_recurrence.sql` in place. `rule_skip` keys on
-      `(rule_uid, frequency_uid, beat_at)` — a skip is per-beat, like a firing.
-- [ ] **Drop `cadence_json` and `anchor_at` from the rule.** They belong to the
-      Frequency now. A rule's schedule is whatever `freq(@x)` it reads; a rule
-      reading none has no schedule at all.
-- [ ] **Two triggers, one evaluator.** A condition holding a Frequency is
-      evaluated *only* on its beat. A condition holding none is evaluated *only*
-      when a Record or Command it reads changes — extend `Engine::react_to` to
-      skip rules carrying a `freq` token, keeping the cascade guard. Both paths
-      call one `evaluate_rule(rule, now, cause)` so a beat and a change cannot
-      drift.
-- [ ] **One target Record per rule** (`record_uid`); consequences apply to it.
-      Apple/Pear is already expressible — target `@pear`, condition reads
-      `@apple`.
-
-### 1.6 — Later, still Rule
-
-- [ ] **Rules take named parameters** with declared types and ranges, so tuning
-      one number is not a revision of the whole rule and a rule can be installed
-      as a template and then adjusted.
-- [ ] **A rule is reusable inside another rule** through explicit typed inputs
-      and outputs, so a shared piece of arithmetic is written once.
-- [ ] **A text form of a rule**, round-tripping rule → text → rule without
-      semantic loss, so a rule is diffable, shareable and reviewable outside the
-      sand. The visual builder stays the primary surface.
-- [ ] **A rule may keep durable state across firings** — a counter, a last
-      value, a cooldown's clock. It is an immutable event chain with one
-      projection, not a mutable field, and §1.3's temporal controls depend on it.
-- [ ] **A rule declares what happens when it is triggered while still running**
-      — queue, drop, or restart. Deterministic, declared, never emergent.
-- [ ] **Simultaneous rules run in a deterministic order** — dependency order
-      first, a stable tiebreak after — and conflicting writes resolve by a
-      declared policy rather than by whichever landed first.
-
-- [ ] **Add `RecordKind::Command`** and the ingress Action that appends its Fact.
-- [ ] **Commands declare** executable identity and hash, typed arguments (no
-      string interpolation), working directory, environment allow-list, timeout
-      and captured output.
-- [ ] **An inbound HTTP request maps to one Command Fact**, authenticated,
-      idempotent by request id, and refused rather than queued when unauthorized.
-
-- [ ] **Crash atomicity is not met, and this is known.** The engine appends the
-      Fact and its classification in separate statements; a crash between them
-      leaves an unclassified Fact.
-- [ ] **Archive instead of delete.** Pre-checkpoint Facts move to
-      `fact_archive` carrying the classification and unit in force at the time.
-      The checkpoint is the past/present boundary — no `is_history` column.
-- [ ] **Compaction refuses rather than truncating a window a live rule reads.**
-- [ ] **Exact deltas on `promise.delta` and `link.quantity`**, deliberately not
-      done yet.
-- [ ] **A shorthand capture language**, deterministic and readable, never an
-      executable shell: `lose 68.40 @brl on record:@cash from merchant:@market
-      on 2026-07-22 #household`. The unit is an ordinary Record reference, which
-      is why `@brl` and `@kg` are the same kind of token. A missing target,
-      unit or magnitude, or an ambiguous date, yields a question — never a
-      guessed Fact.
-- [ ] **Retention is keyed on meaning with DAG inheritance**, not on
-      `record.kind`, and is purpose- and sensitivity-aware.
-
-- [ ] **Projection writes nothing** — no Fact, no intent, no candidate, no
-      cursor advance. Prove it with a test that counts rows before and after.
-- [ ] **Return exact points, not floats**, carrying decimals and units end to
-      end.
-- [ ] **Exclusions are reported, never silent.** A rule that could not be
-      projected says so on the timeline.
-- [ ] **Fold classified promises alongside rule beats**, so "in three weeks"
-      includes what was promised as well as what is scheduled.
-
-- [ ] **Build the effect worker.** Lease an intent, record a typed attempt,
-      apply the change, land a signed Fact, release the lease. Retries driven by
-      the frozen idempotency key.
-- [ ] **Three distinct targets, three distinct capabilities** — a Record's plain
-      quantity, a Transfer stage, an external effect. Never one
-      `transfer:automatic` boolean.
-- [ ] **Reserve on authorization, reconcile on receipt, release on failure.** A
-      compensated intent keeps its budget consumed.
-- [ ] **Compensation is real, not nominal.** Reversing an applied intent appends
-      the reversing Fact; it does not delete the original.
-- [ ] **Attribute every automatic Action to both the real principal and the
-      rule**, and enforce at the engine and Action boundary, never in a sand.
-- [ ] **Freeze the effective grant at proposal time** for explanation, and
-      recheck it at apply time.
-- [ ] **Role/permission grants themselves become Karma-drivable.** Assigning a
-      role to a Person, or granting/revoking a permission, is today only a
-      direct auth-table mutation (Interface.md's permissions sand). Once the
-      effect worker exists, a Rule's Consequence should be able to do the same
-      thing a person does by hand today — grant, revoke, or reassign a role —
-      under the same signed-grant/Authority discipline as any other
-      Consequence, never a bypass of it. Not started; the direct auth-table
-      mutation path stays the only one until this lands.
-
-- [ ] **HTTP connectors declare** method, host and path policy, request and
-      response schema, retry policy, and reference secrets by opaque
-      capability-bound handle — never by value in a rule.
-- [ ] **Device controllers expose** typed commands and state plus physical
-      safety limits that a rule cannot argue past.
-- [ ] **Distinguish durable desired interface state from a one-off command.**
-- [ ] **Every adapter has a simulation double** built at the same time, not
-      after.
-
-- [ ] **One observation envelope:** `source_uid, source_revision, observed_at,
-      received_at, payload, signature`.
-- [ ] **Deactivating a Signal stops new acquisition and downstream triggers**
-      without deleting what it already produced.
-- [ ] **Source health is data, not logs:** last scheduled, attempted and
-      successful acquisition, adapter version, next retry — readable through
-      Protein, and usable in a rule.
-- [ ] **Event-time nodes declare a late-data watermark and a correction policy.**
-- [ ] **Recognition has one capture lifecycle:** `captured → extracted →
-      needs_review | ready → applied | rejected`. Every inferred field records
-      its recognizer and version, input hash, candidate value, confidence,
-      source span and alternatives. A person may edit any field; that edit never
-      rewrites the captured model output. Raw audio and photos can be discarded
-      after review while keeping the hash and the structured evidence.
-
-- [ ] **Split the name.** Recurrence probability, estimate confidence,
-      counterparty evidence, expected utility and authority eligibility are five
-      different claims and `confidence()` currently blurs them.
-- [ ] **Refine counterparty evidence by meaning, role and window**, and show
-      kept, broken and outstanding counts beside the number.
-
-- [ ] **A deterministic decayed Beta/cadence model** as the first and only
-      learner, stored as typed policy rather than frontend state: prior,
-      evidence window, decay, update rule.
-- [ ] **Separate opportunity and exposure from positive, negative and censored
-      outcomes.** An absent Fact is not a negative one.
-- [ ] **Persist each update** with the prior checkpoint hash and the admitted
-      and rejected evidence, so any number can be explained backwards.
-- [ ] **Model lifecycle:** `cold → learning → calibrated → drifting → retired`,
-      with a deterministic train/validation split and declared candidate
-      features — no combinatorial context mining.
-- [ ] **Recommendation states:** `open, accepted, accepted-edited, dismissed,
-      snoozed, muted, expired`, with typed contextual feedback.
-- [ ] **Detect action/recommendation loops** — if accepting a suggestion creates
-      the evidence that regenerates it, stop and say so.
-- [ ] **Explanations at several depths:** one sentence, substituted values, full
-      evidence.
-
-- [ ] **Idempotent whisper uid with per-channel delivery state**, so a retry is
-      not a second interruption.
-- [ ] **Explicit escalation:** retry a channel, change channel, notify another
-      person — each a declared step, never an emergent one.
-- [ ] **Attention policy reserves capacity** for safety and expiring decisions,
-      and persists quiet hours, recipients and per-channel thresholds as durable
-      policy rather than as a device setting.
-- [ ] **No coercive ranking, synthetic urgency, dark patterns, or hiding the
-      "do nothing" option.** This is a build constraint, not a sentiment.
-
-- [ ] **Persist as a Record** (`kind=automation_trust_scope`, quantity is the
-      tier) with an immutable revision chain, and extend `source:"karma"` with
-      `object_kind="trust_scope"`.
-- [ ] **Policy evaluation returns a structured proof, never just `false`** —
-      which clause matched, and what would have to change.
-- [ ] **Never use locally inferred counterparty probability as their consent.**
-- [ ] **Autonomy is chosen per step** — "always ask before publishing" is a
-      different setting from "always ask before settling".
-- [ ] **Keep payment execution separate from Transfer settlement.**
-
-- [ ] **Workflow nodes:** state machine, sequence, parallel, wait-until,
-      timeout, compensate.
-- [ ] **Deterministic solver adapters** — linear, mixed-integer, constraint —
-      translating Records, Facts, assertions, Promises, availability and time
-      windows into decision variables.
-- [ ] **Distinguish forecast from plan from schedule.** A forecast estimates
-      what will happen; a plan chooses; a schedule commits.
-- [ ] **Reoptimization preserves stability** through explicit change penalties,
-      so a small input change does not reshuffle a person's week.
-
-- [ ] **Put clock, scheduling, entropy, uid generation, filesystem, network and
-      model access behind injected ports.** Nothing else makes replay possible.
-- [ ] **Canonicalize maps, sets, strings, units, timestamps and serialization**,
-      and give every stochastic algorithm a recorded seed.
-- [ ] **Nondeterministic model output is an observation** with model id, request
-      and response recorded — never a decision.
-- [ ] **Upgrades never reinterpret an old run silently.**
-- [ ] **Deterministic fault injection and shrinking** for time jumps, crashes,
-      duplicate delivery and clock skew, preserving the violated invariant.
-- [ ] **Shadow mode** runs a candidate revision beside the active one without
-      effects.
-
-- [ ] **Publish engine health through Protein:** mode, active schema, task
-      liveness, queue depth, oldest unclaimed work.
-- [ ] **Type failures** as invalid definition, missing or stale or denied data,
-      adapter error, budget exhausted, timeout.
-- [ ] **Cell modes:** `normal`, `stage-effects`, `observe-only`,
-      `emergency-stop` — each surviving reboot.
-- [ ] **Enforce CPU, memory, storage, I/O and notification limits** per rule.
-
-
-
-- [ ] The default for a newly-activated *externally observable* Karma rule's designated executor is unset — no Cell is marked "the always-on one" yet, so the obvious "designate the activating Cell" default is known-wrong and
-  nothing has replaced it.
-- [ ] Karma cycle fuel/ceiling for *dispatched* rule-produced ops — not buildable yet because nothing dispatches an accepted candidate into an op (Karma intents are still inert).
-
-## Karma across Cells
-
-- [ ] **Axis 1 has no transport: sync a Program's active revision.** *Why:* `op_in_scope` enumerates the tables that sync and no `karma_*` table is among them, so "Karma NOT synced" is not a second mode waiting to be supported — it is the only mode that exists, and it is the default by accident. Everything axis 2 says about an always-on Cell holding the common Karma describes an arrangement that cannot be reached yet. *How:* carry the AST as `record_extension` ops on the Program's Record — namespace `lince.karma.program`, key = the revision hash in hex so it survives the `rsplit_once` field split, plus one LWW key naming the active hash. That is an append-only set plus a pointer, which converges by construction, reuses the op path and the scope filter, and arrives content-addressed so the receiver can verify a hash it already has a function for. **Key on the ACTIVE hash only** — extension ops have no snapshot to become prunable under, so keying per revision would carry fifty ASTs forever for a rule edited fifty times. Revision history stays local to the Cell that authored it. *How used:* a rule written on the laptop appears on the phone and the VPS, and the "Where rules run" panel stops describing an arrangement nobody can reach.
-- [ ] **An arriving Program from a CONTACT must never become executable.** *Why:* code arriving over a socket that runs on receipt is the failure mode. *How:* only Programs whose ops arrived in a batch AUTHENTICATED AS THIS ORGAN'S OWN Cell materialise into `karma_program` — never those whose Record merely carries our `organ_uid`, which is a column the sender filled in. A peer's Program extension is stored and displayable and nothing else, through a DEDICATED importer rather than the ordinary `karma::programs` writers (which would re-log ops and re-derive hashes locally). The freeze query joining `karma_program` is the only place that decides. *How used:* a contact's rule is visible as text in the Karma sand and cannot run.
-- [ ] **Karma sync is a per-Organ default (ON) that any single Rule may override.** *Why:* the axes are independent and the useful cases are mixed — all Cells running the same Karma, one Cell running the common Karma while others hold it, each Cell running different private Karma over shared Records. *How:* the override suppresses emission, so it is a decision at CREATE time: ops already sent cannot be recalled, and a rule switched to private after the fact would be private here while still running elsewhere. *How used:* a "keep this rule on this Cell only" checkbox at rule creation, refused afterwards with the reason.
-- [ ] **Make single-executor the DEFAULT for outward rules.** *Why:* the designation is built but nothing defaults to it, and the obvious implementation — designate the activating Cell — picks the WRONG Cell and does it without consent, since rules are authored on the laptop, whose being offline half the time is why the heartbeat was rejected. **Blocked on a Cell having a ROLE to be defaulted to** (an always-on Cell, or the reachability hint), not on the lease. *How:* a per-Organ default executor read as a FALLBACK at freeze time, never copied onto each rule at activation — a fallback writes no op, so it has no ordering race, and changing it moves every un-pinned rule rather than only future ones. It must apply to OUTWARD rules only, or it silently stops non-outward rules everywhere else. `is_externally_observable` is an AST property the freeze SQL cannot see, so it must first be stored on the revision at the single place revisions are written, or the freeze needs a Rust-side second pass. *How used:* one "which Cell runs outward rules by default" setting per Organ. Until then the warning on the row is the whole of it: a person is told, and chooses.
-- [ ] **Rule-produced ops carry provenance.** *Why:* enough to say which rule produced them — provenance exists to ATTRIBUTE and COUNT, and breaking a cycle is a policy on top of it that the author selects, including "let it run". **Blocked on intent dispatch**, not on design: today a run emits a candidate, a person accepts it, and the resulting Fact is correctly stamped `CauseKind::Action` with the review's request id. `Cause::rule(program_uid)` exists and has exactly one caller, a unit test. *How used:* the Ledger says which rule caused a movement, and the Karma sand can list what a rule has done.
-- [ ] **A generation counter on rule-triggered ops, plus a per-rule budget over a window.** *Why:* cycles are a FEATURE and get bounded rather than forbidden, but an unbounded cycle writes an op every iteration and every op enters the log, the outbox and the feed of every contact — freedom for the author, unbounded cost to third parties. **Also blocked on dispatch**: with nothing dispatching, a runaway loop produces local candidate rows and no ops at all, so the third-party cost does not exist yet and the counter would be built against a guess about how dispatch attributes its writes. *How:* same shape as the gossip TTL and seen-set, applied to rules — a converging cycle finishes well inside the budget and nobody notices; one that does not hits the ceiling, PAUSES, and says which rule and which cycle. **The budget is not a per-contact tunable**, because an unbounded loop harms the network rather than only its author. *How used:* a paused rule appears with its cycle named and a resume button — visible and resumable, never silently killed and never silently infinite.
-- [ ] **Surface: which Cell holds the designation, and what fired where.** *Why:* none of the boxes above are done until that view exists, and it must cover the three non-Rule schedulers too. *How:* one page reading the executor extension per Record plus the local per-Cell flags, and the Ledger for what actually fired. *How used:* "this rule runs on the VPS, last fired there at 09:00; delivery retries for this Transfer run on the laptop".
 
 } r_K7T3ZG08G5EBWRSTF8NBWMTZYV
 
-Fiote (@fiote: 0,#instinct, #part-of @karma) { r_137BM4Q7GV2707HBTRQ3GTJ9E5
+Fiote (@fiote: 0, #instinct, #part-of @karma) { r_137BM4Q7GV2707HBTRQ3GTJ9E5
 
 Doing a harness for Lince with Fiote may be a good way of making Lince's development more slopped more faster. While they slop in the dev checkout the nixos flake may get from github main branch.
 
 The AI agent of Lince, firstly a harness, then maybe a model running locally. It should be an everything helper. Autonomous as you set it, having the same capabilites as you, or not. It should be able to understand your way of approaching problems by looking at your data, learning from it, never sharing with outside your Lince (by default).
+
+- [ ] Pi for now.
+- [ ] MCP for the actions the model takes.
+- [ ] in the future use the genai crate for abstracting providers?
+- [ ] Pi has session information that will be a cache, ephemeral, what remains are the messages we send it, and the messages it sends back. These are Message Records, the thread is the session.
+	- [ ] When i add a photo in a message we need to try and send that to the model, if it has vision it will receive it well.
+
 - [ ] Agency (with user control):
 - [ ] Personality:
 - [ ] Seeded into model context is a minimal explanation of Lince, short phrases, when user asks something to be done, it should translate it into Lince's model and go after more information if needed. This info can be the existing documentation of .lingua files, and it can be skills.
@@ -1668,38 +705,20 @@ The AI agent of Lince, firstly a harness, then maybe a model running locally. It
 - [ ] Be able to be prompted
 - [ ] Be able to have loops (related to Karma frequency?)
 - [ ] Be able to interact and manage a fleet of other Fiotes.
-- [ ] CRUD Records
+- [ ] CRUD Records:
+	- [ ] Doing imperative changes like: change this, start a call with someone, i did this task...
 - [ ] CRUD Karma's Rules:
-- [ ] Be able to set an autonomous initiative of searching for optimizations in your habits, the order of them in a day, the frequency, removing or adding.
+	- [ ] Be able to set an autonomous initiative of searching for optimizations in your habits, the order of them in a day, the frequency, removing or adding.
 - [ ] CRUD Transfers
+- [ ] Creating components for the frontend.
+- [ ] "I spent 42 reais on lunch", transcribe a note, read a receipt, rank existing Records, take the most similar to create a Fact of removing money because of some Food related record. If there are none Fiote may suggest creating some Record to Center some Facts around like this.
+- [ ] Be able to show from each subagent of Fiote the context they have and what it is comprised of.
+- [ ] Be able to compact context by petting it and making it sleep (it puts it's head down and gets up when context compacted).
+- [ ] When you see the agents/subagents running, you may see the them moving around if they are working, chilling if stopped, and with their head down sleeping if text is being compacted.
+- [ ] Fiote can help with accessibility: A person who cannot use the standard visual/mouse Sand surface should be able to reach the same field-candidate contract through Fiote instead: describe what they want in speech or plain text, hear or read back what a Sand would otherwise show them. This is the same narrow client role as every other Fiote entry point — field candidates, never a privileged mutation path — applied to the surface itself rather than to one Record at a time.
 
 
-- [ ] **Fiote is a client of that contract, not a privileged path.** Parse "I spent 42 reais on lunch", transcribe a note, read a receipt, rank existing Records — always returning field candidates, never a final mutation, and never silently creating an ambiguous Record. **A model score is not a grant.** Deferred, but the boundary is fixed now so it stays narrow. Be able to run an model to look at your DNA and change it to fit your needs:
-      - [ ] **Give agents and harnesses a live Lince interface.** Preserve the
-            same `lince-lingua-crud` workflow available to repository agents
-            now, then let native harnesses and later Fiote use it against a
-            running Lince. The interface exposes current `.lingua`
-            capabilities and selected Instinct Records; it can search
-            Records, resolve Concepts, validate a projection, preview its
-            semantic diff, and submit field candidates through Protein and
-            ordinary authorized Actions. MCP may be one adapter, never the
-            contract. No direct SQLite access, duplicated schema, or private
-            mutation path.
-      - [ ] Creating components for the frontend.
-      - [ ] Suggesting Karma, or more Lince ways of doing things.
-      - [ ] Doing imperative changes like: change this, start a call with someone, i did this task...
-      - [ ] **Actual accessibility is Fiote's job, not a base-UI checklist item.**
-            A person who cannot use the standard visual/mouse Sand surface
-            should be able to reach the same field-candidate contract through
-            Fiote instead: describe what they want in speech or plain text,
-            hear or read back what a Sand would otherwise show them. This is
-            the same narrow client role as every other Fiote entry point —
-            field candidates, never a privileged mutation path — applied to
-            the surface itself rather than to one Record at a time.
-
-
-Be able to show from each subagent of Fiote the context they have and what it is comprised of. Be able to compact context by petting it and making it sleep (it puts it's head down and gets up when context compacted). Maybe you can see a vision of all the agents and their individual working state by jumping around or with head laid down compacting context.
-
+- [ ] What if the actions people do on board, are events, like moving things around are Karma Consequences? That way karma can control the appearance/disappearance of sands the interaction with them. It could even control the position of records with some properties. Like moving them up and down. Agents doing actions in board can also fire these events so Fiote can move sands around to tidy them, add things it thinks you need for your workflows, call people (activating the Communication of a Record-message with someone). So when you interact with the board as a user you are not calling js directly, you are interacting with things that fire events and these events have consequences, Karma once again in frontend.
 
 } r_137BM4Q7GV2707HBTRQ3GTJ9E5
 
@@ -1763,7 +782,7 @@ Mechanics: all I/O (network, file writes, time delays) routes through the simula
 } r_NPSFP32HZJK064WP93XH0HKJZJ
 
 
-Ailuros (@ailuros, #instinct, #part-of @lince) {
+Ailuros (@ailuros: 0, #instinct) {
 Ideas like this are between fiction, dream, larping and futurism. It's a stretch of imagination, to maybe build something similar to it after experimenting with ideas. The description below is aiming for perfection and failling probably. But it's cool to dream.
 
 What is more embarrassing, to dream or not to dream something like this? That is the question.

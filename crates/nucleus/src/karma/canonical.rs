@@ -8,8 +8,6 @@ use super::failure::KarmaBoundaryError;
 
 const CANONICAL_DOMAIN: &[u8] = b"lince.canonical-json.v1\0";
 
-/// Canonical SHA-256 string kept opaque so malformed hashes cannot cross a
-/// typed boundary.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct CanonicalHash(String);
 
@@ -58,8 +56,6 @@ impl<'de> Deserialize<'de> for CanonicalHash {
     }
 }
 
-/// Serialize canonical JSON: sorted object keys, stable arrays, no whitespace,
-/// and no floating-point numbers.
 pub fn canonical_json_bytes<T: Serialize>(value: &T) -> Result<Vec<u8>, KarmaBoundaryError> {
     let value = serde_json::to_value(value).map_err(|error| {
         KarmaBoundaryError::invalid_input(format!("value is not JSON serializable: {error}"))

@@ -1,11 +1,3 @@
-//! Effect runner (blueprint VI): shell/notify/action/query effects run OUTSIDE
-//! evaluation, from a durable queue, results logged back as zero-delta
-//! provenance facts on the originating rule record.
-//!
-//! `action` effects re-enter the one write surface (`Engine::act`) with the
-//! typed Action carried in the payload; `query` effects execute a saved
-//! Protein by slug/uid and log the row count — the read stays read-only.
-
 use chrono::Utc;
 use nucleus::{Cause, CauseKind, NewFact};
 
@@ -36,9 +28,6 @@ impl Engine {
                         .to_string();
                     run_shell(&cmd).await
                 }
-                // Notify (XIII.2): the queue row is the deliverable; platform
-                // channels render it. The hard daily budget parks overflow in
-                // the digest instead of interrupting.
                 "notify" => {
                     let budget = store::config::attention_budget(&self.store.pool).await?;
                     let midnight = Utc::now().format("%Y-%m-%dT00:00:00+00:00").to_string();
@@ -77,7 +66,6 @@ impl Engine {
                 other => (false, format!("unknown effect kind {other}")),
             };
             store::misc::finish_effect(&self.store.pool, &effect.uid, ok, &result).await?;
-            // provenance: a zero-delta fact on the originating rule record
             if let Some(origin) = &effect.origin_uid {
                 let _ = append_one(
                     &self.store,

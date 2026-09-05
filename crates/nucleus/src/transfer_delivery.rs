@@ -1,9 +1,3 @@
-//! Pure cross-Cell Transfer delivery contracts.
-//!
-//! Canonical Transfer state remains owned by its origin Cell. These types carry
-//! recipient-redacted evidence to a hosted reference or an isolated replica;
-//! they are never instructions to create local Transfer sidecars.
-
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
@@ -44,9 +38,7 @@ impl TransferDeliveryMode {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TransferDisclosureEntry {
-    /// Stable projection path, for example `terms.promises.p_123.delta`.
     pub path: String,
-    /// Why this recipient receives the field. This must not contain field data.
     pub reason: String,
 }
 
@@ -71,10 +63,6 @@ pub struct TransferActionIntentEvidence {
     pub fact_uids: Vec<String>,
 }
 
-/// Recipient-specific immutable delivery unit.
-///
-/// `projection` and `events` are deliberately JSON: Protein owns their public
-/// shape. Their exact serialized bytes are covered by `payload_hash`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransferEnvelopeV1 {
     pub version: u16,
@@ -205,8 +193,6 @@ impl TransferEnvelopeV1 {
     }
 }
 
-/// Signed policy transport independent of active data envelopes. In
-/// particular, a revocation can travel after active envelope delivery stops.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TransferDeliveryPolicyEventV1 {
     pub version: u16,
@@ -323,8 +309,6 @@ impl TransferApplicationHandoffState {
     }
 }
 
-/// Origin-authenticated public settlement proposal delivered to exactly one
-/// participant Cell. It cannot represent that Cell's private Record or formula.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TransferApplicationHandoffV1 {
     pub version: u16,
@@ -420,9 +404,6 @@ impl TransferApplicationHandoffV1 {
     }
 }
 
-/// Public proof that one participant Cell processed one canonical settlement
-/// slice. The formula itself, the resulting local quantity, and the private
-/// Record uid are intentionally impossible to represent here.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TransferApplicationAttestationV1 {
     pub version: u16,
@@ -497,9 +478,6 @@ impl TransferApplicationAttestationV1 {
     }
 }
 
-/// Stable evidence that a recipient Organ received or displayed one envelope.
-/// The signature is independent of the nonce-bearing HTTP request wrapper so
-/// an exact delivery retry produces the same durable receipt proof.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TransferPackageReceiptV1 {
     pub version: u16,
@@ -561,9 +539,6 @@ impl TransferPackageReceiptV1 {
     }
 }
 
-/// Stable, session-independent Person command submitted to the origin Cell.
-/// The exact Action JSON bytes are base64 encoded so JSON reserialization
-/// cannot alter what the Person signed.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TransferRemoteCommandV1 {
     pub version: u16,
@@ -631,8 +606,6 @@ impl TransferRemoteCommandV1 {
     }
 }
 
-/// Organ-authenticated HTTP request wrapper. The body itself is transported
-/// separately; signing binds its SHA-256 hash to route, peers, time and nonce.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct SignedOrganRequestV1 {
     pub version: u16,

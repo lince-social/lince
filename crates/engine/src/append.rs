@@ -1,7 +1,3 @@
-//! The one write path (blueprint 0.3). Appends the fact and bumps the quantity
-//! cache in the same transaction. Idempotent: a fact whose uid already exists
-//! is a no-op success (sync replay safety).
-
 use chrono::{DateTime, Utc};
 use nucleus::{Fact, NewFact};
 use store::Store;
@@ -22,9 +18,6 @@ pub async fn append_one(
     Ok(fact)
 }
 
-/// Append a fact through an existing semantic transaction. The caller owns the
-/// commit, so assertion mutations and the quantity cache/fact either all land
-/// or all roll back together.
 pub(crate) async fn append_one_in_transaction(
     tx: &mut Transaction<'_, Sqlite>,
     new: NewFact,
@@ -38,14 +31,12 @@ pub(crate) async fn append_one_in_transaction(
     }
     let mut new = new;
     if let Some(signer) = signer {
-        // the Cell's identity authors what nobody else claimed
         new.actor_uid
             .get_or_insert_with(|| signer.actor_uid.clone());
     }
     let prev = store::facts::last_hash(&mut *tx).await?;
     let mut fact = nucleus::fact::seal(new, &prev, now);
     if let Some(signer) = signer {
-        // imported facts keep their origin signature; local ones get ours
         if fact.signature.is_none() {
             fact.signature = Some(signer.sign_hash(&fact.hash));
         }
@@ -60,7 +51,6 @@ pub(crate) async fn append_one_in_transaction(
     Ok(Some(fact))
 }
 
-/// Batch append in one transaction (settlements, sync imports).
 pub async fn append_all(
     store: &Store,
     news: Vec<NewFact>,

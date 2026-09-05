@@ -263,12 +263,6 @@ fn fold_both_returns_two_ordered_boundaries_for_one_local_time() {
 
 #[test]
 fn a_weekday_set_is_a_landing_rule_not_a_shape_of_its_own() {
-    // What used to be `weekly(2, [mon, wed], time)` is now a step that lands on
-    // the days it is allowed to land on. The trade is deliberate: landing rolls
-    // an occurrence *forward* to an allowed weekday, so it produces one instant
-    // per step rather than one per weekday per cycle. "Monday and Wednesday,
-    // every fortnight" is therefore two rules with two anchors, which is what
-    // full CRUD over rules makes ordinary rather than exotic.
     let tzdb = revision("2026c", '4');
     let monday = civil("2026-07-06T08:00:00.000");
     let wednesday = civil("2026-07-08T08:00:00.000");
@@ -297,8 +291,6 @@ fn a_weekday_set_is_a_landing_rule_not_a_shape_of_its_own() {
         );
     let schedule = schedule(
         monday,
-        // Two weekdays in a cycle is a daily step that lands on them, not a
-        // shape of its own.
         Cadence::every_days(1)
             .landing_on(WeekdaySet::new([CivilWeekday::Wednesday, CivilWeekday::Monday]).unwrap()),
         tzdb,
@@ -354,8 +346,6 @@ fn monthly_invalid_dates_are_skipped_clamped_or_paused_explicitly() {
                 instant: instant("2026-02-28T11:00:00.000Z"),
             },
         );
-    // The day of month is the anchor's own, so a rule anchored on the 31st is
-    // a rule about the 31st.
     let monthly = |policy| Cadence::every_months(1).with_invalid_day(policy);
 
     let skipped_schedule = schedule(
@@ -491,8 +481,6 @@ fn calendar_wire_vocabulary_has_a_golden_hash() {
         Cadence::every_days(1),
         Cadence::every_weeks(2).landing_on(weekdays.clone()),
         Cadence::every_months(1),
-        // The shape none of the former three could hold: a sum of components,
-        // landing on a weekday, retiring after a count.
         Cadence {
             every: nucleus::karma::CadenceStep {
                 months: 1,

@@ -424,6 +424,8 @@ version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d2f3f79755c74fd155000314eb349864caa787c6592eace6c6882dad873d9c39"
 dependencies = [
+ "async-fs",
+ "async-net",
  "enumflags2",
  "futures-channel",
  "futures-util",
@@ -431,7 +433,6 @@ dependencies = [
  "raw-window-handle",
  "serde",
  "serde_repr",
- "tokio",
  "url",
  "wayland-backend",
  "wayland-client",
@@ -539,6 +540,17 @@ dependencies = [
  "event-listener",
  "event-listener-strategy",
  "pin-project-lite",
+]
+
+[[package]]
+name = "async-net"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b948000fad4873c1c9339d60f2623323a0cfd3816e5181033c6a5cb68b2accf7"
+dependencies = [
+ "async-io",
+ "blocking",
+ "futures-lite",
 ]
 
 [[package]]
@@ -3483,6 +3495,7 @@ dependencies = [
  "protein",
  "qrcode",
  "rqrr",
+ "sensei",
  "serde",
  "serde_json",
  "sha2 0.10.9",
@@ -5833,6 +5846,7 @@ dependencies = [
  "dirs 6.0.0",
  "lince-utils",
  "lince-web",
+ "sensei",
  "serde",
  "serde_json",
  "store",
@@ -5849,6 +5863,7 @@ dependencies = [
  "lince-interface",
  "lince-utils",
  "lince-web",
+ "sensei",
  "serde",
  "sqlx",
  "tauri",
@@ -5864,6 +5879,7 @@ dependencies = [
 name = "lince-fiote"
 version = "0.7.0"
 dependencies = [
+ "sensei",
  "serde",
  "serde_json",
  "tokio",
@@ -5880,6 +5896,9 @@ dependencies = [
  "bevy",
  "bytemuck",
  "cef",
+ "dirs 6.0.0",
+ "engine",
+ "futures",
  "glyphon",
  "libc",
  "maud",
@@ -5887,11 +5906,14 @@ dependencies = [
  "pollster",
  "protein",
  "schemars 1.2.1",
+ "sensei",
  "serde",
  "serde_json",
  "sha2 0.10.9",
  "store",
  "tokio",
+ "tokio-tungstenite",
+ "transport",
  "url",
  "wgpu",
  "winit",
@@ -5905,6 +5927,7 @@ dependencies = [
  "chrono",
  "dirs 6.0.0",
  "jsonwebtoken",
+ "sensei",
  "serde",
  "toml 0.9.12+spec-1.1.0",
 ]
@@ -5928,6 +5951,7 @@ dependencies = [
  "protein",
  "reqwest 0.12.28",
  "rfd",
+ "sensei",
  "serde",
  "serde_json",
  "socket2",
@@ -6745,6 +6769,7 @@ name = "nucleus"
 version = "0.7.0"
 dependencies = [
  "chrono",
+ "sensei",
  "serde",
  "serde_json",
  "sha2 0.10.9",
@@ -8252,6 +8277,7 @@ dependencies = [
  "engine",
  "lince-utils",
  "nucleus",
+ "sensei",
  "serde",
  "serde_json",
  "store",
@@ -10160,6 +10186,7 @@ dependencies = [
  "async-trait",
  "chrono",
  "nucleus",
+ "sensei",
  "serde",
  "serde_json",
  "sqlx",
@@ -10932,7 +10959,6 @@ dependencies = [
  "signal-hook-registry",
  "socket2",
  "tokio-macros",
- "tracing",
  "windows-sys 0.61.2",
 ]
 
@@ -11312,6 +11338,7 @@ dependencies = [
  "nucleus",
  "portable-pty",
  "protein",
+ "sensei",
  "serde",
  "serde_json",
  "store",
@@ -13342,7 +13369,6 @@ dependencies = [
  "rustix 1.1.4",
  "serde",
  "serde_repr",
- "tokio",
  "tracing",
  "uds_windows",
  "uuid",

@@ -6,7 +6,7 @@ subject specifications, deferred work, historical alternatives, and the v2
 world direction.
 
 The owner-authored [Interface section in Lince](../Lince.lingua) remains
-authoritative for interface decisions. [Ontology](../Ontology.lingua) and
+authoritative for interface decisions. [Ontology](../Lince.lingua) and
 [Karma](../Karma.lingua) remain authoritative when a subject here links to
 them. There are currently no separate Interface, Customization, Sands, or
 Interoperability `.lingua` files. If one is created, it immediately becomes
@@ -46,17 +46,25 @@ substantive source passage was dropped.
 
 [current.md](current.md) is the compact continuation context. The promoted
 native foundation is described in [architecture.md](architecture.md), while
-its evidence and current production-launch blocker live in
-[laboratory.md](laboratory.md) and
-[plans/interface.md](plans/interface.md).
+its evidence and production launch proof live in [laboratory.md](laboratory.md)
+and [plans/interface.md](plans/interface.md).
 
-The typed Customization, semantic primitive-Sand and recursive-composition
-kernels are landed. The ordered 30-entry Pulsar/Helio study in
+The typed Customization, semantic primitive-Sand, recursive-composition and C3
+Configuration/external-authoring kernels are landed. C4 has a 25-root,
+72-definition Rust catalog and native F12 inspector. Edit controls, zoom
+controls, Record, Conversation, Table, Todo and Kanban now have operational
+retained projections.
+The production desktop binds Record, Conversation and private-draft data
+through live Protein subscriptions; acknowledged Message lifecycle and durable
+draft and Record-quantity Actions cross the same domain boundary. Seventeen
+runtime migrations remain active; the three collection roots still carry
+explicit C4 follow-up for richer configuration and editing.
+The ordered 30-entry Pulsar/Helio study in
 [links.md](links.md) is complete. It selected no engine, renderer, database or
 GPUI dependency; its narrow carry-forward set is canonical in
 [architecture.md](architecture.md#completed-pulsarhelio-study-and-carry-forward-boundary).
-Implementation continues with Configuration and external authoring,
-official-Sand migration, the completion gate, and only then Box. The completed
+Implementation continues with official-Sand runtime migration, the completion gate,
+and only then Box. The completed
 SceneDB/EngineFS cluster informs Box durability and live collaboration without
 owning either design.
 
@@ -66,15 +74,15 @@ owning either design.
 | --- | --- | --- |
 | [First Steps.linguai](First%20Steps.linguai) | Agent-maintained future user tutorial that will become owner-reviewed Instinct after v1 settles | Draft; legacy instructions plus clearly marked native plan |
 | [product.md](product.md) | Product promises, UI guidelines, collaboration/editor surface | Active product boundary |
-| [architecture.md](architecture.md) | V1 runtime ownership, Plan A/Plan B disposition, engine seams | Plan A accepted |
-| [laboratory.md](laboratory.md) | Native fixtures, benchmarks, acceptance evidence and handoff | Promoted through C2; production launch awaits valid owner references |
-| [customization.md](customization.md) | Tokens, themes, visual character and design-system sequence | Composition landed; Configuration next |
+| [architecture.md](architecture.md) | V1 runtime ownership, Plan A/Plan B disposition, engine seams, browser-as-client gate | Plan A accepted; browser client NOT PLANNED (2026-09-01) |
+| [laboratory.md](laboratory.md) | Native fixtures, benchmarks, acceptance evidence and handoff | Promoted; first C4 retained runtime and live Protein seam proven |
+| [customization.md](customization.md) | Tokens, themes, Configuration, visual character and design-system sequence | C3 landed; C4 retained-runtime migration active |
 | [visual-inventory.md](visual-inventory.md) | First-party visual source boundary and token migration classification | Landed inventory; migration pending |
 | [legacy-web-ui.md](legacy-web-ui.md) | Existing Web component/API inventory | Migration input only |
 | [behavior.md](behavior.md) | JavaScript/Rust Behavior boundary and shipped source rules | Accepted boundary |
 | [sand-model.md](sand-model.md) | Recursive Sand/Castle model, ports, state and renderer projections | Recursive host and workbench landed |
 | [html-and-websites.md](html-and-websites.md) | Installed HTML, Website authority, packages and isolation | Prototype proven; product surface pending |
-| [official-sands.md](official-sands.md) | Existing first-party Sand behavior that migration must preserve | Migration input |
+| [official-sands.md](official-sands.md) | Existing first-party Sand behavior that migration must preserve | Rust catalog plus first retained-runtime slice landed; migration active |
 | [box.md](box.md) | Box, Protein result templates, Areas, surface topology, free space, projection and persistence | Opens after customization gate |
 | [facade.md](facade.md) | Public read-only Live Facade | Late v1 |
 | [interoperability.md](interoperability.md) | Interface-facing Facade, Blood and portable-canvas boundaries | Partly deferred |
@@ -90,8 +98,8 @@ owning either design.
 
 - [plans/interface.md](plans/interface.md): landed foundation statement and
   remaining Box, Areas, persistence and Facade work.
-- [plans/customization.md](plans/customization.md): landed style, Sand and
-  composition kernels and remaining C3 through C5 waterfall.
+- [plans/customization.md](plans/customization.md): landed style, Sand,
+  composition and Configuration kernels and remaining C4-C5 waterfall.
 - [plans/sands.md](plans/sands.md): landed composition boundary, packages and
   external runtime hardening.
 - [plans/communication.md](plans/communication.md): Communication stages.

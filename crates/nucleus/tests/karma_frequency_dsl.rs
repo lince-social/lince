@@ -47,16 +47,12 @@ fn elapsed_frequency_has_stable_text_and_compiles_symbolic_parameters() {
 #[test]
 fn calendar_daily_weekly_and_monthly_forms_round_trip_and_compile() {
     for frequency in [
-        // The former `daily(...)`.
         calendar_frequency(cadence(step(
             "days",
             PositiveIntegerBinding::Parameter {
                 parameter: id("calendar_step"),
             },
         ))),
-        // The former `weekly(..., [mon, wed, fri], ...)`. A weekday set is now a
-        // landing rule on a daily step, which is what makes it composable with
-        // everything else rather than a shape of its own.
         calendar_frequency(CadenceAst {
             every: step("days", literal(1)),
             land_on: Some(
@@ -70,16 +66,12 @@ fn calendar_daily_weekly_and_monthly_forms_round_trip_and_compile() {
             invalid_day: InvalidDay::Clamp,
             bound: CadenceBound::Unbounded,
         }),
-        // The former `monthly(..., day(31), ..., clamp-to-last-day)`. The day of
-        // month comes from the anchor now.
         calendar_frequency(CadenceAst {
             every: step("months", literal(1)),
             land_on: None,
             invalid_day: InvalidDay::Clamp,
             bound: CadenceBound::Unbounded,
         }),
-        // And the rule none of the three old shapes could say: a sum of
-        // components, landing on a weekday, ending after a fixed count.
         calendar_frequency(CadenceAst {
             every: CadenceStepAst {
                 months: Some(literal(1)),
@@ -409,7 +401,6 @@ fn elapsed_frequency() -> FrequencyAst {
     }
 }
 
-/// A step with exactly one component set, which is what most rules are.
 fn step(component: &str, binding: PositiveIntegerBinding) -> CadenceStepAst {
     let mut step = CadenceStepAst::default();
     match component {

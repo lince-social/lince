@@ -21,21 +21,12 @@ pub async fn favicon() -> Response {
     })
 }
 
-/// The new-way sand host (`frame.js`), served at the absolute `/board/frame.js`
-/// that every migrated sand loads. Runs inside the sand iframe (srcdoc, so the
-/// URL resolves against the board origin) and exposes `window.LinceWidgetHost`
-/// (Protein subscriptions + Actions + onLive) talking to the board-side unified
-/// widget bridge over the one shared transport WebSocket.
 pub async fn frame_js() -> Response {
     asset_response(js(include_bytes!(
         "../../../static/presentation/board/frame.js"
     )))
 }
 
-/// The reusable body editor (K6): slash block palette + @-mention picker +
-/// the shared markdown block renderer, served at the absolute
-/// `/board/editor.js` beside frame.js. Sands that show or edit a record body
-/// load it and get `window.LinceBodyEditor`.
 pub async fn editor_js() -> Response {
     asset_response(js(include_bytes!(
         "../../../static/presentation/board/editor.js"
@@ -48,9 +39,6 @@ pub async fn lynx_ui_css() -> Response {
     )))
 }
 
-/// The shared collaborative-text element (Ontology §11 "Collab"). One
-/// implementation for the record editor and every embed that shows a
-/// Record body — they are the same question, so they get the same answer.
 pub async fn collab_editor_js() -> Response {
     asset_response(js(include_bytes!(
         "../../../static/presentation/board/collab-editor.js"
@@ -63,12 +51,6 @@ pub async fn lynx_ui_js() -> Response {
     )))
 }
 
-/// Vendored d3 v7 for the relations force graph, served at the absolute
-/// `/board/vendor/d3.v7.min.js`. This MUST be an always-registered route like
-/// frame.js/editor.js: when `static_dir` exists on disk, `/static/*` goes to
-/// ServeDir alone and the embedded fallback below is never wired — d3 under
-/// `/static/vendored/` 404'd there and the graph lost all physics. The
-/// license travels beside it (AGENTS.md rule).
 pub async fn d3_js() -> Response {
     asset_response(js(include_bytes!(
         "../../../src/sand/relations/d3.v7.min.js"
@@ -81,16 +63,6 @@ pub async fn d3_license() -> Response {
     )))
 }
 
-/// Vendored mermaid v11 for the Instinct sand's diagrams, served at the
-/// absolute `/board/vendor/mermaid.min.js`. Same reason as d3 above: this MUST
-/// stay an always-registered route, because when `static_dir` exists on disk
-/// `/static/*` is handled by ServeDir alone and anything under
-/// `/static/vendored/` 404s. The license travels beside it (AGENTS.md rule).
-///
-/// This is the UMD `dist/mermaid.min.js` on purpose — a single self-contained
-/// bundle with NO dynamic imports, which assigns `globalThis.mermaid`. The
-/// `.esm.mjs` builds code-split into ~1000 chunk files and cannot be served
-/// from one embedded route.
 pub async fn mermaid_js() -> Response {
     asset_response(js(include_bytes!(
         "../../../src/sand/instinct/mermaid.min.js"
@@ -103,13 +75,6 @@ pub async fn mermaid_license() -> Response {
     )))
 }
 
-/// Vendored loro-crdt (JS/wasm, npm loro-crdt pinned to the SAME version as
-/// the Rust `loro` crate) for the client collab layer (Ontology §11 "Collab").
-/// Same always-registered rule as d3/mermaid above. The three files MUST stay
-/// siblings under `/board/vendor/`: `loro-index.js` is the ESM entry
-/// re-exporting `./loro_wasm.js`, whose default `init()` resolves
-/// `loro_wasm_bg.wasm` relative to `import.meta.url`. License beside them
-/// (AGENTS.md rule).
 pub async fn loro_index_js() -> Response {
     asset_response(js(include_bytes!(
         "../../../src/sand/collab/vendor/loro-index.js"
@@ -167,13 +132,9 @@ fn embedded_asset(path: &str) -> Option<EmbeddedAsset> {
         "presentation/board/widget-bridge.js" => Some(js(include_bytes!(
             "../../../static/presentation/board/widget-bridge.js"
         ))),
-        // The board's single shared transport socket (Stage 8b, base task 1):
-        // the one WebSocket that the unified widget bridge and the Data-panel
-        // Protein config multiplex over.
         "presentation/board/transport.js" => Some(js(include_bytes!(
             "../../../static/presentation/board/transport.js"
         ))),
-        // New-way sand host, also served at `/board/frame.js` (see `frame_js`).
         "presentation/board/frame.js" => Some(js(include_bytes!(
             "../../../static/presentation/board/frame.js"
         ))),
@@ -187,12 +148,6 @@ fn asset_response(asset: EmbeddedAsset) -> Response {
         header::CONTENT_TYPE,
         HeaderValue::from_static(asset.content_type),
     );
-    // These embedded board assets (main.js, store.js, widget-bridge.js, …) are
-    // rebuilt in place during development. Without a revalidation header the
-    // Tauri/desktop webview happily serves a STALE copy, which shows up as a
-    // NEW main.js calling a method a stale store.js hasn't got yet
-    // ("store.addImportedGroup is not a function"). Force revalidation so the
-    // whole board's JS is always coherent.
     response.headers_mut().insert(
         header::CACHE_CONTROL,
         HeaderValue::from_static("no-cache, must-revalidate"),

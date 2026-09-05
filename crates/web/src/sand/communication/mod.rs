@@ -2,13 +2,6 @@ use crate::domain::lince_package::{LincePackage, PackageManifest};
 
 pub(crate) const FEATURE_FLAG: &str = "sand.communication";
 
-// The Communication sand IS this HTML string (Stage 8b pattern): a
-// self-contained document that talks to the board host
-// (`window.LinceWidgetHost`) over Protein reads + typed Actions. It lists
-// conversations carrying a tag (`@communication` by default), drives the
-// pinned Record sand via a board-wide `recordClicked` ABI event, and drops
-// into a per-conversation room mode (call view) for audio/video. Ships as a
-// single `.html` package.
 const HTML: &str = include_str!("communication.html");
 
 pub(crate) fn manifest() -> PackageManifest {

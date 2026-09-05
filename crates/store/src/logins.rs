@@ -1,11 +1,3 @@
-//! Logins granted to contact Organs (Ontology §11 "live mode").
-//!
-//! A login here is a BINDING, not a credential: the iroh handshake already
-//! proved which Organ is on the connection, so what remains to decide is which
-//! Person they act as. Every read they then make is gated by that Person's
-//! visibility, which is why granting one is a named, revocable thing rather
-//! than a door.
-
 use chrono::Utc;
 use sqlx::{Row, SqlitePool};
 
@@ -26,9 +18,6 @@ fn map(row: sqlx::sqlite::SqliteRow) -> Login {
     }
 }
 
-/// Bind a contact Organ to the Person it acts as. Re-granting moves the
-/// binding rather than adding a second one — an Organ acts as exactly one
-/// Person, or its writes could not be told apart.
 pub async fn grant(pool: &SqlitePool, organ_uid: &str, person_uid: &str) -> Result<(), StoreError> {
     sqlx::query(
         "INSERT INTO organ_login (organ_uid, person_uid, created_at) VALUES (?, ?, ?)
@@ -42,8 +31,6 @@ pub async fn grant(pool: &SqlitePool, organ_uid: &str, person_uid: &str) -> Resu
     Ok(())
 }
 
-/// The Person an Organ acts as, or `None` — which is a refusal, not an error:
-/// a contact with no login granted simply has no live session available.
 pub async fn person_for_organ(
     pool: &SqlitePool,
     organ_uid: &str,
@@ -63,8 +50,6 @@ pub async fn list(pool: &SqlitePool) -> Result<Vec<Login>, StoreError> {
         .collect())
 }
 
-/// Take the login back. One row, one delete — the guarantee §12 asks of
-/// revocation: local, immediate, and not a request the other side may decline.
 pub async fn revoke(pool: &SqlitePool, organ_uid: &str) -> Result<(), StoreError> {
     sqlx::query("DELETE FROM organ_login WHERE organ_uid = ?")
         .bind(organ_uid)

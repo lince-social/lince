@@ -1,9 +1,3 @@
-//! Recipient-specific Transfer HTTP transport.
-//!
-//! This boundary deliberately does not accept `engine::sync::Package`. Every
-//! body is bound to an Organ signature and Transfer replicas stay in their
-//! isolated read model.
-
 use std::time::Duration;
 
 use axum::http::StatusCode;
@@ -417,9 +411,6 @@ pub(crate) async fn receive_command(
 
 pub(crate) fn spawn_worker(state: CellApiState) {
     tokio::spawn(async move {
-        // No HTTP client any more: every drain below dials a contact's NodeId
-        // over the Cell's own iroh endpoint, which is also why nothing here
-        // needs a timeout of its own — the dial has one.
         let mut interval = tokio::time::interval(Duration::from_secs(5));
         interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
         loop {
@@ -469,17 +460,6 @@ async fn drain_envelopes(state: &CellApiState) -> Result<(), String> {
         .await
         .map_err(|error| error.to_string())?
     {
-        // The designated executor (Ontology C7), read off the Transfer Record.
-        // This retry loop is the one non-Rule scheduler that reaches OUTWARD:
-        // two Cells draining the same outbox POST the same envelope to the
-        // recipient twice, and a retry loop's whole job is to keep trying. The
-        // other two schedulers — pruning and Organ polling — deliberately do
-        // NOT consult this, because each Cell prunes its own disk and polls for
-        // its own ops, and designating either would starve every other Cell.
-        //
-        // Skipped, not failed: a Cell that is not the designated one has
-        // nothing wrong with it and nothing to retry, and marking it failed
-        // would burn the attempt budget of the Cell that IS supposed to send.
         if !executor_runs_here(state, &row).await? {
             continue;
         }
@@ -510,16 +490,6 @@ async fn drain_envelopes(state: &CellApiState) -> Result<(), String> {
     Ok(())
 }
 
-/// Whether this Cell is the one that delivers this envelope.
-///
-/// The designation lives on the TRANSFER Record rather than on the outbox row,
-/// so it is one answer for the whole conversation with a recipient rather than
-/// a per-envelope race — and it is the same read Karma does, on purpose: one
-/// mechanism to reason about, one place to look when a scheduler is quiet.
-///
-/// A delivery whose policy has vanished answers `true` and falls through to
-/// `push_envelope`, which is where that condition is already reported. Deciding
-/// it here would turn a broken delivery into a silently skipped one.
 async fn executor_runs_here(
     state: &CellApiState,
     row: &store::transfer_delivery::DeliveryOutboxRow,
@@ -550,10 +520,6 @@ async fn push_envelope(
         .await
         .map_err(|error| error.to_string())?
         .ok_or_else(|| "recipient Organ is not introduced".to_string())?;
-    // `known`, not merely "not blocked". Delivery rides `lince/sync/1`, whose
-    // accept gate serves known contacts only, so checking the weaker condition
-    // here would dial and be refused — recording a failure that reads like a
-    // network problem when the answer is that nobody vetted this contact.
     if contact.trust != "known" || !contact.sync_out {
         return Err(
             "recipient Organ is not a known contact, or outgoing delivery is disabled".into(),
@@ -750,10 +716,6 @@ async fn push_application_attestation(
         .await
         .map_err(|error| error.to_string())?
         .ok_or_else(|| "origin Organ is not introduced".to_string())?;
-    // `known`, not merely "not blocked". Delivery rides `lince/sync/1`, whose
-    // accept gate serves known contacts only, so checking the weaker condition
-    // here would dial and be refused — recording a failure that reads like a
-    // network problem when the answer is that nobody vetted this contact.
     if contact.trust != "known" || !contact.sync_out {
         return Err("origin Organ is not a known contact, or outgoing delivery is disabled".into());
     }
@@ -846,10 +808,6 @@ async fn pull_reference(
         .await
         .map_err(|error| error.to_string())?
         .ok_or_else(|| "origin Organ is not introduced".to_string())?;
-    // `known`, not merely "not blocked". Delivery rides `lince/sync/1`, whose
-    // accept gate serves known contacts only, so checking the weaker condition
-    // here would dial and be refused — recording a failure that reads like a
-    // network problem when the answer is that nobody vetted this contact.
     if contact.trust != "known" || !contact.sync_out {
         return Err("origin Organ is not a known contact, or outgoing delivery is disabled".into());
     }
@@ -869,10 +827,6 @@ async fn pull_reference(
         )
         .await
         .map_err(|error| error.to_string())?;
-    // `hosted_url` used to override where this pull went. It is gone as an
-    // address: an Organ is reached by identity, and a URL carried inside a
-    // reference is the peer's view of itself — routinely a loopback address,
-    // and never something this Cell could dial.
     let wire: Authenticated<PullResult> = post_to_peer(
         state,
         &origin,
@@ -902,10 +856,6 @@ async fn pull_reference(
     Ok(envelope.cursor)
 }
 
-/// `origin_organ` replaces what used to be an `origin_base_url` threaded down
-/// from the caller. The address was travelling as a value and being trusted as
-/// a destination; the Organ uid is the thing that actually names who gets the
-/// receipt, and the transport resolves it.
 async fn send_received_receipt(
     state: &CellApiState,
     origin_organ: &str,
@@ -964,10 +914,6 @@ async fn push_command(
         .await
         .map_err(|error| error.to_string())?
         .ok_or_else(|| "origin Organ is not introduced".to_string())?;
-    // `known`, not merely "not blocked". Delivery rides `lince/sync/1`, whose
-    // accept gate serves known contacts only, so checking the weaker condition
-    // here would dial and be refused — recording a failure that reads like a
-    // network problem when the answer is that nobody vetted this contact.
     if contact.trust != "known" || !contact.sync_out {
         return Err("origin Organ is not a known contact, or outgoing delivery is disabled".into());
     }
@@ -1143,9 +1089,6 @@ async fn accept_policy_event(
                 "First Transfer delivery policy event must be an active reference".into(),
             ));
         }
-        // Still required, still checked — the contact row is what makes the
-        // origin an Organ we have met. Nothing is read off it any more: the
-        // address it used to supply is the transport's business now.
         store::organs::contact(&state.store.pool, &event.origin_organ_uid)
             .await
             .map_err(internal)?
@@ -1160,9 +1103,6 @@ async fn accept_policy_event(
                 recipient_organ_uid: &event.recipient_organ_uid,
                 mode: event.mode,
                 policy_revision: event.policy_revision,
-                // No address. A pull dials the origin Organ by identity, so
-                // recording where it "is" would be a stale copy of something
-                // the transport resolves for itself.
                 hosted_url: None,
                 policy_payload_hash: &event.payload_hash,
                 signed_policy_payload: &signed,
@@ -1223,15 +1163,6 @@ async fn accept_policy_event(
     .map_err(internal)
 }
 
-/// Send one signed Transfer body to a contact over iroh and hand back their
-/// reply.
-///
-/// This replaced an HTTP POST to `contact.base_url`. Nothing about the
-/// PAYLOAD changed: the same `Authenticated<T>` is signed and verified at
-/// either end, and the transport is a pipe. What changed is that we now dial
-/// an identity rather than an address, so a contact that moved network — or
-/// whose recorded URL was a loopback address, which was routine — is reachable
-/// where it previously was not.
 async fn post_to_peer<B, R>(
     state: &CellApiState,
     contact_organ: &str,
@@ -1316,15 +1247,6 @@ fn engine_error(error: engine::EngineError) -> HttpError {
     (status, error.to_string())
 }
 
-/// Serves the six Transfer exchanges over `lince/sync/1`.
-///
-/// These were HTTP routes on this Cell until 2026-08-08. Nothing about the
-/// bodies changed — the same `Authenticated<T>` is verified by the same
-/// `verify_wire` — so this type is a dispatch table and deliberately nothing
-/// more. The verbs and the old paths are one-to-one, and the paths survive as
-/// SIGNING DOMAINS: `sign_organ_request` binds each signature to its path, so
-/// the constants above are still what a signature covers even though nothing
-/// routes on them.
 pub(crate) struct TransferPeerHandler {
     state: CellApiState,
 }
@@ -1343,10 +1265,6 @@ impl engine::wire::TransferPeer for TransferPeerHandler {
         body: serde_json::Value,
     ) -> Result<serde_json::Value, String> {
         use engine::wire::TransferVerb;
-        // The error text is the peer's, so it says what went wrong without
-        // saying anything a refusal should not: `forbidden`/`engine_error`
-        // already decide that, and the HTTP status they carried is dropped
-        // rather than translated into a second vocabulary.
         fn parse<T: DeserializeOwned>(body: serde_json::Value) -> Result<T, String> {
             serde_json::from_value(body)
                 .map_err(|error| format!("malformed Transfer body: {error}"))

@@ -1,11 +1,16 @@
 extern crate self as lince_interface;
 
 pub mod composition;
+pub mod configuration;
 pub mod dependency_graph;
+pub mod domain_model;
 pub mod frame;
 pub mod html;
 pub mod input;
+pub mod official_runtime;
+pub mod official_sands;
 pub mod primitive_gallery;
+pub mod retained_ui;
 pub mod sand;
 pub mod semantic;
 pub mod style;
@@ -19,6 +24,9 @@ pub mod scene_artifact;
 
 #[cfg(feature = "joined-runtime")]
 pub mod node_layer;
+
+#[cfg(feature = "joined-runtime")]
+pub mod domain;
 
 #[cfg(feature = "joined-runtime")]
 pub mod joined_accessibility;

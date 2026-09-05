@@ -1,22 +1,3 @@
-//! Entries: the editable, voidable handle over an authored quantity change.
-//!
-//! A captured change is a signed Fact plus a classification assertion, and
-//! neither can be edited — the Fact is hash-chained, the classification is an
-//! assertion *about* it. So "I typed 15 instead of 150" needs somewhere to live
-//! that is allowed to change. That is this module.
-//!
-//! Editing never rewrites history: a revision compensates the old Fact and the
-//! caller appends a replacement, so the Ledger keeps both and the chain stays
-//! intact. What changes here is only which Fact is currently the live one.
-//!
-//! Nothing here is domain-specific. A mistyped expense, a miscounted stock
-//! take, and a wrongly logged training set are the same problem: an authored
-//! change that turned out to be wrong.
-//!
-//! **Classification is not stored here.** It has exactly one owner,
-//! `fact_concept`, and duplicating it would let the two disagree the moment a
-//! change is re-tagged. Read it by joining through `fact_uid`.
-
 use chrono::{DateTime, Utc};
 use nucleus::DecimalValue;
 use sqlx::{Row, SqlitePool};
@@ -53,7 +34,6 @@ impl Entry {
     }
 }
 
-/// One step in an entry's audit trail.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct EntryRevision {
     pub uid: String,
@@ -70,11 +50,6 @@ pub struct EntryRevision {
     pub at: String,
 }
 
-/// Whether a call did the work or found that it already had.
-///
-/// `Replayed` is not an error and not a no-op — it is the *same answer* the
-/// first call gave. A retried request that returned an error would push callers
-/// toward retrying differently, which is how one hiccup becomes two applied changes.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum EntryCommit {
     Committed(Entry),
@@ -117,8 +92,6 @@ pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<Entry>, StoreErr
     row.as_ref().map(map_entry).transpose()
 }
 
-/// The entry that currently owns a Fact, if any. This is how the write path
-/// tells "x/// entry that should be revised or voided instead".
 pub async fn for_fact(pool: &SqlitePool, fact_uid: &str) -> Result<Option<Entry>, StoreError> {
     let row = sqlx::query("SELECT * FROM entry WHERE fact_uid = ? LIMIT 1")
         .bind(fact_uid)
@@ -127,9 +100,6 @@ pub async fn for_fact(pool: &SqlitePool, fact_uid: &str) -> Result<Option<Entry>
     row.as_ref().map(map_entry).transpose()
 }
 
-/// Every entry, newest change first. Voided ones are included: an append-only
-/// Ledger has no delete, and a surface that hid them would make a correction
-/// look like a disappearance.
 pub async fn list_all(pool: &SqlitePool, limit: i64) -> Result<Vec<Entry>, StoreError> {
     let rows =
         sqlx::query("SELECT * FROM entry ORDER BY occurred_at DESC, created_at DESC LIMIT ?")
@@ -164,12 +134,6 @@ pub async fn history(pool: &SqlitePool, entry_uid: &str) -> Result<Vec<EntryRevi
         .collect()
 }
 
-/// The entry a request already produced, if this request has been seen.
-///
-/// **Callers must consult this before doing any Ledger work.** The engine
-/// appends Facts outside this module's transaction, so a replay detected only
-/// at insert time would already have appended a duplicate compensating Fact —
-/// the quantity moved twice, and the error afterwards would not put it back.
 pub async fn replayed(pool: &SqlitePool, request_id: &str) -> Result<Option<Entry>, StoreError> {
     let row = sqlx::query(
         "SELECT e.* FROM entry_revision r
@@ -187,8 +151,6 @@ pub struct NewEntry<'a> {
     pub amount: DecimalValue,
     pub note: Option<&'a str>,
     pub occurred_at: DateTime<Utc>,
-    /// The Fact that carried the amount. Appended by the caller, because only
-    /// the engine can seal and sign one.
     pub fact_uid: &'a str,
     pub request_id: &'a str,
     pub actor_uid: Option<&'a str>,
@@ -263,9 +225,6 @@ pub struct ReviseEntry<'a> {
     pub amount: DecimalValue,
     pub note: Option<&'a str>,
     pub occurred_at: DateTime<Utc>,
-    /// The Fact reversing the previous amount, and the Fact carrying the new
-    /// one. Both `None` when nothing about the quantity changed — a note-only
-    /// edit still earns a revision and an audit row, but moves nothing.
     pub compensated_fact_uid: Option<&'a str>,
     pub replacement_fact_uid: Option<&'a str>,
     pub request_id: &'a str,
@@ -297,9 +256,6 @@ pub async fn revise(
     let at = instant(now);
     let occurred_at = instant(input.occurred_at);
     let (mantissa, scale) = decimal_columns(input.amount);
-    // A note-only edit moves no quantity, so the live Fact stays the one already
-    // carrying this entry's amount. Blanking it would orphan the entry from
-    // its own Ledger entry.
     let live_fact = input
         .replacement_fact_uid
         .map(str::to_string)
@@ -352,8 +308,6 @@ pub async fn revise(
 pub struct VoidEntry<'a> {
     pub entry_uid: &'a str,
     pub expected_revision: i64,
-    /// The Fact returning the amount. `None` only when the entry carried no
-    /// quantity to return.
     pub compensated_fact_uid: Option<&'a str>,
     pub request_id: &'a str,
     pub actor_uid: Option<&'a str>,
@@ -385,9 +339,6 @@ pub async fn void(
     let (mantissa, scale) = decimal_columns(current.amount);
 
     let mut tx = crate::write_tx(pool).await?;
-    // `fact_uid` deliberately keeps pointing at the compensated Fact: that is
-    // still the change this entry describes, and the compensation is a
-    // separate Ledger entry rather than a replacement for it.
     sqlx::query(
         "UPDATE entry SET state = ?, revision = ?, updated_at = ?
           WHERE uid = ? AND revision = ?",

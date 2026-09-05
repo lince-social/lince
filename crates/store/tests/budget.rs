@@ -1,10 +1,3 @@
-//! Storage budgets (Ontology C2c), against a real store.
-//!
-//! The pure arithmetic is unit-tested beside `store::budget`. What needs a
-//! database is the part that matters: that quarantine actually evicts inside
-//! its share, and that one contact flooding the ring cannot reach another
-//! contact's evidence.
-
 use store::Store;
 use store::budget::{self, Area};
 
@@ -14,8 +7,6 @@ async fn cell() -> Store {
 
 #[tokio::test]
 async fn the_default_budget_is_a_real_number_rather_than_unlimited() {
-    // A budget that is off until somebody finds the setting is off on every
-    // Cell, which is the same as not having one.
     let store = cell().await;
     let total = budget::total(&store.pool).await.expect("total");
     assert_eq!(total, budget::DEFAULT_TOTAL_BYTES);
@@ -26,7 +17,6 @@ async fn the_default_budget_is_a_real_number_rather_than_unlimited() {
 async fn a_negative_budget_is_refused_rather_than_read_as_unlimited() {
     let store = cell().await;
     assert!(budget::set_total(&store.pool, -1).await.is_err());
-    // And the stored value is untouched, so a refused write leaves no dent.
     assert_eq!(
         budget::total(&store.pool).await.expect("total"),
         budget::DEFAULT_TOTAL_BYTES
@@ -36,8 +26,6 @@ async fn a_negative_budget_is_refused_rather_than_read_as_unlimited() {
 #[tokio::test]
 async fn quarantine_evicts_inside_its_share_and_keeps_the_newest() {
     let store = cell().await;
-    // A share of 100 bytes: small enough that a handful of rows overruns it.
-    // 5% of 2000 is 100.
     budget::set_total(&store.pool, 2000).await.expect("set");
     assert_eq!(budget::share(2000, Area::Quarantine), Some(100));
 
@@ -53,9 +41,6 @@ async fn quarantine_evicts_inside_its_share_and_keeps_the_newest() {
         "quarantine held {used} bytes, over its 100 share"
     );
 
-    // Three 30-byte rows fit in 100; the rest are gone. And what survived is
-    // the newest, because the evidence a peer is misbehaving NOW is the
-    // evidence worth keeping.
     let kept = store::organs::quarantined_for(&store.pool, "organ-a", 50)
         .await
         .expect("read");
@@ -64,9 +49,6 @@ async fn quarantine_evicts_inside_its_share_and_keeps_the_newest() {
 
 #[tokio::test]
 async fn one_contact_flooding_the_ring_cannot_evict_another_contacts_evidence() {
-    // The whole reason the quota is per contact. A global byte cap would let
-    // an attacker bury the record of what they did under noise from a second
-    // identity — which is exactly what an attacker would do.
     let store = cell().await;
     budget::set_total(&store.pool, 2000).await.expect("set");
 
@@ -89,10 +71,6 @@ async fn one_contact_flooding_the_ring_cannot_evict_another_contacts_evidence() 
 
 #[tokio::test]
 async fn an_unlimited_budget_disables_the_byte_bound_but_not_the_count_bound() {
-    // Zero means unlimited, and the two bounds answer different questions —
-    // "how much disk may one peer cost me" versus "how much garbage from one
-    // peer is worth reading". Turning the budget off must not turn the ring
-    // into something unbounded.
     let store = cell().await;
     budget::set_total(&store.pool, 0).await.expect("set");
     for _ in 0..20 {
@@ -109,9 +87,6 @@ async fn an_unlimited_budget_disables_the_byte_bound_but_not_the_count_bound() {
 
 #[tokio::test]
 async fn the_report_says_which_areas_have_a_consumer_yet() {
-    // A Facade row reading 0 B because C9 has not built the cache must not
-    // look like a row reading 0 B because nothing is cached. The empty state
-    // has to say which nothing it means.
     let store = cell().await;
     let usage = budget::usage(&store.pool, 512, 0, None)
         .await
@@ -132,8 +107,6 @@ async fn the_report_says_which_areas_have_a_consumer_yet() {
     assert!(media.live);
     assert_eq!(media.used_bytes, 512);
 
-    // The unbudgeted remainder is reported rather than hidden, so the total
-    // matches what the owner's file manager says.
     assert!(
         usage.unbudgeted_bytes > 0,
         "the database is never zero bytes"

@@ -1,10 +1,3 @@
-//! Joining an existing Organ as a second Cell (Ontology §11, cluster C3).
-//!
-//! The server half — token, redemption, roster signing — has existed since
-//! migration 0044. What is exercised here is the CLIENT: a fresh device that
-//! stops being its own Organ and becomes a member of another, and every way
-//! that must fail.
-
 use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 
@@ -42,14 +35,8 @@ fn addrs(wire: &Wire) -> Vec<String> {
         .collect()
 }
 
-/// An Organ with a root key, a roster of one, and an endpoint serving the
-/// thread door — a Cell you already own, showing an Add-a-device code.
 async fn enroller(seed: u8) -> (Arc<Engine>, String, Signer, Wire) {
     let (engine, organ) = cell("http://enroller.test").await;
-    // The root has to be on DISK, because the serving side reaches it through
-    // `root_signer()` — enrolling signs a new roster, and only the root can.
-    // That is also the honest shape: an Organ whose root has been moved
-    // offline correctly cannot enrol a device until it comes back.
     let key_path = std::path::PathBuf::from(env!("CARGO_TARGET_TMPDIR"))
         .join(format!("enrolment-root-{seed}.key"));
     let _ = std::fs::remove_file(&key_path);
@@ -91,7 +78,6 @@ async fn invite_from(engine: &Engine, organ: &str, root: &Signer, wire: &Wire) -
     }
 }
 
-/// The whole point: a second device stops being its own Organ.
 #[tokio::test]
 async fn a_new_device_joins_an_existing_organ() {
     let (them, their_organ, root, their_wire) = enroller(51).await;
@@ -123,7 +109,6 @@ async fn a_new_device_joins_an_existing_organ() {
         "and one of them is us"
     );
 
-    // The identity swap, which is what makes this a Cell rather than a contact.
     let now = store::organs::local(&us.store.pool)
         .await
         .expect("organ")
@@ -140,7 +125,6 @@ async fn a_new_device_joins_an_existing_organ() {
         "and is repointed at the joined Organ"
     );
 
-    // The chain: we adopted their root, so the roster verifies against it.
     assert!(
         us.key_chains(&their_organ, &root.public_key_b64())
             .await
@@ -152,20 +136,12 @@ async fn a_new_device_joins_an_existing_organ() {
         "and the roster is stored under the joined uid"
     );
 
-    // The bootstrap ops are gone rather than orphaned: they were stamped with
-    // an Organ that no longer exists, and `rebuild_read_model` replays the
-    // whole log.
     let (ops, _) = us.ops_after(0, 500).await.expect("ops");
     assert!(
         ops.iter().all(|op| op.organ_uid == their_organ),
         "no op may still claim the discarded identity"
     );
 
-    // C2b's machinery, pointed at the result. The log and the read model must
-    // agree AFTER an identity swap — an orphaned op stamped with the discarded
-    // Organ would replay here and either materialise under a Record that no
-    // longer exists or abort on migration 0051's origin trigger. This is the
-    // check that says the purge was complete.
     let audit = us.audit_read_model().await.expect("audit");
     assert!(
         audit.is_clean(),
@@ -179,8 +155,6 @@ async fn a_new_device_joins_an_existing_organ() {
     serving.abort();
 }
 
-/// A device that has been USED cannot join: merging two identities is a much
-/// larger act than scanning a code, and doing it silently is the wrong default.
 #[tokio::test]
 async fn a_device_that_already_holds_records_is_refused() {
     let (them, their_organ, root, their_wire) = enroller(53).await;
@@ -220,10 +194,6 @@ async fn a_device_that_already_holds_records_is_refused() {
         "and must change nothing"
     );
 
-    // THE POINT: the refusal happened before the dial, so the single-use token
-    // was never spent. Checking only inside the swap would redeem it on the
-    // other side first, leaving a spent code and a roster naming a device that
-    // never joined. A clean Cell using the SAME invite is what proves it.
     let (clean, _) = cell("http://clean.test").await;
     let clean_wire = Wire::bind(clean.clone(), secret(58), Reach::Local)
         .await
@@ -236,7 +206,6 @@ async fn a_device_that_already_holds_records_is_refused() {
     serving.abort();
 }
 
-/// Single-use, by the design that makes it safe to show on a screen.
 #[tokio::test]
 async fn a_token_works_exactly_once() {
     let (them, their_organ, root, their_wire) = enroller(55).await;
@@ -260,11 +229,6 @@ async fn a_token_works_exactly_once() {
         .await
         .expect_err("the second use must fail");
 
-    // Two shapes, both correct. If another enrolment is still open the server
-    // reads the verb and refuses it by name; if this was the only one, the
-    // window has closed and the door itself is shut — which is the stronger
-    // outcome, and the client says so in those terms rather than "connection
-    // lost".
     assert!(
         error.to_string().contains("already used")
             || error.to_string().contains("enrolment_denied")
@@ -283,15 +247,10 @@ async fn a_token_works_exactly_once() {
     serving.abort();
 }
 
-/// The joining Cell verifies the answer rather than trusting the connection:
-/// a roster for a different Organ than the code offered is refused, and
-/// nothing local changes.
 #[tokio::test]
 async fn a_roster_for_another_organ_is_refused() {
     let (us, our_organ) = cell("http://careful.test").await;
     let elsewhere = Signer::generate("organ-elsewhere", ROOT_KEY_ID);
-    // Built by hand rather than published: this is what a hostile or confused
-    // peer ANSWERS with, so it never passed through our own writer.
     let roster = engine::roster::Roster {
         organ_uid: "organ-elsewhere".into(),
         root_key: elsewhere.public_key_b64(),
@@ -347,16 +306,11 @@ async fn a_roster_for_another_organ_is_refused() {
     );
 }
 
-/// A Cell that has already published an identity of its own has contacts who
-/// hold its key. Joining another Organ would strand every one of them.
 #[tokio::test]
 async fn a_cell_with_a_published_identity_will_not_join() {
     let (us, our_organ) = cell("http://established.test").await;
     let our_root = Signer::generate(&our_organ, ROOT_KEY_ID);
     us.publish_root_key(&our_root).await.expect("root key");
-    // Naming ITSELF, which is what publishing your own roster means. A roster
-    // that omits this Cell is a self-revocation, and the database now refuses
-    // its writes accordingly — correct, but not what this test is about.
     us.publish_roster(
         &our_root,
         vec![CellEntry {
@@ -385,13 +339,6 @@ async fn a_cell_with_a_published_identity_will_not_join() {
     );
 }
 
-/// The schema fact that made a second Cell impossible, stated as a test.
-///
-/// `identity_key` is keyed `(actor_uid, key_id)` and every Cell published its
-/// transport key under `ed25519:organ:v1`, so two Cells of one Organ collided
-/// on one row — and `require_published_key` refuses to overwrite a published
-/// key, so the second could not bind its own at all. Per-Cell key ids are what
-/// fix it.
 #[tokio::test]
 async fn two_cells_of_one_organ_each_hold_their_own_operational_key() {
     let (engine, organ) = cell("http://two-keys.test").await;
@@ -407,8 +354,6 @@ async fn two_cells_of_one_organ_each_hold_their_own_operational_key() {
         .set_organ_signer(our_key.clone())
         .await
         .expect("this Cell binds its key");
-    // The sibling's key, as it would arrive through an Introduction: same
-    // Organ, different Cell, DIFFERENT public key.
     let their_key = Signer::generate(&organ, &engine::roster::cell_key_id(sibling));
     engine::trust::adopt_key(
         &engine.store,
@@ -419,7 +364,6 @@ async fn two_cells_of_one_organ_each_hold_their_own_operational_key() {
     .await
     .expect("a sibling's key must be storable alongside ours");
 
-    // Both resolve, independently, by the id the wire carries.
     assert_eq!(
         engine::trust::key_of(&engine.store, &organ, &engine::roster::cell_key_id(&ours))
             .await
@@ -434,8 +378,6 @@ async fn two_cells_of_one_organ_each_hold_their_own_operational_key() {
         "the sibling's key must not have been swallowed by ours"
     );
 
-    // And rebinding this Cell's own key is still refused: immutability is now
-    // per-Cell rather than per-Organ, which is the property that was wanted.
     let impostor = Signer::generate(&organ, &engine::roster::cell_key_id(&ours));
     assert!(
         engine.set_organ_signer(impostor).await.is_err(),
@@ -443,13 +385,6 @@ async fn two_cells_of_one_organ_each_hold_their_own_operational_key() {
     );
 }
 
-/// An operational key must NEVER validate a roster.
-///
-/// It signs traffic in the Organ's name; the root speaks for the identity. If
-/// the two were one set, a stolen phone could sign itself a roster adding more
-/// devices and the whole two-key split would be decoration. Before per-Cell
-/// key ids there was exactly one operational key per Organ and it sat quietly
-/// in the set `key_chains` walks.
 #[tokio::test]
 async fn a_cell_key_cannot_speak_for_the_identity() {
     let (engine, organ) = cell("http://not-a-root.test").await;
@@ -472,7 +407,6 @@ async fn a_cell_key_cannot_speak_for_the_identity() {
         "an operational key must not chain — it may sign traffic, never identity"
     );
 
-    // A roster it signs is therefore refused outright.
     let roster = engine::roster::Roster {
         organ_uid: organ.clone(),
         root_key: operational.public_key_b64(),
@@ -493,12 +427,6 @@ async fn a_cell_key_cannot_speak_for_the_identity() {
     );
 }
 
-/// Two Cells of one Organ converge — the point of everything above.
-///
-/// The enrolled device is only useful once it actually syncs, and this is the
-/// path no contact row can describe: a sibling shares our Organ uid, so
-/// `organ_contact` cannot hold it. The signed roster is the sibling list, and
-/// the accept gate recognises a Cell by it.
 #[tokio::test]
 async fn two_cells_of_one_organ_converge() {
     let (them, their_organ, root, their_wire) = enroller(61).await;
@@ -507,7 +435,6 @@ async fn two_cells_of_one_organ_converge() {
         .await
         .expect("binds");
     let invite = invite_from(&them, &their_organ, &root, &their_wire).await;
-    // Dialing by NodeId alone needs an address on a `Local` endpoint.
     our_wire.remember_addr(
         iroh::EndpointAddr::new(their_wire.node_id()).with_ip_addr(SocketAddr::new(
             IpAddr::V4(Ipv4Addr::LOCALHOST),
@@ -523,8 +450,6 @@ async fn two_cells_of_one_organ_converge() {
     let serving = tokio::spawn(async move { their_wire.serve().await });
     our_wire.enrol(&invite).await.expect("enrolment");
 
-    // The first Cell writes something. Nothing is pushed: siblings are
-    // pull-only, so this must arrive because the second Cell ASKED.
     store::records::create(
         &them.store.pool,
         NewRecord {
@@ -554,10 +479,6 @@ async fn two_cells_of_one_organ_converge() {
     serving.abort();
 }
 
-/// Membership is not enough: a Cell listed WITHOUT `CAP_WRITE` — a relay, a
-/// front door — must not be able to push ops in the Organ's name. That is what
-/// keeps "the front door holds no signing material" a structural fact rather
-/// than a promise.
 #[tokio::test]
 async fn a_capability_less_sibling_is_not_a_writer() {
     let (them, their_organ, root, their_wire) = enroller(63).await;
@@ -577,8 +498,6 @@ async fn a_capability_less_sibling_is_not_a_writer() {
     .await
     .expect("the relay joins the roster");
 
-    // A real writing sibling, so this test cannot pass by `sibling_organ`
-    // returning `None` for everything.
     let phone_node = "kzcgcjhoxfvpplzvrdxi2ldw6h2qzr3rrl3vcgxzuwvnkfvfvzhb";
     them.enrol_cell(
         &root,
@@ -613,15 +532,8 @@ async fn a_capability_less_sibling_is_not_a_writer() {
     );
 }
 
-/// The front door (Ontology §11, "Front-door mechanics").
-///
-/// A stranger's "add me in Lince" reaches the always-on Cell, whose owner may
-/// be on a phone that is offline and not in the public record. The door cannot
-/// decide — it holds no `CAP_REPRESENT` — so it HOLDS the request until a Cell
-/// that can decide comes and takes it.
 #[tokio::test]
 async fn a_front_door_holds_a_strangers_knock_for_the_owner() {
-    // The door: a Cell of an Organ whose roster gives it nothing.
     let (door, door_organ) = cell("http://front-door.test").await;
     let door_wire = Wire::bind(door.clone(), secret(71), Reach::Local)
         .await
@@ -642,14 +554,12 @@ async fn a_front_door_holds_a_strangers_knock_for_the_owner() {
             operational_key: "k-door".into(),
             sealing_key: None,
             front_door: true,
-            // A carrier and nothing more.
             capabilities: engine::roster::relay_capabilities(),
         }],
     )
     .await
     .expect("roster");
 
-    // The stranger.
     let (them, their_organ) = cell("http://stranger.test").await;
     let their_wire = Wire::bind(them.clone(), secret(72), Reach::Local)
         .await
@@ -665,14 +575,9 @@ async fn a_front_door_holds_a_strangers_knock_for_the_owner() {
                 .port(),
         )),
     );
-    // The door must let a stranger knock at all.
-    // Through the CELL path, logging no op — a relay Cell may not write, and
-    // configuring itself is the one thing it must still be able to do.
     store::cells::set_config(
         &door.store.pool,
         "lince.discovery",
-        // The WHOLE namespace, because the Discovery panel writes all three
-        // keys together and replaces rather than merges.
         &serde_json::json!({ "local": false, "internet": false, "accept_unknown": true }),
     )
     .await
@@ -698,8 +603,6 @@ async fn a_front_door_holds_a_strangers_knock_for_the_owner() {
         other => panic!("expected a held answer, got {other:?}"),
     }
 
-    // Held, and NOT bound: a door that quietly created a contact row would be
-    // deciding on the owner's behalf with no capability to do so.
     assert_eq!(
         store::door::count(&door.store.pool).await.expect("count"),
         1,
@@ -716,12 +619,8 @@ async fn a_front_door_holds_a_strangers_knock_for_the_owner() {
     serving.abort();
 }
 
-/// The other half of the front door: a Cell that CAN decide comes and takes
-/// what the door was holding.
 #[tokio::test]
 async fn the_owner_collects_what_the_front_door_held() {
-    // One Organ, two Cells: the owner's laptop (full capabilities) and a
-    // front door (a carrier and nothing more).
     let (owner, organ, root, owner_wire) = enroller(81).await;
     let (door, _) = cell("http://door-two.test").await;
     let door_wire = Wire::bind(door.clone(), secret(82), Reach::Local)
@@ -764,7 +663,6 @@ async fn the_owner_collects_what_the_front_door_held() {
         .await
         .expect("roster of two");
 
-    // The door becomes a Cell of that Organ.
     store::organs::adopt_identity(&door.store.pool, &organ, "http://door-two.test")
         .await
         .expect("the door joins the Organ");
@@ -780,7 +678,6 @@ async fn the_owner_collects_what_the_front_door_held() {
     .await
     .expect("open the invite door");
 
-    // A stranger knocks at the door.
     let (them, their_organ) = cell("http://stranger-two.test").await;
     let their_wire = Wire::bind(them.clone(), secret(83), Reach::Local)
         .await
@@ -794,7 +691,6 @@ async fn the_owner_collects_what_the_front_door_held() {
     let door_addr = iroh::EndpointAddr::new(door_wire.node_id())
         .with_ip_addr(SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), door_port));
     their_wire.remember_addr(door_addr.clone());
-    // The owner needs an address for the door too — it dials it by NodeId.
     owner_wire.remember_addr(door_addr.clone());
 
     let door_serving = tokio::spawn(async move { door_wire.serve().await });
@@ -820,7 +716,6 @@ async fn the_owner_collects_what_the_front_door_held() {
         "and the owner has not seen it yet"
     );
 
-    // The owner's device comes online and runs an ordinary sync pass.
     owner_wire.sync_once().await.expect("a sync pass");
 
     let arrived = store::organs::contact(&owner.store.pool, &their_organ)
@@ -841,10 +736,6 @@ async fn the_owner_collects_what_the_front_door_held() {
     door_serving.abort();
 }
 
-/// An epoch cut makes a stale Cell INVISIBLE rather than merely out of date —
-/// the sync door does not open, and from the dialing side that is identical to
-/// a device someone turned off. `ALPN_HELLO` is the one protocol that survives
-/// a cut, so it is what tells the two apart (Ontology §11, decision 1).
 #[tokio::test]
 async fn a_sibling_answers_the_stable_hello_across_any_epoch() {
     let (owner, organ, root, owner_wire) = enroller(91).await;
@@ -916,7 +807,6 @@ async fn a_sibling_answers_the_stable_hello_across_any_epoch() {
         "and report the epoch it speaks"
     );
 
-    // Same epoch, so nothing is reported as stale.
     owner_wire.sync_once().await.expect("a sync pass");
     assert!(
         owner_wire.stale_siblings().is_empty(),
@@ -926,12 +816,6 @@ async fn a_sibling_answers_the_stable_hello_across_any_epoch() {
     serving.abort();
 }
 
-/// The cross-Organ audit (Ontology §11, C2b): ask a contact what they hold of
-/// OUR ops and say whether the two logs agree, without moving any ops.
-///
-/// `audit_read_model` compares this Cell against its own log and catches
-/// nothing about a peer. Catch-up only ever asks what IT is missing, so a
-/// contact silently behind is invisible — which is the gap this closes.
 #[tokio::test]
 async fn an_audit_sees_what_a_contact_is_missing() {
     let (us, our_organ) = cell("http://auditor.test").await;
@@ -942,7 +826,6 @@ async fn an_audit_sees_what_a_contact_is_missing() {
     let their_wire = Wire::bind(them.clone(), secret(102), Reach::Local)
         .await
         .expect("binds");
-    // Each side knows the other, and can reach it.
     for (engine, organ, node) in [
         (&us, &their_organ, their_wire.node_id().to_string()),
         (&them, &our_organ, our_wire.node_id().to_string()),
@@ -968,7 +851,6 @@ async fn an_audit_sees_what_a_contact_is_missing() {
             .with_ip_addr(SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), port)),
     );
 
-    // We write something they have never seen.
     store::records::create(
         &us.store.pool,
         NewRecord {
@@ -1001,12 +883,6 @@ async fn an_audit_sees_what_a_contact_is_missing() {
     serving.abort();
 }
 
-/// "The front door holds no signing material" as an ENFORCED property
-/// (Ontology §11, C4), not a promise kept by everything politely not asking.
-///
-/// The refusal lives in the DATABASE, below every client, because a property
-/// you can defeat by pointing a second client at the same store is not a
-/// security property.
 #[tokio::test]
 async fn a_relay_cell_cannot_author_anything() {
     let (relay, organ) = cell("http://relay-cell.test").await;
@@ -1018,7 +894,6 @@ async fn a_relay_cell_cannot_author_anything() {
         .expect("cell record")
         .uid;
 
-    // Before any roster exists this Cell IS the whole Organ, and writing works.
     store::records::create(
         &relay.store.pool,
         NewRecord {
@@ -1032,7 +907,6 @@ async fn a_relay_cell_cannot_author_anything() {
     .await
     .expect("a Cell with no roster is the whole Organ");
 
-    // The root then says this Cell is a carrier and nothing more.
     relay
         .publish_roster(
             &root,
@@ -1069,8 +943,6 @@ async fn a_relay_cell_cannot_author_anything() {
         "and the refusal must say why: {refused:?}"
     );
 
-    // Configuring ITSELF still works, and must: a relay that cannot be
-    // configured cannot be operated. Cell config logs no op.
     store::cells::set_config(
         &relay.store.pool,
         "lince.discovery",
@@ -1079,8 +951,6 @@ async fn a_relay_cell_cannot_author_anything() {
     .await
     .expect("a relay must still be able to configure itself");
 
-    // And the root can give it back, which is what makes this a capability
-    // rather than a one-way door.
     relay
         .publish_roster(
             &root,
@@ -1114,13 +984,6 @@ async fn a_relay_cell_cannot_author_anything() {
     .expect("the root can restore the capability");
 }
 
-/// An enrolled device can get its rotated mail key published, and can change
-/// NOTHING else about the roster while doing it.
-///
-/// The gap this closes: rotation is local — a keyring on the device's own disk
-/// — while publishing is not, because the roster carries a ROOT signature. So
-/// a Cell that joined by enrolment could rotate and then watch senders quietly
-/// stop being able to mail it, with nothing anywhere saying why.
 #[tokio::test]
 async fn an_enrolled_cell_gets_its_rotated_mail_key_published() {
     let (them, their_organ, root, their_wire) = enroller(111).await;
@@ -1158,8 +1021,6 @@ async fn an_enrolled_cell_gets_its_rotated_mail_key_published() {
         .expect("keyring")
         .expect("a fresh keyring generates one");
 
-    // Before asking, the device list says nothing about this device's mail
-    // key — which is exactly the state that made it unmailable in silence.
     let published_key = |engine: Arc<Engine>, organ: String, cell_uid: String| async move {
         engine
             .roster_of(&organ)
@@ -1191,8 +1052,6 @@ async fn an_enrolled_cell_gets_its_rotated_mail_key_published() {
         "and the key it is actually using is the one senders are told about"
     );
 
-    // Idempotent: asking again changes nothing, because burning a roster
-    // version on a no-op trains contacts to accept rosters that say nothing.
     let version_before = them
         .roster_of(&their_organ)
         .await
@@ -1216,9 +1075,6 @@ async fn an_enrolled_cell_gets_its_rotated_mail_key_published() {
         version_before
     );
 
-    // THE GUARD. The verb carries a key, never an entry, and it may only move
-    // the asker's OWN line. A device that could name another Cell would be
-    // able to rewrite the membership statement it is merely a member of.
     let their_cell = them
         .roster_of(&their_organ)
         .await
@@ -1255,15 +1111,6 @@ async fn an_enrolled_cell_gets_its_rotated_mail_key_published() {
     serving.abort();
 }
 
-/// A Cell with NO write capability — a front door, a relay — can still publish
-/// its own mail key.
-///
-/// The case that matters most, and the one that nearly did not work. A front
-/// door is the machine most likely to be always on, so it is the most useful
-/// place to leave mail for; `sibling_organ` requires `CAP_WRITE`, which a
-/// front door has none of by design. Served on the sync door, or gated on
-/// being a sibling, this verb would have been refused for exactly that Cell,
-/// which would then rotate into silence while its panel claimed it was asking.
 #[tokio::test]
 async fn a_capability_less_cell_can_still_publish_its_own_mail_key() {
     let (them, their_organ, root, their_wire) = enroller(113).await;
@@ -1291,8 +1138,6 @@ async fn a_capability_less_cell_can_still_publish_its_own_mail_key() {
         .expect("a local Cell")
         .uid;
 
-    // Narrowed to what a front door actually is: listed, and permitted
-    // nothing. This is the state the verb has to survive.
     them.enrol_cell(
         &root,
         CellEntry {

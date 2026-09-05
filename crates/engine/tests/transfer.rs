@@ -1,5 +1,3 @@
-//! Transfer (blueprint VIII) + Trust (XI) + Imagination (XII) acceptance.
-
 pub mod support;
 
 use chrono::{DateTime, TimeDelta, Utc};
@@ -258,8 +256,6 @@ async fn every_fact_is_signed_and_verifiable() {
         "signature verifies"
     );
 
-    // two-layer tamper detection: the chain guards the content -> hash link,
-    // the signature guards the hash -> author link.
     assert!(nucleus::fact::verify_chain_step(fact));
     let mut delta_tampered = fact.clone();
     delta_tampered.delta = store::exact::from_f64(-999.0);
@@ -281,8 +277,6 @@ async fn imagination_projects_the_scrubbable_future() {
     let e = support::engine().await;
     let apples = plain(&e, "apples.stock", 8.0).await;
 
-    // A daily rule eats one apple. One object: the schedule it repeats on is
-    // part of the rule, so there is no timer row to keep in step with it.
     support::declare_rule(
         &e,
         &apples,
@@ -297,7 +291,6 @@ async fn imagination_projects_the_scrubbable_future() {
     )
     .await;
 
-    // project 5 days out: 8 - 5 = 3, and the run-out is foreseeable
     let now = at("2026-07-05T00:00:00Z");
     let timeline = e.project(now, now + TimeDelta::days(5)).await.unwrap();
     assert_eq!(timeline.projected(&apples), Some(3.0));

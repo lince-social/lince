@@ -226,6 +226,7 @@ pub const STYLE_TOKEN_SPECS: &[StyleTokenSpec] = &[
     token("--lynx-space-6", StyleValueKind::LengthPx, "spacing"),
     token("--lynx-space-7", StyleValueKind::LengthPx, "spacing"),
     token("--lynx-gap-content", StyleValueKind::LengthPx, "spacing"),
+    token("--lynx-margin-sand", StyleValueKind::LengthPx, "spacing"),
     token("--lynx-padding-record", StyleValueKind::LengthPx, "spacing"),
     token(
         "--lynx-padding-control-x",
@@ -362,7 +363,7 @@ pub enum StyleScope {
     Instance,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ScopedStyleLayer {
     pub scope: StyleScope,
@@ -370,7 +371,7 @@ pub struct ScopedStyleLayer {
     pub layer: StyleLayer,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum ThemeAssetKind {
     Raster,
@@ -378,7 +379,7 @@ pub enum ThemeAssetKind {
     Font,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ThemeAsset {
     pub path: String,
@@ -386,7 +387,7 @@ pub struct ThemeAsset {
     pub kind: ThemeAssetKind,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ThemeManifest {
     pub contract_version: u32,
@@ -457,14 +458,14 @@ impl ThemeManifest {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct StyleOrigin {
     pub scope: StyleScope,
     pub label: String,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize, JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ResolvedStyle {
     pub contract_version: u32,
@@ -665,6 +666,7 @@ pub fn lynx_theme() -> ThemeManifest {
             length("--lynx-space-6", 32.0),
             length("--lynx-space-7", 48.0),
             length("--lynx-gap-content", 4.0),
+            length("--lynx-margin-sand", 0.0),
             length("--lynx-padding-record", 5.0),
             length("--lynx-padding-control-x", 5.0),
             length("--lynx-padding-control-y", 3.0),

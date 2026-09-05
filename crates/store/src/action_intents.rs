@@ -1,5 +1,3 @@
-//! Persistence for client-signed Action authorization evidence.
-
 use chrono::{DateTime, Utc};
 use nucleus::Fact;
 use sqlx::{Row, Sqlite, SqlitePool, Transaction};
@@ -137,9 +135,6 @@ pub async fn mark_committed(
     tx.commit().await
 }
 
-/// Link an unsigned semantic Fact while its authorizing intent is still
-/// pending in the same higher-level action. Call this inside the semantic
-/// transaction before returning the Fact to the engine.
 pub async fn link_pending_fact(
     tx: &mut Transaction<'_, Sqlite>,
     intent_uid: &str,

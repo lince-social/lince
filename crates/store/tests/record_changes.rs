@@ -46,8 +46,6 @@ async fn a_local_edit_is_logged_as_local_and_names_no_winner() {
     );
 }
 
-/// Recent and local only. Without this the aid-to-noticing quietly becomes a
-/// permanent audit trail, which the Ledger already is and this is not.
 #[tokio::test]
 async fn entries_age_out() {
     let store = cell().await;
@@ -77,8 +75,6 @@ async fn entries_age_out() {
     );
 }
 
-/// A field edited in a tight loop must not grow the log without bound between
-/// prunes, nor push another Record's entries out — the cap is per Record.
 #[tokio::test]
 async fn one_record_keeps_only_its_newest_entries() {
     let store = cell().await;

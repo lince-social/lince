@@ -2,9 +2,6 @@ use crate::domain::lince_package::{LincePackage, PackageManifest};
 
 pub(crate) const FEATURE_FLAG: &str = "sand.record_editor";
 
-// Real-time collaborative text on a Record's `head`/`body` (Ontology §11
-// "Collab"). This is where the client collab layer stops being type-checked
-// and starts being run.
 const HTML: &str = include_str!("record_editor.html");
 
 pub(crate) fn manifest() -> PackageManifest {
@@ -49,22 +46,11 @@ pub(crate) fn package() -> LincePackage {
 mod tests {
     use super::{HTML, manifest};
 
-    /// The sand wires the SHARED collaborative element rather than carrying
-    /// its own copy of the protocol.
-    ///
-    /// The delta bookkeeping and the echo guard are asserted where they now
-    /// live — `crates/web/tests/collab_wasm.rs` drives that module against the
-    /// real wasm — so duplicating string checks here would only pin the
-    /// wording of code this file no longer contains.
     #[test]
     fn the_editor_uses_the_shared_collab_element() {
         assert!(HTML.contains("/board/collab-editor.js"));
         assert!(HTML.contains("createCollabEditor({"));
-        // Input wiring and the caret-preserving write come from the shared
-        // element too, so the sand names `bindInputs` rather than repeating
-        // either one.
         assert!(HTML.contains("bindInputs(editor,"));
-        // Same-origin vendored bundle only.
         assert!(HTML.contains("/board/vendor/loro-index.js"));
         assert!(
             !HTML.contains("https://"),
@@ -72,12 +58,6 @@ mod tests {
         );
     }
 
-    /// Presence is ephemeral and cursors are not history. A caret position
-    /// written to the Ledger would be both useless and permanent.
-    ///
-    /// The lane plumbing moved into the shared element (one implementation for
-    /// the record editor, a kanban card and a table cell), so what is pinned
-    /// here is that this sand CONSUMES resolved presence and never sources it.
     #[test]
     fn cursors_ride_lanes_and_are_named_only_when_the_host_says_so() {
         assert!(HTML.contains("onPresence:"));
@@ -89,15 +69,11 @@ mod tests {
             !HTML.contains("action: \"create-fact\""),
             "presence must never reach the Ledger"
         );
-        // The sand renders whatever identity the HOST resolved, and "someone"
-        // when it resolved none — it never decides whose name it may show. It
-        // must never fall back to `from`, which is a connection id.
         assert!(HTML.contains("peer.name || \"someone\""));
         assert!(
             !HTML.contains("name: from"),
             "a connection id is not a name and must never be rendered as one"
         );
-        // Selection RANGES and idle are what the peer list shows now.
         assert!(HTML.contains("peer.focus !== peer.anchor"));
         assert!(HTML.contains("peer.idle"));
         assert_eq!(

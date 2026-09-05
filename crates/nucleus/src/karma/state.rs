@@ -113,10 +113,6 @@ impl IntentStatus {
         })
     }
 
-    /// Whether an intent in this state still holds its share of a grant's
-    /// budget. Only the states that could still cause work do; a cancelled
-    /// intent releases what it reserved. States that arrive with execution
-    /// (E0.3) are listed here so the accounting rule is stated once.
     pub const fn holds_reservation(self) -> bool {
         match self {
             Self::Authorized

@@ -1,26 +1,8 @@
-//! Thread invites: a request to talk, before anyone has agreed to anything.
-//!
-//! **Everything here is local and stays local.** An invite is written with
-//! plain SQL rather than through `records::create`, for the same reason
-//! `organs::add_contact` does: the Record write path logs an op and enqueues
-//! it to every known contact. An invite must never travel — "Bea is asking to
-//! talk to me" is nobody else's business, and the offer itself already arrived
-//! over the wire. Reach for `records::create` here and the invite becomes a
-//! broadcast.
-//!
-//! The Record row exists so the invite is visible to Protein like anything
-//! else; the `lince.invite` extension mirrors who it is from, so a surface can
-//! render it without a new Protein source. Both are written the same
-//! unlogged way.
-
 use chrono::Utc;
 use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;
 
-/// The extension namespace carrying an invite's sender and offered root — a
-/// local projection for display, the way `lince.pairing` mirrors the invite
-/// code onto the Organ record.
 pub const EXTENSION: &str = "lince.invite";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -32,12 +14,6 @@ pub struct Invite {
     pub created_at: String,
 }
 
-/// Record an offer as a pending invite.
-///
-/// Returns `Ok(None)` when this Organ already has one pending: refusing a
-/// second is the anti-spam rule, and it is not an error — the sender is told
-/// their offer was received either way, because telling them apart would leak
-/// whether the last one was ignored or declined.
 pub async fn put(
     pool: &SqlitePool,
     from_organ: &str,
@@ -52,7 +28,6 @@ pub async fn put(
         title.trim()
     };
 
-    // Unlogged on purpose — see the module comment.
     sqlx::query(
         "INSERT INTO record (uid, slug, kind, head, body, quantity_mantissa, quantity_scale,
                              organ_uid, created_at, updated_at)
@@ -61,18 +36,12 @@ pub async fn put(
     .bind(&uid)
     .bind(nucleus::RecordKind::ThreadInvite.as_str())
     .bind(title)
-    // An invite originates from whoever offered it, not from us. It is the
-    // one thing an Organ you may not know can put in front of you, so
-    // attributing it here would erase the only fact you need to judge it by.
     .bind(from_organ)
     .bind(&now)
     .bind(&now)
     .execute(pool)
     .await?;
 
-    // The UNIQUE on `from_organ` is what enforces one pending per Organ, and
-    // it is enforced HERE rather than by a preceding query because an Organ is
-    // several Cells and two of them can offer at the same moment.
     let claimed = sqlx::query(
         "INSERT OR IGNORE INTO thread_invite (record_uid, from_organ, root, created_at)
          VALUES (?, ?, ?, ?)",
@@ -87,8 +56,6 @@ pub async fn put(
         == 1;
 
     if !claimed {
-        // Someone else's invite holds the slot. Undo the Record so a refused
-        // invite leaves nothing behind to render.
         sqlx::query("DELETE FROM record WHERE uid = ?")
             .bind(&uid)
             .execute(pool)
@@ -150,13 +117,6 @@ pub async fn pending(pool: &SqlitePool) -> Result<Vec<Invite>, StoreError> {
     .collect())
 }
 
-/// Clear an invite once it has been answered.
-///
-/// Both exits — accept and decline — come through here, and neither leaves the
-/// Record behind. There is deliberately no "dismiss": clearing an invite
-/// without answering the grant would leave the sender waiting forever while
-/// the Organ slot stayed occupied, so the invite could never be re-sent
-/// either.
 pub async fn clear(pool: &SqlitePool, record_uid: &str) -> Result<(), StoreError> {
     sqlx::query("DELETE FROM record_extension WHERE record_uid = ?")
         .bind(record_uid)

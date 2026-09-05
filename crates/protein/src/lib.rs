@@ -1,30 +1,3 @@
-//! The Protein layer (blueprint Part VII): how any interface asks Lince for
-//! data. DNA is what you store; Protein is how it comes out and shows its
-//! power. Sands and every first-party surface speak only Protein (reads) and
-//! Actions (writes, in `engine`); they never see tables or SQL — which is what
-//! makes the storage engine replaceable underneath.
-//!
-//! **Protein never mutates.** This crate has no write path at all.
-//!
-//! Sources: `record | promise | decision | fact | concept | transfer |
-//! transfer_settlement_preview | transfer_bulk_completion_preview | nearby`.
-//! Boolean predicate tree with Lingua-DAG `concept_in` (what a Record IS) and
-//! `classified_in` (what a CHANGE was for); includes `facts` (provenance),
-//! `promises`, `links` (with tree `depth`), `threads`, `extension`,
-//! `availability`, and `projection` (promise fold); aggregation (`sum`/`count`
-//! by total/concept/classification/kind/cause_kind/day, exact and
-//! unit-separated — the statistics workhorse, and equally at home totalling
-//! spending, stock consumption, or hours);
-//! ordering by record fields and directed link rules; limit. Rows come out as JSON — the
-//! wire shape sands consume. Live subscriptions ride the engine's `fact_bus`
-//! (see `affects`): snapshot, then re-execute on relevant commits. A source
-//! reading process state rather than the database (`nearby`) commits no Facts
-//! and so is refreshed by the session's ephemeral tick instead.
-//!
-//! `include: projection` folds **promises** forward (the planned trajectory
-//! from agreed/active commitments). Full rule simulation needs the Karma
-//! registry and stays engine-side (`Engine::project`) so this crate keeps its
-//! read-only-by-construction guarantee.
 #![recursion_limit = "512"]
 
 use base64::Engine as _;
@@ -37,8 +10,6 @@ use store::Store;
 
 pub type ProteinError = store::StoreError;
 
-/// Stable wire code for Protein validation failures. Store failures remain
-/// uncoded; only deliberately typed Protein protocol errors are exposed.
 pub fn error_code(error: &ProteinError) -> Option<String> {
     let store::sqlx::Error::Protocol(message) = error else {
         return None;
@@ -62,20 +33,7 @@ pub fn error_code(error: &ProteinError) -> Option<String> {
 pub struct Protein {
     pub source: Source,
     #[serde(default, rename = "where")]
-    pub filter: Vec<Predicate>, // top level is an implicit `all`
-    /// Which COLUMNS come back. `None` means all of them, which is what every
-    /// existing caller means and gets.
-    ///
-    /// Added for cluster C5, where it is load-bearing well beyond trimming a
-    /// payload: the same selector that decides a sand renders `assignee`
-    /// decides whether `assignee` TRAVELS to a contact. One language, learned
-    /// once, rather than a query language and a separate sharing language kept
-    /// laboriously in step.
-    ///
-    /// NAME-WHAT-YOU-WANT, never name-what-to-hide, and that asymmetry is the
-    /// whole security argument: a column added six months from now stays home
-    /// until some Protein names it. A deny-list would have leaked it by
-    /// default, and nobody would have noticed until it had.
+    pub filter: Vec<Predicate>,
     #[serde(default)]
     pub fields: Option<Vec<String>>,
     #[serde(default)]
@@ -88,8 +46,6 @@ pub struct Protein {
     pub limit: Option<usize>,
 }
 
-/// `aggregate: { op: sum, by: concept }` — the finance/statistics workhorse
-/// (blueprint VII.1). Applied after filtering, instead of row output.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Aggregate {
     pub op: AggregateOp,
@@ -106,25 +62,12 @@ pub enum AggregateOp {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum GroupBy {
-    /// No grouping: one bucket for everything the filter matched (still split
-    /// by unit). "What is my net this month" is a real question and expressing
-    /// it as a group-by over some arbitrary key and re-summing on the client
-    /// would put exact arithmetic back in JavaScript.
     Total,
-    /// The Record's own concept — what the thing IS.
     Concept,
-    /// Fact source: the concept the CHANGE was classified with — what it was
-    /// FOR. `concept` groups a food purchase under the wallet it came from;
-    /// `classification` groups it under food. Both are needed, and conflating
-    /// them silently answers the wrong question.
     Classification,
     Kind,
-    /// Fact source: group by the fact's cause_kind (W-finance).
     CauseKind,
-    /// Fact source: group by calendar day (`YYYY-MM-DD` of `at`).
     Day,
-    /// Group by calendar month (`YYYY-MM` of `at`). The natural bucket for a
-    /// timeline that spans a year, where a daily point is noise.
     Month,
 }
 
@@ -134,102 +77,24 @@ pub enum Source {
     Record,
     Promise,
     Decision,
-    /// The Ledger itself — history, finance, statistics.
     Fact,
-    /// The Lingua vocabulary.
     Concept,
-    /// Named collections of shared Concepts.
     Lingua,
-    /// Current Record assertions: unary classifications and binary relations.
     Assertion,
-    /// Transfers with their derived status (blueprint VIII.1). The first row
-    /// is `kind: "transfer_context"`, carrying server-derived viewer identity,
-    /// creation capability, and blocker codes even when no transfers exist;
-    /// actual rows are `kind: "transfer"` and carry per-transfer capabilities.
     Transfer,
-    /// Private, quantity-sensitive settlement review for one occurrence. This
-    /// source requires direct `uid_eq` and `quantity_eq` predicates and emits
-    /// no row unless the caller is the signed source-promise owner.
     TransferSettlementPreview,
-    /// Reviewed, read-only plan for asserting this Person's currently missing
-    /// delivery/receipt claims across an explicit occurrence selection.
     TransferBulkCompletionPreview,
-    /// The permission/role/user system (`store::auth` — native SQL state,
-    /// not Ledger records, per blueprint's split). Rows are heterogeneous,
-    /// distinguished by `kind`: `"role"` (id, name, permissions), `"user"`
-    /// (id, username, name, role, `active` and why — never a password hash),
-    /// and one
-    /// `"permission_catalog"` row (the full static key list, for building a
-    /// grant UI). No filter/include support — it's a small, fixed listing.
-    /// Gated at the session boundary (`execute_for`): a remote/authenticated
-    /// subject needs `role:read`, `user:read`, or `permission:read`; the
-    /// local Cell (`subject: None`) always sees it, like every other source.
     Auth,
-    /// Durable Program/Frequency definitions, activation epochs, scheduler
-    /// cursors/batches, semantic occurrences, frozen Program epochs, and
-    /// deterministic runs. Remote subjects see no rows until fine-grained
-    /// Karma visibility grants exist.
     Karma,
-    /// One classified quantity axis through time: what settled, where it stands
-    /// now, and what is declared ahead.
-    ///
-    /// This exists because those three are one question, not three panels. A
-    /// person asking "how is `@rent` going" wants the months behind, the
-    /// running position, and the months ahead on a single line — and stitching
-    /// that together on the client would require summing exact decimals in
-    /// JavaScript, which is where exactness goes to die.
-    ///
-    /// The future is *declared*, never invented: it is the dates recurring
-    /// rules produce plus promises already made. Nothing here forecasts, and
-    /// nothing here writes a Fact.
     Timeline,
-    /// Authored changes with the handle needed to correct them.
-    ///
-    /// [`Source::Fact`] answers what the Ledger holds; this answers what a
-    /// person typed and may still fix. The difference that matters to a surface
-    /// is `uid` and `revision`: revising or voiding requires both, and a Fact
-    /// has neither because a Fact is not editable.
     Entry,
-    /// Named beats a condition reads as `freq(@slug)`.
-    ///
-    /// A Frequency is a slug and a step, and that is all a row carries. The
-    /// beats themselves are not here and are not stored anywhere: `Cadence` is
-    /// pure, so a surface wanting the next date or the next twelve months
-    /// derives them from `every` and `anchor_at` rather than reading a table
-    /// that would have to be kept in sync with the step.
     Frequency,
-    /// Standing recurring declarations and the dates they produce.
-    ///
-    /// Rows are heterogeneous by `kind`: `"recurrence"` for a rule, and
-    /// `"occurrence"` for one derived date with what became of it. Occurrences
-    /// are derived on read, never stored.
     Recurrence,
-    /// Organs announcing themselves on this local network right now.
-    ///
-    /// The only source whose rows come from the process rather than the
-    /// database, and the reason it belongs here anyway is that a sand should
-    /// not need a second way to ask a question. [`Source::Decision`] already
-    /// established the local-only category; this joins it, for a stronger
-    /// reason: a nearby list tells you who is on someone's LAN, which is
-    /// exactly what must never leave the Cell.
-    ///
-    /// Discovery deliberately commits no Facts (the Ledger is not a place to
-    /// record who walked past), so `affects` returns false here and a
-    /// subscription is refreshed by the session's ephemeral tick instead.
     Nearby,
 }
 
-/// What the calling process knows that the database cannot answer.
-///
-/// The precedent is `installed_signer_actor`: a caller-supplied fact about
-/// this process, passed in rather than looked up, because no query could find
-/// it. Discovery is the same kind of thing. Bundled as a struct so the next
-/// one does not become a sixth positional argument.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Context<'a> {
-    /// Organs on the LAN, as the wire currently sees them. `None` when no
-    /// endpoint is bound — which is also the right answer for a Cell with
-    /// discovery switched off, so it needs no separate signal.
     pub nearby: Option<&'a [nucleus::nearby::NearbyPeer]>,
 }
 
@@ -249,17 +114,10 @@ pub enum Predicate {
     QuantityGte(f64),
     QuantityEq(f64),
     UidEq(String),
-    /// Focused Transfer bulk-preview selection. This predicate is not a
-    /// general Record/Transfer filter.
     OccurrenceIn(Vec<String>),
     KindEq(String),
     SlugEq(String),
-    /// Lingua-DAG aware: `concept_in("food")` matches records tagged `@apple`
-    /// through `apple -> fruit -> food` (blueprint III.1/VII.1).
     ConceptIn(String),
-    /// Generic Record-link predicate. `other = None` asks whether a link of
-    /// this kind exists in the selected direction; otherwise `other` is
-    /// resolved as a Record slug/uid and must be the opposite endpoint.
     Relation {
         kind: String,
         #[serde(default)]
@@ -267,13 +125,6 @@ pub enum Predicate {
         #[serde(default)]
         other: Option<String>,
     },
-    /// Everything beneath one Record through a link kind, transitively.
-    ///
-    /// `Relation` answers "is there an edge", one hop only, which cannot say
-    /// "this branch": a grandchild is under its grandparent through two edges
-    /// and matches no single-hop test. The whole point of sharing a branch is
-    /// that it keeps working as the branch grows, so the closure has to be the
-    /// predicate rather than something a caller re-enumerates.
     Under {
         record: String,
         #[serde(default = "part_of_kind")]
@@ -281,76 +132,36 @@ pub enum Predicate {
         #[serde(default)]
         include_self: bool,
     },
-    /// Case-insensitive search across a Record's head and body.
     TextContains(String),
-    /// A comparison against the existing `work.start` or `work.due` date.
     WorkDate {
         field: WorkDateField,
         op: DateComparison,
         #[serde(default)]
         value: Option<String>,
     },
-    /// Promise source: state is one of these. Transfer source: at least one
-    /// bundled promise currently has one of these states.
     StateIn(Vec<String>),
-    /// Transfer source: match the exact signed terms revision.
     RevisionEq(u64),
-    /// Transfer source: signed terms revision range filters.
     RevisionLt(u64),
     RevisionLte(u64),
     RevisionGt(u64),
     RevisionGte(u64),
-    /// Transfer source: derived Transfer status is one of these.
     StatusIn(Vec<String>),
-    /// Transfer source: the requesting viewer has one of these server-derived
-    /// roles (`local`, `creator`, `participant`, `invitee`, `observer`).
     ViewerRoleIn(Vec<String>),
-    /// Transfer source: at least one addressed invitation has one of these
-    /// lifecycle states.
     InvitationStateIn(Vec<String>),
-    /// Transfer source: a Person is a participant, addressee, inviter, or the
-    /// assigned Person of one of the Transfer's promises.
     PersonEq(String),
-    /// Transfer source: a bundled promise's signed unit equals this Lingua
-    /// concept. Name and uid tokens resolve through Lingua.
     UnitEq(String),
-    /// Transfer source: at least one promise window ends before/after the
-    /// supplied RFC3339 instant.
     WindowEndBefore(String),
     WindowEndAfter(String),
-    /// Fact source: `at` within the trailing window (`"30d"`, `"2h"`) or at or
-    /// after an absolute RFC3339 instant.
     AtSince(String),
-    /// Fact source: the exclusive end of the window, same spellings as
-    /// `at_since`. Half-open `[since, before)` on purpose — adjacent periods
-    /// must tile without one change being counted in both.
     AtBefore(String),
-    /// Fact source: the concept the CHANGE ITSELF was classified with,
-    /// DAG-expanded.
-    ///
-    /// Deliberately distinct from `concept_in`, which asks about the Record the
-    /// change happened to. The two answer different questions and a query needs
-    /// both: "what did I spend on food" selects Records by `@budget` and changes
-    /// by `@food`. Collapsing them into one predicate is how a query silently
-    /// answers something other than what was asked.
     ClassifiedIn(String),
-    /// Fact source: the fact's cause_kind equals this (`"settlement"`, ...).
     CauseKindEq(String),
-    /// Fact source: the fact belongs to this record (slug or uid) —
-    /// the W-provenance standard.
     RecordEq(String),
-    /// Place Instinct (IX): the record's place is within `meters` of the
-    /// anchor record's place. Records without a place never match.
     Near {
         of: String,
         meters: f64,
     },
-    /// The record's origin organ (slug or uid, resolved like any `@token`)
-    /// equals this one. Records with no known origin never match. The
-    /// selection primitive behind Protein-driven Sync/File Sync: "every
-    /// record belonging to organ X".
     OrganEq(String),
-    /// Like `organ_eq`, but any of these organs (slug or uid each).
     OrganIn(Vec<String>),
 }
 
@@ -378,35 +189,14 @@ pub struct Include {
     pub promises: Option<PromisesInclude>,
     pub links: Option<LinksInclude>,
     pub threads: Option<ThreadsInclude>,
-    /// Availability projections (blueprint V.3): `available`, `planned`.
     #[serde(default)]
     pub availability: bool,
-    /// One fds namespace attached as `extension` (blueprint I.2).
     pub extension: Option<ExtensionInclude>,
-    /// Promise fold to a future instant (blueprint XII via V.3): `projected`.
     pub projection: Option<ProjectionInclude>,
-    /// This organ's `organ_contact` row (trust, proximity), when one exists
-    /// (blueprint XV) — `null` for a record with no contact sidecar, e.g. the
-    /// local organ itself.
     #[serde(default)]
     pub contact: bool,
-    /// The conversations shared with this organ (Ontology §11), as
-    /// `conversations`. Empty for a record nobody talks to through — including
-    /// this Cell's own Organ, which has no grants pointing at it.
-    ///
-    /// A grant is not a link and not a Fact, so a surface has no other way to
-    /// ask whether a conversation with someone already exists.
     #[serde(default)]
     pub conversations: bool,
-    /// Who has READ this Record through a live reference, as `reference_reads`
-    /// (Ontology §11, C6). Reading a reference is an observable event on the
-    /// owner's Cell whether or not anyone records it, so the owner is shown
-    /// what their Cell already saw rather than left with an invisible side
-    /// effect.
-    ///
-    /// LOCAL ONLY. This never syncs and no op kind carries it: who read what
-    /// and when is exactly the behavioural trail that must not become someone
-    /// else's data.
     #[serde(default)]
     pub reference_reads: bool,
 }
@@ -418,7 +208,6 @@ pub struct ExtensionInclude {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProjectionInclude {
-    /// `"+7d"` relative to now, or an absolute RFC3339 instant.
     pub at: String,
 }
 
@@ -435,20 +224,16 @@ fn default_fact_limit() -> i64 {
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct PromisesInclude {
     #[serde(default)]
-    pub state: Vec<String>, // empty = all states
+    pub state: Vec<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct LinksInclude {
-    /// Explicit link kinds to include. Empty means no links; a `"*"` entry
-    /// means EVERY kind (Record's all-links view).
     #[serde(default)]
     pub kinds: Vec<String>,
     #[serde(default)]
     pub direction: LinkDirection,
-    /// Reserved for tree expansion; v1 Relation uses `0`/omitted for direct
-    /// links among the subscribed records.
     #[serde(default)]
     pub depth: usize,
 }
@@ -482,8 +267,6 @@ fn default_messages_limit() -> usize {
 pub enum Order {
     Asc(String),
     Desc(String),
-    /// A directed link is an ordering rule. `higher: from` means the source
-    /// endpoint is earlier in the result; `to` reverses that meaning.
     Link(LinkOrder),
 }
 
@@ -501,16 +284,10 @@ pub enum LinkEndpoint {
     To,
 }
 
-/// Execute a Protein snapshot for the local Cell. Output rows are JSON — the
-/// sand wire shape.
 pub async fn execute(store: &Store, protein: &Protein) -> Result<Vec<Value>, ProteinError> {
     execute_for(store, protein, None).await
 }
 
-/// Execute for a subject (blueprint XV.1): the ONE visibility enforcement
-/// point. `None` = the local Cell (sees everything). `Some(subject)` = a
-/// remote Organ/actor: default hidden, whole-row grants only in v1; the
-/// Decision Queue never leaves the Cell.
 pub async fn execute_for(
     store: &Store,
     protein: &Protein,
@@ -519,9 +296,6 @@ pub async fn execute_for(
     execute_for_with_signer(store, protein, subject, None).await
 }
 
-/// Execute for a subject while projecting the signing authority actually
-/// available to the calling process. Public identity keys only prove that a
-/// signature can be verified; they must never advertise write capability.
 pub async fn execute_for_with_signer(
     store: &Store,
     protein: &Protein,
@@ -538,9 +312,6 @@ pub async fn execute_for_with_signer(
     .await
 }
 
-/// Execute with everything the calling process knows. The other entry points
-/// are this one with an empty [`Context`] — which is why a source reading the
-/// context must treat "absent" as "nothing to report" rather than an error.
 pub async fn execute_for_with_context(
     store: &Store,
     protein: &Protein,
@@ -551,18 +322,18 @@ pub async fn execute_for_with_context(
     validate(protein)?;
     let visible = match subject {
         None => None,
-        Some(s) => Some(store::visibility::visible_targets(&store.pool, s).await?),
+        Some(s) => {
+            let mut allowed = store::visibility::visible_targets(&store.pool, s).await?;
+            if let Some(readable) = read_filter_targets(store, s).await? {
+                allowed.retain(|uid| readable.contains(uid));
+            }
+            Some(allowed)
+        }
     };
-    // The gate applies BEFORE aggregation: hidden rows must not leak into sums.
     let visible = visible.as_ref();
-    // Blanket read enforcement (2026-08-07): checked once here, before
-    // dispatch, rather than inside each `execute_*` fn — one choke point for
-    // every source. `None` (source has no catalog permission yet — Decision,
-    // Concept, Lingua, Nearby keep their own bespoke/no gating below) skips
-    // this check entirely.
     if let Some(keys) = read_permission_keys(protein.source) {
         if !actor_can_read_source(store, subject, keys).await? {
-            return Ok(vec![]); // same "hidden, not an error" shape as Decision/Karma/Nearby
+            return Ok(vec![]);
         }
     }
     Ok(match protein.source {
@@ -570,7 +341,7 @@ pub async fn execute_for_with_context(
         Source::Promise => execute_promises(store, protein, visible).await?,
         Source::Decision => {
             if visible.is_some() {
-                return Ok(vec![]); // attention is never exported
+                return Ok(vec![]);
             }
             execute_decisions(store, protein).await?
         }
@@ -579,7 +350,6 @@ pub async fn execute_for_with_context(
         Source::Entry => execute_entries(store, protein, visible).await?,
         Source::Frequency => execute_frequency(store).await?,
         Source::Recurrence => execute_recurrence(store, protein, visible).await?,
-        // Lingua is shared vocabulary by design (III): concepts travel freely.
         Source::Concept => execute_concepts(store, protein).await?,
         Source::Lingua => execute_linguas(store, protein).await?,
         Source::Assertion => execute_assertions(store, protein).await?,
@@ -610,7 +380,7 @@ pub async fn execute_for_with_context(
         Source::Auth => {
             if let Some(actor) = subject {
                 if !actor_can_read_auth(store, actor).await? {
-                    return Ok(vec![]); // same "hidden, not an error" shape as Decision
+                    return Ok(vec![]);
                 }
             }
             execute_auth(store).await?
@@ -623,19 +393,41 @@ pub async fn execute_for_with_context(
         }
         Source::Nearby => {
             if visible.is_some() {
-                return Ok(vec![]); // who is on your LAN is never exported
+                return Ok(vec![]);
             }
             execute_nearby(store, protein, context.nearby.unwrap_or(&[])).await?
         }
     })
 }
 
-/// Which catalog permission(s) (`utils::auth::ALL_PERMISSIONS`) unlock a
-/// source for a local logged-in user — any one of the listed keys is
-/// enough. `None` = no blanket gate for this source: `Decision`/`Nearby`
-/// already fully hide from any non-local subject above, `Karma` gets its
-/// own catalog key, and `Concept`/`Lingua` stay ungated on purpose (shared
-/// vocabulary "travels freely", per the standing comment on `Source::Concept`).
+async fn read_filter_targets(
+    store: &Store,
+    person_uid: &str,
+) -> Result<Option<HashSet<String>>, ProteinError> {
+    let Some(raw) = store::read_filter::get(&store.pool, person_uid).await? else {
+        return Ok(None);
+    };
+    let Ok(predicate) = serde_json::from_str::<Predicate>(&raw) else {
+        return Ok(Some(HashSet::new()));
+    };
+    let narrowed = Protein {
+        source: Source::Record,
+        filter: vec![predicate],
+        fields: None,
+        include: Default::default(),
+        aggregate: None,
+        order: vec![],
+        limit: None,
+    };
+    Ok(Some(
+        matching_records(store, &narrowed, None)
+            .await?
+            .into_iter()
+            .map(|row| row.uid)
+            .collect(),
+    ))
+}
+
 fn read_permission_keys(source: Source) -> Option<&'static [&'static str]> {
     match source {
         Source::Record | Source::Fact | Source::Timeline | Source::Entry | Source::Assertion => {
@@ -696,9 +488,6 @@ pub fn validate(protein: &Protein) -> Result<(), ProteinError> {
     for predicate in &protein.filter {
         visit(predicate, 0)?;
     }
-    // UID is deliberately an internal, final tie-breaker for Record Proteins.
-    // It must never become a visible/authorable ordering choice: a saved
-    // Protein says what matters, while head + uid make every result stable.
     if protein.source == Source::Record
         && protein
             .order
@@ -712,10 +501,6 @@ pub fn validate(protein: &Protein) -> Result<(), ProteinError> {
     Ok(())
 }
 
-/// Build the recipient-specific hosted/replica payload at the same visibility
-/// boundary as normal Transfer reads. Recipient-specific capabilities and
-/// action templates remain so signed commands can be sent back to the origin;
-/// raw proof signatures are intentionally absent.
 pub async fn transfer_delivery_projection(
     store: &Store,
     transfer_uid: &str,
@@ -842,34 +627,14 @@ fn strip_delivery_mutation_and_proof(value: &mut Value) {
     }
 }
 
-/// Best-effort: any failure to resolve the actor (not a numeric app_user id,
-/// no such user) reads as "can't read", not an error — a Protein snapshot
-/// should never fail just because of who's asking.
-/// Blanket read enforcement (2026-08-07): a Protein source is gated by a
-/// catalog permission (`utils::auth::ALL_PERMISSIONS`) — the same catalog
-/// the permissions sand already lets every role toggle, and the same
-/// pattern `actor_can_read_auth` already used for the `auth` source alone.
-///
-/// This is a DIFFERENT concern from `visible_targets` in
-/// `execute_for_with_context`: that governs which ROWS a remote-organ
-/// `subject` may see (row-level cross-organ grants, blueprint XV.1) — this
-/// governs whether a LOCAL logged-in user's role may use a source AT ALL.
-/// Only a numeric `subject` (a local app_user id — the same convention
-/// `actor_can_read_auth` relies on) is checked here; a non-numeric subject
-/// (a remote organ) is left to `visible_targets` alone, or organ-to-organ
-/// sync would silently go blind the moment this landed.
 async fn actor_can_read_source(
     store: &Store,
     subject: Option<&str>,
     keys: &[&str],
 ) -> Result<bool, ProteinError> {
     let Some(subject) = subject else {
-        return Ok(true); // the local Cell itself: unrestricted
+        return Ok(true);
     };
-    // The subject is always a Person uid now. A Person with no credential —
-    // a contact, or the Person a remote Organ's login named — holds no role
-    // here, so `visible_targets` is their only gate, exactly as it was when
-    // this branch keyed off "the subject did not parse as an integer".
     let Some(user) = store::auth::user_by_uid(&store.pool, subject).await? else {
         return Ok(true);
     };
@@ -897,14 +662,7 @@ async fn execute_auth(store: &Store) -> Result<Vec<Value>, ProteinError> {
         }));
     }
     for (uid, username, name, role) in store::auth::list_users(&store.pool).await? {
-        // `id` and `person` are the same value now and both are kept: sands
-        // read one or the other, and they were never allowed to disagree.
         let person_record = store::records::get(&store.pool, &uid).await?;
-        // Standing rides along with the user row rather than as its own source:
-        // the admin table is where someone decides to turn a person off, and a
-        // list that shows who can log in without showing who cannot is a list
-        // that hides its own most important column. `note` is the owner's, and
-        // stays behind `user:read` with the rest of this source.
         let standing = store::people::standing(&store.pool, &uid).await?;
         out.push(json!({
             "kind": "user",
@@ -927,8 +685,6 @@ async fn execute_auth(store: &Store) -> Result<Vec<Value>, ProteinError> {
     Ok(out)
 }
 
-/// Execute a saved Protein (a record of kind='protein' whose AST lives in the
-/// `lince.protein` extension) — the old `view` table's successor.
 pub async fn execute_saved(
     store: &Store,
     slug_or_uid: &str,
@@ -937,7 +693,6 @@ pub async fn execute_saved(
     execute_saved_with_signer(store, slug_or_uid, subject, None).await
 }
 
-/// Saved-Protein counterpart of [`execute_for_with_signer`].
 pub async fn execute_saved_with_signer(
     store: &Store,
     slug_or_uid: &str,
@@ -955,9 +710,6 @@ pub async fn execute_saved_with_signer(
     execute_for_with_signer(store, &protein, subject, installed_signer_actor).await
 }
 
-/// Coarse live-subscription invalidation: does a committed fact possibly
-/// change this Protein's result? v1 answer: any fact touching the source
-/// domain does. The transport re-executes on `true`; refinement comes later.
 pub fn affects(protein: &Protein, _fact: &nucleus::Fact) -> bool {
     matches!(
         protein.source,
@@ -968,19 +720,12 @@ pub fn affects(protein: &Protein, _fact: &nucleus::Fact) -> bool {
             | Source::TransferSettlementPreview
             | Source::TransferBulkCompletionPreview
             | Source::Karma
-            // A capture, a correction, and an applied occurrence all commit
-            // Facts, and all three of these read them. Leaving them out would
-            // leave a surface showing a total that stopped being true.
             | Source::Timeline
             | Source::Entry
             | Source::Recurrence
     )
 }
 
-/// Whether this Protein reads process state that commits no Facts, and so can
-/// only be refreshed by re-running it on a tick. The complement of `affects`:
-/// a source is one or the other, never both, and a source that is neither is
-/// simply static.
 pub fn is_ephemeral(protein: &Protein) -> bool {
     matches!(protein.source, Source::Nearby)
 }
@@ -1008,10 +753,6 @@ async fn execute_karma(store: &Store, protein: &Protein) -> Result<Vec<Value>, P
         ));
     }
 
-    // C7 axis 2 — does THIS Cell execute each Program. Read once for the whole
-    // union rather than per row: the answer is a per-Cell setting, so it is one
-    // small local table and a query per Program would be the only reason this
-    // union scaled with the number of rules.
     let executing: std::collections::BTreeMap<String, (bool, Option<String>)> =
         store::karma::execution::list(&store.pool)
             .await?
@@ -1019,11 +760,6 @@ async fn execute_karma(store: &Store, protein: &Protein) -> Result<Vec<Value>, P
             .map(|row| (row.program_uid, (row.executes, row.note)))
             .collect();
 
-    // Read once, used twice: the revision rows below, and the outward-consequence
-    // flag each Program handle needs. A Program's handle is the thing a person
-    // configures, so the flag has to reach the handle row — asking the surface
-    // to join a handle to its active revision to learn whether the rule acts
-    // outward is how that warning ends up omitted.
     let revisions = store::karma::programs::list_revisions(&store.pool).await?;
     let outward: std::collections::BTreeMap<String, bool> = revisions
         .iter()
@@ -1035,14 +771,8 @@ async fn execute_karma(store: &Store, protein: &Protein) -> Result<Vec<Value>, P
         })
         .collect();
 
-    // Which Cell is answering. The surface needs it to tell "designated to me"
-    // from "designated to one of my others" — the same string in both cases,
-    // and the difference is the whole meaning of the row.
     let this_cell: Option<String> = store::cells::local(&store.pool).await?.map(|cell| cell.uid);
 
-    // Read once for the whole union, like the two maps above. Every per-row
-    // lookup in this loop is one query per Program per Protein query, and this
-    // union is read on every refresh of the panel it feeds.
     let designations: std::collections::BTreeMap<String, Option<String>> =
         store::sqlx::query("SELECT record_uid, fds FROM record_extension WHERE namespace = ?")
             .bind(store::executor::NAMESPACE)
@@ -1064,9 +794,6 @@ async fn execute_karma(store: &Store, protein: &Protein) -> Result<Vec<Value>, P
     for handle in store::karma::programs::list_handles(&store.pool).await? {
         let can_activate = handle.active_revision_hash.as_ref() != Some(&handle.head_revision_hash);
         let can_pause = handle.status == nucleus::karma::DefinitionStatus::Active;
-        // Absent means executing, the same default the run path uses. Reading
-        // it as `false` here would make an unconfigured Organ's whole rule set
-        // look dormant in the interface while it ran normally underneath.
         let (executes, execution_note) = executing
             .get(&handle.record_uid)
             .cloned()
@@ -1082,22 +809,10 @@ async fn execute_karma(store: &Store, protein: &Protein) -> Result<Vec<Value>, P
             "owner_person_uid": handle.owner_person_uid,
             "created_at": handle.created_at,
             "updated_at": handle.updated_at,
-            // Local to the Cell answering this query, and labelled so nothing
-            // downstream mistakes it for a property of the rule. The same
-            // Program queried on another Cell may answer differently, and that
-            // is the point of the axis rather than an inconsistency.
             "executes_here": executes,
             "execution_note": execution_note,
-            // The shared half of C7, beside the local half. Both are needed to
-            // read a row honestly: a rule can be designated elsewhere AND
-            // switched off here, and showing only one would explain the wrong
-            // reason for it not running.
             "designated_cell": designations.get(handle.record_uid.as_str()).cloned().flatten(),
             "this_cell": this_cell,
-            // Read from the ACTIVE revision, not the head: what this Cell would
-            // run right now is what the warning has to describe. A head
-            // revision that adds an outward consequence is not yet running, and
-            // warning about it would be warning about the wrong thing.
             "externally_observable": handle
                 .active_revision_hash
                 .as_ref()
@@ -1108,9 +823,6 @@ async fn execute_karma(store: &Store, protein: &Protein) -> Result<Vec<Value>, P
                 "revise": true,
                 "activate": can_activate,
                 "pause": can_pause,
-                // Always offered: holding a rule without running it is not
-                // gated on the rule's status. A paused Program is exactly one
-                // somebody may want to arrange before activating it.
                 "set_execution": true,
             },
             "blocking_reasons": {
@@ -1139,11 +851,6 @@ async fn execute_karma(store: &Store, protein: &Protein) -> Result<Vec<Value>, P
                     "program_uid": handle.record_uid,
                     "expected_handle_revision": handle.handle_revision,
                 },
-                // No `expected_handle_revision`: this is not a change to the
-                // Program, so revising the rule elsewhere must not invalidate
-                // a pending "do not run this here". Concurrency between two
-                // processes on ONE Cell is the only race, and last-write-wins
-                // is the right answer for a switch with two positions.
                 "set_execution": {
                     "action": "set-karma-execution",
                     "program_uid": handle.record_uid,
@@ -1156,11 +863,6 @@ async fn execute_karma(store: &Store, protein: &Protein) -> Result<Vec<Value>, P
     for revision in revisions {
         rows.push(json!({
             "object_kind": "program_revision",
-            // C7: whether this revision's consequences leave the machine, so
-            // the interface can say what running it on several Cells costs AT
-            // THE MOMENT of choosing rather than leaving it to be discovered in
-            // the Ledger. Computed from the frozen AST, never stored, because a
-            // stored copy would drift from the revision it describes.
             "externally_observable": revision.program.is_externally_observable(),
             "uid": revision.revision_hash,
             "program_uid": revision.program_uid,
@@ -1422,8 +1124,6 @@ async fn execute_karma(store: &Store, protein: &Protein) -> Result<Vec<Value>, P
                 "snooze": true,
             },
             "creates_intent": false,
-            // K5.1 made authority real, but accepting a proposal still translates
-            // into no work: the candidate-to-intent bridge does not exist yet.
             "intent_blocking_reasons": ["karma_intent_not_implemented"],
             "action_templates": {
                 "accept": {
@@ -1485,7 +1185,6 @@ async fn execute_karma(store: &Store, protein: &Protein) -> Result<Vec<Value>, P
             "valid_from": head.revision.spec.valid_from,
             "expires_at": head.revision.spec.expires_at,
             "budget": head.revision.spec.budget,
-            // Who vouched for the authority currently on offer, and with which key.
             "signature_provenance": {
                 "signer_person_uid": head.signature.signer_person_uid,
                 "key_id": head.signature.key_id,
@@ -1509,8 +1208,6 @@ async fn execute_karma(store: &Store, protein: &Protein) -> Result<Vec<Value>, P
                 },
                 "revoke": if revoked { vec!["grant_revoked"] } else { Vec::<&str>::new() },
             },
-            // An active grant can now authorize a durable intent, but nothing
-            // executes one: there is still no worker, lease, or dispatch.
             "authorizes_effects": false,
             "effect_blocking_reasons": ["karma_execution_not_implemented"],
             "action_templates": {
@@ -1581,16 +1278,12 @@ async fn execute_karma(store: &Store, protein: &Protein) -> Result<Vec<Value>, P
             "deadline": intent.intent.deadline,
             "status": state.status.as_str(),
             "state_revision": state.state_revision,
-            // The head of this intent's transition chain, so an audit can walk
-            // its whole lifecycle without trusting the projection.
             "current_event_hash": state.current_event_hash,
             "cancelled_reason": state.cancelled_reason,
             "actor_person_uid": state.actor_person_uid,
-            // The whole reason this was permitted, auditable as one object.
             "policy_proof": intent.intent.authorization,
             "created_at": intent.created_at,
             "updated_at": state.updated_at,
-            // K5.2 authorizes work and stops. No worker may claim this.
             "executable": false,
             "execution_blocking_reasons": ["karma_execution_not_implemented"],
             "action_templates": {},
@@ -1697,12 +1390,6 @@ fn karma_query_error(code: &str, message: impl std::fmt::Display) -> ProteinErro
     store::sqlx::Error::Protocol(format!("{code}:{message}"))
 }
 
-// ------------------------------------------------------------------- records
-
-/// Records matching a Protein's filter, ignoring aggregate/order/limit — the
-/// selection primitive shared by `execute_records` and any consumer that
-/// needs actual rows rather than the JSON wire shape (Protein-driven Sync and
-/// File Sync: resolve WHICH records travel by evaluating a saved Protein).
 pub async fn matching_records(
     store: &Store,
     protein: &Protein,
@@ -1750,12 +1437,6 @@ pub async fn matching_records(
     Ok(rows)
 }
 
-/// Which of `among` the query selects — the incremental half of
-/// [`matching_records`].
-///
-/// A share reconciliation only ever asks about the Records an op touched since
-/// its watermark, so evaluating the selection against the whole store on every
-/// pass would do work proportional to the store rather than to the change.
 pub async fn matching_among(
     store: &Store,
     protein: &Protein,
@@ -1778,24 +1459,8 @@ async fn execute_records(
 ) -> Result<Vec<Value>, ProteinError> {
     let mut rows = matching_records(store, protein, visible).await?;
 
-    // The Cell Record is infrastructure, not content: it is this device, it
-    // never travels, and it exists so that "who wrote this" and "whose is
-    // this" can be different values. It appeared in ordinary queries only
-    // because the Organ/Cell split created it, so hiding it restores what
-    // every surface showed before rather than taking anything away.
-    //
-    // The ORGAN Record deliberately stays visible. It was always queryable,
-    // and surfaces depend on it: the organ list distinguishes you from your
-    // contacts by finding your own Organ row with no contact sidecar.
-    //
-    // Filtered HERE and not in `matching_records`, because that function is
-    // the shared primitive and internal callers legitimately scan with it.
-    //
-    // PROVISIONAL: a fixed slug exclusion is the blunt version of what the C5
-    // selector language should express properly.
     rows.retain(|r| r.slug.as_deref() != Some(store::cells::LOCAL_CELL_SLUG));
 
-    // aggregation short-circuits row output (blueprint VII.1)
     if let Some(agg) = &protein.aggregate {
         return Ok(aggregate_records(&rows, agg));
     }
@@ -1827,10 +1492,6 @@ async fn execute_records(
             "concept_name": r.identity_predicate_uid.as_ref().and_then(|uid| concept_names.get(uid)),
             "created_at": r.created_at,
             "updated_at": r.updated_at,
-            // Creation order that survives crossing a machine boundary. A
-            // surface showing anything written on more than one Cell — a
-            // conversation above all — must order by this rather than by
-            // `created_at`, which is whatever that machine's clock said.
             "created_hlc": r.created_hlc,
             "start_date": work.get(&r.uid).and_then(|value| value.get("start")).and_then(Value::as_str),
             "due_date": work.get(&r.uid).and_then(|value| value.get("due")).and_then(Value::as_str),
@@ -1850,14 +1511,6 @@ async fn execute_records(
     Ok(out)
 }
 
-/// Keep only the named columns, plus the ones a row is meaningless without.
-///
-/// `uid` and `kind` always survive: a row nobody can identify is not a
-/// narrower answer to the question, it is a different and useless one, and
-/// every surface and the sync path alike address rows by uid.
-///
-/// An absent selector returns everything, so this is invisible to callers that
-/// do not use it.
 fn narrow_to_fields(row: &mut Value, fields: Option<&[String]>) {
     let Some(fields) = fields else {
         return;
@@ -1871,9 +1524,6 @@ fn narrow_to_fields(row: &mut Value, fields: Option<&[String]>) {
 }
 
 fn aggregate_records(rows: &[store::records::RecordRow], agg: &Aggregate) -> Vec<Value> {
-    // Summing Record quantities is summing LEVELS, not changes, so there is no
-    // gain/loss split here — a level has no direction. It is still exact, and
-    // still unit-separated for the same reason the Fact side is.
     let mut buckets: std::collections::BTreeMap<(String, String), (nucleus::DecimalValue, i64)> =
         std::collections::BTreeMap::new();
     for r in rows {
@@ -1884,7 +1534,6 @@ fn aggregate_records(rows: &[store::records::RecordRow], agg: &Aggregate) -> Vec
                 .unwrap_or_else(|| UNCLASSIFIED.into()),
             GroupBy::Kind => r.kind.clone(),
             GroupBy::Total => TOTAL.into(),
-            // fact-source group keys are meaningless on records
             GroupBy::CauseKind | GroupBy::Day | GroupBy::Month | GroupBy::Classification => {
                 "(n/a)".into()
             }
@@ -1926,9 +1575,6 @@ async fn order_records(
     mut rows: Vec<store::records::RecordRow>,
     order: &[Order],
 ) -> Result<Vec<store::records::RecordRow>, ProteinError> {
-    // Every Record Protein has a deterministic, human-readable base order.
-    // Authored order items are applied afterwards as stable, higher-priority
-    // rules, so an empty `order` intentionally does not serialize this fact.
     rows.sort_by(|left, right| {
         left.head
             .to_lowercase()
@@ -1958,9 +1604,6 @@ async fn order_records(
             }
         }
     }
-    // Stable sorting from lowest to highest priority makes the first authored
-    // item decisive. A link rule only rearranges connected rows; graph ties
-    // and cycles retain the lower-priority order passed into topo_order.
     for key in order.iter().rev() {
         match key {
             Order::Asc(f) | Order::Desc(f) => {
@@ -2060,10 +1703,6 @@ fn record_field_cmp(
             .map(str::to_owned)
     };
     match field {
-        // Clock-independent creation order. A record predating the column
-        // sorts LAST in both directions (`optional` puts `None` after `Some`,
-        // and the caller does not reverse a comparison involving a missing
-        // field) — an unknown position is not a position at the start of time.
         "created_hlc" => optional(
             left.created_hlc.map(|hlc| format!("{hlc:020}")),
             right.created_hlc.map(|hlc| format!("{hlc:020}")),
@@ -2113,7 +1752,6 @@ async fn attach_includes(
         }
     }
     if let Some(facts) = &include.facts {
-        // provenance in one line: this is "the end of custom plumbing" (VII.1)
         let list = store::facts::for_record(&store.pool, record_uid, facts.limit).await?;
         row["facts"] = Value::Array(
             list.into_iter()
@@ -2163,10 +1801,6 @@ async fn attach_includes(
                 .unwrap_or(Value::Null);
     }
     if include.reference_reads {
-        // Named by the CONTACT's own head where we have one, because an Organ
-        // uid tells nobody who read their Record. Falls back to the uid rather
-        // than to a friendly placeholder: "someone" would be a worse answer
-        // than an unreadable one, since it implies we do not know.
         let mut reads = Vec::new();
         for (reader, count, at) in store::replica::reference_reads(&store.pool, record_uid).await? {
             let name = store::organs::contact(&store.pool, &reader)
@@ -2188,67 +1822,19 @@ async fn attach_includes(
                 json!({
                     "trust": c.trust,
                     "proximity": c.proximity,
-                    // A surface must be able to say "added, but not yet
-                    // reachable" — otherwise a contact that cannot sync looks
-                    // exactly like one that can.
                     "pending_introduction": c.pending_introduction,
-                    // Every Cell calls itself the same thing out of the box,
-                    // so a surface listing organs has nothing to tell two
-                    // contacts apart by — nor a contact from this Cell's own
-                    // Organ. The NodeId is the one field that differs, and
-                    // under iroh it is also the only routing input.
                     "node_id": c.node_id,
-                    // The two directions of the general feed, which the engine
-                    // already enforces (`sync.rs` on the way out,
-                    // `transfer_delivery` on the way in). A surface that
-                    // cannot see them cannot offer them.
                     "sync_out": c.sync_out,
                     "sync_in": c.sync_in,
-                    // THREE states, not two, and the difference is the whole
-                    // point: `null` is unnarrowed (they see every column of
-                    // the Records they can already see), `[]` is narrowed to
-                    // nothing but the identifying columns, and a list is
-                    // narrowed to that list. A surface that renders the first
-                    // two the same way turns "share nothing" into "share
-                    // everything" the moment someone saves.
                     "scope_fields": c.scope_fields,
-                    // Carried so a surface can say what a WIDENING will and
-                    // will not do. Nothing consumes this yet (see the
-                    // re-snapshot box in Ontology §12) — until it does, the
-                    // honest claim is "from now on", not "retroactively".
                     "scope_version": c.scope_version,
-                    // The inbound half. Same three states, same vocabulary,
-                    // and a separate value on purpose — outbound is what they
-                    // may see of us, this is what they may change about our
-                    // copy of the world, and they have no reason to agree.
                     "accept_fields": c.accept_fields,
                     "accept_version": c.accept_version,
-                    // A scope that would not parse reads as UNNARROWED, which
-                    // is wider than anybody asked for. It must therefore not
-                    // LOOK like an ordinary unnarrowed scope, so the raw text
-                    // comes out too and the panel says the setting is broken.
-                    // `null` in every other case, the absent scope included.
                     "scope_unreadable": c.scope_unreadable,
                     "accept_unreadable": c.accept_unreadable,
                 })
             })
             .unwrap_or(Value::Null);
-        // The row half of hiding, where `scope_fields` is the column half. A
-        // second query rather than a field on `Contact`, because it is a list
-        // of Records and every other contact surface loads without it.
-        //
-        // Always present when there is a contact, `[]` included: a panel that
-        // cannot tell "nothing hidden" from "not loaded" shows an empty box
-        // either way, and the empty state has to say WHICH nothing it means.
-        // What we REFUSED from this contact. The ring is bounded and per
-        // contact, so this is a short list by construction; it is here rather
-        // than behind its own query because the only place anyone would look
-        // for it is the panel for the contact it belongs to.
-        //
-        // Refusals, not policy: an op dropped by our acceptance scope is our
-        // own setting working and is never quarantined — putting those here
-        // would bury the reports that mean something under the ones that mean
-        // "as configured".
         if row["contact"].is_object() {
             row["contact"]["quarantined"] = json!(
                 store::organs::quarantined_for(&store.pool, record_uid, 20)
@@ -2275,9 +1861,6 @@ async fn attach_includes(
         }
     }
     if include.conversations {
-        // Keyed by the CONTACT's organ uid, which is what the grant stores —
-        // `offer(conversation, contact_organ)`. Indexing this the other way
-        // round returns empty for everyone and looks like "no conversations".
         row["conversations"] = Value::Array(
             store::replica::conversations_with(&store.pool, record_uid)
                 .await?
@@ -2287,8 +1870,6 @@ async fn attach_includes(
         );
     }
     if let Some(projection) = &include.projection {
-        // the promise fold (V.3/XII): quantity + Σ deltas of agreed/active
-        // promises whose window closes by the target instant
         let target = resolve_at(&projection.at);
         if let Some(target) = target {
             let promises = store::misc::promises_for_record(&store.pool, record_uid).await?;
@@ -2315,8 +1896,6 @@ async fn derive_record_availability(
     quantity: f64,
     record_unit_uid: Option<&str>,
 ) -> Result<Value, ProteinError> {
-    // Lingua conversion is deliberately opt-in. Incomparable or unknown units
-    // stay explicit instead of contaminating a numeric inventory bucket.
     let promises = store::misc::promises_for_record(&store.pool, record_uid).await?;
     let mut reserved = 0.0;
     let mut planned_delta = 0.0;
@@ -2363,7 +1942,6 @@ async fn derive_record_availability(
     }))
 }
 
-/// Resolve a projection instant: `"+7d"` relative to now, or absolute RFC3339.
 fn resolve_at(value: &str) -> Option<String> {
     if let Some(rest) = value.strip_prefix('+') {
         let secs = nucleus::parse_duration(rest)?;
@@ -2412,8 +1990,6 @@ async fn links_for_record(
         store::assertions::binary_of_predicates(&store.pool, &kind_uids).await?
     };
 
-    // BFS over the loaded kind-graph: hop 1 = direct links (depth 0/1 —
-    // the default), deeper hops expand the tree (blueprint IV.2/VII.1).
     let max_hops = links.depth.max(1);
     let mut frontier: HashSet<String> = HashSet::from([record_uid.to_string()]);
     let mut visited: HashSet<String> = frontier.clone();
@@ -2474,20 +2050,12 @@ async fn threads_for_record(
     let Some(thread_of) = store::concepts::resolve(&store.pool, "thread-of").await? else {
         return Ok(vec![]);
     };
-    // `message-in` does not exist on a fresh Cell until the first message is
-    // created or imported. That must not hide an otherwise valid empty
-    // thread: accepting a conversation creates the thread before either
-    // participant has said anything.
     let message_in = store::concepts::resolve(&store.pool, "message-in").await?;
     let reply_to = store::concepts::resolve(&store.pool, "reply-to").await?;
     let references = store::concepts::resolve(&store.pool, "references").await?;
     let threads =
         store::assertions::subjects_pointing_to(&store.pool, &thread_of, record_uid).await?;
     let mut out = Vec::new();
-    // organ_uid -> display name, memoized per call: a thread's messages
-    // typically share very few origin organs, and this avoids one query per
-    // message. `None` key = this record's own organ_uid was itself `None`
-    // (created on this Cell, never stamped with an origin).
     let mut organ_names: HashMap<Option<String>, Option<String>> = HashMap::new();
     for thread in threads {
         if thread.kind != "thread" || !thread.quantity.is_positive() {
@@ -2537,6 +2105,28 @@ async fn threads_for_record(
             let (created_by, sender) = creator_info(store, &message.uid).await?;
             let organ_name =
                 organ_name_for(store, &mut organ_names, message.organ_uid.as_deref()).await?;
+            let lifecycle =
+                store::records::get_extension(&store.pool, &message.uid, "lince.message").await?;
+            let author = lifecycle
+                .as_ref()
+                .and_then(|value| value.get("author"))
+                .and_then(Value::as_str)
+                .map(str::to_string)
+                .or_else(|| created_by.clone())
+                .or_else(|| message.organ_uid.clone())
+                .unwrap_or_else(|| "local".into());
+            let operator = lifecycle
+                .as_ref()
+                .and_then(|value| value.get("operator"))
+                .and_then(Value::as_str)
+                .map(str::to_string)
+                .unwrap_or_else(|| author.clone());
+            let message_state = lifecycle
+                .as_ref()
+                .and_then(|value| value.get("state"))
+                .and_then(Value::as_str)
+                .filter(|value| matches!(*value, "writing" | "finished" | "interrupted"))
+                .unwrap_or("finished");
             messages.push(json!({
                 "uid": message.uid,
                 "head": message.head,
@@ -2546,15 +2136,11 @@ async fn threads_for_record(
                 "created_at": created_at,
                 "created_by": created_by,
                 "sender": sender,
+                "author": author,
+                "operator": operator,
+                "message_state": message_state,
                 "organ_name": organ_name,
                 "references": record_references,
-                // References we CANNOT resolve locally — the live ones
-                // (Ontology §11, C6). `references` above inner-joins `record`,
-                // which is right for everything we hold and silently drops the
-                // case a reference exists for: a Record that lives on its
-                // owner's Cell and was never copied here. Through that join a
-                // remote reference is not unresolved, it is invisible, and a
-                // surface cannot offer to read what it cannot see.
                 "live_references": match &references {
                     Some(predicate) => {
                         let held: Vec<&str> = record_references
@@ -2573,10 +2159,6 @@ async fn threads_for_record(
                     }
                     None => Vec::new(),
                 },
-                // Who to ask, and under which conversation. Both are needed to
-                // read a live reference and neither is derivable in the sand:
-                // the owner is the message's Organ, the root is the grant that
-                // authorises the read.
                 "organ_uid": message.organ_uid,
                 "replica_root": store::replica::root_of(&store.pool, &message.uid).await?,
             }));
@@ -2603,14 +2185,6 @@ async fn threads_for_record(
     Ok(out)
 }
 
-/// A record's creator (its earliest fact's actor_uid, the logged-in
-/// `app_user.id` as a string — a DIFFERENT identity namespace than the
-/// Ledger's record/concept uids): the raw id (for the client's "is this
-/// mine" delete-button check, matched against its own viewer id) and a
-/// best-effort display name (falling back to username). Both are `None`
-/// when there's no creator (local-no-auth mode, every action's actor is
-/// `None`) or the actor_uid isn't a numeric app_user id. Never an error: a
-/// name is a nicety, not something a message should fail to render over.
 async fn creator_info(
     store: &Store,
     record_uid: &str,
@@ -2618,7 +2192,6 @@ async fn creator_info(
     let Some(actor_uid) = store::facts::creator_uid(&store.pool, record_uid).await? else {
         return Ok((None, None));
     };
-    // The creator is a Person uid; a credential is how we get their username.
     let Some(user) = store::auth::user_by_uid(&store.pool, &actor_uid).await? else {
         return Ok((None, None));
     };
@@ -2630,14 +2203,6 @@ async fn creator_info(
     Ok((Some(actor_uid), Some(name)))
 }
 
-/// A message/thread Record's origin organ display name, from the same
-/// `record.organ_uid` column Sync/File Sync already use to select what
-/// travels where (records.rs) — NOT from the creator's actor_uid, which is
-/// an app_user id local to whichever Cell logged the action and can't be
-/// resolved for a Record synced in from a paired organ. `organ_uid = None`
-/// means "born on this Cell": resolve to this Cell's own local organ name so
-/// a local sender still gets a stable organ label to compare their username
-/// against.
 async fn organ_name_for(
     store: &Store,
     cache: &mut HashMap<Option<String>, Option<String>>,
@@ -2659,22 +2224,13 @@ async fn organ_name_for(
     Ok(name)
 }
 
-// ---------------------------------------------------------------- predicates
-
 struct PredicateCtx {
-    /// concept name/uid -> the DAG family (root + descendants) as a set.
     concept_families: HashMap<String, HashSet<String>>,
-    /// Record uid -> every directly asserted predicate, unary or binary.
     record_concepts: HashMap<String, Vec<String>>,
-    /// `near.of` anchor token -> the anchor's place (None if it has none).
     anchors: HashMap<String, Option<nucleus::place::Place>>,
-    /// (kind, direction, optional opposite endpoint) -> matching Records.
     relations: HashMap<(String, LinkDirection, Option<String>), HashSet<String>>,
-    /// (root token, link kind, include_self) -> the branch beneath it.
     branches: HashMap<(String, String, bool), HashSet<String>>,
-    /// Batched `work` extension values, loaded only when a work-date leaf is used.
     work: Option<HashMap<String, Value>>,
-    /// organ token (slug or uid) -> resolved organ uid (`None` = unresolvable).
     organs: HashMap<String, Option<String>>,
 }
 
@@ -2733,9 +2289,6 @@ impl PredicateCtx {
                 let kind_uid = store::concepts::resolve(&store.pool, kind).await?;
                 let members = match (root, kind_uid) {
                     (Some(root), Some(kind_uid)) => {
-                        // The whole predicate family, so a Lingua that narrows
-                        // `part-of` into its own sub-predicate still walks the
-                        // same branch.
                         let family =
                             store::concepts::descendants_including(&store.pool, &kind_uid).await?;
                         store::assertions::record_descendants(
@@ -2937,9 +2490,7 @@ impl PredicateCtx {
                         }
                     }
                 }
-                Predicate::StateIn(_) => true, // promise-source predicate: vacuous on records
-                // Transfer-source predicates are validated and evaluated by
-                // `execute_transfers`; they remain vacuous on Record queries.
+                Predicate::StateIn(_) => true,
                 Predicate::RevisionEq(_)
                 | Predicate::RevisionLt(_)
                 | Predicate::RevisionLte(_)
@@ -2953,9 +2504,7 @@ impl PredicateCtx {
                 | Predicate::WindowEndBefore(_)
                 | Predicate::WindowEndAfter(_)
                 | Predicate::OccurrenceIn(_) => true,
-                // fact-source predicates: vacuous on records
                 Predicate::AtSince(_) | Predicate::CauseKindEq(_) | Predicate::RecordEq(_) => true,
-                // ledger-window predicates: vacuous on records
                 Predicate::AtBefore(_) | Predicate::ClassifiedIn(_) => true,
                 Predicate::Near { of, meters } => {
                     match (
@@ -2985,8 +2534,6 @@ impl PredicateCtx {
         })
     }
 }
-
-// ------------------------------------------------------------------ promises
 
 async fn execute_promises(
     store: &Store,
@@ -3027,8 +2574,6 @@ async fn execute_promises(
     let mut out = Vec::new();
     for p in store::misc::list_promises(&store.pool).await? {
         if let Some(visible) = visible {
-            // conservative v1: a remote subject sees a promise only through a
-            // visible target record (concept-level promises travel via Senses)
             if !p
                 .record_uid
                 .as_deref()
@@ -3078,13 +2623,11 @@ async fn execute_promises(
     Ok(out)
 }
 
-// ----------------------------------------------------------------- decisions
-
 async fn execute_decisions(store: &Store, protein: &Protein) -> Result<Vec<Value>, ProteinError> {
     let mut out = Vec::new();
     for d in store::misc::list_decisions(&store.pool).await? {
         if !d.open {
-            continue; // the Decision Queue shows what awaits a human (XIII.1)
+            continue;
         }
         out.push(json!({
             "uid": d.record_uid,
@@ -3100,13 +2643,6 @@ async fn execute_decisions(store: &Store, protein: &Protein) -> Result<Vec<Value
     Ok(out)
 }
 
-// -------------------------------------------------------------------- nearby
-
-/// Organs announcing on this LAN, joined against contacts by NodeId.
-///
-/// Rows are sorted by `node_id` — the underlying list is a map, and an
-/// arbitrary order would both make the list jump around under a surface and
-/// defeat the session's "push only when it changed" comparison.
 async fn execute_nearby(
     store: &Store,
     protein: &Protein,
@@ -3116,19 +2652,12 @@ async fn execute_nearby(
     peers.sort_by(|a, b| a.node_id.cmp(&b.node_id));
     let mut out = Vec::new();
     for peer in peers {
-        // `known` comes from the NodeId, not from anything the peer
-        // broadcast. The retired multicast announce carried an organ uid for
-        // this, which meant telling the whole LAN who you were before anyone
-        // had authenticated.
         let contact = store::organs::contact_by_node_id(&store.pool, &peer.node_id).await?;
         out.push(json!({
             "node_id": peer.node_id,
             "fingerprint": peer.fingerprint,
-            // Their self-declared label. A claim, never identity.
             "claimed_name": peer.name,
             "known": contact.is_some(),
-            // A contact's own name wins where we have one: it is what this
-            // Cell decided to call them, not what they called themselves.
             "name": contact.as_ref().map(|c| c.head.clone()),
             "trust": contact.as_ref().map(|c| c.trust.clone()),
         }));
@@ -3139,10 +2668,6 @@ async fn execute_nearby(
     Ok(out)
 }
 
-// --------------------------------------------------------------------- facts
-
-/// Resolve an `at_since` value: a trailing duration (`"30d"`) against now, or
-/// an absolute RFC3339 instant passed through.
 fn resolve_since(value: &str) -> Option<String> {
     if let Some(secs) = nucleus::parse_duration(value) {
         return Some((chrono::Utc::now() - chrono::TimeDelta::seconds(secs)).to_rfc3339());
@@ -3152,22 +2677,10 @@ fn resolve_since(value: &str) -> Option<String> {
         .map(|_| value.to_string())
 }
 
-/// The bucket every change falls into when nothing classifies it. Named and
-/// always emitted rather than dropped: a bucket that disappears when empty is
-/// indistinguishable from one that was never computed, and "everything is
-/// accounted for" is exactly the claim a person needs before trusting a total.
 const UNCLASSIFIED: &str = "(unclassified)";
 
-/// The single bucket `group_by: total` puts everything in.
 const TOTAL: &str = "(total)";
 
-/// One aggregation bucket, summed exactly.
-///
-/// Gains, losses, and net come back together from a single pass, because
-/// direction is the sign of the delta and nothing else — a refund classified
-/// `@cost` correctly *reduces* the cost total, and a separate direction field
-/// would get that backwards. Reporting only the net would hide the difference
-/// between a quiet month and a busy one that happened to balance.
 struct DeltaBucket {
     net: nucleus::DecimalValue,
     gains: nucleus::DecimalValue,
@@ -3210,9 +2723,6 @@ impl DeltaBucket {
             Value::String(unit.to_string())
         };
         match op {
-            // Sums cross the wire as canonical decimal TEXT. A JSON number is
-            // an IEEE double, and letting one in here would undo the Ledger's
-            // exactness at the very last step — the hardest place to notice.
             AggregateOp::Sum => json!({
                 "group": group,
                 "unit_uid": unit,
@@ -3221,8 +2731,6 @@ impl DeltaBucket {
                 "losses": self.losses.to_string(),
                 "count": self.count,
             }),
-            // A count has no net, gains, or losses. Emitting zeros for them
-            // would be stating something false rather than omitting it.
             AggregateOp::Count => json!({
                 "group": group,
                 "unit_uid": unit,
@@ -3232,9 +2740,6 @@ impl DeltaBucket {
     }
 }
 
-/// A concept and everything below it in the Lingua DAG. An unknown name yields
-/// an empty family, which matches nothing — the honest answer for a filter on a
-/// vocabulary word that does not exist.
 async fn concept_descendants(store: &Store, name: &str) -> Result<HashSet<String>, ProteinError> {
     Ok(match store::concepts::resolve(&store.pool, name).await? {
         Some(uid) => store::concepts::descendants_including(&store.pool, &uid)
@@ -3250,17 +2755,11 @@ async fn execute_facts(
     protein: &Protein,
     visible: Option<&HashSet<String>>,
 ) -> Result<Vec<Value>, ProteinError> {
-    // Record metadata for concept filters and aggregation keys. `concept_in`
-    // reads the union of a Record's identity concept and the ones it merely
-    // counts as, because a toothbrush that counts as `@health` must answer a
-    // `@health` query about its changes just as it does about itself.
     let counts_as = store::ledger::all_record_concepts(&store.pool).await?;
     let mut record_concepts: HashMap<String, Vec<String>> = HashMap::new();
     let mut record_unit: HashMap<String, Option<String>> = HashMap::new();
     for r in store::records::list_all(&store.pool).await? {
         record_unit.insert(r.uid.clone(), r.unit_uid.clone());
-        // Identity concept first, so `group_by: concept` keys on what the thing
-        // IS rather than on whichever tag happens to sort first.
         let mut concepts: Vec<String> = r.identity_predicate_uid.clone().into_iter().collect();
         if let Some(extra) = counts_as.get(&r.uid) {
             for concept in extra {
@@ -3272,7 +2771,6 @@ async fn execute_facts(
         record_concepts.insert(r.uid.clone(), concepts);
     }
 
-    // walk the flat predicate list (fact predicates don't nest in v1)
     let mut since: Option<String> = None;
     let mut before: Option<String> = None;
     let mut cause_kind: Option<&str> = None;
@@ -3289,7 +2787,7 @@ async fn execute_facts(
                     .await?
                     .map(|r| r.uid);
                 if record.is_none() {
-                    return Ok(vec![]); // unknown record: nothing can match
+                    return Ok(vec![]);
                 }
             }
             Predicate::ConceptIn(name) => {
@@ -3310,7 +2808,6 @@ async fn execute_facts(
         None => None,
     };
 
-    // Loaded once when the query cares about it, never per Fact.
     let needs_classification = classification_family.is_some()
         || matches!(&protein.aggregate, Some(a) if a.by == GroupBy::Classification);
     let fact_classification = if needs_classification {
@@ -3331,8 +2828,6 @@ async fn execute_facts(
         if record.as_ref().is_some_and(|r| &f.record_uid != r) {
             continue;
         }
-        // Half-open: a change exactly at `at_before` belongs to the next
-        // window, so adjacent periods tile without double-counting.
         if before_instant.is_some_and(|end| f.at >= end) {
             continue;
         }
@@ -3345,9 +2840,6 @@ async fn execute_facts(
             }
         }
         if let Some(family) = &classification_family {
-            // An unclassified change never matches a classification filter:
-            // "what did I spend on food" must not silently include the ones
-            // nobody said were food.
             let matches = fact_classification
                 .get(&f.uid)
                 .is_some_and(|c| family.contains(c));
@@ -3359,12 +2851,6 @@ async fn execute_facts(
     }
 
     if let Some(agg) = &protein.aggregate {
-        // Buckets are keyed by (group, unit) rather than group alone. Two
-        // Records measured in different units share a concept all the time —
-        // flour in kilograms and milk in litres are both `@stock` — and adding
-        // them produces a number that means nothing. Separating is the true
-        // answer; refusing would make the query useless, and summing would make
-        // it wrong.
         let mut buckets: std::collections::BTreeMap<(String, String), DeltaBucket> =
             Default::default();
         for f in &facts {
@@ -3373,13 +2859,10 @@ async fn execute_facts(
                 GroupBy::CauseKind | GroupBy::Kind => f.cause.kind.as_str().to_string(),
                 GroupBy::Day => f.at.format("%Y-%m-%d").to_string(),
                 GroupBy::Month => f.at.format("%Y-%m").to_string(),
-                // What the Record IS.
                 GroupBy::Concept => record_concepts
                     .get(&f.record_uid)
                     .and_then(|concepts| concepts.first().cloned())
                     .unwrap_or_else(|| UNCLASSIFIED.into()),
-                // What the CHANGE was — a different question, and the one an
-                // expense breakdown or a usage report actually asks.
                 GroupBy::Classification => fact_classification
                     .get(&f.uid)
                     .cloned()
@@ -3398,7 +2881,6 @@ async fn execute_facts(
             .collect());
     }
 
-    // newest last (chain order); limit takes the most recent
     if let Some(limit) = protein.limit {
         if facts.len() > limit {
             facts.drain(..facts.len() - limit);
@@ -3421,10 +2903,6 @@ async fn execute_facts(
         .collect())
 }
 
-// ------------------------------------------------------- entries & recurrence
-
-/// Authored changes, with the classification each was given and the revision a
-/// correction has to quote.
 async fn execute_entries(
     store: &Store,
     protein: &Protein,
@@ -3450,9 +2928,6 @@ async fn execute_entries(
     }
 
     let fact_classification = store::ledger::all_fact_concepts(&store.pool).await?;
-    // Scan wide, then cut. Applying the caller's limit in SQL would take the
-    // newest N rows and filter *those*, so a rare category would look almost
-    // empty while plenty of matching changes existed just past the cut.
     const ENTRY_SCAN_CAP: i64 = 100_000;
     let limit = protein.limit.unwrap_or(500);
     let mut out = Vec::new();
@@ -3480,12 +2955,10 @@ async fn execute_entries(
             "kind": "entry",
             "uid": entry.uid,
             "record": entry.record_uid,
-            // Exact text, never a float: this is the number a person typed.
             "amount": entry.amount.to_string(),
             "note": entry.note,
             "occurred_at": entry.occurred_at,
             "state": entry.state,
-            // Both are required to revise or void; a stale one is refused.
             "revision": entry.revision,
             "fact": entry.fact_uid,
             "concept": concept,
@@ -3495,12 +2968,6 @@ async fn execute_entries(
     Ok(out)
 }
 
-/// Standing rules and the dates they imply.
-/// Every declared beat.
-///
-/// Deliberately unfiltered: the whole point of a Frequency is that it is a
-/// short, shared list a condition picks names out of, and a surface offering
-/// completions needs all of them anyway.
 async fn execute_frequency(store: &Store) -> Result<Vec<Value>, ProteinError> {
     let mut rows = Vec::new();
     for frequency in store::frequency::all(&store.pool).await? {
@@ -3548,7 +3015,6 @@ async fn execute_recurrence(
             .map(|v| v.with_timezone(&Utc))
             .unwrap_or(fallback)
     };
-    // A default window that shows what was recently missed and what is coming.
     let from = since
         .as_deref()
         .map(|v| parse(v, now - Duration::days(60)))
@@ -3571,19 +3037,10 @@ async fn execute_recurrence(
             "kind": "recurrence",
             "uid": rule.uid,
             "record": rule.record_uid,
-            // What the rule does, in full. `amount` and `concept` remain
-            // beside it as the *summary* a list view reads, because scanning
-            // rules should not mean parsing a consequence tree — but they are
-            // derived from `consequences`, never a second place to edit.
             "consequences": rule.consequences,
             "amount": rule.consequences.declared_delta().map(|a| a.to_string()),
-            // A rule stepping in milliseconds produces more dates than any
-            // window can hold. Saying so is the difference between a list a
-            // person can trust and a page that merely looks complete.
             "truncated": derived.truncated,
             "concept": rule.consequences.capture_concept(),
-            // The *if* half, as the three fields the form asked for. Null when
-            // the rule is unconditional, which is most of them.
             "condition": rule.condition.as_ref().map(|c| c.source.clone()),
             "gate": rule.condition.as_ref().map(|c| c.gate.as_text()),
             "carry": rule.condition.as_ref().map(|c| c.carry.as_text()),
@@ -3592,8 +3049,6 @@ async fn execute_recurrence(
             "anchor_at": rule.anchor_at,
             "state": rule.state,
             "paused": rule.is_paused(),
-            // Quoted back on every edit, so a stale surface loses rather than
-            // silently overwriting someone else's change.
             "revision": rule.revision,
         }));
         for occurrence in derived {
@@ -3603,9 +3058,6 @@ async fn execute_recurrence(
                 "record": rule.record_uid,
                 "due_at": occurrence.due_at.to_rfc3339(),
                 "state": occurrence.state.as_str(),
-                // Absent for a rule that only changes concepts: nothing about a
-                // quantity is expected to move, and a zero there would read as
-                // an expectation of no change rather than of no amount.
                 "amount": occurrence.amount.map(|a| a.to_string()),
                 "entry": occurrence.entry_uid,
                 "concept": rule.consequences.capture_concept(),
@@ -3616,9 +3068,6 @@ async fn execute_recurrence(
     Ok(out)
 }
 
-// ------------------------------------------------------------------ timeline
-
-/// The bucket granularity a timeline reports in.
 fn timeline_bucket(at: chrono::DateTime<chrono::Utc>, by: GroupBy) -> String {
     match by {
         GroupBy::Day => at.format("%Y-%m-%d").to_string(),
@@ -3626,21 +3075,6 @@ fn timeline_bucket(at: chrono::DateTime<chrono::Utc>, by: GroupBy) -> String {
     }
 }
 
-/// One classified axis through time: settled past, position now, declared future.
-///
-/// Requires a `classified_in` predicate — a timeline is *of* something, and a
-/// timeline of everything is just the Ledger. `at_since`/`at_before` bound it;
-/// both default to a year around now.
-///
-/// Every number leaves here as exact decimal text, including the running
-/// cumulative, because the whole point of the source is that the client never
-/// does the arithmetic.
-///
-/// **On the future's exactness:** recurring amounts are exact, since a rule
-/// stores the same mantissa/scale pair the Ledger does. Promise deltas are
-/// `REAL` in schema 0001 and are converted on the way out; a promise-derived
-/// point is therefore only as exact as that column ever was. Points say which
-/// they came from so a reader is never guessing.
 async fn execute_timeline(
     store: &Store,
     protein: &Protein,
@@ -3668,7 +3102,7 @@ async fn execute_timeline(
     };
     let family = concept_descendants(store, concept_token).await?;
     if family.is_empty() {
-        return Ok(vec![]); // unknown concept: nothing can match
+        return Ok(vec![]);
     }
 
     let parse = |value: &str| -> Result<DateTime<Utc>, ProteinError> {
@@ -3695,7 +3129,6 @@ async fn execute_timeline(
         .map(|a| a.by)
         .unwrap_or(GroupBy::Month);
 
-    // ---------------------------------------------------------------- actuals
     let fact_classification = store::ledger::all_fact_concepts(&store.pool).await?;
     let mut record_unit: HashMap<String, Option<String>> = HashMap::new();
     for r in store::records::list_all(&store.pool).await? {
@@ -3703,13 +3136,6 @@ async fn execute_timeline(
     }
 
     const TIMELINE_SCAN_CAP: i64 = 100_000;
-    // `opening` is everything this concept did before the window. Without it a
-    // cumulative line would restart at zero at the window's edge and show a
-    // position the person has never been in.
-    // Both are per unit, for the same reason the buckets are: a concept can
-    // span kilograms and hours at once, and one scalar running total
-    // across both would add them. That is the number this whole module refuses
-    // to produce, and it would be the most prominent one on the screen.
     let mut opening: std::collections::BTreeMap<String, nucleus::DecimalValue> = Default::default();
     let mut settled_through: std::collections::BTreeMap<String, nucleus::DecimalValue> =
         Default::default();
@@ -3718,7 +3144,6 @@ async fn execute_timeline(
         if visible.is_some_and(|v| !v.contains(&f.record_uid)) {
             continue;
         }
-        // An unclassified change is not this concept's business.
         if !fact_classification
             .get(&f.uid)
             .is_some_and(|c| family.contains(c))
@@ -3758,9 +3183,6 @@ async fn execute_timeline(
             .add(f.delta)?;
     }
 
-    // ---------------------------------------------------------------- declared
-    // Everything ahead is something somebody already stated: a rule's date or a
-    // promise. Nothing is extrapolated from the past.
     let mut expected: std::collections::BTreeMap<(String, String), DeltaBucket> =
         Default::default();
     let mut contributors: Vec<Value> = Vec::new();
@@ -3785,13 +3207,8 @@ async fn execute_timeline(
             .unwrap_or_default();
         let derived =
             store::recurrence::occurrences(&store.pool, &rule, forward_from, to, now).await?;
-        // A rule too fast to enumerate makes the declared half of the line a
-        // lower bound rather than the whole of what is coming.
         projection_truncated |= derived.truncated;
         for occurrence in derived {
-            // An applied date is already a Fact and was counted above; counting
-            // it here too would double every rule-driven month. A skipped date
-            // was declined and is not expected.
             if !matches!(
                 occurrence.state,
                 store::recurrence::OccurrenceState::Planned
@@ -3799,9 +3216,6 @@ async fn execute_timeline(
             ) {
                 continue;
             }
-            // A rule that only changes concepts expects no quantity to move, so
-            // it contributes no point. Folding a zero here would draw a
-            // deliberate "no change" onto the line, which is a different claim.
             let Some(amount) = occurrence.amount else {
                 continue;
             };
@@ -3841,8 +3255,6 @@ async fn execute_timeline(
         {
             continue;
         }
-        // Only what is still outstanding is ahead of you. A settled promise
-        // already produced its Fact and is in the actuals.
         if !matches!(
             promise.state,
             nucleus::PromiseState::Open | nucleus::PromiseState::Proposed
@@ -3850,7 +3262,7 @@ async fn execute_timeline(
             continue;
         }
         let Some(window_end) = promise.window_end.as_deref() else {
-            continue; // a promise with no date cannot be placed on a timeline
+            continue;
         };
         let Ok(due) = DateTime::parse_from_rfc3339(window_end).map(|v| v.with_timezone(&Utc))
         else {
@@ -3884,10 +3296,6 @@ async fn execute_timeline(
         }));
     }
 
-    // ------------------------------------------------------------- assemble
-    // One ordered line per unit. Two units under one concept — flour in
-    // kilograms and milk in litres are both `@stock` — are two lines, never one
-    // sum, because adding them produces a number that means nothing.
     let mut units: Vec<String> = actual
         .keys()
         .map(|(_, unit)| unit.clone())
@@ -3904,9 +3312,6 @@ async fn execute_timeline(
         }
         Value::Object(map)
     };
-    // A single scalar is offered ONLY when there is one unit to be scalar about.
-    // With two, `current` is null and a reader must use `current_by_unit` — the
-    // alternative is a headline number that added kilograms to hours.
     let single_unit = if units.len() <= 1 {
         units.first().cloned().or_else(|| Some(String::new()))
     } else {
@@ -3931,16 +3336,11 @@ async fn execute_timeline(
         "to": to.to_rfc3339(),
         "now": now.to_rfc3339(),
         "bucket": match by { GroupBy::Day => "day", _ => "month" },
-        // Where this concept stands right now, counting everything settled:
-        // the "current state" a timeline is read to find.
         "current": scalar(&settled_through),
         "opening": scalar(&opening),
         "current_by_unit": per_unit(&settled_through),
         "opening_by_unit": per_unit(&opening),
         "units": units.clone(),
-        // The settled half is always complete — it is read from Facts. Only the
-        // declared half can run out of room, so this qualifies the future of
-        // the line and never its past.
         "projection_truncated": projection_truncated,
     })];
 
@@ -3959,9 +3359,6 @@ async fn execute_timeline(
         buckets.sort();
         buckets.dedup();
 
-        // The line starts where the concept already stood *in this unit*, so
-        // the first point is a position rather than a fresh zero, and a second
-        // unit's history never seeds it.
         let mut running = opening
             .get(unit)
             .copied()
@@ -3970,8 +3367,6 @@ async fn execute_timeline(
         for bucket in buckets {
             let settled = actual.get(&(bucket.clone(), unit.clone()));
             let declared = expected.get(&(bucket.clone(), unit.clone()));
-            // A bucket can hold both: the month you are standing in has days
-            // that already happened and dates still to come.
             if let Some(settled) = settled {
                 running = running
                     .aligned_add(settled.net)
@@ -4022,10 +3417,7 @@ fn timeline_overflow() -> ProteinError {
         .into()
 }
 
-// ------------------------------------------------------------------ concepts
-
 async fn execute_concepts(store: &Store, protein: &Protein) -> Result<Vec<Value>, ProteinError> {
-    // concept_in narrows to a family (the concept + its descendants)
     let mut family: Option<HashSet<String>> = None;
     for p in &protein.filter {
         if let Predicate::ConceptIn(name) = p {
@@ -4143,11 +3535,6 @@ async fn execute_assertions(store: &Store, protein: &Protein) -> Result<Vec<Valu
     Ok(out)
 }
 
-// ----------------------------------------------------------------- transfers
-
-/// Derived transfer status (blueprint VIII.1) — never stored:
-/// `inactive` (quantity=0) | `draft` | `proposed` | `agreed` | `in_transfer` |
-/// `settled`, from promise states + agreement levels + policy.
 fn derive_transfer_status(
     active: bool,
     agreement_type: &str,
@@ -4300,9 +3687,6 @@ fn agreement_required(agreement_type: &str, agreement_pct: Option<i64>, parties:
             let pct = agreement_pct.unwrap_or(100).clamp(0, 100) as usize;
             parties.saturating_mul(pct).div_ceil(100)
         }
-        // Individual/dependency readiness is path-derived. The overview still
-        // reports how many people have committed without inventing a bundle
-        // quorum for those policies.
         _ => 0,
     }
 }
@@ -4406,9 +3790,6 @@ fn evaluate_occurrence_application_formula(
 
     fn validate(expr: &Expr) -> Result<(), nucleus::NucleusError> {
         match expr {
-            // The literal is kept as its source text so an exact evaluator can
-            // read it without going through a double. A lexed number is always
-            // finite, so parsing back is the whole check.
             Expr::Num(text) if text.parse::<f64>().is_ok_and(f64::is_finite) => Ok(()),
             Expr::Fn(name, args) if name == "incoming" && args.is_empty() => Ok(()),
             Expr::Unary(UnOp::Neg, value) => validate(value),
@@ -4764,9 +4145,6 @@ async fn derive_agreement_readiness(
     Ok((projection, dependency_status))
 }
 
-/// Server-derived Phase 3 gate used by later engine stages. This reads only
-/// signed revision terms and their current store projections; it never grants
-/// one Person's agreement to another.
 pub async fn transfer_agreement_ready(
     store: &Store,
     transfer_uid: &str,
@@ -4775,9 +4153,6 @@ pub async fn transfer_agreement_ready(
     Ok(derive_agreement_readiness(store, &input).await?.0.ready)
 }
 
-/// Exact Phase 4 activation candidates for one Person. This is intentionally
-/// narrower than bundle readiness: individual agreement may unlock one path
-/// while another path remains blocked.
 pub async fn transfer_ready_promises_for_person(
     store: &Store,
     transfer_uid: &str,
@@ -4800,9 +4175,6 @@ pub async fn transfer_ready_promises_for_person(
         .collect())
 }
 
-/// Resolve a directed occurrence without guessing among multiple people.
-/// Exact opposite signed promises win. An unmatched promise is safe only when
-/// exactly one other accepted Person can be its counterparty.
 pub fn transfer_occurrence_roles(
     input: &store::transfers::TransferAgreementReadinessInput,
     promise_uid: &str,
@@ -5305,9 +4677,6 @@ fn collect_changed_fields(before: &Value, after: &Value, path: &str, out: &mut V
                 }
             }
         }
-        // Collections in a revision snapshot are canonically uid-sorted. A
-        // collection-level path is more useful to clients than unstable array
-        // indexes; the current terms carry the exact signed replacement.
         (Value::Array(_), Value::Array(_)) if before != after => out.push(path.to_string()),
         _ if before != after => out.push(path.to_string()),
         _ => {}
@@ -6452,12 +5821,6 @@ async fn origin_social_delivery_projection(
         })
     })
     .collect::<Vec<_>>();
-    // Which Cell retries this Transfer's deliveries (Ontology C7). The retry
-    // loop is the one non-Rule scheduler that reaches OUTWARD — two Cells
-    // draining the same outbox POST the same envelope twice — so it consults
-    // the same designation Karma does. `this_cell` rides along because
-    // "designated to me" and "designated to one of my others" are the same
-    // string otherwise, and the difference is the whole meaning of the row.
     let designated_cell = store::executor::designated(&store.pool, transfer_uid).await?;
     let this_cell = store::cells::local(&store.pool).await?.map(|cell| cell.uid);
     Ok(json!({
@@ -6478,9 +5841,6 @@ async fn origin_social_delivery_projection(
         "application_handoffs": settlement_handoffs,
         "capabilities": {
             "configure_recipient": can_admin_delivery,
-            // Designating rides the same permission as configuring a recipient:
-            // both decide how this Transfer reaches the other side, and a
-            // person who may not do the first has no business doing the second.
             "designate_executor": can_admin_delivery,
         },
         "blocking_reasons": { "configure_recipient": if can_admin_delivery { Vec::<&str>::new() } else { vec!["delivery_admin_identity_required"] } },
@@ -6497,10 +5857,6 @@ async fn origin_social_delivery_projection(
             "designate_executor": {
                 "action": "designate-transfer-executor",
                 "transfer_uid": transfer_uid,
-                // Filled by the surface with THIS Cell's uid, or left null to
-                // hand delivery back to every Cell. Naming a Cell you are not
-                // sitting at is how a Transfer ends up pinned to a machine that
-                // is no longer running.
                 "cell_uid": Value::Null,
             },
         }) } else { json!({}) },
@@ -6611,8 +5967,6 @@ fn phase6_rollup(
                 .get("unit")
                 .and_then(Value::as_str)
                 .map(str::to_string);
-            // Unknown resource identities stay separate; only canonical
-            // (concept, unit) pairs may be summed across Transfers.
             let discriminator = (concept.is_none() || unit.is_none())
                 .then(|| format!("{descendant}:{resource_index}"));
             let totals = resource_rollup
@@ -7051,8 +6405,6 @@ fn order_transfers(rows: &mut [TransferOutput], order: &[Order]) {
                 };
             }
         }
-        // A uid tie-break makes both explicit ordering and the no-order
-        // default deterministic across SQLite query plans and Cells.
         left.uid.cmp(&right.uid)
     });
 }
@@ -7096,9 +6448,6 @@ async fn execute_transfers(
         Some(uid) => records_by_uid.get(uid),
         None => None,
     };
-    // Transfer is a mixed Protein source: the context row remains available
-    // even when a new Cell has no transfers, so creation controls never infer
-    // authority from an empty list or from client-side viewer state.
     let mut out = vec![json!({
         "kind": "transfer_context",
         "viewer": {
@@ -7134,10 +6483,6 @@ async fn execute_transfers(
                     .iter()
                     .any(|invitation| invitation.addressed_person_uid == person)
             });
-            // Hidden remains the default, but creator and named parties are
-            // intrinsic recipients of the commitment. An addressed Person
-            // also retains access to the invitation decision and its history,
-            // without being promoted to a participant before acceptance.
             if !viewer_created && !viewer_participates && !viewer_was_addressed {
                 continue;
             }
@@ -7276,8 +6621,6 @@ async fn execute_transfers(
         let revision_promises = current_revision_evidence
             .as_ref()
             .map(|evidence| evidence.terms.promises.as_slice());
-        // Advisory balance (VIII.1): a trade sums to zero per Lingua concept
-        // across parties; donations are deliberately unbalanced.
         let mut balance: std::collections::BTreeMap<String, f64> = Default::default();
         for p in &promises {
             let key = p
@@ -8975,10 +8318,6 @@ async fn execute_transfers(
                     let person = signed
                         .and_then(|promise| promise.person_uid.as_deref())
                         .or(p.party_uid.as_deref());
-                    // Promise stage advances through signed agreement events
-                    // without creating a new terms revision. The sidecar is
-                    // therefore the current projection; the revision snapshot
-                    // remains the immutable terms evidence.
                     let state = p.state.as_str();
                     let is_open = state == "open";
                     let proposer = is_open.then_some(person).flatten();
@@ -9589,9 +8928,6 @@ impl TransferViewer {
                 ..Self::default()
             });
         };
-        // A Person with no credential (a contact, or a remote Organ's granted
-        // login) is recognized but role-less: they are still a real identity,
-        // they just hold no local permissions.
         let Some(user) = store::auth::user_by_uid(&store.pool, subject).await? else {
             return Ok(Self {
                 subject: Some(subject.to_string()),
@@ -9757,10 +9093,6 @@ impl TransferViewer {
     }
 }
 
-// -------------------------------------------------------- canned Proteins
-
-/// The focus queue (blueprint Window 1b), as the Protein it always was:
-/// active plain Needs, ordered by its directed link kind, oldest-first tie-break.
 pub fn focus_queue(order_kind: &str) -> Protein {
     Protein {
         source: Source::Record,
@@ -9782,7 +9114,6 @@ pub fn focus_queue(order_kind: &str) -> Protein {
     }
 }
 
-/// The Decision Queue (blueprint XIII): everything awaiting a human choice.
 pub fn decision_queue() -> Protein {
     Protein {
         source: Source::Decision,

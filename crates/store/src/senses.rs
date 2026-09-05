@@ -1,6 +1,3 @@
-//! Senses repository (blueprint X): match rules as records (`sense_rule`
-//! sidecar) and the discovery cache of remote open promises.
-
 use chrono::Utc;
 use nucleus::RecordKind;
 use sqlx::{Row, SqlitePool};
@@ -23,7 +20,7 @@ pub struct NewSenseRule<'a> {
     pub watch_concept: Option<&'a str>,
     pub max_proximity: u32,
     pub min_confidence: f64,
-    pub auto: &'a str, // draft_only | ask | auto_propose
+    pub auto: &'a str,
 }
 
 pub async fn create_sense_rule(
@@ -37,7 +34,7 @@ pub async fn create_sense_rule(
             kind: RecordKind::Rule,
             head: new.head,
             body: "",
-            quantity: crate::exact::one(), // active by default
+            quantity: crate::exact::one(),
         },
     )
     .await?;
@@ -55,7 +52,6 @@ pub async fn create_sense_rule(
     Ok(rec.uid)
 }
 
-/// Every ACTIVE match rule (record quantity != 0).
 pub async fn active_sense_rules(pool: &SqlitePool) -> Result<Vec<SenseRuleRow>, StoreError> {
     Ok(sqlx::query(
         "SELECT s.* FROM sense_rule s
@@ -88,8 +84,6 @@ pub struct RemoteOpenRow {
     pub confidence: f64,
 }
 
-/// Upsert one remote open promise into the discovery cache (Part XV feeds
-/// this; tests and the matcher read it).
 pub async fn upsert_remote_open(pool: &SqlitePool, row: &RemoteOpenRow) -> Result<(), StoreError> {
     sqlx::query(
         "INSERT INTO discovery_cache

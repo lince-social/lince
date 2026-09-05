@@ -1,10 +1,3 @@
-//! The `nearby` source: Organs on the LAN, served through Protein.
-//!
-//! What is being pinned here is mostly what this source REFUSES to do. It is
-//! the second source (after the Decision Queue) that never leaves the Cell,
-//! and the reason is sharper than attention: a nearby list says who is
-//! physically around you.
-
 use engine::Engine;
 use nucleus::nearby::NearbyPeer;
 use protein::{Context, Protein};
@@ -45,12 +38,8 @@ async fn nearby_serves_the_peers_the_wire_currently_sees() {
     let rows = run(&e, &[peer("bbb", "Tablet"), peer("aaa", "Laptop")], None).await;
 
     assert_eq!(rows.len(), 2);
-    // Sorted by node_id, not by discovery order: the backing list is a map, so
-    // an unsorted answer would both reorder the rendered list on every refresh
-    // and defeat the session's "push only when it changed" comparison.
     assert_eq!(rows[0]["node_id"], "aaa");
     assert_eq!(rows[1]["node_id"], "bbb");
-    // A stranger's label is carried as a claim and never as the name.
     assert_eq!(rows[0]["claimed_name"], "Laptop");
     assert_eq!(rows[0]["name"], serde_json::Value::Null);
     assert_eq!(rows[0]["known"], false);
@@ -76,9 +65,6 @@ async fn nearby_is_never_exported_to_a_remote_subject() {
 #[tokio::test]
 async fn an_unbound_endpoint_reads_as_an_empty_list_not_an_error() {
     let e = engine().await;
-    // Every entry point other than `execute_for_with_context` supplies an
-    // empty context. A Cell with discovery switched off must answer the same
-    // way, so absence has to be a normal answer rather than a failure.
     let rows = protein::execute_for(&e.store, &nearby_protein(), None)
         .await
         .expect("no endpoint bound is not an error");
@@ -98,18 +84,12 @@ async fn a_known_contact_is_matched_by_node_id_and_named_by_us() {
     let rows = run(&e, &[peer("aaa", "definitely-marcia")], None).await;
     assert_eq!(rows.len(), 1);
     assert_eq!(rows[0]["known"], true);
-    // The name this Cell chose wins over the one the peer broadcast: the
-    // match came from the NodeId, which is the key, and never from the label.
     assert_eq!(rows[0]["name"], "Marcia");
     assert_eq!(rows[0]["claimed_name"], "definitely-marcia");
 }
 
 #[tokio::test]
 async fn a_nearby_subscription_is_woken_by_the_tick_and_not_by_facts() {
-    // `affects` is the fact-bus invalidation filter. Discovery commits no
-    // Facts — recording who walked past would be a Ledger entry nobody asked
-    // for — so a fact could never refresh this source. Were it listed here,
-    // every unrelated commit would instead re-send the whole list.
     let protein = nearby_protein();
     assert!(protein::is_ephemeral(&protein));
     let fact = nucleus::Fact {
@@ -125,8 +105,6 @@ async fn a_nearby_subscription_is_woken_by_the_tick_and_not_by_facts() {
         signature: None,
     };
     assert!(!protein::affects(&protein, &fact));
-    // And the complement holds: a database source is woken by facts, never by
-    // the tick.
     let records: Protein =
         serde_json::from_value(serde_json::json!({ "source": "record" })).unwrap();
     assert!(!protein::is_ephemeral(&records));

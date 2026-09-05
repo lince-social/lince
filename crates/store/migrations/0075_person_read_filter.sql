@@ -1,0 +1,16 @@
+-- Ontology, cluster 2: the READ half of per-person permissions.
+--
+-- Permissions gate create/update/delete. They have never gated reading, so
+-- anyone you give a login to sees every Record you hold. You can stop someone
+-- editing your finances; you could not stop them reading them.
+--
+-- This is the missing half: one saved Protein predicate per Person, naming what
+-- that Person may SEE. It is evaluated on the read path AND on the write path,
+-- so an edit can only touch a Record the filter already admits — a filter that
+-- only hid things on screen would be a display preference, not a boundary.
+--
+-- NULL is the unnarrowed case and the default: this Person sees everything the
+-- existing permissions already allow. That is not the same as an empty
+-- predicate, which is a real and different answer, and conflating the two is
+-- how a migration silently blinds somebody.
+ALTER TABLE person_credential ADD COLUMN read_filter TEXT;

@@ -1,7 +1,3 @@
-//! E0.0 proof: an exact amount survives the round trip from kernel decimal to
-//! Fact to aggregate without ever becoming a float, and there is no second
-//! representation for it to become.
-
 use chrono::{TimeDelta, Utc};
 use nucleus::{Cause, DecimalValue, NewFact};
 use store::Store;
@@ -23,8 +19,6 @@ async fn record(store: &Store, slug: &str) -> String {
     .uid
 }
 
-/// Append a sealed fact and move the cache, the way the engine's one write
-/// path does — without depending on the engine crate.
 async fn append(store: &Store, record_uid: &str, delta: DecimalValue) {
     let now = Utc::now();
     let mut tx = store.pool.begin().await.expect("begin");
@@ -46,7 +40,6 @@ async fn float_drift_does_not_survive_the_ledger() {
     let store = Store::open_memory().await.expect("store");
     let uid = record(&store, "drift").await;
 
-    // The canonical float-drift pair. As f64 this is 0.30000000000000004.
     append(&store, &uid, from_f64(0.1)).await;
     append(&store, &uid, from_f64(0.2)).await;
 
@@ -78,13 +71,11 @@ async fn a_thousand_cent_additions_reach_exactly_ten() {
         .expect("record exists");
     assert_eq!(level.canonical(), "10.00", "1000 x 0.01 is exactly 10");
 
-    // The fold over the chain agrees with the cache, digit for digit.
     let summed = store::facts::sum_window(&store.pool, &uid, 3600, Utc::now())
         .await
         .expect("sum");
     assert_eq!(summed.canonical(), "10.00");
 
-    // And the float version of the same loop does not.
     let mut float_total = 0.0_f64;
     for _ in 0..1000 {
         float_total += 0.01;
@@ -147,9 +138,6 @@ async fn sign_filtered_windows_stay_exact() {
     assert_eq!(losses.canonical(), "-0.3");
 }
 
-/// The structural half of the exit condition: no REAL quantity column survives
-/// anywhere on the Fact/Record path. Asserted against the live schema rather
-/// than by reading the migration.
 #[tokio::test]
 async fn no_real_quantity_column_survives() {
     use sqlx::Row;
@@ -185,8 +173,6 @@ async fn no_real_quantity_column_survives() {
     }
 }
 
-/// A quantity's declared precision is covered by the signature, not annotated
-/// beside it: tampering with either half of the pair breaks the chain.
 #[test]
 fn the_exact_pair_is_inside_the_hash_preimage() {
     let now = Utc::now();
@@ -205,7 +191,6 @@ fn the_exact_pair_is_inside_the_hash_preimage() {
     mantissa_tampered.delta = DecimalValue::parse_canonical(2, "9.99").unwrap();
     assert!(!nucleus::fact::verify_chain_step(&mantissa_tampered));
 
-    // Same number, different declared scale — still a different Fact.
     let mut scale_tampered = fact.clone();
     scale_tampered.delta = DecimalValue::parse_canonical(1, "1.5").unwrap();
     assert!(!nucleus::fact::verify_chain_step(&scale_tampered));

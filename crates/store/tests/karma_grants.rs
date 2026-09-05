@@ -20,8 +20,6 @@ const RECORD_UID: &str = "r_01ARZ3NDEKTSV4RRFFQ69G5FAX";
 const OTHER_RECORD_UID: &str = "r_01ARZ3NDEKTSV4RRFFQ69G5FAY";
 const MISSING_GRANT_UID: &str = "r_01ARZ3NDEKTSV4RRFFQ69G5FAZ";
 
-/// create → activate → narrow → revoke, with authority read back from storage at
-/// every step. The grant is inert until activation and dead after revocation.
 #[tokio::test]
 async fn the_grant_lifecycle_moves_authority_only_at_explicit_steps() {
     let store = Store::open_memory().await.unwrap();
@@ -46,7 +44,6 @@ async fn the_grant_lifecycle_moves_authority_only_at_explicit_steps() {
     assert_eq!(created.status, GrantStatus::Draft);
     assert_eq!(created.active_revision_hash, None);
     assert_eq!(created.principal_person_uid, PERSON_UID);
-    // Creating authority is not holding it: no quantity moves and nothing evaluates.
     assert_eq!(created_fact.delta, store::exact::from_f64(0.0));
     assert_eq!(record_quantity(&store, &created.record_uid).await, 0.0);
     assert!(created_fact.signature.is_some());
@@ -93,8 +90,6 @@ async fn the_grant_lifecycle_moves_authority_only_at_explicit_steps() {
         Some(&created.head_revision_hash)
     );
 
-    // Narrowing an active grant swaps head and active together; no wider revision
-    // survives the commit.
     let (narrowed, narrow_fact) = committed(
         narrow(
             &store.pool,
@@ -162,7 +157,6 @@ async fn the_grant_lifecycle_moves_authority_only_at_explicit_steps() {
         vec![GrantAuthorityDenial::GrantRevoked]
     );
 
-    // A revoked handle cannot be resurrected by any route.
     assert!(
         activate(
             &store.pool,
@@ -195,7 +189,6 @@ async fn the_grant_lifecycle_moves_authority_only_at_explicit_steps() {
         .await
         .is_err()
     );
-    // Every revision ever published stays readable; only the live pointer moved.
     assert_eq!(count(&store, "karma_grant_revision").await, 2);
     assert!(
         get_revision(
@@ -209,9 +202,6 @@ async fn the_grant_lifecycle_moves_authority_only_at_explicit_steps() {
     );
 }
 
-/// Narrowing a draft moves the head without ever making the grant live. The
-/// handle CHECK ties status to the active pointer, so this transition has to
-/// leave `active_revision_hash` NULL rather than write it.
 #[tokio::test]
 async fn narrowing_a_draft_grant_never_activates_it() {
     let store = Store::open_memory().await.unwrap();
@@ -259,8 +249,6 @@ async fn narrowing_a_draft_grant_never_activates_it() {
     );
 }
 
-/// Revoking a draft grant that never held authority must not push the Record
-/// quantity negative: the delta follows the transition, not the action name.
 #[tokio::test]
 async fn revoking_a_draft_grant_moves_no_authority_quantity() {
     let store = Store::open_memory().await.unwrap();
@@ -321,7 +309,6 @@ async fn replay_is_exact_and_stale_expectations_write_nothing() {
     assert_eq!(count(&store, "karma_grant_revision").await, 1);
     assert_eq!(count(&store, "karma_grant_request").await, 1);
 
-    // Same request id, different payload: refused rather than silently accepted.
     let mut altered = input.clone();
     altered.slug = slug("replay.two");
     assert!(create(&store.pool, altered, now(10), signer).await.is_err());
@@ -398,7 +385,6 @@ async fn only_a_proven_subset_of_a_live_program_can_be_granted() {
     let program = host_program(&store, "grant.subset", "grant-program-4").await;
     let other = host_program(&store, "grant.other", "grant-program-5").await;
 
-    // The Program must exist.
     let mut unknown = create_input(
         &program.record_uid,
         "unknown.program",
@@ -407,14 +393,12 @@ async fn only_a_proven_subset_of_a_live_program_can_be_granted() {
     unknown.grant.program_uid = uid(ReferenceKind::Program, MISSING_GRANT_UID);
     assert!(create(&store.pool, unknown, now(0), signer).await.is_err());
 
-    // An exact revision scope must belong to its own Program.
     let mut foreign = create_input(&program.record_uid, "foreign.rev", "grant-create-foreign");
     foreign.grant.program_revision = GrantProgramRevisionScope::Exact {
         revision_hash: other.head_revision_hash.clone(),
     };
     assert!(create(&store.pool, foreign, now(1), signer).await.is_err());
 
-    // Grant management capability is never delegable through a grant.
     let mut escalating = create_input(&program.record_uid, "escalate", "grant-create-escalate");
     escalating.grant.capabilities = CapabilitySet::new([Capability::KarmaGrantWiden]);
     assert!(
@@ -434,7 +418,6 @@ async fn only_a_proven_subset_of_a_live_program_can_be_granted() {
         .unwrap(),
     );
 
-    // Widening is refused even though the actor is the principal.
     let mut wider = spec(&program.record_uid, two_capabilities());
     wider.capabilities = CapabilitySet::new([
         Capability::RecordAddQuantity,
@@ -458,7 +441,6 @@ async fn only_a_proven_subset_of_a_live_program_can_be_granted() {
         .is_err()
     );
 
-    // An unchanged replacement is not a narrowing either.
     assert!(
         narrow(
             &store.pool,
@@ -483,7 +465,6 @@ async fn only_the_signing_principal_may_hold_or_change_a_grant() {
     let store = Store::open_memory().await.unwrap();
     let program = host_program(&store, "grant.principal", "grant-program-6").await;
 
-    // No signature, no grant.
     assert!(
         create(
             &store.pool,
@@ -494,7 +475,6 @@ async fn only_the_signing_principal_may_hold_or_change_a_grant() {
         .await
         .is_err()
     );
-    // A signature from anyone but the principal is refused.
     assert!(
         create(
             &store.pool,
@@ -525,7 +505,6 @@ async fn only_the_signing_principal_may_hold_or_change_a_grant() {
         .await
         .unwrap(),
     );
-    // A different Person cannot activate, narrow, or revoke someone else's grant.
     assert!(
         activate(
             &store.pool,
@@ -567,8 +546,6 @@ async fn only_the_signing_principal_may_hold_or_change_a_grant() {
     );
 }
 
-/// Every dimension of the frozen request denies on its own, and an absent grant
-/// denies without consulting anything else.
 #[tokio::test]
 async fn authority_denies_on_each_dimension_separately() {
     let store = Store::open_memory().await.unwrap();
@@ -704,8 +681,6 @@ async fn authority_denies_on_each_dimension_separately() {
     assert_eq!(missing.handle_revision, None);
 }
 
-/// K5.1 is an authority boundary and nothing more: no intent, receipt, or
-/// candidate row may appear anywhere along the lifecycle.
 #[tokio::test]
 async fn granting_authority_creates_no_effect_of_any_kind() {
     let store = Store::open_memory().await.unwrap();
@@ -919,8 +894,6 @@ async fn record_quantity(store: &Store, uid: &str) -> f64 {
         .quantity_f64()
 }
 
-/// The contract says a revoked handle is replaced by creating a new grant, so
-/// two grants must be able to carry identical terms.
 #[tokio::test]
 async fn a_revoked_grant_can_be_replaced_by_an_identical_one() {
     let store = Store::open_memory().await.unwrap();

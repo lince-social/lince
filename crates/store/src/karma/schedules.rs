@@ -268,8 +268,6 @@ struct PreparedActivationCursor {
     demand: ScheduleDemand,
 }
 
-/// Atomically supersede the previous cursor, protect incumbent admissions, and
-/// install the new cursor inside the Frequency mutation transaction.
 pub(crate) async fn install_admitted_activation_cursor_tx(
     tx: &mut Transaction<'_, Sqlite>,
     activation_hash: &CanonicalHash,
@@ -505,8 +503,6 @@ fn prepare_activation_cursor(
     }
 }
 
-/// One-shot boot reconciliation. Live mutation handlers should materialize the
-/// activation named by their committed result directly; this is not a poller.
 pub async fn reconcile_active_schedule_cursors(
     pool: &SqlitePool,
     demand_policy: ScheduleDemandPolicy,
@@ -1124,9 +1120,6 @@ pub async fn claim_due(
     }))
 }
 
-/// Fence leases whose exact expiry has passed so a directory rebuild can arm
-/// them again. This is called at boot/change or from a one-shot lease recovery
-/// arm; it is never a polling loop.
 pub async fn recover_expired_schedule_leases(
     pool: &SqlitePool,
     now: DateTime<Utc>,

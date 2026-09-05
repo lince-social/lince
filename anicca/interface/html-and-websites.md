@@ -83,7 +83,10 @@ iframe, framing headers do not apply in the same way; sites may still reject
 embedded browsers, protected media, authentication, automation, or unsupported
 Chromium builds, and Lince offers an explicit open-in-browser fallback.
 
-In the browser client and Plan B, Website uses a
+In the browser client and Plan B — modelled, and NOT PLANNED as a way to reach
+a Cell's own interface (see
+[architecture.md](architecture.md#reaching-this-cells-own-interface-through-a-browser-not-planned))
+— Website uses a
 [sandboxed cross-origin iframe](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/iframe).
 A site may refuse embedding with
 [`frame-ancestors`](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/frame-ancestors)

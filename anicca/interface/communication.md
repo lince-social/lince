@@ -184,7 +184,7 @@ disable the hide itself because it is an instantaneous visibility change.
 #### References
 
 - Canonical Karma architecture: [Karma](../Karma.lingua)
-- Shared data and federation model: [Ontology](../Ontology.lingua)
+- Shared data and federation model: [Ontology](../Lince.lingua)
 - Local: `crates/web/src/sand/record/record.html` (thread/message surface)
 - Local: `crates/store/src/action_intents.rs` (intent/lease machinery)
 - MDN: `RTCPeerConnection`, `MediaRecorder`, `getDisplayMedia`

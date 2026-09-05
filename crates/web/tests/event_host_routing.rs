@@ -1,16 +1,3 @@
-//! An event names a record; the record names a Lince (Ontology §11).
-//!
-//! A record uid on its own is not enough to fetch anything: the same uid names
-//! nothing — or something else entirely — on a different Cell. So an ABI event
-//! carries the Cell the emitting sand was reading, and a sand acting on that
-//! event fetches from THERE rather than from whatever host it is itself bound
-//! to. Without it, clicking a row in a kanban pointed at someone else's Lince
-//! opened an empty Record panel: the record was never missing, we were asking
-//! our own Cell for a uid it had never heard of.
-//!
-//! This runs the SHIPPED `widget-bridge.js` and `transport.js` in node against
-//! fake frames, so what is asserted is the routing the board actually performs.
-
 use std::fs;
 use std::path::PathBuf;
 use std::process::Command;
@@ -24,9 +11,6 @@ fn node_available() -> bool {
         .unwrap_or(false)
 }
 
-/// Stage the real modules beside a harness faking only the browser globals they
-/// touch. Copying the shipped files (never a transcription) is the point — a
-/// divergence between this and what is served makes the test worthless.
 fn run(label: &str, body: &str) {
     if !node_available() {
         eprintln!("SKIP event host routing test `{label}`: node is not on PATH");
@@ -126,8 +110,6 @@ export function socketFor(organ) {
     }
 }
 
-/// A sand that names a Cell for one request is served by THAT Cell, whatever
-/// its own binding says — and the matching unsubscribe goes to the same place.
 #[test]
 fn a_request_that_names_a_cell_is_sent_to_that_cell() {
     run(
@@ -198,12 +180,6 @@ console.log("ok");
     );
 }
 
-/// Reads and writes must agree on which Cell they mean.
-///
-/// The failure this rules out is the worst one available here: a sand reading a
-/// record from another Lince and writing the edit back to its own binding would
-/// create or overwrite whatever local record carries that uid, record the change
-/// against the wrong Organ, and raise no error anywhere.
 #[test]
 fn an_action_goes_to_the_cell_the_record_was_read_from() {
     run(
@@ -274,9 +250,6 @@ console.log("ok");
     );
 }
 
-/// A Cell kept open only by an event-driven sand must not be closed for looking
-/// unused: its host is in no card's binding, and closing it would blank the
-/// sand with nothing to say and nothing to re-dial it.
 #[test]
 fn a_host_held_only_by_a_subscription_is_still_in_use() {
     run(
@@ -323,8 +296,6 @@ console.log("ok");
     );
 }
 
-/// An event carries the Cell its emitter was reading, so the sand that acts on
-/// it knows where to look.
 #[test]
 fn an_event_carries_the_cell_its_subject_lives_on() {
     run(
@@ -380,10 +351,6 @@ console.log("ok");
     );
 }
 
-/// The same host reaches the user's OTHER devices. It rides as a sibling of
-/// `payload` on the lane frame, so a board that predates the field sends one
-/// without it and reads one straight past it — the payload every existing sand
-/// parses is untouched, and nothing has to be upgraded in step.
 #[test]
 fn the_cell_an_event_names_survives_the_trip_to_another_device() {
     run(

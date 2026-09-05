@@ -1,5 +1,3 @@
-//! Fact repository (blueprint Part II).
-
 use chrono::{DateTime, SecondsFormat, TimeDelta, Utc};
 use nucleus::{Cause, CauseKind, DecimalValue, Fact};
 use sqlx::{Row, Sqlite, SqlitePool, Transaction};
@@ -7,25 +5,10 @@ use sqlx::{Row, Sqlite, SqlitePool, Transaction};
 use crate::StoreError;
 use crate::exact::{decimal_columns, read_decimal, zero};
 
-/// Render an instant for the `fact.at` column and for every comparison against
-/// it (blueprint E0).
-///
-/// `at` is TEXT compared lexically, which equals chronological order only when
-/// every value shares one format. Two things break that: a `+00:00` suffix
-/// sorting against a `Z` one, and variable-length fractional seconds. This is
-/// fixed-width UTC with `Z`, so the two orders coincide — and a wrong answer
-/// here would look exactly like a correct one, which is why it is centralised
-/// rather than spelled out at each call site.
-///
-/// Nanosecond precision is kept deliberately. The Fact's hash preimage is built
-/// from the parsed `DateTime`, so truncating here would change the instant a
-/// re-read Fact reconstructs and silently break `verify_chain_step`.
 pub fn instant(at: DateTime<Utc>) -> String {
     at.to_rfc3339_opts(SecondsFormat::Nanos, true)
 }
 
-/// Re-render a caller-supplied timestamp into the stored format. A caller that
-/// passes `+00:00` would otherwise compare wrong against `Z`-suffixed rows.
 fn instant_str(value: &str) -> String {
     DateTime::parse_from_rfc3339(value)
         .map(|parsed| instant(parsed.with_timezone(&Utc)))
@@ -40,7 +23,6 @@ pub async fn exists(tx: &mut Transaction<'_, Sqlite>, uid: &str) -> Result<bool,
         .is_some())
 }
 
-/// Head of the Cell's hash chain; "genesis" for an empty ledger.
 pub async fn last_hash(tx: &mut Transaction<'_, Sqlite>) -> Result<String, StoreError> {
     Ok(
         sqlx::query("SELECT hash FROM fact ORDER BY rowid DESC LIMIT 1")
@@ -72,8 +54,6 @@ pub async fn insert(tx: &mut Transaction<'_, Sqlite>, f: &Fact) -> Result<(), St
     .bind(&f.signature)
     .execute(&mut **tx)
     .await?;
-    // Facts join the op log (Ontology §11) — except imported ones, whose
-    // original op the sync import path appends under its origin identity.
     if f.cause.kind != CauseKind::Sync {
         crate::sync_ops::log_local_tx(tx, "fact", &f.uid, "", crate::sync_ops::OpKind::Fact, None)
             .await?;
@@ -107,7 +87,6 @@ fn map_facts(rows: Vec<sqlx::sqlite::SqliteRow>) -> Result<Vec<Fact>, StoreError
     rows.into_iter().map(map_fact).collect()
 }
 
-/// Fetch a single sealed fact by uid (the target of a compensation/undo).
 pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<Fact>, StoreError> {
     sqlx::query("SELECT * FROM fact WHERE uid = ?")
         .bind(uid)
@@ -129,10 +108,6 @@ pub async fn get_in_transaction(
         .transpose()
 }
 
-/// The actor_uid of a record's EARLIEST fact (rowid order — creation, not the
-/// latest edit). Used for "who created this" (record ownership checks,
-/// message/thread sender resolution) — a record's own row carries no creator
-/// column, only its facts do.
 pub async fn creator_uid(
     pool: &SqlitePool,
     record_uid: &str,
@@ -160,9 +135,6 @@ pub async fn for_record(
     )
 }
 
-/// Which deltas of a window a sum should keep. Sign is a Rust-side test now: a
-/// canonical mantissa is TEXT, so `delta > 0` is no longer a SQL predicate.
-/// The `(record_uid, at)` index still bounds the scan to the window itself.
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum SignFilter {
     All,
@@ -180,8 +152,6 @@ impl SignFilter {
     }
 }
 
-/// Fold the deltas of `[start, end)` exactly, in Rust, at the finest scale any
-/// of them declares.
 async fn fold_window(
     pool: &SqlitePool,
     record_uid: &str,
@@ -224,7 +194,6 @@ async fn fold_window(
     Ok(total)
 }
 
-/// `sum(@x, <window>)` (blueprint II.1): net delta over the trailing window.
 pub async fn sum_window(
     pool: &SqlitePool,
     record_uid: &str,
@@ -235,7 +204,6 @@ pub async fn sum_window(
     fold_window(pool, record_uid, &cutoff, None, SignFilter::All).await
 }
 
-/// `sum_pos(@x, <window>)`: only the inflows (positive deltas) of the window.
 pub async fn sum_pos_window(
     pool: &SqlitePool,
     record_uid: &str,
@@ -246,8 +214,6 @@ pub async fn sum_pos_window(
     fold_window(pool, record_uid, &cutoff, None, SignFilter::Positive).await
 }
 
-/// `sum_neg(@x, <window>)`: only the outflows (negative deltas); the sum is
-/// returned as-is (a negative number, or 0 when there were none).
 pub async fn sum_neg_window(
     pool: &SqlitePool,
     record_uid: &str,
@@ -258,8 +224,6 @@ pub async fn sum_neg_window(
     fold_window(pool, record_uid, &cutoff, None, SignFilter::Negative).await
 }
 
-/// End-lagged window: net delta over `[now - end_lag - window, now - end_lag)`.
-/// `end_lag = 0` degenerates to `sum_window` (with an exclusive upper bound).
 pub async fn sum_window_lagged(
     pool: &SqlitePool,
     record_uid: &str,
@@ -273,15 +237,6 @@ pub async fn sum_window_lagged(
     fold_window(pool, record_uid, &start, Some(&end), SignFilter::All).await
 }
 
-/// A Record's exact level, folded from its Fact chain (blueprint E0.1) rather
-/// than read from the `record.quantity` cache. This is what a Program reads:
-/// the cache is a cache, and a rule that decides something should decide it
-/// from the truth.
-///
-/// Anchored on the last checkpoint that carries a level. Retention genuinely
-/// deletes archived Facts, so folding whatever rows remain would silently
-/// under-report a compacted Record — the checkpoint already accounts for
-/// everything before it, and only the Facts after it still need adding.
 pub async fn level(pool: &SqlitePool, record_uid: &str) -> Result<DecimalValue, StoreError> {
     let (base, after_rowid) = level_anchor(pool, record_uid).await?;
     let rows = match after_rowid {
@@ -312,9 +267,6 @@ pub async fn level(pool: &SqlitePool, record_uid: &str) -> Result<DecimalValue, 
     Ok(total)
 }
 
-/// The most recent checkpoint that actually carries a level, and its rowid.
-/// Compaction's archive anchors are checkpoints too but carry `{archive, ...}`
-/// instead of a level, so they are skipped rather than read as zero.
 async fn level_anchor(
     pool: &SqlitePool,
     record_uid: &str,
@@ -335,7 +287,7 @@ async fn level_anchor(
             continue;
         };
         let Some(text) = json.get("level").and_then(serde_json::Value::as_str) else {
-            continue; // an archive anchor, not a level checkpoint
+            continue;
         };
         let level = DecimalValue::parse_inferred(text).map_err(|error| {
             StoreError::Decode(format!("checkpoint level is not an exact decimal: {error}").into())
@@ -345,7 +297,6 @@ async fn level_anchor(
     Ok((zero(), None))
 }
 
-/// Set (upsert) the retention horizon for a record kind (blueprint II.2).
 pub async fn set_retention(
     pool: &SqlitePool,
     kind: &str,
@@ -362,7 +313,6 @@ pub async fn set_retention(
     Ok(())
 }
 
-/// All retention policies as `(kind, horizon_seconds)`.
 pub async fn retention_policies(pool: &SqlitePool) -> Result<Vec<(String, i64)>, StoreError> {
     Ok(
         sqlx::query("SELECT kind, horizon_seconds FROM retention_policy")
@@ -374,7 +324,6 @@ pub async fn retention_policies(pool: &SqlitePool) -> Result<Vec<(String, i64)>,
     )
 }
 
-/// The record's most recent checkpoint fact and its rowid (compaction bound).
 pub async fn last_checkpoint(
     pool: &SqlitePool,
     record_uid: &str,
@@ -391,8 +340,6 @@ pub async fn last_checkpoint(
     .transpose()
 }
 
-/// Facts of a record eligible for compaction: strictly before the checkpoint
-/// row AND older than the cutoff time. Ordered by rowid (chain order).
 pub async fn archivable_before(
     pool: &SqlitePool,
     record_uid: &str,
@@ -413,8 +360,6 @@ pub async fn archivable_before(
     )
 }
 
-/// Delete archived facts by uid, in one transaction. The quantity cache is
-/// untouched on purpose: the deltas live on, folded into the checkpoint level.
 pub async fn delete_by_uids(pool: &SqlitePool, uids: &[String]) -> Result<u64, StoreError> {
     let mut tx = crate::write_tx(pool).await?;
     let mut deleted = 0;
@@ -429,8 +374,6 @@ pub async fn delete_by_uids(pool: &SqlitePool, uids: &[String]) -> Result<u64, S
     Ok(deleted)
 }
 
-/// Facts across all records, optionally since a cutoff, in chain order —
-/// the `source: fact` Protein's raw feed.
 pub async fn list_since(
     pool: &SqlitePool,
     since_rfc3339: Option<&str>,
@@ -454,7 +397,6 @@ pub async fn list_since(
     map_facts(rows)
 }
 
-/// Hours since the most recent fact on a record; None when it has none.
 pub async fn hours_since_last(
     pool: &SqlitePool,
     record_uid: &str,

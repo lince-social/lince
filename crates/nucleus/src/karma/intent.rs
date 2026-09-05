@@ -1,10 +1,3 @@
-//! K5.2 — durable authorized intents and the budget reservation kernel.
-//!
-//! An intent is what an accepted proposal becomes once exactly one grant has
-//! permitted it and its budget has been reserved. Nothing here executes: this
-//! module decides whether work *may* exist and freezes the evidence for that
-//! decision. Leases, attempts, receipts, and dispatch are later K5 layers.
-
 use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
@@ -24,9 +17,6 @@ pub enum KarmaIntentSchema {
     V1,
 }
 
-/// The states K5.2 can actually produce. The full `IntentStatus` vocabulary is
-/// already frozen in `state.rs`; this slice only ever writes these two, because
-/// every other state arrives with execution.
 pub const K5_2_INTENT_STATES: [IntentStatus; 2] =
     [IntentStatus::Authorized, IntentStatus::Cancelled];
 
@@ -36,14 +26,6 @@ pub enum IntentTransitionSchema {
     V1,
 }
 
-/// One movement of an intent through its lifecycle, content-addressed and
-/// chained to the movement before it.
-///
-/// The transition names the durable request that caused it rather than a Fact,
-/// because one cause can move many intents at once — revoking a grant cancels
-/// everything it authorized — and the Fact for that cause is reachable from the
-/// request. Chaining to `previous_event_hash` means the history of an intent is
-/// tamper-evident on its own terms, without reading the Ledger.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct IntentTransition {
     pub schema: IntentTransitionSchema,
@@ -62,8 +44,6 @@ impl IntentTransition {
     }
 }
 
-/// An exact amount in one unit. Both the unit and the scale must match the
-/// grant's limit; nothing is rounded to fit.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct IntentAmount {
     pub unit_uid: TypedUid,
@@ -83,9 +63,6 @@ pub enum BudgetDenial {
     QuantityNotPositive,
 }
 
-/// What a grant has already spent. The store derives this by counting the
-/// grant's own intents that still hold a reservation, so it can never drift
-/// from the evidence.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BudgetUsage {
     pub intents: u64,
@@ -96,8 +73,6 @@ pub struct BudgetUsage {
     pub quantity: Option<DecimalValue>,
 }
 
-/// The reservation as it stood at authorization: what was spent before, and
-/// what this intent took.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BudgetSnapshot {
     pub budget: GrantBudget,
@@ -113,8 +88,6 @@ pub struct BudgetSnapshot {
     pub quantity_after: Option<DecimalValue>,
 }
 
-/// Why an intent was or was not permitted: the whole authority answer plus the
-/// budget arithmetic, kept together so a person can audit one object.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct IntentAuthorization {
     pub schema: KarmaIntentSchema,
@@ -126,8 +99,6 @@ pub struct IntentAuthorization {
     pub budget: BudgetSnapshot,
 }
 
-/// The frozen, content-addressed request. Status lives beside it in the store,
-/// exactly as a candidate's status lives beside its immutable proposal.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct KarmaIntent {
     pub schema: KarmaIntentSchema,
@@ -180,12 +151,6 @@ impl KarmaIntent {
     }
 }
 
-/// The amount a proposal asks for, read from the proposal itself.
-///
-/// The caller never states this: if an accepting client could name the amount,
-/// it could understate it and spend a budget it was not given. Exactly one
-/// quantity field may appear, because an ambiguous proposal must not be
-/// resolved by guessing which number the budget applies to.
 pub fn proposal_amount(
     fields: &BTreeMap<LocalId, LiteralValue>,
 ) -> Result<Option<IntentAmount>, KarmaBoundaryError> {
@@ -206,8 +171,6 @@ pub fn proposal_amount(
     Ok(found)
 }
 
-/// The typed target a proposal acts on, read from its unique reference field.
-/// Several references cannot be disambiguated safely, so they fail closed.
 pub fn proposal_target(
     fields: &BTreeMap<LocalId, LiteralValue>,
 ) -> Result<Option<GrantTarget>, KarmaBoundaryError> {
@@ -236,7 +199,6 @@ pub fn proposal_target(
     Ok(found)
 }
 
-/// The answer to "may this become work?" — never a partial yes.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct IntentAuthorizationOutcome {
     pub allowed: bool,
@@ -246,11 +208,6 @@ pub struct IntentAuthorizationOutcome {
     pub budget: Option<BudgetSnapshot>,
 }
 
-/// Evaluate one named grant against one frozen request and reserve its budget.
-///
-/// Authority is checked first and budget second, but both denial lists come
-/// back together so a person sees every reason at once. A snapshot is produced
-/// only when nothing objected.
 pub fn authorize_intent(
     revision: &DelegationGrantRevision,
     request: &GrantAuthorityRequest,
@@ -274,8 +231,6 @@ pub fn authorize_intent(
     let window_intents_after = usage.window_intents.saturating_add(1);
     if let Some(window) = &budget.per_window {
         match window_index {
-            // The store must have counted the same window this request lands in;
-            // anything else means the usage was gathered for another instant.
             Some(index) if usage.window_index == Some(index) => {
                 if window_intents_after > window.count {
                     denials.push(BudgetDenial::WindowCapExhausted);

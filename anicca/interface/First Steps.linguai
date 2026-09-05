@@ -17,6 +17,70 @@ A **workspace** is one canvas with its arrangement of sands. Keep several, name 
 
 The ideas below walk through the frontend in order: the toolbar in the corner, what edit mode turns on, the two layers a sand can live in, how to add one, and then **Protein** — the thing that decides which records a sand is looking at, which is where the frontend stops being about windows and starts being about your data.
 
+The native interface is still a developer preview rather than the finished
+Box described later in this chapter. Run `mise run interface-lab-joined` to
+try the parts that have landed. Press **F9** for primitive Sand states,
+**F10** for recursive Sand composition, **F11** for the Configuration Sand and
+**F12** for the official-Sand migration catalog.
+In either workbench, use **Tab** and **Shift-Tab** to select an operation and
+**Enter** to apply it; pointer and accessibility activation reach the same
+operation. Press **F8** to write the machine-readable report.
+
+Configuration currently lets you exercise Dark/Light and theme selection,
+typed workspace, group and instance values, inheritance, definition defaults,
+ports and Behavior, isolation and capabilities, safe developer CSS, undo,
+save/reopen and an idempotent domain-compound launch. Each accepted operation
+previews immediately and the panel shows where representative resolved values
+came from. A refused operation says so and keeps the last good preview. This
+F-key surface is the implementation laboratory, not the intended final route
+through the v1 Configuration Sand; it is documented so a person can test what
+exists while the official interface is rebuilt.
+
+The F12 catalog lists all 25 official Sands. Use Tab or Shift-Tab, click a
+name, or select it through accessibility controls. The panel shows which Rust
+definitions compose that Sand, its typed inputs and outputs, and the legacy
+source whose behavior still has to be preserved. Press Enter or Space on Edit
+controls, Zoom controls, Record or Conversation to open its native retained runtime.
+Inside it, Tab and Shift-Tab move among its real composed controls; Enter,
+Space, a pointer click or accessibility activation operates the focused Sand.
+Record's textarea accepts typing and Backspace. Escape returns to the catalog.
+
+`Landed` means the complete native behavior is usable. Edit, Zoom, Record,
+Conversation, Table, Todo and Kanban now have native retained Behavior. When F12 is reached through
+the production desktop, Record and Conversation read the running Lince through
+live Protein subscriptions; the panel says whether that connection is live and
+how many Records, Conversations and private drafts arrived. The laboratory
+without a domain endpoint uses clearly labeled representative data.
+
+Conversation shows the latest Message's author, the Person or Agent that
+operated for that author, its words and whether it is still `writing`,
+`finished` or `interrupted`. Its composer and draft queue are private working
+state. Type in the textarea; **Add draft** creates another entry, **Pinned**
+turns one into a reusable preset, **Move up** changes queue order and **Delete**
+removes it. Changes wait briefly so typing does not write on every key, then
+persist through Lince Actions and return after restart. **Send** first saves an
+unsaved draft. It removes an ordinary draft only after the Message is
+acknowledged and keeps a pinned preset. If no Fiote turn is running, the timing
+control honestly says “send now · no turn running”; safe-point and after-turn
+delivery become active only when a running turn is attached.
+
+Table shows one reusable row Sand for every Record on its current page. Todo
+shows plain Records whose quantity is negative: type a title into **New task**,
+choose **Add task**, or choose **Complete** to request quantity zero. Kanban
+places Records into Backlog, Next, WIP, Review and Done from their quantity.
+Choose **Open Record** on a card to select it, then **Move left** or **Move
+right**. These operations wait for Lince to acknowledge the Action; live
+Protein then decides what remains on screen.
+
+This is the first collection behavior, not its final editor. Table cell editing
+and deletion, custom Protein drivers, custom Kanban lanes and concepts, bulk
+selection and swimlanes still use the old Web Sand while C4 continues.
+
+`Rust structure cataloged; runtime Behavior pending` means only the decomposed
+shape is ready; the old Web Sand is still the usable implementation. Seventeen
+official roots currently have that state. This distinction keeps the tutorial
+honest while the migration proceeds.
+
 Everything after this branch is what sits underneath. First why Lince exists at all, then the model everything is made from, then the boundary between one Lince and another, the transfers that cross it, and the rules that keep working while you are not looking.
 
 ## Sands on a canvas

@@ -124,18 +124,8 @@ pub enum ProgramRunBlockCode {
     StatefulRuntimeUnavailable,
     UnsupportedStatePersistence,
     StateMigrationRequired,
-    /// A `record-quantity` input names a Record that no longer resolves —
-    /// deleted, or never existed. A run blocks rather than reading a zero,
-    /// because "the Record is gone" and "the Record holds nothing" are
-    /// different facts and a rule must not confuse them.
     RecordQuantityUnavailable,
-    /// A `record-quantity` input resolved, but the Record's unit could not be
-    /// typed. A rule that silently treats litres as kilograms is worse than a
-    /// rule that refuses to run.
     RecordUnitUntypable,
-    /// The boundary source is real but its resolver is not wired yet
-    /// (`saved-protein`, and `signal`/`secret-metadata`/`captured-fact`, which
-    /// belong to K6). A named block, never a missing value.
     InputSourceUnresolved,
 }
 

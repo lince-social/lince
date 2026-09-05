@@ -37,3 +37,9 @@ tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
 # test has to hold a real Ed25519 key rather than a stub.
 base64 = { workspace = true }
 ed25519-dalek = { workspace = true }
+
+[build-dependencies]
+sensei = { workspace = true }
+
+[lints]
+workspace = true

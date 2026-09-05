@@ -35,10 +35,6 @@ pub struct RespondCandidateInput {
     pub expected_state_revision: u64,
     pub response: CandidateReviewAction,
     pub actor_person_uid: Option<String>,
-    /// K5.2: accepting an `act` proposal *and* authorizing it are one commit.
-    /// Left empty, acceptance stays inert exactly as it was in K4.3. Naming a
-    /// grant makes this transaction check authority and reserve budget too, and
-    /// exactly one grant may be named — never a union of matching grants.
     pub authorizing_grant_uid: Option<String>,
 }
 
@@ -48,7 +44,6 @@ pub enum CandidateReviewCommit {
         state: KarmaCandidateStateRow,
         fact: Fact,
         intent: Option<CanonicalHash>,
-        /// The intent's own lifecycle Fact, committed in the same transaction.
         intent_fact: Option<Fact>,
     },
     Replayed {
@@ -163,8 +158,6 @@ where
         let fact = crate::facts::get_in_transaction(&mut tx, &fact_uid)
             .await?
             .ok_or(sqlx::Error::RowNotFound)?;
-        // A candidate has at most one intent, so the replay reports the same one
-        // the original commit created rather than minting a second.
         let intent = intent_for_candidate_tx(&mut tx, &input.candidate_hash).await?;
         tx.rollback().await?;
         return Ok(CandidateReviewCommit::Replayed {
@@ -315,8 +308,6 @@ where
     .bind(&at)
     .execute(&mut *tx)
     .await?;
-    // Accepting and authorizing are one commit: there is no window in which a
-    // proposal is accepted but its authority was never checked.
     let (intent, intent_fact) = match &input.authorizing_grant_uid {
         None => (None, None),
         Some(grant_uid) => {
@@ -442,8 +433,6 @@ struct CandidateReviewFingerprint<'a> {
     expected_state_revision: u64,
     response: &'a CandidateReviewAction,
     actor_person_uid: Option<&'a str>,
-    /// Part of the fingerprint: replaying the same request id against a
-    /// different grant is a different request and must be refused.
     #[serde(skip_serializing_if = "Option::is_none")]
     authorizing_grant_uid: Option<&'a str>,
 }

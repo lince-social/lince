@@ -1,10 +1,3 @@
-//! Thread invites (Ontology §11): what an Organ can put in front of you
-//! before you have agreed to anything, and the two ways out of it.
-//!
-//! The properties worth pinning are all about restraint — an invite must not
-//! travel, must not multiply, and must not decide anything on the user's
-//! behalf.
-
 use std::sync::Arc;
 
 use engine::Engine;
@@ -23,8 +16,6 @@ async fn cell(base_url: &str) -> (Arc<Engine>, String) {
     (Arc::new(e), organ)
 }
 
-/// Register `them` as a known contact of `us` — enough for the outbox to
-/// consider them a sync destination.
 async fn know(us: &Engine, organ_uid: &str) {
     store::organs::add_contact(&us.store.pool, organ_uid, None, "peer", "", 0)
         .await
@@ -37,10 +28,6 @@ async fn know(us: &Engine, organ_uid: &str) {
         .expect("policy");
 }
 
-/// The property that makes an invite safe to receive: it is a LOCAL note.
-///
-/// Written through `records::create` it would be logged and enqueued to every
-/// known contact — "Bea is asking to talk to me" pushed to everyone you know.
 #[tokio::test]
 async fn an_invite_is_local_and_is_never_pushed_to_anyone() {
     let (us, _) = cell("http://us.test").await;
@@ -78,8 +65,6 @@ async fn an_invite_is_local_and_is_never_pushed_to_anyone() {
     assert_eq!(queued, 0, "and nothing may be queued for any contact");
 }
 
-/// One pending per Organ. Without it, a declined conversation is just a spam
-/// channel with extra steps.
 #[tokio::test]
 async fn one_organ_gets_one_pending_invite() {
     let (us, _) = cell("http://us.test").await;
@@ -97,7 +82,6 @@ async fn one_organ_gets_one_pending_invite() {
             .is_none(),
         "a second offer from the same Organ is refused while one is pending"
     );
-    // And the refused one leaves nothing behind to render.
     assert_eq!(
         store::invites::pending(&us.store.pool)
             .await
@@ -106,8 +90,6 @@ async fn one_organ_gets_one_pending_invite() {
         1
     );
 
-    // A DIFFERENT Organ is unaffected: the cap is per sender, not a global
-    // one-at-a-time queue.
     assert!(
         store::invites::put(&us.store.pool, "o-carla", "r-3", "Hello")
             .await
@@ -123,16 +105,12 @@ async fn one_organ_gets_one_pending_invite() {
     );
 }
 
-/// Accepting opens the conversation and NOTHING else. Agreeing to read what
-/// someone sends is not deciding who they are.
 #[tokio::test]
 async fn accepting_opens_the_conversation_without_deciding_anything_else() {
     let (us, _) = cell("http://us.test").await;
     store::organs::add_contact(&us.store.pool, "o-bea", None, "Bea", "", 1)
         .await
         .expect("contact");
-    // `add_contact` defaults to `known`; start from `unknown` so this test
-    // actually observes what accepting does rather than what setup did.
     store::organs::set_trust(&us.store.pool, "o-bea", "unknown")
         .await
         .expect("trust");
@@ -185,8 +163,6 @@ async fn accepting_opens_the_conversation_without_deciding_anything_else() {
     );
 }
 
-/// Declining is an ANSWER, not a dismissal — it revokes the grant and frees
-/// the sender to ask again later.
 #[tokio::test]
 async fn declining_revokes_the_grant_and_frees_the_slot() {
     let (us, _) = cell("http://us.test").await;
@@ -221,8 +197,6 @@ async fn declining_revokes_the_grant_and_frees_the_slot() {
         "the grant row is gone, so the sender is not left waiting on an answer \
          that never comes"
     );
-    // The slot is free: they may ask once more. That is the ONE thing that
-    // remains possible after a refusal.
     assert!(
         store::invites::put(&us.store.pool, "o-bea", "r-later", "Try again")
             .await
@@ -231,8 +205,6 @@ async fn declining_revokes_the_grant_and_frees_the_slot() {
     );
 }
 
-/// The invite Record is an ordinary Record, so it is visible to Protein
-/// without a new source — which is how a surface renders the queue.
 #[tokio::test]
 async fn invites_are_visible_through_protein_like_any_other_record() {
     let (us, _) = cell("http://us.test").await;
@@ -260,11 +232,6 @@ async fn invites_are_visible_through_protein_like_any_other_record() {
     assert_eq!(rows[0]["extension"]["root"], "r-root");
 }
 
-/// The invite as it actually arrives: over the wire, from a real Organ, and
-/// answered by the local user rather than by the protocol.
-///
-/// This is the seam the unit tests above cannot reach — the offer handler is
-/// what turns a wire request into something a person sees.
 #[tokio::test]
 async fn an_offer_over_the_wire_becomes_an_invite_the_user_answers() {
     use engine::wire::{ALPN_SYNC, Reach, Wire, WireRequest, WireResponse};
@@ -293,7 +260,6 @@ async fn an_offer_over_the_wire_becomes_an_invite_the_user_answers() {
         .await
         .expect("b binds");
 
-    // Each knows the other: the sync ALPN is where offers travel.
     know(&a, &b_organ).await;
     store::organs::set_node_id(&a.store.pool, &b_organ, Some(&b_wire.node_id().to_string()))
         .await
@@ -342,9 +308,6 @@ async fn an_offer_over_the_wire_becomes_an_invite_the_user_answers() {
     );
     assert_eq!(pending[0].root, conversation);
 
-    // A second offer from the same Organ is absorbed silently — the sender is
-    // told the same thing either way, so they cannot learn whether the first
-    // was declined or merely unanswered.
     let again = a_wire
         .request(
             b_addr,
@@ -367,7 +330,6 @@ async fn an_offer_over_the_wire_becomes_an_invite_the_user_answers() {
         "still one pending: an Organ gets one, however many times it asks"
     );
 
-    // B answers it, and only now is the conversation theirs to receive.
     b.act(
         Action::AcceptThreadInvite {
             invite: pending[0].record_uid.clone(),
@@ -385,21 +347,11 @@ async fn an_offer_over_the_wire_becomes_an_invite_the_user_answers() {
     serving.abort();
 }
 
-/// An invite must WAKE the board, not wait to be asked for.
-///
-/// Notifications are the one thing the board learns about that commits no
-/// Fact — an invite is a local note in its own side table, so the `fact_bus`
-/// cannot carry it. That gap used to be covered by a `fetch` on a two-second
-/// interval running for as long as any board was open. This watch is what
-/// replaced it, so the properties it has to hold are: it fires when an invite
-/// lands, `notifications()` then describes it, and answering fires it again.
 #[tokio::test]
 async fn a_pending_invite_wakes_watchers_and_answering_wakes_them_again() {
     let (us, _organ) = cell("http://us.test").await;
     let (them, their_organ) = cell("http://them.test").await;
     know(&us, &their_organ).await;
-    // The far side has to hold the conversation Record for `accept_invite` to
-    // have something to accept.
     let (root, _thread) = them
         .start_conversation(&their_organ, "Coffee")
         .await

@@ -2,8 +2,6 @@ use crate::domain::lince_package::{LincePackage, PackageManifest};
 
 pub(crate) const FEATURE_FLAG: &str = "sand.view_todo_editor";
 
-// Standalone todo focus queue as a self-contained HTML string over Protein +
-// Actions.
 const HTML: &str = include_str!("todo.html");
 
 pub(crate) fn manifest() -> PackageManifest {

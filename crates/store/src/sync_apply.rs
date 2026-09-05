@@ -1,21 +1,46 @@
-//! Raw appliers for REMOTE ops (Ontology §11 "Merge"). These write the read
-//! model directly and NEVER log local ops — the import path appends the
-//! original op (origin identity) itself. LWW decisions are the engine's; by
-//! the time a function here runs, the op has already won its HLC compare.
-
 use chrono::Utc;
 use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;
 
-/// Make sure a record row exists for an incoming op (uid is the origin's —
-/// cross-organ joins line up by uid; a slug is a local suggestion, dropped on
-/// collision).
-/// `created_hlc` comes from the op that brought this record into being, NOT
-/// from a fresh stamp. A fresh one would order every imported record by when
-/// it happened to arrive here, which puts a conversation back on local
-/// wall-clock time by another route — the exact thing the column exists to
-/// avoid.
+#[derive(Clone, Copy)]
+pub struct Stamp<'a> {
+    pub tbl: &'a str,
+    pub uid: &'a str,
+    pub field: &'a str,
+    pub hlc: i64,
+}
+
+const NOT_SUPERSEDED: &str =
+    " AND NOT EXISTS (SELECT 1 FROM sync_op WHERE tbl = ? AND uid = ? AND field = ? AND hlc > ?)";
+
+type SqliteQuery<'q> = sqlx::query::Query<'q, sqlx::Sqlite, sqlx::sqlite::SqliteArguments<'q>>;
+
+fn bind_stamp<'q>(query: SqliteQuery<'q>, stamp: &Stamp<'q>) -> SqliteQuery<'q> {
+    query
+        .bind(stamp.tbl)
+        .bind(stamp.uid)
+        .bind(stamp.field)
+        .bind(stamp.hlc)
+}
+
+async fn superseded(
+    conn: &mut sqlx::SqliteConnection,
+    stamp: &Stamp<'_>,
+) -> Result<bool, StoreError> {
+    Ok(sqlx::query(
+        "SELECT 1 FROM sync_op
+          WHERE tbl = ? AND uid = ? AND field = ? AND hlc > ? LIMIT 1",
+    )
+    .bind(stamp.tbl)
+    .bind(stamp.uid)
+    .bind(stamp.field)
+    .bind(stamp.hlc)
+    .fetch_optional(&mut *conn)
+    .await?
+    .is_some())
+}
+
 pub async fn ensure_record_stub(
     pool: &SqlitePool,
     uid: &str,
@@ -50,32 +75,34 @@ pub async fn ensure_record_stub(
     Ok(())
 }
 
-/// Apply one record `set` op. Unknown fields are ignored (a newer peer may
-/// speak columns this Cell does not have yet). `undelete` clears the
-/// tombstone — "undelete is a newer write".
 pub async fn set_record_field(
     pool: &SqlitePool,
     uid: &str,
     field: &str,
     value: &serde_json::Value,
     undelete: bool,
+    stamp: Stamp<'_>,
 ) -> Result<bool, StoreError> {
     let now = Utc::now().to_rfc3339();
     let text = value.as_str().map(str::to_string);
     let applied = match field {
         "head" | "body" | "kind" => {
-            let sql = format!("UPDATE record SET {field} = ?, updated_at = ? WHERE uid = ?");
-            sqlx::query(&sql)
-                .bind(text.unwrap_or_default())
-                .bind(&now)
-                .bind(uid)
-                .execute(pool)
-                .await?
-                .rows_affected()
+            let sql = format!(
+                "UPDATE record SET {field} = ?, updated_at = ? WHERE uid = ?{NOT_SUPERSEDED}"
+            );
+            bind_stamp(
+                sqlx::query(&sql)
+                    .bind(text.unwrap_or_default())
+                    .bind(&now)
+                    .bind(uid),
+                &stamp,
+            )
+            .execute(pool)
+            .await?
+            .rows_affected()
                 > 0
         }
         "slug" => {
-            // A slug is a local suggestion, never identity — drop on collision.
             let taken = match text.as_deref() {
                 Some(slug) => sqlx::query("SELECT 1 FROM record WHERE slug = ? AND uid != ?")
                     .bind(slug)
@@ -85,48 +112,31 @@ pub async fn set_record_field(
                     .is_some(),
                 None => false,
             };
-            sqlx::query("UPDATE record SET slug = ?, updated_at = ? WHERE uid = ?")
-                .bind(if taken { None } else { text })
-                .bind(&now)
-                .bind(uid)
-                .execute(pool)
-                .await?
-                .rows_affected()
+            let sql =
+                format!("UPDATE record SET slug = ?, updated_at = ? WHERE uid = ?{NOT_SUPERSEDED}");
+            bind_stamp(
+                sqlx::query(&sql)
+                    .bind(if taken { None } else { text })
+                    .bind(&now)
+                    .bind(uid),
+                &stamp,
+            )
+            .execute(pool)
+            .await?
+            .rows_affected()
                 > 0
         }
-        // A peer may not clear a Record's origin. `record_origin_required_update`
-        // ABORTS a null here, and that error would propagate out of
-        // `import_ops` and fail the WHOLE batch — turning one malformed op
-        // into a denial of the rest, which is the opposite of the
-        // quarantine-one-op behaviour the admissibility gate exists for. So an
-        // empty origin is simply not applied.
         "organ_uid" if text.as_deref().unwrap_or_default().is_empty() => false,
         "unit_uid" | "organ_uid" => {
-            let sql = format!("UPDATE record SET {field} = ?, updated_at = ? WHERE uid = ?");
-            sqlx::query(&sql)
-                .bind(text)
-                .bind(&now)
-                .bind(uid)
+            let sql = format!(
+                "UPDATE record SET {field} = ?, updated_at = ? WHERE uid = ?{NOT_SUPERSEDED}"
+            );
+            bind_stamp(sqlx::query(&sql).bind(text).bind(&now).bind(uid), &stamp)
                 .execute(pool)
                 .await?
                 .rows_affected()
                 > 0
         }
-        // Quantity is ADDED, never assigned — the one field where "last write
-        // wins" is the wrong rule (Ontology §11, C2b).
-        //
-        // `record.quantity` is the fold of a record's fact chain over its
-        // OPENING value, and `bump_quantity` adds. Exactly one `quantity` op
-        // exists per record — the one creation logs — so it is that opening
-        // value, and every later change is a signed fact.
-        //
-        // Assigning it made the result depend on arrival order: a peer that
-        // received the facts first held the sum of the deltas, and the genesis
-        // op then overwrote it with the opening value, silently discarding
-        // every change. Adding gives `opening + deltas` whichever order they
-        // arrive in, and the op log's identity dedupe (`UNIQUE(actor_cell,
-        // hlc)`) is what keeps it exactly-once — an add applied twice would be
-        // just as wrong as a set applied late.
         "quantity" => {
             let mantissa = value
                 .get("mantissa")
@@ -138,22 +148,21 @@ pub async fn set_record_field(
                 .unwrap_or(0);
             let opening = crate::exact::parse_decimal(mantissa, scale)?;
             if opening.is_zero() {
-                // Nothing to add, but an undelete may still be riding this op.
-                // Still gated on the row EXISTING, so a zero opening cannot
-                // report "applied" for a record that is not there — which
-                // would inflate the count and push a phantom uid into the
-                // refresh set.
                 sqlx::query("SELECT 1 FROM record WHERE uid = ?")
                     .bind(uid)
                     .fetch_optional(pool)
                     .await?
                     .is_some()
             } else {
+                let mut tx = crate::write_tx(pool).await?;
+                if superseded(&mut tx, &stamp).await? {
+                    return Ok(false);
+                }
                 let row = sqlx::query(
                     "SELECT quantity_mantissa, quantity_scale FROM record WHERE uid = ?",
                 )
                 .bind(uid)
-                .fetch_optional(pool)
+                .fetch_optional(&mut *tx)
                 .await?;
                 let Some(row) = row else {
                     return Ok(false);
@@ -166,7 +175,7 @@ pub async fn set_record_field(
                         )
                     })?;
                 let (mantissa, scale) = crate::exact::decimal_columns(updated);
-                sqlx::query(
+                let hit = sqlx::query(
                     "UPDATE record
                         SET quantity_mantissa = ?, quantity_scale = ?, updated_at = ?
                       WHERE uid = ?",
@@ -175,38 +184,42 @@ pub async fn set_record_field(
                 .bind(scale)
                 .bind(&now)
                 .bind(uid)
-                .execute(pool)
+                .execute(&mut *tx)
                 .await?
                 .rows_affected()
-                    > 0
+                    > 0;
+                tx.commit().await?;
+                hit
             }
         }
         _ => false,
     };
     if applied && undelete {
-        sqlx::query("UPDATE record SET deleted_at = NULL WHERE uid = ?")
-            .bind(uid)
+        let sql = format!("UPDATE record SET deleted_at = NULL WHERE uid = ?{NOT_SUPERSEDED}");
+        bind_stamp(sqlx::query(&sql).bind(uid), &stamp)
             .execute(pool)
             .await?;
     }
     Ok(applied)
 }
 
-/// Apply a record tombstone: mark deleted, free the slug.
-/// Undelete without touching any field — "undelete is a newer write" when the
-/// winning write is text owned by the record-doc rather than a scalar set.
-pub async fn undelete_record(pool: &SqlitePool, uid: &str) -> Result<(), StoreError> {
-    sqlx::query("UPDATE record SET deleted_at = NULL, updated_at = ? WHERE uid = ?")
-        .bind(Utc::now().to_rfc3339())
-        .bind(uid)
-        .execute(pool)
-        .await?;
+pub async fn undelete_record(
+    pool: &SqlitePool,
+    uid: &str,
+    stamp: Stamp<'_>,
+) -> Result<(), StoreError> {
+    let sql = format!(
+        "UPDATE record SET deleted_at = NULL, updated_at = ? WHERE uid = ?{NOT_SUPERSEDED}"
+    );
+    bind_stamp(
+        sqlx::query(&sql).bind(Utc::now().to_rfc3339()).bind(uid),
+        &stamp,
+    )
+    .execute(pool)
+    .await?;
     Ok(())
 }
 
-/// Whether a record row is tombstoned: `None` = no row at all, `Some(true)` =
-/// deleted, `Some(false)` = alive. Sees THROUGH the deleted_at filter the
-/// normal getters apply.
 pub async fn record_deleted(pool: &SqlitePool, uid: &str) -> Result<Option<bool>, StoreError> {
     Ok(
         sqlx::query("SELECT deleted_at IS NOT NULL AS gone FROM record WHERE uid = ?")
@@ -217,8 +230,6 @@ pub async fn record_deleted(pool: &SqlitePool, uid: &str) -> Result<Option<bool>
     )
 }
 
-/// Materialize a record-doc's text (engine::collab's raw writer): both fields
-/// at once, no ops logged, no existence error — the caller ensured the row.
 pub async fn set_record_text_raw(
     pool: &SqlitePool,
     uid: &str,
@@ -235,19 +246,23 @@ pub async fn set_record_text_raw(
     Ok(())
 }
 
-pub async fn tombstone_record(pool: &SqlitePool, uid: &str) -> Result<(), StoreError> {
+pub async fn tombstone_record(
+    pool: &SqlitePool,
+    uid: &str,
+    stamp: Stamp<'_>,
+) -> Result<(), StoreError> {
     let now = Utc::now().to_rfc3339();
-    sqlx::query("UPDATE record SET deleted_at = ?, slug = NULL, updated_at = ? WHERE uid = ?")
-        .bind(&now)
-        .bind(&now)
-        .bind(uid)
+    let sql = format!(
+        "UPDATE record SET deleted_at = ?, slug = NULL, updated_at = ? WHERE uid = ?{NOT_SUPERSEDED}"
+    );
+    bind_stamp(sqlx::query(&sql).bind(&now).bind(&now).bind(uid), &stamp)
         .execute(pool)
         .await?;
     Ok(())
 }
 
 async fn extension_fds(
-    pool: &SqlitePool,
+    conn: &mut sqlx::SqliteConnection,
     record_uid: &str,
     namespace: &str,
 ) -> Result<serde_json::Value, StoreError> {
@@ -255,7 +270,7 @@ async fn extension_fds(
         sqlx::query("SELECT fds FROM record_extension WHERE record_uid = ? AND namespace = ?")
             .bind(record_uid)
             .bind(namespace)
-            .fetch_optional(pool)
+            .fetch_optional(&mut *conn)
             .await?
             .and_then(|r| serde_json::from_str(&r.get::<String, _>("fds")).ok())
             .unwrap_or_else(|| serde_json::json!({})),
@@ -263,7 +278,7 @@ async fn extension_fds(
 }
 
 async fn write_extension_fds(
-    pool: &SqlitePool,
+    conn: &mut sqlx::SqliteConnection,
     record_uid: &str,
     namespace: &str,
     fds: &serde_json::Value,
@@ -276,71 +291,82 @@ async fn write_extension_fds(
     .bind(record_uid)
     .bind(namespace)
     .bind(fds.to_string())
-    .execute(pool)
+    .execute(&mut *conn)
     .await?;
     Ok(())
 }
 
-/// Set one key inside a namespace (read-modify-write of the fds object).
 pub async fn set_extension_key(
     pool: &SqlitePool,
     record_uid: &str,
     namespace: &str,
     key: &str,
     value: serde_json::Value,
+    stamp: Stamp<'_>,
 ) -> Result<(), StoreError> {
-    let mut fds = extension_fds(pool, record_uid, namespace).await?;
+    let mut tx = crate::write_tx(pool).await?;
+    if superseded(&mut tx, &stamp).await? {
+        return Ok(());
+    }
+    let mut fds = extension_fds(&mut tx, record_uid, namespace).await?;
     if !fds.is_object() {
         fds = serde_json::json!({});
     }
     fds.as_object_mut()
         .expect("just ensured object")
         .insert(key.to_string(), value);
-    write_extension_fds(pool, record_uid, namespace, &fds).await
+    write_extension_fds(&mut tx, record_uid, namespace, &fds).await?;
+    tx.commit().await?;
+    Ok(())
 }
 
-/// Remove one key from a namespace.
 pub async fn tombstone_extension_key(
     pool: &SqlitePool,
     record_uid: &str,
     namespace: &str,
     key: &str,
+    stamp: Stamp<'_>,
 ) -> Result<(), StoreError> {
-    let mut fds = extension_fds(pool, record_uid, namespace).await?;
+    let mut tx = crate::write_tx(pool).await?;
+    if superseded(&mut tx, &stamp).await? {
+        return Ok(());
+    }
+    let mut fds = extension_fds(&mut tx, record_uid, namespace).await?;
     if let Some(map) = fds.as_object_mut() {
         map.remove(key);
     }
-    write_extension_fds(pool, record_uid, namespace, &fds).await
+    write_extension_fds(&mut tx, record_uid, namespace, &fds).await?;
+    tx.commit().await?;
+    Ok(())
 }
 
-/// Replace a whole non-object namespace value.
 pub async fn set_extension_whole(
     pool: &SqlitePool,
     record_uid: &str,
     namespace: &str,
     value: &serde_json::Value,
+    stamp: Stamp<'_>,
 ) -> Result<(), StoreError> {
-    write_extension_fds(pool, record_uid, namespace, value).await
+    let mut tx = crate::write_tx(pool).await?;
+    if superseded(&mut tx, &stamp).await? {
+        return Ok(());
+    }
+    write_extension_fds(&mut tx, record_uid, namespace, value).await?;
+    tx.commit().await?;
+    Ok(())
 }
 
-/// Apply an assertion `set` op: insert under the origin uid, or un-retract a
-/// row that a newer set revives (later HLC wins per uid).
 pub async fn upsert_assertion(
     pool: &SqlitePool,
     uid: &str,
     value: &serde_json::Value,
+    stamp: Stamp<'_>,
 ) -> Result<(), StoreError> {
+    let mut tx = crate::write_tx(pool).await?;
+    if superseded(&mut tx, &stamp).await? {
+        return Ok(());
+    }
     let s = |k: &str| value.get(k).and_then(|v| v.as_str()).map(str::to_string);
-    // An Assertion's predicate is a Concept, and a Concept lives on the
-    // GENERAL feed — so an Assertion arriving through an individual-replica
-    // grant channel can reference a predicate the receiver has never seen.
-    // Without a stub the insert fails the foreign key and the whole
-    // conversation refuses to land.
-    //
-    // The stub carries the uid and no name: naming is the general feed's job
-    // and the real Concept overwrites this the moment it arrives. Depending on
-    // the general feed to carry it would be wrong in the case that matters —
-    // a contact granted ONE conversation and no feed sync at all.
     if let Some(predicate_uid) = s("predicate_uid") {
         let placeholder = format!("concept:{predicate_uid}");
         let predicate_name = s("predicate_name")
@@ -353,10 +379,8 @@ pub async fn upsert_assertion(
         .bind(&predicate_uid)
         .bind(&predicate_name)
         .bind(Utc::now().to_rfc3339())
-        .execute(pool)
+        .execute(&mut *tx)
         .await?;
-        // A previous op in the same batch may have made the nameless stub.
-        // Name only that placeholder; never rename an established Concept.
         if predicate_name != placeholder {
             sqlx::query(
                 "UPDATE concept SET canonical_name = ?
@@ -365,7 +389,7 @@ pub async fn upsert_assertion(
             .bind(&predicate_name)
             .bind(&predicate_uid)
             .bind(&placeholder)
-            .execute(pool)
+            .execute(&mut *tx)
             .await?;
         }
     }
@@ -385,45 +409,53 @@ pub async fn upsert_assertion(
     .bind(s("unit_uid"))
     .bind(s("asserted_by"))
     .bind(s("created_at").unwrap_or_else(|| Utc::now().to_rfc3339()))
-    .execute(pool)
+    .execute(&mut *tx)
     .await?;
     if res.rows_affected() == 0 {
-        // Already present: a newer set re-activates it.
         sqlx::query(
             "UPDATE record_assertion SET retracted_at = NULL, retracted_by = NULL WHERE uid = ?",
         )
         .bind(uid)
-        .execute(pool)
+        .execute(&mut *tx)
         .await?;
     }
+    tx.commit().await?;
     Ok(())
 }
 
-/// Apply an assertion tombstone.
-pub async fn retract_assertion(pool: &SqlitePool, uid: &str) -> Result<(), StoreError> {
-    sqlx::query(
-        "UPDATE record_assertion SET retracted_at = ? WHERE uid = ? AND retracted_at IS NULL",
+pub async fn retract_assertion(
+    pool: &SqlitePool,
+    uid: &str,
+    stamp: Stamp<'_>,
+) -> Result<(), StoreError> {
+    let sql = format!(
+        "UPDATE record_assertion SET retracted_at = ?
+          WHERE uid = ? AND retracted_at IS NULL{NOT_SUPERSEDED}"
+    );
+    bind_stamp(
+        sqlx::query(&sql).bind(Utc::now().to_rfc3339()).bind(uid),
+        &stamp,
     )
-    .bind(Utc::now().to_rfc3339())
-    .bind(uid)
     .execute(pool)
     .await?;
     Ok(())
 }
 
-/// Apply a concept `set`: adopt under the origin uid, or rename. A canonical
-/// name held by a DIFFERENT local concept stays local (names are unique;
-/// keep ours, skip theirs).
 pub async fn upsert_concept(
     pool: &SqlitePool,
     uid: &str,
     canonical_name: &str,
     origin_organ: &str,
+    stamp: Stamp<'_>,
 ) -> Result<(), StoreError> {
+    let mut tx = crate::write_tx(pool).await?;
+    if superseded(&mut tx, &stamp).await? {
+        return Ok(());
+    }
     let name_holder: Option<String> =
         sqlx::query("SELECT uid FROM concept WHERE canonical_name = ?")
             .bind(canonical_name)
-            .fetch_optional(pool)
+            .fetch_optional(&mut *tx)
             .await?
             .map(|r| r.get("uid"));
     if let Some(holder) = name_holder {
@@ -439,22 +471,28 @@ pub async fn upsert_concept(
     .bind(canonical_name)
     .bind(origin_organ)
     .bind(Utc::now().to_rfc3339())
-    .execute(pool)
+    .execute(&mut *tx)
     .await?;
     if res.rows_affected() == 0 {
         sqlx::query("UPDATE concept SET canonical_name = ? WHERE uid = ?")
             .bind(canonical_name)
             .bind(uid)
-            .execute(pool)
+            .execute(&mut *tx)
             .await?;
     }
+    tx.commit().await?;
     Ok(())
 }
 
-/// Apply a concept tombstone: the same cascade as `concepts::delete`, without
-/// local op logging.
-pub async fn delete_concept(pool: &SqlitePool, uid: &str) -> Result<(), StoreError> {
+pub async fn delete_concept(
+    pool: &SqlitePool,
+    uid: &str,
+    stamp: Stamp<'_>,
+) -> Result<(), StoreError> {
     let mut tx = crate::write_tx(pool).await?;
+    if superseded(&mut tx, &stamp).await? {
+        return Ok(());
+    }
     for sql in [
         "DELETE FROM concept_name WHERE concept_uid = ?",
         "DELETE FROM lingua_concept WHERE concept_uid = ?",

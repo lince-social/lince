@@ -38,9 +38,6 @@ pub struct BoardCard {
     pub z_index: i32,
     #[serde(default)]
     pub group_id: Option<String>,
-    /// Nested-group membership stack, outermost -> innermost (Stage 8b, Phase 3).
-    /// `group_id` mirrors the innermost id for flat-group back-compat; empty for
-    /// ungrouped cards. Disbanding the outer group pops the front, inner survives.
     #[serde(default)]
     pub group_ids: Vec<String>,
     #[serde(default)]
@@ -101,12 +98,6 @@ pub struct AppBootstrap {
     pub viewer: Option<ViewerBootstrap>,
 }
 
-/// The logged-in user's identity + permissions, best-effort resolved from the
-/// request's JWT (`None` when unauthenticated or auth isn't required). Sands
-/// never see raw JWTs — this flows down through the widget-bridge's per-card
-/// meta (alongside cardState) so a sand's delete buttons can be shown/hidden
-/// without a round trip, though the engine (`record:delete`/`record:delete_own`)
-/// is the actual enforcement boundary, not this hint.
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct ViewerBootstrap {
@@ -136,9 +127,6 @@ pub struct ServerBootstrap {
     pub username_hint: String,
     pub connected_at_unix: Option<u64>,
     pub last_error: String,
-    /// Our own Cell. Exactly one row carries this, and it is what lets the
-    /// board say "this is your Lince" instead of showing a bare name a
-    /// contact could have chosen to look identical.
     pub local: bool,
 }
 
@@ -255,8 +243,6 @@ pub fn default_world() -> BoardWorld {
 
 pub fn default_camera() -> BoardCamera {
     BoardCamera {
-        // The seed workspace is composed for a 1920×1080 camera at 100%.
-        // Its tutorial card is 1536×864 and centered in the world.
         x: -4_040.0,
         y: -4_460.0,
         scale: 1.0,
@@ -265,14 +251,8 @@ pub fn default_camera() -> BoardCamera {
 
 pub const RECORD_PIN_ID: &str = "shell-record";
 
-/// Screen coordinate parked past any real viewport so the pinned-card clamp
-/// in `syncCardNode` (main.js) keeps this card against the right edge.
 const PINNED_RIGHT: f64 = 99_999.0;
 
-/// The Record sand, seeded pinned at the top-right corner. Starts
-/// collapsed to an icon (`widgetState.recordExpanded` is absent/false) and
-/// expands in place when it receives a `recordClicked`/`recordCreate` ABI
-/// event; see `syncCardNode` in main.js for the icon<->full geometry.
 pub fn record_pin_card() -> BoardCard {
     let mut card = package_card(
         RECORD_PIN_ID,
@@ -304,8 +284,6 @@ fn seed_workspace_cards(include_seed_cards: bool) -> Vec<BoardCard> {
     cards.push(record_pin_card());
 
     if include_seed_cards {
-        // Was the flat "Tutorial" sand (`lince-shell-tutorial.html`) until it
-        // was rebuilt as the chaptered Instinct package (2026-08-01).
         let instinct = package_card(
             "seed-instinct",
             "Instinct",

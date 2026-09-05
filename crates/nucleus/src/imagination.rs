@@ -1,46 +1,14 @@
-//! Imagination (blueprint XII): fold promises and rules forward.
-//!
-//! `state(t) = facts ≤ now + promises kept by t`, with rules simulated on a
-//! virtual clock. No IO: the engine builds the [`Snapshot`]; this walks it.
-//!
-//! # One rule shape, here too
-//!
-//! There used to be three objects in this file: a rule, a frequency it read
-//! through `freq()`, and a separate notion of a derived value. There is one now.
-//! A rule carries its own cadence, so projecting it forward is just deriving the
-//! instants that cadence produces between now and the horizon — the same
-//! arithmetic the heartbeat runs, on a clock that has not happened yet.
-//!
-//! That identity is the point. A projection that used a second implementation
-//! of "when does this repeat" would drift from the wheel, and the drift would
-//! show up as a threshold crossing that never arrives or an alarm for one that
-//! does not exist.
-//!
-//! # What does not simulate
-//!
-//! Signals stay frozen at their snapshot values: they are world state, and
-//! guessing at them would be inventing readings. Windowed sums are not replayed
-//! either, because a projected window would have to sum facts that have not been
-//! written. A rule whose condition needs one of those simply does not fire in
-//! the projection, which understates the future rather than fabricating it.
-//!
-//! Outward consequences — notify, ask, run, promise — never simulate. They do
-//! not move a number, so a timeline has nothing to draw for them.
-
 use crate::NucleusError;
 use crate::karma::{Cadence, Carry, Condition, ConditionError, DecimalValue, ExactResolver, Gate};
 use chrono::{DateTime, Utc};
 use std::collections::HashMap;
 
-/// How deep one projected rule may read another's arithmetic.
 const VALUE_DEPTH_CAP: usize = 4;
 
 #[derive(Debug, Clone)]
 pub struct Snapshot {
     pub now: DateTime<Utc>,
-    /// record uid -> current level (the quantity cache, copied).
     pub quantities: HashMap<String, f64>,
-    /// slug -> record uid, for token resolution inside rule conditions.
     pub slugs: HashMap<String, String>,
     pub promises: Vec<ProjPromise>,
     pub rules: Vec<ProjRule>,
@@ -50,36 +18,23 @@ pub struct Snapshot {
 pub struct ProjPromise {
     pub record_uid: String,
     pub delta: f64,
-    /// expected keep time (window_end in v1).
     pub at: DateTime<Utc>,
 }
 
-/// How a rule moves the number it is about, per occurrence.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ProjMove {
-    /// A capture or an add: the number is a movement, and folds.
     Add,
-    /// An assignment: the number is a level, and replaces.
     Set,
 }
 
-/// One rule, in the only form a projection needs.
-///
-/// Deliberately not the stored rule type. A projection needs to know when a
-/// rule lands and what it does to a number, and nothing else — so the stored
-/// type stays free to grow consequences that mean nothing here without this
-/// file having to learn about them.
 #[derive(Debug, Clone)]
 pub struct ProjRule {
     pub uid: String,
     pub slug: Option<String>,
-    /// The Record the rule acts on.
     pub record_uid: String,
     pub cadence: Cadence,
     pub anchor: DateTime<Utc>,
-    /// The *if*, already parsed, or `None` for a rule its dates alone justify.
     pub condition: Option<ProjCondition>,
-    /// What it does to the number, or `None` when it only touches concepts.
     pub movement: Option<(ProjMove, f64)>,
 }
 
@@ -95,7 +50,7 @@ pub struct TimelinePoint {
     pub at: DateTime<Utc>,
     pub record_uid: String,
     pub quantity: f64,
-    pub cause: String, // "promise" | "rule:<uid>"
+    pub cause: String,
 }
 
 #[derive(Debug, Clone)]
@@ -105,7 +60,6 @@ pub struct Timeline {
 }
 
 impl Timeline {
-    /// First projected moment `record` crosses at-or-below `threshold`.
     pub fn crossing_below(&self, record_uid: &str, threshold: f64) -> Option<&TimelinePoint> {
         self.points
             .iter()
@@ -117,11 +71,9 @@ impl Timeline {
     }
 }
 
-/// Readings taken against the virtual world, at one virtual instant.
 struct VirtualResolver<'a> {
     snapshot: &'a Snapshot,
     quantities: &'a HashMap<String, f64>,
-    /// The rule being evaluated, and the stretch its evaluation speaks for.
     since: DateTime<Utc>,
     at: DateTime<Utc>,
     depth: usize,
@@ -164,8 +116,6 @@ impl ExactResolver for VirtualResolver<'_> {
                     .ok_or_else(|| ConditionError::UnknownReference(slug.to_string()))?;
                 exact(self.quantities.get(&uid).copied().unwrap_or(0.0))
             }
-            // The same window rule as the live engine: the boundaries of the
-            // referenced rule that land in the stretch this evaluation covers.
             "freq" => {
                 let uid = self
                     .uid_of(slug)
@@ -209,7 +159,6 @@ impl ExactResolver for VirtualResolver<'_> {
                 };
                 asked.condition.evaluate(&mut inner)
             }
-            // Frozen world state and windowed sums are not invented here.
             other => Err(ConditionError::UnknownReference(format!(
                 "{other}() in projection"
             ))),
@@ -217,15 +166,12 @@ impl ExactResolver for VirtualResolver<'_> {
     }
 }
 
-/// The fold. Deterministic: same snapshot, same timeline.
 pub fn project(snapshot: &Snapshot, until: DateTime<Utc>) -> Timeline {
     let mut state = snapshot.quantities.clone();
     let mut points = Vec::new();
 
-    /// One thing that happens at a virtual instant.
     enum Ev {
         Promise(usize),
-        /// A rule's occurrence, and the instant its previous one fell on.
         Rule(usize, DateTime<Utc>),
     }
 
@@ -236,16 +182,9 @@ pub fn project(snapshot: &Snapshot, until: DateTime<Utc>) -> Timeline {
         }
     }
     for (index, rule) in snapshot.rules.iter().enumerate() {
-        // A cadence that does not validate produces no instants, which is what
-        // it contributes to a real wheel too. Failing the whole projection
-        // because one stored rule is malformed would hide every other rule's
-        // future in order to report one broken one.
         let Ok(derived) = rule.cadence.between(rule.anchor, snapshot.now, until) else {
             continue;
         };
-        // Each occurrence reads back to the one before it, so the windows a
-        // rule reads over tile the projected timeline exactly as they tile the
-        // real one.
         let mut previous = rule
             .cadence
             .preceding(rule.anchor, snapshot.now)
@@ -257,8 +196,6 @@ pub fn project(snapshot: &Snapshot, until: DateTime<Utc>) -> Timeline {
             previous = at;
         }
     }
-    // Stable across equal instants: a promise kept at the same moment a rule
-    // lands is applied first, so the rule sees the world the promise made.
     events.sort_by_key(|(at, event)| {
         (
             *at,
@@ -285,7 +222,7 @@ pub fn project(snapshot: &Snapshot, until: DateTime<Utc>) -> Timeline {
             Ev::Rule(index, since) => {
                 let rule = &snapshot.rules[index];
                 let Some((movement, declared)) = rule.movement else {
-                    continue; // touches no number: nothing for a timeline to draw
+                    continue;
                 };
                 let mut number = declared;
                 if let Some(asked) = rule.condition.as_ref() {
@@ -302,9 +239,6 @@ pub fn project(snapshot: &Snapshot, until: DateTime<Utc>) -> Timeline {
                         &asked.carry,
                         &mut resolver,
                     ) {
-                        // The gate blocked, or the condition needed a reading
-                        // this projection will not invent. Either way the rule
-                        // does not act at this instant.
                         Ok(None) | Err(_) => continue,
                         Ok(Some(carried)) => number = carried.to_f64(),
                     }
@@ -333,7 +267,6 @@ pub fn project(snapshot: &Snapshot, until: DateTime<Utc>) -> Timeline {
     }
 }
 
-/// Parse a stored condition into the form a projection evaluates.
 pub fn proj_condition(
     source: &str,
     gate: Gate,
@@ -360,7 +293,6 @@ mod tests {
     #[test]
     fn promises_and_rules_fold_forward() {
         let now = at("2026-07-05T00:00:00Z");
-        // apples 8; a daily rule eats one; Maria delivers 5 on the 8th.
         let snapshot = Snapshot {
             now,
             quantities: HashMap::from([("r_APPLES".into(), 8.0)]),
@@ -380,24 +312,17 @@ mod tests {
                 movement: Some((ProjMove::Add, -1.0)),
             }],
         };
-        // Ten days out: 8 - 10 (rule) + 5 (promise) = 3.
         let timeline = project(&snapshot, now + TimeDelta::days(10));
         assert_eq!(timeline.projected("r_APPLES"), Some(3.0));
-        // The low point is reached by the rule BEFORE the delivery lifts it —
-        // exactly the threshold crossing Attention watches for.
         let crossing = timeline.crossing_below("r_APPLES", 4.0).unwrap();
         assert!(crossing.at < at("2026-07-08T12:00:00Z"));
         assert!(crossing.cause.starts_with("rule:"));
-        // Determinism: same snapshot, same timeline.
         let again = project(&snapshot, now + TimeDelta::days(10));
         assert_eq!(again.points, timeline.points);
     }
 
     #[test]
     fn a_projected_rhythm_is_counted_the_same_way_the_wheel_counts_it() {
-        // The whole reason a projection may share the schedule type: a rule
-        // gated on `freq(@payday)` has to land on the projected timeline
-        // exactly where the heartbeat would land it.
         let now = at("2026-03-01T00:00:00Z");
         let snapshot = Snapshot {
             now,
@@ -431,16 +356,12 @@ mod tests {
                 },
             ],
         };
-        // Three weeks: three Mondays, three acts, and nothing on the other days.
         let timeline = project(&snapshot, at("2026-03-22T00:00:00Z"));
         assert_eq!(timeline.projected("r_HABIT"), Some(-3.0));
     }
 
     #[test]
     fn a_reading_the_projection_will_not_invent_stops_that_rule_only() {
-        // A rule needing a windowed sum cannot be simulated, and the honest
-        // response is to leave it out — not to guess, and not to abandon the
-        // other rules' futures.
         let now = at("2026-07-05T00:00:00Z");
         let snapshot = Snapshot {
             now,

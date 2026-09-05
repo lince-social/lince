@@ -1,14 +1,9 @@
-//! S2 store-layer tests for the Communication sand: tag listing (newest
-//! activity first, with participants + last-message preview) and the
-//! `call_session` lifecycle. No call-intent / Karma coverage — that is F2.
-
 use nucleus::RecordKind;
 use store::{
     Store, communication,
     records::{self, NewRecord},
 };
 
-/// Create a `@`-tag Record and return its uid.
 async fn tag_record(store: &Store, slug: &str) -> String {
     communication::ensure_tag_record(&store.pool, slug)
         .await
@@ -16,7 +11,6 @@ async fn tag_record(store: &Store, slug: &str) -> String {
         .uid
 }
 
-/// Create a plain conversation Record, tag it, and add the given participants.
 async fn conversation(store: &Store, head: &str, tag_uid: &str, participants: &[&str]) -> String {
     let conv = records::create(
         &store.pool,
@@ -53,9 +47,6 @@ async fn conversation(store: &Store, head: &str, tag_uid: &str, participants: &[
     conv.uid
 }
 
-/// Post a message into a conversation the way the Record surface does: a
-/// `thread` linked `thread-of` → conversation, a `message` linked
-/// `message-in` → thread. Returns the message uid.
 async fn post_message(store: &Store, conversation_uid: &str, body: &str) -> String {
     let thread_of = store::concepts::ensure(&store.pool, "thread-of")
         .await
@@ -125,7 +116,6 @@ async fn tag_listing_orders_by_newest_activity_with_preview_and_participants() {
     let store = Store::open_memory().await.unwrap();
     let tag = tag_record(&store, "communication").await;
 
-    // Alpha gets an early message; Beta a later one -> Beta must sort first.
     let alpha = conversation(&store, "Alpha", &tag, &["Ana", "Bea"]).await;
     post_message(&store, &alpha, "first in alpha").await;
     let beta = conversation(&store, "Beta", &tag, &["Cid"]).await;
@@ -139,7 +129,6 @@ async fn tag_listing_orders_by_newest_activity_with_preview_and_participants() {
     assert_eq!(list[0].record.uid, beta, "newest activity sorts first");
     assert_eq!(list[1].record.uid, alpha);
 
-    // Last-message preview resolves to the newest message body.
     assert_eq!(
         list[0].last_message.as_ref().map(|m| m.body.as_str()),
         Some("hello from beta")
@@ -149,7 +138,6 @@ async fn tag_listing_orders_by_newest_activity_with_preview_and_participants() {
         Some("first in alpha")
     );
 
-    // Participants are resolved for the row.
     assert_eq!(list[0].participants.len(), 1);
     assert_eq!(list[1].participants.len(), 2);
 }
@@ -162,7 +150,6 @@ async fn untagged_and_other_tag_conversations_are_excluded() {
 
     let mine = conversation(&store, "Mine", &comms, &[]).await;
     conversation(&store, "Theirs", &other, &[]).await;
-    // A plain record with no tag at all.
     records::create(
         &store.pool,
         NewRecord {
@@ -197,8 +184,6 @@ async fn deactivated_conversation_drops_out_of_the_list() {
         1
     );
 
-    // Deactivate (quantity -> 0) the way the engine would; the store read
-    // path filters it out of the list.
     sqlx::query("UPDATE record SET quantity_mantissa = '0', quantity_scale = 0 WHERE uid = ?")
         .bind(&conv.as_str())
         .execute(&store.pool)
@@ -225,7 +210,6 @@ async fn extension_roundtrips_with_defaults() {
     )
     .await;
 
-    // No extension yet.
     assert!(
         communication::get_ext(&store.pool, &conv)
             .await
@@ -266,7 +250,6 @@ async fn session_open_flips_room_active_and_writes_sidecar_and_link() {
     assert_eq!(session.kind, "call_session");
     assert!(session.head.starts_with("Call · "));
 
-    // Conversation room is now active and points at the session.
     let ext = communication::get_ext(&store.pool, &conv)
         .await
         .unwrap()
@@ -278,7 +261,6 @@ async fn session_open_flips_room_active_and_writes_sidecar_and_link() {
         Some(session.uid.as_str())
     );
 
-    // Session sidecar is present and open (no ended_at yet).
     let sidecar = communication::get_session(&store.pool, &session.uid)
         .await
         .unwrap()
@@ -287,7 +269,6 @@ async fn session_open_flips_room_active_and_writes_sidecar_and_link() {
     assert!(sidecar.ended_at.is_none());
     assert_eq!(sidecar.recording.state, "idle");
 
-    // Session is linked call-session-of -> conversation.
     let sessions = communication::sessions_of(&store.pool, &conv)
         .await
         .unwrap();

@@ -25,7 +25,6 @@ pub enum ProgramMutationAction {
     Pause,
 }
 
-/// Fact payload for one atomic mutation of a durable Program handle.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ProgramMutationEvidence {
     pub schema: ProgramMutationEvidenceSchema,
@@ -78,7 +77,6 @@ pub enum FrequencyActivationEpochSchema {
     V1,
 }
 
-/// Immutable effective configuration consumed by scheduling cursors.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct FrequencyActivationEpoch {
     schema: FrequencyActivationEpochSchema,
@@ -240,7 +238,6 @@ impl<'de> Deserialize<'de> for FrequencyActivationEpoch {
     }
 }
 
-/// Fact payload for one atomic mutation of a durable Frequency handle.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FrequencyMutationEvidence {
     pub schema: FrequencyMutationEvidenceSchema,

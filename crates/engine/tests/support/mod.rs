@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use engine::Engine;
 use engine::actions::{
     Action, TransferPromiseInput, TransferReservePoint, TransferSatiation, TransferVisibility,
@@ -342,12 +344,6 @@ pub async fn settle_from_preview(
         .expect("settlement slice uid")
 }
 
-/// Declare a rule the way every surface does: through the Action.
-///
-/// One helper, because there is one rule object now. What used to need a
-/// `rule` row, a `rule_consequence` row and sometimes a `frequency` row —
-/// three inserts that had to agree — is a single declaration carrying when it
-/// repeats, what it reads and what it does.
 #[allow(dead_code)]
 pub async fn declare_rule(
     engine: &Engine,

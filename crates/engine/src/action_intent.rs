@@ -1,10 +1,3 @@
-//! Per-session verification for client-held Person keys.
-//!
-//! A verified Action intent proves who requested an Action. It is deliberately
-//! distinct from a Fact signature: Fact hashes are produced later, inside the
-//! semantic transaction, and must never be signed or attributed by the server
-//! on the Person's behalf.
-
 use std::collections::HashSet;
 
 use base64::Engine as _;
@@ -22,10 +15,6 @@ const MAX_CHALLENGE_BYTES: usize = 512;
 const MAX_ACTION_BYTES: usize = 1_048_576;
 const MAX_ACTION_BASE64_BYTES: usize = 1_398_104;
 
-/// Server-owned state for one authenticated transport session.
-///
-/// Fields that establish authority are private so callers cannot construct a
-/// session for an arbitrary Person. Use `Engine::begin_action_intent_session`.
 pub struct ActionIntentSession {
     person_uid: String,
     session_id: String,
@@ -53,8 +42,6 @@ impl ActionIntentSession {
     }
 }
 
-/// An Action whose session, Person identity, key and signature were verified.
-/// The actor is copied from server-owned session state, never from the client.
 pub struct VerifiedActionIntent {
     intent_uid: String,
     pub message_id: String,
@@ -86,20 +73,10 @@ impl VerifiedActionIntent {
 }
 
 impl Engine {
-    /// Start signed-intent verification for an authenticated app user.
-    ///
-    /// The challenge is generated here rather than accepted from the client.
-    /// Reconnecting creates a new challenge and invalidates old envelopes.
     pub async fn begin_action_intent_session(
         &self,
         person_uid: &str,
     ) -> Result<ActionIntentSession, EngineError> {
-        // What must be true is that this Person EXISTS — not that they hold a
-        // password here. A live guest acts as the Person a `GrantOrganLogin`
-        // named, and that Person has no credential by design: the iroh
-        // handshake already proved which Organ is on the connection. Requiring
-        // a credential row was what left remote Actions dead, while reads
-        // worked, for as long as live mode has existed.
         let person = store::records::get(&self.store.pool, person_uid)
             .await?
             .ok_or_else(|| EngineError::Forbidden("unrecognized actor".into()))?;
@@ -117,9 +94,6 @@ impl Engine {
         })
     }
 
-    /// Bind a client-held key to this authenticated session after proving
-    /// possession over the server challenge. A new key may be published for
-    /// the mapped Person, but an existing key id is never reassigned.
     pub async fn authenticate_action_intent_session(
         &self,
         session: &mut ActionIntentSession,
@@ -202,12 +176,6 @@ impl Engine {
         Ok(())
     }
 
-    /// Verify and consume one signed Action envelope.
-    ///
-    /// Replay markers are consumed only after successful signature
-    /// verification. They stay consumed even if later Action validation fails;
-    /// a retry must use the next sequence and a new message id while the Action's own
-    /// request id provides semantic idempotency where required.
     pub async fn verify_action_intent(
         &self,
         session: &mut ActionIntentSession,
@@ -324,8 +292,6 @@ impl Engine {
         })
     }
 
-    /// Execute a previously verified and persisted intent with its effective
-    /// actor taken exclusively from the server-owned authenticated session.
     pub async fn act_verified_intent(
         &self,
         verified: VerifiedActionIntent,

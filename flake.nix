@@ -389,15 +389,10 @@
           devShells.default = pkgs.mkShell {
             packages =
               (with pkgs; [
-                cargo
-                clippy
                 cmake
                 ninja
                 openssl
                 pkg-config
-                rust-analyzer
-                rustc
-                rustfmt
                 sqlite
               ])
               ++ lib.optionals (!pkgs.stdenv.isLinux) [ pkgs.cargo-tauri ]
@@ -405,7 +400,6 @@
               ++ interfaceLinuxBuildInputs;
 
             shellHook = ''
-              export RUSTFLAGS="-D warnings"
               export LINCE_MIGRATION_PREFLIGHT=1
             ''
             + interfaceCefShellHook
@@ -427,15 +421,10 @@
               (
                 with pkgs;
                 [
-                  cargo
-                  clippy
                   cmake
                   ninja
                   pkg-config
                   python3
-                  rust-analyzer
-                  rustc
-                  rustfmt
                 ]
                 ++ lib.optionals stdenv.isLinux [
                   at-spi2-core
@@ -445,10 +434,8 @@
               )
               ++ interfaceLinuxBuildInputs;
 
-            shellHook = ''
-              export RUSTFLAGS="-D warnings"
-            ''
-            + interfaceCefShellHook
+            shellHook =
+              interfaceCefShellHook
             + lib.optionalString pkgs.stdenv.isLinux ''
               export LD_LIBRARY_PATH="${lib.makeLibraryPath interfaceLinuxBuildInputs}:''${LD_LIBRARY_PATH:-}"
               export LINCE_AT_SPI_BUS_LAUNCHER="${pkgs.at-spi2-core}/libexec/at-spi-bus-launcher"
@@ -457,21 +444,16 @@
 
           devShells.legacy = pkgs.mkShell {
             packages = with pkgs; [
-              cargo
               cmake
               curl
               ninja
               openssl
               pkg-config
-              rust-analyzer
-              rustc
-              rustfmt
               sqlite
               xdg-utils
             ];
 
             shellHook = ''
-              export RUSTFLAGS="-D warnings"
               export LINCE_MIGRATION_PREFLIGHT=1
             '';
           };
@@ -479,15 +461,10 @@
           devShells.desktop = pkgs.mkShell {
             packages =
               (with pkgs; [
-                cargo
-                clippy
                 cmake
                 ninja
                 openssl
                 pkg-config
-                rust-analyzer
-                rustc
-                rustfmt
                 sqlite
               ])
               ++ lib.optionals (!pkgs.stdenv.isLinux) [ pkgs.cargo-tauri ]
@@ -495,7 +472,6 @@
               ++ interfaceLinuxBuildInputs;
 
             shellHook = ''
-              export RUSTFLAGS="-D warnings"
               export LINCE_MIGRATION_PREFLIGHT=1
             ''
             + interfaceCefShellHook

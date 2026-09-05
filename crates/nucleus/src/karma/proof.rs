@@ -1002,19 +1002,11 @@ impl Validator {
     }
 }
 
-/// Why a binary expression did not type-check. The distinction matters because
-/// a wrongly declared rounding rule and an operand that simply does not combine
-/// are different mistakes with different fixes, and a single "type mismatch"
-/// would tell the author neither.
 enum BinaryIssue {
-    /// No rule combines these operand types at all.
     Types,
-    /// The `precision` declaration is missing, stray, or out of range.
     Precision(String),
 }
 
-/// The dimension an exact value carries, which is what decides whether a
-/// product needs the author to name its unit.
 enum Dimension<'a> {
     Plain,
     Unit(&'a TypedUid),
@@ -1034,10 +1026,6 @@ fn infer_binary(
     right: &ValueType,
     precision: Option<&DecimalPrecision>,
 ) -> Result<ValueType, BinaryIssue> {
-    // Exact multiply and divide are the only operations that take a precision,
-    // and they always require one. Everything else must not carry one: a field
-    // that rides in the revision hash without changing behaviour would give two
-    // identical programs two identities.
     let exact_product = matches!(operator, BinaryOperator::Multiply | BinaryOperator::Divide)
         && (dimension(left).is_some() || dimension(right).is_some());
     if exact_product {
@@ -1077,9 +1065,6 @@ fn infer_exact_product(
     let multiply = operator == BinaryOperator::Multiply;
 
     match (left_dim, right_dim) {
-        // Scaling by a plain decimal — the percentage, rate, and split cases,
-        // which is what most rules actually need. The dimension survives
-        // untouched and there is nothing for the author to declare.
         (Dimension::Plain, Dimension::Plain) => {
             keeps_own_dimension(precision)?;
             Ok(ValueType::Decimal { scale })
@@ -1098,9 +1083,6 @@ fn infer_exact_product(
                 unit: unit.clone(),
             })
         }
-        // Both sides carry a unit, or the unit sits in the divisor. There is no
-        // unit to inherit, so the author names one rather than the system
-        // inventing `kg²` or silently dropping a dimension.
         (Dimension::Unit(_), Dimension::Unit(_)) | (Dimension::Plain, Dimension::Unit(_)) => {
             match &precision.result_unit {
                 Some(DeclaredUnit::Dimensionless) => Ok(ValueType::Decimal { scale }),
@@ -1126,9 +1108,6 @@ fn infer_exact_product(
     }
 }
 
-/// Scaling a dimensioned value by a plain decimal keeps its own dimension, so a
-/// declared result unit there is a second, contradictory answer to a question
-/// that already has one.
 fn keeps_own_dimension(precision: &DecimalPrecision) -> Result<(), BinaryIssue> {
     if precision.result_unit.is_some() {
         return Err(BinaryIssue::Precision(

@@ -1,28 +1,7 @@
-//! Configuring a Cell that has no board.
-//!
-//! `--server` removes the UI, and the UI was the only place three facts could
-//! be set: whether the discovery door is open (`lince.discovery.accept_unknown`),
-//! whether a contact is `known`, and which Person a contact's live session acts
-//! as (`organ_login`). None of those are derivable — they are decisions — so a
-//! headless Cell needs somewhere to be told them, or `--server` ships a box
-//! that can hold data and can never be reached.
-//!
-//! These are DELIBERATELY not HTTP routes. Every one of them is the bootstrap
-//! that precedes having any credential on the box, so putting them behind the
-//! credential they create is a circle; and they are administration of the
-//! machine, which is what shell access already means. They read and write the
-//! same store the server does, so run them as the same user (`sudo -u lince
-//! lince --data-dir /var/lib/lince organ list`) and expect SQLite's write lock
-//! to serialise them against a running server.
-
 use std::io::Error;
 
 use store::Store;
 
-/// Dispatch an admin subcommand, or `None` when the args are a normal boot.
-///
-/// Returning `Option` rather than exiting keeps `main` in charge of the
-/// process: an unknown first argument is a boot with flags, not an error.
 pub async fn dispatch(args: &[String]) -> Option<Result<(), Error>> {
     let verbs = positional(args);
     match verbs.split_first() {
@@ -32,11 +11,6 @@ pub async fn dispatch(args: &[String]) -> Option<Result<(), Error>> {
     }
 }
 
-/// Flags that consume the token after them.
-///
-/// `lince --data-dir /var/lib/lince organ list` has to reach `organ`, and a
-/// naive "first non-flag argument" reads `/var/lib/lince` as the subcommand —
-/// which then silently falls through to a normal boot with a confusing error.
 const VALUE_FLAGS: [&str; 5] = [
     "--data-dir",
     "--port",
@@ -68,11 +42,6 @@ fn oops(message: impl Into<String>) -> Error {
     Error::other(message.into())
 }
 
-/// Resolve a contact from a uid or any unambiguous prefix of one.
-///
-/// Uids are long and are read off a screen; an ambiguous prefix is an error
-/// rather than a pick, because the two things a prefix could name here are
-/// "someone I meant to trust" and "someone else".
 async fn resolve(store: &Store, needle: &str) -> Result<store::organs::Contact, Error> {
     let contacts = store::organs::contacts(&store.pool)
         .await
@@ -117,8 +86,6 @@ async fn organ(verbs: &[&str]) -> Result<(), Error> {
                 "ORGAN UID", "TRUST", "LOGIN AS"
             );
             for contact in contacts {
-                // The login is the interesting column: `known` alone opens
-                // sync, and live mode additionally needs this to be set.
                 let login = match store::logins::person_for_organ(&store.pool, &contact.record_uid)
                     .await
                     .map_err(|error| oops(error.to_string()))?
@@ -158,9 +125,6 @@ async fn organ(verbs: &[&str]) -> Result<(), Error> {
         ))),
         ["login", needle, username] => {
             let contact = resolve(&store, needle).await?;
-            // `known` is not implied. A login says which Person they act as;
-            // it does not say they may connect, and quietly granting both from
-            // one command would make the narrower thing unavailable.
             if contact.trust != "known" {
                 return Err(oops(format!(
                     "{} is `{}`, and only a known Organ may open a live session. \
@@ -176,9 +140,6 @@ async fn organ(verbs: &[&str]) -> Result<(), Error> {
                         "No user `{username}` on this Cell. `lince organ users` lists them."
                     ))
                 })?;
-            // Granting a login to someone who no longer uses this Organ would
-            // create a door that `wire.rs` then refuses on every use — a
-            // command that appears to work and never does.
             if !store::people::is_active(&store.pool, &user.uid)
                 .await
                 .map_err(|error| oops(error.to_string()))?
@@ -214,9 +175,6 @@ async fn organ(verbs: &[&str]) -> Result<(), Error> {
                 return Ok(());
             }
             for (uid, username, name, role) in users {
-                // Standing is shown here for the same reason the sand shows
-                // it: a list of who can log in that hides who cannot is a list
-                // that omits its most important column.
                 let standing = match store::people::is_active(&store.pool, &uid).await {
                     Ok(true) => "",
                     Ok(false) => "  (deactivated)",
@@ -252,9 +210,6 @@ async fn discovery(verbs: &[&str]) -> Result<(), Error> {
         .map_err(|error| oops(error.to_string()))?
         .unwrap_or_else(|| serde_json::json!({}));
 
-    // Defaults live in `web::discovery_is_local` / `discovery_reaches_internet`
-    // and `Wire::accept_unknown`, and differ per key. Mirror them rather than
-    // inventing a single default, so what this prints is what the Cell does.
     let read = |key: &str, default: bool| {
         current
             .get(key)
@@ -296,10 +251,6 @@ async fn discovery(verbs: &[&str]) -> Result<(), Error> {
                 .map_err(|error| oops(error.to_string()))?;
             println!("discovery.{field} = {value}");
             if field == "accept_unknown" || field == "accept_logins" {
-                // Read per connection in `serve_connection`, unlike `local`
-                // and `internet`, which are Endpoint builder options fixed at
-                // bind. Saying which take effect now is the difference between
-                // a working pair attempt and a confusing one.
                 println!("In effect immediately — no restart needed.");
                 if *value == "on" {
                     println!(

@@ -21,8 +21,6 @@ pub enum TimeZoneArtifactSchema {
     V1,
 }
 
-/// One half-open UTC interval with a fixed local offset. `None` at the first
-/// start or final end represents complete coverage toward that infinity.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub struct UtcOffsetSegment {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -369,7 +367,6 @@ impl<'de> Deserialize<'de> for TimeZoneArtifact {
     }
 }
 
-/// Pure provider created only from canonical, content-addressed artifact bytes.
 #[derive(Debug, Clone)]
 pub struct ArtifactTimeZoneProvider {
     artifact: TimeZoneArtifact,
@@ -463,17 +460,6 @@ impl TimeZoneProvider for ArtifactTimeZoneProvider {
     }
 }
 
-/// The shortest local separation two consecutive occurrences of this rule can
-/// have, in milliseconds.
-///
-/// Deliberately a lower bound, never an average. It exists so the dispatcher can
-/// refuse a schedule it could not keep up with, and a bound that is too large
-/// would admit exactly the schedule that overloads it.
-///
-/// A month contributes 28 days, its shortest possible length. Landing subtracts
-/// six days: rolling each occurrence forward to an allowed weekday moves it by
-/// nought to six days, so it can pull two neighbours at most six days closer
-/// together — never more, because the roll is bounded by the week it starts in.
 fn minimum_local_interval_ms(cadence: &Cadence) -> Result<u64, KarmaBoundaryError> {
     let overflow = || KarmaBoundaryError::invalid_definition("calendar cadence overflowed");
     let months = u64::from(cadence.every.calendar_months().ok_or_else(overflow)?);
@@ -489,7 +475,5 @@ fn minimum_local_interval_ms(cadence: &Cadence) -> Result<u64, KarmaBoundaryErro
     } else {
         step
     };
-    // A one-shot has no second occurrence to be separated from, and a zero here
-    // would read as "infinitely fast" to a dispatcher sizing its budget.
     Ok(step.max(1))
 }

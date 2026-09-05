@@ -32,7 +32,7 @@ tokens. It remains the safest portable artifact and can be opened without a
 running Lince host.
 
 An Organ Facade is the public T2 surface described by
-[the Organ Profile](../Ontology.lingua#the-organ-profile-in-three-tiers). It may
+[the Organ Profile](../Lince.lingua). It may
 use one of two visibly distinct delivery policies:
 
 - **static** freezes public data into the archive and has a strict no-network,
@@ -88,7 +88,7 @@ The rationale and the EngineFS comparison are in
 
 ### Blood and portable canvas representations
 
-[Blood](../Ontology.lingua#9-federation-and-blood-talking-to-other-systems) remains
+[Blood](../Lince.lingua) remains
 the integration path for foreign services and data models. A Blood adapter
 maps provenance and semantics explicitly; an embedded Web page does not become
 a Blood integration merely by loading in a Website Sand.

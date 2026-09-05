@@ -2,10 +2,6 @@ use crate::domain::lince_package::{LincePackage, PackageManifest};
 
 pub(crate) const FEATURE_FLAG: &str = "sand.view_archive_exporter";
 
-// The Archive sand is only a button: the actual capture runs in the board
-// chrome (`/static/presentation/board/archive.js`), because a sand iframe
-// cannot read its sibling iframes' documents. See
-// notes/institute/Playground.md for the export's no-network guarantees.
 const HTML: &str = include_str!("archive.html");
 
 pub(crate) fn manifest() -> PackageManifest {

@@ -69,10 +69,6 @@ pub enum OccurrenceBatchEmission {
     Coalesced,
 }
 
-/// Compact, lossless representation of elapsed boundaries emitted by one
-/// fenced cursor completion. `first_schedule_ordinal` is relative to the
-/// immutable schedule anchor, so semantic tick identity does not depend on how
-/// host wakes happened to divide the same lattice into batches.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct OccurrenceBatch {
     pub schema: OccurrenceBatchSchema,
@@ -140,9 +136,6 @@ impl OccurrenceBatch {
         }
     }
 
-    /// Reconstruct one individually emitted tick without allocating the whole
-    /// range. Coalesced batches deliberately have one aggregate occurrence and
-    /// cannot be expanded through this method.
     pub fn individual_tick(
         &self,
         batch_ordinal: u64,
@@ -177,9 +170,6 @@ impl OccurrenceBatch {
         SemanticScheduleTick::new(self.activation_hash.clone(), schedule_ordinal, intended_at)
     }
 
-    /// Expand at most one deterministic work page. A caller must persist its
-    /// next batch ordinal between pages; requesting an unbounded allocation is
-    /// rejected even if the compact range itself contains billions of ticks.
     pub fn individual_page(
         &self,
         start_batch_ordinal: u64,
@@ -270,8 +260,6 @@ pub enum SemanticScheduleTickSchema {
     V1,
 }
 
-/// Segmentation-independent identity for one individually emitted elapsed
-/// boundary. Retries and different host wake grouping reproduce the same hash.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct SemanticScheduleTick {
     pub schema: SemanticScheduleTickSchema,
@@ -608,9 +596,6 @@ impl DispatcherResourceGrant {
     }
 }
 
-/// Conservative work reachable from one semantic schedule tick. Counts are
-/// upper bounds, not observed averages; at least one write accounts for cursor
-/// advancement/occurrence evidence.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub struct ScheduleWorkloadUpperBounds {
     evaluator_fuel_per_tick: u64,
@@ -691,9 +676,6 @@ impl SchedulerCalibration {
     }
 }
 
-/// Exact upper-bound demand for one schedule. Derived rates are calculated
-/// from reduced rationals and checked multiplication; no float participates in
-/// admission.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 pub struct ScheduleDemand {
     semantic_ticks_per_second: RationalRate,

@@ -16,8 +16,6 @@ const MAX_CALENDAR_SEARCH_STEPS: usize = 4_096;
 const MAX_TIME_ZONE_ID_BYTES: usize = 255;
 const MAX_TZDB_VERSION_BYTES: usize = 64;
 
-/// A local date and time without an offset. The canonical representation keeps
-/// millisecond precision but does not imply a timezone.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct CivilDateTime(NaiveDateTime);
 
@@ -69,12 +67,6 @@ impl CivilDateTime {
         self.0
     }
 
-    /// Re-enter the civil type from wall-clock arithmetic done outside it.
-    ///
-    /// The bounds check is the point: the cadence generator works on a raw
-    /// `NaiveDateTime` because that is what wall-clock addition is defined on,
-    /// and this is where a result that has walked out of the representable
-    /// calendar is caught rather than stored.
     pub fn from_naive(value: NaiveDateTime) -> Result<Self, KarmaBoundaryError> {
         Self::new(
             value.year(),
@@ -129,7 +121,6 @@ impl<'de> Deserialize<'de> for CivilDateTime {
     }
 }
 
-/// A local wall-clock time, represented as milliseconds since midnight.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct CivilTime(u32);
 
@@ -236,7 +227,6 @@ impl<'de> Deserialize<'de> for CivilTime {
     }
 }
 
-/// Validated IANA timezone identifier. Resolution belongs to a pinned provider.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct TimeZoneId(String);
 
@@ -494,7 +484,6 @@ pub enum FoldPolicy {
     Pause,
 }
 
-/// Provider output for a local civil time in one pinned timezone database.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
 pub enum LocalTimeResolution {
@@ -520,10 +509,6 @@ pub trait TimeZoneProvider: Send + Sync {
         local: CivilDateTime,
     ) -> Result<LocalTimeResolution, KarmaBoundaryError>;
 
-    /// Conservative shortest possible UTC separation for this complete
-    /// schedule under the provider's pinned artifact. Production providers
-    /// derive this from their content-addressed transition data. An absent
-    /// proof fails admission rather than falling back to an average cadence.
     fn minimum_interval_ms(
         &self,
         _schedule: &CalendarSchedule,
@@ -596,11 +581,6 @@ impl CalendarAdvance {
         }
     }
 
-    /// No boundary and no pause: the rule reached its bound.
-    ///
-    /// Distinct from a pause, which is "I will not guess, ask a human", and from
-    /// an error, which is "this schedule is malformed". A schedule ending is
-    /// neither — it is a one-shot promise having been kept.
     fn retired(skipped: Vec<CalendarDiscontinuity>) -> Self {
         Self {
             boundary: None,
@@ -609,7 +589,6 @@ impl CalendarAdvance {
         }
     }
 
-    /// Whether this advance means the rule has no further boundaries.
     pub fn is_retired(&self) -> bool {
         self.boundary.is_none() && self.pause.is_none()
     }
@@ -623,19 +602,6 @@ impl CalendarAdvance {
     }
 }
 
-/// A [`Cadence`] bound to a timezone and to execution policy.
-///
-/// This carries no time arithmetic of its own. The rule — the compound step,
-/// the weekday landing, the short-month policy, the bound — is the same
-/// [`Cadence`] a read path derives dates from without a provider. What is added
-/// here is everything that only matters because something will *fire*: which
-/// zone the wall clock belongs to, what a DST gap or fold means, and what to do
-/// about a wake-up that was missed.
-///
-/// The division is deliberate and is the whole point of the merge. A schedule
-/// and a declaration were two types answering one question in two ways; now
-/// they are one question with two resolutions of it, and a rule cannot mean one
-/// thing on the screen and another in the runtime.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct CalendarSchedule {
     pub anchor: CivilDateTime,
@@ -652,8 +618,6 @@ pub struct CalendarSchedule {
 }
 
 impl CalendarSchedule {
-    /// Resolve the next boundary. `previous` must be the boundary previously
-    /// returned by this schedule/provider pair.
     pub fn next_after(
         &self,
         provider: &dyn TimeZoneProvider,
@@ -696,8 +660,6 @@ impl CalendarSchedule {
             let candidate = match self.next_local_candidate(after_local)? {
                 LocalCandidate::Value(value) => value,
                 LocalCandidate::Retired => {
-                    // The rule ended as authored. Not an error and not a pause:
-                    // there is simply no next boundary to arm.
                     return Ok(CalendarAdvance::retired(skipped));
                 }
                 LocalCandidate::InvalidDay { year, month, day } => {
@@ -861,24 +823,10 @@ impl CalendarSchedule {
         }
     }
 
-    /// Whether this schedule could have produced this local instant.
-    ///
-    /// One line, because the question is now answered where the schedule is
-    /// *defined* rather than re-derived here. The three hand-written membership
-    /// tests this replaced — one per rule variant — were three chances for the
-    /// generator and the checker to disagree about the same rule.
     fn is_local_candidate(&self, local: CivilDateTime) -> bool {
         self.cadence.produces_civil(self.anchor, local)
     }
 
-    /// The next local instant strictly after `after`, or the anchor's own if
-    /// `after` is none.
-    ///
-    /// Landing can map two consecutive indices onto the same weekday, so a
-    /// candidate that is not strictly later than the previous one is passed
-    /// over rather than returned; the sequence a scheduler sees is always
-    /// increasing. That is also what makes `every 1 day landing on Mon/Wed/Fri`
-    /// behave as "those three days", with no separate weekly-set rule.
     fn next_local_candidate(
         &self,
         after: Option<CivilDateTime>,
@@ -894,10 +842,6 @@ impl CalendarSchedule {
                     }
                 }
                 Err(NoOccurrence::InvalidMonthDay { year, month, day }) => {
-                    // A month that cannot host the anchor's day. Only report it
-                    // if it is genuinely ahead of where the caller already is —
-                    // re-reporting a month already stepped past would stall the
-                    // schedule on it forever.
                     let ahead = after.is_none_or(|previous| {
                         (year, month) > (previous.0.year(), previous.0.month())
                     });
@@ -929,8 +873,6 @@ impl CalendarSchedule {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum LocalCandidate {
     Value(CivilDateTime),
-    /// The rule has reached its bound. A schedule that ends is not an error —
-    /// "on the 14th, once" is the ordinary case, not the exotic one.
     Retired,
     InvalidDay {
         year: i32,

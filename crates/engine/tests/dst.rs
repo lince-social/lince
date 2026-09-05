@@ -1,12 +1,3 @@
-//! DST harness (blueprint Part 0): the organism runs on a virtual clock, in
-//! memory, and the same script always produces the same Ledger; a recorded
-//! fact log replays into a fresh Cell deterministically and idempotently.
-//!
-//! Everything here is clocked explicitly — no wall time reaches the engine.
-//! (`Engine::act` stamps `Utc::now()` internally, so the script drives the
-//! engine through `append`/`heartbeat`, the same entry points the daemon and
-//! sync use.)
-
 use chrono::{DateTime, Utc};
 use engine::Engine;
 use nucleus::karma::{Cadence, Consequence};
@@ -36,15 +27,11 @@ async fn plain(e: &Engine, slug: &str, quantity: f64) -> String {
     .uid
 }
 
-/// The scripted week: a daily habit, a stock with a threshold rule, and user
-/// edits — all on the virtual clock. Both are the same kind of object; one
-/// acts because a date arrived, the other because a level moved.
 async fn run_script(e: &Engine) {
     plain(e, "apples.stock", 8.0).await;
     plain(e, "exercise", 0.0).await;
     plain(e, "alerts.low-apples", 0.0).await;
 
-    // The habit: every day at 07:00, this is a Need again.
     support::declare_rule(
         e,
         "@exercise",
@@ -58,7 +45,6 @@ async fn run_script(e: &Engine) {
         }],
     )
     .await;
-    // The alert: looked at daily, but it is the level dropping that fires it.
     support::declare_rule(
         e,
         "@alerts.low-apples",
@@ -73,12 +59,12 @@ async fn run_script(e: &Engine) {
     )
     .await;
 
-    e.heartbeat(at("2026-07-05T10:00:00Z")).await.unwrap(); // daily fires
-    user_delta(e, "apples.stock", -3.0, at("2026-07-05T12:00:00Z")).await; // 8 -> 5
-    e.heartbeat(at("2026-07-06T08:00:00Z")).await.unwrap(); // daily fires again
-    user_delta(e, "apples.stock", -3.0, at("2026-07-06T09:00:00Z")).await; // 5 -> 2, alert cascades
-    e.heartbeat(at("2026-07-07T07:30:00Z")).await.unwrap(); // third day
-    user_delta(e, "exercise", 1.0, at("2026-07-07T08:00:00Z")).await; // habit done: -1 -> 0
+    e.heartbeat(at("2026-07-05T10:00:00Z")).await.unwrap();
+    user_delta(e, "apples.stock", -3.0, at("2026-07-05T12:00:00Z")).await;
+    e.heartbeat(at("2026-07-06T08:00:00Z")).await.unwrap();
+    user_delta(e, "apples.stock", -3.0, at("2026-07-06T09:00:00Z")).await;
+    e.heartbeat(at("2026-07-07T07:30:00Z")).await.unwrap();
+    user_delta(e, "exercise", 1.0, at("2026-07-07T08:00:00Z")).await;
 }
 
 async fn user_delta(e: &Engine, slug: &str, delta: f64, t: DateTime<Utc>) {
@@ -98,9 +84,6 @@ async fn user_delta(e: &Engine, slug: &str, delta: f64, t: DateTime<Utc>) {
     .unwrap();
 }
 
-/// One Ledger entry in run-comparable form: uids are minted per run (ULIDs
-/// embed randomness) so records and causes are named by slug; `hash`/`uid` are
-/// excluded because the hash covers the uid.
 #[derive(Debug, PartialEq)]
 struct LogEntry {
     record: String,
@@ -119,7 +102,6 @@ async fn slug_of(e: &Engine, uid: &str) -> String {
         .unwrap_or_else(|| uid.to_string())
 }
 
-/// The full Ledger in true (rowid) order.
 async fn full_log(e: &Engine) -> Vec<nucleus::Fact> {
     let rows = store::sqlx::query("SELECT uid FROM fact ORDER BY rowid")
         .fetch_all(&e.store.pool)
@@ -186,7 +168,6 @@ async fn same_script_same_ledger() {
     assert_eq!(log_a, log_b, "two runs of one script: one Ledger");
     assert_eq!(quantities(&a).await, quantities(&b).await);
 
-    // sanity: the week actually happened
     let q = quantities(&a).await;
     assert!(q.contains(&("apples.stock".into(), 2.0)));
     assert!(q.contains(&("alerts.low-apples".into(), 1.0)));
@@ -202,12 +183,8 @@ async fn recorded_log_replays_deterministically_and_idempotently() {
     run_script(&a).await;
     let recorded = full_log(&a).await;
 
-    // A fresh Cell with the same record seeds (facts replay; rows travel by
-    // uid in real sync — here the initial quantities are the seed state).
     let b = Engine::open_memory().await.unwrap();
     for r in store::records::list_all(&a.store.pool).await.unwrap() {
-        // Not the identity records: `Store::open` already minted this Cell its
-        // own Organ and Cell Record, and they hold the same fixed slugs.
         if matches!(
             r.slug.as_deref(),
             Some(store::organs::LOCAL_ORGAN_SLUG) | Some(store::cells::LOCAL_CELL_SLUG)
@@ -236,7 +213,7 @@ async fn recorded_log_replays_deterministically_and_idempotently() {
     let replay: Vec<NewFact> = recorded
         .iter()
         .map(|f| NewFact {
-            uid: Some(f.uid.clone()), // idempotency key
+            uid: Some(f.uid.clone()),
             record_uid: f.record_uid.clone(),
             delta: f.delta,
             at: Some(f.at),
@@ -257,7 +234,6 @@ async fn recorded_log_replays_deterministically_and_idempotently() {
         "replayed Ledger folds to the same state vector"
     );
 
-    // replaying the same log again is a no-op (idempotent by fact uid)
     let again = engine::append::append_all(&b.store, replay, at("2026-07-09T00:00:00Z"), None)
         .await
         .unwrap();
@@ -265,7 +241,6 @@ async fn recorded_log_replays_deterministically_and_idempotently() {
     assert_eq!(quantities(&a).await, quantities(&b).await);
 }
 
-/// Rewind a record's final cached quantity to its pre-log seed value.
 fn initial_quantity(r: &store::records::RecordRow, log: &[nucleus::Fact]) -> nucleus::DecimalValue {
     let played = store::exact::sum_exact(
         log.iter()

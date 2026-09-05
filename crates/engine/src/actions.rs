@@ -1,11 +1,8 @@
-//! Actions (blueprint VII.2): the typed write surface. Semantic verbs,
-//! validated in the engine, all terminating in `append()` and/or sidecar
-//! updates, each with provenance. Protein never mutates; Actions never query.
-//! Sands and Fiote speak only these — Fiote has no privileged path.
-
 use chrono::{DateTime, Utc};
 use nucleus::karma::{CanonicalHash, FrequencyAst, FrequencyParameterValue, LocalId, ProgramAst};
-use nucleus::{Cause, CauseKind, Fact, NewFact, PromiseState, RecordKind};
+use nucleus::{
+    Cause, CauseKind, Fact, MessageDraftTiming, MessageState, NewFact, PromiseState, RecordKind,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, HashSet};
 
@@ -52,27 +49,14 @@ pub enum Action {
         #[serde(default)]
         quantity: f64,
     },
-    /// Set a record's quantity to a value (the delta is derived — one write path).
     SetQuantity {
         target: String,
         value: f64,
     },
-    /// `SetQuantity` without the float. `amount` is exact decimal TEXT
-    /// (`"12"`, `"3.50"`), parsed straight to a decimal so a level written by
-    /// a person — in a `.lingua` file, say — never passes through an f64 on
-    /// its way to a signed Fact.
-    ///
-    /// Still a FOLD, not an assignment: it appends the exact difference
-    /// between what was asked for and what the Ledger currently holds. The
-    /// number becomes true, and it becomes true the honest way, with a Fact
-    /// saying who moved it and by how much.
     SetQuantityExact {
         target: String,
         amount: String,
     },
-    /// Atomically change ordinary unary state assertions and, optionally, a
-    /// Record quantity. This is the Kanban move primitive: it never changes a
-    /// Record identity, and its Fact plus assertion edits share one commit.
     TransitionRecord {
         subject: String,
         #[serde(default)]
@@ -86,124 +70,54 @@ pub enum Action {
         target: String,
         delta: f64,
     },
-    /// Capture a classified change in one step: "ice cream, `@cost`, -10".
-    /// The amount lands on the Record that actually moved, and what the change
-    /// *was* is asserted about the Fact.
-    ///
-    /// Deliberately one action, not two. A form that made you first pick which
-    /// total to affect would have reintroduced exactly the bookkeeping this
-    /// design removes — totals are a query over classified changes, never a
-    /// number a person maintains.
-    ///
-    /// `amount` is exact decimal text (`"-10"`, `"-10.50"`); its sign carries
-    /// direction, so a refund is the same `@cost` concept with a positive
-    /// amount and correctly *reduces* the total.
     CaptureEntry {
-        /// The resource Record whose level moved — stock, hours, a balance.
         target: String,
         amount: String,
-        /// What the change was. Resolved through the concept DAG, so `@food`
-        /// answers a query for `@cost` when it sits under it.
         concept: Option<String>,
         #[serde(default)]
         note: Option<String>,
-        /// Occurred-at, for backdating. Defaults to now.
         #[serde(default)]
         at: Option<String>,
-        /// Idempotency key. Supplying one makes a retry return the first
-        /// result instead of capturing the change twice — the difference
-        /// between a network hiccup and the quantity moving twice. Omitting it is
-        /// allowed for local one-shot callers and simply forgoes that
-        /// protection.
         #[serde(default)]
         request_id: Option<String>,
     },
-    /// Correct a captured change: wrong amount, wrong date, wrong note.
-    ///
-    /// Nothing is rewritten. The old Fact is compensated and a replacement is
-    /// appended, so the chain keeps both and the correction is visible as a
-    /// pair rather than as history that quietly changed. An edit that touches
-    /// only the note moves no quantity and appends no Fact, but still earns a
-    /// revision and an audit row.
-    ///
-    /// To change what a change *was*, use `classify-fact` — the quantity did not
-    /// move, so there is nothing to compensate.
     ReviseEntry {
         entry: String,
         expected_revision: i64,
         request_id: String,
-        /// Exact decimal text, like `capture-entry`.
         amount: String,
         #[serde(default)]
         note: Option<String>,
         #[serde(default)]
         at: Option<String>,
     },
-    /// Undo a captured change entirely. The amount is returned by a
-    /// compensating Fact carrying the same classification, so the category it
-    /// was counted against is the category it is removed from. The event keeps
-    /// its row and its history: an append-only Ledger has no delete.
     VoidEntry {
         entry: String,
         expected_revision: i64,
         request_id: String,
     },
-    /// Re-assert what an already-recorded change was. Appends an assertion
-    /// with an audit trail; it never touches the Fact, because the quantity did
-    /// not move — only our account of what it meant.
     ClassifyFact {
         fact: String,
         concept: Option<String>,
         #[serde(default)]
         note: Option<String>,
     },
-    /// Declare a named beat, read by any condition as `freq(@slug)`.
-    ///
-    /// Writes no Fact and moves nothing. A Frequency is a slug and a step; the
-    /// beats it implies are derived from that step and its anchor on demand,
-    /// which is why the one declaration serves both firing a rule and drawing a
-    /// calendar without a second description of "when".
-    ///
-    /// Declared apart from any rule on purpose. A schedule written inline is a
-    /// schedule only one rule can use, which is what made every previous
-    /// cadence un-reusable.
     CreateFrequency {
-        /// What a condition calls it: the `daily` in `freq(@daily)`.
         slug: String,
-        /// What a person calls it. Defaults to the slug.
         #[serde(default)]
         head: Option<String>,
-        /// The compound step this beat advances by.
         every: nucleus::karma::CadenceStep,
-        /// Sets the beat's phase and time of day. Defaults to now.
         #[serde(default)]
         anchor_at: Option<String>,
         #[serde(default)]
         request_id: Option<String>,
     },
-    /// Forget a named beat. Refused while a rule still reads it.
     DeleteFrequency {
         frequency: String,
     },
-    /// Declare that a change is expected to repeat: a rent, a salary, a weekly
-    /// count.
-    ///
-    /// This writes no Fact and moves nothing. It states what is expected, how
-    /// often, and what it counts as; the dates it implies are derived on read,
-    /// and each becomes real only when applied.
     CreateRecurrence {
-        /// The Record this rule is about.
         target: String,
-        /// What the rule does when one of its dates is applied. Ordered and
-        /// non-empty; every item reduces to a typed Action a person could have
-        /// performed by hand, so a rule gets no private write path.
         consequences: Vec<nucleus::karma::Consequence>,
-        /// The *if* half of "when, if, then". Absent means unconditional: the
-        /// date arriving is the whole reason to act.
-        ///
-        /// `condition` is an expression over Record readings, `gate` decides
-        /// whether the number it computes means "fire", and `carry` decides
-        /// what number the consequences receive.
         #[serde(default)]
         condition: Option<String>,
         #[serde(default)]
@@ -213,28 +127,16 @@ pub enum Action {
         #[serde(default)]
         note: Option<String>,
         cadence: nucleus::karma::Cadence,
-        /// Sets the rule's phase and time of day. Defaults to now.
         #[serde(default)]
         anchor_at: Option<String>,
         #[serde(default)]
         request_id: Option<String>,
     },
-    /// Change what a rule expects from here on.
-    ///
-    /// Dates already applied are Facts and keep the amount they carried — this
-    /// is not a correction of history. To fix one that was applied wrongly,
-    /// revise its entry.
     ReviseRecurrence {
         recurrence: String,
         expected_revision: i64,
         request_id: String,
         consequences: Vec<nucleus::karma::Consequence>,
-        /// The *if* half of "when, if, then". Absent means unconditional: the
-        /// date arriving is the whole reason to act.
-        ///
-        /// `condition` is an expression over Record readings, `gate` decides
-        /// whether the number it computes means "fire", and `carry` decides
-        /// what number the consequences receive.
         #[serde(default)]
         condition: Option<String>,
         #[serde(default)]
@@ -247,47 +149,29 @@ pub enum Action {
         #[serde(default)]
         anchor_at: Option<String>,
     },
-    /// Stop or resume offering a rule's future dates. Disowns nothing already
-    /// applied.
     SetRecurrencePaused {
         recurrence: String,
         expected_revision: i64,
         request_id: String,
         paused: bool,
     },
-    /// Remove a rule for good, with its revision log and its skips.
-    ///
-    /// Distinct from pausing, which stops the future while keeping the rule on
-    /// the list. Dates this rule already applied are ordinary entries and stay:
-    /// the rule proposed them, it never owned them. What a delete removes is the
-    /// rule's future, which is all a rule ever holds.
     DeleteRecurrence {
         recurrence: String,
     },
-    /// Turn one expected date into a real change.
-    ///
-    /// This is an ordinary capture whose idempotency key names the rule and the
-    /// date, so applying the same date twice is refused by the same UNIQUE that
-    /// protects every other retry. `amount` overrides the rule's figure for
-    /// this date alone — the bill that came in higher than the standing rule.
     ApplyRecurrenceOccurrence {
         recurrence: String,
-        /// RFC3339, and it must be a date the rule actually produces.
         due_at: String,
         #[serde(default)]
         amount: Option<String>,
         #[serde(default)]
         note: Option<String>,
     },
-    /// Decline one expected date. Recorded, because "decided against" and
-    /// "nobody has looked yet" must not read the same.
     SkipRecurrenceOccurrence {
         recurrence: String,
         due_at: String,
         #[serde(default)]
         note: Option<String>,
     },
-    /// Take a skip back, so the date is offered again.
     UnskipRecurrenceOccurrence {
         recurrence: String,
         due_at: String,
@@ -298,18 +182,9 @@ pub enum Action {
     Deactivate {
         target: String,
     },
-    /// HARD delete (2026-07-17) — DISTINCT from `deactivate` (quantity -> 0).
-    /// Tombstones the record: it vanishes from every read surface (record
-    /// Proteins, slug resolution, rule inputs) and its UNIQUE slug is freed;
-    /// the Ledger's facts are untouched (append-only, chain intact) and a
-    /// final zero-delta annotation records the deletion + the freed slug.
     DeleteRecord {
         target: String,
     },
-    /// Edit a record's text — its head (title) and/or body. Each present field
-    /// is written; a zero-delta annotation fact carries provenance and refreshes
-    /// live subscriptions. The CRDT relay for collaborative body editing is a
-    /// separate surface (blueprint VII.4 record editor); this is the direct set.
     EditRecordText {
         target: String,
         #[serde(default)]
@@ -317,430 +192,177 @@ pub enum Action {
         #[serde(default)]
         body: Option<String>,
     },
-    /// Rename a record's slug (`None`/empty clears it).
     SetSlug {
         target: String,
         slug: Option<String>,
     },
-    /// Set a record's unit-of-measure concept (name or uid; `None` clears).
     SetUnit {
         target: String,
         unit: Option<String>,
     },
-    /// Write a namespaced fds sidecar extension on a record (blueprint I.2).
     SetExtension {
         target: String,
         namespace: String,
         fds: serde_json::Value,
     },
-    /// Adopt a pasted or scanned pairing code as a known Organ, under a name
-    /// the LOCAL user types (Ontology §11).
-    ///
-    /// This is trust-on-first-use on the root key, and the UI must say so
-    /// rather than implying the typing verified anything. It is safe exactly
-    /// when the code came from somewhere unrelayable — a QR held up in person,
-    /// or a chat app already authenticated to that human. No dial is needed,
-    /// so it works with the other side offline.
     AddKnownOrgan {
         invite: String,
         name: String,
     },
-    /// Rename a contact to what the LOCAL user calls them.
-    ///
-    /// Separate from `edit-record-text` because a contact's Organ record is
-    /// filed under THEIR uid: editing it the ordinary way logs a CRDT op that
-    /// is pushed back to them and to every other contact, publishing the
-    /// private label this Cell chose for someone. This writes it locally and
-    /// logs nothing (see `store::organs::rename_contact`).
     RenameOrganContact {
         target: String,
         name: String,
     },
-    /// Which directions of the general feed are open with one contact.
-    ///
-    /// `out` is what this Cell pushes them; `in` is what it accepts from them.
-    /// Both are already enforced — outbound in the outbox drain, inbound at
-    /// the delivery boundary — so this is the switch, not a preference.
-    /// Individually granted conversations are a narrower permission and keep
-    /// flowing either way.
     SetSyncPolicy {
         target: String,
         sync_out: bool,
         sync_in: bool,
     },
-    /// WHICH columns of the Records a contact can already see actually travel
-    /// to them (Ontology §12).
-    ///
-    /// `sync_out` decides whether the feed is open at all; this decides how
-    /// wide it is. `fields` is `None` for unnarrowed and `Some(list)` for a
-    /// scope — including `Some([])`, which is a real answer meaning nothing
-    /// but the identifying columns, NOT the same as `None`. Serialising these
-    /// two the same way is the one mistake here that leaks rather than
-    /// annoys, so the wire keeps them distinct.
-    ///
-    /// Narrowing takes effect on the next serve. WIDENING does not reach back:
-    /// the ops for a newly-added column are already below the contact's
-    /// version vector, so they travel from now on and existing Records need a
-    /// re-snapshot that does not exist yet. Surfaces must say so.
-    /// `fields` is deliberately NOT `#[serde(default)]`: an omitted field
-    /// would deserialise to `None`, and `None` is the widest setting there
-    /// is. A caller that forgets to send it should get an error, not silently
-    /// unnarrow someone.
     SetContactScope {
         target: String,
         fields: Option<Vec<String>>,
     },
-    /// WHICH Records travel to a contact, named by a saved Protein query.
-    ///
-    /// The sibling of `SetContactScope` on the other axis: that one narrows
-    /// the COLUMNS of everything shared, this one narrows WHICH Records are
-    /// shared at all. `None` clears the selection back to the unnarrowed feed.
     SetContactShare {
         target: String,
         protein: Option<serde_json::Value>,
     },
-    /// Hand a Record over to a contact: they become its holder, and once the
-    /// handover has actually been delivered it stops being ours.
     MoveRecordTo {
         record: String,
         target: String,
     },
-    /// Call off a move that has not been handed over yet.
     CancelRecordMove {
         record: String,
     },
-    /// WHICH columns we accept FROM a contact (Ontology §12).
-    ///
-    /// The other half of the pairing, and deliberately its own action rather
-    /// than a direction flag on the one above: outbound narrowing is a
-    /// privacy control, this is an integrity one. They have different reasons
-    /// to be narrow and no reason to agree — a contact we tell everything is
-    /// routinely one we accept little from — and one setting with two ends
-    /// would invite keeping them equal.
-    ///
-    /// Out-of-scope ops are dropped at import, silently and permanently:
-    /// unlike the outbound side there is no cursor to re-open, because we
-    /// cannot ask a peer to re-send what we chose not to take. Widening
-    /// therefore applies to what arrives next and to nothing already past.
     SetContactAcceptScope {
         target: String,
         fields: Option<Vec<String>>,
     },
-    /// End a conversation on THIS Cell (Ontology §11, C6).
-    ///
-    /// Local removal plus revocation, and both halves are needed: revoking
-    /// alone leaves it sitting in the list, removing alone leaves their ops
-    /// still welcome so it repopulates on the next sync.
-    ///
-    /// It emits NO tombstones. That is the honest limit rather than a
-    /// shortcut: a tombstone is a synced op, so deleting these Records the
-    /// ordinary way would delete THEIR copy too, and nobody agreed to that.
-    /// Their copy is theirs. What remains is exactly one thing — they may send
-    /// an invite to open a new conversation, one pending at a time, which is a
-    /// knock rather than a channel.
     DeleteConversation {
         conversation: String,
     },
-    /// Put a COPY of a Record into a conversation (Ontology §11, C6).
-    ///
-    /// The deliberate opposite of a reference, and a separate verb because it
-    /// is a separate decision. A reference is a pointer read live, and can be
-    /// taken back by hiding the Record; a copy LEAVES this Cell, lands in the
-    /// other party's store, and cannot be recalled — they run their own code
-    /// and promised nothing.
-    ///
-    /// It is the right tool for a document two people are editing, where "the
-    /// owner went offline so there is nothing to show" is the wrong answer,
-    /// and the wrong default for everything else — which is why it is not the
-    /// default for anything. Surfaces must present the choice AT the moment of
-    /// copying, in its own wording, because that is the only moment at which
-    /// it can still be declined.
     SendRecordCopy {
         thread: String,
         record: String,
     },
-    /// Keep one whole Record out of one contact's feed (Ontology §12).
-    ///
-    /// The other half of hiding: the scope above says which COLUMNS a contact
-    /// receives, this says which ROWS. Per-contact and per-record, so the same
-    /// Record can be shared with one person and withheld from another without
-    /// anything on the write path knowing — the filter runs where the feed is
-    /// served, like everything else in this cluster.
-    ///
-    /// Honest about its limit, and surfaces must be too: this stops what
-    /// travels NEXT. A contact who already received the Record keeps it, and
-    /// no delete is sent to make them drop it — sending one would confirm the
-    /// Record exists, which is most of what hiding was for.
     HideRecordFromContact {
         target: String,
         record: String,
         hidden: bool,
     },
-    /// Drop a contact and the Record standing in for it — locally, and only
-    /// locally. `delete-record` on the same uid would log a tombstone against
-    /// THEIR Organ record and push it to them and everyone else; this forgets
-    /// them here and tells nobody (see `store::organs::forget_contact`).
     ForgetOrganContact {
         target: String,
     },
-    /// Post this Cell's pairing code into a thread, so the other party can add
-    /// you. The promotion step happens INSIDE the conversation: you talk
-    /// first, decide it is really them, and only then exchange keys.
     ShareMyKey {
         thread: String,
     },
-    /// Open a conversation with a contact and offer it to them. Creates the
-    /// Conversation (its own replica root) and a first Thread together —
-    /// clicking "talk" needs somewhere to type immediately.
     StartConversation {
         contact: String,
         title: String,
     },
-    /// A new topic inside a conversation. Needs no new grant: it is born
-    /// inside the root that was already shared.
     OpenThread {
         conversation: String,
         title: String,
     },
-    /// Let a known contact Organ open live sessions on this Cell, acting as a
-    /// Person here (Ontology §11 "live mode").
-    ///
-    /// No password: the iroh handshake already proved which Organ is on the
-    /// connection, with a key rather than a secret someone could retype. What
-    /// this decides is WHO they are once inside — every read they make is
-    /// gated by that Person's visibility, so this grants a named identity
-    /// rather than a door.
     GrantOrganLogin {
         organ: String,
-        /// Name for the Person they act as. A new Person is created unless one
-        /// with this name already answers to it.
         person_name: String,
     },
-    /// Take a live login back. Local, immediate, and not a request the other
-    /// side may decline (§12).
     RevokeOrganLogin {
         organ: String,
     },
-    /// Say yes to a thread invite: keep a copy of the offered conversation.
-    ///
-    /// This opens the conversation and nothing else — no trust, no sync, no
-    /// key. Agreeing to read what someone sends is not deciding who they are.
     AcceptThreadInvite {
         invite: String,
     },
-    /// Say no: revoke the offered grant and clear the invite, which also frees
-    /// this Organ's one-pending slot so they may ask again later.
     DeclineThreadInvite {
         invite: String,
     },
-    /// Issue a single-use, short-lived device-enrolment token (Ontology §11).
-    /// The plaintext comes back in `outcome.created` and is never stored — the
-    /// database keeps only a hash, because a token sitting in a row would be a
-    /// second, quieter way into the identity. Requires the root key.
     RosterEnrolToken,
-    /// Remove a Cell from the roster. This IS revocation: the roster is the
-    /// membership list, and the version bump stops the old one being replayed
-    /// to re-add a stolen device. Requires the root key.
     RosterRevokeCell {
         cell_uid: String,
     },
-    /// What this Cell knows about its own identity right now: who is waiting
-    /// at the front door, and which devices are running a different build.
-    ///
-    /// A READ shaped as an Action because a sand's only channels are Protein
-    /// subscriptions and Actions, and neither the door queue nor the stale
-    /// list is a Record — the first is deliberately local-only (a front door
-    /// must not write into the identity) and the second is transient. Without
-    /// it both are invisible, which for a queue of people waiting to reach you
-    /// is the same as broken.
     RosterStatus,
-    /// What this Cell carries for others, and what is waiting for it
-    /// elsewhere (Ontology C4, the blind mailbox).
-    ///
-    /// Read-only, and it reports the two halves separately because they are
-    /// different roles: an Institute VPS is usually a carrier, a phone is
-    /// usually a recipient, and one Cell can be both without the panel
-    /// conflating them.
     MailboxStatus,
-    /// Start carrying mail for an Organ.
-    ///
-    /// Volunteering is PER CONTACT, when they ask — not a switch that makes
-    /// you everyone's mailbox. The storage being donated stays legible because
-    /// the operator named who it is for, one at a time.
     MailboxCarryFor {
         organ_uid: String,
         #[serde(default)]
         label: String,
-        /// Bytes. Zero means the default.
         #[serde(default)]
         quota_bytes: i64,
     },
-    /// Stop carrying for an Organ. Their held mail goes with the
-    /// registration — a mailbox that keeps mail for someone it no longer
-    /// serves is storing what nobody will collect.
     MailboxStopCarrying {
         organ_uid: String,
     },
-    /// Where THIS Organ's mail may be left, and whether those boxes still say
-    /// they are carrying it (Ontology C4).
-    ///
-    /// Separate from `MailboxStatus` because they are opposite roles and one
-    /// panel showing both without saying which is which is how an operator
-    /// ends up believing their own mail is safe because somebody else's is.
     MailboxPickupPoints,
-    /// Publish a pickup point: name a contact whose Cell holds our mail when
-    /// our own Cells cannot be reached.
-    ///
-    /// Probes before publishing. A box that never agreed to carry for us is a
-    /// hole every sender falls into silently, and the roster is signed — a
-    /// wrong entry costs a re-publish and a version.
     MailboxAddPickup {
         organ_uid: String,
-        /// The carrier Cell to dial. Empty means "their front door", resolved
-        /// from the contact row.
         #[serde(default)]
         node_id: String,
         #[serde(default)]
         label: String,
     },
-    /// Stop publishing a pickup point. Senders stop using it as their rosters
-    /// refresh, and anything still waiting there stops being collected — so
-    /// this reports what is in the box at the moment it is dropped.
     MailboxRemovePickup {
         organ_uid: String,
     },
-    /// Collect now, rather than at the next sync pass.
-    ///
-    /// The pass already does it; this exists because "is my mail arriving"
-    /// is a question people ask at the moment they are looking at the panel,
-    /// and an answer that comes minutes later answers nothing.
     MailboxCollectNow,
-    /// Who we cannot reach right now, how long that has been true, and what
-    /// has been done about it (Ontology C4, the retry window).
-    ///
-    /// Its own listing rather than a column on the contact list, because the
-    /// question it answers is not "who do I know" but "is anything stuck" —
-    /// and the honest answer to that includes contacts whose mail CANNOT be
-    /// left anywhere, which a contact row has no room to explain.
     MailboxOutbound,
-    /// What the last File Sync pass over this Organ's folder refused to act
-    /// on, and why. Read-only, and in-memory rather than stored — see
-    /// `Engine::file_sync_conflicts`.
     FileSyncStatus {
         organ: String,
     },
-    /// The operator's inbox: who has asked to be carried here, and which
-    /// invite codes are outstanding (Ontology C4).
     MailboxRequests,
-    /// Answer one ask. Accepting registers them on the terms given; declining
-    /// removes the row and tells them nothing — a decline that notified would
-    /// make refusing socially expensive, which is how people end up saying yes.
     MailboxAnswerRequest {
         organ_uid: String,
         accept: bool,
-        /// Bytes. Zero means the default. Ignored when declining.
         #[serde(default)]
         quota_bytes: i64,
     },
-    /// Issue a single-use code that lets its holder register themselves. The
-    /// plaintext comes back once, here, and is never stored.
     MailboxIssueInvite {
         #[serde(default)]
         label: String,
         #[serde(default)]
         quota_bytes: i64,
     },
-    /// Ask a contact to carry our mail. The other half of `MailboxCarryFor`,
-    /// and the direction that was missing: carrying is a favour, and a favour
-    /// starts with the asking.
     MailboxAskCarry {
         organ_uid: String,
     },
-    /// Spend a mailbox invite somebody sent us.
     MailboxUseInvite {
         code: String,
     },
-    /// Stop waiting for one contact: try them now, and leave their mail with
-    /// a carrier if they still do not answer.
-    ///
-    /// The window is a default, not a verdict. Somebody who knows the other
-    /// person is away for a week should not have to wait it out, and somebody
-    /// watching a batch not arrive wants to do something rather than read
-    /// about a timer.
     MailboxMailNow {
         organ_uid: String,
     },
-    /// Write a LOCAL-ONLY config namespace on this Cell's own Record
-    /// (Ontology §11, C4).
-    ///
-    /// Separate from `SetExtension` because it logs no op and never syncs.
-    /// That is what makes it usable by a relay Cell, which may not write —
-    /// and discovery settings are per-DEVICE anyway, so putting them on the
-    /// shared Organ Record was always the wrong shape.
     SetCellConfig {
         namespace: String,
         fds: serde_json::Value,
     },
-    /// Compare logs with a contact and report what disagrees, moving no ops
-    /// (Ontology §11, C2b — the cross-Organ audit).
-    ///
-    /// REPORTS rather than repairs, deliberately. A disagreement between two
-    /// Organs is not obviously anyone's bug — a peer legitimately prunes, an
-    /// outbox legitimately has not drained — so silently re-sending would hide
-    /// the one case worth seeing: two logs that never converge however many
-    /// passes run. That is a person's call, so a person is told.
     AuditContact {
         contact: String,
     },
-    /// Join an existing Organ as a new device, from a code shown by a Cell
-    /// that already belongs to it (Ontology §11, C3).
-    ///
-    /// The counterpart of `RosterEnrolToken`, and the reason this is an action
-    /// rather than a wire detail: without it the enrolment client is reachable
-    /// only from a test, which is not a feature anyone can use.
     RosterJoinOrgan {
         code: String,
     },
-    /// Copy the root key to removable media, at mode 0600. Refuses to
-    /// overwrite anything already there.
     RootKeyExport {
         destination: String,
     },
-    /// Delete the LOCAL root key, having verified byte-for-byte that the copy
-    /// at `copy_at` matches. The verification is the whole point: detaching
-    /// without it destroys an identity that no authority can restore.
     RootKeyDetach {
         copy_at: String,
     },
-    /// Set a contact's trust level (blueprint XV): `unknown` | `known` |
-    /// `blocked`. Blocking is just this with `trust: "blocked"` — no
-    /// separate action.
     SetContactTrust {
         target: String,
         trust: String,
     },
-    /// Set a contact's local proximity ranking (never exported, blueprint XV).
     SetContactProximity {
         target: String,
         proximity: u32,
     },
-    /// Undo a prior fact by appending its inverse (compensation, blueprint II.3):
-    /// an append-only Ledger never deletes, so undo is a new fact with the
-    /// opposite delta, caused by the original. Metadata/annotation facts
-    /// (delta 0) have nothing to reverse and compensate to a no-op.
     Compensate {
         fact: String,
     },
-    /// Reverse only the private Record application of one immutable Transfer
-    /// settlement. Public fulfillment evidence is not withdrawn.
     CompensateTransferOccurrenceSettlement {
         settlement: String,
         request_id: String,
-        /// Required only in trusted local mode.
         #[serde(default)]
         person: Option<String>,
     },
-    /// Create an unsent hidden draft for one exact partial remainder.
     CreateTransferRemainderDraft {
         occurrence: String,
         expected_revision: u64,
@@ -749,7 +371,6 @@ pub enum Action {
         #[serde(default)]
         person: Option<String>,
     },
-    /// Propose an append-only reversing Transfer without rewriting fulfillment.
     CreateReversingTransferDraft {
         occurrence: String,
         expected_revision: u64,
@@ -758,8 +379,6 @@ pub enum Action {
         #[serde(default)]
         person: Option<String>,
     },
-    /// Add a proposed successor promise in a new signed revision while keeping
-    /// the terminal predecessor and all its evidence unchanged.
     ReopenTransferPromise {
         transfer: String,
         promise: String,
@@ -825,33 +444,12 @@ pub enum Action {
     RetractAssertion {
         assertion: String,
     },
-    /// Put Lince's own documentation into this store, as Records.
-    ///
-    /// The Instinct sand reads the same embedded bundle it imports, so what
-    /// you read and what you get are the same thing. Idempotent: a Record
-    /// whose uid is already here is left exactly as it is, because the point
-    /// of importing is to be able to EDIT them afterwards and a second import
-    /// must never undo that.
     ImportInstinct,
-    /// Create an Agent — an Actor that is not a Person.
-    ///
-    /// An Actor is anything that can hold work: `actor` is a Concept with
-    /// `person` and `agent` beneath it, which is all the distinction needs,
-    /// because the Concept DAG already answers "is this an Actor" for both.
-    /// Renaming the Person type itself was considered and dropped: standing,
-    /// the four login doors and dormant absorption are written about people,
-    /// and widening the word would blur every one of them.
-    ///
-    /// `operated_by` is the Person answerable for it. The Organ half of "whose
-    /// agent is this" needs nothing new — every Record already carries the
-    /// Organ it originated at.
     CreateAgent {
         head: String,
         #[serde(default)]
         operated_by: Option<String>,
     },
-    /// Atomically turn a unary assertion `A @task` into the binary `A @task
-    /// [object]` under the same predicate — retract+assert as one step.
     RefineAssertion {
         subject: String,
         predicate: String,
@@ -874,25 +472,51 @@ pub enum Action {
         #[serde(default)]
         reverse: bool,
     },
-    /// Start a discussion thread attached to any record. Threads are ordinary
-    /// records (`kind=thread`) linked `thread --thread-of--> target`.
     CreateThread {
         target: String,
         head: String,
     },
-    /// Add a message to a thread. Messages are ordinary records
-    /// (`kind=message`) linked `message --message-in--> thread`; replies add
-    /// `message --reply-to--> parent_message`.
     CreateMessage {
         thread: String,
         body: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        author: Option<String>,
+        #[serde(default, skip_serializing_if = "MessageState::is_finished")]
+        state: MessageState,
         #[serde(default)]
         parent: Option<String>,
-        /// Existing Records deliberately disclosed by this message. These are
-        /// ordinary `message --references--> record` links, not uploaded files
-        /// or a Transfer-private attachment model.
         #[serde(default)]
         references: Vec<String>,
+    },
+    ReviseMessage {
+        message: String,
+        body: String,
+        state: MessageState,
+    },
+    CreateMessageDraft {
+        conversation: String,
+        thread: String,
+        #[serde(default)]
+        body: String,
+        #[serde(default)]
+        pinned: bool,
+        #[serde(default)]
+        timing: MessageDraftTiming,
+        #[serde(default)]
+        position: u32,
+    },
+    ReviseMessageDraft {
+        draft: String,
+        body: String,
+        pinned: bool,
+        timing: MessageDraftTiming,
+        position: u32,
+    },
+    DeleteMessageDraft {
+        draft: String,
+    },
+    SendMessageDraft {
+        draft: String,
     },
     CreateTransferThread {
         transfer: String,
@@ -916,22 +540,17 @@ pub enum Action {
         delta: f64,
         window_end: Option<String>,
         party: Option<String>,
-        /// true = published Need with an unfilled party slot (blueprint V).
         #[serde(default)]
         open: bool,
     },
-    /// Drive the promise state machine (nucleus validates the transition).
     PromiseTransition {
         promise: String,
         to: PromiseState,
     },
-    /// Edit a standalone promise. Bundled promises use complete signed
-    /// Transfer revisions so agreement invalidation remains atomic.
     EditPromiseDelta {
         promise: String,
         delta: f64,
     },
-    /// Answer a decision-record: records the answer and closes it (quantity -> 0).
     Decide {
         decision: String,
         answer: String,
@@ -944,20 +563,13 @@ pub enum Action {
         agreement_pct: Option<i64>,
         satiation: Option<String>,
         source: Option<String>,
-        /// Default `reserve_from` for the bundle's promises (V.3).
         #[serde(default)]
         reserve_default: Option<String>,
-        /// Settlement demands delivery+receipt confirmations (VIII.3).
         #[serde(default)]
         require_confirmation: bool,
     },
-    /// Create a complete, reviewed manual draft in one typed Action. Every
-    /// token is resolved and every term is validated before the store commits
-    /// the transfer record, sidecar, parties, and promises together.
     CreateTransferDraft {
         request_id: String,
-        /// Trusted local no-auth mode must choose its acting Person explicitly.
-        /// Authenticated sessions derive this from app_user -> Person instead.
         #[serde(default)]
         creator: Option<String>,
         slug: Option<String>,
@@ -985,9 +597,6 @@ pub enum Action {
         #[serde(default)]
         dependencies: Vec<TransferDependencyInput>,
     },
-    /// Replace the complete public terms of one promise under an optimistic
-    /// revision precondition. The store commits terms, invalidation, signed
-    /// snapshot and request idempotency as one transaction.
     ReviseTransferPromise {
         transfer: String,
         promise: String,
@@ -1006,8 +615,6 @@ pub enum Action {
         request_id: String,
         draft: TransferDraftRevisionInput,
     },
-    /// Address a Person without making them a party. The creator is derived
-    /// from the signed Transfer rather than accepted from the client.
     AddressTransferInvitation {
         transfer: String,
         expected_revision: u64,
@@ -1025,8 +632,6 @@ pub enum Action {
         #[serde(default)]
         person: Option<String>,
     },
-    /// Rejection is lifecycle evidence and deliberately does not revise the
-    /// proposed terms.
     RejectTransferInvitation {
         invitation: String,
         request_id: String,
@@ -1047,67 +652,47 @@ pub enum Action {
         #[serde(default)]
         expires_at: Option<String>,
     },
-    /// Replace the one canonical proposal. Counteroffers never create a
-    /// competing revision branch.
     CounterofferTransfer {
         transfer: String,
         expected_revision: u64,
         request_id: String,
-        /// Required in trusted local mode; authenticated mode derives it.
         #[serde(default)]
         person: Option<String>,
         draft: TransferDraftRevisionInput,
     },
-    /// Refine and claim one visible OPEN promise. `duplicate` leaves the
-    /// source template OPEN; `consume` assigns/replaces it.
     ClaimOpenTransferPromise {
         transfer: String,
         promise: String,
         expected_revision: u64,
         request_id: String,
-        /// Required in trusted local mode; authenticated mode derives it.
         #[serde(default)]
         person: Option<String>,
         terms: TransferPromiseInput,
     },
-    /// Move only the acting Person's agreement by one adjacent milestone for
-    /// one exact signed Transfer revision. Every transition, including a
-    /// retraction, is retained as immutable signed evidence.
     SetTransferAgreementLevel {
         transfer: String,
         expected_revision: u64,
         request_id: String,
-        /// Required in trusted local mode; authenticated mode derives it.
         #[serde(default)]
         person: Option<String>,
         level: u8,
     },
-    /// Materialize immutable directed occurrences for every policy-ready
-    /// promise owned by one Person on the exact current signed revision.
     ActivateTransferOccurrence {
         transfer: String,
         promise: String,
         expected_revision: u64,
         request_id: String,
-        /// Required only in trusted local mode. Authenticated sessions derive
-        /// this from their app-user binding and may not override it.
         #[serde(default)]
         person: Option<String>,
     },
-    /// Assert or correct one role-specific real-world fulfillment claim.
-    /// Delivery belongs to the occurrence giver; receipt to its receiver.
     SetTransferOccurrenceClaim {
         occurrence: String,
         request_id: String,
-        /// Required only in trusted local mode.
         #[serde(default)]
         person: Option<String>,
         role: TransferOccurrenceClaimRole,
         claimed: bool,
     },
-    /// Assert only the authenticated Person's currently missing role across an
-    /// exact, acknowledged preview. The store rejects the whole batch if any
-    /// revision or claim-state token changed.
     CompleteTransferOccurrenceClaimsBulk {
         request_id: String,
         #[serde(default)]
@@ -1115,35 +700,23 @@ pub enum Action {
         review_token: String,
         items: Vec<TransferOccurrenceBulkClaimInput>,
     },
-    /// Assert or retract this participant's occurrence dispute. Current
-    /// disputed state remains true while either participant's latest event is
-    /// asserted.
     SetTransferOccurrenceDispute {
         occurrence: String,
         request_id: String,
-        /// Required only in trusted local mode.
         #[serde(default)]
         person: Option<String>,
         disputed: bool,
     },
-    /// Persist the receiver's private deterministic local-application rule.
-    /// This is signed identity evidence, but it never changes public terms or
-    /// invalidates agreement. The only occurrence input is `incoming()`.
     SetTransferOccurrenceApplicationFormula {
         occurrence: String,
         request_id: String,
-        /// Required only in trusted local mode.
         #[serde(default)]
         person: Option<String>,
         formula: String,
     },
-    /// Settle one reviewed, positive fulfillment slice. All `expected_*`
-    /// fields are compare-and-set inputs from the private Protein projection;
-    /// the engine independently recomputes the local Record application.
     SettleTransferOccurrence {
         occurrence: String,
         request_id: String,
-        /// Required only in trusted local mode.
         #[serde(default)]
         person: Option<String>,
         canonical_quantity: f64,
@@ -1153,8 +726,6 @@ pub enum Action {
         expected_application_formula_version: u64,
         expected_remainder_policy: nucleus::transfer::TransferRemainderPolicy,
     },
-    /// Create an explicit recipient policy. Hosted is the conservative
-    /// default; replicated must be selected explicitly by the signer.
     ConfigureTransferDelivery {
         transfer: String,
         recipient_person: String,
@@ -1196,7 +767,6 @@ pub enum Action {
         person: Option<String>,
         request_id: String,
     },
-    /// Queue a fresh authoritative snapshot after explicit conflict review.
     RefreshTransferDelivery {
         transfer: String,
         delivery: String,
@@ -1222,10 +792,8 @@ pub enum Action {
         request_id: String,
         person: String,
     },
-    /// Record a delivery/receipt confirmation as an annotation fact (VIII.3).
     ConfirmTransfer {
         transfer: String,
-        /// `delivery` | `receipt`
         confirmation: String,
     },
     AddParty {
@@ -1238,7 +806,6 @@ pub enum Action {
         delta: f64,
         party: String,
         window_end: Option<String>,
-        /// Chain/spectator condition, same grammar as Karma conditions.
         condition: Option<String>,
     },
     AgreeTransfer {
@@ -1246,7 +813,6 @@ pub enum Action {
         party: String,
         level: i64,
     },
-    /// agreed -> active for the bundle's promises, within policy.
     ActivateTransfer {
         transfer: String,
     },
@@ -1261,11 +827,10 @@ pub enum Action {
         address: Option<String>,
     },
     GrantVisibility {
-        subject_kind: String, // organ | actor | public | fiote
+        subject_kind: String,
         subject: Option<String>,
         target: String,
     },
-    /// Persist a Protein AST as a record (kind='protein') — the saved view.
     SaveProtein {
         slug: String,
         head: String,
@@ -1294,41 +859,17 @@ pub enum Action {
         program_uid: String,
         expected_handle_revision: u64,
     },
-    /// C7 axis 2: does THIS Cell execute this Program.
-    ///
-    /// Deliberately unlike its neighbours in two ways. There is no
-    /// `request_id`, because idempotency exists to stop a retried mutation
-    /// minting a second revision and this mutation has no history to duplicate
-    /// — setting a switch twice leaves it where it was. And there is no
-    /// `expected_handle_revision`, because this changes nothing about the
-    /// Program: revising the rule on another Cell must not invalidate a
-    /// pending "do not run this one here".
     SetKarmaExecution {
         program_uid: String,
         executes: bool,
         #[serde(default)]
         note: Option<String>,
     },
-    /// C7: name the one Cell that runs this Program, or clear the designation.
-    ///
-    /// `cell_uid: None` clears it and returns the Program to running wherever
-    /// it is held. Unlike its neighbour above this one SYNCS — "which Cell is
-    /// the one" is a fact every Cell needs, where "do I run it" is each
-    /// machine's own business.
     DesignateKarmaExecutor {
         program_uid: String,
         #[serde(default)]
         cell_uid: Option<String>,
     },
-    /// C7: name the one Cell that retries this Transfer's deliveries.
-    ///
-    /// The same designation as the Karma one — `store::executor`, the same
-    /// namespace, the same last-writer-wins value — read off a Transfer Record
-    /// instead of a Program. Kept as a separate variant rather than one generic
-    /// `DesignateExecutor { record_uid }` because the permission differs: this
-    /// one belongs to whoever may configure the Transfer's delivery, and a
-    /// single variant taking any uid would have to pick one permission for
-    /// every kind of Record there will ever be.
     DesignateTransferExecutor {
         transfer_uid: String,
         #[serde(default)]
@@ -1339,14 +880,9 @@ pub enum Action {
         candidate_hash: CanonicalHash,
         expected_state_revision: u64,
         response: nucleus::karma::CandidateReviewAction,
-        /// K5.2: naming one grant authorizes the accepted `act` proposal into a
-        /// durable intent in the same commit. Omitted, acceptance stays inert.
         #[serde(default)]
         authorizing_grant_uid: Option<String>,
     },
-    /// K5.1 delegation grants. None of these carry a principal: the grant belongs
-    /// to the Person whose installed key signs it, so a payload cannot name a
-    /// different holder of the authority.
     CreateKarmaGrant {
         request_id: String,
         slug: nucleus::karma::Slug,
@@ -1414,8 +950,6 @@ pub enum Action {
         source: String,
         schedule: String,
     },
-    /// Senses match rule (blueprint X.1): a record; `activate`/`deactivate`
-    /// work on it like on any rule.
     CreateMatchRule {
         slug: String,
         head: String,
@@ -1428,8 +962,6 @@ pub enum Action {
         #[serde(default = "default_auto")]
         auto: String,
     },
-    /// Lingua adoption (blueprint III.2): insert foreign concepts preserving
-    /// uid and lineage; one tap on import.
     AdoptConcepts {
         concepts: Vec<ConceptSeed>,
     },
@@ -1437,11 +969,6 @@ pub enum Action {
         a: String,
         b: String,
     },
-    /// The permission/role/user system (2026-07-18): native SQL state
-    /// (`store::auth`), NOT Ledger records — no facts, no `created` uid
-    /// convention beyond the new row's numeric id. Each variant is gated on
-    /// the matching key already in `utils::auth::ALL_PERMISSIONS`
-    /// (`role:create`, `user:create`, `user:assign_role`, `permission:assign`).
     CreateRole {
         name: String,
     },
@@ -1449,36 +976,25 @@ pub enum Action {
         username: String,
         name: String,
         password: String,
-        /// Role name — must already exist (`CreateRole` first); this action
-        /// does not silently create one (that's `role:create`'s job alone).
         role: String,
     },
     AssignRole {
-        /// The target Person's uid (same convention as `actor`).
         user: String,
         role: String,
     },
-    /// Stop a Person acting here — they left, or simply stopped using Lince.
-    ///
-    /// Reversible by `SetPersonStanding { active: true }`, and NOT a delete:
-    /// their Record, their Facts and everything naming them stay exactly as
-    /// they are, because none of it stopped being true. Unlike the four
-    /// variants above this one DOES write to the Ledger's world — standing
-    /// lives on the Person Record as an extension, so it syncs to this Organ's
-    /// other Cells, which is the difference between deactivating someone and
-    /// deactivating them on one laptop.
     SetPersonStanding {
-        /// The target Person's uid or slug.
         person: String,
         active: bool,
-        /// The owner's own note ("moved out, July"). Never shown to the person
-        /// refused: a login refusal says the same words whatever the cause.
         #[serde(default)]
         note: Option<String>,
     },
+    SetPersonReadFilter {
+        person: String,
+        #[serde(default)]
+        filter: Option<protein::Predicate>,
+    },
     GrantPermission {
         role: String,
-        /// `"subject:action"`, e.g. `"record:delete_own"`.
         permission: String,
     },
     RevokePermission {
@@ -1563,15 +1079,11 @@ pub struct TransferPromiseInput {
     #[serde(default)]
     pub uid: Option<String>,
     pub record: String,
-    /// `None` is an OPEN Person slot.
     #[serde(default)]
     pub party: Option<String>,
-    /// Publish the acting Person's offer/request without naming a counterparty.
-    /// Ownership remains explicit; only the matching counterparty is open.
     #[serde(default)]
     pub open: bool,
     pub delta: f64,
-    /// Explicit canonical unit; `None` means intentionally unitless.
     #[serde(default)]
     pub unit: Option<String>,
     #[serde(default)]
@@ -1592,7 +1104,6 @@ pub struct TransferPromiseInput {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransferDraftRevisionInput {
-    /// Immutable creator Person, repeated in the complete reviewed snapshot.
     pub creator: String,
     pub slug: Option<String>,
     pub head: String,
@@ -1674,7 +1185,6 @@ pub struct TransferPlaceInput {
     pub address: Option<String>,
 }
 
-/// One adoptable concept in a package (blueprint III.2).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConceptSeed {
     pub uid: String,
@@ -1705,8 +1215,6 @@ fn default_dependency_required_state() -> String {
     "kept".into()
 }
 
-/// Keeps legacy Transfer verbs deserializable while the sequential workflow
-/// replaces their non-revisioned persistence paths phase by phase.
 fn transfer_phase_locked() -> bool {
     true
 }
@@ -1903,9 +1411,6 @@ fn normalize_transfer_invitation_expiry(
     Ok(Some(parsed))
 }
 
-/// Exact from the keystroke: typed text becomes a decimal without ever being a
-/// float, so `-10.50` survives as `-10.50`.
-
 pub(crate) fn parse_instant_field(text: &str) -> Result<DateTime<Utc>, EngineError> {
     chrono::DateTime::parse_from_rfc3339(text)
         .map(|value| value.with_timezone(&Utc))
@@ -1915,12 +1420,6 @@ pub(crate) fn parse_instant_field(text: &str) -> Result<DateTime<Utc>, EngineErr
         })
 }
 
-/// Every reading a rule's condition took, gathered before evaluation.
-///
-/// Gathered rather than looked up lazily because the kernel's evaluator is
-/// synchronous and the database is not. Reading first also means the whole
-/// condition sees one consistent moment, instead of each term seeing whatever
-/// the world looked like when its own query happened to land.
 struct GatheredReadings {
     values: std::collections::HashMap<String, nucleus::DecimalValue>,
 }
@@ -1939,8 +1438,6 @@ impl nucleus::karma::ExactResolver for GatheredReadings {
     }
 }
 
-/// How deep one rule may read another rule's arithmetic before the chain is
-/// called a circle. Four is far past any honest spreadsheet.
 const VALUE_DEPTH_CAP: usize = 4;
 
 fn reading_key(func: &str, slug: &str, window_secs: Option<i64>) -> String {
@@ -1950,15 +1447,34 @@ fn reading_key(func: &str, slug: &str, window_secs: Option<i64>) -> String {
     }
 }
 
-/// Turn the three optional condition fields into a stored condition.
-///
-/// Refused here rather than at fire time, for the same reason a cadence is: a
-/// rule whose condition cannot be read is not a rule that fires cautiously, it
-/// is a rule nobody can predict. Finding that out on a Tuesday at 3am, inside a
-/// heartbeat with no one watching, is the worst place to learn it.
-///
-/// Gate and carry default to the pair that reproduces the oldest behaviour:
-/// fire on any non-zero number, and hand that number over unchanged.
+pub(crate) fn concept_tokens_in(source: &str) -> Vec<(usize, usize, String)> {
+    let bytes = source.as_bytes();
+    let mut found = Vec::new();
+    let mut at = 0usize;
+    while at < bytes.len() {
+        if bytes[at] != b'#' {
+            at += 1;
+            continue;
+        }
+        let start = at;
+        let mut end = at + 1;
+        while end < bytes.len()
+            && (bytes[end].is_ascii_alphanumeric()
+                || bytes[end] == b'.'
+                || bytes[end] == b'-'
+                || bytes[end] == b'_'
+                || bytes[end] == b'/')
+        {
+            end += 1;
+        }
+        if end > start + 1 {
+            found.push((start, end, source[start + 1..end].to_string()));
+        }
+        at = end.max(start + 1);
+    }
+    found
+}
+
 fn parse_rule_condition(
     condition: Option<String>,
     gate: Option<String>,
@@ -1968,9 +1484,6 @@ fn parse_rule_condition(
         .map(|c| c.trim().to_string())
         .filter(|c| !c.is_empty())
     else {
-        // A gate without a condition has nothing to gate. Silently dropping it
-        // would make the rule fire always, which is the opposite of what
-        // someone writing a gate wants.
         if gate.is_some() || carry.is_some() {
             return Err(EngineError::Consequence(
                 "a gate or carry needs a condition to act on".into(),
@@ -2048,26 +1561,12 @@ async fn transfer_invitation_replay(
 
 #[derive(Debug, Default)]
 pub struct ActionOutcome {
-    /// Facts committed by this action (including any Karma cascade).
     pub facts: Vec<Fact>,
-    /// Uid of a created row (record, concept, link, promise), when applicable.
     pub created: Option<String>,
-    /// Non-fatal advisories (blueprint IV.2: cycle warnings on save). The
-    /// action succeeded; these are for the surface to show.
     pub warnings: Vec<String>,
-    /// Structured result for the surface, when `created` (one uid) is not
-    /// enough to render what happened.
-    ///
-    /// Exists because a feature is not done until a human can use it, and some
-    /// results are not a uid: an enrolment code plus the QR that carries it,
-    /// what a front door is holding, which of your devices is out of date. The
-    /// alternative was mirroring those into a synced extension, which is what
-    /// the pairing code does — and that is exactly wrong for anything secret,
-    /// since an extension on the Organ Record TRAVELS.
     pub data: Option<serde_json::Value>,
 }
 
-/// Which Karma definition a mutation just changed.
 #[derive(Debug, Clone, Copy)]
 pub(crate) enum KarmaKind {
     Program,
@@ -2125,8 +1624,6 @@ fn apply_candidate_review(
             intent,
             intent_fact,
         } => {
-            // An authorized acceptance reports the intent it created, so the
-            // caller never has to guess whether authority was actually taken.
             outcome.created = Some(
                 intent
                     .map(|hash| hash.as_str().to_string())
@@ -2186,8 +1683,6 @@ pub(crate) struct VerifiedActionAuthorship {
 }
 
 impl Engine {
-    /// Execute one Action with provenance. `actor` is the acting person/organ
-    /// record uid; it lands on every fact this action commits.
     pub async fn act(
         &self,
         action: Action,
@@ -2196,8 +1691,6 @@ impl Engine {
         self.act_at(action, actor, Utc::now()).await
     }
 
-    /// Close due invitations as signed lifecycle evidence. Rejection and
-    /// expiry intentionally leave the canonical terms revision unchanged.
     pub async fn expire_due_transfer_invitations(
         &self,
         now: DateTime<Utc>,
@@ -2229,8 +1722,6 @@ impl Engine {
         Ok(facts)
     }
 
-    /// `act` with an explicit clock — the DST-drivable variant (Part 0): same
-    /// action, virtual `now`.
     pub async fn act_at(
         &self,
         action: Action,
@@ -2247,18 +1738,6 @@ impl Engine {
         now: DateTime<Utc>,
         verified_authorship: Option<VerifiedActionAuthorship>,
     ) -> Result<ActionOutcome, EngineError> {
-        // Applying an occurrence is one firing, wherever it came from — the
-        // heartbeat, a reaction, or a person pressing apply in the inbox.
-        //
-        // While it runs, the entry that marks the date done is not committed
-        // yet. So a rule reacting to the facts this firing commits would look
-        // at its own date, find it unspent, and apply it a second time. The
-        // guard has to sit on the *apply*, not on any one caller: a manual
-        // apply reaches exactly the same code by a different road.
-        //
-        // Chains are not lost, only deferred to where they are safe: the
-        // reaction that started this follows them through its own queue, and
-        // `fire_due_rules` follows them after the fact.
         if matches!(action, Action::ApplyRecurrenceOccurrence { .. }) && !crate::already_firing() {
             return Box::pin(crate::as_one_firing(self.act_at_inner(
                 action,
@@ -2286,6 +1765,8 @@ impl Engine {
             self.require_permission_lenient(actor.as_deref(), permission)
                 .await?;
         }
+        let touched = self.record_targets_of(&action).await?;
+        self.refuse_unreadable(actor.as_deref(), &touched).await?;
         let mut outcome = ActionOutcome::default();
         match action {
             Action::CreateRecord {
@@ -2302,15 +1783,10 @@ impl Engine {
                         kind,
                         head: &head,
                         body: &body,
-                        quantity: store::exact::zero(), // level arrives via the one write path below
+                        quantity: store::exact::zero(),
                     },
                 )
                 .await?;
-                // Always drop a creation fact — the initial level as a delta
-                // (zero-delta when quantity==0, blueprint I.1/II.3 provenance).
-                // Without it, a record created at quantity 0 commits no fact and
-                // never invalidates live subscriptions, so it stays invisible to
-                // every subscribed sand until some later fact touches it.
                 outcome.facts = self
                     .append(
                         NewFact {
@@ -2325,9 +1801,6 @@ impl Engine {
             Action::SetQuantityExact { target, amount } => {
                 let uid = self.resolve(&target).await?;
                 self.reject_direct_transfer_record_mutation(&uid).await?;
-                // Exact from the text: a level someone wrote in a file is
-                // parsed straight to a decimal, so `3.50` never becomes a
-                // float on its way to a signed Fact.
                 let target_value =
                     nucleus::DecimalValue::parse_inferred(amount.trim()).map_err(|_| {
                         EngineError::Conflict {
@@ -2404,9 +1877,6 @@ impl Engine {
                         assert_uids.push(uid);
                     }
                 }
-                // A destination tag wins if configuration accidentally lists it
-                // on both sides; otherwise this transition would retract state
-                // it has just established.
                 retract_uids.retain(|uid| !assert_uids.contains(uid));
 
                 let signer = self.signer.lock().await.clone();
@@ -2455,10 +1925,6 @@ impl Engine {
                 at,
                 request_id,
             } => {
-                // The replay guard runs BEFORE any Ledger work, and it has to.
-                // `append` commits its own transaction, so a replay detected
-                // later would already have moved the quantity a second time, and
-                // the error afterwards would not put it back.
                 let request_id = request_id
                     .map(|id| id.trim().to_string())
                     .filter(|id| !id.is_empty())
@@ -2471,9 +1937,6 @@ impl Engine {
                 }
                 let uid = self.resolve(&target).await?;
                 self.reject_direct_transfer_record_mutation(&uid).await?;
-                // Exact from the keystroke: the typed text is parsed straight
-                // into a decimal, so "-10.50" never becomes a float on the way
-                // to a signed Fact.
                 let delta = nucleus::DecimalValue::parse_inferred(amount.trim()).map_err(|_| {
                     EngineError::Conflict {
                         code: "entry_amount_invalid",
@@ -2502,8 +1965,6 @@ impl Engine {
                         now,
                     )
                     .await?;
-                // Classification is an assertion ABOUT the Fact, so it happens
-                // after the Fact is sealed and never enters its preimage.
                 if let Some(fact) = outcome.facts.first() {
                     store::ledger::classify_fact(
                         &self.store.pool,
@@ -2513,8 +1974,6 @@ impl Engine {
                         note.as_deref(),
                     )
                     .await?;
-                    // The entry is what makes this change editable later. The
-                    // Fact and its classification cannot change; this can.
                     let commit = store::entries::create(
                         &self.store.pool,
                         store::entries::NewEntry {
@@ -2529,8 +1988,6 @@ impl Engine {
                         now,
                     )
                     .await?;
-                    // Handed back so a surface can revise or void this change
-                    // without having to search for the event it just made.
                     outcome.created = Some(commit.entry().uid.clone());
                 }
             }
@@ -2597,6 +2054,7 @@ impl Engine {
                     .unwrap_or_else(|| nucleus::new_uid("req"));
                 let uid = self.resolve(&target).await?;
                 let declared = self.resolve_consequences(consequences).await?;
+                let condition = self.canonical_condition(condition).await?;
                 let declared_condition = parse_rule_condition(condition, gate, carry)?;
                 let anchor = parse_optional_instant(anchor_at.as_deref())?.unwrap_or(now);
                 let commit = store::recurrence::create(
@@ -2636,10 +2094,8 @@ impl Engine {
                     .await?
                     .ok_or_else(|| EngineError::UnknownRecord(recurrence.clone()))?;
                 let declared = self.resolve_consequences(consequences).await?;
+                let condition = self.canonical_condition(condition).await?;
                 let declared_condition = parse_rule_condition(condition, gate, carry)?;
-                // Keeping the anchor by default matters: silently re-anchoring
-                // to "now" on an edit would shift every future date of a rule
-                // whose author only meant to change what it does.
                 let anchor = match parse_optional_instant(anchor_at.as_deref())? {
                     Some(value) => value,
                     None => parse_instant_field(&current.anchor_at)?,
@@ -2703,10 +2159,6 @@ impl Engine {
                     .await?
                     .ok_or_else(|| EngineError::UnknownRecord(recurrence.clone()))?;
                 let due = parse_instant_field(&due_at)?;
-                // A date the rule does not produce is not an occurrence of it.
-                // Without this check, "apply" degenerates into a capture that
-                // merely claims a rule's name, and the derived timeline would
-                // show an applied date that no cadence explains.
                 let produced = rule
                     .cadence
                     .between(
@@ -2718,22 +2170,12 @@ impl Engine {
                         code: "recurrence_cadence_invalid",
                         message: error.to_string(),
                     })?;
-                // A one-instant window is still correct with a landing rule in
-                // play: the derivation widens its own scan and filters on the
-                // landed instant, so a date that landed here is found here.
                 if !produced.dates.contains(&due) {
                     return Err(EngineError::Conflict {
                         code: "recurrence_occurrence_unknown",
                         message: format!("`{due_at}` is not a date this rule produces"),
                     });
                 }
-                // Applying twice must do nothing the second time. The entry
-                // carrying this date's request id is the only record that it
-                // ran, and for a capture-only rule the UNIQUE index alone would
-                // have been enough. It is not enough once a rule can add a
-                // quantity or toggle a concept: those would run again before
-                // the capture was refused. So the guard moves to the front and
-                // covers every consequence.
                 if let Some(existing) =
                     store::recurrence::applied(&self.store.pool, &rule.uid, due).await?
                 {
@@ -2741,15 +2183,6 @@ impl Engine {
                     return Ok(outcome);
                 }
 
-                // The *if* half. A date arriving is only half a reason to act:
-                // the condition is asked now, against the world as it stands,
-                // which is what lets "every day, but only when stock is low"
-                // mean what it says.
-                //
-                // A blocked gate is not an error and not a skip. The rule
-                // looked and decided not to act, so the date is simply left
-                // unapplied — it will be asked again next beat, because the
-                // answer can change without the rule changing.
                 let carried = match rule.condition.as_ref() {
                     None => None,
                     Some(condition) => {
@@ -2763,26 +2196,9 @@ impl Engine {
                     }
                 };
 
-                // One entry per applied date, always — it is what marks the
-                // occurrence done. A rule that captures uses its declared
-                // amount; a rule that only changes concepts writes a zero
-                // delta, which is the same annotation shape every metadata edit
-                // in Lince already uses and is what makes live subscriptions
-                // refresh.
                 let capture_concept = rule.consequences.capture_concept().map(str::to_string);
                 let declared = match amount.as_deref() {
                     Some(text) => text.trim().to_string(),
-                    // What the condition carried, when there is one. This is
-                    // the whole point of a carry: `-1 * freq(@daily)` puts -1
-                    // into the Record, rather than the rule having to hardcode
-                    // a number it could have computed.
-                    // The number the condition carried — but only for a rule
-                    // that genuinely captures. The marker entry exists for
-                    // every applied date, so letting a carry into it
-                    // unconditionally would move an `add-quantity` rule's
-                    // figure twice: once through this entry and once through
-                    // the consequence itself. A rule that does not capture
-                    // marks its date with a zero.
                     None => match rule.consequences.capture_amount() {
                         None => "0".to_string(),
                         Some(declared) => match carried {
@@ -2791,10 +2207,6 @@ impl Engine {
                         },
                     },
                 };
-                // Applying is an ordinary capture. Reusing the same path is
-                // what keeps a rule-applied change indistinguishable from a
-                // hand-typed one in the Ledger afterwards — nothing downstream
-                // needs to know a rule was involved to read a balance.
                 let capture = Action::CaptureEntry {
                     target: rule.record_uid.clone(),
                     amount: declared,
@@ -2803,27 +2215,15 @@ impl Engine {
                     at: Some(due.to_rfc3339()),
                     request_id: Some(store::recurrence::occurrence_request_id(&rule.uid, due)),
                 };
-                // Deliberately `None`: any signed authorship on this action
-                // attested *applying an occurrence*, not capturing an entry.
-                // Forwarding it would let one signature stand for an action
-                // shape its signer never saw. The outer action has already
-                // cleared its own authority, and the capture is its
-                // consequence rather than a second attested request.
                 let applied =
                     Box::pin(self.act_at_with_authorship(capture, actor.clone(), now, None))
                         .await?;
                 outcome.facts = applied.facts;
                 outcome.created = applied.created;
 
-                // The rest of the rule, in the order its author wrote it. The
-                // capture above already covered `CaptureEntry`.
                 for consequence in rule.consequences.iter() {
                     let next = match consequence {
                         nucleus::karma::Consequence::CaptureEntry { .. } => continue,
-                        // A written number wins; without one, the consequence
-                        // receives what the condition computed. A rule with
-                        // neither has no figure at all and does nothing,
-                        // rather than silently assigning zero.
                         nucleus::karma::Consequence::SetQuantity { value } => {
                             let Some(figure) = value.or(carried) else {
                                 continue;
@@ -2832,6 +2232,29 @@ impl Engine {
                                 target: rule.record_uid.clone(),
                                 value: figure.to_f64(),
                             }
+                        }
+                        nucleus::karma::Consequence::SetQuantityWhere { assertion, value } => {
+                            let Some(figure) = value.or(carried) else {
+                                continue;
+                            };
+                            let concept = self.resolve_concept(assertion).await?;
+                            let targets =
+                                store::ledger::records_with_concept(&self.store.pool, &concept)
+                                    .await?;
+                            for target in targets {
+                                let ran = Box::pin(self.act_at_with_authorship(
+                                    Action::SetQuantity {
+                                        target,
+                                        value: figure.to_f64(),
+                                    },
+                                    actor.clone(),
+                                    now,
+                                    None,
+                                ))
+                                .await?;
+                                outcome.facts.extend(ran.facts);
+                            }
+                            continue;
                         }
                         nucleus::karma::Consequence::AddQuantity { delta } => {
                             let Some(figure) = delta.or(carried) else {
@@ -2864,12 +2287,6 @@ impl Engine {
                                 object: None,
                             }
                         }
-                        // Everything that leaves the Cell, asks a person, or
-                        // binds a second party. None of it runs here: it is
-                        // committed as an obligation, a question or a queued
-                        // effect, so the worker that carries it out can still
-                        // refuse. That separation is what keeps a rule from
-                        // acquiring a private way to reach the outside world.
                         outward => {
                             self.commit_outward_consequence(&rule, outward, carried.as_ref(), now)
                                 .await?;
@@ -2909,8 +2326,6 @@ impl Engine {
                 note,
                 at,
             } => {
-                // Replay guard first, for the same reason as capture: a retry
-                // that got as far as appending would compensate twice.
                 if store::entries::replayed(&self.store.pool, &request_id)
                     .await?
                     .is_some()
@@ -2953,15 +2368,6 @@ impl Engine {
                         .with_timezone(&Utc),
                 };
 
-                // The quantity only moves if the amount or the instant
-                // changed. A
-                // note-only edit is bookkeeping about a change, not a change,
-                // and appending a compensating pair for it would put two
-                // meaningless entries in the chain.
-                //
-                // The amount is compared numerically, not representationally:
-                // `DecimalValue` equality includes the scale, so re-typing
-                // `-15` as `-15.00` would otherwise read as a change.
                 let amount_changed = delta
                     .aligned_sub(current.amount)
                     .is_none_or(|difference| !difference.is_zero());
@@ -2979,9 +2385,6 @@ impl Engine {
                     let old_fact = store::facts::get(&self.store.pool, &old_fact_uid)
                         .await?
                         .ok_or_else(|| EngineError::UnknownRecord(old_fact_uid.clone()))?;
-                    // Carry the classification onto both new Facts. Without
-                    // this, correcting an amount would silently drop the
-                    // change out of the category it belonged to.
                     let concept_uid =
                         store::ledger::fact_concept(&self.store.pool, &old_fact_uid).await?;
 
@@ -3085,10 +2488,6 @@ impl Engine {
                         .await?
                         .ok_or_else(|| EngineError::UnknownRecord(old_fact_uid.clone()))?;
                     if !old_fact.delta.is_zero() {
-                        // The compensation carries the same classification, so
-                        // undoing a food expense removes it from food rather
-                        // than leaving food overstated and an unclassified
-                        // credit floating beside it.
                         let concept_uid =
                             store::ledger::fact_concept(&self.store.pool, &old_fact_uid).await?;
                         outcome.facts = self
@@ -3097,19 +2496,6 @@ impl Engine {
                                     uid: None,
                                     record_uid: old_fact.record_uid.clone(),
                                     delta: store::exact::negate(old_fact.delta)?,
-                                    // The original instant, not now — the same
-                                    // rule revising uses. Voiding says the
-                                    // change never happened, so it is retracted
-                                    // from the period that claimed it and that
-                                    // period nets to zero.
-                                    //
-                                    // This is NOT how a reversal is recorded. A
-                                    // purchase that really happened and was
-                                    // later refunded is a new capture today
-                                    // with the opposite sign; that keeps both
-                                    // periods honest. Voiding is for "this was
-                                    // never true", and the difference matters
-                                    // to anyone reading last month's totals.
                                     at: Some(old_fact.at),
                                     actor_uid: actor.clone(),
                                     cause: Cause {
@@ -3194,8 +2580,6 @@ impl Engine {
                 let old_slug = store::records::get(&self.store.pool, &uid)
                     .await?
                     .and_then(|r| r.slug);
-                // Annotate FIRST (the appender needs a live record), then
-                // tombstone; the fact survives the record's disappearance.
                 outcome.facts = self
                     .annotate(
                         uid.clone(),
@@ -3209,8 +2593,6 @@ impl Engine {
             Action::EditRecordText { target, head, body } => {
                 let uid = self.resolve(&target).await?;
                 self.reject_direct_transfer_record_mutation(&uid).await?;
-                // Through the record-doc (collab): converges with concurrent
-                // remote edits and logs ONE cumulative crdt op.
                 self.write_record_text(&uid, head.as_deref(), body.as_deref())
                     .await?;
                 outcome.facts = self
@@ -3322,10 +2704,6 @@ impl Engine {
             }
             Action::DeleteConversation { conversation } => {
                 let uid = self.resolve(&conversation).await?;
-                // The ROOT, resolved from whatever inside it was named — a
-                // person deleting a conversation may well have a thread
-                // selected, and deleting only the thread would leave the
-                // conversation half-present and still syncing.
                 let root = store::replica::root_of(&self.store.pool, &uid)
                     .await?
                     .ok_or_else(|| {
@@ -3345,10 +2723,6 @@ impl Engine {
                 let source = store::records::get(&self.store.pool, &source_uid)
                     .await?
                     .ok_or_else(|| EngineError::Consequence("no such record to copy".into()))?;
-                // A Record already inside a root is not copyable into another
-                // one: that is the cross-root widening `assert` refuses, and
-                // going through a copy would be the same disclosure wearing a
-                // different verb.
                 if let Some(existing) =
                     store::replica::root_of(&self.store.pool, &source_uid).await?
                 {
@@ -3360,15 +2734,6 @@ impl Engine {
                         ));
                     }
                 }
-                // A NEW uid, deliberately. Reusing the source uid would make
-                // the copy and the original the same Record to every later
-                // merge, so an edit either side would flow back through the
-                // grant channel — which is a shared document, not a copy, and
-                // not what was agreed to.
-                //
-                // Slug is dropped for the same reason: it is a local
-                // suggestion and a copy carrying it would collide with the
-                // original on our own Cell.
                 let copy = store::records::create_in_root(
                     &self.store.pool,
                     store::records::NewRecord {
@@ -3408,10 +2773,6 @@ impl Engine {
                         "not a contact — this Cell's own Organ has no feed to hide from".into(),
                     ));
                 }
-                // Resolved, not taken on trust: a uid that names nothing would
-                // store a rule that hides no Record while reading as applied,
-                // and the surface accepts a slug because that is what a person
-                // actually knows a Record by.
                 let record_uid = self.resolve(&record).await?;
                 if store::records::get(&self.store.pool, &record_uid)
                     .await?
@@ -3426,15 +2787,6 @@ impl Engine {
                     hidden,
                 )
                 .await?;
-                // UNHIDING is a grant, and a grant has to reach back or it
-                // grants nothing: the ops this contact missed are already
-                // below their version vector, so ordinary catch-up will never
-                // offer them again and the Record would stay permanently
-                // absent while reading as shared.
-                //
-                // Replayed by identity rather than re-snapshotted — see
-                // `sync_ops::enqueue_record_for_contact` for why that is the
-                // cheaper AND the safer of the two.
                 if !hidden {
                     store::sync_ops::enqueue_record_for_contact(
                         &self.store.pool,
@@ -3459,26 +2811,9 @@ impl Engine {
                         "not a contact — this Cell's own Organ has no scope to narrow".into(),
                     ));
                 };
-                // Read BEFORE the write, because the repair below depends on
-                // which direction the change went and the stored value is
-                // about to stop saying.
                 let before = contact.scope_fields;
-                // A scope names COLUMNS, and a column name that matches
-                // nothing narrows to nothing while looking configured. Empty
-                // and blank entries are the common way that happens (a
-                // trailing comma in a surface's text field), so they are
-                // refused rather than stored.
                 validate_scope(fields.as_deref())?;
                 store::organs::set_contact_scope(&self.store.pool, &uid, fields.as_deref()).await?;
-                // A WIDENING has to reach back or it widens nothing: every op
-                // for a newly-named column is already below the contact's
-                // version vector, so catch-up will never offer it again and
-                // the column would stay permanently blank for them while the
-                // panel reads as shared. Same replay-by-identity as a
-                // re-grant, over the whole feed rather than one Record.
-                //
-                // Narrowing needs no counterpart. It stops sending; it does
-                // not reach back and retract, and there is nothing to repair.
                 if widens_scope(before.as_deref(), fields.as_deref()) {
                     store::sync_ops::enqueue_widened_for_contact(
                         &self.store.pool,
@@ -3507,10 +2842,6 @@ impl Engine {
                         "not a contact — this Cell's own Organ shares with nobody".into(),
                     ));
                 }
-                // Evaluated BEFORE it is stored. A selection nobody can read
-                // narrows to nothing while the panel reads as configured,
-                // which is the silent-stop-sharing failure rather than an
-                // error anyone would notice.
                 let raw = match &protein {
                     Some(value) => {
                         let raw = value.to_string();
@@ -3550,10 +2881,6 @@ impl Engine {
                 {
                     return Err(EngineError::Consequence("no such Record".into()));
                 }
-                // Refused rather than re-targeted. Two handovers in flight for
-                // one Record is a race whose loser has already been told they
-                // own it; there is no answer at this layer that is not a
-                // guess, so the second one is a mistake to report.
                 if let Some(existing) =
                     store::record_move::of_record(&self.store.pool, &record_uid).await?
                 {
@@ -3566,9 +2893,6 @@ impl Engine {
                     }
                 }
                 store::record_move::begin(&self.store.pool, &record_uid, &contact_uid).await?;
-                // Handing something over means sending it, whatever the
-                // selection says: a Record they are about to own cannot be
-                // filtered out of its own handover.
                 store::sync_ops::enqueue_record_for_contact(
                     &self.store.pool,
                     &contact_uid,
@@ -3586,6 +2910,17 @@ impl Engine {
             }
             Action::CancelRecordMove { record } => {
                 let record_uid = self.resolve(&record).await?;
+                if let Some(moving) =
+                    store::record_move::of_record(&self.store.pool, &record_uid).await?
+                {
+                    store::offers::refuse(
+                        &self.store.pool,
+                        store::offers::OfferKind::RecordMove,
+                        &record_uid,
+                        &moving.contact_organ,
+                    )
+                    .await?;
+                }
                 store::record_move::forget(&self.store.pool, &record_uid).await?;
                 outcome.facts = self
                     .annotate(
@@ -3616,17 +2951,9 @@ impl Engine {
                         "give this contact a name you will recognise".into(),
                     ));
                 }
-                // Do we already reach someone at this NodeId? Then the code is
-                // for a person we have already MET — found on the network, or
-                // paired earlier — and pasting it is a promotion, not a first
-                // contact. Minting a second row here is not merely untidy: the
-                // NodeId binding is UNIQUE, so it fails outright, which is
-                // exactly the "I pasted their code and got an error" report.
                 let existing =
                     store::organs::contact_by_node_id(&self.store.pool, &invite.node_id).await?;
                 if let Some(contact) = &existing {
-                    // `blocked` is terminal everywhere else; a pasted code must
-                    // not be the one door that launders it back to `known`.
                     if contact.trust == "blocked" {
                         return Err(EngineError::Consequence(
                             "this Organ is blocked. Unblock them first if that is what you \
@@ -3635,13 +2962,6 @@ impl Engine {
                         ));
                     }
                 }
-                // The uid is theirs to declare, and a code cannot declare it —
-                // only an Introduction over a real connection can. So a row for
-                // someone NOT yet met is held under a uid derived from the
-                // NodeId and FLAGGED: the next sync pass dials them, learns the
-                // real uid, and replaces this row with it. Until that happens
-                // they cannot sync, and the flag is what stops that from being
-                // a silent dead end.
                 let organ_uid = match &existing {
                     Some(contact) => contact.record_uid.clone(),
                     None => {
@@ -3658,14 +2978,9 @@ impl Engine {
                     }
                 };
                 if existing.is_some() {
-                    // They already have a name here — from discovery, which
-                    // took it from their own claim. What the user just typed is
-                    // deliberate and local, so it wins.
                     store::organs::rename_contact(&self.store.pool, &organ_uid, name).await?;
                 }
                 if let Some(root_key) = &invite.root_key {
-                    // TOFU, and the ONLY moment it happens: every roster and
-                    // succession afterwards must chain from this key.
                     crate::trust::adopt_key(
                         &self.store,
                         &organ_uid,
@@ -3681,10 +2996,6 @@ impl Engine {
                     );
                 }
                 store::organs::set_trust(&self.store.pool, &organ_uid, "known").await?;
-                // Only a row we just invented owes an Introduction. Someone we
-                // have already met introduced themselves when we met them, and
-                // re-flagging them would send a settled contact back through
-                // reconciliation for nothing.
                 if existing.is_none() {
                     store::organs::set_pending_introduction(&self.store.pool, &organ_uid, true)
                         .await?;
@@ -3700,12 +3011,6 @@ impl Engine {
                 let contact_uid = self.resolve(&contact).await?;
                 let (conversation, thread) =
                     self.start_conversation(&contact_uid, title.trim()).await?;
-                // Same zero-delta wake-up `create-message` commits, and for
-                // the same reason: the three levels of a conversation are
-                // written straight through `store::records`, which drops no
-                // Fact, and a live subscription re-runs on nothing else. The
-                // Fact rides the CONTACT, because "do I already have a
-                // conversation with them" is a question asked of their row.
                 outcome.facts = self
                     .append(
                         NewFact {
@@ -3722,8 +3027,6 @@ impl Engine {
                         now,
                     )
                     .await?;
-                // Both uids come back: the caller opens the thread, but the
-                // conversation is what was actually shared.
                 outcome.created = Some(
                     serde_json::json!({
                         "conversation": conversation,
@@ -3744,9 +3047,6 @@ impl Engine {
                 let contact = store::organs::contact(&self.store.pool, &organ_uid)
                     .await?
                     .ok_or_else(|| EngineError::Consequence("not a contact".into()))?;
-                // `known` and nothing less. An unvetted contact reaching the
-                // thread door is the design; an unvetted contact acting as a
-                // Person inside this Cell is not.
                 if contact.trust != "known" {
                     return Err(EngineError::Consequence(
                         "only a known contact may be given a login".into(),
@@ -3812,26 +3112,12 @@ impl Engine {
                 outcome.created = Some(uid);
             }
             Action::RosterEnrolToken => {
-                // Requiring the root here is the design, not an obstacle:
-                // enrolling a device grants membership in the identity, and
-                // that should feel deliberate.
                 if self.root_signer().await?.is_none() {
                     return Err(EngineError::Consequence(
                         "the root key is not on this Cell — bring it back to enrol a device".into(),
                     ));
                 }
                 let token = self.issue_enrolment_token().await?;
-                // The TOKEN ALONE IS UNUSABLE. A new device needs to know
-                // where to send it, whose identity it is joining, and which
-                // root key to expect back — so what the owner is shown is the
-                // whole enrolment code, not the secret out of context.
-                //
-                // The reachable parts are taken from the pairing code this
-                // Cell already mirrors (NodeId and current addresses), because
-                // that is the one place they are already assembled. What must
-                // NOT happen is the reverse: an enrolment code carries a live
-                // secret and can never be mirrored into an extension, since
-                // extensions on the Organ Record travel to every contact.
                 let organ = store::organs::local(&self.store.pool)
                     .await?
                     .ok_or_else(|| EngineError::Consequence("no local Organ".into()))?;
@@ -3866,9 +3152,6 @@ impl Engine {
                         }));
                     }
                     None => {
-                        // No endpoint bound yet, so there is no address to put
-                        // in a code. Say that rather than handing back a token
-                        // that cannot be used.
                         return Err(EngineError::Consequence(
                             "this Cell has no network identity yet, so a device cannot be \
                              told where to reach it. Wait for the endpoint to bind and try \
@@ -3879,19 +3162,12 @@ impl Engine {
                 }
             }
             Action::MailboxStatus => {
-                // Swept on read. A carrier that only expired mail when
-                // somebody happened to run a timer would quietly hold it past
-                // the retention it promised, and the panel is exactly the
-                // moment the number had better be true.
                 let swept = self.sweep_mailbox().await?;
                 let mut carrying = Vec::new();
                 for registration in store::mailbox::registrations(&self.store.pool).await? {
                     let held =
                         store::mailbox::carried_for(&self.store.pool, &registration.organ_uid)
                             .await?;
-                    // The contact's own name when we have one, so an operator
-                    // reads a person rather than a uid. Falls back to the
-                    // label they typed, then to the uid — never to nothing.
                     let known_as =
                         store::organs::contact(&self.store.pool, &registration.organ_uid)
                             .await?
@@ -3911,10 +3187,6 @@ impl Engine {
                 outcome.data = Some(serde_json::json!({
                     "carrying_for": carrying,
                     "swept_just_now": swept,
-                    // Senders who need telling that their mail expired
-                    // uncollected. Surfaced now even though the DELIVERY of
-                    // that notice is a later box, because a queue nobody can
-                    // see is how a promise quietly stops being kept.
                     "expiry_notices_pending": pending.len(),
                     "retention_days": crate::seal::RETENTION_DAYS,
                     "max_bundle_bytes": crate::mailbox::MAX_BUNDLE_BYTES,
@@ -3925,11 +3197,6 @@ impl Engine {
                 label,
                 quota_bytes,
             } => {
-                // The root key is what registration is FOR: it is how a
-                // recipient proves, later and from a device that may not exist
-                // yet, that the mail is theirs. Without one there is nothing
-                // to check a presented roster against, so this refuses rather
-                // than registering something uncollectable.
                 let root_key =
                     crate::trust::key_of(&self.store, &organ_uid, crate::roster::ROOT_KEY_ID)
                         .await?
@@ -3955,9 +3222,6 @@ impl Engine {
             Action::MailboxStopCarrying { organ_uid } => {
                 let held = store::mailbox::carried_for(&self.store.pool, &organ_uid).await?;
                 store::mailbox::deregister(&self.store.pool, &organ_uid).await?;
-                // Reported, not hidden: the operator has just discarded mail
-                // somebody was expecting, and the number is the honest cost of
-                // the decision they made.
                 outcome.data = Some(serde_json::json!({
                     "organ_uid": organ_uid,
                     "discarded_bundles": held.bundles,
@@ -3967,11 +3231,6 @@ impl Engine {
                 let points = self.own_pickup_points().await?;
                 let mut published = Vec::new();
                 for point in &points {
-                    // Re-asked every time the panel opens, because the carrier
-                    // can stop carrying at any moment and nothing tells us: the
-                    // registration lives on THEIR disk. A published point that
-                    // has quietly stopped answering is the failure this panel
-                    // exists to make visible.
                     let probe = self.carrier_probe(&point.node_id).await;
                     let known_as = store::organs::contact(&self.store.pool, &point.organ_uid)
                         .await?
@@ -4001,9 +3260,6 @@ impl Engine {
                         "waiting": waiting,
                     }));
                 }
-                // Who could be asked. Every known contact, because whether
-                // they carry for us is not something we hold — only they do,
-                // and the probe is what answers it.
                 let candidates: Vec<serde_json::Value> = store::organs::contacts(&self.store.pool)
                     .await?
                     .into_iter()
@@ -4025,8 +3281,6 @@ impl Engine {
                     "pickup": published,
                     "candidates": candidates,
                     "retention_days": crate::seal::RETENTION_DAYS,
-                    // The root is what signs a roster, so this is exactly the
-                    // set of Cells that can change these at all.
                     "may_change": self.root_signer().await?.is_some(),
                 }));
             }
@@ -4053,10 +3307,6 @@ impl Engine {
                 };
                 match self.carrier_probe(&node_id).await {
                     crate::wire::CarrierProbe::Carrying(_) => {}
-                    // A real answer, and the answer is no. It is deliberately
-                    // not said WHY — a carrier gives one wording for every
-                    // collection failure — so this says what we know and what
-                    // we do not.
                     crate::wire::CarrierProbe::Refused => {
                         return Err(EngineError::Consequence(
                             "they are not carrying mail for you. They have to add you first, \
@@ -4065,10 +3315,6 @@ impl Engine {
                                 .into(),
                         ));
                     }
-                    // NOT a refusal. A closed laptop is the ordinary state of
-                    // most machines, and publishing on silence would be the
-                    // same error as falling back to a mailbox on the first
-                    // failed dial.
                     crate::wire::CarrierProbe::Unreachable => {
                         return Err(EngineError::Consequence(
                             "they did not answer just now, so we cannot tell whether they \
@@ -4104,8 +3350,6 @@ impl Engine {
                 outcome.data = Some(serde_json::json!({
                     "organ_uid": organ_uid,
                     "pickup_points": published,
-                    // Two is advice, not a rule — refusing the first would make
-                    // the second unreachable. The panel says what one costs.
                     "single_point_of_failure": published < 2,
                 }));
             }
@@ -4120,9 +3364,6 @@ impl Engine {
                         "that is not one of your pickup points".into(),
                     ));
                 };
-                // Asked BEFORE it is dropped: once it is out of the roster
-                // nothing collects from it, so anything sitting there is
-                // stranded until it expires. The number is the honest cost.
                 let stranded = match self.carrier_probe(&going.node_id).await {
                     crate::wire::CarrierProbe::Carrying(waiting) => Some(waiting.bundles),
                     _ => None,
@@ -4149,10 +3390,6 @@ impl Engine {
                 let pool = &self.store.pool;
                 let mut asks = Vec::new();
                 for row in store::mailbox::requests(pool).await? {
-                    // Their own label is shown BESIDE the uid, never instead
-                    // of it: a display name from a peer is an untrusted claim,
-                    // and this panel is where somebody decides to hold another
-                    // person's correspondence.
                     let known_as = store::organs::contact(pool, &row.organ_uid)
                         .await?
                         .and_then(|contact| contact.slug);
@@ -4197,11 +3434,6 @@ impl Engine {
                     .await?
                     .ok_or_else(|| EngineError::Consequence("no such request".into()))?;
                 if accept {
-                    // The root key comes from the ask, not from a fresh
-                    // lookup: it is what they presented and what was checked
-                    // when the ask was taken, and re-deriving it days later
-                    // would quietly accept a different key than the one the
-                    // operator is looking at.
                     let quota = if quota_bytes > 0 {
                         quota_bytes
                     } else {
@@ -4216,9 +3448,6 @@ impl Engine {
                     )
                     .await?;
                 }
-                // Only after the registration stuck. Accepting and failing to
-                // register must not also consume the ask, or the request is
-                // gone and nothing carries.
                 store::mailbox::answer_request(pool, &organ_uid).await?;
                 outcome.data = Some(serde_json::json!({
                     "organ_uid": organ_uid,
@@ -4227,9 +3456,6 @@ impl Engine {
             }
             Action::MailboxIssueInvite { label, quota_bytes } => {
                 let token = self.issue_mailbox_invite(&label, quota_bytes).await?;
-                // The code needs somewhere to point. A Cell with no endpoint
-                // can issue nothing usable, and saying so beats handing over a
-                // string that fails silently on the other person's machine.
                 let node_id = self.own_node_id().await?.ok_or_else(|| {
                     EngineError::Consequence(
                         "this Cell has published no address, so an invite would have nowhere \
@@ -4255,8 +3481,6 @@ impl Engine {
                 self.ask_carrier(&node_id).await?;
                 outcome.data = Some(serde_json::json!({
                     "organ_uid": organ_uid,
-                    // Said in these words on purpose: a wire round trip proves
-                    // the ask arrived and nothing else. Their operator decides.
                     "asked": true,
                 }));
             }
@@ -4270,8 +3494,6 @@ impl Engine {
             Action::FileSyncStatus { organ } => {
                 let organ_uid = self.resolve(&organ).await?;
                 outcome.data = Some(serde_json::json!({
-                    // "nothing wrong" and "nothing known yet" look identical
-                    // in an empty list, and only one of them is an all-clear.
                     "checked": self.file_sync_has_ticked(&organ_uid),
                     "conflicts": self
                         .file_sync_conflicts(&organ_uid)
@@ -4295,10 +3517,6 @@ impl Engine {
                     let Some(waiting) = minutes(&contact.unreachable_since) else {
                         continue;
                     };
-                    // Whether mail is even possible for them. Three states,
-                    // not two: a contact who published no box is not "not
-                    // mailed yet", they are unmailable until they choose
-                    // somebody — and only they can.
                     let publishes = self
                         .roster_of(&contact.record_uid)
                         .await?
@@ -4317,9 +3535,6 @@ impl Engine {
                         "can_be_mailed": publishes,
                     }));
                 }
-                // What a carrier reported dead. Believed already — these are
-                // rows this Cell wrote when it made the deposit — so the panel
-                // states them plainly rather than hedging.
                 let mut never_picked_up = Vec::new();
                 for gone in store::mail_left::expired(pool, 20).await? {
                     let known_as = store::organs::contact(pool, &gone.to_organ)
@@ -4335,10 +3550,6 @@ impl Engine {
                         "expired_at": gone.expired_at,
                     }));
                 }
-                // Whether senders can still write to THIS device. An enrolled
-                // Cell rotates its own mail key but cannot publish one, so
-                // this is the state that used to be invisible: mail keeps
-                // working for the Organ, and stops working for the device.
                 let mail_key_published = self.own_sealing_key_is_published().await.unwrap_or(true);
                 outcome.data = Some(serde_json::json!({
                     "contacts": rows,
@@ -4355,10 +3566,6 @@ impl Engine {
                 {
                     return Err(EngineError::Consequence("no such contact".into()));
                 }
-                // Move the clock, then run the ORDINARY pass. Not a private
-                // path to the carrier: if they are in fact reachable this
-                // second, the pass reaches them and no mail is left at all,
-                // which is the outcome the button's owner actually wants.
                 let past = (chrono::Utc::now() - crate::wire::Wire::MAIL_AFTER).to_rfc3339();
                 store::organs::backdate_unreachable(&self.store.pool, organ_uid.as_str(), &past)
                     .await?;
@@ -4380,9 +3587,6 @@ impl Engine {
                 let waiting: Vec<serde_json::Value> = held
                     .into_iter()
                     .map(|row| {
-                        // The NodeId is what iroh authenticated at the door.
-                        // Anything inside `intro` is a CLAIM, and the surface
-                        // has to keep saying so.
                         let claimed = serde_json::from_str::<serde_json::Value>(&row.intro)
                             .ok()
                             .and_then(|intro| {
@@ -4416,19 +3620,11 @@ impl Engine {
                         })
                     })
                     .collect();
-                // This Cell's OWN standing, so a surface can say "this device
-                // carries traffic and authors nothing" instead of letting a
-                // person meet that fact as a failed write.
                 let this_cell = store::cells::local(&self.store.pool).await?;
                 let held = match store::organs::local(&self.store.pool).await? {
                     Some(organ) => self.roster_of(&organ.uid).await?,
                     None => None,
                 };
-                // Whether a roster EXISTS is a different question from what it
-                // grants, and conflating them is a bug: a relay has a roster
-                // and no capabilities, so deriving one from the other would
-                // make the relay state unreportable — exactly the case this is
-                // for.
                 let has_roster = held.is_some();
                 let capabilities: Vec<String> = match (&this_cell, held) {
                     (Some(cell), Some(signed)) => signed
@@ -4445,18 +3641,11 @@ impl Engine {
                     "devices_needing_update": stale,
                     "this_cell": this_cell.as_ref().map(|cell| cell.uid.clone()),
                     "capabilities": capabilities,
-                    // No roster yet means this Cell IS the whole Organ, which
-                    // is a different state from "listed with nothing".
                     "has_roster": has_roster,
                 }));
             }
             Action::SetCellConfig { namespace, fds } => {
                 store::cells::set_config(&self.store.pool, &namespace, &fds).await?;
-                // A raw write drops no Fact, so nothing on the bus would say
-                // this happened — and the endpoint rebinds on a discovery
-                // change. Without this announcement, saving a discovery
-                // setting would appear to work and take effect only at the
-                // next reboot.
                 self.notify_config_changed();
             }
             Action::AuditContact { contact } => {
@@ -4470,9 +3659,6 @@ impl Engine {
                             "reached": true,
                         }));
                     }
-                    // Unreachable is NOT a disagreement, and saying so is the
-                    // whole difference between a useful audit and an alarming
-                    // one. A contact with a closed laptop is the normal case.
                     None => {
                         outcome.data = Some(serde_json::json!({ "reached": false }));
                     }
@@ -4588,11 +3774,6 @@ impl Engine {
                             .into(),
                     });
                 }
-                // Same reasoning for a Fact that belongs to an Entry:
-                // generic compensation would return the quantity while leaving the
-                // event reading `applied`, so the Ledger and the thing that
-                // describes it would disagree with no way to tell which is
-                // right. `void-entry` does both halves.
                 if store::entries::for_fact(&self.store.pool, &original.uid)
                     .await?
                     .is_some()
@@ -4602,8 +3783,6 @@ impl Engine {
                         message: "this Fact belongs to an Entry; use void-entry".into(),
                     });
                 }
-                // Zero-delta facts (metadata/annotation) carry no quantity to
-                // reverse — undoing them is a no-op, not an error.
                 if !original.delta.is_zero() {
                     outcome.facts = self
                         .append(
@@ -4778,20 +3957,10 @@ impl Engine {
                     .await?;
             }
             Action::ImportInstinct => {
-                // The vocabulary FIRST. A file must never invent a meaning, so
-                // without these every record in the bundle refuses — which is
-                // the rule working, and also a useless import. The list is
-                // fixed in `instinct::VOCABULARY` rather than read off the
-                // files, so importing a bundle can never introduce a Concept
-                // nobody chose.
                 for name in crate::instinct::VOCABULARY {
                     store::concepts::ensure(&self.store.pool, name).await?;
                 }
                 let bundle = crate::instinct::records();
-                // Two phases, for the reason the file-sync path found: the
-                // records cross-link by uid, and asserting a link needs its
-                // object to exist. Everything is created, then everything is
-                // described.
                 let mut fresh = Vec::new();
                 for record in &bundle {
                     let uid = record.projection.uid.trim();
@@ -4857,10 +4026,6 @@ impl Engine {
                         "give the Agent a name you will recognise in an assignee list".into(),
                     ));
                 }
-                // Resolve the operator BEFORE creating anything: a named
-                // Person who is not one leaves an unowned Agent behind, and
-                // an Agent nobody is answerable for is the thing this field
-                // exists to prevent.
                 let operator = match &operated_by {
                     Some(person) => {
                         let uid = self.resolve(person).await?;
@@ -5133,11 +4298,6 @@ impl Engine {
                 )
                 .await?;
                 if replica_root.is_some() {
-                    // Individual replicas carry Record/assertion ops, not the
-                    // general Fact feed. The level therefore starts active in
-                    // its quantity set op; this zero-delta signal refreshes
-                    // local Protein views and wakes the durable outbox without
-                    // leaking conversation metadata to general-sync contacts.
                     outcome.facts = self
                         .append(
                             NewFact {
@@ -5183,9 +4343,16 @@ impl Engine {
             Action::CreateMessage {
                 thread,
                 body,
+                author,
+                state,
                 parent,
                 references,
             } => {
+                if state == MessageState::Interrupted {
+                    return Err(EngineError::Consequence(
+                        "a new message may be writing or finished, not interrupted".into(),
+                    ));
+                }
                 let thread_uid = self.resolve(&thread).await?;
                 let thread_row = store::records::get(&self.store.pool, &thread_uid)
                     .await?
@@ -5202,7 +4369,7 @@ impl Engine {
                 }
                 let references = self.resolve_message_references(references).await?;
                 let body = body.trim();
-                if body.is_empty() && references.is_empty() {
+                if state == MessageState::Finished && body.is_empty() && references.is_empty() {
                     return Err(EngineError::Consequence(
                         "message body and Record references cannot both be empty".into(),
                     ));
@@ -5303,6 +4470,20 @@ impl Engine {
                     )
                     .await?;
                 }
+                let (author, operator) = self
+                    .message_authorship(author.as_deref(), actor.as_deref())
+                    .await?;
+                store::records::set_extension(
+                    &self.store.pool,
+                    &message.uid,
+                    "lince.message",
+                    &serde_json::json!({
+                        "author": author,
+                        "operator": operator,
+                        "state": state.as_str(),
+                    }),
+                )
+                .await?;
                 if replica_root.is_some() {
                     outcome.facts = self
                         .append(
@@ -5351,6 +4532,249 @@ impl Engine {
                 }
                 outcome.created = Some(message.uid);
             }
+            Action::ReviseMessage {
+                message,
+                body,
+                state,
+            } => {
+                let message_uid = self.resolve(&message).await?;
+                let message_row = store::records::get(&self.store.pool, &message_uid)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(message.clone()))?;
+                if message_row.kind != RecordKind::Message.as_str() {
+                    return Err(EngineError::Consequence(format!(
+                        "`{message}` is a {} record, not a message",
+                        message_row.kind
+                    )));
+                }
+                let thread_uid = self.thread_for_message(&message_uid).await?;
+                if let Some(transfer_uid) = self.transfer_for_thread(&thread_uid).await? {
+                    self.require_transfer_thread_writer(&transfer_uid, actor.as_deref(), now)
+                        .await?;
+                }
+                let mut metadata =
+                    store::records::get_extension(&self.store.pool, &message_uid, "lince.message")
+                        .await?
+                        .and_then(|value| value.as_object().cloned())
+                        .ok_or_else(|| EngineError::Conflict {
+                            code: "message_lifecycle_missing",
+                            message: "the message has no persisted lifecycle metadata".into(),
+                        })?;
+                if metadata.get("state").and_then(serde_json::Value::as_str) != Some("writing") {
+                    return Err(EngineError::Conflict {
+                        code: "message_not_writing",
+                        message: "only a writing message may grow, finish or be interrupted".into(),
+                    });
+                }
+                if let Some(actor) = actor.as_deref()
+                    && metadata.get("operator").and_then(serde_json::Value::as_str) != Some(actor)
+                {
+                    return Err(EngineError::Forbidden(
+                        "only the persisted message operator may revise it".into(),
+                    ));
+                }
+                if state == MessageState::Finished && body.trim().is_empty() {
+                    let references =
+                        store::concepts::resolve(&self.store.pool, "references").await?;
+                    let has_references = match references {
+                        Some(predicate) => !store::assertions::objects_from_subject(
+                            &self.store.pool,
+                            &message_uid,
+                            &predicate,
+                        )
+                        .await?
+                        .is_empty(),
+                        None => false,
+                    };
+                    if !has_references {
+                        return Err(EngineError::Consequence(
+                            "a finished message body and Record references cannot both be empty"
+                                .into(),
+                        ));
+                    }
+                }
+                let head = if body.trim().is_empty() {
+                    match state {
+                        MessageState::Writing => "Writing message".into(),
+                        MessageState::Finished => "Shared Records".into(),
+                        MessageState::Interrupted => "Interrupted message".into(),
+                    }
+                } else {
+                    message_head(&body)
+                };
+                self.write_record_text(&message_uid, Some(&head), Some(&body))
+                    .await?;
+                metadata.insert("state".into(), serde_json::json!(state.as_str()));
+                store::records::set_extension(
+                    &self.store.pool,
+                    &message_uid,
+                    "lince.message",
+                    &serde_json::Value::Object(metadata),
+                )
+                .await?;
+                outcome.facts = self
+                    .annotate(
+                        message_uid,
+                        actor,
+                        serde_json::json!({ "message": { "state": state.as_str() } }),
+                        now,
+                    )
+                    .await?;
+            }
+            Action::CreateMessageDraft {
+                conversation,
+                thread,
+                body,
+                pinned,
+                timing,
+                position,
+            } => {
+                let (conversation_uid, thread_uid) = self
+                    .validate_message_draft_target(&conversation, &thread)
+                    .await?;
+                let (author, operator) = self.message_authorship(None, actor.as_deref()).await?;
+                let head = message_draft_head(&body);
+                let draft = store::records::create(
+                    &self.store.pool,
+                    store::records::NewRecord {
+                        slug: None,
+                        kind: RecordKind::MessageDraft,
+                        head: &head,
+                        body: &body,
+                        quantity: store::exact::zero(),
+                    },
+                )
+                .await?;
+                store::records::set_extension(
+                    &self.store.pool,
+                    &draft.uid,
+                    "lince.message-draft",
+                    &serde_json::json!({
+                        "conversation": conversation_uid,
+                        "thread": thread_uid,
+                        "author": author,
+                        "operator": operator,
+                        "pinned": pinned,
+                        "timing": timing.as_str(),
+                        "position": position,
+                    }),
+                )
+                .await?;
+                outcome.facts = self
+                    .append(
+                        NewFact {
+                            actor_uid: actor,
+                            ..NewFact::quantity(
+                                draft.uid.clone(),
+                                store::exact::one(),
+                                Cause::user_edit(),
+                            )
+                        },
+                        now,
+                    )
+                    .await?;
+                outcome.created = Some(draft.uid);
+            }
+            Action::ReviseMessageDraft {
+                draft,
+                body,
+                pinned,
+                timing,
+                position,
+            } => {
+                let (draft_uid, mut metadata) = self
+                    .message_draft_metadata(&draft, actor.as_deref())
+                    .await?;
+                let head = message_draft_head(&body);
+                self.write_record_text(&draft_uid, Some(&head), Some(&body))
+                    .await?;
+                metadata.insert("pinned".into(), serde_json::json!(pinned));
+                metadata.insert("timing".into(), serde_json::json!(timing.as_str()));
+                metadata.insert("position".into(), serde_json::json!(position));
+                store::records::set_extension(
+                    &self.store.pool,
+                    &draft_uid,
+                    "lince.message-draft",
+                    &serde_json::Value::Object(metadata),
+                )
+                .await?;
+                outcome.facts = self
+                    .annotate(
+                        draft_uid,
+                        actor,
+                        serde_json::json!({ "message_draft": "revised" }),
+                        now,
+                    )
+                    .await?;
+            }
+            Action::DeleteMessageDraft { draft } => {
+                let (draft_uid, _) = self
+                    .message_draft_metadata(&draft, actor.as_deref())
+                    .await?;
+                self.check_delete_permission(&draft_uid, actor.as_deref())
+                    .await?;
+                outcome.facts = self
+                    .annotate(
+                        draft_uid.clone(),
+                        actor,
+                        serde_json::json!({ "message_draft": "deleted" }),
+                        now,
+                    )
+                    .await?;
+                store::records::mark_deleted(&self.store.pool, &draft_uid).await?;
+            }
+            Action::SendMessageDraft { draft } => {
+                let (draft_uid, metadata) = self
+                    .message_draft_metadata(&draft, actor.as_deref())
+                    .await?;
+                let draft_row = store::records::get(&self.store.pool, &draft_uid)
+                    .await?
+                    .ok_or_else(|| EngineError::UnknownRecord(draft_uid.clone()))?;
+                let thread = metadata
+                    .get("thread")
+                    .and_then(serde_json::Value::as_str)
+                    .ok_or_else(|| EngineError::Conflict {
+                        code: "message_draft_invalid",
+                        message: "the draft has no target thread".into(),
+                    })?
+                    .to_string();
+                let pinned = metadata
+                    .get("pinned")
+                    .and_then(serde_json::Value::as_bool)
+                    .unwrap_or(false);
+                let operator = metadata.get("operator").and_then(serde_json::Value::as_str);
+                let author = metadata
+                    .get("author")
+                    .and_then(serde_json::Value::as_str)
+                    .filter(|author| Some(*author) != operator)
+                    .map(str::to_string);
+                outcome = Box::pin(self.act_at_with_authorship(
+                    Action::CreateMessage {
+                        thread,
+                        body: draft_row.body,
+                        author,
+                        state: MessageState::Finished,
+                        parent: None,
+                        references: Vec::new(),
+                    },
+                    actor.clone(),
+                    now,
+                    verified_authorship,
+                ))
+                .await?;
+                if !pinned {
+                    outcome.facts.extend(
+                        self.annotate(
+                            draft_uid.clone(),
+                            actor,
+                            serde_json::json!({ "message_draft": "sent" }),
+                            now,
+                        )
+                        .await?,
+                    );
+                    store::records::mark_deleted(&self.store.pool, &draft_uid).await?;
+                }
+            }
             Action::CreateTransferThread {
                 transfer,
                 head,
@@ -5391,6 +4815,8 @@ impl Engine {
                     Action::CreateMessage {
                         thread: thread_uid,
                         body,
+                        author: None,
+                        state: MessageState::Finished,
                         parent,
                         references,
                     },
@@ -5453,8 +4879,6 @@ impl Engine {
                 }
                 let next = PromiseState::transition(row.state, to)?;
                 store::misc::set_promise_state(&self.store.pool, &promise, next).await?;
-                // zero-delta annotation fact on the target record: promise
-                // history is Ledger-visible provenance (blueprint V.2)
                 if let Some(record_uid) = row.record_uid {
                     outcome.facts = self
                         .append(
@@ -6374,6 +5798,13 @@ impl Engine {
                         "only the addressed Person may reject an invitation".into(),
                     ));
                 }
+                store::offers::refuse(
+                    &self.store.pool,
+                    store::offers::OfferKind::Transfer,
+                    &invitation_row.transfer_uid,
+                    &invitation_row.addressed_person_uid,
+                )
+                .await?;
                 if let Some(created) = transfer_invitation_replay(
                     &self.store.pool,
                     request_id.trim(),
@@ -8301,12 +7732,6 @@ impl Engine {
                 protein::validate(&parsed).map_err(|error| {
                     EngineError::Consequence(format!("invalid Protein: {error}"))
                 })?;
-                // Upsert by slug so a saved Protein is full CRUD: saving the same
-                // name again updates the title + AST (and reactivates it if it
-                // had been deactivated/"deleted"), rather than colliding on the
-                // UNIQUE slug. The pretty AST is also stored in `body` so a plain
-                // records Protein can list saved Proteins WITH their query for the
-                // editor (the `lince.protein` extension stays canonical for reads).
                 let body = serde_json::to_string_pretty(&ast).unwrap_or_default();
                 let uid = match store::records::resolve(&self.store.pool, &slug).await? {
                     Some(existing) => {
@@ -8446,10 +7871,6 @@ impl Engine {
                     now,
                 )
                 .await?;
-                // No Fact and no op. This is a machine's own setting, so it has
-                // nothing to say to the Ledger and nothing to send to a peer —
-                // recording it as either would make one Cell's arrangement look
-                // like a change to the shared rule.
                 outcome.warnings.push(if executes {
                     "This Cell now runs that rule.".into()
                 } else {
@@ -8463,11 +7884,6 @@ impl Engine {
             } => {
                 store::executor::designate(&self.store.pool, &program_uid, cell_uid.as_deref())
                     .await?;
-                // The cost of a designation is stated when it is made. If the
-                // named Cell is off, the rule does not run — a visible silence,
-                // which is the trade taken deliberately over a heartbeat lease
-                // that would hand execution to whichever Cell merely cannot see
-                // the holder.
                 outcome.warnings.push(match cell_uid {
                     Some(_) => "Only that Cell will run this rule. If it is off, the rule does not run until you move it."
                         .into(),
@@ -8479,15 +7895,10 @@ impl Engine {
                 cell_uid,
             } => {
                 let transfer = self.resolve(&transfer_uid).await?;
-                // Same permission as configuring a recipient — both decide how
-                // this Transfer reaches the other side.
                 self.require_transfer_editor(&transfer, actor.as_deref())
                     .await?;
                 store::executor::designate(&self.store.pool, &transfer, cell_uid.as_deref())
                     .await?;
-                // No Fact. Which of MY Cells does the retrying is an arrangement
-                // between machines I own; the Ledger records what was agreed
-                // with the other side, and this changes none of it.
                 outcome.warnings.push(match cell_uid {
                     Some(_) => "Only that Cell will deliver this Transfer. If it is off, deliveries wait until you move it."
                         .into(),
@@ -8516,9 +7927,6 @@ impl Engine {
                     .await?;
                 apply_candidate_review(commit, &mut outcome)?;
             }
-            // One boxed future for the whole grant family: `act_at`'s state machine
-            // is already near the debug-build stack limit, and inlining four more
-            // arms overflows it.
             grant_action @ (Action::CreateKarmaGrant { .. }
             | Action::NarrowKarmaGrant { .. }
             | Action::ActivateKarmaGrant { .. }
@@ -8671,7 +8079,6 @@ impl Engine {
             }
             Action::Decide { decision, answer } => {
                 store::misc::answer_decision(&self.store.pool, &decision, &answer).await?;
-                // the chosen option may carry an Action to execute (XIII.1)
                 let chosen_action = store::misc::list_decisions(&self.store.pool)
                     .await?
                     .into_iter()
@@ -8683,8 +8090,6 @@ impl Engine {
                                 .flatten()
                         })
                     });
-                // closing the decision is a fact (quantity 1 -> 0), so Karma can
-                // react to answered decisions like anything else (XIII.1)
                 let current = store::records::quantity(&self.store.pool, &decision)
                     .await?
                     .unwrap_or_else(store::exact::zero);
@@ -9438,9 +8843,6 @@ impl Engine {
                     .ok_or_else(|| EngineError::Consequence(format!("unknown role `{role}`")))?;
                 let password_hash =
                     utils::auth::hash_password(&password).map_err(EngineError::Io)?;
-                // A user IS a Person. Creating one creates their record through
-                // the ordinary path — so it has op-log history and syncs like
-                // any other — and then gives it a way to log in here.
                 let person_uid = store::auth::create_person_login(
                     &self.store.pool,
                     &name,
@@ -9449,10 +8851,6 @@ impl Engine {
                     role_id,
                 )
                 .await?;
-                // Same creation fact `CreateRecord` drops, for the same
-                // reason: without one this Person commits no fact and stays
-                // invisible to every subscribed sand until something else
-                // touches it.
                 outcome.facts = self
                     .append(
                         NewFact {
@@ -9478,6 +8876,23 @@ impl Engine {
                 }
                 store::auth::set_user_role(&self.store.pool, &person, role_id).await?;
             }
+            Action::SetPersonReadFilter { person, filter } => {
+                self.require_permission(actor.as_deref(), "user:update")
+                    .await?;
+                let person_uid = self.resolve(&person).await?;
+                let record = store::records::get(&self.store.pool, &person_uid)
+                    .await?
+                    .ok_or_else(|| {
+                        EngineError::Consequence(format!("no such Person `{person}`"))
+                    })?;
+                if record.kind != "person" {
+                    return Err(EngineError::Consequence(format!(
+                        "`{person}` is a {} record, not a Person",
+                        record.kind
+                    )));
+                }
+                self.set_read_filter(&person_uid, filter.as_ref()).await?;
+            }
             Action::SetPersonStanding {
                 person,
                 active,
@@ -9491,33 +8906,17 @@ impl Engine {
                     .ok_or_else(|| {
                         EngineError::Consequence(format!("no such Person `{person}`"))
                     })?;
-                // Standing means "may this human act here", so it only makes
-                // sense over a Person. Written onto a Transfer or a Cell it
-                // would be a field nothing reads — an owner believing they had
-                // turned something off when they had not.
                 if record.kind != "person" {
                     return Err(EngineError::Consequence(format!(
                         "`{person}` is a {} record, not a Person",
                         record.kind
                     )));
                 }
-                // Deactivating yourself is refused rather than confirmed. It is
-                // the one move that can leave an Organ with nobody able to undo
-                // it — the permission to reactivate is held by the account you
-                // just closed — and it is never what someone means to do from
-                // an admin panel listing everybody. Leaving is done by someone
-                // else turning you off, which is also what makes it reversible.
                 if actor.as_deref() == Some(person_uid.as_str()) && !active {
                     return Err(EngineError::Consequence(
                         "you cannot deactivate yourself — ask another admin".into(),
                     ));
                 }
-                // The other half of the lockout guard. Refusing self-
-                // deactivation alone does not save an Organ: an admin can turn
-                // off every OTHER admin one at a time and then be turned off by
-                // one of them, and `user:update` is not itself the admin role —
-                // someone holding only it can close every admin account without
-                // ever touching their own. So the last ACTIVE admin stays.
                 if !active {
                     let admins = store::auth::admins(&self.store.pool).await?;
                     if admins.iter().any(|admin| admin == &person_uid) {
@@ -9578,7 +8977,7 @@ impl Engine {
         Ok(outcome)
     }
 
-    async fn resolve(&self, token: &str) -> Result<String, EngineError> {
+    pub(crate) async fn resolve(&self, token: &str) -> Result<String, EngineError> {
         let token = token.trim_start_matches('@');
         store::records::resolve(&self.store.pool, token)
             .await?
@@ -9586,21 +8985,12 @@ impl Engine {
             .ok_or_else(|| EngineError::UnknownRecord(token.to_string()))
     }
 
-    /// Resolve an actor id to the `app_user` it names. Every permission check
-    /// goes through this — a `Some` actor that doesn't resolve to a real user
-    /// (stale JWT, deleted account) is denied rather than silently treated as
-    /// local, and it's the one place that parses the actor-id-as-string
-    /// convention shared with `created_by`/provenance.
     async fn actor_user(&self, actor: &str) -> Result<store::auth::AuthUser, EngineError> {
         store::auth::user_by_uid(&self.store.pool, actor)
             .await?
             .ok_or_else(|| EngineError::Forbidden("unrecognized actor".into()))
     }
 
-    /// `actor == None` is the local, no-auth Cell — unrestricted, matching
-    /// every other action's local-mode convention. A `Some` actor must hold
-    /// `permission` (a `"subject:action"` key from `utils::auth::ALL_
-    /// PERMISSIONS`) on their role.
     pub(crate) async fn require_permission(
         &self,
         actor: Option<&str>,
@@ -9618,22 +9008,6 @@ impl Engine {
         )))
     }
 
-    /// The blanket table's gate (2026-08-07) — deliberately more forgiving
-    /// than `require_permission`. `actor: Option<String>` is overloaded
-    /// across this file: for a web-originated action it is always a numeric
-    /// `app_user` id (`authenticate_headers` in `web::lib` mints exactly
-    /// that), but plenty of legitimate internal call sites — Karma acting on
-    /// behalf of a Person, replay/test fixtures — pass a non-numeric actor
-    /// (a Person uid, an organ id) purely for Ledger attribution, with no
-    /// permission-bearing session behind it at all. `require_permission`
-    /// treats any such actor as `Forbidden("unrecognized actor")`, which is
-    /// exactly right for the actions it already gated (only ever invoked
-    /// from an authenticated web session in practice) but wrong here: the
-    /// blanket table now covers ~100 more variants, several of which ARE
-    /// legitimately called with a Person-uid actor. Only a `Some` actor that
-    /// resolves to a REAL `app_user` row is checked against `permission`;
-    /// anything else (including `None`) is unrestricted, matching this
-    /// action's behavior before blanket enforcement existed.
     async fn require_permission_lenient(
         &self,
         actor: Option<&str>,
@@ -9642,9 +9016,6 @@ impl Engine {
         let Some(actor) = actor else {
             return Ok(());
         };
-        // A Person with no credential holds no local role — a contact, or a
-        // remote Organ's granted login. Lenient means lenient: they pass here
-        // and are gated by visibility instead.
         let Some(user) = store::auth::user_by_uid(&self.store.pool, actor).await? else {
             return Ok(());
         };
@@ -9656,13 +9027,6 @@ impl Engine {
         )))
     }
 
-    /// The Person an actor acts as.
-    ///
-    /// Now an identity function by construction: there is one human reference,
-    /// so an authenticated actor IS a Person uid. This used to resolve an app
-    /// user through `app_user_person` and could fail with "no assigned person
-    /// identity" — a state that can no longer be represented. Local no-auth
-    /// mode still returns `None`, which every caller reads as "trusted local".
     pub(crate) async fn actor_person(
         &self,
         actor: Option<&str>,
@@ -9699,9 +9063,6 @@ impl Engine {
             | Action::AgreeTransfer { transfer, .. }
             | Action::ActivateTransfer { transfer }
             | Action::SettleTransfer { transfer, .. } => Some(transfer.as_str()),
-            // Designating a deliverer is the ORIGIN's call: it names which of
-            // the origin's own Cells retries, and a recipient has no Cells in
-            // that answer.
             Action::DesignateTransferExecutor { transfer_uid, .. } => Some(transfer_uid.as_str()),
             _ => None,
         };
@@ -9770,8 +9131,6 @@ impl Engine {
         Ok(targets)
     }
 
-    /// Creation needs both the role grant and a social identity. The returned
-    /// Person is inserted as the creator's initial Transfer party.
     async fn require_transfer_creator(
         &self,
         actor: Option<&str>,
@@ -9812,9 +9171,6 @@ impl Engine {
             })
     }
 
-    /// Authenticated actions derive their Person from the user binding. Local
-    /// no-auth actions may name one explicitly; a lifecycle action can instead
-    /// provide an unambiguous Person derived from its signed target.
     async fn transfer_action_person(
         &self,
         actor: Option<&str>,
@@ -9877,6 +9233,150 @@ impl Engine {
                 message: "a negotiation thread must belong to exactly one Transfer".into(),
             }),
         }
+    }
+
+    async fn thread_for_message(&self, message_uid: &str) -> Result<String, EngineError> {
+        let message_in = store::concepts::resolve(&self.store.pool, "message-in")
+            .await?
+            .ok_or_else(|| EngineError::Conflict {
+                code: "message_thread_missing",
+                message: "the message-in relationship is not defined".into(),
+            })?;
+        let threads =
+            store::assertions::objects_from_subject(&self.store.pool, message_uid, &message_in)
+                .await?;
+        match threads.as_slice() {
+            [thread] if thread.kind == RecordKind::Thread.as_str() => Ok(thread.uid.clone()),
+            [] => Err(EngineError::Conflict {
+                code: "message_thread_missing",
+                message: "the message does not belong to a thread".into(),
+            }),
+            _ => Err(EngineError::Conflict {
+                code: "message_thread_ambiguous",
+                message: "the message must belong to exactly one thread".into(),
+            }),
+        }
+    }
+
+    async fn message_authorship(
+        &self,
+        author: Option<&str>,
+        actor: Option<&str>,
+    ) -> Result<(String, String), EngineError> {
+        let operator = match actor {
+            Some(actor) => actor.to_string(),
+            None => store::organs::local(&self.store.pool)
+                .await?
+                .map(|organ| organ.uid)
+                .unwrap_or_else(|| "local".into()),
+        };
+        let Some(author) = author.map(str::trim).filter(|value| !value.is_empty()) else {
+            return Ok((operator.clone(), operator));
+        };
+        let author_uid = self.resolve(author).await?;
+        let author_record = store::records::get(&self.store.pool, &author_uid)
+            .await?
+            .ok_or_else(|| EngineError::UnknownRecord(author_uid.clone()))?;
+        if author_record.kind != RecordKind::Person.as_str() {
+            return Err(EngineError::Consequence(
+                "a message author must be a Person or Agent record".into(),
+            ));
+        }
+        if let Some(actor) = actor
+            && author_uid != actor
+        {
+            let operated_by = store::concepts::resolve(&self.store.pool, "operated-by").await?;
+            let delegated = match operated_by {
+                Some(predicate) => store::assertions::objects_from_subject(
+                    &self.store.pool,
+                    &author_uid,
+                    &predicate,
+                )
+                .await?
+                .iter()
+                .any(|record| record.uid == actor),
+                None => false,
+            };
+            if !delegated {
+                return Err(EngineError::Forbidden(
+                    "a delegated message author must be operated by the acting Person".into(),
+                ));
+            }
+        }
+        Ok((author_uid, operator))
+    }
+
+    async fn validate_message_draft_target(
+        &self,
+        conversation: &str,
+        thread: &str,
+    ) -> Result<(String, String), EngineError> {
+        let conversation_uid = self.resolve(conversation).await?;
+        let conversation_row = store::records::get(&self.store.pool, &conversation_uid)
+            .await?
+            .ok_or_else(|| EngineError::UnknownRecord(conversation.to_string()))?;
+        if conversation_row.kind != RecordKind::Conversation.as_str() {
+            return Err(EngineError::Consequence(
+                "a message draft must target a Conversation".into(),
+            ));
+        }
+        let thread_uid = self.resolve(thread).await?;
+        let thread_row = store::records::get(&self.store.pool, &thread_uid)
+            .await?
+            .ok_or_else(|| EngineError::UnknownRecord(thread.to_string()))?;
+        if thread_row.kind != RecordKind::Thread.as_str() {
+            return Err(EngineError::Consequence(
+                "a message draft must target a Thread".into(),
+            ));
+        }
+        let thread_of = store::concepts::resolve(&self.store.pool, "thread-of")
+            .await?
+            .ok_or_else(|| EngineError::Conflict {
+                code: "message_draft_thread_missing",
+                message: "the thread-of relationship is not defined".into(),
+            })?;
+        let targets =
+            store::assertions::objects_from_subject(&self.store.pool, &thread_uid, &thread_of)
+                .await?;
+        if !targets.iter().any(|target| target.uid == conversation_uid) {
+            return Err(EngineError::Conflict {
+                code: "message_draft_thread_mismatch",
+                message: "the draft thread belongs to another Record".into(),
+            });
+        }
+        Ok((conversation_uid, thread_uid))
+    }
+
+    async fn message_draft_metadata(
+        &self,
+        draft: &str,
+        actor: Option<&str>,
+    ) -> Result<(String, serde_json::Map<String, serde_json::Value>), EngineError> {
+        let draft_uid = self.resolve(draft).await?;
+        let row = store::records::get(&self.store.pool, &draft_uid)
+            .await?
+            .ok_or_else(|| EngineError::UnknownRecord(draft.to_string()))?;
+        if row.kind != RecordKind::MessageDraft.as_str() {
+            return Err(EngineError::Consequence(
+                "the target is not a message draft".into(),
+            ));
+        }
+        let metadata =
+            store::records::get_extension(&self.store.pool, &draft_uid, "lince.message-draft")
+                .await?
+                .and_then(|value| value.as_object().cloned())
+                .ok_or_else(|| EngineError::Conflict {
+                    code: "message_draft_invalid",
+                    message: "the message draft has no persisted metadata".into(),
+                })?;
+        if let Some(actor) = actor
+            && metadata.get("operator").and_then(serde_json::Value::as_str) != Some(actor)
+        {
+            return Err(EngineError::Forbidden(
+                "only the message draft author may use it".into(),
+            ));
+        }
+        Ok((draft_uid, metadata))
     }
 
     async fn resolve_message_references(
@@ -10814,8 +10314,6 @@ impl Engine {
         Ok((fact_uid, facts))
     }
 
-    /// Terms may be edited by the authenticated creator or by a represented
-    /// participant (counteroffers). Permission remains an independent gate.
     async fn require_transfer_editor(
         &self,
         transfer_uid: &str,
@@ -10875,8 +10373,6 @@ impl Engine {
         ))
     }
 
-    /// Legacy settlement still carries a Person field on the wire. In an
-    /// authenticated session it must match the server-side identity exactly.
     async fn require_transfer_person(
         &self,
         transfer_uid: &str,
@@ -10905,9 +10401,6 @@ impl Engine {
         ))
     }
 
-    /// Deletion is split into two grants (blueprint permission system):
-    /// `record:delete` (any record) and `record:delete_own` (only records
-    /// this actor created, per the earliest fact's `actor_uid`).
     async fn check_delete_permission(
         &self,
         record_uid: &str,
@@ -10931,21 +10424,12 @@ impl Engine {
         ))
     }
 
-    /// Blanket write enforcement (2026-08-07): every `Action` variant not
-    /// already covered by a bespoke gate (`DeleteRecord`'s ownership-aware
-    /// `check_delete_permission`, `CreateTransfer`'s `transfer:create`, the
-    /// 17 transfer-lifecycle arms already gated on `transfer:update` inline,
-    /// and the five role/user/permission-admin actions) is checked here
-    /// against `utils::auth::ALL_PERMISSIONS` — a catalog that already
-    /// declared `record:update`, `transfer:read`, `karma:create`, etc. and
-    /// already lets every role toggle them in the permissions sand; nothing
-    /// here invents a new permission string. `actor == None` (a local,
-    /// no-auth Cell) is unrestricted, same as every other gate in this file.
     fn generic_write_permission(action: &Action) -> Option<&'static str> {
         Some(match action {
-            // Record core
             Action::CreateRecord { .. }
             | Action::CreateAgent { .. }
+            | Action::CreateMessageDraft { .. }
+            | Action::SendMessageDraft { .. }
             | Action::ImportInstinct => "record:create",
             Action::SetQuantity { .. }
             | Action::SetQuantityExact { .. }
@@ -10961,6 +10445,8 @@ impl Engine {
             | Action::SetSlug { .. }
             | Action::SetUnit { .. }
             | Action::SetExtension { .. }
+            | Action::ReviseMessage { .. }
+            | Action::ReviseMessageDraft { .. }
             | Action::AssertRecord { .. }
             | Action::RetractAssertion { .. }
             | Action::RefineAssertion { .. }
@@ -10980,11 +10466,6 @@ impl Engine {
             | Action::RenameLingua { .. } => "record:update",
             Action::CreateThread { .. }
             | Action::CreateMessage { .. }
-            // Creating a Record inside a conversation, which is what a copy
-            // IS. Not a `record:update` on the source: the original is not
-            // touched, and permissioning it that way would let someone who
-            // may only READ a Record be unable to pass it on, while someone
-            // who may edit it could — which is backwards.
             | Action::SendRecordCopy { .. }
             | Action::CreateTransferThread { .. }
             | Action::CreateTransferMessage { .. }
@@ -10994,26 +10475,24 @@ impl Engine {
             | Action::CreateMatchRule { .. } => "record:create",
             Action::DeleteConcept { .. }
             | Action::DeleteLingua { .. }
-            // Ending a conversation removes Records, so it is a delete — even
-            // though it logs nothing and reaches nobody. Permissioning it
-            // lower because it is local would let someone who may not delete
-            // a Record delete a whole conversation of them.
             | Action::DeleteConversation { .. } => "record:delete",
 
-            // Frequency/Recurrence (Frequency's own catalog subject)
-            Action::CreateFrequency { .. } | Action::CreateRecurrence { .. } => {
-                "frequency:create"
-            }
+            Action::CreateFrequency { .. } | Action::CreateRecurrence { .. } => "frequency:create",
             Action::ReviseRecurrence { .. }
             | Action::SetRecurrencePaused { .. }
             | Action::ApplyRecurrenceOccurrence { .. }
             | Action::SkipRecurrenceOccurrence { .. }
             | Action::UnskipRecurrenceOccurrence { .. } => "frequency:update",
-            Action::DeleteFrequency { .. } | Action::DeleteRecurrence { .. } => {
-                "frequency:delete"
-            }
+            Action::DeleteFrequency { .. } | Action::DeleteRecurrence { .. } => "frequency:delete",
 
-            // Organ (pairing/contact management, not the sync wire itself)
+            Action::AuditContact { .. }
+            | Action::RosterStatus
+            | Action::MailboxStatus
+            | Action::MailboxPickupPoints
+            | Action::MailboxOutbound
+            | Action::MailboxRequests
+            | Action::FileSyncStatus { .. } => "organ:read",
+
             Action::AddKnownOrgan { .. } => "organ:create",
             Action::RenameOrganContact { .. }
             | Action::SetSyncPolicy { .. }
@@ -11035,47 +10514,21 @@ impl Engine {
             | Action::SetContactTrust { .. }
             | Action::SetContactProximity { .. }
             | Action::RosterEnrolToken
-            // A READ gated as an update, and that is a compromise rather than
-            // a design: the organ permissions are create/update/delete with no
-            // read tier, so there is nothing narrower to ask for. The cost is
-            // real — someone allowed to look at this Organ but not change it
-            // cannot see who is waiting at their own front door, and the panel
-            // renders empty for them, which is the empty-state failure the
-            // surface rule exists to prevent. Fix it by adding `organ:read`
-            // when the permission set next moves, not by widening this.
             | Action::SetCellConfig { .. }
-            | Action::AuditContact { .. }
-            | Action::RosterStatus
-            // Carrying mail is an ORGAN-scoped decision: it commits this
-            // Cell's disk and uptime on behalf of the identity, and the
-            // registration list is the carrier's most sensitive record.
-            | Action::MailboxStatus
             | Action::MailboxCarryFor { .. }
-            // Publishing where your own mail may be left is organ-scoped for
-            // the stronger reason: it re-signs the roster every contact holds,
-            // and it decides who gets to hold your unread mail.
-            | Action::MailboxPickupPoints
             | Action::MailboxAddPickup { .. }
             | Action::MailboxRemovePickup { .. }
             | Action::MailboxCollectNow
-            | Action::MailboxOutbound
-            | Action::FileSyncStatus { .. }
             | Action::MailboxMailNow { .. }
-            | Action::MailboxRequests
             | Action::MailboxAnswerRequest { .. }
             | Action::MailboxIssueInvite { .. }
             | Action::MailboxAskCarry { .. }
             | Action::MailboxUseInvite { .. }
-            // Joining REPLACES this Cell's identity, which is the largest
-            // organ-scoped change there is — but it is still an organ-scoped
-            // change, and the real gate is the enrolment token itself.
             | Action::RosterJoinOrgan { .. } => "organ:update",
             Action::ForgetOrganContact { .. }
             | Action::RosterRevokeCell { .. }
-            // Deleting: it discards mail somebody is expecting to collect.
             | Action::MailboxStopCarrying { .. } => "organ:delete",
 
-            // Transfer (the remainder not already gated inline above)
             Action::CreatePromise { .. }
             | Action::CreateTransferDraft { .. }
             | Action::CreateTransferRemainderDraft { .. } => "transfer:update",
@@ -11102,7 +10555,6 @@ impl Engine {
             | Action::SettleTransfer { .. }
             | Action::Compensate { .. } => "transfer:update",
 
-            // Karma
             Action::CreateKarmaProgram { .. } | Action::CreateKarmaGrant { .. } => "karma:create",
             Action::ReviseKarmaProgram { .. }
             | Action::ActivateKarmaProgram { .. }
@@ -11120,10 +10572,8 @@ impl Engine {
             | Action::PauseKarmaFrequency { .. } => "karma:update",
             Action::RevokeKarmaGrant { .. } => "karma:delete",
 
-            // Already bespoke-gated inline (transfer:create/update, or
-            // ownership-aware) or admin-only (auth actions): no generic
-            // check here, would only duplicate the existing one.
             Action::DeleteRecord { .. }
+            | Action::DeleteMessageDraft { .. }
             | Action::CreateTransfer { .. }
             | Action::AddressTransferInvitation { .. }
             | Action::AcceptTransferInvitation { .. }
@@ -11145,23 +10595,37 @@ impl Engine {
             | Action::CreateRole { .. }
             | Action::CreateUser { .. }
             | Action::AssignRole { .. }
-            // Gated on `user:update` in its own arm, not by the generic
-            // record-write permission: it writes to a Person Record, and
-            // `record:update` is held by people who may edit a name and must
-            // not be able to close an account.
             | Action::SetPersonStanding { .. }
+            | Action::SetPersonReadFilter { .. }
             | Action::GrantPermission { .. }
             | Action::RevokePermission { .. } => return None,
         })
     }
 
-    /// Resolve a rule's consequences and prove the list is legal.
-    ///
-    /// Concept tokens arrive as whatever the author typed and leave as uids, so
-    /// a later rename cannot change what a rule does. Validation happens here
-    /// rather than at the store boundary because "a rule with nothing to do"
-    /// and "the same consequence twice" are authoring mistakes, and the person
-    /// who can still fix them is the one submitting this Action.
+    async fn canonical_condition(
+        &self,
+        condition: Option<String>,
+    ) -> Result<Option<String>, EngineError> {
+        let Some(source) = condition else {
+            return Ok(None);
+        };
+        let tokens = concept_tokens_in(&source);
+        if tokens.is_empty() {
+            return Ok(Some(source));
+        }
+        let mut rewritten = String::with_capacity(source.len());
+        let mut copied = 0usize;
+        for (start, end, name) in tokens {
+            let uid = self.resolve_concept(&name).await?;
+            rewritten.push_str(&source[copied..start]);
+            rewritten.push('#');
+            rewritten.push_str(&uid);
+            copied = end;
+        }
+        rewritten.push_str(&source[copied..]);
+        Ok(Some(rewritten))
+    }
+
     async fn resolve_consequences(
         &self,
         declared: Vec<nucleus::karma::Consequence>,
@@ -11174,6 +10638,12 @@ impl Engine {
                     amount,
                     concept: self.resolve_concept_opt(concept).await?,
                 },
+                Consequence::SetQuantityWhere { assertion, value } => {
+                    Consequence::SetQuantityWhere {
+                        assertion: self.resolve_concept(&assertion).await?,
+                        value,
+                    }
+                }
                 Consequence::SetConcept { concept } => Consequence::SetConcept {
                     concept: self.resolve_concept(&concept).await?,
                 },
@@ -11192,10 +10662,6 @@ impl Engine {
         })
     }
 
-    /// Ask a rule's condition, against the world as it stands now.
-    ///
-    /// Returns what the carry hands to the consequences, or `None` when the
-    /// gate blocked — which is a decision, not a failure.
     async fn evaluate_rule_condition(
         &self,
         rule: &store::recurrence::Recurrence,
@@ -11221,11 +10687,6 @@ impl Engine {
             }
         })?;
 
-        // The stretch of time this evaluation speaks for. Every rhythm a
-        // condition reads is counted over the same window, gathered here with
-        // every other reading, so one evaluation sees one consistent moment and
-        // the answer cannot depend on the order the tokens happen to be listed
-        // in.
         let since = self.rule_reading_since(rule, at)?;
 
         let mut values = std::collections::HashMap::new();
@@ -11253,12 +10714,6 @@ impl Engine {
         )
     }
 
-    /// One reading a condition asked for.
-    ///
-    /// The vocabulary lives in the kernel; which table answers it lives here.
-    /// An unknown reading is refused rather than defaulted to zero, because a
-    /// zero would let a typo read as "the stock is empty" and fire a rule for
-    /// the most alarming possible reason.
     async fn read_for_condition(
         &self,
         func: &str,
@@ -11276,26 +10731,23 @@ impl Engine {
                 let uid = self.resolve(slug).await?;
                 Ok(store::facts::level(&self.store.pool, &uid).await?)
             }
-            // A rhythm, read as a number: how many times the rule on that
-            // Record came round in the stretch this evaluation speaks for.
-            //
-            // This is what makes a schedule part of the arithmetic instead of a
-            // separate kind of object. `-1 * freq(@rent)` is worth -1 on a rent
-            // date and exactly zero on every other, so the ordinary `!=0` gate
-            // turns a daily check into a monthly act — no second trigger
-            // mechanism, no second table, and any threshold already spellable
-            // works on it unchanged.
+            nucleus::expr::ASSERTION => {
+                let concept = self.resolve_concept(slug).await?;
+                let mut total = zero;
+                for uid in store::ledger::records_with_concept(&self.store.pool, &concept).await? {
+                    let level = store::facts::level(&self.store.pool, &uid).await?;
+                    total = total
+                        .aligned_add(level)
+                        .ok_or_else(|| EngineError::Conflict {
+                            code: "rule_condition_unreadable",
+                            message: format!("#{slug} adds up to more than fits"),
+                        })?;
+                }
+                Ok(total)
+            }
             "freq" => {
-                // A declared Frequency answers first. It is the whole object —
-                // a slug and a step — and its beats come from the same pure
-                // `Cadence` that draws a calendar, so nothing is stored and
-                // nothing has to be kept in sync with the step.
                 if let Some(frequency) = store::frequency::resolve(&self.store.pool, slug).await? {
                     let anchor = frequency.anchor()?;
-                    // `(since, at]` — half-open at the near edge, closed at the
-                    // far one, so the instant a window ends on belongs to that
-                    // window and to no other. Same edges as the rhythm this
-                    // replaces, or a rule would double-count on the boundary.
                     let tick = chrono::Duration::milliseconds(1);
                     let (Some(from), Some(to)) =
                         (since.checked_add_signed(tick), at.checked_add_signed(tick))
@@ -11316,17 +10768,9 @@ impl Engine {
                         },
                     );
                 }
-                // Falling back to a rhythm carried by a rule on that Record,
-                // which is what a frequency was before it had a table of its
-                // own. Rules written the old way keep working.
                 let uid = self.resolve(slug).await?;
                 self.rhythm_count(&uid, since, at).await
             }
-            // Another rule's arithmetic, read as a number — its gate ignored,
-            // its consequences not run. This is what makes a rule usable as a
-            // named cell: one rule computes "how much is left this month" and
-            // several others read it, instead of each restating the formula and
-            // drifting apart the first time one is edited.
             "value" => {
                 let uid = self.resolve(slug).await?;
                 Box::pin(self.derived_value(&uid, at, now, depth)).await
@@ -11347,17 +10791,12 @@ impl Engine {
                     _ => store::facts::sum_window(&self.store.pool, &uid, seconds, now).await?,
                 })
             }
-            // Where a promise stands, as an ordinal a comparison can use.
             "promise_state" => inexact(
                 store::misc::promise_state(&self.store.pool, slug)
                     .await?
                     .map(nucleus::PromiseState::ordinal)
                     .unwrap_or(0.0),
             ),
-            // How long since anything happened on a Record. A Record nothing
-            // has ever touched reads as an enormous number rather than zero:
-            // "never" is the opposite of "just now", and zero would say the
-            // opposite of the truth to every `>` a person writes.
             "hours_since_fact" => {
                 let uid = self.resolve(slug).await?;
                 inexact(
@@ -11366,11 +10805,8 @@ impl Engine {
                         .unwrap_or(1.0e9),
                 )
             }
-            // How reliably a party has kept what they promised.
             "confidence" => inexact(crate::imagination::confidence(&self.store, slug).await?),
-            // A concept's share of activity in this hour of the day.
             "demand" => inexact(crate::imagination::demand(&self.store, slug, now).await?),
-            // Where a Record's level is heading, folded forward.
             "projected" => {
                 let seconds = window_secs.ok_or_else(|| EngineError::Conflict {
                     code: "rule_condition_invalid",
@@ -11384,7 +10820,6 @@ impl Engine {
                 );
                 inexact(timeline.projected(&uid).unwrap_or(0.0))
             }
-            // How far apart two Records' places are.
             "distance" => {
                 let mut places = Vec::new();
                 for token in slug.split('|') {
@@ -11417,18 +10852,6 @@ impl Engine {
         }
     }
 
-    /// Commit one outward consequence.
-    ///
-    /// "Commit", not "run". Each of these lands as a durable row — an
-    /// obligation, a question, or a queued effect — and a separate worker
-    /// carries it out afterwards. Two reasons, and both are load-bearing. A
-    /// rule that shelled out mid-evaluation could change the world and then
-    /// have its own transaction rolled back. And a rule that reached the
-    /// network from inside the evaluation would have no place left to check a
-    /// grant, because by then it has already happened.
-    ///
-    /// The number the condition carried travels with each one, so an outward
-    /// consequence can be as computed as an inward one.
     async fn commit_outward_consequence(
         &self,
         rule: &store::recurrence::Recurrence,
@@ -11443,8 +10866,6 @@ impl Engine {
                 window_end,
                 party,
             } => {
-                // A promise the rule did not put a number on takes the one the
-                // condition computed — the same fallback a capture makes.
                 let delta = delta
                     .as_ref()
                     .map(|value| value.to_f64())
@@ -11467,8 +10888,6 @@ impl Engine {
                 let question = question
                     .clone()
                     .unwrap_or_else(|| format!("{}?", rule.note.as_deref().unwrap_or("this rule")));
-                // Yes or no is what almost every asked question is, so an
-                // unspecified list means that rather than an empty prompt.
                 let offered = if options.is_empty() {
                     vec!["yes".to_string(), "no".to_string()]
                 } else {
@@ -11546,7 +10965,6 @@ impl Engine {
                 )
                 .await?;
             }
-            // The inward variants are Actions and were handled by the caller.
             _ => {}
         }
         let _ = now;
@@ -11563,13 +10981,6 @@ impl Engine {
         Ok(())
     }
 
-    /// The number the rule on this Record computes, gate ignored.
-    ///
-    /// Reading a rule's arithmetic is not the same as letting it act, so the
-    /// gate is deliberately skipped and no consequence runs. Depth is capped
-    /// because a cell that reads itself — directly or around a ring of three —
-    /// is a mistake a person can make in one keystroke, and the honest answer
-    /// is a refusal rather than a heartbeat that never returns.
     async fn derived_value(
         &self,
         record_uid: &str,
@@ -11592,8 +11003,6 @@ impl Engine {
                 message: format!("`{record_uid}` has no rule with a value to read"),
             })?;
         let condition = rule.condition.clone().expect("filtered on Some");
-        // Always/value: the raw number, before any decision about whether it
-        // means act. Those two belong to the rule that *owns* the condition.
         let asked = store::recurrence::RuleCondition {
             source: condition.source,
             gate: nucleus::karma::Gate::Always,
@@ -11607,17 +11016,6 @@ impl Engine {
             })
     }
 
-    /// The opening edge of the stretch one evaluation speaks for.
-    ///
-    /// A rule that runs daily answers for one day; a rule that runs monthly
-    /// answers for one month. So the window is the gap back to the rule's own
-    /// previous instant — which makes consecutive evaluations tile the timeline
-    /// exactly. Nothing a rule reads over time can be counted twice, and a Cell
-    /// that slept still sees every rhythm it missed, because the missed dates
-    /// are applied in order and each one carries its own window.
-    ///
-    /// Before a rule's first instant there is nothing to have missed, so the
-    /// window opens at the anchor.
     fn rule_reading_since(
         &self,
         rule: &store::recurrence::Recurrence,
@@ -11634,14 +11032,6 @@ impl Engine {
         Ok(previous.unwrap_or(anchor))
     }
 
-    /// How many times the rule declared on `record_uid` came round in
-    /// `(since, at]`.
-    ///
-    /// Half-open at the near edge and closed at the far one, so the instant a
-    /// window ends on belongs to that window and to no other. A Record with no
-    /// rule on it is worth zero rather than an error: "that rhythm did not
-    /// happen" is a true answer, and it is the one that lets a condition be
-    /// written before the schedule it will eventually watch.
     async fn rhythm_count(
         &self,
         record_uid: &str,
@@ -11651,8 +11041,6 @@ impl Engine {
         let tick = chrono::Duration::milliseconds(1);
         let mut total: i128 = 0;
         for rule in store::recurrence::for_record(&self.store.pool, record_uid).await? {
-            // A paused rhythm is silent. Counting its dates would have a rule
-            // keep acting on a schedule its author stopped.
             if rule.is_paused() {
                 continue;
             }
@@ -11697,10 +11085,6 @@ impl Engine {
         }
     }
 
-    /// Commit a zero-delta annotation fact on `record_uid`. Metadata edits
-    /// (text/slug/concept/unit/extension) are not quantity deltas, but a fact is
-    /// still appended so the edit is Ledger-visible provenance and so live
-    /// subscriptions invalidate and refresh (same pattern as `CreateRecord`).
     async fn annotate(
         &self,
         record_uid: String,
@@ -11745,8 +11129,6 @@ impl Engine {
     }
 }
 
-/// Order-like link kinds (blueprint IV): `@precedes`, `@before`, `@order`, or
-/// any descendant of those concepts. Only these get cycle warnings on save.
 async fn is_order_like(
     pool: &store::sqlx::SqlitePool,
     kind_uid: &str,
@@ -11762,8 +11144,6 @@ async fn is_order_like(
     Ok(false)
 }
 
-/// SCCs of the given link kind's graph (nucleus::graph::cycles over the
-/// stored edges) — each returned Vec is one loop of record uids.
 async fn kind_cycles(
     pool: &store::sqlx::SqlitePool,
     kind_uid: &str,
@@ -11783,24 +11163,6 @@ async fn kind_cycles(
     Ok(nucleus::graph::cycles(&nodes, &tuples))
 }
 
-/// The rules a column scope has to satisfy, in EITHER direction.
-///
-/// Shared because the two directions are different policies over the same
-/// vocabulary: what is unsayable outbound is unsayable inbound, and letting
-/// them validate separately is how one of them quietly starts accepting an
-/// expression the other refuses.
-/// Whether a scope change lets MORE through than it did before.
-///
-/// `None` is the widest setting there is, so moving to it from anything else
-/// is a widening and moving away from it never is. Between two lists, one new
-/// name is enough — a change that both adds and removes columns is a widening
-/// for the added ones, and the repair it triggers is filtered back down by the
-/// new scope anyway.
-///
-/// Deliberately conservative in one direction: it may answer "wider" for a
-/// change that is not, which costs a redundant re-send, and it must never
-/// answer "not wider" for one that is, which would leave a column permanently
-/// blank on the other side with nothing to say so.
 fn widens_scope(before: Option<&[String]>, after: Option<&[String]>) -> bool {
     match (before, after) {
         (None, _) => false,
@@ -11813,19 +11175,11 @@ fn validate_scope(fields: Option<&[String]>) -> Result<(), EngineError> {
     let Some(fields) = fields else {
         return Ok(());
     };
-    // A blank matches nothing, so it narrows to nothing while looking
-    // configured. A trailing comma in a text field is the ordinary way one
-    // arrives, which is to say it comes straight from a surface.
     if fields.iter().any(|f| f.trim().is_empty()) {
         return Err(EngineError::Consequence(
             "a scope cannot contain a blank column name".into(),
         ));
     }
-    // `head` and `body` are one Loro document, and its ops carry no field to
-    // filter on — so a scope naming one of them gets the other too. That
-    // cannot be enforced at serve time, but it CAN be reported here, where
-    // there is somebody to tell. Silently widening a scope the user wrote is
-    // the failure this refusal exists to prevent.
     let head = fields.iter().any(|f| f == "head");
     let body = fields.iter().any(|f| f == "body");
     if head != body {
@@ -11855,13 +11209,15 @@ fn message_head(body: &str) -> String {
     }
 }
 
-/// Read an opaque JSON payload a rule stored for an outward consequence.
-///
-/// Kept as text on the rule so the consequence type stays comparable and does
-/// not drag a whole JSON document into every equality check. It is parsed at
-/// the moment it is queued rather than when it runs, so a malformed payload is
-/// a visible failure of the rule that wrote it and not a mystery in a worker
-/// log hours later.
+fn message_draft_head(body: &str) -> String {
+    let head = message_head(body);
+    if head == "Message" {
+        "Message draft".into()
+    } else {
+        head
+    }
+}
+
 fn parse_effect_payload(
     text: Option<&str>,
     kind: &'static str,
@@ -11875,13 +11231,6 @@ fn parse_effect_payload(
     })
 }
 
-/// Bring a reading that is natively a float into the exact world.
-///
-/// Only for the readings that are *measurements* — a distance, a ratio, a
-/// count of hours. Those are approximate at the source, and pretending
-/// otherwise by carrying them as exact decimals from the start would dress a
-/// GPS reading up as an accounting figure. Everything the Ledger owns —
-/// levels, sums, captured amounts — never passes through here.
 fn inexact(value: f64) -> Result<nucleus::DecimalValue, EngineError> {
     nucleus::DecimalValue::from_f64_lossy(value).map_err(|_| EngineError::Conflict {
         code: "rule_condition_unreadable",
@@ -11890,28 +11239,11 @@ fn inexact(value: f64) -> Result<nucleus::DecimalValue, EngineError> {
 }
 
 impl Engine {
-    /// Publish a Karma definition to this Organ's other Cells (Ontology C7,
-    /// axis 1).
-    ///
-    /// Called after every Program and Frequency mutation, and derived from the
-    /// STORE rather than from the action: create, revise, activate and pause all
-    /// publish the same thing — whatever is active now, or `null` — so the
-    /// published value cannot drift from what this Cell holds, and a pause
-    /// travels as surely as an activation. Without the pause travelling, turning
-    /// a rule off here would leave the always-on Cell running the last
-    /// definition it heard about.
-    ///
-    /// Both kinds, because either alone does nothing: every active Program is a
-    /// member of every frozen occurrence epoch, so a Cell holding a synced
-    /// Program with no Frequency has nothing to schedule it.
     pub(crate) async fn publish_karma_definition(
         &self,
         outcome: &ActionOutcome,
         kind: KarmaKind,
     ) -> Result<(), EngineError> {
-        // `created` carries the mutated handle's uid for every one of these
-        // actions, including the replayed ones — a replay publishes the same
-        // value again, which is a redundant write and never a wrong one.
         let Some(uid) = outcome.created.as_deref() else {
             return Ok(());
         };

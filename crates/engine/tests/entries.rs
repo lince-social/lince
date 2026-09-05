@@ -1,10 +1,3 @@
-//! Entries (blueprint E0): correcting and undoing an authored change.
-//!
-//! The Ledger has no delete and no edit — a Fact is hash-chained and signed,
-//! and a classification is an assertion about one. So every correction here is
-//! a *new* pair of Facts, and what these tests defend is that the pair leaves
-//! the totals saying what actually happened while the chain keeps both halves.
-
 use engine::Engine;
 use engine::actions::Action;
 use nucleus::RecordKind;
@@ -18,8 +11,6 @@ async fn engine() -> Engine {
     engine
 }
 
-/// A Record and a `@food` concept. The scenario is a household balance because
-/// it reads clearly; the primitive under test knows nothing about what it counts.
 async fn setup(e: &Engine) -> (String, String) {
     let food = store::concepts::create(&e.store.pool, "food", &[])
         .await
@@ -77,7 +68,6 @@ async fn revising_an_amount_compensates_and_replaces_rather_than_rewriting() {
     let entry = capture(&e, "-15", None).await;
     assert_eq!(level(&e).await, "-15");
 
-    // The typo: it was 150, not 15.
     let outcome = e
         .act(
             Action::ReviseEntry {
@@ -93,7 +83,6 @@ async fn revising_an_amount_compensates_and_replaces_rather_than_rewriting() {
         .await
         .unwrap();
 
-    // Two Facts: the reversal and the replacement. Nothing was edited.
     assert_eq!(outcome.facts.len(), 2);
     assert_eq!(level(&e).await, "-150");
 
@@ -105,7 +94,6 @@ async fn revising_an_amount_compensates_and_replaces_rather_than_rewriting() {
     assert_eq!(stored.amount.to_string(), "-150");
     assert_eq!(stored.state, store::entries::STATE_APPLIED);
 
-    // The chain kept all three entries: original, reversal, replacement.
     let record_uid = stored.record_uid.clone();
     let facts = store::facts::for_record(&e.store.pool, &record_uid, 100)
         .await
@@ -117,8 +105,6 @@ async fn revising_an_amount_compensates_and_replaces_rather_than_rewriting() {
         .unwrap();
     assert_eq!(history.len(), 2);
     assert_eq!(history[1].kind, "revised");
-    // The correction is recorded as a pair, so an audit can show what was
-    // reversed next to what replaced it rather than two loose changes.
     assert!(history[1].compensated_fact_uid.is_some());
     assert!(history[1].fact_uid.is_some());
 }
@@ -143,9 +129,6 @@ async fn a_correction_stays_in_the_category_it_was_captured_under() {
     .await
     .unwrap();
 
-    // Both new Facts carry @food. Without this, correcting an amount would
-    // quietly drop the change out of its category and leave the category
-    // showing the ORIGINAL wrong number forever.
     let record_uid = store::records::resolve(&e.store.pool, "checking")
         .await
         .unwrap()
@@ -172,7 +155,6 @@ async fn a_correction_stays_in_the_category_it_was_captured_under() {
         concept_uid: Some(&food),
     };
     let totals = store::ledger::totals(&e.store.pool, &window).await.unwrap();
-    // -15 + 15 - 150 = -150. The category shows what was actually spent.
     assert_eq!(totals.net.to_string(), "-150");
 }
 
@@ -201,8 +183,6 @@ async fn a_note_only_edit_moves_no_quantity_but_still_earns_a_revision() {
         .await
         .unwrap();
 
-    // Nothing moved, so nothing was appended. A compensating pair here would
-    // put two meaningless entries in the chain.
     assert!(outcome.facts.is_empty());
     assert_eq!(level(&e).await, "-15");
 
@@ -212,8 +192,6 @@ async fn a_note_only_edit_moves_no_quantity_but_still_earns_a_revision() {
         .unwrap();
     assert_eq!(after.revision, 2);
     assert_eq!(after.note.as_deref(), Some("groceries and a coffee"));
-    // The entry still points at the Fact carrying its amount. Blanking it
-    // would orphan it from its own Ledger entry.
     assert_eq!(after.fact_uid, before.fact_uid);
     assert_eq!(
         store::entries::history(&e.store.pool, &entry)
@@ -249,12 +227,8 @@ async fn voiding_returns_the_quantity_to_the_category_it_came_from() {
         .unwrap()
         .unwrap();
     assert_eq!(stored.state, store::entries::STATE_VOID);
-    // The row survives: an append-only Ledger has no delete, and the change
-    // did happen even though it was undone.
     assert_eq!(stored.amount.to_string(), "-15");
 
-    // The compensating Fact carries @food too, so the category nets to zero
-    // instead of showing -15 beside an unclassified +15.
     let record_uid = stored.record_uid.clone();
     let window = store::ledger::LedgerWindow {
         record_uids: std::slice::from_ref(&record_uid),
@@ -272,7 +246,6 @@ async fn a_replayed_request_returns_the_first_answer_instead_of_moving_quantity_
     let e = engine().await;
     setup(&e).await;
 
-    // Capture, retried.
     let first = capture(&e, "-15", Some("capture-1")).await;
     let retried = e
         .act(
@@ -291,8 +264,6 @@ async fn a_replayed_request_returns_the_first_answer_instead_of_moving_quantity_
     assert!(retried.facts.is_empty());
     assert_eq!(level(&e).await, "-15");
 
-    // Void, retried. This is the one that matters: a second compensating Fact
-    // would hand back a quantity that was only taken once.
     e.act(
         Action::VoidEntry {
             entry: first.clone(),
@@ -338,7 +309,6 @@ async fn a_stale_revision_is_refused_so_two_editors_cannot_overwrite_each_other(
     .await
     .unwrap();
 
-    // Someone still holding revision 1 tries to save.
     let stale = e
         .act(
             Action::ReviseEntry {
@@ -353,7 +323,6 @@ async fn a_stale_revision_is_refused_so_two_editors_cannot_overwrite_each_other(
         )
         .await;
     assert!(stale.is_err());
-    // And it was refused BEFORE any Fact was appended.
     assert_eq!(level(&e).await, "-150");
 }
 
@@ -403,14 +372,10 @@ async fn generic_compensation_cannot_bypass_an_entry() {
         .fact_uid
         .unwrap();
 
-    // Compensating the Fact directly would return the quantity while the entry
-    // still read `applied` — the Ledger and the thing describing it would
-    // disagree with no way to tell which is right.
     let bypass = e.act(Action::Compensate { fact: fact_uid }, None).await;
     assert!(bypass.is_err());
     assert_eq!(level(&e).await, "-15");
 
-    // The typed route does both halves.
     e.act(
         Action::VoidEntry {
             entry,
@@ -473,8 +438,6 @@ async fn backdating_a_correction_moves_it_into_the_month_it_belongs_to() {
     .await
     .unwrap();
 
-    // March keeps the original AND its reversal — history is not rewritten —
-    // so it nets to zero, and February now carries the change.
     assert_eq!(march.net.to_string(), "0");
     assert_eq!(march.count, 2);
     assert_eq!(february.net.to_string(), "-15");
@@ -483,9 +446,6 @@ async fn backdating_a_correction_moves_it_into_the_month_it_belongs_to() {
 
 #[tokio::test]
 async fn the_same_correction_works_on_something_that_is_not_a_balance() {
-    // A miscounted stock take, corrected. Identical machinery, identical
-    // guarantees — the Entry primitive knows nothing about finance, and this
-    // test exists so that stays true.
     let e = engine().await;
     let kg = store::concepts::create(&e.store.pool, "kg", &[])
         .await
@@ -534,7 +494,6 @@ async fn the_same_correction_works_on_something_that_is_not_a_balance() {
         "-2.5"
     );
 
-    // It was 2.75 kg, not 2.5.
     e.act(
         Action::ReviseEntry {
             entry: entry.clone(),
@@ -556,7 +515,6 @@ async fn the_same_correction_works_on_something_that_is_not_a_balance() {
         "-2.75"
     );
 
-    // And voiding returns the flour, exactly as it returns a balance.
     e.act(
         Action::VoidEntry {
             entry,

@@ -1,10 +1,3 @@
-//! The permission/role/user system, driven through Actions (2026-07-18) — the
-//! first brick of "the WS is guarded by Protein + Actions + Permissions":
-//! `create-role`, `create-user`, `assign-role`, `grant-permission`,
-//! `revoke-permission`. Each is gated on the matching key already in
-//! `utils::auth::ALL_PERMISSIONS`; `actor: None` (local Cell) is unrestricted,
-//! same convention as `delete-record` (crates/engine/tests/record_edits.rs).
-
 use engine::Engine;
 use engine::actions::Action;
 
@@ -137,7 +130,6 @@ async fn each_auth_action_denies_an_actor_without_its_permission() {
 async fn create_role_then_create_user_wires_a_working_login() {
     let e = engine().await;
     let admin = privileged_actor(&e, "role:create").await;
-    // role:create alone can't create-user too — a second, separately-granted actor.
     let role_id = store::auth::ensure_role(&e.store.pool, "user-creator")
         .await
         .unwrap();
@@ -284,9 +276,6 @@ async fn grant_and_revoke_permission_round_trip() {
     assert!(!keys.iter().any(|k| k == "record:delete_own"));
 }
 
-/// Deactivation through the Action, which is the path the admin panel takes —
-/// the store tests cover the flag, this covers who is allowed to set it and
-/// what they may set it on.
 #[tokio::test]
 async fn set_person_standing_deactivates_and_restores() {
     let e = engine().await;
@@ -330,10 +319,6 @@ async fn set_person_standing_deactivates_and_restores() {
     );
 }
 
-/// `user:update`, not `record:update`. Closing an account and editing a name
-/// are not the same authority, and a Person IS a Record — so without its own
-/// arm this would have ridden the generic record-write permission and handed
-/// deactivation to everyone who may fix a typo.
 #[tokio::test]
 async fn deactivating_needs_user_update_not_record_update() {
     let e = engine().await;
@@ -396,10 +381,6 @@ async fn deactivating_needs_user_update_not_record_update() {
     );
 }
 
-/// The one move that can leave an Organ with nobody able to undo it: the
-/// permission to reactivate is held by the account you just closed. Refused
-/// rather than confirmed, because from a panel listing everybody it is never
-/// what someone means to do.
 #[tokio::test]
 async fn nobody_can_deactivate_themselves() {
     let e = engine().await;
@@ -436,9 +417,6 @@ async fn nobody_can_deactivate_themselves() {
     );
 }
 
-/// Standing means "may this human act here", so it only fits over a Person.
-/// Written onto anything else it would be a field nothing reads — an owner
-/// believing they had turned something off when they had not.
 #[tokio::test]
 async fn standing_is_refused_over_a_record_that_is_not_a_person() {
     let e = engine().await;
@@ -472,11 +450,6 @@ async fn standing_is_refused_over_a_record_that_is_not_a_person() {
     assert!(err.to_string().contains("not a Person"), "{err}");
 }
 
-/// Refusing self-deactivation alone does not save an Organ. `user:update` is
-/// not the admin role, so someone holding only it can close every admin account
-/// without ever touching their own — and an admin can turn off every OTHER
-/// admin one at a time and then be turned off by one of them. The last ACTIVE
-/// admin stays.
 #[tokio::test]
 async fn the_last_active_admin_cannot_be_deactivated() {
     let e = engine().await;
@@ -492,7 +465,6 @@ async fn the_last_active_admin_cannot_be_deactivated() {
             .await
             .unwrap();
 
-    // Two admins: turning one off is ordinary.
     e.act(
         Action::SetPersonStanding {
             person: second.clone(),
@@ -504,7 +476,6 @@ async fn the_last_active_admin_cannot_be_deactivated() {
     .await
     .expect("one of two admins may go");
 
-    // One left: it is refused, however it is asked for.
     let err = e
         .act(
             Action::SetPersonStanding {
@@ -523,8 +494,6 @@ async fn the_last_active_admin_cannot_be_deactivated() {
             .unwrap()
     );
 
-    // Bring the other back and the first may go after all — the guard is about
-    // the Organ keeping an admin, not about protecting one account.
     e.act(
         Action::SetPersonStanding {
             person: second,

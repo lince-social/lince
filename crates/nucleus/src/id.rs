@@ -1,12 +1,7 @@
-//! Prefixed ULIDs (`r_`, `f_`, `p_`, `l_`, `c_`, `t_` ...) and slug validation.
-//! `ulid_from` is pure (blueprint 0.1: DST passes explicit time/entropy);
-//! `new_uid` is the clocked convenience wrapper.
-
 use chrono::Utc;
 
 const ALPHABET: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
-/// Crockford-base32 ULID from explicit parts: 48-bit millis + 80-bit entropy.
 pub fn ulid_from(millis: u64, entropy: u128) -> String {
     let value: u128 = ((millis as u128 & 0xFFFF_FFFF_FFFF) << 80) | (entropy & ((1u128 << 80) - 1));
     let mut out = String::with_capacity(26);
@@ -17,22 +12,12 @@ pub fn ulid_from(millis: u64, entropy: u128) -> String {
     out
 }
 
-/// New uid with a type prefix, e.g. `new_uid("r")` -> `r_01J8...`.
 pub fn new_uid(prefix: &str) -> String {
     let millis = Utc::now().timestamp_millis().max(0) as u64;
     let entropy = uuid::Uuid::new_v4().as_u128();
     format!("{prefix}_{}", ulid_from(millis, entropy))
 }
 
-/// Whether `uid` is a well-formed uid of `prefix` — `r_` plus 26 Crockford
-/// base32 characters.
-///
-/// Exists because a uid may arrive from OUTSIDE this Cell: a `.lingua` file
-/// written by hand can carry the uid of the Record it is going to become, so
-/// that a folder of files can cross-link before any of them has been adopted.
-/// Nothing downstream parses a uid, so a malformed one would not fail loudly —
-/// it would simply be a Record whose identifier does not sort or compare like
-/// any other, found much later.
 pub fn valid_uid(uid: &str, prefix: &str) -> bool {
     let Some(body) = uid
         .strip_prefix(prefix)
@@ -43,7 +28,6 @@ pub fn valid_uid(uid: &str, prefix: &str) -> bool {
     body.len() == 26 && body.bytes().all(|byte| ALPHABET.contains(&byte))
 }
 
-/// Slug grammar: dot-separated segments of `[a-z0-9][a-z0-9-]*`.
 pub fn valid_slug(slug: &str) -> bool {
     if slug.is_empty() {
         return false;

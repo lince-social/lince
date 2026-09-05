@@ -23,7 +23,6 @@ pub enum EvaluatorRevision {
     V1,
 }
 
-/// Complete, portable input and expected output of one pure Program run.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct EvaluationReplayCapsule {
     pub schema: EvaluationReplayCapsuleSchema,

@@ -22,3 +22,9 @@ engine = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt"] }
 chrono = { workspace = true }
 store = { workspace = true }
+
+[build-dependencies]
+sensei = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,6 +1,3 @@
-//! Part V completion: the promise expiry sweep (heartbeat arm) and the
-//! reserve_from default inheritance from the bundle's transfer.
-
 use chrono::{DateTime, Utc};
 use engine::Engine;
 use engine::actions::{
@@ -145,7 +142,6 @@ async fn expiry_breaks_commitments_and_withdraws_lapsed_offers() {
         "no deadline, no expiry"
     );
 
-    // One zero-delta annotation fact per transition, quantity cache untouched.
     assert_eq!(
         facts
             .iter()
@@ -161,7 +157,6 @@ async fn expiry_breaks_commitments_and_withdraws_lapsed_offers() {
         Some(0.0)
     );
 
-    // Broken commitments enqueue decisions; the lapsed open offer does not.
     let decisions = store::misc::open_decisions(&e.store.pool).await.unwrap();
     let expiry: Vec<_> = decisions
         .iter()
@@ -169,7 +164,6 @@ async fn expiry_breaks_commitments_and_withdraws_lapsed_offers() {
         .collect();
     assert_eq!(expiry.len(), 2);
 
-    // Idempotent: the next beat finds nothing left to expire.
     let facts = e.expire_promises(at("2026-07-06T00:00:00Z")).await.unwrap();
     assert!(facts.is_empty());
 }
@@ -231,7 +225,6 @@ async fn reserve_from_inherits_the_transfer_default() {
         .unwrap();
     assert_eq!(row.reserve_from, "agreed", "inherited from the transfer");
 
-    // A loose promise falls back to the persisted Cell default.
     store::config::set_transfer_reservation_default(&e.store.pool, "active")
         .await
         .unwrap();
@@ -254,7 +247,6 @@ async fn reserve_from_inherits_the_transfer_default() {
         .unwrap();
     assert_eq!(row.reserve_from, "active");
 
-    // An explicit reserve_from beats the transfer default.
     let explicit = store::misc::insert_promise(
         &e.store.pool,
         NewPromise {

@@ -1,14 +1,3 @@
-//! K5.2 — durable authorized intents.
-//!
-//! An intent is created inside the very transaction that accepts a candidate,
-//! so a person can never end up with an accepted proposal whose authority was
-//! never checked, nor with authority reserved for work nobody accepted.
-//!
-//! Budget consumption is a query over the intents themselves rather than a
-//! counter: the rows that still hold a reservation *are* the ledger, so the
-//! accounting cannot drift from the evidence, and cancelling an intent gives
-//! its budget back automatically.
-
 use chrono::{DateTime, Utc};
 use nucleus::karma::{
     BudgetUsage, CanonicalHash, Capability, DecimalValue, DelegationGrantRevision,
@@ -91,7 +80,6 @@ pub async fn list_states(pool: &SqlitePool) -> Result<Vec<KarmaIntentStateRow>, 
         .collect()
 }
 
-/// One intent's whole lifecycle, oldest first.
 pub async fn history(
     pool: &SqlitePool,
     intent_hash: &CanonicalHash,
@@ -116,12 +104,6 @@ pub async fn get_for_candidate(
     row.map(map_intent).transpose()
 }
 
-/// Authorize one accepted `act` candidate against one named grant and reserve
-/// its budget, inside the caller's transaction.
-///
-/// The caller supplies no amount, target, or deadline: every one of those is
-/// read from the stored proposal and the stored grant. A client that could name
-/// the amount could understate it and spend a budget it was never given.
 pub(crate) async fn authorize_accepted_candidate_tx(
     tx: &mut Transaction<'_, Sqlite>,
     candidate_hash: &CanonicalHash,
@@ -171,8 +153,6 @@ pub(crate) async fn authorize_accepted_candidate_tx(
     let outcome =
         authorize_intent(&revision, &request, &usage, amount.as_ref()).map_err(boundary)?;
     if !outcome.allowed {
-        // Fail closed and loudly: the whole accept is refused rather than
-        // quietly becoming an accepted candidate with no authority behind it.
         return Err(protocol(format!(
             "Karma authority refused this intent: authority={} budget={}",
             denial_list(&outcome.decision.denials),
@@ -193,10 +173,7 @@ pub(crate) async fn authorize_accepted_candidate_tx(
         target: request.target.clone(),
         fields: proposal.fields.clone(),
         quantity: amount.clone(),
-        // One accepted candidate is one intent, forever: a retry of the same
-        // acceptance can never mint a second authorized request.
         idempotency_key: format!("karma-intent:{}", candidate_hash.as_str()),
-        // Authority cannot outlive the consent that granted it.
         deadline: revision.spec.expires_at,
         authorization: IntentAuthorization {
             schema: KarmaIntentSchema::V1,
@@ -271,9 +248,6 @@ pub(crate) async fn authorize_accepted_candidate_tx(
     Ok(intent)
 }
 
-/// Write one transition into the immutable history and return its hash. Every
-/// state change goes through here, so a projection can never point at an event
-/// that was never recorded.
 async fn append_transition_tx(
     tx: &mut Transaction<'_, Sqlite>,
     transition: IntentTransition,
@@ -306,8 +280,6 @@ async fn append_transition_tx(
     Ok(event_hash)
 }
 
-/// Revoking consent cancels the work it authorized. Cancellation releases the
-/// reservation, so a revoked-and-replaced grant starts from its own budget.
 pub(crate) async fn cancel_for_grant_tx(
     tx: &mut Transaction<'_, Sqlite>,
     grant_uid: &str,
@@ -316,11 +288,6 @@ pub(crate) async fn cancel_for_grant_tx(
     reason: &str,
     at: &str,
 ) -> Result<Vec<CanonicalHash>, StoreError> {
-    // A lifecycle rule, not the accounting rule: `authorized` is the only state
-    // K5.2 can cancel from. When E0.3 adds leased and dispatching intents this
-    // selection must widen to every reservation-holding state, or a revoked
-    // grant will leave claimed work alive — exactly the revocation race the K5
-    // exit gate names.
     let rows = sqlx::query(
         "SELECT intent.intent_hash, state.state_revision, state.current_event_hash
          FROM karma_intent intent
@@ -338,8 +305,6 @@ pub(crate) async fn cancel_for_grant_tx(
         let state_revision: i64 = row.get("state_revision");
         let next_revision = u64::try_from(state_revision + 1)
             .map_err(|_| protocol("stored Karma intent revision is invalid"))?;
-        // Every cancelled intent names the same revocation request as its cause;
-        // the Fact for that revocation is reachable through it.
         let event_hash = append_transition_tx(
             tx,
             IntentTransition {
@@ -378,9 +343,6 @@ pub(crate) async fn cancel_for_grant_tx(
     Ok(cancelled)
 }
 
-/// What this grant handle has already spent. Counted across the handle, never
-/// per revision: if narrowing reset consumption, narrowing would be a way to
-/// refill a spent budget.
 async fn budget_usage_tx(
     tx: &mut Transaction<'_, Sqlite>,
     grant_uid: &str,
@@ -388,9 +350,6 @@ async fn budget_usage_tx(
     logical_at: TimestampMs,
     amount: Option<&IntentAmount>,
 ) -> Result<BudgetUsage, StoreError> {
-    // Every query below asks the database which states hold a reservation
-    // instead of naming them. When execution states arrive, they start counting
-    // against the budget automatically rather than being silently free.
     let intents: i64 = sqlx::query_scalar(
         "SELECT COUNT(*) FROM karma_intent intent
          JOIN karma_intent_state state ON state.intent_hash = intent.intent_hash
@@ -422,8 +381,6 @@ async fn budget_usage_tx(
         None => 0,
     };
 
-    // Summed in Rust as i128: exact decimals do not survive SQLite's numeric
-    // affinity, and a budget must never be approximate.
     let quantity = match (&revision.spec.budget.quantity_limit, amount) {
         (Some(limit), Some(_)) => {
             let mantissas: Vec<String> = sqlx::query_scalar(
@@ -461,8 +418,6 @@ async fn budget_usage_tx(
     })
 }
 
-/// The Fact that records an intent's creation or cancellation. Intents are
-/// durable evidence, so their lifecycle joins the Ledger like everything else.
 pub(crate) async fn append_intent_fact<F>(
     tx: &mut Transaction<'_, Sqlite>,
     program_uid: &str,
@@ -497,15 +452,8 @@ where
     Ok(fact)
 }
 
-/// Which capability an `act` template asks for. K5.2 ships the reversible local
-/// data capabilities only; anything else has no mapping yet and is refused
-/// rather than silently treated as a lesser permission.
 fn template_capability(proposal: &KarmaCandidateProposal) -> Result<Capability, StoreError> {
     let capability = match proposal.template.as_str() {
-        // No domain aliases here. `record.add-quantity` already names what the
-        // capability grants; an `economy.add` spelling beside it would make one
-        // domain a first-class citizen of the kernel's permission table and
-        // invite every other domain to add its own synonym.
         "record.add-quantity" => Capability::RecordAddQuantity,
         "record.set-quantity" => Capability::RecordSetQuantity,
         "link.create" => Capability::LinkCreate,
@@ -517,8 +465,6 @@ fn template_capability(proposal: &KarmaCandidateProposal) -> Result<Capability, 
             )));
         }
     };
-    // Belt and braces: this slice may only ever authorize reversible local data
-    // work, so a future template mapping cannot quietly reach further.
     if capability.family() != nucleus::karma::CapabilityFamily::LocalReversibleData {
         return Err(protocol(
             "K5.2 authorizes only reversible local data capabilities",
@@ -527,8 +473,6 @@ fn template_capability(proposal: &KarmaCandidateProposal) -> Result<Capability, 
     Ok(capability)
 }
 
-/// The capability's wire name, taken from its own serialization so the column
-/// and the frozen intent can never disagree.
 fn capability_name(capability: Capability) -> Result<String, StoreError> {
     serde_json::to_value(capability)
         .map_err(json_protocol)?

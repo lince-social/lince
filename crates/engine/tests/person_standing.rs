@@ -1,16 +1,3 @@
-//! Deactivating someone across an Organ's Cells (Ontology C3).
-//!
-//! Standing has to travel or it is not deactivation: turning someone off on the
-//! laptop while the VPS Cell still takes their password is a checkbox, not a
-//! decision. And it must travel to OUR CELLS ONLY — outbound because "who did
-//! this Organ turn off, and when" is a statement about a person and nobody
-//! else's business, inbound because a contact who could write this field could
-//! lock an Organ out of its own Cell.
-//!
-//! The inbound half is tested by hand-assembling the batch our own filter would
-//! never send, because a filter is our policy on our side and proves nothing
-//! about what can arrive.
-
 use engine::Engine;
 use engine::sync::Delivery;
 use engine::trust::Signer;
@@ -28,10 +15,6 @@ async fn cell() -> (Engine, String) {
     (engine, organ)
 }
 
-/// Same fixture as `karma_sync.rs`, and for the same reason: enrolment (C3's
-/// own remaining work) is what makes a real sibling, so until it exists the
-/// local Organ uid is rewritten AFTER pairing. Pair as strangers, then become
-/// siblings — an Organ is not its own contact.
 async fn become_sibling_of(engine: &Engine, organ_uid: &str) {
     let existing = store::organs::local(&engine.store.pool)
         .await
@@ -84,8 +67,6 @@ async fn pair(from: &Engine, from_organ: &str, to: &Engine, to_organ: &str) {
         .unwrap();
 }
 
-/// A sibling catches up by PULLING the log — `organ_contact` cannot represent
-/// one, because it is keyed by the contact's Organ uid and a sibling's is ours.
 async fn deliver_to_sibling(from: &Engine, to: &Engine, organ: &str) {
     let (ops, _head) = from.ops_after(0, 1_000).await.unwrap();
     to.import_op_batch(&engine::sync::OpBatch {
@@ -125,7 +106,6 @@ async fn person(engine: &Engine, slug: &str) -> String {
     .uid
 }
 
-/// The point: deactivate here, and the Cell that holds the password agrees.
 #[tokio::test]
 async fn deactivating_someone_reaches_this_organs_other_cell() {
     let (a, organ) = cell().await;
@@ -163,9 +143,6 @@ async fn deactivating_someone_reaches_this_organs_other_cell() {
     );
 }
 
-/// People come back, and the return travels the same way. A reactivation that
-/// did not cross would leave the VPS Cell refusing someone the laptop lets in —
-/// worse than the original bug, because it looks like it worked.
 #[tokio::test]
 async fn reactivating_reaches_the_other_cell_too() {
     let (a, organ) = cell().await;
@@ -191,14 +168,6 @@ async fn reactivating_reaches_the_other_cell_too() {
     );
 }
 
-/// Layer one: nothing leaves. A contact's feed carries the Person — they may
-/// well know her — and carries no word about whether we turned her off.
-///
-/// Asserted on the BATCH WE SEND, not on what the peer ends up holding. The
-/// obvious version of this test — deliver, then look at the receiver — passes
-/// with the outbound filter deleted, because the receiver's own admissibility
-/// gate refuses the op anyway. Two guards covering each other is exactly the
-/// arrangement in which a test proves neither.
 #[tokio::test]
 async fn a_contacts_feed_never_carries_a_persons_standing() {
     let (a, organ) = cell().await;
@@ -241,24 +210,15 @@ async fn a_contacts_feed_never_carries_a_persons_standing() {
     );
 }
 
-/// Layer two, and the one that matters: a standing op that bypasses our own
-/// outbound filter is REFUSED on arrival. Our filter is our policy on our side;
-/// it says nothing about what a hostile peer can assemble by hand.
-///
-/// Unlike a Karma definition — which a contact may hold inertly, doing nothing —
-/// this one cannot be allowed to land at all: materialising it would be a
-/// contact locking us out of our own Cell.
 #[tokio::test]
 async fn a_contact_cannot_deactivate_one_of_our_people() {
     let (a, organ) = cell().await;
     let (b, b_organ) = cell().await;
     pair(&a, &organ, &b, &b_organ).await;
 
-    // `b` knows this Person because we sync with them; the uid is not a secret.
     let uid = person(&a, "maria").await;
     deliver(&a, &b).await;
 
-    // Hand-assembled: the shape our own `drain_outbox` refuses to send.
     let hostile = engine::sync::OpBatch {
         from_organ: b_organ.clone(),
         ops: vec![engine::sync::WireOp {

@@ -482,11 +482,15 @@ impl CompositionDocument {
         ]);
         for placement in &self.placements {
             let graph = catalog.graph_for(&placement.definition)?;
+            let root = NodeAddress {
+                instance_uid: placement.instance_uid.clone(),
+                node_path: Vec::new(),
+            };
             SandInstance {
                 uid: placement.instance_uid.clone(),
                 definition: placement.definition.clone(),
                 projection: placement.projection.clone(),
-                inputs: placement.inputs.clone(),
+                inputs: self.inputs_for(&root),
                 configuration: placement.configuration.clone(),
                 style: placement.style.clone(),
             }
@@ -494,11 +498,31 @@ impl CompositionDocument {
             .map_err(|error| CompositionError::new(error.to_string()))?;
         }
         let mut read_targets = BTreeSet::new();
+        for placement in &self.placements {
+            for port in placement.inputs.keys() {
+                let target = self.terminal_input_target(
+                    catalog,
+                    NodePortAddress {
+                        node: NodeAddress {
+                            instance_uid: placement.instance_uid.clone(),
+                            node_path: Vec::new(),
+                        },
+                        port: port.clone(),
+                    },
+                )?;
+                if !read_targets.insert(target) {
+                    return Err(CompositionError::new(
+                        "one Sand input receives more than one value",
+                    ));
+                }
+            }
+        }
         for binding in &self.bindings {
             match binding {
                 CompositionBinding::ProteinRead { value, target, .. } => {
                     let expected = self.port_type(catalog, target, PortDirection::Input)?;
-                    if expected != value.value_type() || !read_targets.insert(target.clone()) {
+                    let target = self.terminal_input_target(catalog, target.clone())?;
+                    if expected != value.value_type() || !read_targets.insert(target) {
                         return Err(CompositionError::new(
                             "Protein binding type or destination is invalid",
                         ));
@@ -528,6 +552,23 @@ impl CompositionDocument {
             }
         }
         Ok(())
+    }
+
+    fn terminal_input_target(
+        &self,
+        catalog: &DefinitionCatalog,
+        mut target: NodePortAddress,
+    ) -> Result<NodePortAddress, CompositionError> {
+        loop {
+            let definition = self.definition_at(catalog, &target.node)?;
+            let Some(export) = definition.exports.iter().find(|export| {
+                export.direction == PortDirection::Input && export.name == target.port
+            }) else {
+                return Ok(target);
+            };
+            target.node.node_path.push(export.child_uid.clone());
+            target.port = export.child_port.clone();
+        }
     }
 
     fn placement(&self, uid: &str) -> Result<&CompositionPlacement, CompositionError> {
@@ -643,6 +684,7 @@ pub struct MountedNode {
     pub renderer_handle: u64,
     pub dom_uid: String,
     pub behavior_handles: Vec<u64>,
+    pub inputs: BTreeMap<String, SandValue>,
     pub configured: bool,
     pub style: StyleLayer,
     pub children: Vec<MountedNode>,
@@ -776,6 +818,7 @@ impl CompositionHost {
                 &placement.projection,
                 placement.configuration.clone(),
                 placement.style.clone(),
+                BTreeMap::new(),
             )?;
             mounted.insert(placement.instance_uid, root);
         }
@@ -791,6 +834,7 @@ impl CompositionHost {
         projection_key: &str,
         configuration: BTreeMap<String, SandValue>,
         style: StyleLayer,
+        inherited_inputs: BTreeMap<String, SandValue>,
     ) -> Result<MountedNode, CompositionError> {
         let definition = self.catalog.definition(&reference)?.clone();
         let graph = self.catalog.graph_for(&reference)?;
@@ -801,14 +845,28 @@ impl CompositionHost {
             .or_else(|| ProjectionManifest::select(&definition.projections, &self.available).ok())
             .ok_or_else(|| CompositionError::new("no usable renderer projection"))?;
         let projection_key = projection.key.clone();
-        let inputs = self.document.inputs_for(&address);
+        let mut inputs = self.document.inputs_for(&address);
+        for (name, value) in inherited_inputs {
+            if inputs.insert(name, value).is_some() {
+                return Err(CompositionError::new(
+                    "one Sand input receives more than one value",
+                ));
+            }
+        }
+        for input in &definition.inputs {
+            if !inputs.contains_key(&input.name)
+                && let Some(default) = &input.default
+            {
+                inputs.insert(input.name.clone(), default.clone());
+            }
+        }
         let configured = !configuration.is_empty();
         let style = merged_style(&definition.style, &style)?;
         let instance = SandInstance {
             uid: dom_identity(&address, "instance"),
             definition: reference.clone(),
             projection: projection_key.clone(),
-            inputs,
+            inputs: inputs.clone(),
             configuration,
             style: style.clone(),
         };
@@ -825,6 +883,19 @@ impl CompositionHost {
         let mut ordered = definition.children.clone();
         ordered.sort_by_key(|child| child.sibling_order);
         for child in ordered {
+            let child_inputs = definition
+                .exports
+                .iter()
+                .filter(|export| {
+                    export.direction == PortDirection::Input && export.child_uid == child.local_uid
+                })
+                .filter_map(|export| {
+                    inputs
+                        .get(&export.name)
+                        .cloned()
+                        .map(|value| (export.child_port.clone(), value))
+                })
+                .collect::<BTreeMap<_, _>>();
             let mut path = address.node_path.clone();
             path.push(child.local_uid);
             children.push(self.mount_node(
@@ -837,6 +908,7 @@ impl CompositionHost {
                 &projection_key,
                 child.configuration,
                 child.style,
+                child_inputs,
             )?);
         }
         Ok(MountedNode {
@@ -847,6 +919,7 @@ impl CompositionHost {
             adapter: runtime.adapter,
             renderer_handle: runtime.renderer_handle,
             behavior_handles,
+            inputs,
             configured,
             style,
             children,
@@ -1228,6 +1301,13 @@ impl CompositionHost {
             .and_then(|root| find_node(root, &address.node_path))
             .map(|node| &node.style)
     }
+
+    pub fn mounted_inputs(&self, address: &NodeAddress) -> Option<&BTreeMap<String, SandValue>> {
+        self.mounted
+            .get(&address.instance_uid)
+            .and_then(|root| find_node(root, &address.node_path))
+            .map(|node| &node.inputs)
+    }
 }
 
 impl Drop for CompositionHost {
@@ -1598,19 +1678,39 @@ fn video_call_definition() -> SandDefinition {
         revision: 1,
         display_name: "Video call".into(),
         element: SandElement::Compound,
-        inputs: Vec::new(),
+        inputs: composable_record_inputs(),
         outputs: vec![crate::sand::OutputPort {
             name: "record-clicked".into(),
             value_type: ValueType::Record,
         }],
         children: vec![frame, open],
         connections: Vec::new(),
-        exports: vec![ExportedPort {
-            name: "record-clicked".into(),
-            child_uid: "open".into(),
-            child_port: "pressed".into(),
-            direction: PortDirection::Output,
-        }],
+        exports: vec![
+            ExportedPort {
+                name: "label".into(),
+                child_uid: "open".into(),
+                child_port: "label".into(),
+                direction: PortDirection::Input,
+            },
+            ExportedPort {
+                name: "description".into(),
+                child_uid: "open".into(),
+                child_port: "description".into(),
+                direction: PortDirection::Input,
+            },
+            ExportedPort {
+                name: "record".into(),
+                child_uid: "open".into(),
+                child_port: "record".into(),
+                direction: PortDirection::Input,
+            },
+            ExportedPort {
+                name: "record-clicked".into(),
+                child_uid: "open".into(),
+                child_port: "pressed".into(),
+                direction: PortDirection::Output,
+            },
+        ],
         behaviors: vec![BehaviorBinding::Module {
             module: ModuleBehavior {
                 asset: INSTALLED_GALLERY_COMPOSITION_JS_PATH.into(),
@@ -1647,19 +1747,39 @@ fn video_call_room_definition() -> SandDefinition {
         revision: 1,
         display_name: "Video call room".into(),
         element: SandElement::Compound,
-        inputs: Vec::new(),
+        inputs: composable_record_inputs(),
         outputs: vec![crate::sand::OutputPort {
             name: "record-clicked".into(),
             value_type: ValueType::Record,
         }],
         children: vec![call],
         connections: Vec::new(),
-        exports: vec![ExportedPort {
-            name: "record-clicked".into(),
-            child_uid: "call".into(),
-            child_port: "record-clicked".into(),
-            direction: PortDirection::Output,
-        }],
+        exports: vec![
+            ExportedPort {
+                name: "label".into(),
+                child_uid: "call".into(),
+                child_port: "label".into(),
+                direction: PortDirection::Input,
+            },
+            ExportedPort {
+                name: "description".into(),
+                child_uid: "call".into(),
+                child_port: "description".into(),
+                direction: PortDirection::Input,
+            },
+            ExportedPort {
+                name: "record".into(),
+                child_uid: "call".into(),
+                child_port: "record".into(),
+                direction: PortDirection::Input,
+            },
+            ExportedPort {
+                name: "record-clicked".into(),
+                child_uid: "call".into(),
+                child_port: "record-clicked".into(),
+                direction: PortDirection::Output,
+            },
+        ],
         behaviors: Vec::new(),
         configuration: vec![ConfigurationField {
             name: "compact".into(),
@@ -1679,6 +1799,29 @@ fn video_call_room_definition() -> SandDefinition {
         capabilities: BTreeSet::from([action.clone()]),
         projections: composition_projections_with_capabilities(["root", "call"], [action]),
     }
+}
+
+fn composable_record_inputs() -> Vec<crate::sand::InputPort> {
+    vec![
+        crate::sand::InputPort {
+            name: "label".into(),
+            value_type: ValueType::Text,
+            required: false,
+            default: Some(SandValue::Text("Open Record".into())),
+        },
+        crate::sand::InputPort {
+            name: "description".into(),
+            value_type: ValueType::Text,
+            required: false,
+            default: Some(SandValue::Text("Open the bound Record".into())),
+        },
+        crate::sand::InputPort {
+            name: "record".into(),
+            value_type: ValueType::Record,
+            required: false,
+            default: Some(SandValue::Record("fixture-record".into())),
+        },
+    ]
 }
 
 fn composition_projections<const N: usize>(nodes: [&str; N]) -> Vec<ProjectionManifest> {
@@ -1830,7 +1973,10 @@ fn nested_open() -> NodeAddress {
 fn fixture_bindings() -> Vec<CompositionBinding> {
     let mut bindings = Vec::new();
     for instance_uid in ["room-native", "room-html"] {
-        let target = nested_open_for(instance_uid);
+        let target = NodeAddress {
+            instance_uid: instance_uid.into(),
+            node_path: Vec::new(),
+        };
         for (field, port, value) in [
             (
                 "title",
@@ -1994,6 +2140,34 @@ mod tests {
         assert!(arrows.iter().any(|line| line.starts_with("READ")));
         assert!(arrows.iter().any(|line| line.starts_with("EVENT")));
         assert!(arrows.iter().any(|line| line.starts_with("WRITE")));
+    }
+
+    #[test]
+    fn compound_inputs_cross_recursive_exports_once() {
+        let workbench = CompositionWorkbenchState::new().unwrap();
+        let inputs = workbench.host().mounted_inputs(&nested_open()).unwrap();
+        assert_eq!(
+            inputs["label"],
+            SandValue::Text("Build the Box together".into())
+        );
+        assert_eq!(
+            inputs["description"],
+            SandValue::Text("Protein data crossed two compound boundaries".into())
+        );
+        assert_eq!(inputs["record"], SandValue::Record("fixture-record".into()));
+
+        let mut duplicate = composition_workbench_fixture().unwrap();
+        duplicate
+            .document
+            .bindings
+            .push(CompositionBinding::ProteinRead {
+                uid: "duplicate-deep-label".into(),
+                protein_uid: "current-records".into(),
+                field: "title".into(),
+                value: SandValue::Text("Duplicate".into()),
+                target: nested_open().port("label"),
+            });
+        assert!(duplicate.validate().is_err());
     }
 
     #[test]

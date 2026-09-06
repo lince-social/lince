@@ -1113,9 +1113,7 @@ mod tests {
         client
             .request_create_record("New task", "Description", -1.0)
             .unwrap();
-        client
-            .request_set_record_quantity("r_task", 0.0)
-            .unwrap();
+        client.request_set_record_quantity("r_task", 0.0).unwrap();
         assert!(matches!(
             commands_rx.try_recv().unwrap(),
             ClientMessage::Act {

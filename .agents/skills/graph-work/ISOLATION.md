@@ -9,8 +9,10 @@ Give each builder that compiles its own **clone** on its own branch, and push
 back for the integrator to merge. Agents that only read — planning, review,
 drift checks — share one checkout and need nothing.
 
-Clones, specifically: this project bans worktrees. Do not call `EnterWorktree`,
-and do not pass `isolation: "worktree"` to `Agent`. If the owner declines the
+Clones, specifically: this project bans worktrees. How many of those clones
+may compile is a separate question, answered in
+[COMPILATION.md](COMPILATION.md). Do not call `EnterWorktree`, and do not
+pass `isolation: "worktree"` to `Agent`. If the owner declines the
 disk cost of clones, the fallback is serializing builders on `dev`, which means
 width 1 — say so plainly rather than pretending the run is parallel.
 
@@ -23,8 +25,9 @@ width 1 — say so plainly rather than pretending the run is parallel.
 
 ## Per-builder environment
 
-- `CARGO_TARGET_DIR` — one per tree. Expect a full copy of the dependency graph
-  per builder; heavy graphics stacks make this the real disk cost.
+- `CARGO_TARGET_DIR` — one per tree. Each is a full copy of the dependency
+  graph: 18 GB and about five minutes the first time. This is why only one tree
+  compiles by default — see [COMPILATION.md](COMPILATION.md).
 - `CARGO_HOME` — shared. The registry is read-mostly and has its own lock.
 - `XDG_CONFIG_HOME`, `XDG_CACHE_HOME` — one per builder, so each app run gets
   its own database and cache. Check how the project resolves its data

@@ -23,11 +23,17 @@ uses spatial indexing and viewport virtualisation rather than a fixed world
 rectangle. **Sandbox** is the metaphor for the complete environment; `board`
 is legacy implementation terminology.
 
-The default view is an orthographic, paper-like 2D workspace. Spatial physics
-may feel alive, but a person is never forced into a game camera merely to edit
-a Record. Controls must recenter the view, bring a chosen Sand or selection to
-the user, and expose a minimap Sand so an unbounded workspace remains
-navigable.
+The first v1 view is an orthographic, paper-like 2D workspace with stable
+placement and restrained motion. Keep existing movement code, but leave
+automatic attraction, collision settling and terrain motion inactive in this
+first delivery. Later motion follows the stable everyday-use gate in the
+[Interface plan](plans/interface.md).
+
+Workspace controls are visible by default. Configuration can fold them into
+a corner triangle and change its color or transparency. Keyboard discovery
+and recovery remain reachable even with a transparent triangle. Controls
+recenter, locate a Sand and bring a selection into view; a minimap keeps the
+unbounded workspace navigable.
 
 ### Protein areas and result-template groups
 
@@ -45,7 +51,8 @@ The result-template pipeline is deliberately linear:
 4. Arrows connect result fields to compatible data inputs on those Sands.
 5. Unconnected Sands may remain in the group as labels, controls, decoration,
    or Behavior.
-6. Locking the group makes it the area's result template.
+6. Save the group as the area's result template. Its children initially move
+   together but can later be released individually.
 7. Every Protein row fills one instance of that complete group.
 
 For example, a Record result can expose `title`, `description`, `quantity`, and
@@ -54,7 +61,64 @@ complete Record identity to a button that performs an Action. If five rows
 arrive, Box produces five bound instances of the same locked group. The group
 is referenced as a template rather than copied HTML, so editing its definition
 updates every result instance while each instance retains its row binding and
-Box position.
+Box position. Selecting one displayed Sand defaults to an appearance override;
+editing every row's template is a separate scope choice.
+
+### Individual appearances and released children
+
+A loose circle is edited by its Sand uid. A field of Apple is edited by its
+appearance and child uid, retaining the source Protein area and stable row
+key. A Record uid can locate its appearances; if several exist, choose one
+rather than editing all of them. Renaming, reordering and ordinary Protein
+refresh preserve the chosen appearance's overrides.
+
+Key a result appearance by its stable source Area, row key and child identity.
+The Protein content hash is useful revision metadata, never a replacement for
+that identity on every query edit. A presentation switch explicitly reconciles
+changed children; a normal refresh only updates their bound values.
+
+Group ownership and movement attachment are separate. Releasing a child gives
+it an independent placement without changing its owning result, bindings or
+event scope. Moving the attached remainder leaves it where it was put.
+Releasing every child still leaves one logical result bundle. Reattaching
+preserves the visible position and then makes it follow the group again.
+
+Copy and release adds another child appearance with its own identity and the
+same declared inputs. The original remains. Do not copy live sessions or
+authority, or forward one user event through both copies accidentally. Both
+permitted editors still change the same source Record. Removing an appearance
+does not delete that Record.
+
+When the row stops matching, retire every owned appearance, including released
+and copied children. Keep their overrides under the row's bounded recovery
+policy; restoring the row restores their placements. Release does not keep
+data permanently outside the query. Show each released child's owner and offer
+Locate group, Reattach and Remove appearance. Forking a definition remains a
+separate operation.
+
+### Choosing another presentation
+
+The picker separates basic Sands from packaged Castles without adding a
+runtime kind. Choose a Protein, then change its presentation from Sand to
+Castle or between Castles. Preserve Protein identity, selection and bindings
+where their declared meanings and types agree.
+
+Preview matching fields, fields the new presentation needs, omitted old fields,
+and affected appearance overrides or released children. Match declared field
+identities and roles, not similar labels or equal types alone. For absent
+fields, offer Show common fields or add supported reads and explicit values.
+Missing values are not zero. Required action inputs must be supplied or their
+controls stay unavailable with a reason.
+
+For extra fields, offer Hide from this presentation or add compatible property
+Sands. Hiding never removes Record properties. Adding Protein reads is explicit,
+especially when a saved Protein has other consumers; offer a local fork where
+appropriate. Unsupported reads remain unavailable. Explicitly remap local
+overrides and released children; repair or omit unresolved mappings. Apply
+the complete switch as one undoable operation. Cancel or failure keeps the
+old presentation intact.
+
+### Binding and refresh
 
 A mapped child receives only the field or object explicitly wired to its typed
 input. Incompatible connections are rejected visibly; missing optional values
@@ -83,7 +147,7 @@ deletes the underlying Record.
 
 Result disappearance and shape drift are explicit states. When a stable row
 stops arriving, the runtime removes its live projection but retains bounded
-recoverable instance-local state by Protein identity and row key for a visible
+recoverable instance-local state by stable source Area and row key for a visible
 grace policy; it never leaves an unexplained blank or deletes Ledger data.
 When a result field is removed or changes to an incompatible type, the binding
 becomes visibly broken, the last valid definition remains editable, and the
@@ -91,7 +155,8 @@ person can reconnect, clear or intentionally replace it. **Why is it here?**
 shows whether an appearance is live, retired, restored or awaiting binding
 repair.
 
-Protein admission has an explicit cadence and placement policy. The runtime
+First delivery uses direct placement without travel animation. Later motion
+adds explicit cadence and placement policies. The runtime
 always materializes one complete semantic result group atomically before
 physics can act on it; a half-built group never exposes children to different
 forces or renders as though it were a valid result. Presentation may then use
@@ -118,8 +183,9 @@ in the correct columns.
 ### Spatial areas and production-line behavior
 
 The Supercomponent is a set of Box capabilities, not one enormous Sand.
-Beyond supplying data, its areas can act on bound Sands. The first version has
-four single-purpose area semantics. Each uses the same filters and field semantics
+Beyond supplying data, its areas can act on bound Sands. The later v1 motion
+stage has four single-purpose area semantics. Stationary grouping and sorting
+ship first, as described below. Each uses the same filters and field semantics
 already available to Protein; arbitrary formulas, Karma-aware traversal, and
 new query languages are outside this plan. Only a Protein area spawns result
 groups. The areas below merely test the Protein-bound row already carried by a
@@ -172,14 +238,43 @@ Action. Edit and view mode show whether the Area is previewing, armed, paused
 or failed, its grant and recent outcomes, and provide an immediate disarm
 control.
 
-Groups always move as one body. If a filter or force matches a data-bound
-child, the complete result-template group is pulled or pushed; the child is
-never torn out of the locked group. Bare Sands and ordinary hand-made groups
+Released and copied children share the mutation visit of their owning result
+appearance. The first matching body entering begins the visit; the last one
+leaving ends it. A second copy entering does not repeat the Action. Show which
+bodies keep a visit open. Explicit user gestures on separate editors remain
+separate Actions; presentation fan-out alone is never a request to write twice.
+
+Attached children move as one body. A force matching an attached child acts on
+that attached part. A deliberately released child is a separate body with the
+same result ownership. Forces never release children implicitly. Bare Sands
+and ordinary hand-made groups
 may coexist on the canvas, but a Protein filter cannot match data they do not
 carry. When several children match different forces, those forces combine at
-the group transform and the group remains intact.
+the attached group's transform and that attached part remains intact.
 
-The workspace also has an optional weak centering force, similar to the current
+### Turning fields into Areas
+
+Selecting a displayed property offers Group by or Order by. Preview the exact
+field and ordering. Generated Areas retain its binding, one stable group per
+value, and a visible missing-value group. Assignees compare Record identity,
+not names. Multi-value fields initially group by their complete set; splitting
+one row between several groups requires an explicit further choice.
+
+Two properties can control separate axes: assignee groups down a strip, then
+due dates ordered leftwards within each group. Break ties with stable row keys.
+Show group labels and allow the same property to remain visible on the card.
+
+The first Areas place groups directly. Later motion can add attraction to the
+same layout. Show priority when arrangements overlap; contradictory layouts
+report a reason rather than oscillating. A released child needs its own
+explicit Area placement rule and is never silently reattached.
+
+Manual placement is a visible exception for that appearance, preserved across
+refresh; Follow layout removes it. Dragging across an assignee label does not
+rewrite the assignment. Use the ordinary field editor or an explicit mapped
+Action to change the data. Arrangement alone never grants write authority.
+
+The later motion stage also has an optional weak centering force, similar to the current
 Relation physics, so unattended Sands can slowly return toward a recoverable
 region. Areas expose shape, pull/repulsion strength, color, opacity, and border
 controls. Color is never their only label.
@@ -192,6 +287,10 @@ its source on the canvas. Box movement and mutation mechanisms must therefore
 emit structured reasons rather than setting positions or data anonymously.
 
 ### Topology editing and effective terrain
+
+This is retained later-v1 work, after the stable everyday-use gate. Existing
+movement implementation stays available but inactive in the first Box. A group
+body below means its attached part; released children have separate bodies.
 
 In the v1 Box, **topology** means an editable scalar height or potential field
 over a logical plane. It is closer to sculpting literal sand than to the
@@ -233,8 +332,8 @@ height or depth, radius, steepness, falloff, and top flatness are separate
 controls. Increasing flatness moves a smooth hill toward a plateau or
 cylinder-like profile without requiring a person to type an equation.
 
-The field is evaluated at the complete group's body. Children are not torn
-out of a Castle or result template. Collision, settling, manual dragging,
+The field is evaluated at each movement body's position. Children are never
+implicitly released from their attached part. Collision, settling, manual dragging,
 immunity, and the existing deterministic Area order still apply after the
 topology force is calculated.
 
@@ -313,11 +412,12 @@ shown as inactive and cannot invisibly attract or support a floating Sand.
 Direct force Areas remain active because they are the behavioral source; an
 Area-linked pit or hill was only its surface-mode explanation.
 
-Every world Sand or complete group owns one authoritative free-space position
+Every movement body owns one authoritative free-space position
 and, where its projection needs it, orientation. Ordinary cards translate in
 three dimensions but do not have to tumble: their default visual face remains
 camera-facing or gravity-upright, while a specialized native 3D Sand may expose
-rotation. Groups remain one body. Protein spawn Areas, force Areas, sorting
+rotation. Attached children remain one body; released children move independently.
+Protein spawn Areas, force Areas, sorting
 Areas, mutation Areas and immunity Areas become declared volumes with a local
 3D transform. Radial forces use a 3D direction, directional forces use an
 explicit vector, sorting uses declared local axes or a local shelf, and entry
@@ -400,9 +500,11 @@ executed merely because it is used as a pattern.
 
 ### Interaction and navigation
 
-View mode is for using the composition; edit mode reveals placement,
-subscriptions, Actions, Behavior, state, ports, event paths, groups, inherited
-definitions, and influence zones. It supports pan, zoom, select, marquee,
+View mode is for using the composition. Edit mode starts with a selected Sand
+and scope: this appearance, this result template, or its reusable definition.
+Appearance, Connections and Data can be shown separately or combined. Hidden
+facets stay unchanged. Inspecting one connection highlights its route through
+the relevant groups. It supports pan, zoom, select, marquee,
 move, resize, group, connect, copy/paste, and drag/drop. Drawing follows only
 after these operations are stable. Topology editing uses its own visible
 brush/lens mode so sculpting the plane cannot be confused with moving a Sand
@@ -413,6 +515,30 @@ Records/Sands; Enter opens the focused Record in the configured Record view;
 Ctrl+N creates; configurable action keys can change quantity or perform the
 same focused operations as Relation Trail mode. Shortcuts act on the current
 selection and context, never on a hidden arbitrary Record.
+
+### Sizing and focus
+
+A Sand can use its normal size as a minimum and declare a maximum on either
+axis. Validate minimum against maximum. At a maximum, content scrolls inside;
+without one it grows with content. Children retain their own explicit limits.
+Large content can render in bounded chunks without changing its logical extent
+or losing editing state.
+
+Focus temporarily removes the selected Sand's outer maximum and brings it to
+a centered reading surface. This is personal view state, not a size or template
+edit. No internal scroll is introduced at that boundary; long documents are
+navigated by the outer focused view. This is the implementation interpretation
+of “no scroll”: unlimited text cannot all fit on one physical display.
+
+Keep caret, selection and drafts. Escape/Back restores the previous view and
+size limits. Values remain live. If the row retires, show that state and keep
+any draft for deliberate recovery. Focusing never starts another media session
+or duplicates Actions.
+
+A property offers Open source Record in focus when it has a declared source.
+Several sources require choosing; aggregates do not invent one. Focusing a
+Sand exposes its provided content, not fields missing from Protein. Opening
+the source Record uses the normal authorized Record read and editor.
 
 ### Box-state persistence
 
@@ -433,8 +559,9 @@ plane frame. An Area records its surface footprint, free-space volume and local
 basis or the explicit rule that derives one from the other. An instance records
 its definition revision, parent group, mode-appropriate authored transform,
 anchor space, layer, sibling order, override patch, exported bindings, and its
-persistent host-state allocation. Child position is relative to its group;
-moving the group therefore never rewrites every child. Persisted ordering is
+persistent host-state allocation. Attached children use group-local positions.
+Released children retain their owning result and an independent placement;
+moving the group does not rewrite those coordinates. Persisted ordering is
 semantic layer and sibling order, not a leaked CSS `z-index` implementation
 detail.
 

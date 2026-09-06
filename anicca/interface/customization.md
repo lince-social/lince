@@ -60,6 +60,17 @@ settings. Common changes are approachable controls; arbitrary styling and
 Behavior editing live behind an explicit advanced developer mode so the normal
 surface stays small.
 
+For v1 editing, select a target and scope before opening controls. Appearance,
+Connections and Data can be inspected independently or combined. An appearance
+edit defaults to the selected Sand, including a single Protein row's child;
+the person deliberately chooses a shared template or definition when wanted.
+Changing the visible facets never changes the underlying configuration.
+
+Workspace controls are shown by default. A preference folds them into a corner
+triangle with configurable color and transparency. A documented keyboard
+action restores the controls regardless of that preference. Basic Sands and
+packaged Castles occupy separate picker sections over the same catalog.
+
 #### Customization and architecture
 
 Customization is a contract, not a collection of CSS conveniences. The
@@ -210,8 +221,10 @@ A locked group is not a special application type. It is a recursive Sand
 composition with stable child identities, local layout, explicit connections,
 and exported ports. **Castle** is a useful nickname for a saved, prepackaged
 group of Sands, never a schema kind or a constraint. Any group can stay local,
-be saved as a reusable compound Sand, or be forked; locking controls editing
-and movement but does not change its data model. A Protein result template is
+be saved as a reusable compound Sand, or be forked. Movement attachment can be
+released for one child without losing group ownership; editor locking remains
+separate. See [Box](box.md#individual-appearances-and-released-children).
+A Protein result template is
 another use of the same composition model.
 
 ### Transparency and elevation
@@ -240,6 +253,11 @@ overrides, and the supported browser text-size settings without clipping.
 Motion tokens may describe direct manipulation and spatial simulation, but
 ordinary component state changes are immediate. Reduced-motion is a behavior
 contract, not merely a shorter duration token.
+
+The first Box uses stable placement with existing movement code retained but
+inactive. Decorative [shader effects](shaders.md) are later v1 work and begin
+with bounded presets and a supported WGSL profile. Sizing and temporary focus
+follow [Box](box.md#sizing-and-focus); focus is not a saved size override.
 
 ### The test
 
@@ -298,6 +316,6 @@ The implementation order is binding and closes behind us:
     and theme tests, runtime validation, and automated design-system checks.
 
 Box canvas, Protein-area, grouping, wiring, and spatial-area implementation
-does not begin before steps 1–10 are complete. The later Box editor consumes
+does not begin before steps 1–9 are complete. The later Box editor consumes
 the already-proven composition contract; it is not where that contract is
 invented or where basic components are finally repaired.

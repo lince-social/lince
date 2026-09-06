@@ -8,8 +8,8 @@ mod lesson;
 
 fn main() {
     println!("cargo:rerun-if-env-changed=SENSEI");
-    let manifest = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let root = lesson::workspace_root(&manifest);
+    let manifest =
+        std::path::PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"));
     if std::env::var("SENSEI").as_deref() == Ok("off") {
         println!(
             "cargo:warning=SENSEI=off: the lessons did not run. \
@@ -17,5 +17,5 @@ fn main() {
         );
         return;
     }
-    lesson::teach_workspace(root);
+    lesson::teach(&manifest);
 }

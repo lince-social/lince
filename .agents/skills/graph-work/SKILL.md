@@ -57,9 +57,11 @@ manifest — belong to the integrator. No builder owns them.
    skill — it is the owner's, so you cut nodes from it without editing it.
    Depth is the critical path, so spend the effort making the deep chain short
    and the wide parts genuinely independent.
-2. **Confirm isolation with the owner before spawning anything.** See
-   [ISOLATION.md](ISOLATION.md). Blocking — parallel builders are fake without
-   it.
+2. **Confirm isolation and the compilation scenario with the owner before
+   spawning anything.** See [ISOLATION.md](ISOLATION.md) and
+   [COMPILATION.md](COMPILATION.md). Both blocking — parallel builders are fake
+   without isolation, and a scenario picked by accident costs five minutes and
+   18 GB per node.
 3. **Land the bootstrap nodes first.** A node that unblocks width — a hardcoded
    port, a data directory that cannot be redirected, a lock two agents contend
    on — runs at width 1, before the fan-out. Width stays 1 until they are
@@ -87,13 +89,17 @@ inspector's.
 
 Put these in every builder brief:
 
+- Which tree it works in, and whether it may compile there — see
+  [COMPILATION.md](COMPILATION.md). By default only the inspector's tree
+  compiles, so builders edit and report rather than building on demand.
 - Edit only the node's `owns` set. Anything else is a message back to you.
 - `check` is the loop; `prove` is the handoff gate. Run both before reporting.
 - `cargo check` type-checks without codegen or linking, several times faster,
   and certifies nothing. `cargo test` pays a full build for that crate's graph,
   and shares no artifacts with `check` — for a node whose `prove` is a test,
   run the test and skip the redundant check.
-- Full workspace builds belong to the inspector.
+- Full workspace builds belong to the inspector, which pulls the branch into
+  its own warm tree rather than entering the builder's.
 - Report as: node id, `check` output, `prove` output, files touched, anything
   wanted outside `owns`.
 

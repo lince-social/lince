@@ -15,6 +15,13 @@ Read when: changing what v1 exposes to a person or how the base interface should
 
 ## Interface scope notes
 
+The 2026-09-06 Interface Record makes stable everyday use the first v1 delivery.
+Individual appearances, released group children, presentation switching,
+focused editing and native time views are required. Existing movement code
+stays intact while inactive; the [master plan](plans/interface.md#v1-master-waterfall)
+places moving Areas and topology later. This revises the earlier spatial order.
+The details live in [Box](box.md), [Time](time.md) and [Shaders](shaders.md).
+
 - [ ] [Sand](sand-model.md#sand): Sand is the recursively composable unit of interface.
   A button, form, Record view, graph, game, or complete workflow may all be
   Sands. Small Sands combine into larger ones without creating a conceptual
@@ -28,6 +35,9 @@ Read when: changing what v1 exposes to a person or how the base interface should
   - [ ] The Sand store grows on demand from ordinary design-system controls to
     specialised workflow bundles; it need not build every generic control
     before a workflow first needs it.
+  - [ ] The picker separates basic Sands and packaged Castles. Changing the
+    presentation of one Protein previews field mappings and affected local
+    overrides before applying it; hidden fields remain in the data.
 - [ ] [Box: Base Capabilities](box.md#box-workspace-and-canvas): Box is the application host and the
   spatial playground for building, connecting, and using Sands. It is a
   holistic environment rather than a sidebar of separate applications. Its
@@ -37,8 +47,9 @@ Read when: changing what v1 exposes to a person or how the base interface should
   paper-like.
   - [ ] Add built-in and external Sands at every scale.
   - [ ] Link Sands through typed interactions, data, events, and explicit state
-    planes. Groups move as one and shelter their internal events, except for
-    ports deliberately exposed across the boundary.
+    planes. Attached children move as one. All logical children keep their
+    internal event scope even when released; only deliberately exported ports
+    cross that ownership boundary.
   - [ ] Box edit mode is the Sand composer. It reveals subscriptions, Actions,
     state, result fields, typed inputs and outputs, mapping arrows, spatial
     areas, connections, and inherited definitions, and copies these semantics
@@ -100,13 +111,14 @@ it; an application-specific exception does not.
 | 3D scene planning and spatial whiteboard | Space mode provides free transforms, volume Areas and floating native/HTML Sands; collapse previews how the composition becomes a surface workspace. | 3D transform gizmos, local frames, volume shapes, picking, snapping and spatial artifact adapters. |
 | Simulation and game | Records project as actors; Behavior and fixed-step systems update them; force volumes, collisions and Actions connect simulation consequences back to Lince authority. | Deterministic simulation boundary, input mapping, sprite/mesh/audio Sands, replay and capability-limited game rules. |
 | Map, logistics and geographic planning | Location-aware Records, routes, layers and Area filters eventually project through the world frame while ordinary Sands remain usable as map annotations and HUD. | V2 globe/map streaming, disclosure-aware location, route primitives and multiscale spatial indexing. |
-| Calendar, Gantt and media timeline | Protein can select dated Records and groups can render entries, but pagination, recurrence and a shared time-axis interaction remain deliberately undecided. | A future bounded timeline/time-ruler primitive; these applications must not smuggle calendar semantics into v1 Areas. |
+| Calendar, timeline and Clock | A native time leaf inside ordinary Castle controls maps Record dates and bounded Karma occurrences; Clock adds next-hour and spiral projections. | V1 date mapping, intervals, occurrence identity, timezone, selection and bounded navigation. General media editing remains separate. |
 
 The strongest near-term primitives across this matrix are a virtualized table,
-tree/outline, chart, master/detail selection, camera bookmark, 3D transform
-gizmo, Area shelf/lane and an inspectable stream/log. Calendar recurrence,
-planetary maps, exact geometry and a general media timeline remain separate
-future semantics even though the Box should leave room for them.
+tree/outline, chart, master/detail selection, camera bookmark, stationary Area
+shelf/lane, an inspectable stream/log and native Calendar/Clock. Calendar uses
+Karma's recurrence rather than adding a scheduler. 3D Box manipulation follows
+the stable gate; planetary maps, exact geometry and general media editing stay
+outside this revision.
 
 ## UI guidelines
 

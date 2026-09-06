@@ -147,7 +147,10 @@ correctness, not a C4 workaround.
 - [ ] After the Customization completion gate and official-Sand migration,
   prove the Box model vertically with one current Protein item, visual result
   fields, a mixed bound/unbound result-template group, repeated row instances,
-  and force/sort/mutation areas. Do not use this spatial proof to finish the
+  and stationary grouping/sorting areas. Released children, appearance edits,
+  presentation switching and focus follow the
+  [Interface plan](interface.md#individual-edits-and-presentation-changes).
+  Do not use this proof to finish the
   component or composition foundations underneath it.
 - [ ] In that vertical proof, remove and restore one stable Protein row and
   change one result field incompatibly. Show live, retired, restored and broken
@@ -170,6 +173,18 @@ correctness, not a C4 workaround.
   save or fork the exact group as a reusable Castle. Grouping creates one
   recursive definition and one placement rather than copying HTML or storing
   group membership redundantly on every child.
+- [ ] Extend this same composition model for logical ownership separate from
+  movement attachment. Release and copy-and-release preserve the owning
+  Protein row, input/event scope and teardown. Do not confuse these operations
+  with forking a definition. Prove them through the stage-4 Interface checklist,
+  including refresh and restart, before declaring the extension complete.
+- [ ] Add the basic-Sand and packaged-Castle picker sections, compatible field
+  mapping and appearance/template scope choices to the shared authoring
+  surface. The calendar/timeline native leaf and Clock are new v1 catalog
+  additions described in [Time](../time.md), after the existing C4 migration.
+- [ ] Implement custom surface effects through [Shaders](../shaders.md) in the
+  later v1 effect stage. The existing GPU capability/package checks are a
+  foundation, not a completed WGSL editor or a guarantee of bounded GPU work.
 - [ ] Write concise author documentation that starts with composing existing
   pieces and progresses to HTML, Protein, Actions, ports, permissions, and
   packaged assets.
@@ -238,7 +253,7 @@ Owner ask, 2026-08-29: "we should be able to have in the end a libghostty or
 equivalent sand so we can attach properties to that specific sand which can be
 the record of the task we are trying to do in such terminal."
 
-The design reasoning lives in [Fiote build notes](../../Karma.md) (D1, D13,
+The design reasoning lives in [Fiote build notes](../../Fiote.md) (D1, D13,
 D14, D31-D33); only the shared interface consequence belongs here. Phase 1 is
 split across the existing pre-Box waterfall rather than inserted as another
 framework or milestone:
@@ -290,7 +305,7 @@ Fiote and its cubs are doing must be watchable here, live.
 
 This reuses the same typed Record binding and Terminal renderer as the
 task-bound terminal, but it is a compound rather than one overloaded pane. The
-harness design lives in [Fiote build notes](../../Karma.md); only the surface
+harness design lives in [Fiote build notes](../../Fiote.md); only the surface
 consequence belongs here.
 
 - [ ] Stream a Fiote or cub session into a pane as it runs: assistant text,
@@ -312,7 +327,7 @@ consequence belongs here.
 
 ### Pinned and queued messages, one list
 
-Owner, 2026-08-30. The reasoning is in [Fiote build notes](../../Karma.md) D32;
+Owner, 2026-08-30. The reasoning is in [Fiote build notes](../../Fiote.md) D32;
 this is the surface.
 
 A draft message is a Record only its author can see. The landed C4 storage
@@ -360,7 +375,7 @@ as “send now · no turn running.”
 
 ### Three views of a session, and live messages
 
-Owner, 2026-08-30. Reasoning in [Fiote build notes](../../Karma.md) D31, D32.
+Owner, 2026-08-30. Reasoning in [Fiote build notes](../../Fiote.md) D31, D32.
 
 Agreed and settled: a queued draft is consumed on send and a pinned preset is
 copied; delivery aspects are assertions on the draft; delivery controls appear
@@ -444,7 +459,7 @@ the code-owned definition.
 
 Owner, 2026-08-30: face the feature increase — write down the full version and
 build it piece by piece. First cut is what the Fiote prototype needs
-(Karma.md Phase 2); full is what it becomes.
+(Fiote.md, "The first Fiote a person can use"); full is what it becomes.
 
 **Session control.**
 
@@ -490,7 +505,7 @@ build it piece by piece. First cut is what the Fiote prototype needs
 
 - [ ] Once a group is derived rather than hand-placed, a Fiote adding or moving
   a Sand is an ordinary write and needs no privileged path — which is what
-  [Karma](../../Karma.lingua) imagined. It must be **visible and undoable**,
+  [Karma](../../Lince.lingua) imagined. It must be **visible and undoable**,
   or a board that rearranges itself reads as haunted rather than helpful.
 
 ### The agent work board

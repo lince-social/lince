@@ -14,9 +14,8 @@ browser-parity = ["dep:maud"]
 candidate-audit = ["joined-runtime"]
 cef-runtime = ["dep:ash", "dep:cef", "dep:libc"]
 physics-preflight = ["dep:avian2d", "bevy-preflight"]
-joined-runtime = [
+native-runtime = [
     "browser-parity",
-    "cef-runtime",
     "semantic-spatial",
     "dep:accesskit",
     "dep:accesskit_winit",
@@ -26,6 +25,7 @@ joined-runtime = [
     "dep:tokio-tungstenite",
     "dep:transport",
 ]
+joined-runtime = ["native-runtime", "cef-runtime"]
 semantic-spatial = [
     "physics-preflight",
     "dep:nucleus",

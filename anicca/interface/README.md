@@ -7,7 +7,7 @@ world direction.
 
 The owner-authored [Interface section in Lince](../Lince.lingua) remains
 authoritative for interface decisions. [Ontology](../Lince.lingua) and
-[Karma](../Karma.lingua) remain authoritative when a subject here links to
+[Karma](../Lince.lingua) remain authoritative when a subject here links to
 them. There are currently no separate Interface, Customization, Sands, or
 Interoperability `.lingua` files. If one is created, it immediately becomes
 the higher source of truth for its adjacent subject.
@@ -43,6 +43,14 @@ the preserved pseudo-Record wrappers as readable source metadata. No
 substantive source passage was dropped.
 
 ## Current checkpoint
+
+The 2026-09-06 Interface Record revises planned v1 behavior: stable placement
+comes first, with per-appearance edits, children released from group movement,
+presentation switching, focused editing and native Calendar/Clock. Movement
+code stays intact but inactive in the first delivery. The
+[master plan](plans/interface.md#v1-master-waterfall) is the execution order;
+[Box](box.md), [Time](time.md) and [Shaders](shaders.md) define the changes.
+The evidence below describes what was already built, not these new features.
 
 [current.md](current.md) is the compact continuation context. The promoted
 native foundation is described in [architecture.md](architecture.md), while
@@ -84,6 +92,8 @@ owning either design.
 | [html-and-websites.md](html-and-websites.md) | Installed HTML, Website authority, packages and isolation | Prototype proven; product surface pending |
 | [official-sands.md](official-sands.md) | Existing first-party Sand behavior that migration must preserve | Rust catalog plus first retained-runtime slice landed; migration active |
 | [box.md](box.md) | Box, Protein result templates, Areas, surface topology, free space, projection and persistence | Opens after customization gate |
+| [time.md](time.md) | Native Calendar/timeline, next-hour Clock, spiral and simulation views | Planned v1; domain dependencies included |
+| [shaders.md](shaders.md) | Presets, supported WGSL effects, glow bounds and authoring/recovery | Later v1, after stable use |
 | [facade.md](facade.md) | Public read-only Live Facade | Late v1 |
 | [interoperability.md](interoperability.md) | Interface-facing Facade, Blood and portable-canvas boundaries | Partly deferred |
 | [communication.md](communication.md) | Communication Sand domain and staged implementation | Separate Sand backlog |
@@ -97,7 +107,8 @@ owning either design.
 ## Plans
 
 - [plans/interface.md](plans/interface.md): landed foundation statement and
-  remaining Box, Areas, persistence and Facade work.
+  stable Box, individual composition, native time, later motion/effects,
+  simulation dependencies, persistence and Facade work.
 - [plans/customization.md](plans/customization.md): landed style, Sand,
   composition and Configuration kernels and remaining C4-C5 waterfall.
 - [plans/sands.md](plans/sands.md): landed composition boundary, packages and

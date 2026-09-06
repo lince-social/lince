@@ -179,7 +179,13 @@ not a separate semantic-zoom system. The default has no compulsory physics,
 game, globe or 3D camera; motion and visual richness are opt-in while the
 ordinary desk remains fast and calm.
 
-V1 includes only the Box topology specified in
+The 2026-09-06 owner revision puts stable placement, durable individual edits
+and native Calendar/Clock before automatic movement. Preserve existing motion
+code without enabling it in the first Box. The [master plan](plans/interface.md#v1-master-waterfall)
+owns delivery order; the [time surfaces](time.md) use a specialized native leaf,
+not time-driven Areas or a second recurrence engine.
+
+The later v1 motion stage includes only the Box topology specified in
 [Topology editing and effective terrain](box.md#topology-editing-and-effective-terrain):
 compact brush stamps, filtered scalar potentials, Sand-attached effects, and
 consistent Top/Perspective explanation of the surface simulation. It also
@@ -188,8 +194,8 @@ plane and an explicit projection back to surface mode. The two modes reuse the
 same Sand identities, Protein bindings and Areas but never run as contradictory
 live positions.
 
-The v1 exclusion line remains concrete: no calendar generator, offline
-multi-writer workspace replicas, automatic collaborative-host failover,
+The v1 exclusion line remains concrete: no separate frontend recurrence
+scheduler, offline multi-writer workspace replicas, automatic collaborative-host failover,
 arbitrary Protein language beyond the current supported operations, free-form
 force expressions, multiple independently physical Sand planes, planetary
 terrain/world, general scene authoring, reality reconstruction, avatar/game

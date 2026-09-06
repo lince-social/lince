@@ -62,13 +62,11 @@ limits and recovery. Offline replication additionally requires:
 The following ideas are preserved but unplanned. They carry no current
 checkbox and do not expand the first Protein-area or spatial-area contract.
 
-**Calendar composition.** A future Calendar may be a paginated stack of day
-Protein areas rather than a separate calendar data model. Each day would show
-Record or recurrence projections valid on that date; moving between months
-would hide one page and reveal another without deleting or recreating Records.
-One recurring Record could produce several occurrence appearances tied to the
-same source unless an explicit Action materialized an occurrence as its own
-Record. This needs more design before it becomes implementation work.
+**Calendar decomposition into smaller primitives.** The owner moved native
+Calendar, timeline and Clock into the v1 plan on 2026-09-06; their specification
+is [Time](time.md). Only a later decomposition of that specialized temporal
+leaf into smaller pieces remains exploratory. Do not implement the first
+Calendar as time-driven Areas or leave the Calendar itself deferred.
 
 **Richer Protein selection.** Exact and bounded-regex selection by Record slug
 or Concept, and filters that pull a Record because of associated Karma or other
@@ -85,12 +83,13 @@ portal semantics remain undecided.
 
 ### Deferred topology extensions
 
-The v1 Box now includes one editable base height field, filtered potential
+The later v1 motion stage retains one editable base height field, filtered potential
 effects, fixed or Sand-attached brush stamps, Area-linked field visualization,
 surface Top/Perspective views, one free-space mode and an explicit collapse
 projection between them. Their canonical semantics live in
 [Box topology editing](box.md#topology-editing-and-effective-terrain). The
-following extensions remain deferred so that the first implementation has one
+first stable Box does not enable that motion. The following extensions remain
+deferred so that the later motion implementation has one
 active deterministic simulation at a time and an understandable reference
 plane.
 

@@ -1,9 +1,10 @@
 use std::path::Path;
 
 fn main() {
-    sensei::teach(env!("CARGO_MANIFEST_DIR"));
+    sensei::teach(std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"));
 
-    let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../anicca");
+    let dir = Path::new(&std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"))
+        .join("../../anicca");
     println!("cargo:rerun-if-changed={}", dir.display());
 
     let mut files: Vec<_> = std::fs::read_dir(&dir)
@@ -20,10 +21,8 @@ fn main() {
             .file_name()
             .and_then(|name| name.to_str())
             .expect("utf-8 filename");
-        output.push_str(&format!(
-            "    ({name:?}, include_str!({:?})),\n",
-            path.canonicalize().expect("readable").display().to_string()
-        ));
+        let text = std::fs::read_to_string(path).expect("readable");
+        output.push_str(&format!("    ({name:?}, {text:?}),\n"));
     }
     output.push_str("];\n");
 

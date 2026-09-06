@@ -129,7 +129,10 @@ A number is deliberately unopinionated. The same field can mean stock, debt, nee
 
 A Record as mentioned so far is plain, basic. There are workflows that are not just modeling ideas, they need extra features. The 'kind' property is a way to specialize the Record, into being many possible things. It can be a rule, signal, transfer, decision, device, organ, person, protein, sand, conversation, thread, message, thread-invite, program, frequency, grant, and call-session. If the built-in features of Lince are not enough, one can use a record.extension to save data, and build custom logic in the sands to use that data, this is like an everything-goes field to store what you want.
 
-A record's quantity can name its **unit** — kilograms, hours, a currency — by pointing at a Concept, so "3" is never ambiguous. A Record can name a **place**, so it shows up on a map or in whatever is near you. It remembers which **Organ** it came from, which is how you know whether something arrived from a group you are in or you wrote it yourself. And it keeps **when it was created and last changed**.
+A record's quantity can name its **unit** — kilograms, hours, a currency — by pointing at a Concept, so "3" is never ambiguous. A Record can name a **place**, so it shows up on a map or in whatever is near you.
+- [ ] Maybe a Record can have longitute,latitude, and be given a name, so we can use it as an address, and in the links of a record of party we put like location or address link so Party #address Street4 (that has a longitude) or just plainly in the Party record, since it will also have latitude longitude. It's good to be able to use both.
+
+It remembers which **Organ** it came from, which is how you know whether something arrived from a group you are in or you wrote it yourself. And it keeps **when it was created and last changed**.
 }
 
 Assertion (@assertion: 0, #instinct, #part-of @ontology) {
@@ -260,7 +263,6 @@ Trail can be a sand and a system thought. Today if i want to have a certain Trai
 
 Trails of certain types cannot be maintained by non-technical people of such area probably, one can teach itself, but it should be curated, and updated, as these fields have advancements everyday. A good Lince will be able to remove friction between generating and prooving things inside Lince or not, and having them accessible as a Trail, managing data is a Need, we should attend to it.
 
-
 Here are the subjects wanted to create Trails for:
 - [ ] Basic Economic Transfers - these might really like certain features that have some specific combinations, being useful to make a Castle that is an easy way to enact certain workflows. People can download these Trails for living in cities, as templates on how to use Lince for doing common things like buying seats at an event, cinema, restaurant reservations, or ride sharing, supermarket purchases, all as preset workflows, Trails.
   - [ ] Ride sharing
@@ -375,13 +377,16 @@ That can extend to several different Transfers, many people agreeing to many thi
 	- [ ] I can compose a two way Transfer, functioning like a Trade.
 	- [ ] I can say how much should go to the other party's resources, how much I am willing to contribute with some Record, and have the amount that is publicly being Contributed by me be different from the one i contabilize internally in my Lince: saying I will pay you 10 might make me internally diminish my 'Money' Record by 5 instead. I still will pay 10, but I control how my resources fluctuate with Transfers internally.
 	- [ ] Surplus can be projected. (Surplus = quantity you have beyond what is already committed to hard reservations — the "safe to give away" figure. Formula: `record.quantity - reserved_quantity`. Distinct from `available_quantity` in that surplus could also account for confirmed incoming deliveries not yet settled.)
-- [ ] Visibility
-	- [ ] A party can see only the Transfer fields allowed for it.
-	- [ ] A party can see a Transfer item title without seeing the source Record head.
-	- [ ] A party can see a Transfer item description without seeing the source Record body.
-	- [ ] Visibility can hide source Record identity.
-	- [ ] Visibility can hide other parties.
-	- [ ] Visibility can hide locations and quantities.
+
+- [ ] Be able to combine many possible records to be changed in a transfer internally, but only showing it as one record externally. I break my bike, need to go to work tomorrow. Bike and Transport to Work are internal Needs tomorrow, but i can post a Transfer to the world that says 'Bike broke, need to go to work tomorrow'. I can decide if someone gives me a #bike i can satiate it and the need to go to work.
+	- [ ] If they lend me for 3 days they are both still fullfiled, but i see it in a timeline becoming a need again after a while, i can then post the need now or only when i actually need it.
+	- [ ] Karma Frequency should be the thing that schedules all in Lince, so it would have to do the returning of the bike after 3 days be a proposed contribution from my side. Same thing for the scheduling of my need of a bike for 3 days later.
+- [ ] A party can see only the Transfer fields allowed for it.
+- [ ] A party can see a Transfer item title without seeing the source Record head.
+- [ ] A party can see a Transfer item description without seeing the source Record body.
+- [ ] Visibility can hide source Record identity.
+- [ ] Visibility can hide other parties.
+- [ ] Visibility can hide locations and quantities.
 - [ ] Agreement
 	- [ ] Agreement state can also be derived for a parent Transfer.
 	- [ ] Dependency agreement mode is wired to interaction dependency satisfaction. (Agreement is complete when the depended-on Transfer itself is agreed/settled, not when local parties sign. Requires querying `transfer_interaction` rows with `depends_on` kind and checking the referenced Transfer state.)
@@ -689,6 +694,8 @@ Doing a harness for Lince with Fiote may be a good way of making Lince's develop
 
 The AI agent of Lince, firstly a harness, then maybe a model running locally. It should be an everything helper. Autonomous as you set it, having the same capabilites as you, or not. It should be able to understand your way of approaching problems by looking at your data, learning from it, never sharing with outside your Lince (by default).
 
+- [ ] When Fiote suggests stuff, the suggestion may be seen as sands of the data being added. It can also run a Simulation to understand how things will change with that proposal before it shows you it's recommendation.
+	- [ ] If it violates some rule we added it can think of something else and report what ideas it thought but didnt work out.
 - [ ] Pi for now.
 - [ ] MCP for the actions the model takes.
 - [ ] in the future use the genai crate for abstracting providers?
@@ -726,6 +733,7 @@ Resenha (@resenha: -1, #instinct, #part-of @ontology, is #task, #todo) { r_NPSFP
 
 Resenha must give Karma very boosted capabilities, running resenha is like simulating with karma, so there isn't a powerful mode to simulate stuff in the future and another scheduler that takes the rules and saves them forward according to their suppositions of things changing. Example: the feature of taking my daily task and showing that it occurs over the next month is a form of simulation, the Resenha that controls time should take that feature to move the state forward, controllable. Resenha should be a Karma simulation engine? while karma has rules resenha makes sure they are followed by simulating it happening and with math to not brute force it, knowing it will go bad or loop?
 
+
 # Resenha
 The running of many Lince in one computer. In the Resenha mode of Lince, as a TUI, you are able to do this stuff or having one active Lince with a Resenha sand and a backend corresponding set of features to keep using Lince and emulating many more:
 - [ ] See all your Lince instances.
@@ -737,6 +745,11 @@ The running of many Lince in one computer. In the Resenha mode of Lince, as a TU
 	- [ ] Name of it's own Local Organ for recognizing in the network discovery.
 	- [ ] Known Organs (contacts)
 	- [ ] Sync settings between Organs
+- [ ]  Resenha should be able to simulate not only a random db, but the user's. If i have an appointment to day X i should be able to simulate it happening in day X+1. If i then send a scenario to someone, they can run that diff (like git's diff) and simulate a scenario of their db+diff. If its affecting only me i can simulate some state, doesnt need to be my current one, can be with a diff applied. If it affects others i send the diff, they simulate and aprove or not, they can also send that diff and a chain of approvals (or hide it) and get the results back before aproving themselves (if not before).
+	- [ ] There should be a central thing that does syncing of any form in Lince, deals with diffs, crdt, all that stuff. It could be also the thing that receives this Simulation diff, which speaks a lot about the git-like features.
+	- [ ] The Record Editor could also get the same 'simulation' which can actually be just a scenario of it writing something else, a version of a Record. How could we do it well? Not a frankestein of features for this?
+	- [ ] It would be nice to be able to save different versions of the Record's description/title, or maybe quantity/link. Putting a limit to it in mb per total local history of edits, maybe keyed by amount of seconds spent not editing, makes a new save + explicit save. Again, how to not frankestein? Loro?
+	- [ ] Transclusion, we can reference in the description of a Record, another recordA as [[recordA]] or as transclusion (new).
 - [ ] Deterministic Simulation Testing: the runtime that with initial seeded data in possibly any table, random or specific, simulates time, disk and network. If the app is deterministic (and it should be) we should be able to put the same seed and run the Resenha of a Lince or several Lince instances through many years of automated interactions and whatnot, with availability of disk and network differing for writing and access tests, and have the same intended result, the same state in the end. The DNA (Seed) and Runs, the same start produces the same result given the same simulated events of time, network and disk (might be perfection and never reached, but getting as close to it as possible is good). A Run is when we make a seed, ingest in db and do the simulation, of requests coming into Commands, karmas updating naturally, transfers happening, organs syncing, communicating:
 	- [ ] Test if Octopii would not solve a lot of our problems in building the parts that simulate time, network and disk for DST: https://github.com/octopii-rs/octopii
 	- [ ] Be able to set Constraints, that are enforced, so the state doesnt reach an undesired point. Maybe this means putting a lot of constraints that need to be checked to make sure they are true in one run and not activating them in another, only a part of it. The one with less Constraints will be able to simulate more events per second happening since it doesnt need to be constantly checked to make sure it didnt pass thorugh an undesired state. Similar to the difference of unit tests and end-to-end ones. But instead of it being a division by part it is a division by period of Constraint checking, we can still have a difference of the equivalent of unit tests and e2e and several other types of tests, and still make them be checked in different times.

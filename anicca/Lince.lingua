@@ -408,6 +408,7 @@ Ice White — CMYK: 2, 1, 0, 1; HEX: `#F8FAFC`; RGB: 248, 250, 252.
 
 # The Zen on Interfaces.
 
+
 - [ ] Choices can be done quickly. Full control is always available.
 	- [ ] Customization
 - [ ] Built-in UI is minimal, not taking screenspace from users and flexible, fitting many Needs.
@@ -420,12 +421,37 @@ Ice White — CMYK: 2, 1, 0, 1; HEX: `#F8FAFC`; RGB: 248, 250, 252.
 - [ ] Interfaces should ask for as little attention as possible throughout the user's life. The best interface is Interfaceless.
 	- [ ] Interoperability.
 
+- [ ] Have a way to edit one sand based on it's uid or the uid of one record it has a property of, not all the sands that spawn from the protein of that record. So if i want to edit a circle i made, or the sand of my record Apple it feels like im just editing singular stuff that will be persisted if we have an update on protein that serves the Apple record.
+- [ ] Castles should be separated from sand in the picker. Basic blocks and packaged workflows. One can select a protein and change the way it's data is shown from a sand to a castle, castle to castle... If i change the way i present the protein and it is missing a field, i can choose to only show the properties that appear in the original or fill the remaining ones. If i have more properties than the new castle shows, it can discard it or add to the final piece.
+- [ ] We have castles (group of sands, locked, one bundle of data coming from protein, with every bundle showing as the same castle we made). It would be good to be able to maintain a group, meaning we still maintain the sands as being generated in a certain way, filling certain sands per bundle, but one sand of the group is unlocked, meaning it is not glued to the group. I will move the glued sands of the group and it will not follow along necessairily. It is detatched. If i end up changing the protein and not showing a certain "row" of data, the bundle/group will be gone, the locked and unlocked parts of that "row", it is still part of the group, just unlocked. I can unlock all of the group or just one sand.
+	- [ ] Be able to copy a sand from the group, duplicating the showing of one property in two sands (should be normal behavior, it's not 1 on 1 data-sand) and detatching it from the group, so it maintains the original sands, plus an unlocked that is a copy of a sand of the castle, still belonging to the group, but unlocked.
+- [ ] When editing we should have a way to edit a part of the sand, just it's visuals of the sand, just the links, the protein, the visual and links... no need to bombard them with all of the information at once.
+- [ ] When composing sands, we might choose to give it it's normal size as the minimal one, if we give a maximum it will have some respective form of scroll of the content inside if it occupies it all. If we dont give it a max it will grow, so we can have either our full documents or a scrollable version of them.
+	- [ ] The focus can be a way to take a sand with a maximum and showing it with no limit, in the center of the screen, it is different from editing a sand to have no limit, the focus is like entering the data being shown. It's like the current Record sand, that shows everything. But this would be showing all the contents of one sand, no scroll or anything, maybe centered and occupying a big portion of the screen, a focus, really.
+		- [ ] We can also take a property and show a focused view of the Record it belongs to. Similar to today's html Record sand.
+- [ ] Be able to turn properties from information shown in a sand to areas of influence, sorted by some heuristic. If i have a task title, it's assignee and due date, instead of showing a bundle of sands i can show a task title grouped by assignee in areas of influence going in one direction (downwards and alphabetically along a strip) and another (attracting area of influence + sorting area of influence) leftwards for the due date. I can even combine having them grouped by a property, like assignee, as an area of influence and showing the property redundantly either way in the group of title+assignee.
+- [ ] The temporal part of the needs is central to Lince. The interface should find a smart way to deal with it. We can start with a simple calendar sand, that is a castle sand made of some buttons and one special made calendar one that can take time related properties of records and show as first class citizens of it, because it is a native calendar/timeline sand, not an area of influence for time properties. In the future we might want to discover a way to turn it into lower primitives, but a ready made calendar sand is ok too.
+	- [ ] Also make a sand clock to show the next things i need to do, so i can organize my life. In 2d i see from the top only the next our, but it is not a clock really, it is a spiral when seeing from the 3d camera. And the tasks (if they have the hour:minute in them are in one point of this timeline that was warped to show the things in the next hour only, when seeing from 2d. That way i can see other stuff i have to do and the height of the spiral is the amount of time i want to glimpse in the future when in 3d.
+		- [ ] If something takes not a point in time but a range it is seen taking a part of the strip.
+		- [ ] If it is recurrent i might see it a bunch of times in the strip. 
+- [ ] What if we could put shaders in the sand? We have wgpu, shouldnt be too hard to slap a custom WGSL into the surface of the sand, maybe even making the sand be the actual body and the wgsl going out of it, if it glowed it could show as a light outside of the sand. If we are using compute/vertex shaders in the interface, putting something custom to make it pretty should be fairly straightforward to the users.
+- [ ] Using Simulation to see the how things would change if we performed some action, or some rule where enacted, or some transfer completed could all be simulation related visualizations.
+- [ ] The Record editor’s five-second return from source to rendered text (anicca/interface/ official-sands.md:178) would go. I’d keep the current block stable until the person leaves it or deliberately changes presentation. Thinking for five seconds should not cause the editor to transform beneath the caret.
+- [ ] Make the controls of the workspace shown by default, with configuration to hide them in the triangle corner (configurable too for making triangle transparent or colored).
+- [ ]  Lets make the stable placement and restricted motion the first implementation then. Dont delete the code already built to make the sands move. Just dont use it for now while we make the more basic features done.
+
 # Tasks
 - [ ] We may embed the LICENSE and credits to the sand, ethical. We should have an easy to access part of Lince, not a hidden one, that is talking about the interface and is saying that we use such and such dependencies (the ones that ask us to give the LICENSE, users dont care). In that part we include the LICENSES, if we put it in the sand it's going to be work to take only the rust of it, and drop the LICENSE from the queried bytes.
 
 Components are flat by default, preffering 2D forces us to convey information only with flat data, not layers and composition, constraining the space forces minimalism. Shadows and hints can be used for subtle differentiation of areas, components and data.
 
 - [ ] The interface must keep it's state in memory, and backup to a file with a frequency per configuration.
+
+
+
+
+
+
 
 } r_99NWECF19VKV94HQQ3G3ASMC4M
 

@@ -21,6 +21,20 @@ production dependency and added no waterfall stage.
 
 [Corpus map](README.md)
 
+## Owner revision, 2026-09-06
+
+The Interface Record changes the next v1 work, not the implementation evidence
+below. The first Box is stationary and durable, with individual appearance
+edits, released/copied group children, a Sand/Castle picker with field mapping,
+selective editing facets, content sizing and temporary focus. Native Calendar
+and Clock are now v1 work; they are not time-based Areas. Keep movement code
+but do not enable it until the stable everyday-use gate passes. Shader effects
+and general simulation views have separate later gates.
+
+The current contracts are [Box](box.md), [Time](time.md) and
+[Shaders](shaders.md). The [master plan](plans/interface.md#v1-master-waterfall)
+owns their order. None of these new tasks is certified by an older report.
+
 ## Where work stands
 
 Plan A has been accepted. Lince has a joined Wayland-only Linux runtime in
@@ -277,23 +291,24 @@ the complete positive and negative evidence remains in [links.md](links.md).
 
 1. Continue C4 from the proven shell, Record, Conversation and first
    Record-collection slice: finish data-workflow behavior, migrate bounded
-   specialized adapters and finally delete the legacy implementation.
+   specialized adapters and finally delete the legacy implementation. Include
+   the stable editor block and visible-by-default workspace controls.
 2. Pass C5: visual, accessibility, theme, authoring, lifecycle, runtime-health
    and scale gate.
-3. Only then open Box navigation, layers, anchors, base pattern and input.
-4. Build current-Protein result templates and visible field-to-port wiring.
-5. Build force, sorting, mutation and immunity Areas through typed Actions.
-6. Build topology brushes, filtered potential effects, admission policies,
-   surface-bound Top/Perspective views, free-space Area volumes and the
-   previewable collapse/expand operation; make the Avian/SoA decision from this
-   measured workload.
-7. Build Box durability, the operation/snapshot model and coalesced spatial
-   checkpoints; prove that Area/topology movement survives restart.
-8. Finish Installed HTML/Website administration and runtime health.
-9. Build live-only host-authoritative workspace collaboration in Protein's
-    Synchronization surface, reusing contact infrastructure but not Record or
-    File projection operation semantics.
-10. Build the public read-only Live Facade.
+3. Build stationary Box navigation, layers, anchors, base pattern and input
+   together with snapshots, operations, undo and restart recovery.
+4. Build stable result templates and individual overrides, released/copied
+   children, Sand/Castle switching, editing facets, sizing and temporary focus.
+5. Build stationary property Areas, native Calendar and the Clock/spiral.
+6. Pass the stable everyday-use gate in the master plan.
+7. Finish Installed HTML/Website administration, live workspace collaboration
+   and the read-only Facade using their existing boundaries.
+8. Enable later opt-in moving Areas and topology, with spatial checkpoints and
+   measured physics selection. Preserve the stationary default.
+9. Add bounded surface effects and supported WGSL authoring.
+10. Complete Action/Rule/Transfer simulation views when their domain support
+    is ready. This separate lane can start after step 6 without waiting for
+    motion, shaders or Facade.
 
 Fiote Phase 0 can proceed beside C4-C5. Its Phase 2 prototype opens after C5
 and consumes the general domain-compound and Conversation foundation; it is

@@ -208,42 +208,44 @@ becomes owner-reviewed Instinct.
    parallel LynxUI vocabulary, copied HTML, token aliases and replaced APIs as
    callers move. Conversation includes its general authorship, live-message
    state and private draft/preset queue here; those are not deferred to Fiote.
+   Apply the owner's stable Record editing and visible workspace-control
+   defaults during their C4 migration.
 2. Pass the C5 visual, accessibility, theme, authoring, lifecycle, runtime
    health and scale gate. Only this closes the pre-Box foundation.
-3. Build Box navigation, unbounded logical coordinates, layers, anchors,
-   recursive base pattern and direct input. The human surface includes
-   recenter, locate and honest empty cases.
-4. Build current-Protein result templates, schema visualization and visible
-   field-to-port arrows. The gate is stable row reconciliation and inspectable
-   source identity without implicit write authority.
-5. Build force, sorting, mutation, immunity and Why-is-it-here Areas. The gate
-   is deterministic overlap, typed Actions, complete-group behavior and
-   visible failure/recovery.
-6. Build topology stamps/brushes, filtered effective fields, Protein admission
-   controls, surface-bound top/perspective views, free-space volume physics and
-   the previewable collapse/expand operation between them. Compare Avian with
-   a narrow SoA solver here under the accepted workload; choose or optimize
-   compute only from measurements. The gate is the reproducible surface
-   circuit, free-space clustering and collapse, and flat Kanban-like
-   configuration.
-7. Build the readable Box snapshot, typed operation journal, semantic commit
-   and spatial-checkpoint policy, recovery, compaction and agent/program
-   operation API. Prove that a Sand moved by Areas/topology restores at its
-   last durable position after restart.
-8. Finish Installed HTML and Website administration, capability review,
+3. Build a stable 2D Box: visible controls, navigation, layers, anchors,
+   direct placement and the base pattern. Land the readable snapshot, operation
+   journal, undo and restart recovery here. No customization below ships only
+   in memory. Retain movement code without enabling it in this first delivery.
+4. Build Protein result templates, individual appearance overrides, released
+   children, copy-and-release, the Sand/Castle picker and presentation-switch
+   preview. Add focused editing facets, min/max sizing and temporary focus.
+   Extend the existing Sand contract where required; do not add another model.
+5. Build stationary property-derived grouping/sorting Areas and the native
+   Calendar, then the Clock's top and local spiral views. Recurrence comes from
+   Karma. No terrain or Box free-space physics is a dependency of these views.
+6. Pass the stable everyday-use gate below, including persistence, keyboard
+   use, individual edits, changing presentation, released children and time.
+7. Finish Installed HTML and Website administration, capability review,
    storage/network controls, admission budgets, crash/recovery and runtime
-   health on the actual Box.
-9. Build live-only host-authoritative workspace collaboration through the
-    shared Synchronization surface. Reuse contact identity, grants and delivery
-    infrastructure while keeping Box transactions distinct from Record sync
-    and File projection operations.
-10. Build the public read-only Live Facade from the same semantic definitions,
-    Protein stream and browser adapters, with local-only interactions and no
-    Actions.
+   health on Box; then live workspace collaboration and the read-only Facade.
+   Their existing identity, permission and recovery gates still apply.
+8. Add moving Areas, mutation visits, immunity, topology and free-space work
+   under the retained sections below. Extend durable recovery to spatial
+   checkpoints. Compare Avian and a narrow solver on this workload. Movement
+   stays an explicit choice and the stable default remains available.
+9. Add bounded Sand visual effects and the supported WGSL editor. This is
+   optional decoration after everyday usability, not a Calendar dependency.
+10. Complete Action, Rule and Transfer simulation views when the corresponding
+    domain simulation support is ready. This lane can start after step 6 and
+    does not depend on motion, shaders or the Facade. Calendar and Clock remain
+    useful without it.
 
-Each stage consumes the frozen output before it. A defect belongs to its owning
-stage; later work does not add a workaround or silently reopen an earlier
-contract. Detailed pre-Box work lives in
+The 2026-09-06 owner revision changes the old order: durable stable composition
+and native time views precede automatic movement. Later motion code is kept.
+The checklists below name their delivery stage; later work is not part of the
+first stable gate. New contract extensions are deliberate work with tests,
+not claims that all requested behavior already exists. A defect is repaired
+at its owner. Detailed pre-Box work lives in
 [Customization](customization.md) and [Sands](sands.md); the sections below own
 Box and after.
 
@@ -252,7 +254,7 @@ independently; its prototype lane opens after C5, consuming the domain-derived
 compound recipe and Conversation foundation without becoming a prerequisite
 for Box. The shared requirements and the Fiote-only boundary are mapped in
 [the Sand plan](sands.md#conversation-and-task-surfaces-carried-for-fiote) and
-[Fiote build notes](../../Karma.md#carry-into-the-interface-refactor).
+[Fiote build notes](../../Fiote.md#how-this-fits-the-interface-refactor).
 
 #### Long-horizon world foundation — future, not in the current cluster
 
@@ -292,9 +294,13 @@ for Box. The shared requirements and the Fiote-only boundary are mapped in
   viewport culling, and recoverable navigation.
 - [ ] Add recenter, bring-selection-here, locate-by-name, and minimap surfaces
   with honest empty cases.
-- [ ] Keep Box chrome minimal and outside the user composition. The base Web
-  surface uses the folded top-right corner for system controls; Sand controls
-  belong to the focused Sand's bottom-right page corner.
+- [ ] Show workspace controls by default. Offer folding into a configurable
+  corner triangle, including its color/transparency, and an always-reachable
+  keyboard restore. Persist the preference and keep configuration recovery
+  outside the customized composition. Sand-specific controls remain on the
+  focused Sand's bottom-right page corner.
+- [ ] Use stationary direct placement first. Preserve movement code and its
+  tests without running automatic forces or settling in this first Box.
 
 #### Protein-area result templates
 
@@ -321,19 +327,136 @@ for Box. The shared requirements and the Fiote-only boundary are mapped in
 - [ ] Show the Protein item hash and source area in every bound group's
   metadata and provide locate/highlight navigation in both directions.
 
+#### Individual edits and presentation changes
+
+Stage 4 follows [Box ownership](../box.md#individual-appearances-and-released-children)
+and [presentation mapping](../box.md#choosing-another-presentation).
+
+- [ ] Select a loose Sand by uid or a result child by appearance, row and child
+  identity. A source Record uid locates matching appearances and asks which
+  one when ambiguous. Show the editing scope before a change.
+- [ ] Persist instance overrides independently of the template. Prove that
+  updating, renaming and reordering Apple retains its style while Pear and a
+  second appearance of Apple are unchanged. Test loose decorative Sands too.
+- [ ] Separate movement attachment from logical ownership in the existing
+  composition model. Release one child or every child; move the remainder,
+  reattach without a visual jump, and preserve bindings and event scope.
+- [ ] Copy and release a property Sand, with a fresh child appearance and the
+  same inputs. Both views update; sessions and grants are not cloned. Verify
+  exactly one Action for a gesture on either permitted editor.
+- [ ] Retire attached, released and copied appearances when their row vanishes.
+  Restore their overrides and placements within the recovery policy, including
+  after restart. Expose owner, locate, reattach and remove controls.
+- [ ] Separate basic Sands and packaged Castles in the picker, including saved
+  user compounds. Select a Protein once and preview another compatible
+  presentation without widening its data scope silently.
+- [ ] Implement common/missing/extra field mapping, filling or hiding choices,
+  required-input refusals, local Protein forks, and explicit override/released
+  child remapping. Cancel, failed validation and Undo preserve the old view;
+  hiding presentation never deletes data. Test Sand-to-Castle and
+  Castle-to-Castle switches with both missing and extra fields.
+
+#### Editing facets, size and focus
+
+Stage 4 follows [Box focus](../box.md#sizing-and-focus).
+
+- [ ] Offer Appearance, Connections and Data facets separately and in
+  combination. Hidden facets keep their settings. Highlight the affected scope
+  and the route of a selected connection; keep full inspection available.
+- [ ] Implement minimum and optional maximum sizes per axis, invalid-range
+  feedback, content growth and internal scrolling at an imposed maximum.
+  Prove a growing document and a capped one with the same data.
+- [ ] Focus one Sand without changing its saved maximum or template. Use the
+  outer focused view to navigate long content, retaining caret, drafts and
+  selection. Back restores the workspace; live refresh, source retirement and
+  nested child limits have visible, tested behavior.
+- [ ] Open a property's source Record in focus through the normal authorized
+  read. Handle missing or multiple sources; do not invent a Record for totals.
+
+#### Stationary property Areas
+
+Stage 5 follows [field-to-Area behavior](../box.md#turning-fields-into-areas).
+
+- [ ] Turn a displayed property into grouping or ordering through an exact
+  field/order preview. Keep stable value identities, missing-value groups,
+  row-key tie breaking and explicit behavior for multi-value properties.
+- [ ] Compose two axes: assignee groups down a strip and due dates leftwards
+  inside each group. Permit a property to remain visible on cards as well as
+  Area labels. Unsupported query fields report what must be supplied.
+- [ ] Place results directly, showing layout priority and conflicts. Preserve
+  user overrides and independent released children; never reattach by layout.
+  Save, refresh, restart and undo the whole arrangement.
+- [ ] Make manual placement an inspectable per-appearance exception with
+  Follow layout to restore arrangement. Moving across a group label alone
+  never edits its property; expose ordinary field Actions separately.
+
+#### Calendar, Clock and simulation
+
+Stage 5 implements [Time](../time.md). Simulation is its separate domain-backed
+lane after the stable gate; specialized temporal rendering needs no Area clock.
+
+- [ ] Add a calendar-entry input contract and native leaf inside a Castle of
+  ordinary controls. Wire authorized Record/Promise dates, date-field mapping,
+  stable occurrence identity, timezone, period navigation and selection.
+- [ ] Ship agenda, day/week and linear timeline views with point events,
+  intervals, all-day and unscheduled lanes, overlaps and bounded pagination.
+  Open the correct source from each entry and retain selection across views.
+- [ ] Supply missing bounded Karma occurrence reads and date Actions together
+  with the UI. Test repeat occurrences, interval boundaries, timezone changes,
+  daylight-saving ambiguity, and schedule updates. No frontend scheduler.
+- [ ] Implement previewed drag/date edits and their keyboard equivalent. Show
+  single-occurrence versus series scope only where supported; failed writes
+  preserve drafts. Reading or navigating time never executes scheduled work.
+- [ ] Build the Clock over the same entries: rolling next hour in top view,
+  configurable finite horizon in a local perspective spiral, interval segments,
+  recurrence, overlap selection and an equivalent agenda. Label top-view
+  filtering and Held time; camera/view changes never pause Karma.
+- [ ] For simulation, provide a permission-filtered proposed-operation response
+  for an Action, a Rule and a Transfer, including unsupported/unknown effects.
+  Existing quantity forecasts alone do not satisfy this dependency.
+- [ ] Show Live versus scenario, starting revision, assumptions, before/after
+  fields, dates and reasons. Reuse Sands; keep filtered-out changes findable.
+  Prove previews produce no real Facts or external effects, stale proposals
+  are rechecked, and applying returns through ordinary authorized Actions.
+
+#### Stable everyday-use gate
+
+- [ ] In the running native interface, use one Protein with Apple and Pear.
+  Customize only Apple, copy and release its quantity, move its attached
+  remainder, refresh, remove/restore the row, switch Castle with a field
+  mismatch, focus and edit, then restart. Verify each stated scope and lifetime.
+- [ ] Group tasks by assignee and due date; show the same timed work in Calendar
+  and Clock, including an interval and recurrent occurrences. Prove that view
+  navigation changes no schedule and missing capabilities are not called done.
+- [ ] Perform the workflows through pointer and keyboard/AccessKit, in light
+  and dark styles with restrained motion. Test empty/error/loading states,
+  rejected writes, data visibility, undo and recovery at representative scale.
+- [ ] Update the human tutorial from these real controls and exercised flows.
+  This gate requires working backend bindings and the UI, not fixture-only
+  demonstrations. Simulation, shaders and moving Areas have their own later gates.
+
 #### Force, sorting, mutation, and immunity areas
+
+Stage 8, after stable use. Stationary grouping/sorting above ships first.
+Each movement body is an attached part or one explicitly released child;
+row ownership and visibility always follow the original result bundle.
 
 - [ ] Define common area geometry, current-Protein selection, overlap and
   evaluation order, entry/exit lifecycle, styling, persistence, and edit tools.
 - [ ] Implement force areas and the optional workspace-centering force with
   controllable pull/push, direction, range, collision, settling, and
   reduced-motion behavior.
-- [ ] Apply a matching force to the complete group rather than pulling a bound
-  child out of its result template.
+- [ ] Apply a matching force to the attached part or explicitly released body.
+  Never release a child implicitly, and never let separate placement outlive
+  the source row or widen event scope.
 - [ ] Implement directional sorting areas using current Protein sort semantics
   and fixed, internally scrollable bounds.
 - [ ] Implement mutation areas for quantity changes and Concept addition or
   removal through existing typed Actions, with one trigger per boundary visit.
+- [ ] Share each mutation visit across matching attached/released/copied bodies
+  of one result appearance: first entry opens it and last exit closes it.
+  Show which bodies keep it open and prove duplicate views never multiply
+  the Action, including retry and recovery.
 - [ ] Implement immunity areas attached to one Protein area. Protect that
   source's spawned groups from workspace centering and external force, sorting,
   and mutation areas while preserving internal areas and manual interaction.
@@ -349,6 +472,10 @@ for Box. The shared requirements and the Fiote-only boundary are mapped in
 
 #### Topology editing, surface views and free space
 
+Stage 8 retained work. Do not enable it as part of the first stable Box or
+delete its existing implementation. Group-body operations apply to attached
+parts; released children retain independent bodies and the same result owner.
+
 - [ ] Give each workspace one explicit spatial mode, `surface` or `space`, and
   keep camera projection separate. Surface mode owns logical `(x, y)` body
   positions; space mode owns `(x, y, z)` body transforms. Never run or persist
@@ -361,7 +488,7 @@ for Box. The shared requirements and the Fiote-only boundary are mapped in
   style, enabled state, ordering, and optional Area or Sand attachment.
 - [ ] Implement the common base field and per-group filtered potential field.
   Sample their gradient deterministically inside the same fixed step as other
-  forces. Apply the result to the complete group body, respect immunity and
+  forces. Apply the result to each movement body, respect immunity and
   collision, and never derive different physics from the selected camera.
 - [ ] Let conservative force areas expose an exact potential visualization
   without applying a duplicate force. Keep sorting, mutation, constraints, and
@@ -460,6 +587,11 @@ for Box. The shared requirements and the Fiote-only boundary are mapped in
 
 #### Box-state persistence
 
+Stage 3 establishes snapshots, operations, undo and ordinary restart recovery.
+Stages 4–5 persist their additions as they land. Spatial checkpoints and
+moving-body proofs below are stage 8 extensions, not prerequisites for saving
+a stationary workspace.
+
 - [ ] Replace copied Sand HTML in instances with content-addressed definition
   references plus small override patches.
 - [ ] Store a Box-built group as a workspace-owned local Sand definition plus
@@ -474,7 +606,9 @@ for Box. The shared requirements and the Fiote-only boundary are mapped in
   override-or-fork and Box never attempts to rewrite their Rust source.
 - [ ] Define the versioned Box document schema with stable uids for every
   authored entity; referenced Sand revisions; recursive group-local
-  transforms; world/viewport/group anchors; semantic layers and sibling order;
+  transforms; logical ownership separate from movement attachment;
+  appearance/row/child override identities; released-child placements and
+  local copies; world/viewport/group anchors; semantic layers and sibling order;
   workspace spatial mode and local collapse-plane frame; surface placements
   and free-space transforms; Protein references and field-to-port bindings;
   Area footprint, volume, projection and local-basis definitions; connections;
@@ -520,6 +654,21 @@ for Box. The shared requirements and the Fiote-only boundary are mapped in
   configuration, definitions, groups, connections, zones, and drawings are
   composition; camera, focus, selection, open panels, and temporary portals are
   personal view state.
+
+#### Sand visual effects
+
+Stage 9 follows [the effect contract](../shaders.md).
+
+- [ ] Define the supported fragment-effect inputs, source profile and package
+  assets; validate syntax, bindings and bounded work before running user WGSL.
+  Start with presets and named settings, then expose the supported source editor.
+- [ ] Support a bounded outward glow margin with correct clipping/culling and
+  unchanged hit targets. Vertex/compute effects and scene lighting need their
+  own later contracts, not hidden access through this surface effect.
+- [ ] Keep last-good preview, readable content and external Reset/Disable
+  controls. Test invalid source, reduced motion, device loss, persistence,
+  one-appearance overrides, package credits and measured GPU cost. A successful
+  shader compilation alone is not this feature's completion gate.
 
 #### Live workspace collaboration
 

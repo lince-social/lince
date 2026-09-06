@@ -1705,11 +1705,9 @@ impl DiagnosticWindow {
                         description,
                         quantity,
                         ..
-                    } => self.native_domain.request_create_record(
-                        title,
-                        description,
-                        *quantity,
-                    ),
+                    } => self
+                        .native_domain
+                        .request_create_record(title, description, *quantity),
                     OfficialRuntimeIntent::SetRecordQuantity { record, value, .. } => self
                         .native_domain
                         .request_set_record_quantity(record, *value),

@@ -139,14 +139,36 @@ Kanban are borderless bundles of these pieces, not sealed windows: their
 controls can be separated, moved elsewhere, resized, reconnected, and grouped
 while continuing to interact.
 
-**Castle** is an optional human word for a saved compound Sand: a group of
-Sands prepackaged for reuse. It introduces no fourth object alongside Sand,
+**Castle** is the picker category for a packaged workflow made of Sands. Basic
+Sands and Castles have separate picker sections. A Castle remains a saved
+compound Sand; it introduces no fourth object alongside Sand,
 group, and definition. A Button Sand may be placed directly in Box or
 referenced as a child of a Video Call Sand; the child is not copied or changed
 into a special castle component. A local group can be locked for movement,
 saved as a reusable compound definition, or forked without changing the
 composition semantics. Protein result templates use the same recursive group
 shape rather than a parallel template system.
+
+The 2026-09-06 Interface Record extends movement: a child may be released from
+the group's movement while remaining its logical child. Copy and release adds
+one appearance of the same bound property. Both disappear with the owning
+Protein row, even when placed elsewhere. Release, editor unlock and definition
+fork are separate operations. The full behavior is in
+[Box](box.md#individual-appearances-and-released-children).
+
+Keep one canonical owner for each child appearance. Movement attachment is
+independent of ownership: inherited children retain stable local uids, and an
+appearance override records release and placement. Locally added copies have
+their own stable child identities. Input routing, event scope, teardown and
+permissions follow ownership; coordinates follow attachment. Do not infer
+ownership from which rectangle contains a child.
+
+An override targets an exact loose Sand or a child in a stable result
+appearance. A Record uid locates candidates but never selects all appearances
+implicitly. Protein refresh merges new data with those overrides; it does not
+replace the appearance with an uncustomized template. Presentation switches
+reconcile bindings and overrides through the
+[mapping preview](box.md#choosing-another-presentation).
 
 Each child has a stable identity within its owning definition, local
 coordinates, ordering, configuration overrides, and typed connections.
@@ -170,7 +192,8 @@ presentation, controls, or Behavior inside that template.
 
 Definitions are referenced rather than copied. Built-in and user-owned
 definitions update their instances live, with instance changes represented as
-override patches. Fork/detach explicitly creates an independent definition.
+override patches. Fork explicitly creates an independent definition. The UI
+calls movement detachment Release from group, never Fork.
 External executable Sands are content-hash pinned and never update silently.
 An invalid or incompatible local definition update fails closed: existing
 instances keep the last known-good revision and show the authoring error until
@@ -784,8 +807,9 @@ There are three state planes, never one ambiguous shared bag:
 - cursors, presence, transient events, media, and sessions are ephemeral lanes
   or explicit host capabilities.
 
-Groups move together and shelter internal events. Crossing a group boundary
-requires an explicitly exported typed port. Copying preserves definitions,
+Attached children move together; all logical children shelter their internal
+events even when released. Crossing an ownership boundary requires an
+explicitly exported typed port. Copying preserves definitions,
 layout, configuration, durable bindings, and connections, but not live
 sessions, presence, subscriptions in flight, or other ephemeral state.
 
@@ -810,8 +834,9 @@ Box reaches combinations between these presets by editing Sands, Behavior,
 Protein field bindings, areas, and groups. The first implementation stays with
 the shape already returned by one Protein item: a person may wire `title`,
 `quantity`, and `description` into separate Sands, add an unbound button or
-label, and lock them as the repeated result-template group. Moving or spatially
-influencing any matching child moves the whole group. Pulling a Record because
+label, and save them as the repeated result-template group. Attached children
+move together; an explicitly released child moves independently while keeping
+its result ownership. Later forces use that same attachment boundary. Pulling a Record because
 of associated Karma, or composing Karma and Transfer projections into that
 row automatically, is a preserved later expression rather than part of the
 first area implementation. Configuration is preferred over generating another

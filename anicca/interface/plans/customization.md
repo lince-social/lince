@@ -22,13 +22,12 @@ A defect found later is repaired in the stage that owns it. The Box is not a
 composition test harness: it opens only after C5 proves the foundations it
 will consume.
 
-V1 remains the productivity Box with current Protein, recursive Sands, Areas,
-bounded surface topology, surface Top/Perspective views, one free-space mode,
-collapse projection, Customization and external HTML. V2 retains the
-world-model direction. Planetary scale, general
-scene construction and reality capture do not silently enter this waterfall;
-named authoring programs and geometry systems are examples rather than v1
-dependencies.
+V1 first delivers stable 2D work with current Protein, recursive Sands,
+individual appearance edits, released children, focused editing and native
+Calendar/Clock views. Existing motion code stays intact and inactive in that
+delivery. Moving Areas, topology, free-space conversion and decorative effects
+follow the stable gate in [the Interface plan](interface.md#v1-master-waterfall).
+Planetary work and general scene construction are outside this revision.
 
 The completed Pulsar/Helio study added no prerequisite or framework migration
 to C3–C5. Configuration and official Sands use the landed Lince-owned
@@ -265,6 +264,13 @@ one claims its behavior.
       individually placeable Sands; a Record, Conversation, Kanban or other
       workflow is a recursive compound over them. Do not replace legacy HTML
       monoliths with equally monolithic Rust constructors.
+- [ ] Remove the Record editor's idle source-to-rendered conversion. Preserve
+      the active block while thinking, selecting or composing input; render
+      after leaving it or an explicit presentation change. Test caret, draft
+      and viewport stability through the shared editor in every migrated use.
+- [ ] Make workspace controls visible by default, with a persisted optional
+      corner triangle and its color/transparency controls. Keep a discoverable
+      keyboard restore. These are shell changes; they do not require Box physics.
 - [ ] Migrate the board host, shared components and every official Sand from
       hardcoded governed values to canonical color, spacing, border, radius,
       type, elevation, stacking and motion roles. Preserve user expression and
@@ -300,6 +306,10 @@ one claims its behavior.
 
 ### C5 — Enforcement, authoring and completion gate
 
+C5 closes the existing pre-Box foundation. The 2026-09-06 Box extensions have
+their own [stable everyday-use gate](interface.md#stable-everyday-use-gate);
+do not claim those later surfaces through the historical Gallery evidence.
+
 - [ ] Add a design-system check that rejects governed color, spacing, radii,
       borders, typography, shadow, stacking, transition and animation literals
       outside canonical definitions. Exclude vendored assets, user content,
@@ -310,6 +320,10 @@ one claims its behavior.
 - [ ] Test quantity formatting, tabular figures, solid/dashed truth, non-color
       status, keyboard navigation, focus, ARIA state, associated help/errors,
       reduced motion and absence of ornamental animation.
+- [ ] Verify the active editor block remains stable beyond five idle seconds,
+      during selection and IME composition, and after a live update. Verify
+      visible default controls and keyboard restoration from a transparent
+      folded triangle after restart.
 - [ ] Prove Conversation live growth, interruption, authorship, private
       draft/preset isolation, reorder and restart behavior through keyboard,
       pointer and AccessKit. Fiote may later expose the same Actions through
@@ -341,5 +355,5 @@ one claims its behavior.
       visual-character gate. At that point Box consumes finished foundations.
 
 Physics selection is not hidden in Customization. Avian versus a narrow SoA
-force/sort/group/boundary solver belongs to the measured Area/topology stage
+force/sort/group/boundary solver belongs to the later measured Area/topology stage
 under [the Interface plan](interface.md), using the same adapter and workload.

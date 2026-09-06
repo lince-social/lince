@@ -1294,11 +1294,7 @@ fn official_definition(spec: OfficialSandSpec) -> SandDefinition {
                 output_export("move-left", "tools", "primary"),
                 output_export("move-right", "tools", "secondary"),
                 output_export("create-record", "tools", "tertiary"),
-                output_export(
-                    "backlog-record-clicked",
-                    "backlog",
-                    "record-clicked",
-                ),
+                output_export("backlog-record-clicked", "backlog", "record-clicked"),
                 output_export("active-record-clicked", "active", "record-clicked"),
                 output_export("done-record-clicked", "done", "record-clicked"),
             ]);
@@ -1816,8 +1812,18 @@ mod tests {
             assert!(record.outputs.iter().any(|port| port.name == output));
         }
         let table = &package.graph.definitions["table"];
-        assert!(table.outputs.iter().any(|port| port.name == "record-clicked"));
-        assert!(table.outputs.iter().any(|port| port.name == "create-record"));
+        assert!(
+            table
+                .outputs
+                .iter()
+                .any(|port| port.name == "record-clicked")
+        );
+        assert!(
+            table
+                .outputs
+                .iter()
+                .any(|port| port.name == "create-record")
+        );
         let todo = &package.graph.definitions["todo"];
         assert!(todo.outputs.iter().any(|port| port.name == "complete"));
         let kanban = &package.graph.definitions["kanban"];

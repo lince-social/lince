@@ -175,11 +175,11 @@ plain editable Markdown textarea, **Pretty** is a read-only rendering, and
 **Pragmatic** is the default rendered editor. In Pragmatic mode the line under
 the caret becomes source; fenced structures such as Mermaid become source as
 a complete block. A line means source text ending at a real newline, never one
-visual row produced by wrapping inside a narrow Sand. After five seconds
-without caret activity it renders again and uses the browser's native caret in
-that one rendered surface; moving or typing turns the line or block reached by
-the caret back into borderless raw source. There is no synthetic caret or
-hidden input to disturb the Sand's layout or scroll position. The body itself
+visual row produced by wrapping inside a narrow Sand. The active line or block
+stays in source while the person thinks, selects text or uses input composition.
+It renders after the caret leaves that block or the person explicitly chooses
+another presentation. There is no five-second idle conversion. Preserve the
+native caret, draft and scroll position across these transitions. The body itself
 has no border; the border belongs to the complete Record surface. Its
 property accordion is a divided horizontal rule, not a box: the down-triangle
 half reveals every section and the up-triangle half hides them all. It normally
@@ -251,6 +251,15 @@ hierarchy widening, and Protein behavior live in [Ontology](../Lince.lingua).
 - [x] **Protein trails and Focus** — consumes a directed assertion-order item
   from Record Protein. The returned ordering supplies traversal and the
   earliest root; Focus advances through matching Record states.
+
+### Calendar, Clock and simulation views — planned additions
+
+These extend the catalog after the existing C4 migration; the historical
+25-root count above does not claim they already exist. The native temporal
+leaf, its surrounding Castle, source mapping, recurrence, spiral and simulation
+contracts are in [Time](time.md). Their human surfaces and domain dependencies
+are scheduled in [the Interface plan](plans/interface.md#calendar-clock-and-simulation).
+
 ### Table
 
 Table is a simple tabular projection of Protein results. It is a useful

@@ -31,15 +31,16 @@ Cargo keys artifacts on absolute path, so a second tree shares nothing and pays
 the full cold start. So there is **one** tree that compiles, and it belongs to
 the inspector, which also does the integrator's re-proving.
 
-- Builders work in source-only clones: 214 MB, no `target/`. They edit and
+- Builders work in source-only checkouts, no `target/`; the historical clone
+  measured 214 MB. A worktree shares Git storage, not Cargo artifacts. They edit and
   reason; they do not compile. Say so in the brief — a builder that thinks it
   can compile and meets a 5-minute cold build will report a hang.
 - The inspector **pulls each candidate branch into its own tree** and checks it
-  there, one at a time. It never `cd`s into a builder's clone: that tree is
+  there, one at a time. It never `cd`s into a builder's checkout: that tree is
   cold, which turns a 10s verification into a 5-minute one.
 - That tree stays warm for the whole run, so each builder's work costs 5–10s to
   check, and six builders' work is about a minute in total.
-- Never create a fresh clone per node. That is the cold-start tax, 18 GB and
+- Never create a fresh compiling checkout per node. That is the cold-start tax, 18 GB and
   five minutes, paid again every node.
 
 The cost of this shape is real and worth stating to the owner: a Rust builder
@@ -63,8 +64,10 @@ Measured on Lince, second tree with a one-line change to `engine`: **4 units
 executed, 738 cached, 91s, 139 MB added to the store.** Four workers this way
 cost about 11 GB against roughly 73 GB for four cargo trees.
 
-- Every builder may have its own tree and compile in it. No source-only clones,
-  no queueing for a build slot.
+- Every builder may have its own reusable tree and is eligible to compile in
+  it. It still needs a machine-wide permit; workers queue when RAM/CPU/test
+  capacity is occupied. Source editing and agent capacity are separate from
+  compiler capacity. [WORKER_POOL.md](WORKER_POOL.md) owns this scheduling.
 - The first tree into a cold store is *slow*, not fast — 508s for 742 units.
   Corgi amortizes; it is not a free lunch on worker one.
 - `CORGI_STORE` must point at a disk-backed path **outside the workspace**.
@@ -83,9 +86,11 @@ cost about 11 GB against roughly 73 GB for four cargo trees.
 - Corgi requires a pinned toolchain — a floating `channel = "stable"` is
   refused — and a `corgi.toml` declaring every non-Rust input a build script
   reads. Both already exist in this repo.
-- Corgi caches passing test runs, so a builder re-running an unchanged `prove`
-  gets it free. That is not a reason to skip re-proving on the integrator's
-  tree after a merge: that tree's content differs, so it is a real run.
+- Corgi caches passing deterministic tests. Re-request the accumulated proofs
+  on the integrator's exact content/features after each merge; unchanged
+  actions may legitimately hit cache. Do not claim that every merge executes
+  every test afresh. GPU, live fixture, lifecycle and timing witnesses require
+  fresh execution through a supported uncached path or a prepared Cargo binary.
 
 ### Running it
 
@@ -93,7 +98,7 @@ cost about 11 GB against roughly 73 GB for four cargo trees.
 export CORGI_STORE=/home/user/git/lince-social/.corgi
 export CORGI_SYSTEM_READS=/nix/store:/run/current-system/sw/share/nix-ld
 corgi check -p engine                          # any non-CEF crate
-corgi check --root interface -p lince-interface # interface, CEF-free
+corgi check --root interface -p lince-interface --no-default-features --features native-runtime
 ```
 
 Both variables are required here and neither has a usable default: the store
@@ -102,14 +107,20 @@ misleading `execvp … No such file or directory`.
 
 ### What corgi can and cannot build
 
-The line is a **feature**, not a crate. Everything builds under corgi except
-what enables `cef-runtime`, because `cef-dll-sys`'s build script walks three
+The following CEF limitation and measurements describe the inspected prototype,
+not a permanent requirement that every desktop uses CEF. Interface Part A's
+[build rule](../../../anicca/interface/build.md) explicitly changes the real
+production default to native-only. Certify the selected target and actual
+features; do not enable the deferred adapter just to repeat a historical gate.
+
+The known blocker in the inspected graph is a **feature**, not a crate:
+`cef-runtime` reaches `cef-dll-sys`, whose build script walks three
 directories up from `OUT_DIR` to find cargo's `target/` and copies the CEF
 runtime there. Writing outside `OUT_DIR` is what the sandbox exists to prevent,
 so no configuration fixes it.
 
-`lince-interface` declares no default features and reaches CEF only through
-`joined-runtime`, so it builds fine on its own. What drags CEF in is corgi's
+`lince-interface` declares no default features. The prototype desktop reaches
+CEF through `joined-runtime`. What drags CEF into a bare interface check is corgi's
 workspace-wide feature unification: `crates/desktop/Cargo.toml` depends on it
 with `features = ["joined-runtime"]`, and that reaches back across the
 workspace. Scoping the unification root stops it:
@@ -122,25 +133,34 @@ packages = ["lince-interface"]
 Measured: `corgi check --root interface -p lince-interface` is 232 units, 170s,
 zero CEF. Roots are opt-in through `--root`, so unscoped runs are unchanged.
 
-- **corgi** — every crate, including `lince-interface` through that root.
-- **cargo** — anything actually enabling `cef-runtime`: `lince-desktop`, the
-  joined runtime, the laboratory scenarios, the CEF diagnostics.
+- **corgi** — scoped targets whose feature graph and build-script inputs have
+  been proved to work, including the native interface root.
+- **cargo** — anything actually enabling `cef-runtime`, and explicitly assigned
+  native production/package proofs that Corgi does not cover. The prototype's
+  default desktop and joined diagnostics currently enable CEF; Part A removes
+  that default dependency before its native acceptance.
 
 `lince-interface` has three levels. Default is the bare crate.
-`native-runtime` is the full native runtime with CEF left out — engine,
+`native-runtime` is intended to contain the full native runtime with CEF left out — engine,
 transport, protein, store, AccessKit, browser parity, semantic spatial — and it
 is the one to develop against. `joined-runtime` is `native-runtime` plus
 `cef-runtime`. The split is a pure refactor: `joined-runtime` resolves to the
 same 961-line dependency tree it did before the feature existed.
 
+Feature names alone are not coverage. At the Part A planning baseline some
+native modules and the production entry still sit behind joined/CEF gates;
+the bootstrap must extract them and prove the real native host. A bare-crate
+check is not evidence that this bootstrap already happened.
+
 ### A scoped run is not a full run
 
-A node checked under `--root interface` has been checked against a **narrower
-feature set than the real runtime**. It proves the Rust compiles; it does not
-prove the joined runtime does. Keep that distinction in the graph: a node whose
-`prove` touches the joined runtime, CEF, the laboratory or the desktop is not
-certified by a scoped corgi run, and the inspector re-proves it under cargo
-before it counts.
+A scoped check proves only its selected target/features, not every desktop or
+adapter. If the milestone requires joined/CEF execution, the inspector must
+prove it in its Cargo lane before certification. If the milestone is the
+owner-requested CEF-free Part A, certify its actual native desktop, package and
+runtime instead; joined evidence is explicitly not applicable. Scoping must
+not omit needed native modules, and a passing check alone never proves UI,
+packaging or an exclusive runtime gate.
 
 For everything else — the great majority of nodes — the scoped run is the
 fast loop and nothing is lost.
@@ -168,18 +188,27 @@ done
 echo "peak $((max/1024)) MB"
 ```
 
-Then take the smaller of:
+Use this as a conservative starting bound, not a throughput guarantee:
 
-- **available RAM ÷ peak RSS of one build** — the hard limit. Exceed it and the
+- **(available RAM minus operating/test headroom) ÷ measured peak per job** —
+  a memory bound. Include compiler/linker children and account for different
+  native-check, test-link and release job sizes. Exceed it and the
   machine swaps, which on a compiler's working set means thrashing, not
   slowness. Swap does not raise this number; it only converts an OOM kill into
   a much slower build.
-- **cores ÷ 2** — past this, trees fight over the same cores and total
-  throughput stops improving while every individual build gets slower.
+- **cores ÷ 2** — a starting CPU heuristic, not a universal limit. A single
+  build may already use all cores. Compare elapsed certification throughput
+  at candidate widths; more concurrent commands can make the whole run slower.
 
 On the owner's machine, 2026-09-06: peak RSS **2.9 GB** for one corgi build of
 `store` (168 units), against ~11 GB available and 8 cores. So **3 concurrent
-builds**. Not the 4 an earlier estimate assumed.
+builds** under that measured workload. Not the 4 an earlier estimate assumed.
+Start with one, then widen only with fresh peak, headroom and throughput
+evidence. A fourth lightweight job may be reasonable on a later measured
+workload; it is not authorized merely by four idle agents or a RAM snapshot.
+Record the revised bound before using it, and reduce it for heavier tests or
+release linking. Every compiler and executable test, including integration,
+counts toward the relevant resource budget.
 
 Check `/var/tmp` before trusting the RAM figure. `/` is tmpfs on this machine,
 so a corgi run that forgets `CORGI_STORE` silently builds a second store in RAM

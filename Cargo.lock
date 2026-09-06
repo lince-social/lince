@@ -5883,6 +5883,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tokio",
+ "zeroize",
 ]
 
 [[package]]
@@ -5924,12 +5925,16 @@ name = "lince-utils"
 version = "0.7.0"
 dependencies = [
  "argon2",
+ "base64 0.22.1",
+ "chacha20poly1305",
  "chrono",
  "dirs 6.0.0",
+ "getrandom 0.3.4",
  "jsonwebtoken",
  "sensei",
  "serde",
  "toml 0.9.12+spec-1.1.0",
+ "zeroize",
 ]
 
 [[package]]

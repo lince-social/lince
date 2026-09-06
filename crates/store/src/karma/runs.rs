@@ -311,9 +311,7 @@ async fn evaluate_member(
                 },
                 None => blocked_input = Some(ProgramRunBlockCode::InputSourceUnresolved),
             },
-            InputSource::Signal { .. }
-            | InputSource::SecretMetadata { .. }
-            | InputSource::CapturedFact { .. } => {
+            InputSource::Signal { .. } | InputSource::CapturedFact { .. } => {
                 blocked_input = Some(ProgramRunBlockCode::InputSourceUnresolved);
             }
         }

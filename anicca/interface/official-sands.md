@@ -10,7 +10,7 @@ Configuration is landed; edit controls, zoom controls, Record, Conversation,
 Table, Todo and Kanban have native retained Behavior. Record, Conversation and
 private message drafts are bound to live production Protein subscriptions,
 the collection roots reuse the general Record result, and 17 roots remain
-structure-only C4 migration work.
+structure-only at that source checkpoint. Delivery now splits them between Dogfeeding, later native follow-through and the final CEF lane.
 
 Read when: migrating or regression-testing Record, Kanban, Relation, Table, or another official Sand.
 
@@ -19,6 +19,8 @@ Read when: migrating or regression-testing Record, Kanban, Relation, Table, or a
 ---
 
 ## Landed C4 structural catalog boundary
+
+[The build rule](build.md) accounts for all 25 source roots, but [Dogfeeding](plans/part-a.md) qualifies only the reusable knowledge/work and access controls needed by the company acceptance case. Vocabulary, Role/Protein/property policies and views can be authored manually in the new native Sands; no company starter or legacy desktop surface substitutes for them. Other native roots remain in [native follow-through](plans/native-follow-through.md); Website, Document Viewer, Terminal, Freedoom and Logo LED remain in [late CEF](plans/cef.md). A catalog label is not a running workflow; unavailable references preserve data without executing.
 
 `crates/interface/src/official_sands.rs` is the Rust-owned migration catalog.
 It names the 25 current official roots and builds one validated package of 72
@@ -44,8 +46,7 @@ roots. The generated exact package is
 
 The catalog does not replace or disable the legacy Web Sands yet. Those remain
 the behavioral reference below until each Protein read, Action, local state,
-specialized renderer and honest empty/failure state has moved to its native
-definition.
+specialized renderer and honest empty/failure state has moved to its selected replacement. Native-path cleanup happens in Part A; browser-dependent implementations and needed support sources remain gated until their late-v1 replacements pass.
 
 ### First native retained runtime
 
@@ -169,6 +170,8 @@ from the searchable slash palette: `#` through `#######` create headings,
 `![](url)` embeds an external image, the image picker stores an allowed local
 image under an opaque media name, and `- [ ]` creates an interactive checkbox.
 `@slug` references another Record in bodies and thread messages.
+
+The existing Web Record Editor uses `collab-editor.js` and the Loro text/transport boundary. Preserve its supported convergence, acknowledgements, reconnect, caret and presence behavior through a native binding in Part A; the newer retained Record draft surface alone is not collaborative-editing parity. This does not require running Loro's browser Wasm in the native host. The additional title-to-create Note and new scalar binding paths remain explicitly scheduled in [native follow-through](plans/interface.md#native-follow-through-and-cross-feature-surfaces). Locked descriptions accepted into the launch baseline stay opaque and outside text reconciliation, following [Secrets](../Secrets.md).
 
 The Record sand presents that one canonical body in three modes: **Raw** is a
 plain editable Markdown textarea, **Pretty** is a read-only rendering, and

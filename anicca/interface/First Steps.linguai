@@ -9,6 +9,8 @@ This was the old First Steps.lingua file, i have renamed it .linguai to give you
 > replacement and must lose that label only after a person can perform the
 > described work in the running application.
 
+> **Native delivery revision:** Part A will make the ordinary desktop CEF-free and complete 20 native Sand roots. The embedded Website, Document Viewer, Terminal, Freedoom and Logo LED, Installed HTML and browser previews stay unavailable until the final v1 CEF work. Their descriptions below are retained legacy/future behavior, not promised Part A controls. The new native launch and tutorial are still implementation work; no command below proves that the CEF-free default has landed.
+
 Open Lince and there is no menu bar, no sidebar, no home screen waiting to be navigated. There is a canvas — a large surface you pan and zoom — and on it, small tools called **sands**: a table, a kanban, a record editor, a terminal, a graph of relations, a transfer panel, a rule builder, a reader for this very document. You choose which ones exist, where they sit, how big they are, and — the part that matters most — what data each one is looking at. Nothing here is a fixed screen, because nobody's work is a fixed screen.
 
 The frame around the canvas is turning into sands as well. Some of it already is: every new workspace comes with an **Edit** panel pinned to the side, which is a sand like any other and can be moved, resized or thrown away. The rest — the small toolbar in the corner with the pencil and the notification bell, the zoom controls beside it — is still drawn by the host. The direction is one Lince rather than an application with a canvas inside it, so that the parts you would normally call "the program" end up the same kind of thing as the parts you build for yourself.
@@ -18,8 +20,7 @@ A **workspace** is one canvas with its arrangement of sands. Keep several, name 
 The ideas below walk through the frontend in order: the toolbar in the corner, what edit mode turns on, the two layers a sand can live in, how to add one, and then **Protein** — the thing that decides which records a sand is looking at, which is where the frontend stops being about windows and starts being about your data.
 
 The native interface is still a developer preview rather than the finished
-Box described later in this chapter. Run `mise run interface-lab-joined` to
-try the parts that have landed. Press **F9** for primitive Sand states,
+Box described later in this chapter. The historical `mise run interface-lab-joined` preview requires CEF and is outside the new native delivery. Part A must expose the following landed workbenches through the common CEF-free host and verify their commands before this tutorial recommends a native launch. In the existing preview, press **F9** for primitive Sand states,
 **F10** for recursive Sand composition, **F11** for the Configuration Sand and
 **F12** for the official-Sand migration catalog.
 In either workbench, use **Tab** and **Shift-Tab** to select an operation and

@@ -4,9 +4,10 @@ use nucleus::karma::{
     BinaryOperator, CapabilitySet, ControlState, EvaluationErrorCode, EvaluationLimits,
     ExpressionAst, FrozenEvaluationContext, InputBinding, InputSource, LateEventPolicy,
     LiteralValue, LocalId, NodeAst, NodeOperation, OutputRef, ParameterDefinition, PortContract,
-    ProgramAst, ProgramSchema, Sensitivity, SimulationStatePolicy, Slug, StateContract,
-    StateMigrationPolicy, StatePersistence, StateResetPolicy, TimestampMs, UnaryOperator,
-    ValueType, canonical_hash, evaluate_program,
+    ProgramAst, ProgramSchema, ReferenceKind, ResolvedReference, Sensitivity,
+    SimulationStatePolicy, Slug, StateContract, StateMigrationPolicy, StatePersistence,
+    StateResetPolicy, TimestampMs, TypedUid, UnaryOperator, ValueType, canonical_hash,
+    evaluate_program,
 };
 use serde::Serialize;
 
@@ -26,7 +27,7 @@ fn same_frozen_context_produces_byte_identical_result_and_parameter_override_is_
         canonical_hash("karma.evaluation-result.v1", &first)
             .unwrap()
             .as_str(),
-        "sha256:8e832acf128cb89ff22e0ef287bf6392acc261ace11fb763b7933249f5137968"
+        "sha256:03407831db0604cff246138359568e6e977fb16311fb8e651f3b313a32b52c01"
     );
 
     let overridden = FrozenEvaluationContext {
@@ -252,8 +253,8 @@ fn arithmetic_program(operator: BinaryOperator) -> ProgramAst {
     );
     program.nodes.insert(
         id("input"),
-        input_node(InputSource::SecretMetadata {
-            secret: id("value"),
+        input_node(InputSource::Signal {
+            signal: reference(ReferenceKind::Signal, RECORD_UID, "kitchen.scale"),
         }),
     );
     program.nodes.insert(
@@ -430,4 +431,13 @@ fn int(value: i64) -> LiteralValue {
 
 fn id(value: &str) -> LocalId {
     LocalId::new(value).unwrap()
+}
+
+const RECORD_UID: &str = "r_01ARZ3NDEKTSV4RRFFQ69G5FAV";
+
+fn reference(kind: ReferenceKind, uid_value: &str, slug: &str) -> ResolvedReference {
+    ResolvedReference {
+        target: TypedUid::new(kind, uid_value).unwrap(),
+        display_slug: Some(Slug::new(slug).unwrap()),
+    }
 }

@@ -22,6 +22,8 @@ stays intact while inactive; the [master plan](plans/interface.md#v1-master-wate
 places moving Areas and topology later. This revises the earlier spatial order.
 The details live in [Box](box.md), [Time](time.md) and [Shaders](shaders.md).
 
+[Part A — Dogfeeding](plans/part-a.md) exercises general Lince knowledge/work capabilities in a private company through the new native live Interface Sands, governed by [Backend Part A](../backend-part-A.md). Roles use Protein to select Records and control property writes; projects and teams remain ordinary Records and Assertions. Manual setup is enough: no company starter, required project ownership, lince-desktop wrapper, all-twenty-root migration, Karma/Transfer Castles or calls. Extra native migrations remain in [native follow-through](plans/native-follow-through.md); [the build rule](build.md) retains CEF-free defaults and late browser work. The archetypes below describe the wider design, not extra Dogfeeding gates.
+
 - [ ] [Sand](sand-model.md#sand): Sand is the recursively composable unit of interface.
   A button, form, Record view, graph, game, or complete workflow may all be
   Sands. Small Sands combine into larger ones without creating a conceptual
@@ -135,11 +137,7 @@ outside this revision.
 
 ## Collaboration and the editor
 
-Moved here from Ontology on 2026-08-21, replacing the coarser copy that used to
-sit at the end of this file: the binding, the editor sand and every place a
-field is edited are Interface work, and Interface is what comes next. These
-fold into Interface's own plan when that plan is made. Nothing here has
-dependents outside itself.
+Existing collaborative editing migrates in Part A A02.2–A02.6, including a native binding, shared embedded editor and supported Table paths. The additional tasks here are explicitly routed by [native follow-through](plans/interface.md#native-follow-through-and-cross-feature-surfaces), not forgotten prerequisites. Their old status descriptions are migration evidence to verify against current source, not a claim that the native client already implements them. In particular, the title-to-create Note is not the current Record Editor, and shallow snapshots are a storage optimization rather than an editor launch gate. Do not build overlapping shared-editor work twice or use the later additions to defer existing collaborative behavior.
 
 - [ ] **Somewhere to SEE the recent-changes diff.** Ontology built the log and
   stopped at the store: `record_change` fills correctly and

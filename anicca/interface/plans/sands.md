@@ -111,13 +111,8 @@ correctness, not a C4 workaround.
 
 ### Sand
 
-- [ ] On the accepted [Native Interface Laboratory](../laboratory.md#native-interface-laboratory)
-  runtime, make native Rust retained-UI or world-renderer constructors the
-  first-party Plan A path, paired with the exact
-  node/port/configuration metadata Box needs. Preserve Maud as the standard
-  Plan B and HTML-backed authoring path without changing HTML packages into a
-  Rust-only format. Its paired constructors produce accessible `Markup` and the
-  same metadata; reject naked markup as a declared child boundary.
+The active native migration, constructor/package conformance and author guidance are owned once by [Part A](part-a.md). [The build rule](../build.md) makes the native client/server products CEF-free. Part A is now Dogfeeding's company-workflow subset with [backend foundations](../../backend-part-A.md); other roots remain in [native follow-through](native-follow-through.md). Pure Maud/HTML export and metadata validation do not require CEF, but installed HTML execution, Website and embedded browser previews wait for [the final v1 lane](cef.md). The boxes below preserve later Box and external-authoring work, not a second C4 checklist. Correctness needed by an existing Part A workflow is repaired in its owning node rather than postponed under this heading. Browser portions of a shared ABI never make its native portion wait for a browser runtime.
+
 - [ ] Define the Sand artifact compiler that normalizes the selected authored
   graph (Rust/Maud or declared raw HTML metadata),
   validates it through the authoritative Rust schema, renders and hashes
@@ -141,9 +136,6 @@ correctness, not a C4 workaround.
   surface boundary. An arbitrary shader is installed
   executable content with an exact hash, declared GPU capability, resource
   budget, validation, license, credits, and deterministic disposal.
-- [ ] Rebuild official workflow Sands into referenced primitive/compound Sand
-  definitions plus Behavior after the contract is proven. Do not preserve the
-  legacy component API or old board state merely to avoid rebuilding.
 - [ ] After the Customization completion gate and official-Sand migration,
   prove the Box model vertically with one current Protein item, visual result
   fields, a mixed bound/unbound result-template group, repeated row instances,
@@ -185,9 +177,10 @@ correctness, not a C4 workaround.
 - [ ] Implement custom surface effects through [Shaders](../shaders.md) in the
   later v1 effect stage. The existing GPU capability/package checks are a
   foundation, not a completed WGSL editor or a guarantee of bounded GPU work.
-- [ ] Write concise author documentation that starts with composing existing
-  pieces and progresses to HTML, Protein, Actions, ports, permissions, and
-  packaged assets.
+
+### Final-v1 embedded HTML and Website hardening
+
+These detailed package, permission and browser tasks belong to [the final CEF lane](cef.md), not C4/C5 or the stationary Box gate. The native schema and package inspection already needed by Part A stay in Part A. Browser/Plan B cases here test portable projections; they do not authorize a general browser client for a Cell.
 
 - [ ] Define and version the Sand manifest, bridge handshake, typed ports,
   capability vocabulary, provenance record, resource limits, CSP, and package
@@ -240,12 +233,20 @@ correctness, not a C4 workaround.
 - [ ] Remove the legacy nested-payload frame and old Lynx component API during
   the rebuild. Route `.lince` imports by inspected content rather than a
   legacy filename suffix; unknown shapes fail closed.
+### Later package distribution
+
+Package distribution is independent of whether the recipient can execute an embedded browser projection. Disabled projections remain inspectable metadata, not runnable content.
+
 - [ ] Federate published Sand packages between connected Organs while
   preserving content hash, lineage, author, capabilities, and licenses. The
   contract must not depend on whether bytes live on disk or in a future object
   store, and it must not require a central registry.
 
-- [ ] Later on, some form of creation of data, similar to ontology's trail should exist and be able to see it in this sand, to input in some dsl or lingua the creation of data to make this demo of paradigms of intelligence: https://paradigms-of-intelligence.github.io/morpho/.
+### Later data-authoring exploration
+
+The [MorphoHDL example](https://github.com/paradigms-of-intelligence/morpho) combines a small circuit-description language, recursive graph rewriting and a live viewer. For Lince, the useful question is whether a person can describe a structure, inspect its growth and understand what would be created. This is an exploratory use of Records, Trails, Sands and explicit Actions, not an accepted new language, circuit engine or Part A dependency.
+
+- [ ] Explore a bounded data-creation preview beside an editable Lingua description or an Ontology Trail, using the Morpho example as a comparison. Show proposed Records/assertions and intermediate steps before deliberate application through ordinary authorized Actions; test whether the existing language and primitives suffice before proposing another DSL or runtime. Keep the demonstration's transient graph distinct from committed Records and include notices if code is reused.
 
 ## Conversation and task surfaces carried for Fiote
 
@@ -253,15 +254,14 @@ Owner ask, 2026-08-29: "we should be able to have in the end a libghostty or
 equivalent sand so we can attach properties to that specific sand which can be
 the record of the task we are trying to do in such terminal."
 
-The design reasoning lives in [Fiote build notes](../../Fiote.md) (D1, D13,
-D14, D31-D33); only the shared interface consequence belongs here. Phase 1 is
+The design reasoning lives in [Fiote's session model](../../Fiote.md#the-session-is-a-thread), [tasks and orchestration](../../Fiote.md#tasks-and-orchestration), [wake behavior](../../Fiote.md#being-woken) and [message queue](../../Fiote.md#the-message-queue); only the shared interface consequence belongs here. Phase 1 is
 split across the existing pre-Box waterfall rather than inserted as another
 framework or milestone:
 
 - landed C3 owns renderer-neutral domain launch recipes and typed Record bindings;
-- C4 owns Conversation authorship, live message state, private drafts and the
-  official Conversation/Record/Terminal projections;
-- C5 proves those general surfaces through keyboard, pointer and AccessKit;
+- C4 owns Conversation authorship, live message state, private drafts and the native Conversation/Record projections;
+- C5 proves those native surfaces through keyboard, pointer and AccessKit;
+- the current browser Ghostty Terminal and its task binding return in the final v1 CEF lane; no replacement native terminal engine is a Part A prerequisite;
 - Fiote Phase 2 then adds the agent-specific session permission, tool timeline
   and session-control Sands without blocking Box.
 
@@ -271,6 +271,8 @@ semantics or assistive-technology support in the native Sands.
 
 ### Task-bound terminal Sand
 
+The requirements below are retained for the terminal work in [the final CEF lane](cef.md). Its current browser/Wasm renderer is not a native retained renderer merely because the Rust catalog names a native projection. The typed task binding and host-owned identity remain renderer-neutral. A future native terminal can be chosen separately, but neither C4/C5 nor Fiote may assume one has already been selected or built.
+
 The legacy `BoardCard.widget_state`, `groupId` and JavaScript grouping path is
 not part of Plan A. The landed contract already has the correct primitive: a
 `SandInstance` or `CompositionPlacement` receives a typed `Record` input and
@@ -278,7 +280,7 @@ the composition document persists the binding, while the Record remains the
 truth. C3 added the launch recipe and provenance around that primitive; it does
 not add an arbitrary shared state bag.
 
-- [ ] Let the native Terminal definition expose a typed task-Record input,
+- [ ] Let the Terminal definition expose a typed task-Record input,
   shown in the Sand's own chrome so several terminals remain distinguishable.
   The honest empty cases are separate: not bound, Record deleted, and not
   permitted to read it.
@@ -289,7 +291,7 @@ not add an arbitrary shared state bag.
   killing the session. The PTY and the binding have different lifetimes, and
   today the PTY's is the shorter one
   (`crates/transport/src/terminal.rs` owns sessions per websocket connection —
-  see Fiote D2, which moves agent sessions off that ownership).
+  see [Fiote's harness](../../Fiote.md#the-harness-is-ours), which moves agent sessions off that ownership).
 - [ ] Show the same binding on whatever pane a Fiote cub runs in, so the
   terminal view and the Fiote view are two projections of one task rather than
   two unrelated surfaces.
@@ -307,6 +309,8 @@ This reuses the same typed Record binding and Terminal renderer as the
 task-bound terminal, but it is a compound rather than one overloaded pane. The
 harness design lives in [Fiote build notes](../../Fiote.md); only the surface
 consequence belongs here.
+
+Native Conversation and session controls may proceed after native C5. The full compound described here, including a real terminal and the reusable VT view, additionally depends on the late-v1 Terminal work. A text-only or headless intermediate is not completion of that full user surface.
 
 - [ ] Stream a Fiote or cub session into a pane as it runs: assistant text,
   thinking, tool calls and their results, and the bytes of any command it ran.
@@ -327,8 +331,7 @@ consequence belongs here.
 
 ### Pinned and queued messages, one list
 
-Owner, 2026-08-30. The reasoning is in [Fiote build notes](../../Fiote.md) D32;
-this is the surface.
+The reasoning is in [Fiote's message queue](../../Fiote.md#the-message-queue); this is the surface.
 
 A draft message is a Record only its author can see. The landed C4 storage
 keeps Conversation/thread routing, `pinned`, timing and position together in
@@ -375,7 +378,7 @@ as “send now · no turn running.”
 
 ### Three views of a session, and live messages
 
-Owner, 2026-08-30. Reasoning in [Fiote build notes](../../Fiote.md) D31, D32.
+The reasoning is in [Fiote's session model](../../Fiote.md#the-session-is-a-thread) and [message queue](../../Fiote.md#the-message-queue).
 
 Agreed and settled: a queued draft is consumed on send and a pinned preset is
 copied; delivery aspects are assertions on the draft; delivery controls appear
@@ -426,7 +429,7 @@ the code-owned definition.
 | --- | --- |
 | The thread | **`conversation`**, rebuilt in C4. It reads Conversation → Thread → Message over Protein and sends through ordinary Actions. A session thread is an ordinary thread. |
 | The task | **`record`**, rebuilt in C4 and bound through its typed Record input. |
-| A real terminal | **`terminal`**, rebuilt as a specialized native Sand while preserving its task input and terminal semantics. |
+| A real terminal | **`terminal`**, retained browser Ghostty implementation migrated in the final v1 CEF lane with its typed task input. A separate native renderer is not assumed. |
 | What the agent ran | **New.** A tool timeline: each call with its arguments, its result, diffs it produced, folded by default. Command output renders through the same VT path the terminal Sand already uses, read-only. |
 | Session control | **New.** The cub tree, spawn and stop, model and thinking level, tokens / context / cost, compaction. |
 | Drafts and queue | Part of the composer, not its own Sand. |
@@ -436,7 +439,7 @@ the code-owned definition.
   ephemeral lane room for live coordination without turning lane traffic into
   Ledger data.
 - [ ] Opening a session reconstructs its group; closing it destroys nothing,
-  because the session is host-owned and outlives every view of it (Fiote D2).
+  because the session is host-owned and outlives every view of it ([Fiote's harness](../../Fiote.md#the-harness-is-ours)).
   The earlier Web-era note that layout had to wait for v2 is superseded by the
   C2 composition artifact: reusable layout lives in the compound definition,
   its placement and overrides live in Box state, and the domain launch recipe
@@ -486,13 +489,13 @@ build it piece by piece. First cut is what the Fiote prototype needs
 **Tool timeline.**
 
 - [ ] *First cut:* a folded chronological list — tool name, what it acted on,
-  ok or error, duration. Nothing is persisted (Fiote D33): the timeline is
+  ok or error, duration. Nothing is persisted by default ([Fiote's session model](../../Fiote.md#the-session-is-a-thread)): the timeline is
   live while the session runs and empty afterwards, and "output not kept" is
   stated rather than looking like "no output".
 - [ ] Render a payload by what it is: text, VT for a command, a diff for an
   edit, an image for an image.
 - [ ] Promote a payload into the thread — the one way anything about a tool
-  call becomes durable, since nothing is kept by default (Fiote D33). Copying
+  call becomes durable, since nothing is kept by default ([Fiote's session model](../../Fiote.md#the-session-is-a-thread)). Copying
   it into a Message is an ordinary write and needs no persistence layer.
 - [ ] Filter by tool and by status, and search within outputs.
 - [ ] Jump from a call to the turn it belongs to, and back.

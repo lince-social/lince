@@ -341,7 +341,6 @@ fn evaluate_node(
                 InputSource::RecordQuantity { .. }
                 | InputSource::SavedProtein { .. }
                 | InputSource::Signal { .. }
-                | InputSource::SecretMetadata { .. }
                 | InputSource::CapturedFact { .. } => boundary_value(context, node_id, meter)?,
             };
             Ok(EvaluatedNode::pure(BTreeMap::from([(

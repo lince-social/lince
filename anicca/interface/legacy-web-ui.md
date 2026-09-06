@@ -18,6 +18,8 @@ Read when: inventorying components, building the Gallery, or migrating official 
 
 ### Historical LynxUI implementation
 
+This is behavior and source inventory, not a second supported native UI. [Part A](plans/part-a.md) replaces enabled native-path callers; browser-backed leaves and necessary legacy support remain disabled until [the final CEF lane](plans/cef.md). Preserve that source without using it as the implementation of a newly migrated native control.
+
 - [x] Select Lynx and keep one evolving light/dark demo in the canonical [`LynxUI Gallery Sand`](../../crates/web/src/sand/lynx_ui/index.html). Update this design-system description whenever the demo guidelines change.
 - [x] Build the LynxUI base as a framework-free component library for official Sands. Use native semantic HTML, explicit `lynx-*` classes, and a small JavaScript layer only for behavior that HTML does not provide consistently.
 - [x] Serve shared `lynx-ui.css` and `lynx-ui.js` assets. LynxUI uses the design-system tokens and defines no separate colorscheme, spacing scale, motion, or elevation. Component selectors have low specificity so global and per-Sand styles can override them.

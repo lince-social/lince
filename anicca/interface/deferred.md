@@ -13,6 +13,8 @@ Read when: the owner reopens one of these subjects; do not load for ordinary v1 
 
 ---
 
+CEF is deferred differently from the unscheduled features in this file: it has a named [final v1 lane](plans/cef.md), after the native v1 work. Its five browser-backed roots and embedded HTML remain in source behind the [optional capability boundary](build.md). They are not v2 research and do not block native C5 or Box.
+
 ### Deferred workspace replicas and failover
 
 The first live collaborative workspace is no longer deferred. Its canonical

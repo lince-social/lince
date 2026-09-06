@@ -1,5 +1,7 @@
 # Current interface context
 
+Current milestone: **Part A — Dogfeeding**, defined by [Backend Part A](../backend-part-A.md) and [Interface Part A](plans/part-a.md). General Lince knowledge/work capabilities are exercised in a private company: new native Sands, live access from home, Role-associated Protein Record selection and property-write permissions, and threads/messages. Manual vocabulary, policy and view setup is enough; no starter, required owning project, Karma/Transfer or separate Communication Castle is in scope. The required products are a headless Linux server on a local machine or VPS and the new native Interface client, not a browser or legacy desktop Sands/wrapper. The [old graph](graph.md) is stale until re-cut. Source checkpoints below do not certify the new access boundary.
+
 Purpose: give a future session enough context to continue without loading the
 full interface corpus.
 
@@ -21,6 +23,8 @@ production dependency and added no waterfall stage.
 
 [Corpus map](README.md)
 
+The [coverage map](coverage.md) routes the complete v1 promise without loading it into each builder. Part A now explicitly preserves existing collaborative text editing, native authenticated privacy and any owner-accepted locked-description behavior at launch. Additional Note/scalar-binding and Program-backed Karma surfaces have a named later native lane. Worktrees are owner-permitted; the graph still needs an exact pool and accepted source snapshot at launch. Every graph-work role checkpoints and verifies resumption under the skill's context rules; no worker or build is launched by these document changes.
+
 ## Owner revision, 2026-09-06
 
 The Interface Record changes the next v1 work, not the implementation evidence
@@ -36,6 +40,8 @@ The current contracts are [Box](box.md), [Time](time.md) and
 owns their order. None of these new tasks is certified by an older report.
 
 ## Where work stands
+
+The owner now wants a CEF-free default throughout the native v1 work. [The build rule](build.md) defines the required feature and packaging split; [Part A](plans/part-a.md) implements it before parallel native migration. Twenty roots are in scope. Website, Document Viewer, Terminal, Freedoom and Logo LED, plus Installed HTML and embedded browser previews, are retained but unavailable until [the final v1 CEF lane](plans/cef.md). The following joined-runtime description and measurements are historical source facts, not evidence that the new native default already exists or a demand to test CEF now.
 
 Plan A has been accepted. Lince has a joined Wayland-only Linux runtime in
 which Winit owns the event loop, WGPU/Vulkan owns composition, Lince owns the
@@ -289,33 +295,30 @@ the complete positive and negative evidence remains in [links.md](links.md).
 
 ## Active sequence
 
-1. Continue C4 from the proven shell, Record, Conversation and first
-   Record-collection slice: finish data-workflow behavior, migrate bounded
-   specialized adapters and finally delete the legacy implementation. Include
-   the stable editor block and visible-by-default workspace controls.
-2. Pass C5: visual, accessibility, theme, authoring, lifecycle, runtime-health
-   and scale gate.
+The next milestone is [Dogfeeding](plans/part-a.md), covering steps 1–2 below and [Backend Part A](../backend-part-A.md). The [graph](graph.md) requires re-cut before launch. Shared native bootstrap and company identity/access foundations precede their consumers; full native catalog migration and shared live Box layout are separate work.
+
+1. Deliver the native Interface client and private Linux server with Backend Part A's identity/access foundations, usable project/task controls and authenticated remote live work. Preserve CEF exclusion, stable editing and shared controls; additional native roots remain later.
+2. Pass the native quality gates and Backend Part A's company pilot, access-loss and recovery proofs; full native catalog completion is separate.
 3. Build stationary Box navigation, layers, anchors, base pattern and input
    together with snapshots, operations, undo and restart recovery.
 4. Build stable result templates and individual overrides, released/copied
    children, Sand/Castle switching, editing facets, sizing and temporary focus.
 5. Build stationary property Areas, native Calendar and the Clock/spiral.
 6. Pass the stable everyday-use gate in the master plan.
-7. Finish Installed HTML/Website administration, live workspace collaboration
-   and the read-only Facade using their existing boundaries.
+7. Finish native live workspace collaboration and the read-only Facade using their existing boundaries. Exporting to somebody's browser does not require embedding CEF.
 8. Enable later opt-in moving Areas and topology, with spatial checkpoints and
    measured physics selection. Preserve the stationary default.
 9. Add bounded surface effects and supported WGSL authoring.
 10. Complete Action/Rule/Transfer simulation views when their domain support
     is ready. This separate lane can start after step 6 without waiting for
     motion, shaders or Facade.
+11. Finish the optional CEF adapter, its five deferred roots, Installed HTML, embedded previews and browser administration/security/performance proofs. Native defaults stay CEF-free.
 
 Fiote Phase 0 can proceed beside C4-C5. Its Phase 2 prototype opens after C5
-and consumes the general domain-compound and Conversation foundation; it is
-not an Interface prerequisite and does not delay Box.
+and consumes the general domain-compound and Conversation foundation. Its full terminal-bearing session surface also needs the late-v1 terminal lane; native C5 does not supply that renderer. Fiote is not an Interface prerequisite and does not delay Box.
 
 The active detailed checklist is
-[plans/customization.md](plans/customization.md). The Sand contract that it
+[plans/part-a.md](plans/part-a.md); [plans/customization.md](plans/customization.md) preserves the prior foundation evidence. The Sand contract that it
 must converge with is [sand-model.md](sand-model.md), with its detailed work
 in [plans/sands.md](plans/sands.md). The completed Pulsar/Helio research and
 local source snapshots remain reference material in [links.md](links.md); they
@@ -359,6 +362,8 @@ are not another implementation checklist.
   in.
 
 ## Minimal reading set for the next implementation
+
+Start with [Part A](plans/part-a.md), [the build rule](build.md) and the assigned node in [the graph](graph.md). Read only the relevant behavior references below, together with the graph-work isolation and compilation instructions. The actual native feature boundary still needs its bootstrap proof; a passing bare-crate check does not establish native desktop coverage. Joined-runtime coverage is explicitly deferred, not silently credited to Corgi.
 
 Read:
 

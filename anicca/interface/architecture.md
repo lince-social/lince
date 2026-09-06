@@ -4,7 +4,7 @@ Purpose: Define v1/v2 horizons, Plan A ownership, retained alternatives, and the
 
 Owner source: [Interface in Lince](../Lince.lingua).
 
-Status: Plan A accepted; the joined laboratory is the evidence, not a collection of independent demos.
+Status: Plan A ownership accepted through historical joined evidence. The next delivery makes its common native host CEF-free by default; the optional browser adapter returns only at the end of v1.
 
 Read when: changing window, renderer, engine, physics, HTML-compositor, or platform ownership.
 
@@ -13,6 +13,8 @@ Read when: changing window, renderer, engine, physics, HTML-compositor, or platf
 ---
 
 ## Preserved implementation specification
+
+The current milestone is [Part A — Dogfeeding](plans/part-a.md) with [backend foundations](../backend-part-A.md): new native Interface Sands entering a private Organ live on a headless Linux server, locally or on a VPS. Role-associated Protein Record selection and property-write permissions govern knowledge/work Records; the company is the first acceptance case, not a second project/team or permission model. Manual configuration is sufficient. This does not require legacy desktop Sands, lince-desktop, a browser client, database replication onto employee devices or shared live Box layout. The [build rule](build.md) keeps CEF optional and late; reuse the existing common native host, not a second runtime. Later Box/time, additional native roots and CEF retain separate delivery.
 
 ## Base
 
@@ -67,19 +69,7 @@ reconstruction or a universal world format to satisfy these invariants. It
 needs a small permanent kernel and an honest capability boundary, followed by
 the simple human-usable Box.
 
-The development course is therefore:
-
-1. prove the permanent native ownership seams with one Lince-owned window,
-   device and compositor, selected Bevy modules, retained UI and CEF, while
-   keeping the GPUI-owned path as rejection/reference evidence;
-2. complete Customization, the Lynx visual-character gate and the
-   renderer-independent Sand/Castle composition workbench;
-3. ship the human-usable v1 Box, current Protein wiring, Areas and external
-   HTML on those foundations; and
-4. keep v2 as structured research with explicit coordinate, planetary,
-   artifact, scene-construction, capture and scenario proofs, promoting a
-   result into product planning only after its semantics and human surface are
-   understood.
+The ownership proof and initial Customization/composition kernels have landed. The development course now follows the [master waterfall](plans/interface.md#v1-master-waterfall): CEF-free production bootstrap and native C4/C5; stationary Box, durable composition and native time; the other planned native v1 work; then optional CEF and its dependent features. V2 remains research, and the rejected GPUI path remains reference evidence. Preserving an HTML contract does not require running its adapter during native work.
 
 Research proofs live behind development tooling and leave no dormant public
 schema field, compatibility branch or half-supported button in v1. What v1
@@ -207,14 +197,9 @@ by the v1 Box; it does not acquire a dormant schema field or public button.
 
 The native architecture is accepted on the owner's NixOS/Wayland machine.
 Linux is Wayland-only: Winit is built without its X11 backend, the event loop is
-forced to Wayland, CEF is forced through Ozone Wayland, and Linux has no Tauri,
-WebKitGTK, XWayland or automatic fallback desktop. The prebuilt CEF shared
-object still declares some X11-family system libraries as upstream binary
-dependencies; those libraries are packaging baggage, not a Lince X11 code
-path. A machine without a usable Wayland compositor reaches an honest launch
+forced to Wayland, and Linux has no Tauri, WebKitGTK, XWayland or automatic fallback desktop. When the optional CEF adapter is enabled, it is forced through Ozone Wayland; its prebuilt shared object declares some X11-family system libraries as upstream binary dependencies. Those libraries belong to the optional package, not a Lince X11 code path or the native default. A machine without a usable Wayland compositor reaches an honest launch
 failure instead of negotiating down. V1 names any further supported operating
-systems and graphics backends only after separate build, launch, input, CEF,
-recovery and accessibility evidence; an untested Metal or Direct3D path is not
+systems and graphics backends only after separate native build, launch, input, recovery and accessibility evidence, with additional CEF evidence before that optional adapter is offered there. An untested Metal or Direct3D path is not
 called supported merely because `wgpu` has that backend.
 
 #### Plan A: GPU-first native prototype
@@ -227,7 +212,7 @@ first text path uses Glyphon/cosmic-text and its semantic projection uses
 AccessKit; GPUI remains a behavior, visual-quality and implementation reference
 rather than a production runtime dependency. A world renderer supplies the
 retained 2D/3D scene, instanced Box material, maps, games, terrain, specialised
-shaders, and future immersive visualisations. CEF supplies real Chromium HTML
+shaders, and future immersive visualisations. When enabled, CEF supplies real Chromium HTML
 as accelerated offscreen textures. These are projections behind the same Sand
 graph rather than separate application models.
 
@@ -240,7 +225,7 @@ The native path begins with one candidate ownership constitution:
 - the native UI projection receives normalized input, contributes display work
   to the host frame assembly, and publishes one AccessKit tree without owning a
   second window, surface, device, or queue submission;
-- CEF remains in its required browser processes and exports accelerated
+- the optional CEF adapter remains in its required browser processes and exports accelerated
   offscreen surfaces to that same device topology; and
 - the Lince frame coordinator defines when input, fixed simulation, semantic
   diffs, UI layout, world extraction, browser paint and composition occur.
@@ -282,7 +267,7 @@ or permanent accidental coupling.
 
 The intended native architecture gives the Lince shell the final frame. Bevy
 supplies world passes using the shared device, the Lince UI renderer supplies
-native controls and editor work, and CEF supplies browser surfaces. This
+native controls and editor work, and optional CEF supplies browser surfaces. This
 follows the lesson from Pulsar's failed direct GPUI/game-loop integration
 without making Bevy itself the outer application owner. The laboratory retained the
 GPUI-owned diagnostic below as measured comparison evidence, not as an adapter
@@ -334,6 +319,8 @@ by the host. An arbitrary Website remains different: it gets normal browser
 network/storage behavior and host-owned navigation/focus/bounds ports, but no
 Protein, Action, Lince identity, or ambient bridge unless it is deliberately
 installed as a reviewed external Sand.
+
+Feature unavailability is not camera culling. A disabled CEF projection is never admitted or executed; the following liveness rule applies to admitted, enabled runtimes.
 
 Camera visibility is presentation information only. An off-camera native Sand,
 game, CEF Sand, video call, Protein subscription, Behavior, event route, Area

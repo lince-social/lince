@@ -21,6 +21,8 @@ Read when: implementing reusable primitives, Castles, bindings, artifacts, or co
 
 ## Sand
 
+Projection availability is distinct from definition validity. [The native-first build rule](build.md) controls which adapters the executable contains. A valid installed HTML definition can remain stored and inspectable while unavailable to run; native siblings retain their own bindings and authority. Part A proves the native contract and fail-closed disabled projections, not live HTML execution or browser parity. The landed joined examples below are historical evidence for the shared model, not current CEF prerequisites.
+
 ### Landed version-1 contract
 
 `crates/interface/src/sand.rs` is the executable Rust authority for

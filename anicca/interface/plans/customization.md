@@ -148,7 +148,7 @@ shows the recursive tree and visually distinct `READ`, `EVENT` and `WRITE`
 arrows from Protein fields through the exact nested ports to the granted
 `record.open` Action.
 
-Installed HTML clones the same semantic template twice. Runtime-scoped DOM ids
+Installed HTML checkouts the same semantic template twice. Runtime-scoped DOM ids
 and repaired `for`, `aria-labelledby`, `aria-describedby`, `aria-controls` and
 `aria-owns` references remained collision-free, and its native ES module
 removed its listener before a visible remount. Rust constructors, recursive
@@ -248,111 +248,17 @@ the selected Record through `SetQuantity`. It deliberately leaves inline Table
 editing/deletion, selected Protein drivers, saved Kanban lane/concept presets,
 bulk selection/actions and swimlanes unchecked within C4.
 
-C4 proceeds internally as a strict waterfall: first render and operate the
-shared native shell/Record pieces; then finish Conversation state and private
-queues; then migrate the remaining data workflows; then connect the bounded
-document/game/terminal/graph/Website and other specialized leaves; finally
-delete the last official legacy caller, duplicated CSS/JavaScript and LynxUI
-vocabulary. Each slice reaches the running native interface before the next
-one claims its behavior.
+The company-workflow slice and native quality gate are owned by [Part A — Dogfeeding](part-a.md); other native migrations remain in [native follow-through](native-follow-through.md). The [execution graph](../graph.md) needs re-cut around the backend company foundations before launch. This document preserves the verified foundation and its historical evidence, not a duplicate active checklist.
 
-- [ ] Treat Rust-authored Sand definitions as the first-party source of every
-      reusable semantic piece. Decompose a workflow until each remaining leaf
-      either has an independently useful meaning or is a deliberately bounded
-      specialized renderer. Labels, values, badges, fields, buttons, menus,
-      rows, cards, toolbars, empty/error states and inspectors remain
-      individually placeable Sands; a Record, Conversation, Kanban or other
-      workflow is a recursive compound over them. Do not replace legacy HTML
-      monoliths with equally monolithic Rust constructors.
-- [ ] Remove the Record editor's idle source-to-rendered conversion. Preserve
-      the active block while thinking, selecting or composing input; render
-      after leaving it or an explicit presentation change. Test caret, draft
-      and viewport stability through the shared editor in every migrated use.
-- [ ] Make workspace controls visible by default, with a persisted optional
-      corner triangle and its color/transparency controls. Keep a discoverable
-      keyboard restore. These are shell changes; they do not require Box physics.
-- [ ] Migrate the board host, shared components and every official Sand from
-      hardcoded governed values to canonical color, spacing, border, radius,
-      type, elevation, stacking and motion roles. Preserve user expression and
-      specialized rendering as data behind the documented boundary.
-- [ ] Replace duplicated controls and component CSS with referenced primitive
-      or compound Sands. Graphs, terminals, games, documents, canvases and art
-      keep specialized internals while their ordinary shell and controls use
-      the shared definitions where practical.
-- [ ] Under Plan A, migrate first-party structure to paired native retained
-      UI/world projections. For HTML-backed and Plan B variants, migrate
-      composable first-party structure to small Maud functions with separate
-      CSS and ES modules. Do not rewrite vendored, imported, third-party or
-      deliberately opaque documents merely to claim Maud coverage.
-- [ ] Replace genuine workflow structure with recursive definitions while
-      preserving specialized internals. Ready-made Kanban and video call stay
-      convenient compound definitions, not sealed exceptions.
-- [x] Rebuild Conversation on the shared definitions together with its general
-      data contract: author and delegated operator on every Message; explicit
-      `writing`, `finished` and `interrupted` state; read-only live growth while
-      writing; and author-private drafts that support pinned presets, reorder,
-      age and declared send timing. These are ordinary multi-person
-      conversation capabilities, not Fiote-only controls. Commit coalescing is
-      performance work and may be selected only after ordered state changes
-      and restart behavior are correct.
-- [ ] Split first-party JavaScript by contract and state ownership as each
-      surface moves. Delete copied instance HTML, duplicated CSS, stale token
-      aliases, replaced APIs and the parallel component vocabulary instead of
-      adapting around them.
-- [ ] Remove `LynxDS-components.js` and all official `window.LynxUI` callers.
-      The historical Gallery bridge may exist only while its owning caller is
-      unmigrated; it is absent at C5. No persisted legacy shell HTML or
-      compatibility contract survives.
+C4's CEF-free host/package bootstrap and shared native, editor and domain boundaries are certified before their consumers. Independent native workflows may then migrate in parallel in isolated checkouts; a workflow waits for its actual dependencies, not every unrelated root. Each in-scope migration reaches the running native surface before certification. Native-path legacy deletion follows replacement proofs, while gated browser implementations remain for the final v1 lane. Dogfeeding applies the native quality gate to its selected company workflows together with Backend Part A's remote-access and recovery gates. Other native migrations remain in [native follow-through](native-follow-through.md); full catalog count is not the Part A finish line.
+
+Conversation's general authorship, live state and private-draft queue already exist in the native runtime and domain seam. Part A completes shared-editor integration and regression coverage rather than rebuilding that foundation or introducing a Fiote harness.
 
 ### C5 — Enforcement, authoring and completion gate
 
-C5 closes the existing pre-Box foundation. The 2026-09-06 Box extensions have
-their own [stable everyday-use gate](interface.md#stable-everyday-use-gate);
-do not claim those later surfaces through the historical Gallery evidence.
+[Part A's completion checks](part-a.md#prove-the-foundation-a-person-will-use) own native visual rules, themes, accessibility, author guidance, lifecycle, runtime health, package conformance, scale and quiet-machine measurements. [The build rule](../build.md) assigns scoped native Corgi checks and the warm Cargo/Nix production lane; fresh runtime and measurement evidence still closes C5, not compilation alone. Live native/HTML parity and all browser-specific proofs belong to [the final CEF lane](cef.md).
 
-- [ ] Add a design-system check that rejects governed color, spacing, radii,
-      borders, typography, shadow, stacking, transition and animation literals
-      outside canonical definitions. Exclude vendored assets, user content,
-      runtime measurements and reviewed specialized internals.
-- [ ] Test complete fallback, partial themes, validated selection, every
-      override scope, inherit/reset, persistence, isolation, live updates and
-      resolved declarations inside Installed/Plan B roots.
-- [ ] Test quantity formatting, tabular figures, solid/dashed truth, non-color
-      status, keyboard navigation, focus, ARIA state, associated help/errors,
-      reduced motion and absence of ornamental animation.
-- [ ] Verify the active editor block remains stable beyond five idle seconds,
-      during selection and IME composition, and after a live update. Verify
-      visible default controls and keyboard restoration from a transparent
-      folded triangle after restart.
-- [ ] Prove Conversation live growth, interruption, authorship, private
-      draft/preset isolation, reorder and restart behavior through keyboard,
-      pointer and AccessKit. Fiote may later expose the same Actions through
-      speech or plain language, but that alternative channel never excuses an
-      inaccessible native Sand.
-- [ ] Curate checked-in theme/Sand author guides around the landed generated
-      token reference and external-author kit; expand component/composition,
-      schema-fixture and CEF/browser regression coverage for every official
-      Sand migrated in C4.
-- [ ] Test teardown, stable identity, focus preservation and bounded work with
-      at least 200 Sand instances. No view state may outlive its root, submit
-      unrelated state or bypass validated Actions and future Box operations.
-- [ ] Verify development and release serve the same first-party ES modules,
-      embedded imports resolve and ordinary Behavior needs no frontend build.
-      Any selected Plan B Wasm renderer is reproducible, current, target-
-      checked, debuggable, licensed and omitted from a DOM-only Facade.
-      Facades require neither inline-script nor `unsafe-eval` CSP.
-- [ ] Run the native visual-character gate at 1× and available fractional
-      scales in Dark, Light, partial custom theme and reduced motion. Review
-      sharp text, stable hairlines, density, hierarchy, keyboard/pointer focus
-      transfer, moving/scaling/rotating Sands and p95/p99 input-to-present
-      latency. Keep layout, clipping, text, render targets and quality dynamic
-      so there is no known 4K ceiling; physical 4K review waits for hardware.
-- [ ] Ship runtime health on primitive Sands: graphics backend/software
-      rendering, heavy CEF/GPU use and admission, unavailable/crashed states,
-      retry/recovery/disable controls, and no claim for an untested OS/backend.
-- [ ] Do not open Box until the Gallery and workbench pass Dark, Light, partial
-      theme, reduced motion, keyboard-only, isolated-root, save/reload and the
-      visual-character gate. At that point Box consumes finished foundations.
+The later Box additions retain their separate [stable everyday-use gate](interface.md#stable-everyday-use-gate). C5 certifies the foundation they consume, not per-appearance release, presentation switching, Calendar, Clock or future spatial behavior.
 
 Physics selection is not hidden in Customization. Avian versus a narrow SoA
 force/sort/group/boundary solver belongs to the later measured Area/topology stage

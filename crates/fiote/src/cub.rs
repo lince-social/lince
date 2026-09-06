@@ -1,4 +1,5 @@
 use {
+    crate::credential::{CredentialSource, ProviderCredential},
     serde::{Deserialize, Serialize},
     std::{
         collections::VecDeque,
@@ -117,6 +118,7 @@ pub struct CubStatus {
     pub id: String,
     pub name: String,
     pub cwd: PathBuf,
+    pub credential_source: Option<CredentialSource>,
     pub running: bool,
     pub exit_code: Option<i32>,
     pub events: u64,
@@ -125,6 +127,7 @@ pub struct CubStatus {
 pub struct Cub {
     pub id: String,
     pub spec: CubSpec,
+    credential_source: Option<CredentialSource>,
     stdin: AsyncMutex<Option<ChildStdin>>,
     events: broadcast::Sender<Arc<CubEvent>>,
     backlog: Mutex<VecDeque<Arc<CubEvent>>>,
@@ -134,8 +137,17 @@ pub struct Cub {
 }
 
 impl Cub {
-    pub(crate) fn spawn(id: String, program: &PathBuf, spec: CubSpec) -> Result<Arc<Self>, String> {
-        let mut child = Command::new(program)
+    pub(crate) fn spawn(
+        id: String,
+        program: &PathBuf,
+        spec: CubSpec,
+        credential: Option<ProviderCredential>,
+    ) -> Result<Arc<Self>, String> {
+        let mut command = Command::new(program);
+        if let Some(credential) = &credential {
+            command.env(credential.variable(), credential.secret());
+        }
+        let mut child = command
             .args(spec.arguments())
             .current_dir(&spec.cwd)
             .stdin(Stdio::piped())
@@ -165,6 +177,7 @@ impl Cub {
         let cub = Arc::new(Self {
             id,
             spec,
+            credential_source: credential.as_ref().map(ProviderCredential::source),
             stdin: AsyncMutex::new(Some(stdin)),
             events,
             backlog: Mutex::new(VecDeque::new()),
@@ -215,6 +228,7 @@ impl Cub {
             id: self.id.clone(),
             name: self.spec.name.clone(),
             cwd: self.spec.cwd.clone(),
+            credential_source: self.credential_source,
             running: exit.is_none(),
             exit_code: exit.flatten(),
             events: self.seq.load(Ordering::Relaxed),

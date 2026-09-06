@@ -19,6 +19,8 @@ Read when: publishing, importing/exporting, or connecting the interface to exter
 
 ## Interoperability
 
+The [CEF-free delivery rule](build.md) does not defer static HTML export, content-addressed archives or an externally viewed Live Facade. Their own publication and privacy gates still apply. Only embedded browser execution and previews move to the final v1 CEF lane; package bytes and projection semantics remain independent of an installed renderer.
+
 Lince interoperates through explicit boundaries rather than pretending every
 foreign system is native Ledger truth. Blood owns system-to-system exchange;
 external Sands own embedded interaction; Facades own public presentation;

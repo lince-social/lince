@@ -4,10 +4,10 @@ use nucleus::karma::{
     CandidateRoute, CapabilitySet, ControlState, DatumState, DurationMs, EvaluationErrorCode,
     EvaluationLimits, EvaluationResult, ExpressionAst, FrozenEvaluationContext, InputBinding,
     InputSource, LateEventPolicy, LiteralValue, LocalId, NodeAst, NodeOperation, OutputRef,
-    PortContract, ProgramAst, ProgramSchema, ProofIssueCode, ProofStatus, Sensitivity,
-    SimulationStatePolicy, Slug, StateContract, StateMigrationPolicy, StatePersistence,
-    StateResetPolicy, ThresholdDirection, TimestampMs, ValueType, evaluate_program, format_program,
-    parse_program, prove_program,
+    PortContract, ProgramAst, ProgramSchema, ProofIssueCode, ProofStatus, ReferenceKind,
+    ResolvedReference, Sensitivity, SimulationStatePolicy, Slug, StateContract,
+    StateMigrationPolicy, StatePersistence, StateResetPolicy, ThresholdDirection, TimestampMs,
+    TypedUid, ValueType, evaluate_program, format_program, parse_program, prove_program,
 };
 
 #[test]
@@ -578,8 +578,8 @@ fn boundary_node(value_type: ValueType) -> NodeAst {
         inputs: BTreeMap::new(),
         outputs: BTreeMap::from([(id("value"), port(value_type))]),
         operation: NodeOperation::Input {
-            source: InputSource::SecretMetadata {
-                secret: id("fixture"),
+            source: InputSource::Signal {
+                signal: reference(ReferenceKind::Signal, RECORD_UID, "kitchen.scale"),
             },
             output: id("value"),
         },
@@ -655,4 +655,13 @@ fn timestamp(offset: i64) -> TimestampMs {
         .unwrap()
         .checked_add(DurationMs::new(offset))
         .unwrap()
+}
+
+const RECORD_UID: &str = "r_01ARZ3NDEKTSV4RRFFQ69G5FAV";
+
+fn reference(kind: ReferenceKind, uid_value: &str, slug: &str) -> ResolvedReference {
+    ResolvedReference {
+        target: TypedUid::new(kind, uid_value).unwrap(),
+        display_slug: Some(Slug::new(slug).unwrap()),
+    }
 }

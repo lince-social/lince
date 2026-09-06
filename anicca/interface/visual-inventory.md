@@ -161,6 +161,8 @@ values and invalid hashes fail closed.
 
 ## Migration rule
 
+[Part A](plans/part-a.md) applies this rule to the enabled native path. Browser-backed leaves and the support code they still need are retained behind the CEF boundary for [the final v1 lane](plans/cef.md). Their presence in this inventory is not a demand to migrate or delete them before native C5. Exclusions must name the retained source and disabled dependency; they cannot excuse copied controls in an active native workflow.
+
 The inventory is complete as a source boundary, not as a claim that the old
 Web UI has already migrated. During the official-Sand rebuild, each listed
 source must either map a literal to the canonical contract, classify it as

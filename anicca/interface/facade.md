@@ -15,6 +15,8 @@ Read when: implementing publication, public Protein streaming, or visitor-local 
 
 ### Public Facade
 
+This later v1 feature is not delayed by the embedded-CEF deferral. The exported projection runs in the visitor's browser, not inside the publisher's desktop; a native publication surface can validate and publish without an embedded preview. [The build rule](build.md) keeps those paths separate. Browser-backed previews in the desktop remain optional late-v1 work, and a Facade does not become a general browser client for a Cell.
+
 A **Live Facade** is a published, read-only rendering of one Box composition at
 a public URL. Caddy and DNS may terminate and route the public origin, but
 Lince still owns the publication manifest, public assets, read-only data

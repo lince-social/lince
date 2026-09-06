@@ -10,6 +10,7 @@ const INTERACTIONS_JS: &str = include_str!("../static/presentation/board/interac
 const STORE_JS: &str = include_str!("../static/presentation/board/store.js");
 const GROUP_LOGIC_JS: &str = include_str!("../static/presentation/board/group-logic.js");
 const VIEWPORT_JS: &str = include_str!("../static/presentation/board/viewport.js");
+const VAULT_JS: &str = include_str!("../static/presentation/board/vault.js");
 
 const PRELUDE: &str = r#"
 import assert from "node:assert/strict";
@@ -32,6 +33,7 @@ import {
   wrapInGroup,
 } from "./group-logic.mjs";
 import { createBoardViewport } from "./viewport.mjs";
+import { LOCKED_LABEL, VAULT_MARKER, isLocked } from "./vault.mjs";
 
 globalThis.window = globalThis;
 globalThis.document = globalThis.document || {
@@ -128,6 +130,7 @@ fn stage_and_run(label: &str, body: &str) {
         ("store", STORE_JS),
         ("group-logic", GROUP_LOGIC_JS),
         ("viewport", VIEWPORT_JS),
+        ("vault", VAULT_JS),
     ];
     for (name, source) in modules {
         let rewritten = source.replace(".js\"", ".mjs\"");
@@ -525,6 +528,24 @@ store.setCardsGroup(["a", "b"], null, { persist: false });
 cards = store.getCards();
 assert.strictEqual(byId(cards, "a").groupId, null);
 assert.strictEqual(byId(cards, "b").groupId, null);
+"#,
+    );
+}
+
+#[test]
+fn a_locked_description_is_recognised_before_it_is_rendered() {
+    stage_and_run(
+        "vault-locked-description",
+        r#"
+const envelope =
+  VAULT_MARKER + " m=19456,t=2,p=1 c2FsdHNhbHRzYWx0c2E= " +
+  "bm9uY2Vub25jZW5vbmNlbm9uY2Vub24= Y2lwaGVydGV4dA==";
+
+assert.equal(isLocked(envelope), true);
+assert.equal(isLocked("an ordinary description"), false);
+assert.equal(isLocked(VAULT_MARKER + " not an envelope"), false);
+assert.equal(isLocked(null), false);
+assert.ok(LOCKED_LABEL.length > 0);
 "#,
     );
 }

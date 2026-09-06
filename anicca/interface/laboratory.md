@@ -4,15 +4,21 @@ Purpose: Preserve the acceptance fixtures, benchmark contract, evidence, and han
 
 Owner source: [Interface in Lince](../Lince.lingua).
 
-Status: Promoted native architecture, customization and primitive-Sand
-evidence; the production live report awaits the owner reference repair
-described in the plan.
+Status: Promoted architecture and production joined evidence through C4. The former owner-reference repair is closed. Part A now needs a fresh CEF-free production profile, not another joined report.
 
 Read when: validating runtime changes or deciding whether a prototype seam may become production contract.
 
 [Corpus map](README.md) · [Current context](current.md) · [Interface plan](plans/interface.md)
 
 ---
+
+## Current native acceptance profile
+
+[The build rule](build.md) and [Part A graph](graph.md) govern the next run. Bootstrap must give the real desktop and its native Gallery/workbenches a CEF-free feature graph, shell, package and diagnostic entry. Running the old joined executable with zero browser panes does not prove that boundary. The historical fixture specifications and measured joined reports below are retained; browser-specific obligations resume in [the final v1 CEF lane](plans/cef.md).
+
+The new native profile keeps the benchmark contract below for native frame/input latency, 120 Hz fixed-step regression, partial updates, GPU work, semantic camera invariance, startup, device recovery, ten-cycle lifetime, accessibility and authority. Its 200-visible/1,000-active/10,000-resident fixture is distinct from the stationary everyday-use witness, where automatic movement stays off. A native theme update still reaches all affected visible Sands within the existing budget. Native routes, subscriptions and GPU objects return to baseline on teardown; CEF processes and surfaces remain absent throughout.
+
+CEF counts, browser renderer recovery, live Installed-HTML parity and hostile Website probes are explicitly not applicable to this profile, not silently passing zero-valued fields. Their historical thresholds remain for the final lane. Pure metadata, artifact and export conformance can still be checked without executing HTML. Version the native report and record enabled features, exact source, toolchain, machine, workload and fresh raw samples. Preserve three 30-second warm-ups followed by 120-second samples and the distinction between measured input-to-present-call and physical-display latency. The graph's inspector holds the machine exclusively during measurement; Corgi and Cargo workers are paused or drained first.
 
 #### Native Interface Laboratory
 
@@ -539,6 +545,8 @@ surface rather than silently freezing older pages.
 
 ##### Reproducible benchmark contract
 
+This is the retained joined contract. The current native profile above keeps its native thresholds and excludes its explicitly browser-only rows; the late CEF lane restores those rows. Tool selection follows [build.md](build.md): scoped Corgi native checks where proved, one warm Cargo/Nix production lane and fresh execution for runtime or measurement evidence.
+
 Every performance run records the git revision, dependency locks, release
 profile, scenario/seed, backend, adapter/driver, CPU/GPU/RAM, power mode,
 resolution/scale, visible/resident/awake counts and CEF count. It warms for 30
@@ -824,8 +832,4 @@ zero CPU paints; the Website retained no bridge authority.
 
 The exit artifact contains exact dependency and license inventory, architecture
 decision records, raw and summarized benchmark results, known platform limits,
-accepted adapter contracts and a disposition for every laboratory module. Work
-now advances to Configuration/external authoring, official-Sand migration and
-C5 completion gate; then Box foundations, Protein result
-templates, Areas and Actions, persistence, external HTML hardening and the
-public Live Facade. No later cluster works around a failed foundation seam.
+accepted adapter contracts and a disposition for every laboratory module. The current continuation is [Part A](plans/part-a.md), not a repeat of the accepted kernels: native client/server bootstrap, private company task workflows and their native quality and [backend acceptance](../backend-part-A.md) gates. Other native roots are later work, and the old C4 execution graph needs re-cut. The [master waterfall](plans/interface.md#v1-master-waterfall) then owns Box and the later native work, with CEF hardening and its dependent roots at the end of v1. No later cluster works around a failed native foundation seam.

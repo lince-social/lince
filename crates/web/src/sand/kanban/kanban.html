@@ -394,6 +394,13 @@
     // already-attached node rather than recreating it) fixes that generally,
     // for every render trigger, not just drag release specifically.
     const bodyContentCache = new Map();
+    // The shared recogniser for password-locked descriptions. It loads late;
+    // until it does, a card renders its body the ordinary way and the cache
+    // key changes when it arrives, so every card re-renders once.
+    var Vault = null;
+    import("/board/vault.js")
+      .then((mod) => { Vault = mod; bodyContentCache.clear(); try { render(); } catch (err) { console.warn("[kanban] render after vault load", err); } })
+      .catch((err) => console.warn("[kanban] vault helper unavailable", err));
     function acceptRows(next) {
       rows = next;
       rowsByUid = {};
@@ -748,11 +755,20 @@
     }
     function cardBodyNode(row, mode) {
       if (bodyEdit && bodyEdit.uid === row.uid) return bodyEditNode(row);
-      const cacheKey = `${mode}::${row.body || ""}`;
+      const cacheKey = `${mode}::${Vault ? "v" : "-"}::${row.body || ""}`;
       const cached = bodyContentCache.get(row.uid);
       if (cached && cached.key === cacheKey) return cached.node;
       const el = document.createElement("div");
       el.className = mode === "compact" ? "card-body compact" : "card-body";
+      // A password-locked description (anicca/Secrets.md) is ciphertext: say
+      // it is locked rather than rendering the envelope as markdown, and do
+      // not open the in-place editor over it.
+      if (Vault && Vault.isLocked(row.body || "")) {
+        el.classList.add("empty-body");
+        el.textContent = Vault.LOCKED_LABEL;
+        bodyContentCache.set(row.uid, { key: cacheKey, node: el });
+        return el;
+      }
       if (!String(row.body || "").trim()) {
         el.classList.add("empty-body");
         el.textContent = "add body…";

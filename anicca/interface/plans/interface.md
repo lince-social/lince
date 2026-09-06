@@ -21,6 +21,8 @@ Read when: closing the production report or implementing a Box-and-after cluster
 
 #### Landed native interface foundation
 
+The following records the accepted joined prototype and its source revisions. The next production default is deliberately different: [Part A](part-a.md) extracts the same native host without CEF and earns new native-only evidence. Historical browser proofs and packaging instructions are retained for [the final CEF lane](cef.md), not repeated before Box.
+
 Plan A is accepted and the completed task entry has been removed. The Linux
 desktop now reaches the root-workspace `lince-interface` package directly,
 owns one Wayland event loop and WGPU/Vulkan compositor, runs selected Bevy
@@ -170,7 +172,7 @@ The accepted ideas attach to work that already exists:
 | Existing stage | Study constraint carried into it |
 | --- | --- |
 | C4 official Sands | Stable semantic ids and renderer-neutral definitions remain above retained nodes, Bevy entities, DOM nodes, CEF ids and GPU handles. Focused UI crates or bounded techniques may assist projections without creating another application model. |
-| C5 completion gate | Runtime health relates input and semantic revisions to simulation, CEF and presentation work. Frame coordination, recovery, accessibility and visual quality remain human-tested. |
+| C5 completion gate | Runtime health relates input and semantic revisions to native simulation and presentation work. Frame coordination, native recovery, accessibility and visual quality remain human-tested. CEF health is added only in its final v1 lane. |
 | Box navigation | The Lince coordinator owns the frame; culling removes only extraction and drawing. Coordinate frames, displayed-revision picking and bounded adapter snapshots are correct before scale optimization. |
 | Protein and Areas | Typed events and Actions cross ownership boundaries. Neither camera visibility nor renderer residency changes Protein, Behavior or physics meaning. |
 | Topology and free space | Authoritative frames and potential fields are shared across physics, rendering, picking and persistence. Dirty tiles, dense GPU buffers and compute enter only from measured workload evidence. |
@@ -184,6 +186,8 @@ not claim them merely because the study found them interesting.
 
 #### V1 master waterfall
 
+Steps 1–2 are **Part A — Dogfeeding**: [general backend foundations and company acceptance](../../backend-part-A.md), [new native Sands](part-a.md), [build rule](../build.md). A private Linux server, on a local machine or VPS, and native live Interface support knowledge, teams, projects/tasks and threads/messages through ordinary Records and Assertions. Roles use Protein-selected Record permissions and property-write grants, including checks on proposed changes. Manual vocabulary, policy and view setup is sufficient; no company starter or required owning project is a gate. The former twenty-root graph is [stale pending re-cut](../graph.md). Additional [native migrations](native-follow-through.md), Karma/Transfer and separate Communication Castles are not required. The final CEF lane stays at step 11; later Box/time requirements remain without making all of v1 a prerequisite.
+
 The current C4 boundary catalogs all 25 official roots as 72 validated
 Rust-owned definitions and exposes them through F12, pointer and AccessKit.
 Configuration is marked landed; edit controls, zoom controls, Record,
@@ -194,7 +198,7 @@ other 17 roots retain an explicit runtime-Behavior-pending state. The three
 collection roots have core projection and Action behavior but retain explicit
 C4 follow-up for inline editing, configured Protein/lane rules and bulk work. This does not
 advance the master waterfall past step 1 because remaining workflows,
-specialized adapters and legacy deletion still remain. It proves recursive
+native workflows and their scoped legacy cleanup still remain. It proves recursive
 retained projection, interaction and accessibility, fixes nested input
 forwarding and establishes the renderer-neutral read/write seam before the
 rest of behavior migration depends on it.
@@ -204,14 +208,9 @@ gate. `First Steps.linguai` remains the editable future tutorial rather than an
 ingested Record; the six chapters temporarily stand as roots until that draft
 becomes owner-reviewed Instinct.
 
-1. Rebuild the base and official Sands on the shared definitions, deleting the
-   parallel LynxUI vocabulary, copied HTML, token aliases and replaced APIs as
-   callers move. Conversation includes its general authorship, live-message
-   state and private draft/preset queue here; those are not deferred to Fiote.
-   Apply the owner's stable Record editing and visible workspace-control
-   defaults during their C4 migration.
-2. Pass the C5 visual, accessibility, theme, authoring, lifecycle, runtime
-   health and scale gate. Only this closes the pre-Box foundation.
+1. Extract the common CEF-free native host and deliver its real Interface client entry plus the headless server, without legacy desktop Sands or the lince-desktop wrapper. Complete backend identity and Role/Protein/property permissions, native Organ connection, manual Record/Assertion/Protein authoring, Table/Todo/Kanban, threads/messages and administration. Company workflows reuse these pieces rather than adding a starter or separate task/team model. Keep stable controls/editing and scope legacy retirement to certified replacements; no Karma, Transfer or call workflow is required.
+2. Pass native visual, accessibility, theme, lifecycle and performance gates together with Backend Part A's company fixture, off-LAN live access, revocation, restart and backup restore. This closes Dogfeeding, not the full C4 catalog. Browser proofs remain in step 11.
+
 3. Build a stable 2D Box: visible controls, navigation, layers, anchors,
    direct placement and the base pattern. Land the readable snapshot, operation
    journal, undo and restart recovery here. No customization below ships only
@@ -225,10 +224,7 @@ becomes owner-reviewed Instinct.
    Karma. No terrain or Box free-space physics is a dependency of these views.
 6. Pass the stable everyday-use gate below, including persistence, keyboard
    use, individual edits, changing presentation, released children and time.
-7. Finish Installed HTML and Website administration, capability review,
-   storage/network controls, admission budgets, crash/recovery and runtime
-   health on Box; then live workspace collaboration and the read-only Facade.
-   Their existing identity, permission and recovery gates still apply.
+7. Finish the [native follow-through surfaces](#native-follow-through-and-cross-feature-surfaces), live workspace collaboration and the read-only Facade. Independent follow-through tasks may start after Part A as their domain dependencies permit; workspace collaboration and Facade consume the stable Box gate. Their identity, permission and recovery gates still apply. HTML export and a Facade in an external browser do not require an embedded CEF runtime; a new surface or backend operation is never declared delivered by a related Part A migration.
 8. Add moving Areas, mutation visits, immunity, topology and free-space work
    under the retained sections below. Extend durable recovery to spatial
    checkpoints. Compare Avian and a narrow solver on this workload. Movement
@@ -239,6 +235,7 @@ becomes owner-reviewed Instinct.
     domain simulation support is ready. This lane can start after step 6 and
     does not depend on motion, shaders or the Facade. Calendar and Clock remain
     useful without it.
+11. Complete [the final v1 CEF lane](cef.md): the optional adapter and packaging, five deferred roots, Installed HTML, mixed compositions, embedded previews, administration and fresh browser-specific acceptance. The default native application remains independent of CEF when this lane lands.
 
 The 2026-09-06 owner revision changes the old order: durable stable composition
 and native time views precede automatic movement. Later motion code is kept.
@@ -251,8 +248,7 @@ Box and after.
 
 Fiote is not another stage in this waterfall. Its Phase 0 cleanup can proceed
 independently; its prototype lane opens after C5, consuming the domain-derived
-compound recipe and Conversation foundation without becoming a prerequisite
-for Box. The shared requirements and the Fiote-only boundary are mapped in
+compound recipe and Conversation foundation without becoming a prerequisite for Box. Its full terminal-bearing session surface additionally waits for the late-v1 terminal; C5 alone does not make that pane available. The shared requirements and the Fiote-only boundary are mapped in
 [the Sand plan](sands.md#conversation-and-task-surfaces-carried-for-fiote) and
 [Fiote build notes](../../Fiote.md#how-this-fits-the-interface-refactor).
 
@@ -290,15 +286,12 @@ for Box. The shared requirements and the Fiote-only boundary are mapped in
 
 #### Box canvas
 
+Workspace-control visibility, folding, triangle style and keyboard recovery are owned by Part A A02.1. Reuse and regress those controls in Box; this is not a second implementation task.
+
 - [ ] Replace the fixed 10,000×10,000 world with unbounded logical coordinates,
   viewport culling, and recoverable navigation.
 - [ ] Add recenter, bring-selection-here, locate-by-name, and minimap surfaces
   with honest empty cases.
-- [ ] Show workspace controls by default. Offer folding into a configurable
-  corner triangle, including its color/transparency, and an always-reachable
-  keyboard restore. Persist the preference and keep configuration recovery
-  outside the customized composition. Sand-specific controls remain on the
-  focused Sand's bottom-right page corner.
 - [ ] Use stationary direct placement first. Preserve movement code and its
   tests without running automatic forces or settling in this first Box.
 
@@ -324,8 +317,7 @@ for Box. The shared requirements and the Fiote-only boundary are mapped in
   preserving row identity and local Box state without duplicating or deleting
   underlying Records; refuse persistent repetition when a source declares no
   stable row key.
-- [ ] Show the Protein item hash and source area in every bound group's
-  metadata and provide locate/highlight navigation in both directions.
+- [ ] Show the Protein item hash and source area in every bound group's metadata and provide locate/highlight navigation in both directions. Build the first Why-is-it-here view now: source row, field binding, appearance/template scope, layout exception and current permission or broken-binding reason. Explanation must not wait for moving Areas; later stages extend this same inspector.
 
 #### Individual edits and presentation changes
 
@@ -464,9 +456,7 @@ row ownership and visibility always follow the original result bundle.
   evaluation in edit mode and Why-is-it-here.
 - [ ] Add deterministic overlap ordering, serialized Actions, loop/resource
   ceilings, pause/recover controls, and honest partial-failure states.
-- [ ] Build the Why-is-it-here inspector and require structured causal metadata
-  from Protein spawning, field mapping, grouping, forces, sorting, pins, and
-  mutation Actions.
+- [ ] Extend the existing Why-is-it-here inspector with structured causal metadata from forces, sorting, pins, mutation Actions and blocked influences. Preserve the earlier source, field, grouping and override explanation rather than replacing it with a physics-only inspector.
 - [ ] Add edit tools for drawing, resizing, copying, stacking, styling, and
   removing areas without silently changing the data they currently contain.
 
@@ -645,7 +635,7 @@ a stationary workspace.
 - [ ] Separate local journal append/fsync, spatial checkpoint, snapshot
   compaction, File projection, and contact-delivery rates. Ordinary Lingua
   File Sync keeps its existing projection policy. A slower external delivery
-  rate never weakens local durability or changes Box operation meaning.
+  rate never weakens local durability or changes Box operation meaning. Expose the configured backup/checkpoint cadence, last durable revision, pending state and recovery lag through ordinary settings; a person need not edit a file to change the promised frequency.
 - [ ] Measure actual write volume, recovery after interruption, compaction,
   state growth per Sand, spatial-checkpoint churn, sparse versus bulk encoding,
   and the cost of unbounded workspaces.
@@ -671,6 +661,8 @@ Stage 9 follows [the effect contract](../shaders.md).
   shader compilation alone is not this feature's completion gate.
 
 #### Live workspace collaboration
+
+This is shared Box composition, camera/presence and host-ordered workspace state. Dogfeeding's authenticated live company Record/task editing is owned by [Backend Part A](../../backend-part-A.md) and already required before this stage. Do not defer remote task access to these Box protocol tasks or require shared layout merely to use a company Kanban.
 
 - [ ] Add one Workspace lane beside Record/Organ sync and File projection in
   Protein's Synchronization surface. Share invitation, contact identity,
@@ -744,15 +736,19 @@ Stage 9 follows [the effect contract](../shaders.md).
   content-addressed cached archive can avoid contacting the author; neither
   mode claims privacy it cannot provide.
 
+#### Native follow-through and cross-feature surfaces
+
+Stage 7 closes the remaining native surfaces, including [migrations excluded from Dogfeeding](native-follow-through.md). Independent tasks may start after Dogfeeding when their actual domain dependencies permit; they do not wait for unrelated Box, CEF or interfaceless work. Shared editing, Role/Protein/property authorization, native Organ live access, activity and Trash/Restore already belong to Dogfeeding and are reused here.
+
+The [additional editor work](../product.md#collaboration-and-the-editor) retains its canonical tasks for recent displaced-edit visibility, additional scalar binding paths and their slug policy, the title-to-create Note lifecycle, and the shallow-snapshot optimization. Shared Record/embedded/Table editing already covered by Part A is reused and proved there; the remaining tasks must be checked against current source before implementation. Shallow snapshots are a separate storage optimization, not a prerequisite for a usable editor or Box. The eleven Ontology surfaces immediately below also belong to this native lane and include any named missing domain operation with their UI.
+
+- [ ] Expose the Program-backed Karma workflow through native Sands: author and revise Programs and their Frequencies, activate/pause supported revisions, edit supported parameters, inspect runs/candidates, respond to a candidate and inspect/create/narrow/activate/revoke the required grants through the current Rust Actions. Show cycle/proof errors at the offending input and distinguish Recurrence polling from the director path. Preserve expected revisions, permission and admission refusals, and prove an isolated occurrence-to-candidate-to-review flow without claiming unsupported external execution. Scheduler migration, timezone artifacts and intent execution remain named Karma dependencies, not another frontend scheduler or a reason to hide already-supported operations.
+
+[Communication](communication.md), [Fiote](../../Fiote.md), [Rooms](../../Rooms.md), [Files](../../Files.md), [Secrets](../../Secrets.md) and [Code](../../Code.md) own their additional feature work and usable native surfaces together. They are not silently imported into Part A; accepted behavior already present at its launch is preserved. Agent-only controls remain Fiote work, browser-hosted panes additionally wait for the CEF lane, and camera/call/media transport retains Communication's own gates. New primitive ideas in the product's software-archetype table are design probes, not automatic promises to implement a spreadsheet, chart system, IDE or game engine in v1.
+
 ### Ontology surfaces this interface owes
 
-Moved here from `anicca/Ontology.md` on 2026-09-01. Every one of these has its
-MECHANISM already built and shipping in `store`/`engine`; what is missing is
-only a way for a person to reach it, which is this plan's job. None of them
-needs new backend work, and each names the call it renders. The project rule is
-that a capability ships with the surface that reaches it — these are the debts
-that rule already accrued, collected in one place so they are not rediscovered
-one at a time.
+These are interface debts, not a claim that every domain operation is reachable. Dogfeeding now owns company access/administration and Trash/Restore through [Backend Part A](../../backend-part-A.md) and Interface A03.3/A06.3. The other device/contact/publication surfaces remain later unless an actual company dependency is explicitly cut; a live employee login does not by itself require company roster enrollment.
 
 Two rules apply to all of them. **State the honest empty case**: a panel
 showing nothing has several meanings ("none yet", "not switched on", "cannot
@@ -815,13 +811,8 @@ permission boundary as data.
   like an offer that was never answered**: three of the four kinds deliberately
   do not remember a refusal, and the thread invite's silence is a privacy
   decision (a sender must not be able to tell declined from ignored).
-- [ ] **A Trash, and Restore.** Deletion is a hard tombstone with no way back.
-  The undelete RULE already exists and works — "undelete is a newer write" is
-  enforced on the import path, and a tombstone does not destroy a Record's Loro
-  doc, it only makes the doc refuse new updates while the tombstone is the
-  latest word. So this is a list of tombstoned Records plus a Restore that
-  emits such a write, landing together as one task. It is deliberately NOT a
-  second lifecycle layer in the op log.
+Trash/Restore is now owned by Backend Part A B16 and Interface A06.3. It reuses the newer-write undelete rule and retained Loro document rather than adding a second lifecycle layer; current access is checked on restoration.
+
 - [ ] **The read-model health line.** `Engine::read_model_health()` returns when
   the read model was last checked against the log and what was found. **`None`
   means no pass has run yet on this Cell and must not be drawn as a tick** — it

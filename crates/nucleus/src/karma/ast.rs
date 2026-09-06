@@ -177,7 +177,6 @@ pub enum InputSource {
     RecordQuantity { record: ResolvedReference },
     SavedProtein { view: ResolvedReference },
     Signal { signal: ResolvedReference },
-    SecretMetadata { secret: LocalId },
     CapturedFact { fact: ResolvedReference },
 }
 

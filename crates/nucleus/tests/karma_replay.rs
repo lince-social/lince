@@ -4,10 +4,10 @@ use nucleus::karma::{
     CandidateRoute, CapabilitySet, ControlState, DurationMs, EvaluationErrorCode, EvaluationLimits,
     EvaluationReplayCapsuleSchema, EvaluatorRevision, FrozenEvaluationContext, InputBinding,
     InputSource, LateEventPolicy, LiteralValue, LocalId, NodeAst, NodeOperation, OutputRef,
-    PortContract, ProgramAst, ProgramSchema, ReplayErrorCode, SealedEvaluationReplayCapsule,
-    Sensitivity, SimulationStatePolicy, Slug, StateContract, StateMigrationPolicy,
-    StatePersistence, StateResetPolicy, TimestampMs, ValueType, canonical_hash,
-    capture_evaluation_replay,
+    PortContract, ProgramAst, ProgramSchema, ReferenceKind, ReplayErrorCode, ResolvedReference,
+    SealedEvaluationReplayCapsule, Sensitivity, SimulationStatePolicy, Slug, StateContract,
+    StateMigrationPolicy, StatePersistence, StateResetPolicy, TimestampMs, TypedUid, ValueType,
+    canonical_hash, capture_evaluation_replay,
 };
 use serde::Serialize;
 
@@ -20,7 +20,7 @@ fn a_sealed_capsule_round_trips_and_replays_byte_identically() {
     assert_eq!(first, sealed.capsule.expected_result);
     assert_eq!(
         sealed.capsule_hash.as_str(),
-        "sha256:186adfdb7252fcd938483dd1673203e3dc8b8d6126a3fb8d66b12bae031e6a4c"
+        "sha256:cfc6cd1b872dce9b958439b8d71e6a5b39f0c2d914ccacac81e0d52c02e05764"
     );
 
     let bytes = serde_json::to_vec(&sealed).unwrap();
@@ -149,8 +149,8 @@ fn replay_program() -> ProgramAst {
                     inputs: BTreeMap::new(),
                     outputs: BTreeMap::from([(id("value"), port(ValueType::Bool))]),
                     operation: NodeOperation::Input {
-                        source: InputSource::SecretMetadata {
-                            secret: id("fixture"),
+                        source: InputSource::Signal {
+                            signal: reference(ReferenceKind::Signal, RECORD_UID, "kitchen.scale"),
                         },
                         output: id("value"),
                     },
@@ -258,4 +258,13 @@ fn timestamp(offset: i64) -> TimestampMs {
         .unwrap()
         .checked_add(DurationMs::new(offset))
         .unwrap()
+}
+
+const RECORD_UID: &str = "r_01ARZ3NDEKTSV4RRFFQ69G5FAV";
+
+fn reference(kind: ReferenceKind, uid_value: &str, slug: &str) -> ResolvedReference {
+    ResolvedReference {
+        target: TypedUid::new(kind, uid_value).unwrap(),
+        display_slug: Some(Slug::new(slug).unwrap()),
+    }
 }

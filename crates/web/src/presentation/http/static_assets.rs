@@ -39,6 +39,12 @@ pub async fn lynx_ui_css() -> Response {
     )))
 }
 
+pub async fn vault_js() -> Response {
+    asset_response(js(include_bytes!(
+        "../../../static/presentation/board/vault.js"
+    )))
+}
+
 pub async fn collab_editor_js() -> Response {
     asset_response(js(include_bytes!(
         "../../../static/presentation/board/collab-editor.js"

@@ -602,9 +602,6 @@ fn format_input_source(source: &InputSource) -> String {
         InputSource::Signal { signal } => {
             format!("signal({})", format_reference(signal))
         }
-        InputSource::SecretMetadata { secret } => {
-            format!("secret-metadata({})", secret.as_str())
-        }
         InputSource::CapturedFact { fact } => {
             format!("captured-fact({})", format_reference(fact))
         }
@@ -1879,9 +1876,6 @@ impl<'source> Parser<'source> {
             }),
             "signal" => Ok(InputSource::Signal {
                 signal: self.parse_single_reference_argument()?,
-            }),
-            "secret-metadata" => Ok(InputSource::SecretMetadata {
-                secret: self.parse_single_local_id_argument("secret metadata")?,
             }),
             "captured-fact" => Ok(InputSource::CapturedFact {
                 fact: self.parse_single_reference_argument()?,

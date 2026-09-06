@@ -29,3 +29,15 @@ pub(crate) fn package() -> LincePackage {
     LincePackage::new(Some("kanban.html".into()), manifest(), HTML)
         .expect("kanban official sand should render as a valid package")
 }
+
+#[cfg(test)]
+mod tests {
+    use super::HTML;
+
+    #[test]
+    fn a_locked_card_body_says_it_is_locked_instead_of_rendering_ciphertext() {
+        assert!(HTML.contains("import(\"/board/vault.js\")"));
+        assert!(HTML.contains("Vault.isLocked(row.body || \"\")"));
+        assert!(HTML.contains("el.textContent = Vault.LOCKED_LABEL;"));
+    }
+}

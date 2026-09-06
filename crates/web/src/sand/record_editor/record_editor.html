@@ -51,6 +51,10 @@
   // table cells are not different features — they are this, in a different
   // box — so the delta bookkeeping and the caret handling live in one place.
   const { createCollabEditor, bindInputs } = await import("/board/collab-editor.js");
+  // A password-locked description (anicca/Secrets.md) never joins the shared
+  // doc: a character-wise merge over an envelope would leave ciphertext
+  // nobody's password opens. It is unlocked in the Record sand instead.
+  const Vault = await import("/board/vault.js");
 
   let records = [];
   let selected = null;
@@ -95,6 +99,17 @@
     peers = [];
     renderList();
     renderPeers();
+    const row = records.find((one) => one.uid === uid);
+    if (row && Vault.isLocked(row.body || "")) {
+      $("re-title").value = row.head || "";
+      $("re-body").value = "";
+      $("re-body").placeholder = Vault.LOCKED_LABEL + " — unlock it in the Record sand.";
+      $("re-title").disabled = true;
+      $("re-body").disabled = true;
+      $("re-state").textContent = Vault.LOCKED_LABEL;
+      return;
+    }
+    $("re-body").placeholder = "Pick a record to edit it.";
     $("re-state").textContent = "Joining…";
 
     // The shared element does the joining, the delta bookkeeping and the

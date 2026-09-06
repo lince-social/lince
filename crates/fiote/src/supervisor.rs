@@ -1,6 +1,7 @@
 use {
     crate::{
         binary::PiBinary,
+        credential::ProviderCredential,
         cub::{Cub, CubSpec, CubStatus},
     },
     std::{
@@ -32,8 +33,16 @@ impl Supervisor {
     }
 
     pub fn spawn(&self, spec: CubSpec) -> Result<Arc<Cub>, String> {
+        self.spawn_with_credential(spec, None)
+    }
+
+    pub fn spawn_with_credential(
+        &self,
+        spec: CubSpec,
+        credential: Option<ProviderCredential>,
+    ) -> Result<Arc<Cub>, String> {
         let id = format!("cub-{}", self.next.fetch_add(1, Ordering::Relaxed));
-        let cub = Cub::spawn(id.clone(), &self.binary.path, spec)?;
+        let cub = Cub::spawn(id.clone(), &self.binary.path, spec, credential)?;
         self.cubs
             .lock()
             .expect("fiote supervisor mutex")

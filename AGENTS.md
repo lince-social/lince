@@ -1,7 +1,6 @@
 Instead of cargo build use cargo check.
 Warnings are treated as errors.
-Do not use worktrees. You might be working alongside other agents, it is expected.
-No comments in code sensei crate blocks running if they exist. To remove them do: SENSEI=off cargo run -p sensei --bin sensei -- fix && cargo fmt. There are license files with exceptions to this rule.
+ Parallel writers must use separate reusable Git worktrees (prefferably) or clones, with one writer per checkout. Preserve other agents’ work and reuse checkouts across tasks.No comments in code sensei crate blocks running if they exist. To remove them do: SENSEI=off cargo run -p sensei --bin sensei -- fix && cargo fmt. There are license files with exceptions to this rule.
 
 Never touch AGENTS.md or CLAUDE.md.
 Never touch .lingua files unless explicitly asked, they are for user readability, simple language focused on what things are and how they work, plus eventual next tasks only the developers touch.

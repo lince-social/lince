@@ -669,7 +669,6 @@ impl Validator {
                 id,
                 &format!("{node_path}/operation/source/fact"),
             ),
-            InputSource::SecretMetadata { .. } => {}
         }
     }
 

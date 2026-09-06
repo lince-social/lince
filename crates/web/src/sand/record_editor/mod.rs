@@ -81,4 +81,11 @@ mod tests {
             vec!["bridge_state", "protein_subscribe", "act"]
         );
     }
+
+    #[test]
+    fn a_locked_description_is_not_opened_for_collaborative_editing() {
+        assert!(HTML.contains("/board/vault.js"));
+        assert!(HTML.contains("Vault.isLocked(row.body || \"\")"));
+        assert!(HTML.contains("unlock it in the Record sand"));
+    }
 }

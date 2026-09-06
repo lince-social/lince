@@ -308,12 +308,8 @@ The implementation order is binding and closes behind us:
 7. Recursive composition, group locking, saved compound Sands/Castles,
    overrides, exported ports and explicit teardown have landed in the F10
    composition workbench.
-8. Rebuild the native base and every official Sand on the shared pieces under
-   Plan A, or the base Web surface under Plan B, deleting legacy CSS, copied
-   HTML, and old APIs rather than adapting around them. Browser Facades keep
-   the renderer adapter selected for their capabilities.
-9. Land the remaining official-Sand author documentation, accessibility and behavior tests, CEF/iframe
-    and theme tests, runtime validation, and automated design-system checks.
+8. Make the common native host and production defaults CEF-free, then deliver the company-workflow subset on shared pieces under [Part A — Dogfeeding](plans/part-a.md); other native roots remain in [native follow-through](plans/native-follow-through.md). Remove replaced native-path legacy APIs, but preserve gated browser sources needed by the five deferred roots and Installed HTML. Browser Facades keep the projection adapter selected for their capabilities.
+9. Land native official-Sand author documentation, accessibility, behavior, theme and lifecycle tests, runtime validation and automated design-system checks. Fresh native-only desktop and quiet-machine proofs close C5. CEF/iframe execution, theme parity and browser recovery belong to [the final v1 CEF lane](plans/cef.md), not this pre-Box gate.
 
 Box canvas, Protein-area, grouping, wiring, and spatial-area implementation
 does not begin before steps 1–9 are complete. The later Box editor consumes

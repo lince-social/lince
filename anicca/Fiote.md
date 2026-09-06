@@ -181,7 +181,7 @@ The honest failure case must be visible: fetch-on-demand means a file whose send
 
 The Interface refactor has landed its native runtime, the Sand ABI and recursive composition host, plus renderer-neutral domain launch recipes that instantiate an exact compound definition with typed Record inputs and stable placements, idempotently — reusable layout in the definition, workspace placement and user overrides in Box host state, and the domain Record not absorbing UI layout.
 
-Fiote is parked until the new Interface lands, and resumes at the C5 pre-Box foundation gate. The cleanups below run beside C4 and C5; the thread work is part of the refactor itself. Fiote's own prototype starts after C5 without becoming a prerequisite for Box.
+Fiote resumes its native prototype after the Interface's C5 pre-Box foundation gate. The cleanups below run beside C4 and C5; the thread work is part of the refactor itself. The Interface now delivers a [CEF-free Part A](interface/plans/part-a.md). Its existing browser Ghostty Terminal moves to [the final v1 CEF lane](interface/plans/cef.md), so the full terminal-bearing session group below has that additional dependency. Native thread/control work need not wait for it, but a headless or text-only intermediate does not complete the promised group. Fiote does not become a prerequisite for Box.
 
 ## Known walls
 
@@ -189,7 +189,7 @@ Where a secret can live at all is `anicca/Secrets.md`.
 
 Karma cannot dispatch anything, so every notification lands on `effect_queue` until that changes.
 
-Sand feature flags are labels rather than gates. `sand::FEATURE_FLAG` strings are declared per sand, `OfficialWidgetBuilder::feature_flag()` carries an allow-dead-code and is read nowhere, and every registered sand is built and offered. So Fiote's runtime switch would be the first real use of that mechanism, or the cargo feature is the only opt-in and nothing should imply otherwise. Do not write `sand.fiote` into the registry and call it opt-in.
+Sand feature-flag strings are currently labels rather than gates. `sand::FEATURE_FLAG` strings are declared per sand, `OfficialWidgetBuilder::feature_flag()` carries an allow-dead-code and is read nowhere, and every registered sand is built and offered. Interface Part A now plans the first real compile, registration and admission boundary for optional CEF; it is not implemented by writing a label. Fiote must likewise prove its own opt-in and permission boundary when it lands. Do not write `sand.fiote` into the registry and call it opt-in, or mistake the separate CEF gate for authority to run an agent.
 
 There is no secret-at-rest story. `store/src/logins.rs` is not credentials — a `Login` is `organ_uid`, `person_uid` and `created_at`, so it binds a contact Organ to a Person and holds no secret. `identity_key` stores public keys only, keyed `(actor_uid, key_id)`, populated when a client publishes a key for a Person through the action-intent session and by transfer delivery. `configuration` is a typed singleton of UI and policy settings, unencrypted, the wrong shape and the wrong safety class for an API key. The one real precedent is `engine::trust::load_or_create_secret`: thirty-two raw bytes in a file created `0o600`, deliberately not in the database, with the node key kept distinct from the identity key. Provider keys follow that precedent.
 

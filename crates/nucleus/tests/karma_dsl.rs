@@ -442,14 +442,6 @@ fn comprehensive_program() -> ProgramAst {
             Sensitivity::Private,
         ),
         (
-            "secret_input",
-            InputSource::SecretMetadata {
-                secret: id("api_key"),
-            },
-            ValueType::Text,
-            Sensitivity::Secret,
-        ),
-        (
             "fact_input",
             InputSource::CapturedFact { fact },
             ValueType::Map {

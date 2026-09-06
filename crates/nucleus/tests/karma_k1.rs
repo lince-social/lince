@@ -77,8 +77,8 @@ fn proof_rejects_missing_types_references_and_taint_downgrades() {
     program.nodes.insert(
         id("secret"),
         input_node(
-            InputSource::SecretMetadata {
-                secret: id("api_key"),
+            InputSource::Signal {
+                signal: reference(ReferenceKind::Signal, RECORD_UID, "weather.station"),
             },
             ValueType::Text,
             Sensitivity::Secret,
@@ -121,8 +121,8 @@ fn proof_rejects_missing_types_references_and_taint_downgrades() {
                 },
             )]),
             operation: NodeOperation::Input {
-                source: InputSource::SecretMetadata {
-                    secret: id("metadata"),
+                source: InputSource::Signal {
+                    signal: reference(ReferenceKind::Signal, RECORD_UID, "kitchen.scale"),
                 },
                 output: id("value"),
             },
@@ -148,8 +148,8 @@ fn expression_inputs_and_exact_types_are_proven_before_evaluation() {
     program.nodes.insert(
         id("source"),
         input_node(
-            InputSource::SecretMetadata {
-                secret: id("counter"),
+            InputSource::RecordQuantity {
+                record: reference(ReferenceKind::Record, RECORD_UID, "apple.stock"),
             },
             ValueType::I64,
             Sensitivity::Private,
@@ -239,7 +239,7 @@ fn all_new_k1_wire_variants_have_a_golden_hash() {
     let hash = canonical_hash("karma.i1-vocabulary.v1", &fixture).unwrap();
     assert_eq!(
         hash.as_str(),
-        "sha256:5b87aaa15cf68b4eee34d5ee144f7737b417fca53495941c7471123b00bdd5ef",
+        "sha256:dee51588c4cfd46b8af0e402081652ec1331c80d0c71f634d2be503da686e198",
         "adding a K1 wire variant requires a deliberate golden update"
     );
 }
@@ -333,9 +333,6 @@ fn k1_vocabulary_fixture() -> K1VocabularyFixture {
             },
             InputSource::Signal {
                 signal: reference(ReferenceKind::Signal, RECORD_UID, "kitchen.scale"),
-            },
-            InputSource::SecretMetadata {
-                secret: id("weather_key"),
             },
             InputSource::CapturedFact {
                 fact: reference(ReferenceKind::Fact, FACT_UID, "apple.observation"),

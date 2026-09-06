@@ -954,6 +954,91 @@ pub async fn serve_cell_api_only(
         })))
     }
 
+    async fn vault_body(
+        state: &CellApiState,
+        body: &serde_json::Value,
+    ) -> Result<(String, String, String), (StatusCode, String)> {
+        let record_uid = body
+            .get("record_uid")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or("")
+            .trim()
+            .to_string();
+        let password = body
+            .get("password")
+            .and_then(serde_json::Value::as_str)
+            .unwrap_or("")
+            .to_string();
+        if record_uid.is_empty() || password.is_empty() {
+            return Err((
+                StatusCode::BAD_REQUEST,
+                "a Record and a password are both needed".to_string(),
+            ));
+        }
+        let record = store::records::get(&state.store.pool, &record_uid)
+            .await
+            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?
+            .ok_or((StatusCode::NOT_FOUND, "no such Record".to_string()))?;
+        Ok((record_uid, password, record.body))
+    }
+
+    async fn lock_vault(
+        State(state): State<CellApiState>,
+        headers: HeaderMap,
+        Json(body): Json<serde_json::Value>,
+    ) -> Result<impl IntoResponse, (StatusCode, String)> {
+        let actor = authenticate_headers(&state, &headers).await?;
+        let (record_uid, password, stored) = vault_body(&state, &body).await?;
+        let description = match body.get("description").and_then(serde_json::Value::as_str) {
+            Some(text) => text.to_string(),
+            None => {
+                if utils::vault::is_locked(&stored) {
+                    return Err((
+                        StatusCode::CONFLICT,
+                        "this description is already locked".to_string(),
+                    ));
+                }
+                stored
+            }
+        };
+        let locked = utils::vault::lock(&record_uid, &password, &description)
+            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?;
+        state
+            .engine
+            .act(
+                engine::actions::Action::EditRecordText {
+                    target: record_uid.clone(),
+                    head: None,
+                    body: Some(locked),
+                },
+                actor,
+            )
+            .await
+            .map_err(|error| (StatusCode::BAD_REQUEST, error.to_string()))?;
+        Ok(Json(serde_json::json!({
+            "record_uid": record_uid,
+            "locked": true,
+            "older_revisions_keep_their_old_password": true,
+        })))
+    }
+
+    async fn unlock_vault(
+        State(state): State<CellApiState>,
+        headers: HeaderMap,
+        Json(body): Json<serde_json::Value>,
+    ) -> Result<impl IntoResponse, (StatusCode, String)> {
+        authenticate_headers(&state, &headers).await?;
+        let (record_uid, password, stored) = vault_body(&state, &body).await?;
+        let description =
+            utils::vault::unlock(&record_uid, &password, &stored).map_err(|error| match error {
+                utils::vault::VaultError::NotAVault => (StatusCode::CONFLICT, error.to_string()),
+                utils::vault::VaultError::Unopenable => (StatusCode::FORBIDDEN, error.to_string()),
+            })?;
+        Ok(Json(serde_json::json!({
+            "record_uid": record_uid,
+            "description": description,
+        })))
+    }
     async fn get_record_changes(
         State(state): State<CellApiState>,
         headers: HeaderMap,
@@ -1647,6 +1732,8 @@ pub async fn serve_cell_api_only(
             get(get_record_changes),
         )
         .route("/host/storage", get(get_storage))
+        .route("/host/vault/lock", post(lock_vault))
+        .route("/host/vault/unlock", post(unlock_vault))
         .route("/host/storage/budget", post(set_storage_budget))
         .route("/organ/nearby", get(organ_nearby))
         .route("/organ/pair", post(organ_pair))
@@ -1668,6 +1755,7 @@ pub async fn serve_cell_api_only(
             .route("/board/editor.js", get(static_assets::editor_js))
             .route("/board/lynx-ui.css", get(static_assets::lynx_ui_css))
             .route("/board/lynx-ui.js", get(static_assets::lynx_ui_js))
+            .route("/board/vault.js", get(static_assets::vault_js))
             .route(
                 "/board/collab-editor.js",
                 get(static_assets::collab_editor_js),

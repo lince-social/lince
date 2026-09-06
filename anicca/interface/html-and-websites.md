@@ -5,7 +5,7 @@ Purpose: Define external package identity, capabilities, isolation, storage, net
 Owner source: [Interface in Lince](../Lince.lingua); no separate Sands or
 Interoperability Record currently exists.
 
-Status: Joined CEF authority and composition are proven; installation, review, health, and hostile-content product surfaces remain.
+Status: Historical joined authority/composition evidence retained. Embedded HTML, Website and their product surfaces are scheduled only in the final v1 CEF lane.
 
 Read when: changing CEF, bridge ABI, external packages, Website permissions, or runtime admission.
 
@@ -14,6 +14,8 @@ Read when: changing CEF, bridge ABI, external packages, Website permissions, or 
 ---
 
 ### External HTML and Sand packages
+
+This contract applies when the optional adapter is enabled. [The build rule](build.md) keeps CEF and its dependent features out of native Part A and the following native work; [the CEF plan](plans/cef.md) owns their later delivery. Without that capability, importing or restoring browser-backed content may inspect its metadata and preserve a non-executing unavailable reference, but never start a hidden browser. Static HTML export and a Facade viewed in an external browser do not require embedding CEF.
 
 External HTML is a first-class Sand source, but visual integration and trust
 are separate concerns. Imported content can look and behave like it has always

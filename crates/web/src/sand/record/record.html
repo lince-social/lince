@@ -191,6 +191,10 @@
     .err { color: var(--hot-border); font-size: .75rem; padding: 0 5px 4px; }
     .hint { color: var(--muted); font-size: .72rem; }
     /* rendered body preview (K6): same blocks the board card renderer shows */
+    .vault { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; font-size: 12px; }
+    .vault__state { color: var(--muted); }
+    .vault__note { flex-basis: 100%; color: var(--muted); font-size: 11px; }
+    .vault__locked { color: var(--muted); font-style: italic; }
     .peers { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 11px; opacity: 0.8; margin-top: 3px; }
     .peerlist { display: inline-flex; flex-wrap: wrap; gap: 8px; }
     .savestate.is-pending { opacity: 0.6; font-style: italic; }
@@ -271,6 +275,15 @@
     </div>
 
     <div id="body-fields" class="bodyfields">
+      <div id="vault" class="vault" hidden>
+        <span id="vault-state" class="vault__state"></span>
+        <input id="vault-password" class="lynx-input" type="password" autocomplete="off" placeholder="Password" aria-label="Vault password" />
+        <button id="vault-unlock" type="button" class="lynx-button" hidden>Unlock</button>
+        <button id="vault-lock" type="button" class="lynx-button" hidden>Lock description</button>
+        <button id="vault-change" type="button" class="lynx-button" hidden>Change password</button>
+        <button id="vault-forget" type="button" class="lynx-button" hidden>Forget</button>
+        <span id="vault-note" class="vault__note"></span>
+      </div>
       <div class="bodymode" role="group" aria-label="Body view">
         <button id="body-raw" type="button" aria-pressed="false">Raw</button>
         <button id="body-pragmatic" type="button" aria-pressed="true">Pragmatic</button>
@@ -558,6 +571,7 @@
       if (typeof unsubscribe === "function") unsubscribe();
       focusOrgan = String(organ || "");
       bindDirectory(focusOrgan);
+      forgetVault();
       void startCollab(String(uid)); // live body: bind the shared Loro doc
       fieldsDirty = false;
       workDirty = false;
@@ -718,6 +732,7 @@
       if (typeof unsubscribe === "function") unsubscribe();
       unsubscribe = null;
       stopCollab();
+      forgetVault();
       row = null;
       creating = false;
       fieldsDirty = false;
@@ -774,12 +789,14 @@
         $("f-quantity").value = String(row.quantity ?? 0);
         // With a live collab doc bound, the doc owns the body — a protein row
         // (possibly staler than the doc) must not clobber in-flight merges.
-        if (!(collab && collab.editor && collab.uid === row.uid)) {
-          $("f-body").value = row.body || "";
+        if (!(collab && collab.editor && collab.uid === row.uid) && !vaultIsOpen()) {
+          $("f-body").value = Vault && !vaultIsLocked() ? row.body || "" : "";
         }
         $("f-save").disabled = true;
         $("f-error").hidden = true;
       }
+      if (vaultIsLocked()) stopCollab();
+      renderVault();
       renderBodyPreview();
       renderWork();
       renderLinks();
@@ -858,8 +875,16 @@
       const slug = $("f-slug").value.trim();
       const quantity = Number($("f-quantity").value) || 0;
       const body = $("f-body").value;
+      const vault = vaultIsOpen();
       try {
-        if (head !== (row.head || "") || body !== (row.body || "")) {
+        // A vault's plaintext leaves this page only as ciphertext: the body
+        // goes through the local lock call, and the Action carries the head.
+        if (vault) {
+          await Vault.lockDescription(row.uid, vaultOpen.password, body);
+          if (head !== (row.head || "")) {
+            await act({ action: "edit-record-text", target: row.uid, head });
+          }
+        } else if (head !== (row.head || "") || body !== (row.body || "")) {
           await act({ action: "edit-record-text", target: row.uid, head, body });
         }
         if (slug !== (row.slug || "")) {
@@ -870,7 +895,9 @@
         }
         // K6: every resolvable @slug in the body becomes a real `references`
         // link (the ones already linked are skipped, so re-saving is a no-op).
-        await addBodyRefs(row.uid, body, linksOf("references", "out").map((l) => l.other));
+        if (!vault) {
+          await addBodyRefs(row.uid, body, linksOf("references", "out").map((l) => l.other));
+        }
         fieldsDirty = false;
         $("f-save").disabled = true;
         $("f-error").hidden = true;
@@ -880,6 +907,108 @@
       }
     });
 
+
+    // ---- password-locked descriptions (anicca/Secrets.md) ---------------------
+    // A vault Record's body is ciphertext everywhere else in Lince. Unlocking
+    // is local and temporary: the password and the plaintext live in this page
+    // and in the host call that made them, never in an Action, a Fact or sync.
+    // var, not let: goIdle() runs during initial evaluation, before this
+    // section — var hoists to undefined instead of a TDZ throw.
+    var Vault = null;
+    var vaultOpen = null; // { uid, password }
+    import("/board/vault.js")
+      .then((mod) => { Vault = mod; renderFocus(); renderVault(); })
+      .catch((err) => console.warn("[record] vault helper unavailable", err));
+
+    function vaultIsLocked() {
+      return !!(Vault && row && Vault.isLocked(row.body || ""));
+    }
+    function vaultIsOpen() {
+      return !!(vaultOpen && row && vaultOpen.uid === row.uid);
+    }
+    function forgetVault() {
+      vaultOpen = null;
+      $("vault-password").value = "";
+      $("vault-note").textContent = "";
+    }
+    function renderVault() {
+      const bar = $("vault");
+      if (!row || !Vault) { bar.hidden = true; return; }
+      const locked = vaultIsLocked();
+      const open = vaultIsOpen();
+      bar.hidden = false;
+      $("vault-state").textContent = open
+        ? "Unlocked here only — Save locks it again"
+        : locked ? Vault.LOCKED_LABEL : "";
+      $("vault-password").hidden = open;
+      $("vault-password").placeholder = locked ? "Password" : "New password";
+      $("vault-unlock").hidden = !(locked && !open);
+      $("vault-lock").hidden = locked;
+      $("vault-change").hidden = !open;
+      $("vault-forget").hidden = !open;
+    }
+    function vaultPassword() {
+      const value = $("vault-password").value;
+      if (!value) {
+        $("vault-note").textContent = "Type a password first.";
+        return null;
+      }
+      return value;
+    }
+    async function vaultAct(work) {
+      try {
+        $("vault-note").textContent = "";
+        await work();
+      } catch (err) {
+        $("vault-note").textContent = String(err && err.message ? err.message : err);
+      }
+    }
+    $("vault-unlock").addEventListener("click", () => vaultAct(async () => {
+      const password = vaultPassword();
+      if (!password || !row) return;
+      const description = await Vault.unlockDescription(row.uid, password);
+      vaultOpen = { uid: row.uid, password };
+      $("vault-password").value = "";
+      $("f-body").value = description;
+      // Save is the way back to ciphertext, so it is reachable the moment the
+      // description is open, before anybody has typed into it.
+      fieldsDirty = true;
+      $("f-save").disabled = false;
+      renderVault();
+      renderBodyPreview();
+    }));
+    $("vault-lock").addEventListener("click", () => vaultAct(async () => {
+      const password = vaultPassword();
+      if (!password || !row) return;
+      stopCollab();
+      await Vault.lockDescription(row.uid, password, $("f-body").value);
+      forgetVault();
+      fieldsDirty = false;
+      $("f-save").disabled = true;
+      $("f-body").value = "";
+      renderVault();
+      renderBodyPreview();
+    }));
+    $("vault-change").addEventListener("click", () => vaultAct(async () => {
+      const password = vaultPassword();
+      if (!password || !row) return;
+      if (!window.confirm(Vault.PASSWORD_CHANGE_WARNING)) return;
+      await Vault.lockDescription(row.uid, password, $("f-body").value);
+      vaultOpen = { uid: row.uid, password };
+      $("vault-password").value = "";
+      $("vault-note").textContent = Vault.PASSWORD_CHANGE_WARNING;
+      fieldsDirty = false;
+      $("f-save").disabled = true;
+      renderVault();
+    }));
+    $("vault-forget").addEventListener("click", () => {
+      forgetVault();
+      $("f-body").value = "";
+      fieldsDirty = false;
+      $("f-save").disabled = true;
+      renderVault();
+      renderBodyPreview();
+    });
     // ---- live collab body (Ontology §11 "Collab") ------------------------------
     // The body textarea binds to the record's shared Loro doc: local keystrokes
     // become CRDT ops streamed over the one WebSocket; changes from anyone
@@ -911,6 +1040,10 @@
       collab = state;
       const mod = await loadLoro();
       if (!mod || collab !== state) return;
+      // A locked description is ciphertext and an unlocked one is a secret:
+      // neither may ride the shared doc, where a merge would shred the
+      // envelope or sync the plaintext.
+      if (vaultIsLocked() || vaultIsOpen()) { collab = null; return; }
       const { createCollabEditor, bindPresence } = await import("/board/collab-editor.js");
       if (collab !== state) return;
       const area = $("f-body");
@@ -1049,6 +1182,15 @@
     function renderBodyPreview() {
       const holder = $("f-preview");
       holder.innerHTML = "";
+      if (vaultIsLocked() && !vaultIsOpen()) {
+        $("f-body").hidden = true;
+        holder.hidden = false;
+        const note = document.createElement("div");
+        note.className = "vault__locked";
+        note.textContent = Vault.LOCKED_LABEL;
+        holder.appendChild(note);
+        return;
+      }
       const source = $("f-body").value;
       const raw = bodyMode === "raw" || !Editor;
       $("f-body").hidden = !raw;

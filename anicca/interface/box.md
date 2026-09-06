@@ -7,7 +7,7 @@ and local durability.
 Owner source: [Interface in Lince](../Lince.lingua); no separate Sands Record
 currently exists.
 
-Status: Planned; implementation opens only after the Customization C5 gate.
+Status: Planned; implementation opens after Part A's native C5 gate, without waiting for CEF.
 
 Read when: working on the spatial product after composition foundations pass.
 
@@ -16,6 +16,8 @@ Read when: working on the spatial product after composition foundations pass.
 ---
 
 ### Box, workspace, and canvas
+
+The first Box consumes the CEF-free host and native Sands defined by [the build rule](build.md). Composition, persistence and field wiring do not require embedded HTML. A saved group with an unavailable browser child preserves its references and explains the unavailable projection; native siblings remain usable within their declared scope. Mixed native/HTML execution returns only in the final v1 CEF lane.
 
 **Box** is the application host and composition environment. A **workspace**
 is one persisted spatial document. Its **canvas** is conceptually unbounded and

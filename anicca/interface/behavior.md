@@ -15,6 +15,8 @@ Read when: changing Behavior modules, browser assets, Wasm renderer packaging, o
 
 ### Plan B and installed-HTML JavaScript Behavior
 
+These browser execution and Wasm packaging rules apply to enabled browser projections, not to the default native desktop. [Part A](plans/part-a.md) uses native Rust and pure package/export validation; it does not acquire a JavaScript or Wasm runtime requirement because a retained external package contains those assets. Embedded execution and its live parity tests return in [the final CEF lane](plans/cef.md). A general browser client remains outside the product plan.
+
 Under Plan B, ordinary first-party interface Behavior is authored and shipped
 as native JavaScript ES modules. Under Plan A, the same logical Behavior ports
 may be implemented by native Rust systems, while installed external HTML still

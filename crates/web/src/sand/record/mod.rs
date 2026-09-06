@@ -212,4 +212,19 @@ mod tests {
     fn adding_a_contact_says_what_it_opens() {
         assert!(HTML.contains("opens your ordinary feed to them, which a conversation"));
     }
+
+    #[test]
+    fn a_locked_description_is_shown_locked_and_never_collaborated_on() {
+        assert!(HTML.contains("import(\"/board/vault.js\")"));
+        assert!(HTML.contains("if (vaultIsLocked() || vaultIsOpen()) { collab = null; return; }"));
+        assert!(HTML.contains("Vault.LOCKED_LABEL"));
+        assert!(
+            HTML.contains("await Vault.lockDescription(row.uid, vaultOpen.password, body)"),
+            "an unlocked vault must save as ciphertext, never through the plain text Action"
+        );
+        assert!(
+            HTML.contains("Vault.PASSWORD_CHANGE_WARNING"),
+            "changing a password must say that old revisions keep the old one"
+        );
+    }
 }

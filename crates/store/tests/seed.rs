@@ -42,6 +42,31 @@ async fn seed_is_idempotent_and_grants_admin_everything() {
 }
 
 #[tokio::test]
+async fn an_explicit_admin_revoke_survives_seed_restart() {
+    let store = Store::open_memory().await.unwrap();
+    store::seed::seed(&store.pool, PERMS).await.unwrap();
+    let admin = store::auth::role_by_name(&store.pool, store::auth::ADMIN_ROLE)
+        .await
+        .unwrap()
+        .unwrap();
+    let permission = store::auth::ensure_permission(&store.pool, "record", "read")
+        .await
+        .unwrap();
+    store::auth::revoke(&store.pool, admin, permission)
+        .await
+        .unwrap();
+
+    store::seed::seed(&store.pool, PERMS).await.unwrap();
+
+    assert!(
+        !store::auth::role_permission_keys_by_id(&store.pool, admin)
+            .await
+            .unwrap()
+            .contains(&"record:read".to_string())
+    );
+}
+
+#[tokio::test]
 async fn admin_bootstrap_flips_admin_exists() {
     let store = Store::open_memory().await.unwrap();
     store::seed::seed(&store.pool, PERMS).await.unwrap();

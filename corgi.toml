@@ -1,9 +1,0 @@
-[extra-inputs]
-"store" = ["migrations/*.sql"]
-"engine" = ["../../anicca/*.lingua"]
-"swarm-discovery" = ["README.md"]
-"lince-web" = ["src/**", "static/**", "../../assets/**", "../../LICENSE"]
-"lince-interface" = ["../../assets/**"]
-
-[roots.interface]
-packages = ["lince-interface"]

@@ -686,9 +686,10 @@ async fn mail_reaches_a_recipient_through_the_pickup_point_it_published() {
     let recipient_dir = scratch("recipient");
 
     let (carrier, _carrier_organ) = cell("http://carrier.test").await;
-    let carrier_wire = Wire::bind(carrier.clone(), secret(61), Reach::Local)
-        .await
-        .expect("carrier binds");
+    let carrier_wire =
+        Wire::bind_with_discovery(carrier.clone(), secret(61), Reach::Local, None, false)
+            .await
+            .expect("carrier binds");
     let carrier_node = carrier_wire.node_id().to_string();
     let carrier_addr = loopback(&carrier_wire);
     let _serving = tokio::spawn(async move { carrier_wire.serve().await });
@@ -697,15 +698,24 @@ async fn mail_reaches_a_recipient_through_the_pickup_point_it_published() {
     let (sender, sender_organ, sender_root) =
         mailable("http://sender.test", &sender_dir, "node-sender").await;
     let sender_cell = local_cell(&sender).await;
-    let sender_wire = Wire::bind(sender.clone(), secret(62), Reach::Local)
-        .await
-        .expect("sender binds");
+    let sender_wire =
+        Wire::bind_with_discovery(sender.clone(), secret(62), Reach::Local, None, false)
+            .await
+            .expect("sender binds");
+    sender_wire.remember_addr(carrier_addr.clone());
 
     let (recipient_engine, recipient_organ, recipient_root) =
         mailable("http://recipient.test", &recipient_dir, "node-recipient").await;
-    let recipient_wire = Wire::bind(recipient_engine.clone(), secret(63), Reach::Local)
-        .await
-        .expect("recipient binds");
+    let recipient_wire = Wire::bind_with_discovery(
+        recipient_engine.clone(),
+        secret(63),
+        Reach::Local,
+        None,
+        false,
+    )
+    .await
+    .expect("recipient binds");
+    recipient_wire.remember_addr(carrier_addr.clone());
     let mut cells = recipient_engine
         .roster_of(&recipient_organ)
         .await
@@ -776,7 +786,6 @@ async fn mail_reaches_a_recipient_through_the_pickup_point_it_published() {
             .is_some(),
         "what was mailed arrived as an ordinary change"
     );
-    let _ = carrier_addr;
 }
 
 #[tokio::test]

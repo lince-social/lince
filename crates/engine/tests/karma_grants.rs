@@ -12,8 +12,8 @@ use nucleus::karma::{
 use protein::{Include, Predicate, Protein, Source};
 use serde_json::Value;
 
-const PERSON_UID: &str = "p_01ARZ3NDEKTSV4RRFFQ69G5FAV";
-const OTHER_PERSON_UID: &str = "p_01ARZ3NDEKTSV4RRFFQ69G5FAW";
+const PERSON_UID: &str = "r_01APS3NDEKTSV4RRFFQ69G5FAV";
+const OTHER_PERSON_UID: &str = "r_01APS3NDEKTSV4RRFFQ69G5FAW";
 
 #[tokio::test]
 async fn typed_grant_actions_walk_the_lifecycle_and_hold_cas() {
@@ -330,6 +330,7 @@ async fn karma_rows(engine: &Engine, object_kind: &str) -> Vec<Value> {
 
 async fn signed_engine() -> Engine {
     let engine = Engine::open_memory().await.unwrap();
+    person_record(&engine, PERSON_UID, "ana").await;
     engine
         .set_signer(Signer::generate(PERSON_UID, "key:ana"))
         .await

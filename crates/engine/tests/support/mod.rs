@@ -280,7 +280,7 @@ pub async fn settlement_preview(
         source: Source::TransferSettlementPreview,
         filter: vec![
             Predicate::UidEq(occurrence.into()),
-            Predicate::QuantityEq(quantity),
+            Predicate::QuantityEq(nucleus::DecimalValue::from_f64_lossy(quantity).unwrap()),
         ],
         fields: None,
         include: Include::default(),

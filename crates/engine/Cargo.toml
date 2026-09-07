@@ -9,6 +9,7 @@ description = "Lince engine: the single fact write path, the reactive Karma sche
 
 [dependencies]
 anicca = { workspace = true }
+argon2 = { workspace = true }
 protein = { workspace = true }
 nucleus = { workspace = true }
 store = { workspace = true }
@@ -34,10 +35,14 @@ sha2 = { workspace = true }
 tokio = { workspace = true }
 utils = { workspace = true }
 uuid = { workspace = true }
+zeroize = { workspace = true }
 pkarr = { version = "8", default-features = false, features = ["relays"] }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt"] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+rustix = { version = "=1.1.4", features = ["fs", "process"] }
 
 [build-dependencies]
 sensei = { workspace = true }

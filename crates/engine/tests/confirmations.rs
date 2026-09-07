@@ -89,7 +89,7 @@ fn role_specific_claims_gate_an_idempotent_settlement() {
                     source: Source::TransferSettlementPreview,
                     filter: vec![
                         Predicate::UidEq(occurrence.clone()),
-                        Predicate::QuantityEq(5.0),
+                        Predicate::QuantityEq(nucleus::DecimalValue::from_mantissa(0, 5).unwrap()),
                     ],
                     fields: None,
                     include: Include::default(),

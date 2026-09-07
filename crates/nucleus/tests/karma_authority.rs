@@ -7,8 +7,8 @@ use nucleus::karma::{
     GrantTemplateScope, ReferenceKind, Slug, TimestampMs, TypedUid, canonical_hash,
 };
 
-const PERSON_UID: &str = "p_01ARZ3NDEKTSV4RRFFQ69G5FAV";
-const OTHER_PERSON_UID: &str = "p_01ARZ3NDEKTSV4RRFFQ69G5FAW";
+const PERSON_UID: &str = "r_01APS3NDEKTSV4RRFFQ69G5FAV";
+const OTHER_PERSON_UID: &str = "r_01APS3NDEKTSV4RRFFQ69G5FAW";
 const PROGRAM_UID: &str = "r_01ARZ3NDEKTSV4RRFFQ69G5FAV";
 const RECORD_UID: &str = "r_01ARZ3NDEKTSV4RRFFQ69G5FAW";
 
@@ -96,7 +96,7 @@ fn authority_wire_has_a_golden_hash() {
     let digest = canonical_hash("karma.authority-golden.v1", &fixture).unwrap();
     assert_eq!(
         digest.as_str(),
-        "sha256:b48813e1435afc82fde9f6c59a967cfd7462721901ccf123989f0cc9b2930461",
+        "sha256:746b84e9194ea32564a51c7b924b15a44cc22b23640e1ae3788857556aebf168",
         "an authority wire change requires a deliberate golden update"
     );
 }

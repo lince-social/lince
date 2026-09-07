@@ -150,7 +150,7 @@ async fn concept_dag_filter_and_provenance_include() {
     let p = Protein {
         source: Source::Record,
         filter: vec![
-            Predicate::QuantityLt(0.0),
+            Predicate::QuantityLt(store::exact::zero()),
             Predicate::ConceptIn("food".into()),
         ],
         fields: None,
@@ -282,7 +282,7 @@ async fn promise_lifecycle_through_actions() {
 async fn the_wire_format_is_json_all_the_way() {
     let json = serde_json::json!({
         "source": "record",
-        "where": [ { "quantity_lt": 0.0 }, { "kind_eq": "plain" } ],
+        "where": [ { "quantity_lt": "0.0" }, { "kind_eq": "plain" } ],
         "include": { "facts": { "limit": 3 } },
         "order": [ { "link": { "kind": "before", "higher": "from" } }, { "asc": "created_at" } ],
         "limit": 10

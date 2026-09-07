@@ -2,7 +2,7 @@
 
 This is a reading map, not another task list. It accounts for the owner-authored Interface Record in [Lince](../Lince.lingua) and its cross-feature promises. [Dogfeeding backend](../backend-part-A.md) and [Interface Part A](plans/part-a.md) define the current company milestone; other native work remains scheduled in [native follow-through](plans/native-follow-through.md) and the master plan. Interfaceless is outside this review.
 
-Read [Part A](plans/part-a.md) and the selected subject for implementation; builders do not need this whole map or the research ledger in every brief. The [master waterfall](plans/interface.md#v1-master-waterfall) orders delivery, [build.md](build.md) owns the CEF split and [graph.md](graph.md) schedules Part A. All mapped work remains subject to its real proof; this map certifies no implementation.
+Read [Part A](plans/part-a.md) and the selected subject for implementation; the whole map and research ledger are not needed for every step. The [master waterfall](plans/interface.md#v1-master-waterfall) orders delivery and [build.md](build.md) owns the CEF split. All mapped work remains subject to its real proof; this map certifies no implementation.
 
 ## Owner Interface points
 

@@ -49,6 +49,18 @@ async fn nearby_serves_the_peers_the_wire_currently_sees() {
 async fn nearby_is_never_exported_to_a_remote_subject() {
     let e = engine().await;
     let peers = [peer("aaa", "Laptop")];
+    let person = store::records::create(
+        &e.store.pool,
+        store::records::NewRecord {
+            slug: None,
+            kind: nucleus::RecordKind::Person,
+            head: "Remote reader",
+            body: "",
+            quantity: store::exact::zero(),
+        },
+    )
+    .await
+    .expect("remote Person");
 
     assert_eq!(
         run(&e, &peers, None).await.len(),
@@ -56,7 +68,7 @@ async fn nearby_is_never_exported_to_a_remote_subject() {
         "the Cell sees its LAN"
     );
     assert!(
-        run(&e, &peers, Some("organ.somebody")).await.is_empty(),
+        run(&e, &peers, Some(&person.uid)).await.is_empty(),
         "who is physically near you must never leave the Cell, and an empty \
          answer is the shape the Decision Queue already established"
     );

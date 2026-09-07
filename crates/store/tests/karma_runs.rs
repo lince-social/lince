@@ -516,7 +516,7 @@ async fn activation_reset_uses_frozen_handle_generation_and_is_auditable() {
 
 #[tokio::test]
 async fn act_routed_candidate_is_atomic_durable_and_still_inert() {
-    const ACTOR_PERSON_UID: &str = "p_01ARZ3NDEKTSV4RRFFQ69G5FAW";
+    const ACTOR_PERSON_UID: &str = "r_01APS3NDEKTSV4RRFFQ69G5FAW";
 
     let store = Store::open_memory().await.unwrap();
     let now = instant();
@@ -1417,7 +1417,7 @@ async fn count(store: &Store, table: &str) -> i64 {
         .unwrap()
 }
 
-const GRANT_PERSON_UID: &str = "p_01ARZ3NDEKTSV4RRFFQ69G5FAW";
+const GRANT_PERSON_UID: &str = "r_01APS3NDEKTSV4RRFFQ69G5FAW";
 
 #[tokio::test]
 async fn accepting_with_a_grant_authorizes_one_intent_and_spends_its_budget() {

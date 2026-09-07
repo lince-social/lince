@@ -14,8 +14,8 @@ use store::karma::grants::{
 };
 use store::karma::programs::{CreateProgramInput, ProgramMutationCommit};
 
-const PERSON_UID: &str = "p_01ARZ3NDEKTSV4RRFFQ69G5FAV";
-const OTHER_PERSON_UID: &str = "p_01ARZ3NDEKTSV4RRFFQ69G5FAW";
+const PERSON_UID: &str = "r_01APS3NDEKTSV4RRFFQ69G5FAV";
+const OTHER_PERSON_UID: &str = "r_01APS3NDEKTSV4RRFFQ69G5FAW";
 const RECORD_UID: &str = "r_01ARZ3NDEKTSV4RRFFQ69G5FAX";
 const OTHER_RECORD_UID: &str = "r_01ARZ3NDEKTSV4RRFFQ69G5FAY";
 const MISSING_GRANT_UID: &str = "r_01ARZ3NDEKTSV4RRFFQ69G5FAZ";

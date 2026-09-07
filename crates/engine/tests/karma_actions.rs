@@ -17,11 +17,29 @@ use nucleus::karma::{
 };
 use protein::{Include, Predicate, Protein, Source};
 
-const PERSON_UID: &str = "p_01ARZ3NDEKTSV4RRFFQ69G5FAV";
+const PERSON_UID: &str = "r_01APS3NDEKTSV4RRFFQ69G5FAV";
+
+async fn engine_with_person() -> Engine {
+    let engine = Engine::open_memory().await.unwrap();
+    store::records::create_with_uid(
+        &engine.store.pool,
+        store::records::NewRecord {
+            slug: None,
+            kind: nucleus::RecordKind::Person,
+            head: "Principal",
+            body: "",
+            quantity: store::exact::zero(),
+        },
+        PERSON_UID,
+    )
+    .await
+    .unwrap();
+    engine
+}
 
 #[tokio::test]
 async fn typed_program_actions_preserve_replay_actor_and_stale_cas() {
-    let engine = Engine::open_memory().await.unwrap();
+    let engine = engine_with_person().await;
     let now = Utc
         .timestamp_millis_opt(
             TimestampMs::parse_canonical("2026-07-22T12:00:00.000Z")
@@ -104,7 +122,7 @@ async fn typed_program_actions_preserve_replay_actor_and_stale_cas() {
 
 #[tokio::test]
 async fn typed_frequency_action_requires_runtime_and_never_uses_legacy_frequency_rows() {
-    let engine = Engine::open_memory().await.unwrap();
+    let engine = engine_with_person().await;
     let anchor = TimestampMs::parse_canonical("2026-07-22T12:00:00.000Z").unwrap();
     let now = Utc
         .timestamp_millis_opt(anchor.as_millis())
@@ -223,7 +241,7 @@ async fn typed_frequency_action_requires_runtime_and_never_uses_legacy_frequency
     assert!(remote.is_empty());
     let unsupported = protein::execute(
         &engine.store,
-        &karma_query(vec![Predicate::QuantityGt(0.0)]),
+        &karma_query(vec![Predicate::QuantityGt(store::exact::zero())]),
     )
     .await
     .unwrap_err();
@@ -334,7 +352,7 @@ fn duration(milliseconds: i64) -> DurationBinding {
 
 #[tokio::test]
 async fn acting_on_a_program_publishes_it_to_the_organs_other_cells() {
-    let engine = Engine::open_memory().await.unwrap();
+    let engine = engine_with_person().await;
     let now = Utc
         .timestamp_millis_opt(
             TimestampMs::parse_canonical("2026-07-22T12:00:00.000Z")

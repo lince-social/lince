@@ -516,25 +516,72 @@ async fn a_conversation_orders_by_hlc_not_by_a_machines_clock() {
         .await
         .expect("a learns of the acceptance");
 
-    let first = a.send_message(&thread, "me", "one").await.expect("first");
-    let second = a.send_message(&thread, "me", "two").await.expect("second");
-
     let serving = {
         let b_wire = b_wire.clone();
         tokio::spawn(async move { b_wire.serve().await })
     };
+    let root_ops = store::sync_ops::after_in_root(&a.store.pool, &conversation, 0, 2000)
+        .await
+        .expect("initial root history");
+    let initialized = a_wire
+        .request(
+            loopback(&b_wire),
+            ALPN_SYNC,
+            &WireRequest::PushGrantOps {
+                root: conversation.clone(),
+                batch: OpBatch {
+                    from_organ: a_organ.clone(),
+                    ops: a.hydrate_ops(root_ops).await.expect("initial root batch"),
+                },
+            },
+        )
+        .await
+        .expect("initialize the accepted root");
+    assert!(matches!(initialized, WireResponse::Applied { applied } if applied > 0));
+    for uid in [&conversation, &thread] {
+        let copied = store::records::get(&b.store.pool, uid)
+            .await
+            .expect("initial Record")
+            .expect("the accepted root and Thread arrived");
+        assert_eq!(&copied.uid, uid);
+        assert_eq!(
+            store::replica::root_of(&b.store.pool, uid)
+                .await
+                .expect("initial root membership"),
+            Some(conversation.clone())
+        );
+    }
+
+    let first = a.send_message(&thread, "me", "one").await.expect("first");
+    let second = a.send_message(&thread, "me", "two").await.expect("second");
     for _ in 0..5 {
         if a_wire.sync_once().await.expect("deliver") == 0 {
             break;
         }
     }
 
-    store::sqlx::query("UPDATE record SET created_at = ? WHERE uid = ?")
+    let skewed = store::sqlx::query("UPDATE record SET created_at = ? WHERE uid = ?")
         .bind("1999-01-01T00:00:00Z")
         .bind(&second)
         .execute(&b.store.pool)
         .await
         .expect("skew the clock");
+    assert_eq!(skewed.rows_affected(), 1);
+    for uid in [&first, &second] {
+        let linked: i64 = store::sqlx::query_scalar(
+            "SELECT COUNT(*) FROM record_assertion a
+              JOIN concept c ON c.uid = a.predicate_uid
+             WHERE a.subject_uid = ? AND a.object_uid = ?
+               AND c.canonical_name = ? AND a.retracted_at IS NULL",
+        )
+        .bind(uid)
+        .bind(&thread)
+        .bind(engine::threads::MESSAGE_IN_PREDICATE)
+        .fetch_one(&b.store.pool)
+        .await
+        .expect("delivered message link");
+        assert_eq!(linked, 1, "each new Message arrived with its Thread link");
+    }
 
     let protein: protein::Protein = serde_json::from_value(serde_json::json!({
         "source": "record",

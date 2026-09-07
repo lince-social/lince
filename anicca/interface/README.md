@@ -48,7 +48,7 @@ substantive source passage was dropped.
 
 The next milestone is [Part A — Dogfeeding](plans/part-a.md): general Lince knowledge/work capabilities used by a private company through new native Sands connected live to a local Linux machine or VPS. [Backend Part A](../backend-part-A.md) owns identity, Role-associated Protein Record access, property-write checks, reliable remote work and recovery; the Interface checklist owns reusable controls. The administrator can set vocabulary, Roles, policies and views manually, with no company starter or required owning project. All twenty native roots are not required: Karma, Transfer, separate Communication and other nonessential migrations remain in [native follow-through](plans/native-follow-through.md); CEF remains last.
 
-Dogfeeding is not the already-accepted runtime Plan A, full C4 catalog completion or shared live Box collaboration. The [execution graph](graph.md) is stale until re-cut around the new backend dependencies and company acceptance; do not launch its old frontier. The [build rule](build.md) keeps the actual client/server path CEF-free without making lince-desktop a client dependency.
+Dogfeeding is not the already-accepted runtime Plan A, full C4 catalog completion or shared live Box collaboration. The [build rule](build.md) keeps the actual client/server path CEF-free without making lince-desktop a client dependency.
 
 The 2026-09-06 Interface Record revises planned v1 behavior: stable placement
 comes first, with per-appearance edits, children released from group movement,
@@ -117,7 +117,6 @@ owning either design.
 - [../backend-part-A.md](../backend-part-A.md): Dogfeeding's backend foundations, access model, company fixture and operational acceptance.
 - [plans/part-a.md](plans/part-a.md): Dogfeeding's native controls and quality gates.
 - [plans/native-follow-through.md](plans/native-follow-through.md): native migrations excluded from Dogfeeding, preserved as later v1 work.
-- [graph.md](graph.md): stale C4 cut pending Dogfeeding re-cut; retained isolation, verification and scheduling rules are not launch authorization.
 - [plans/cef.md](plans/cef.md): the final v1 CEF lane, including the five deferred roots and fresh browser-specific proofs.
 - [plans/interface.md](plans/interface.md): landed foundation statement and
   stable Box, individual composition, native time, later motion/effects,

@@ -76,11 +76,12 @@ impl ReferenceKind {
     const fn uid_prefix(self) -> &'static str {
         match self {
             Self::Fact => "f",
-            Self::Person | Self::Promise => "p",
+            Self::Promise => "p",
             Self::Place => "pl",
             Self::Concept | Self::Unit => "c",
             Self::Link => "l",
             Self::Record
+            | Self::Person
             | Self::Organ
             | Self::Transfer
             | Self::Program

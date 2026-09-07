@@ -1,9 +1,11 @@
+pub mod access;
 pub mod action_intent;
 pub mod actions;
 pub mod append;
 pub mod body_links;
 pub mod checkpoint;
 pub mod collab;
+pub mod collab_guard;
 #[allow(dead_code)]
 pub mod communication;
 pub mod directory;
@@ -22,6 +24,13 @@ pub mod lingua_file;
 pub mod mailbox;
 pub mod pairing;
 pub mod peers;
+pub mod private_admin_catalog;
+pub mod private_auth;
+pub mod private_files;
+pub mod private_json;
+pub mod private_password;
+pub mod private_requests;
+pub mod private_work;
 pub mod read_filter;
 pub mod rebuild;
 pub mod roster;

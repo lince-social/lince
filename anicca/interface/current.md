@@ -1,6 +1,6 @@
 # Current interface context
 
-Current milestone: **Part A — Dogfeeding**, defined by [Backend Part A](../backend-part-A.md) and [Interface Part A](plans/part-a.md). General Lince knowledge/work capabilities are exercised in a private company: new native Sands, live access from home, Role-associated Protein Record selection and property-write permissions, and threads/messages. Manual vocabulary, policy and view setup is enough; no starter, required owning project, Karma/Transfer or separate Communication Castle is in scope. The required products are a headless Linux server on a local machine or VPS and the new native Interface client, not a browser or legacy desktop Sands/wrapper. The [old graph](graph.md) is stale until re-cut. Source checkpoints below do not certify the new access boundary.
+Current milestone: **Part A — Dogfeeding**, defined by [Backend Part A](../backend-part-A.md) and [Interface Part A](plans/part-a.md). General Lince knowledge/work capabilities are exercised in a private company: new native Sands, live access from home, Role-associated Protein Record selection and property-write permissions, and threads/messages. Manual vocabulary, policy and view setup is enough; no starter, required owning project, Karma/Transfer or separate Communication Castle is in scope. The required products are a headless Linux server on a local machine or VPS and the new native Interface client, not a browser or legacy desktop Sands/wrapper. Source checkpoints below do not certify the new access boundary.
 
 Purpose: give a future session enough context to continue without loading the
 full interface corpus.
@@ -23,7 +23,7 @@ production dependency and added no waterfall stage.
 
 [Corpus map](README.md)
 
-The [coverage map](coverage.md) routes the complete v1 promise without loading it into each builder. Part A now explicitly preserves existing collaborative text editing, native authenticated privacy and any owner-accepted locked-description behavior at launch. Additional Note/scalar-binding and Program-backed Karma surfaces have a named later native lane. Worktrees are owner-permitted; the graph still needs an exact pool and accepted source snapshot at launch. Every graph-work role checkpoints and verifies resumption under the skill's context rules; no worker or build is launched by these document changes.
+The [coverage map](coverage.md) routes the complete v1 promise without loading it into each implementation step. Part A now explicitly preserves existing collaborative text editing, native authenticated privacy and any owner-accepted locked-description behavior at launch. Additional Note/scalar-binding and Program-backed Karma surfaces have a named later native lane. Work proceeds sequentially from an accepted source revision with focused Cargo proofs.
 
 ## Owner revision, 2026-09-06
 
@@ -295,7 +295,7 @@ the complete positive and negative evidence remains in [links.md](links.md).
 
 ## Active sequence
 
-The next milestone is [Dogfeeding](plans/part-a.md), covering steps 1–2 below and [Backend Part A](../backend-part-A.md). The [graph](graph.md) requires re-cut before launch. Shared native bootstrap and company identity/access foundations precede their consumers; full native catalog migration and shared live Box layout are separate work.
+The next milestone is [Dogfeeding](plans/part-a.md), covering steps 1–2 below and [Backend Part A](../backend-part-A.md). Shared native bootstrap and company identity/access foundations precede their consumers; full native catalog migration and shared live Box layout are separate work.
 
 1. Deliver the native Interface client and private Linux server with Backend Part A's identity/access foundations, usable project/task controls and authenticated remote live work. Preserve CEF exclusion, stable editing and shared controls; additional native roots remain later.
 2. Pass the native quality gates and Backend Part A's company pilot, access-loss and recovery proofs; full native catalog completion is separate.
@@ -363,7 +363,7 @@ are not another implementation checklist.
 
 ## Minimal reading set for the next implementation
 
-Start with [Part A](plans/part-a.md), [the build rule](build.md) and the assigned node in [the graph](graph.md). Read only the relevant behavior references below, together with the graph-work isolation and compilation instructions. The actual native feature boundary still needs its bootstrap proof; a passing bare-crate check does not establish native desktop coverage. Joined-runtime coverage is explicitly deferred, not silently credited to Corgi.
+Start with [Part A](plans/part-a.md) and [the build rule](build.md). Read only the relevant behavior references below. The actual native feature boundary still needs its bootstrap proof; a passing bare-crate check does not establish native desktop coverage. Joined-runtime coverage is explicitly deferred, not inferred from a native-only Cargo check.
 
 Read:
 

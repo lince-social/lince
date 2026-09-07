@@ -414,8 +414,20 @@ async fn re_tagging_a_change_moves_the_total_without_touching_the_fact() {
 async fn totals_never_leave_the_cell_for_a_remote_subject() {
     let e = engine().await;
     spending_month(&e).await;
+    let person = store::records::create(
+        &e.store.pool,
+        NewRecord {
+            slug: None,
+            kind: RecordKind::Person,
+            head: "Remote reader",
+            body: "",
+            quantity: store::exact::zero(),
+        },
+    )
+    .await
+    .unwrap();
 
-    let rows = protein::execute_for(&e.store, &march(GroupBy::Total), Some("org_somebody"))
+    let rows = protein::execute_for(&e.store, &march(GroupBy::Total), Some(&person.uid))
         .await
         .unwrap();
     assert!(rows.is_empty());

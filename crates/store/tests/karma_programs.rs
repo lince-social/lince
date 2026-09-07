@@ -11,8 +11,8 @@ use store::karma::programs::{
     ReviseProgramInput, activate, create, get_handle, get_revision, pause, revise,
 };
 
-const PERSON_UID: &str = "p_01ARZ3NDEKTSV4RRFFQ69G5FAV";
-const OTHER_PERSON_UID: &str = "p_01ARZ3NDEKTSV4RRFFQ69G5FAW";
+const PERSON_UID: &str = "r_01APS3NDEKTSV4RRFFQ69G5FAV";
+const OTHER_PERSON_UID: &str = "r_01APS3NDEKTSV4RRFFQ69G5FAW";
 
 #[tokio::test]
 async fn create_replay_and_reopen_preserve_the_exact_result() {

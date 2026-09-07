@@ -176,41 +176,45 @@ async fn importing_instinct_puts_the_documentation_in_the_store() {
     let assertions = store::assertions::for_subjects(&e.store.pool, &uids)
         .await
         .unwrap();
-    let parent_of = |child: &str| {
-        let uid = bundle
-            .iter()
-            .find(|r| r.head == child)
-            .unwrap_or_else(|| panic!("the {child} chapter"))
-            .projection
-            .uid
-            .clone();
+    let parent_of = |uid: &str| {
         assertions
             .iter()
             .find(|a| a.subject_uid == uid && a.predicate == "part-of")
-            .and_then(|a| a.object_uid.clone())
+            .and_then(|a| a.object_uid.as_deref())
     };
-    let ontology = parent_of("Record").expect("Record is filed under a chapter");
+    for record in &bundle {
+        assert_eq!(
+            parent_of(&record.projection.uid),
+            record.parent_uid(),
+            "{} keeps its declared parent",
+            record.head
+        );
+    }
+    let (child, parent) = bundle
+        .iter()
+        .find_map(|child| {
+            let parent_uid = child.parent_uid()?;
+            let parent = bundle
+                .iter()
+                .find(|record| record.projection.uid == parent_uid)?;
+            Some((child, parent))
+        })
+        .expect("the bundle contains a declared parent link");
+    assert_ne!(child.projection.uid, parent.projection.uid);
     assert_eq!(
-        ontology,
-        bundle
-            .iter()
-            .find(|r| r.head == "Ontology")
-            .expect("the Ontology chapter")
-            .projection
-            .uid,
-        "Record is part of Ontology"
+        parent_of(&child.projection.uid),
+        Some(parent.projection.uid.as_str()),
+        "the imported parent link matches its declaration"
     );
-    assert!(
-        parent_of("Ontology").is_some(),
-        "and Ontology is itself filed under the root — two levels, which is \
-         the link a one-hop reader could not have made"
-    );
-    let _ = chapter;
     let level = store::records::quantity(&e.store.pool, chapter.projection.uid.trim())
         .await
         .unwrap()
         .unwrap();
-    assert_eq!(level.to_string(), "0", "#done does not rewrite quantity");
+    assert_eq!(
+        level.to_string(),
+        chapter.quantity().expect("the Record declares a quantity"),
+        "the declared quantity is preserved"
+    );
 }
 
 #[tokio::test]

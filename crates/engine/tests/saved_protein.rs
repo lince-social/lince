@@ -149,7 +149,7 @@ async fn save_protein_requires_the_canonical_root_group() {
                 head: "Legacy flat".into(),
                 ast: json!({
                     "source": "record",
-                    "where": [{ "kind_eq": "plain" }, { "quantity_gt": 0 }]
+                    "where": [{ "kind_eq": "plain" }, { "quantity_gt": "0" }]
                 }),
             },
             None,

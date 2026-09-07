@@ -14,11 +14,11 @@ Read when: validating runtime changes or deciding whether a prototype seam may b
 
 ## Current native acceptance profile
 
-[The build rule](build.md) and [Part A graph](graph.md) govern the next run. Bootstrap must give the real desktop and its native Gallery/workbenches a CEF-free feature graph, shell, package and diagnostic entry. Running the old joined executable with zero browser panes does not prove that boundary. The historical fixture specifications and measured joined reports below are retained; browser-specific obligations resume in [the final v1 CEF lane](plans/cef.md).
+[The build rule](build.md) and [Part A checklist](plans/part-a.md) govern the next run. Bootstrap must give the real desktop and its native Gallery/workbenches a CEF-free feature graph, shell, package and diagnostic entry. Running the old joined executable with zero browser panes does not prove that boundary. The historical fixture specifications and measured joined reports below are retained; browser-specific obligations resume in [the final v1 CEF lane](plans/cef.md).
 
 The new native profile keeps the benchmark contract below for native frame/input latency, 120 Hz fixed-step regression, partial updates, GPU work, semantic camera invariance, startup, device recovery, ten-cycle lifetime, accessibility and authority. Its 200-visible/1,000-active/10,000-resident fixture is distinct from the stationary everyday-use witness, where automatic movement stays off. A native theme update still reaches all affected visible Sands within the existing budget. Native routes, subscriptions and GPU objects return to baseline on teardown; CEF processes and surfaces remain absent throughout.
 
-CEF counts, browser renderer recovery, live Installed-HTML parity and hostile Website probes are explicitly not applicable to this profile, not silently passing zero-valued fields. Their historical thresholds remain for the final lane. Pure metadata, artifact and export conformance can still be checked without executing HTML. Version the native report and record enabled features, exact source, toolchain, machine, workload and fresh raw samples. Preserve three 30-second warm-ups followed by 120-second samples and the distinction between measured input-to-present-call and physical-display latency. The graph's inspector holds the machine exclusively during measurement; Corgi and Cargo workers are paused or drained first.
+CEF counts, browser renderer recovery, live Installed-HTML parity and hostile Website probes are explicitly not applicable to this profile, not silently passing zero-valued fields. Their historical thresholds remain for the final lane. Pure metadata, artifact and export conformance can still be checked without executing HTML. Version the native report and record enabled features, exact source, toolchain, machine, workload and fresh raw samples. Preserve three 30-second warm-ups followed by 120-second samples and the distinction between measured input-to-present-call and physical-display latency. Pause project compilers and tests before measuring.
 
 #### Native Interface Laboratory
 
@@ -545,7 +545,7 @@ surface rather than silently freezing older pages.
 
 ##### Reproducible benchmark contract
 
-This is the retained joined contract. The current native profile above keeps its native thresholds and excludes its explicitly browser-only rows; the late CEF lane restores those rows. Tool selection follows [build.md](build.md): scoped Corgi native checks where proved, one warm Cargo/Nix production lane and fresh execution for runtime or measurement evidence.
+This is the retained joined contract. The current native profile above keeps its native thresholds and excludes its explicitly browser-only rows; the late CEF lane restores those rows. Tool selection follows [build.md](build.md): focused Cargo checks and tests, the Cargo/Nix production lane and fresh execution for runtime or measurement evidence.
 
 Every performance run records the git revision, dependency locks, release
 profile, scenario/seed, backend, adapter/driver, CPU/GPU/RAM, power mode,

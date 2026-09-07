@@ -177,6 +177,24 @@ impl DecimalValue {
         self.mantissa > 0
     }
 
+    pub fn exact_numeric_cmp(self, rhs: Self) -> std::cmp::Ordering {
+        match self.scale.cmp(&rhs.scale) {
+            std::cmp::Ordering::Equal => self.mantissa.cmp(&rhs.mantissa),
+            std::cmp::Ordering::Less => {
+                let factor = 10_i128.pow(u32::from(rhs.scale - self.scale));
+                let quotient = rhs.mantissa / factor;
+                let remainder = rhs.mantissa % factor;
+                self.mantissa.cmp(&quotient).then_with(|| 0.cmp(&remainder))
+            }
+            std::cmp::Ordering::Greater => {
+                let factor = 10_i128.pow(u32::from(self.scale - rhs.scale));
+                let quotient = self.mantissa / factor;
+                let remainder = self.mantissa % factor;
+                quotient.cmp(&rhs.mantissa).then_with(|| remainder.cmp(&0))
+            }
+        }
+    }
+
     pub fn rescale(self, scale: u8) -> Option<Self> {
         if scale > MAX_DECIMAL_SCALE {
             return None;

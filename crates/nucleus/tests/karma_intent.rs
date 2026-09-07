@@ -9,7 +9,7 @@ use nucleus::karma::{
     TimestampMs, TypedUid, authorize_intent,
 };
 
-const PERSON_UID: &str = "p_01ARZ3NDEKTSV4RRFFQ69G5FAV";
+const PERSON_UID: &str = "r_01APS3NDEKTSV4RRFFQ69G5FAV";
 const PROGRAM_UID: &str = "r_01ARZ3NDEKTSV4RRFFQ69G5FAV";
 const RECORD_UID: &str = "r_01ARZ3NDEKTSV4RRFFQ69G5FAW";
 const UNIT_UID: &str = "c_01ARZ3NDEKTSV4RRFFQ69G5FAV";

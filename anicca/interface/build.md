@@ -2,7 +2,7 @@
 
 Part A — Dogfeeding delivers a real CEF-free native Interface client and new Sands connected live to a private Organ on a local Linux machine or VPS. The company is the acceptance case, not a separate application architecture. Neither the joined application with zero browser panes nor legacy desktop Sands meet that delivery. The lince-desktop wrapper is not required. The same shared native host serves product and acceptance runs. CEF stays behind cef-runtime until the end of v1. [Backend Part A](../backend-part-A.md) owns Role/Protein/property authority, private operation and remote proof; [Interface Part A](plans/part-a.md) owns the controls.
 
-This is the delivery rule for the whole interface corpus. Earlier joined/CEF reports remain evidence for the revisions they measured. They neither certify the new native-only executable nor impose a CEF gate on Part A. Research documents describe possibilities, not additional prerequisites. The graph-work compilation notes describe the current joined dependency graph; the native default below is a planned change, and its actual build graph must be proved before it is called ready.
+This is the delivery rule for the whole interface corpus. Earlier joined/CEF reports remain evidence for the revisions they measured. They neither certify the new native-only executable nor impose a CEF gate on Part A. Research documents describe possibilities, not additional prerequisites. The native default below is a planned change, and its actual build graph must be proved before it is called ready.
 
 ## One optional adapter, with no accidental entry path
 
@@ -46,24 +46,18 @@ Exporting HTML or displaying a public Facade in somebody's browser does not itse
 
 | Work | Lane | Evidence |
 | --- | --- | --- |
-| Reading, editing, formatting and static source checks | Any authorized worker; no compiler needed | Reviewed diff and narrow static checks |
-| Native Rust type checks and deterministic unit/integration tests | Scoped Corgi in reusable builder checkouts | Actual native feature graph, nonzero test count and content/revision identity |
-| Native Interface client and headless server package/production-entry checks | One warm verification checkout; Cargo/Nix, or a proved Corgi desktop root for its Rust portion | Real CEF-free desktop and no CEF payload requirement |
-| GPU/input/accessibility, local server and lifecycle witnesses | Inspector only; a prepared native executable | Fresh execution against isolated fixtures, not cached test success |
-| Frame timing and other machine measurements | Inspector's exclusive machine lease; canonical native release profile | Fresh warm-up and samples with build tool/toolchain, source and workload recorded |
+| Reading, editing, formatting and static source checks | Current checkout | Reviewed diff and narrow static checks |
+| Native Rust type checks and deterministic unit/integration tests | Focused Cargo commands in one reused target | The named affected target and nonzero focused tests |
+| Native Interface client and headless server package/production-entry checks | Cargo/Nix production lane | Real CEF-free client/server and no CEF payload requirement |
+| GPU/input/accessibility, local server and lifecycle witnesses | Prepared native executable | Fresh execution against isolated fixtures, not cached test success |
+| Frame timing and other machine measurements | Quiet machine; canonical native release profile | Fresh warm-up and samples with toolchain, source and workload recorded |
 | Anything enabling `cef-runtime` or `joined-runtime` | Late-v1 Cargo/CEF lane | Its own fresh security, integration, packaging and performance proof |
 
-Every Corgi shell uses `CORGI_STORE=/home/user/git/lince-social/.corgi` on disk outside the checkouts and `CORGI_SYSTEM_READS=/nix/store:/run/current-system/sw/share/nix-ld`. The starting native check is `corgi check --root interface -p lince-interface --no-default-features --features native-runtime`. Named tests use the same root/features and a concrete `--test` target. Verify the installed CLI in bootstrap; a missing tool, unsupported option or absent test fails rather than silently choosing a weaker check.
+Use one current checkout and one reused Cargo target. Start with the narrowest test that exercises the changed feature. A change to a shared contract runs the directly affected focused targets; it does not automatically rerun every backend or Interface test. Release acceptance separately runs the production client/server package and end-to-end journey.
 
-Bootstrap adds and proves Corgi roots for the actual native client and headless server feature graphs before advertising commands for them. The existing interface root proves only its selected Rust target; it does not prove the server or remote connection. Until supported, product/package proofs use the one warm Cargo/Nix verification lane. No Dogfeeding proof requires launching lince-desktop or enabling joined-runtime.
+Use `cargo check`, never a bare `cargo build`. Use `cargo test` when behavior must execute, and `cargo run` only for an actual application or release witness. Do not enable `--all-features` merely to obtain broad coverage because that would pull the deferred CEF lane into Part A.
 
-Cargo is also allowed for a native proof Corgi cannot correctly execute. The planner records the exact reason and command and keeps that work in one warm verification checkout. It is not a reason to enable CEF, use `--all-features`, run an unscoped workspace build or create more Cargo targets in every checkout. There is no requirement to run every unit test under both compilers on every edit. The integrated proof uses the declared native lane and re-proves the accumulated affected work; final acceptance includes the canonical production package.
-
-Use `cargo check`, never a bare `cargo build` as a proof. `cargo test` and release `cargo run` are permitted when the proof requires execution. Prepare the measured release executable before sampling and then run it directly. Cached deterministic test results may be reused only for the identical tested content/configuration; live UI, network-fixture, lifecycle and timing evidence always comes from a fresh run. If Corgi cannot guarantee an uncached runtime invocation, use the prepared Cargo executable for that witness.
-
-Independent workers use separate reusable checkouts. Start with one compiler; the prior machine evidence supports three simultaneous compiler jobs including integration. Remeasure native check, test/link and release workloads with operating headroom and throughput before changing that budget. A fourth lightweight job is possible only if fresh evidence and actual session capacity support it. Agent slots, source checkouts and machine permits are different limits. A completed builder may submit a fixed candidate and reuse its checkout for another independent certified-ready node while verification runs; the [graph](graph.md#reusable-workers-and-the-review-queue) owns the bounded queue and permit priority.
-
-During measurements, every other run-owned compiler, test and app is stopped or drained and acknowledged; the inspector verifies this before sampling and other local tool work remains paused until release. Unexpected outside load invalidates the run, and unrelated user processes are never killed to make room. Current agent capacity allows two builders plus one combined verification agent and the planner; more editors do not raise the machine budget.
+During measurements, stop other project compilers, tests and applications before sampling. Unexpected outside load invalidates the run, and unrelated user processes are never killed to make room.
 
 ## Native acceptance is a new report, not an edited old result
 

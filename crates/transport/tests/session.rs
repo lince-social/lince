@@ -67,6 +67,19 @@ async fn subscribe_act_and_live_update_over_one_channel() {
 #[tokio::test]
 async fn visibility_subject_gates_the_session() {
     let (engine, hub) = setup().await;
+    let guest_uid = store::records::create(
+        &engine.store.pool,
+        store::records::NewRecord {
+            slug: None,
+            kind: RecordKind::Person,
+            head: "Guest",
+            body: "",
+            quantity: store::exact::zero(),
+        },
+    )
+    .await
+    .unwrap()
+    .uid;
     let public = engine
         .act(
             Action::CreateRecord {
@@ -99,7 +112,7 @@ async fn visibility_subject_gates_the_session() {
         .act(
             Action::GrantVisibility {
                 subject_kind: "actor".into(),
-                subject: Some("guest".into()),
+                subject: Some(guest_uid.clone()),
                 target: public,
             },
             None,
@@ -107,10 +120,10 @@ async fn visibility_subject_gates_the_session() {
         .await
         .unwrap();
 
-    let mut guest = Session::new(engine.clone(), hub, "guest-conn", Some("guest".into()));
+    let mut guest = Session::new(engine.clone(), hub, "guest-conn", Some(guest_uid));
     let p = protein::Protein {
         source: protein::Source::Record,
-        filter: vec![protein::Predicate::QuantityLt(0.0)],
+        filter: vec![protein::Predicate::QuantityLt(store::exact::zero())],
         fields: None,
         include: protein::Include::default(),
         aggregate: None,
@@ -189,7 +202,7 @@ async fn saved_protein_subscription() {
                 head: "Needs".into(),
                 ast: serde_json::json!({
                     "source": "record",
-                    "where": [{ "all": [{ "quantity_lt": 0.0 }] }]
+                    "where": [{ "all": [{ "quantity_lt": "0.0" }] }]
                 }),
             },
             None,

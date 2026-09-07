@@ -1,5 +1,9 @@
 #![recursion_limit = "512"]
 
+pub mod authority;
+mod decimal_operand;
+pub mod record_query;
+
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD as B64;
 use ed25519_dalek::{Signature, Verifier as _, VerifyingKey};
@@ -47,6 +51,7 @@ pub struct Protein {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Aggregate {
     pub op: AggregateOp,
     pub by: GroupBy,
@@ -103,16 +108,16 @@ fn part_of_kind() -> String {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub enum Predicate {
     All(Vec<Predicate>),
     Any(Vec<Predicate>),
     Not(Box<Predicate>),
-    QuantityLt(f64),
-    QuantityLte(f64),
-    QuantityGt(f64),
-    QuantityGte(f64),
-    QuantityEq(f64),
+    QuantityLt(#[serde(with = "crate::decimal_operand")] nucleus::DecimalValue),
+    QuantityLte(#[serde(with = "crate::decimal_operand")] nucleus::DecimalValue),
+    QuantityGt(#[serde(with = "crate::decimal_operand")] nucleus::DecimalValue),
+    QuantityGte(#[serde(with = "crate::decimal_operand")] nucleus::DecimalValue),
+    QuantityEq(#[serde(with = "crate::decimal_operand")] nucleus::DecimalValue),
     UidEq(String),
     OccurrenceIn(Vec<String>),
     KindEq(String),
@@ -184,6 +189,7 @@ pub enum DateComparison {
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct Include {
     pub facts: Option<FactsInclude>,
     pub promises: Option<PromisesInclude>,
@@ -202,16 +208,19 @@ pub struct Include {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ExtensionInclude {
     pub namespace: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ProjectionInclude {
     pub at: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct FactsInclude {
     #[serde(default = "default_fact_limit")]
     pub limit: i64,
@@ -222,6 +231,7 @@ fn default_fact_limit() -> i64 {
 }
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct PromisesInclude {
     #[serde(default)]
     pub state: Vec<String>,
@@ -253,6 +263,7 @@ impl Default for LinkDirection {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 pub struct ThreadsInclude {
     #[serde(default = "default_messages_limit")]
     pub messages_limit: usize,
@@ -2422,11 +2433,11 @@ impl PredicateCtx {
                     false
                 }
                 Predicate::Not(p) => !self.matches_one(store, r, p).await?,
-                Predicate::QuantityLt(n) => r.quantity_f64() < *n,
-                Predicate::QuantityLte(n) => r.quantity_f64() <= *n,
-                Predicate::QuantityGt(n) => r.quantity_f64() > *n,
-                Predicate::QuantityGte(n) => r.quantity_f64() >= *n,
-                Predicate::QuantityEq(n) => r.quantity_f64() == *n,
+                Predicate::QuantityLt(n) => r.quantity.exact_numeric_cmp(*n).is_lt(),
+                Predicate::QuantityLte(n) => !r.quantity.exact_numeric_cmp(*n).is_gt(),
+                Predicate::QuantityGt(n) => r.quantity.exact_numeric_cmp(*n).is_gt(),
+                Predicate::QuantityGte(n) => !r.quantity.exact_numeric_cmp(*n).is_lt(),
+                Predicate::QuantityEq(n) => r.quantity.exact_numeric_cmp(*n).is_eq(),
                 Predicate::UidEq(uid) => r.uid == *uid,
                 Predicate::KindEq(k) => r.kind == *k,
                 Predicate::SlugEq(s) => r.slug.as_deref() == Some(s.as_str()),
@@ -5108,7 +5119,7 @@ fn transfer_settlement_preview_filter(protein: &Protein) -> Result<(&str, f64), 
                 occurrence_uid = Some(uid.as_str());
             }
             Predicate::QuantityEq(quantity) if canonical_quantity.is_none() => {
-                canonical_quantity = Some(*quantity);
+                canonical_quantity = Some(quantity.to_f64());
             }
             predicate => {
                 return Err(transfer_query_error(
@@ -9097,7 +9108,7 @@ pub fn focus_queue(order_kind: &str) -> Protein {
     Protein {
         source: Source::Record,
         filter: vec![
-            Predicate::QuantityLt(0.0),
+            Predicate::QuantityLt(store::exact::zero()),
             Predicate::KindEq("plain".into()),
         ],
         fields: None,

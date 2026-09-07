@@ -185,7 +185,7 @@ async fn quantity_lte_and_gte_include_the_boundary() {
     let lte = base(
         Source::Record,
         vec![
-            Predicate::QuantityLte(0.0),
+            Predicate::QuantityLte(store::exact::zero()),
             Predicate::KindEq("plain".into()),
         ],
     );
@@ -200,7 +200,7 @@ async fn quantity_lte_and_gte_include_the_boundary() {
 
     let gte_json = serde_json::json!({
         "source": "record",
-        "where": [ { "quantity_gte": 0.0 }, { "kind_eq": "plain" } ]
+        "where": [ { "quantity_gte": "0.0" }, { "kind_eq": "plain" } ]
     });
     let gte: Protein = serde_json::from_value(gte_json).unwrap();
     let gte_slugs: Vec<String> = protein::execute(&e.store, &gte)
@@ -604,11 +604,13 @@ async fn visibility_gate_is_the_one_read_boundary() {
     let e = engine().await;
     let public_need = make(&e, "public.apples", RecordKind::Plain, -1.0).await;
     make(&e, "private.diary", RecordKind::Plain, -1.0).await;
+    let neighbor = make(&e, "neighbor", RecordKind::Person, 0.0).await;
+    let unknown = make(&e, "unknown", RecordKind::Person, 0.0).await;
 
     e.act(
         Action::GrantVisibility {
-            subject_kind: "organ".into(),
-            subject: Some("organ.neighbors".into()),
+            subject_kind: "person".into(),
+            subject: Some(neighbor.clone()),
             target: public_need.clone(),
         },
         None,
@@ -616,15 +618,18 @@ async fn visibility_gate_is_the_one_read_boundary() {
     .await
     .unwrap();
 
-    let p = base(Source::Record, vec![Predicate::QuantityLt(0.0)]);
+    let p = base(
+        Source::Record,
+        vec![Predicate::QuantityLt(store::exact::zero())],
+    );
     assert_eq!(protein::execute(&e.store, &p).await.unwrap().len(), 2);
-    let seen = protein::execute_for(&e.store, &p, Some("organ.neighbors"))
+    let seen = protein::execute_for(&e.store, &p, Some(&neighbor))
         .await
         .unwrap();
     assert_eq!(seen.len(), 1);
     assert_eq!(seen[0]["slug"], "public.apples");
     assert!(
-        protein::execute_for(&e.store, &p, Some("organ.unknown"))
+        protein::execute_for(&e.store, &p, Some(&unknown))
             .await
             .unwrap()
             .is_empty()
@@ -639,7 +644,7 @@ async fn saved_protein_is_a_record() {
 
     let ast = serde_json::json!({
         "source": "record",
-        "where": [{ "all": [{ "quantity_lt": 0.0 }] }]
+        "where": [{ "all": [{ "quantity_lt": "0.0" }] }]
     });
     e.act(
         Action::SaveProtein {
@@ -703,7 +708,7 @@ async fn near_predicate_uses_the_place_instinct() {
     let p = base(
         Source::Record,
         vec![
-            Predicate::QuantityLt(0.0),
+            Predicate::QuantityLt(store::exact::zero()),
             Predicate::Near {
                 of: "home".into(),
                 meters: 2000.0,
@@ -874,7 +879,7 @@ async fn nested_record_filters_cover_text_dates_relations_and_assignee() {
         Source::Record,
         vec![Predicate::Any(vec![
             Predicate::All(vec![
-                Predicate::QuantityLt(0.0),
+                Predicate::QuantityLt(store::exact::zero()),
                 Predicate::TextContains("DESIGN".into()),
                 Predicate::Relation {
                     kind: "assigned-to".into(),

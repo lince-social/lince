@@ -1,6 +1,6 @@
 use store::Store;
 
-async fn person(store: &Store, slug: &str) -> String {
+async fn record(store: &Store, slug: &str, kind: &str) -> String {
     let organ = store::organs::ensure_local(&store.pool, "me")
         .await
         .unwrap();
@@ -8,16 +8,21 @@ async fn person(store: &Store, slug: &str) -> String {
     store::sqlx::query(
         "INSERT INTO record (uid, slug, kind, head, body, quantity_mantissa, quantity_scale,
                              organ_uid, created_at, updated_at)
-         VALUES (?, ?, 'person', ?, '', '0', 0, ?, '2026-08-15T00:00:00Z', '2026-08-15T00:00:00Z')",
+         VALUES (?, ?, ?, ?, '', '0', 0, ?, '2026-08-15T00:00:00Z', '2026-08-15T00:00:00Z')",
     )
     .bind(&uid)
     .bind(slug)
+    .bind(kind)
     .bind(slug)
     .bind(&organ.uid)
     .execute(&store.pool)
     .await
     .unwrap();
     uid
+}
+
+async fn person(store: &Store, slug: &str) -> String {
+    record(store, slug, "person").await
 }
 
 #[tokio::test]
@@ -107,7 +112,39 @@ async fn the_deactivated_list_holds_only_the_deactivated() {
 }
 
 #[tokio::test]
-async fn an_unreadable_standing_does_not_lock_anyone_out() {
+async fn a_missing_record_is_not_an_active_person() {
+    let store = Store::open_memory().await.unwrap();
+
+    assert!(
+        !store::people::is_active(&store.pool, &nucleus::new_uid("r"))
+            .await
+            .unwrap()
+    );
+}
+
+#[tokio::test]
+async fn a_deleted_person_is_not_active() {
+    let store = Store::open_memory().await.unwrap();
+    let uid = person(&store, "deleted").await;
+
+    assert!(
+        store::records::mark_deleted(&store.pool, &uid)
+            .await
+            .unwrap()
+    );
+    assert!(!store::people::is_active(&store.pool, &uid).await.unwrap());
+}
+
+#[tokio::test]
+async fn a_non_person_record_is_not_an_active_person() {
+    let store = Store::open_memory().await.unwrap();
+    let uid = record(&store, "ordinary", "plain").await;
+
+    assert!(!store::people::is_active(&store.pool, &uid).await.unwrap());
+}
+
+#[tokio::test]
+async fn an_unreadable_standing_is_refused() {
     let store = Store::open_memory().await.unwrap();
     let uid = person(&store, "corrupt").await;
 
@@ -120,7 +157,65 @@ async fn an_unreadable_standing_does_not_lock_anyone_out() {
     .await
     .unwrap();
 
-    assert!(store::people::is_active(&store.pool, &uid).await.unwrap());
+    assert!(store::people::standing(&store.pool, &uid).await.is_err());
+    assert!(store::people::is_active(&store.pool, &uid).await.is_err());
+}
+
+#[tokio::test]
+async fn non_object_person_extension_data_is_refused() {
+    let store = Store::open_memory().await.unwrap();
+    let uid = person(&store, "non-object").await;
+
+    store::records::set_extension_raw(
+        &store.pool,
+        &uid,
+        store::people::NAMESPACE,
+        &serde_json::json!(["standing"]),
+    )
+    .await
+    .unwrap();
+
+    assert!(store::people::is_active(&store.pool, &uid).await.is_err());
+}
+
+#[tokio::test]
+async fn invalid_person_extension_json_is_refused() {
+    let store = Store::open_memory().await.unwrap();
+    let uid = person(&store, "invalid-json").await;
+
+    store::records::set_extension_raw(
+        &store.pool,
+        &uid,
+        store::people::NAMESPACE,
+        &serde_json::json!({}),
+    )
+    .await
+    .unwrap();
+    store::sqlx::query("PRAGMA ignore_check_constraints = ON")
+        .execute(&store.pool)
+        .await
+        .unwrap();
+    store::sqlx::query(
+        "UPDATE record_extension SET fds = 'not-json'
+          WHERE record_uid = ? AND namespace = ?",
+    )
+    .bind(&uid)
+    .bind(store::people::NAMESPACE)
+    .execute(&store.pool)
+    .await
+    .unwrap();
+
+    assert!(store::people::standing(&store.pool, &uid).await.is_err());
+    assert!(store::people::is_active(&store.pool, &uid).await.is_err());
+}
+
+#[tokio::test]
+async fn a_database_error_does_not_become_an_active_person() {
+    let store = Store::open_memory().await.unwrap();
+    let uid = person(&store, "closed").await;
+    store.pool.close().await;
+
+    assert!(store::people::is_active(&store.pool, &uid).await.is_err());
 }
 
 #[test]

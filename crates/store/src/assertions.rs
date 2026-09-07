@@ -62,23 +62,26 @@ pub struct AssertionRow {
 }
 
 fn map(row: sqlx::sqlite::SqliteRow) -> Result<AssertionRow, StoreError> {
-    let quantity = if row.get::<Option<String>, _>("quantity_mantissa").is_some() {
+    let quantity = if row
+        .try_get::<Option<String>, _>("quantity_mantissa")?
+        .is_some()
+    {
         Some(crate::exact::read_decimal(&row, "quantity")?)
     } else {
         None
     };
     Ok(AssertionRow {
-        uid: row.get("uid"),
-        subject_uid: row.get("subject_uid"),
-        predicate_uid: row.get("predicate_uid"),
-        object_uid: row.get("object_uid"),
-        role: row.get("role"),
+        uid: row.try_get("uid")?,
+        subject_uid: row.try_get("subject_uid")?,
+        predicate_uid: row.try_get("predicate_uid")?,
+        object_uid: row.try_get("object_uid")?,
+        role: row.try_get("role")?,
         quantity,
-        unit_uid: row.get("unit_uid"),
-        asserted_by: row.get("asserted_by"),
-        created_at: row.get("created_at"),
-        retracted_at: row.get("retracted_at"),
-        retracted_by: row.get("retracted_by"),
+        unit_uid: row.try_get("unit_uid")?,
+        asserted_by: row.try_get("asserted_by")?,
+        created_at: row.try_get("created_at")?,
+        retracted_at: row.try_get("retracted_at")?,
+        retracted_by: row.try_get("retracted_by")?,
     })
 }
 
@@ -90,6 +93,358 @@ pub struct NewAssertion<'a> {
     pub quantity: Option<DecimalValue>,
     pub unit_uid: Option<&'a str>,
     pub asserted_by: Option<&'a str>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct AssertionQuantity<'a> {
+    pub quantity: Option<DecimalValue>,
+    pub unit_uid: Option<&'a str>,
+}
+
+fn mutation_error(message: &str) -> StoreError {
+    StoreError::Protocol(message.into())
+}
+
+fn require_uid(uid: &str, prefix: &str) -> Result<(), StoreError> {
+    if !nucleus::valid_uid(uid, prefix) {
+        return Err(mutation_error("invalid Assertion mutation reference uid"));
+    }
+    Ok(())
+}
+
+async fn record_root_tx(
+    tx: &mut Transaction<'_, Sqlite>,
+    uid: &str,
+) -> Result<Option<String>, StoreError> {
+    require_uid(uid, "r")?;
+    let row = sqlx::query(
+        "SELECT kind, replica_root FROM record
+          WHERE uid = ? AND typeof(uid) = 'text' AND deleted_at IS NULL
+            AND typeof(kind) = 'text' AND length(CAST(kind AS BLOB)) <= 32
+            AND (replica_root IS NULL OR
+                 (typeof(replica_root) = 'text' AND length(CAST(replica_root AS BLOB)) = 28))",
+    )
+    .bind(uid)
+    .fetch_optional(&mut **tx)
+    .await?
+    .ok_or_else(|| mutation_error("Assertion references a missing, deleted or corrupt Record"))?;
+    if nucleus::RecordKind::parse(row.try_get::<&str, _>("kind")?).is_none() {
+        return Err(mutation_error(
+            "Assertion references an unknown Record kind",
+        ));
+    }
+    let root: Option<String> = row.try_get("replica_root")?;
+    if let Some(root) = &root {
+        require_uid(root, "r")?;
+    }
+    Ok(root)
+}
+
+async fn record_reference_tx(
+    tx: &mut Transaction<'_, Sqlite>,
+    uid: &str,
+) -> Result<Option<String>, StoreError> {
+    let root = record_root_tx(tx, uid).await?;
+    if let Some(root_uid) = &root {
+        let parent = record_root_tx(tx, root_uid).await?;
+        if parent.as_ref().is_some_and(|parent| parent != root_uid) {
+            return Err(mutation_error(
+                "Assertion references a nested or cyclic replica root",
+            ));
+        }
+    }
+    Ok(root)
+}
+
+async fn concept_reference_tx(
+    tx: &mut Transaction<'_, Sqlite>,
+    uid: &str,
+) -> Result<(), StoreError> {
+    require_uid(uid, "c")?;
+    let exists: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM concept WHERE uid = ? AND typeof(uid) = 'text')",
+    )
+    .bind(uid)
+    .fetch_one(&mut **tx)
+    .await?;
+    if !exists {
+        return Err(mutation_error("Assertion references a missing Concept"));
+    }
+    Ok(())
+}
+
+async fn validate_new_tx(
+    tx: &mut Transaction<'_, Sqlite>,
+    new: &NewAssertion<'_>,
+) -> Result<(), StoreError> {
+    if new.role == AssertionRole::Identity
+        && (new.object_uid.is_some() || new.quantity.is_some() || new.unit_uid.is_some())
+    {
+        return Err(mutation_error(
+            "an identity assertion must be unary and unquantified",
+        ));
+    }
+    let subject_root = record_reference_tx(tx, new.subject_uid).await?;
+    concept_reference_tx(tx, new.predicate_uid).await?;
+    if let Some(unit) = new.unit_uid {
+        concept_reference_tx(tx, unit).await?;
+    }
+    if let Some(actor) = new.asserted_by {
+        record_reference_tx(tx, actor).await?;
+    }
+    if let Some(object) = new.object_uid {
+        let object_root = record_reference_tx(tx, object).await?;
+        if object_root.is_some() && object_root != subject_root {
+            return Err(mutation_error(
+                "an assertion cannot cross an individual-replica boundary",
+            ));
+        }
+    }
+    Ok(())
+}
+
+async fn mutation_row_tx(
+    tx: &mut Transaction<'_, Sqlite>,
+    uid: &str,
+) -> Result<AssertionRow, StoreError> {
+    require_uid(uid, "a")?;
+    let row = sqlx::query(
+        "SELECT * FROM record_assertion WHERE uid = ? AND typeof(uid) = 'text'
+            AND typeof(subject_uid) = 'text' AND length(CAST(subject_uid AS BLOB)) = 28
+            AND typeof(predicate_uid) = 'text' AND length(CAST(predicate_uid AS BLOB)) = 28
+            AND (object_uid IS NULL OR (typeof(object_uid) = 'text' AND length(CAST(object_uid AS BLOB)) = 28))
+            AND typeof(role) = 'text' AND length(CAST(role AS BLOB)) <= 8
+            AND (quantity_mantissa IS NULL OR (typeof(quantity_mantissa) = 'text' AND length(CAST(quantity_mantissa AS BLOB)) <= 40))
+            AND (quantity_scale IS NULL OR typeof(quantity_scale) = 'integer')
+            AND (unit_uid IS NULL OR (typeof(unit_uid) = 'text' AND length(CAST(unit_uid AS BLOB)) = 28))
+            AND (asserted_by IS NULL OR (typeof(asserted_by) = 'text' AND length(CAST(asserted_by AS BLOB)) = 28))
+            AND typeof(created_at) = 'text' AND length(CAST(created_at AS BLOB)) BETWEEN 1 AND 64
+            AND (retracted_at IS NULL OR (typeof(retracted_at) = 'text' AND length(CAST(retracted_at AS BLOB)) BETWEEN 1 AND 64))
+            AND (retracted_by IS NULL OR (typeof(retracted_by) = 'text' AND length(CAST(retracted_by AS BLOB)) = 28))",
+    )
+    .bind(uid)
+    .fetch_optional(&mut **tx)
+    .await?
+    .ok_or_else(|| mutation_error("Assertion mutation target is missing or corrupt"))?;
+    let mantissa: Option<String> = row.try_get("quantity_mantissa")?;
+    let scale: Option<i64> = row.try_get("quantity_scale")?;
+    if mantissa.is_none() != scale.is_none() {
+        return Err(mutation_error("Assertion has incomplete exact quantity"));
+    }
+    let row = map(row)?;
+    if row.quantity.map(crate::exact::decimal_columns) != mantissa.zip(scale) {
+        return Err(mutation_error("Assertion has noncanonical exact quantity"));
+    }
+    for actor in [&row.asserted_by, &row.retracted_by].into_iter().flatten() {
+        require_uid(actor, "r")?;
+    }
+    let role = match row.role.as_str() {
+        "ordinary" => AssertionRole::Ordinary,
+        "identity" => AssertionRole::Identity,
+        _ => return Err(mutation_error("Assertion has an unknown role")),
+    };
+    validate_new_tx(
+        tx,
+        &NewAssertion {
+            subject_uid: &row.subject_uid,
+            predicate_uid: &row.predicate_uid,
+            object_uid: row.object_uid.as_deref(),
+            role,
+            quantity: row.quantity,
+            unit_uid: row.unit_uid.as_deref(),
+            asserted_by: None,
+        },
+    )
+    .await?;
+    Ok(row)
+}
+
+async fn log_row_tx(
+    tx: &mut Transaction<'_, Sqlite>,
+    row: &AssertionRow,
+) -> Result<(), StoreError> {
+    log_mutation_tx(
+        tx,
+        &row.uid,
+        OpKind::Set,
+        Some(assertion_op_value(
+            &row.subject_uid,
+            &row.predicate_uid,
+            row.object_uid.as_deref(),
+            &row.role,
+            row.quantity,
+            row.unit_uid.as_deref(),
+            row.asserted_by.as_deref(),
+            &row.created_at,
+        )),
+    )
+    .await
+}
+
+async fn log_mutation_tx(
+    tx: &mut Transaction<'_, Sqlite>,
+    uid: &str,
+    kind: OpKind,
+    value: Option<String>,
+) -> Result<(), StoreError> {
+    let identity = sqlx::query(
+        "SELECT c.uid, c.organ_uid FROM record c JOIN record o ON o.uid = c.organ_uid
+          WHERE c.slug = ? AND c.kind = 'device' AND c.deleted_at IS NULL
+            AND o.kind = 'organ' AND o.deleted_at IS NULL
+            AND typeof(c.uid) = 'text' AND length(CAST(c.uid AS BLOB)) = 28
+            AND typeof(c.organ_uid) = 'text' AND length(CAST(c.organ_uid AS BLOB)) = 28",
+    )
+    .bind(crate::cells::LOCAL_CELL_SLUG)
+    .fetch_optional(&mut **tx)
+    .await?
+    .ok_or_else(|| mutation_error("Assertion mutation requires a local Cell and Organ"))?;
+    require_uid(identity.try_get::<&str, _>("uid")?, "r")?;
+    require_uid(identity.try_get::<&str, _>("organ_uid")?, "r")?;
+    crate::sync_ops::log_local_tx(tx, "record_assertion", uid, "", kind, value).await
+}
+
+pub async fn insert_tx(
+    tx: &mut Transaction<'_, Sqlite>,
+    uid: &str,
+    new: NewAssertion<'_>,
+) -> Result<AssertionRow, StoreError> {
+    require_uid(uid, "a")?;
+    validate_new_tx(tx, &new).await?;
+    let existing: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM record_assertion WHERE uid = ?
+             OR (subject_uid = ? AND predicate_uid = ? AND object_uid IS ?
+                 AND retracted_at IS NULL))",
+    )
+    .bind(uid)
+    .bind(new.subject_uid)
+    .bind(new.predicate_uid)
+    .bind(new.object_uid)
+    .fetch_one(&mut **tx)
+    .await?;
+    if existing {
+        return Err(mutation_error(
+            "Assertion uid or active tuple already exists",
+        ));
+    }
+    let row = AssertionRow {
+        uid: uid.into(),
+        subject_uid: new.subject_uid.into(),
+        predicate_uid: new.predicate_uid.into(),
+        object_uid: new.object_uid.map(str::to_owned),
+        role: new.role.as_str().into(),
+        quantity: new.quantity,
+        unit_uid: new.unit_uid.map(str::to_owned),
+        asserted_by: new.asserted_by.map(str::to_owned),
+        created_at: Utc::now().to_rfc3339(),
+        retracted_at: None,
+        retracted_by: None,
+    };
+    let quantity = new.quantity.map(crate::exact::decimal_columns);
+    sqlx::query(
+        "INSERT INTO record_assertion
+           (uid, subject_uid, predicate_uid, object_uid, role,
+            quantity_mantissa, quantity_scale, unit_uid, asserted_by, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+    )
+    .bind(uid)
+    .bind(new.subject_uid)
+    .bind(new.predicate_uid)
+    .bind(new.object_uid)
+    .bind(new.role.as_str())
+    .bind(quantity.as_ref().map(|pair| pair.0.as_str()))
+    .bind(quantity.as_ref().map(|pair| pair.1))
+    .bind(new.unit_uid)
+    .bind(new.asserted_by)
+    .bind(&row.created_at)
+    .execute(&mut **tx)
+    .await?;
+    log_row_tx(tx, &row).await?;
+    Ok(row)
+}
+
+pub async fn retract_tx(
+    tx: &mut Transaction<'_, Sqlite>,
+    uid: &str,
+    retracted_by: Option<&str>,
+) -> Result<bool, StoreError> {
+    let row = mutation_row_tx(tx, uid).await?;
+    if let Some(actor) = retracted_by {
+        record_reference_tx(tx, actor).await?;
+    }
+    if row.retracted_at.is_some() {
+        return Ok(false);
+    }
+    sqlx::query("UPDATE record_assertion SET retracted_at = ?, retracted_by = ? WHERE uid = ?")
+        .bind(Utc::now().to_rfc3339())
+        .bind(retracted_by)
+        .bind(uid)
+        .execute(&mut **tx)
+        .await?;
+    log_mutation_tx(tx, uid, OpKind::Tombstone, None).await?;
+    Ok(true)
+}
+
+pub async fn set_quantity_tx(
+    tx: &mut Transaction<'_, Sqlite>,
+    uid: &str,
+    quantity: AssertionQuantity<'_>,
+) -> Result<AssertionRow, StoreError> {
+    let mut row = mutation_row_tx(tx, uid).await?;
+    if row.retracted_at.is_some() {
+        return Err(mutation_error("cannot change a retracted Assertion"));
+    }
+    if row.role == "identity" && (quantity.quantity.is_some() || quantity.unit_uid.is_some()) {
+        return Err(mutation_error("an identity assertion must be unquantified"));
+    }
+    if let Some(unit) = quantity.unit_uid {
+        concept_reference_tx(tx, unit).await?;
+    }
+    if row.quantity == quantity.quantity && row.unit_uid.as_deref() == quantity.unit_uid {
+        return Ok(row);
+    }
+    let columns = quantity.quantity.map(crate::exact::decimal_columns);
+    sqlx::query(
+        "UPDATE record_assertion SET quantity_mantissa = ?, quantity_scale = ?, unit_uid = ?
+          WHERE uid = ?",
+    )
+    .bind(columns.as_ref().map(|pair| pair.0.as_str()))
+    .bind(columns.as_ref().map(|pair| pair.1))
+    .bind(quantity.unit_uid)
+    .bind(uid)
+    .execute(&mut **tx)
+    .await?;
+    row.quantity = quantity.quantity;
+    row.unit_uid = quantity.unit_uid.map(str::to_owned);
+    log_row_tx(tx, &row).await?;
+    Ok(row)
+}
+
+pub async fn promote_identity_tx(
+    tx: &mut Transaction<'_, Sqlite>,
+    uid: &str,
+) -> Result<AssertionRow, StoreError> {
+    let mut row = mutation_row_tx(tx, uid).await?;
+    if row.retracted_at.is_some() || row.object_uid.is_some() {
+        return Err(mutation_error(
+            "only an active unary Assertion can become identity",
+        ));
+    }
+    if row.role == "identity" {
+        return Ok(row);
+    }
+    sqlx::query(
+        "UPDATE record_assertion
+            SET role = 'identity', quantity_mantissa = NULL, quantity_scale = NULL, unit_uid = NULL
+          WHERE uid = ?",
+    )
+    .bind(uid)
+    .execute(&mut **tx)
+    .await?;
+    row.role = "identity".into();
+    row.quantity = None;
+    row.unit_uid = None;
+    log_row_tx(tx, &row).await?;
+    Ok(row)
 }
 
 pub struct ImportedAssertion<'a> {
@@ -309,28 +664,7 @@ pub async fn set_identity(
     {
         let uid: String = row.get("uid");
         if row.get::<String, _>("role") != "identity" {
-            sqlx::query("UPDATE record_assertion SET role = 'identity' WHERE uid = ?")
-                .bind(&uid)
-                .execute(&mut *transaction)
-                .await?;
-            crate::sync_ops::log_local_tx(
-                &mut transaction,
-                "record_assertion",
-                &uid,
-                "",
-                OpKind::Set,
-                Some(assertion_op_value(
-                    subject_uid,
-                    predicate_uid,
-                    None,
-                    "identity",
-                    None,
-                    None,
-                    actor_uid,
-                    &now,
-                )),
-            )
-            .await?;
+            promote_identity_tx(&mut transaction, &uid).await?;
         }
         transaction.commit().await?;
         return Ok(Some(uid));

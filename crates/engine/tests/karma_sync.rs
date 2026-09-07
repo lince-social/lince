@@ -41,37 +41,55 @@ async fn become_sibling_of(engine: &Engine, organ_uid: &str) {
         .unwrap()
         .expect("local organ")
         .uid;
-    let mut connection = engine.store.pool.acquire().await.unwrap();
-    store::sqlx::query("PRAGMA foreign_keys = OFF")
-        .execute(&mut *connection)
+    let mut tx = store::write_tx(&engine.store.pool).await.unwrap();
+    store::sqlx::query("UPDATE record SET slug = NULL WHERE uid = ?")
+        .bind(&existing)
+        .execute(&mut *tx)
         .await
         .unwrap();
-    for statement in [
-        "DELETE FROM organ_contact WHERE record_uid = ?",
-        "DELETE FROM record WHERE uid = ?",
-    ] {
-        store::sqlx::query(statement)
-            .bind(organ_uid)
-            .execute(&mut *connection)
-            .await
-            .unwrap();
-    }
+    let assigned = store::sqlx::query(
+        "UPDATE record SET slug = ? WHERE uid = ? AND kind = 'organ' AND deleted_at IS NULL",
+    )
+    .bind(store::organs::LOCAL_ORGAN_SLUG)
+    .bind(organ_uid)
+    .execute(&mut *tx)
+    .await
+    .unwrap();
+    assert_eq!(assigned.rows_affected(), 1);
     for statement in [
         "UPDATE record SET organ_uid = ? WHERE organ_uid = ?",
-        "UPDATE record SET uid = ? WHERE uid = ?",
         "UPDATE sync_op SET organ_uid = ? WHERE organ_uid = ?",
     ] {
         store::sqlx::query(statement)
             .bind(organ_uid)
             .bind(&existing)
-            .execute(&mut *connection)
+            .execute(&mut *tx)
             .await
             .unwrap();
     }
-    store::sqlx::query("PRAGMA foreign_keys = ON")
-        .execute(&mut *connection)
-        .await
-        .unwrap();
+    tx.commit().await.unwrap();
+    assert_eq!(
+        store::organs::local(&engine.store.pool)
+            .await
+            .unwrap()
+            .unwrap()
+            .uid,
+        organ_uid
+    );
+    assert_eq!(
+        store::cells::local(&engine.store.pool)
+            .await
+            .unwrap()
+            .unwrap()
+            .organ_uid,
+        organ_uid
+    );
+    assert!(
+        store::records::get(&engine.store.pool, &existing)
+            .await
+            .unwrap()
+            .is_some()
+    );
 }
 
 async fn pair(from: &Engine, from_organ: &str, to: &Engine, to_organ: &str) {

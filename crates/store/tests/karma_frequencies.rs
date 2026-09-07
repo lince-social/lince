@@ -17,8 +17,8 @@ use store::karma::frequencies::{
 };
 use store::karma::programs::{CreateProgramInput, create as create_program};
 
-const PERSON_UID: &str = "p_01ARZ3NDEKTSV4RRFFQ69G5FAV";
-const OTHER_PERSON_UID: &str = "p_01ARZ3NDEKTSV4RRFFQ69G5FAW";
+const PERSON_UID: &str = "r_01APS3NDEKTSV4RRFFQ69G5FAV";
+const OTHER_PERSON_UID: &str = "r_01APS3NDEKTSV4RRFFQ69G5FAW";
 
 #[tokio::test]
 async fn create_replay_and_reopen_preserve_definition_and_original_result() {

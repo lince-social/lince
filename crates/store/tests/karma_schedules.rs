@@ -30,7 +30,7 @@ use store::karma::schedules::{
     supersede_inactive_frequency_cursors,
 };
 
-const PERSON_UID: &str = "p_01ARZ3NDEKTSV4RRFFQ69G5FAV";
+const PERSON_UID: &str = "r_01APS3NDEKTSV4RRFFQ69G5FAV";
 
 fn demand_policy() -> ScheduleDemandPolicy {
     ScheduleDemandPolicy {

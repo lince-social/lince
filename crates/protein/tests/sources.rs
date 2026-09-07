@@ -447,7 +447,7 @@ async fn settlement_preview(
     let mut query = protein(Source::TransferSettlementPreview);
     query.filter = vec![
         Predicate::UidEq(occurrence.into()),
-        Predicate::QuantityEq(quantity),
+        Predicate::QuantityEq(nucleus::DecimalValue::from_f64_lossy(quantity).unwrap()),
     ];
     protein::execute_for_with_signer(&engine.store, &query, None, Some(person))
         .await

@@ -53,7 +53,7 @@ fn program_mutation_evidence_has_a_complete_stable_wire_vocabulary() {
             action: ProgramMutationAction::Activate,
             request_id: "request-program-activate-0001".to_string(),
             program_uid: "r_01ARZ3NDEKTSV4RRFFQ69G5FAV".to_string(),
-            actor_person_uid: Some("p_01ARZ3NDEKTSV4RRFFQ69G5FAV".to_string()),
+            actor_person_uid: Some("r_01APS3NDEKTSV4RRFFQ69G5FAV".to_string()),
             previous_handle_revision: Some(4),
             handle_revision: 5,
             previous_head_revision_hash: Some(previous_head_revision_hash),
@@ -68,7 +68,7 @@ fn program_mutation_evidence_has_a_complete_stable_wire_vocabulary() {
         canonical_hash("karma.program-mutation-vocabulary.v1", &fixture)
             .unwrap()
             .as_str(),
-        "sha256:e4976f9899e6dd2fe2b7dae76835b2418b3bdc171cb41aafe547cca44a5b3355"
+        "sha256:6b2ef408fcbc4b2aec4cc8361169bc0371de76b316cd6c74fa178ab1f5090a58"
     );
 }
 
@@ -128,7 +128,7 @@ fn frequency_activation_epoch_and_mutation_vocabulary_are_stable() {
             action: FrequencyMutationAction::SetParameters,
             request_id: "request-frequency-parameters-0001".to_string(),
             frequency_uid: "r_01ARZ3NDEKTSV4RRFFQ69G5FAV".to_string(),
-            actor_person_uid: Some("p_01ARZ3NDEKTSV4RRFFQ69G5FAV".to_string()),
+            actor_person_uid: Some("r_01APS3NDEKTSV4RRFFQ69G5FAV".to_string()),
             previous_handle_revision: Some(4),
             handle_revision: 5,
             previous_head_revision_hash: Some(digest('1')),
@@ -148,7 +148,7 @@ fn frequency_activation_epoch_and_mutation_vocabulary_are_stable() {
         canonical_hash("karma.frequency-durable-vocabulary.v1", &fixture)
             .unwrap()
             .as_str(),
-        "sha256:ceec97e4d3ec578438c65d06b3fa1b1598a361d2c4c382c18a070c6510bc042d"
+        "sha256:0616164d01dfc8a0ac3861dfeb4500489edf70bd394c711c03f6e675d61a271f"
     );
 }
 

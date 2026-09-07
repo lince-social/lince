@@ -248,7 +248,7 @@ the selected Record through `SetQuantity`. It deliberately leaves inline Table
 editing/deletion, selected Protein drivers, saved Kanban lane/concept presets,
 bulk selection/actions and swimlanes unchecked within C4.
 
-The company-workflow slice and native quality gate are owned by [Part A — Dogfeeding](part-a.md); other native migrations remain in [native follow-through](native-follow-through.md). The [execution graph](../graph.md) needs re-cut around the backend company foundations before launch. This document preserves the verified foundation and its historical evidence, not a duplicate active checklist.
+The company-workflow slice and native quality gate are owned by [Part A — Dogfeeding](part-a.md); other native migrations remain in [native follow-through](native-follow-through.md). This document preserves the verified foundation and its historical evidence, not a duplicate active checklist.
 
 C4's CEF-free host/package bootstrap and shared native, editor and domain boundaries are certified before their consumers. Independent native workflows may then migrate in parallel in isolated checkouts; a workflow waits for its actual dependencies, not every unrelated root. Each in-scope migration reaches the running native surface before certification. Native-path legacy deletion follows replacement proofs, while gated browser implementations remain for the final v1 lane. Dogfeeding applies the native quality gate to its selected company workflows together with Backend Part A's remote-access and recovery gates. Other native migrations remain in [native follow-through](native-follow-through.md); full catalog count is not the Part A finish line.
 
@@ -256,7 +256,7 @@ Conversation's general authorship, live state and private-draft queue already ex
 
 ### C5 — Enforcement, authoring and completion gate
 
-[Part A's completion checks](part-a.md#prove-the-foundation-a-person-will-use) own native visual rules, themes, accessibility, author guidance, lifecycle, runtime health, package conformance, scale and quiet-machine measurements. [The build rule](../build.md) assigns scoped native Corgi checks and the warm Cargo/Nix production lane; fresh runtime and measurement evidence still closes C5, not compilation alone. Live native/HTML parity and all browser-specific proofs belong to [the final CEF lane](cef.md).
+[Part A's completion checks](part-a.md#prove-the-foundation-a-person-will-use) own native visual rules, themes, accessibility, author guidance, lifecycle, runtime health, package conformance, scale and quiet-machine measurements. [The build rule](../build.md) assigns focused Cargo checks and tests plus the Cargo/Nix production lane; fresh runtime and measurement evidence still closes C5, not compilation alone. Live native/HTML parity and all browser-specific proofs belong to [the final CEF lane](cef.md).
 
 The later Box additions retain their separate [stable everyday-use gate](interface.md#stable-everyday-use-gate). C5 certifies the foundation they consume, not per-appearance release, presentation switching, Calendar, Clock or future spatial behavior.
 

@@ -38,7 +38,13 @@ mod cef_diagnostic;
 #[cfg(feature = "cef-runtime")]
 pub mod cef_source_audit;
 #[cfg(feature = "cef-runtime")]
-pub use cef_diagnostic::run_native_interface;
+pub use cef_diagnostic::run_cef_native_interface;
+
+#[cfg(feature = "native-runtime")]
+#[path = "main.rs"]
+mod native_interface;
+#[cfg(feature = "native-runtime")]
+pub use native_interface::run_native_interface;
 
 #[cfg(all(feature = "cef-runtime", target_os = "linux"))]
 pub mod cef_vulkan;

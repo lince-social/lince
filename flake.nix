@@ -157,6 +157,8 @@
                 lockFile = ./Cargo.lock;
               };
 
+              LINCE_REVISION = self.rev or self.dirtyRev or "unknown";
+
               RUSTFLAGS = "-D warnings";
 
               cargoBuildFlags = [
@@ -202,9 +204,9 @@
               lockFile = ./Cargo.lock;
             };
 
-            RUSTFLAGS = "-D warnings";
-            CEF_PATH = lib.optionalString pkgs.stdenv.isLinux (toString cefLinuxRuntime);
+            LINCE_REVISION = self.rev or self.dirtyRev or "unknown";
 
+            RUSTFLAGS = "-D warnings";
             cargoBuildFlags = [
               "--package"
               "lince-desktop"
@@ -228,18 +230,9 @@
               ])
               ++ interfaceLinuxBuildInputs;
 
-            postInstall = lib.optionalString pkgs.stdenv.isLinux ''
-              mkdir -p "$out/lib/lince/cef"
-              cp -R ${cefLinuxRuntime}/. "$out/lib/lince/cef/"
-              rm -f "$out/bin/chrome-sandbox"
-              rm -f "$out/lib/libEGL.so" "$out/lib/libGLESv2.so" "$out/lib/libcef.so"
-              rm -f "$out/lib/libvk_swiftshader.so" "$out/lib/libvulkan.so.1"
-            '';
-
             postFixup = lib.optionalString pkgs.stdenv.isLinux ''
               wrapProgram "$out/bin/lince-desktop" \
-                --set CEF_PATH "$out/lib/lince/cef" \
-                --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath interfaceLinuxBuildInputs}:$out/lib/lince/cef"
+                --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath interfaceLinuxBuildInputs}"
             '';
 
             meta = {
@@ -474,7 +467,6 @@
             shellHook = ''
               export LINCE_MIGRATION_PREFLIGHT=1
             ''
-            + interfaceCefShellHook
             + lib.optionalString pkgs.stdenv.isLinux ''
               export LD_LIBRARY_PATH="${
                 lib.makeLibraryPath (

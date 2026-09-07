@@ -1,6 +1,6 @@
 Lince Website Sand — bundled asset credits
 
-Lince logos and editable Excalidraw artwork
+Lince logos
 Copyright the Lince contributors. Distributed under the repository's MIT license.
 
 Lato font

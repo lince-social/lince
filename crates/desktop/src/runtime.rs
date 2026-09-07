@@ -4,8 +4,6 @@ use tokio::sync::oneshot;
 use utils::desktop_setup::{read_staged_setup, remove_staged_setup};
 use web::serve_cell_api_only;
 
-const DESKTOP_LISTEN_ADDR: &str = "127.0.0.1:6174";
-
 #[derive(Clone)]
 pub struct DesktopRuntime {
     pub url: String,
@@ -15,7 +13,7 @@ pub struct DesktopRuntime {
     pub start_silent: bool,
 }
 
-pub async fn start_desktop_server() -> Result<DesktopRuntime, Error> {
+pub async fn start_desktop_server(listen_addr: String) -> Result<DesktopRuntime, Error> {
     let staged_setup = read_staged_setup()?;
     if let Some(auth_enabled) = staged_setup.as_ref().and_then(|setup| setup.auth_enabled) {
         bootstrap_config::set_auth_enabled(auth_enabled)?;
@@ -39,7 +37,7 @@ pub async fn start_desktop_server() -> Result<DesktopRuntime, Error> {
     let (addr_tx, addr_rx) = oneshot::channel();
     tokio::spawn(async move {
         if let Err(error) = serve_cell_api_only(
-            Some(DESKTOP_LISTEN_ADDR.to_string()),
+            Some(listen_addr),
             bootstrap.secret,
             bootstrap.auth_enabled,
             staged_setup,

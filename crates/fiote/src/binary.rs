@@ -3,11 +3,10 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub const BINARY_ENV: &str = "LINCE_PI_BIN";
-pub const VENDORED_RELATIVE: &str = "vendor/pi/node_modules/.bin/pi";
+pub const BINARY_ENV: &str = "LINCE_FIOTE_BIN";
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PiBinary {
+pub struct FioteBinary {
     pub path: PathBuf,
     pub origin: Origin,
 }
@@ -15,7 +14,6 @@ pub struct PiBinary {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Origin {
     Environment,
-    Vendored,
     Path,
 }
 
@@ -23,17 +21,16 @@ impl Origin {
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Environment => "environment",
-            Self::Vendored => "vendored",
             Self::Path => "path",
         }
     }
 }
 
-pub fn locate(workspace_root: &Path) -> Result<PiBinary, String> {
+pub fn locate(_workspace_root: &Path) -> Result<FioteBinary, String> {
     if let Some(raw) = env::var_os(BINARY_ENV) {
         let path = PathBuf::from(raw);
         return if path.is_file() {
-            Ok(PiBinary {
+            Ok(FioteBinary {
                 path,
                 origin: Origin::Environment,
             })
@@ -45,24 +42,15 @@ pub fn locate(workspace_root: &Path) -> Result<PiBinary, String> {
         };
     }
 
-    let vendored = workspace_root.join(VENDORED_RELATIVE);
-    if vendored.is_file() {
-        return Ok(PiBinary {
-            path: vendored,
-            origin: Origin::Vendored,
-        });
-    }
-
-    if let Some(found) = search_path("pi") {
-        return Ok(PiBinary {
+    if let Some(found) = search_path("fiote") {
+        return Ok(FioteBinary {
             path: found,
             origin: Origin::Path,
         });
     }
 
     Err(format!(
-        "no pi agent binary: set {BINARY_ENV}, install one at `{}`, or put `pi` on PATH",
-        vendored.display()
+        "no Fiote agent binary: set {BINARY_ENV} or put `fiote` on PATH"
     ))
 }
 

@@ -116,6 +116,8 @@ jobs:
 
       - name: Check desktop crate
         shell: bash
+        env:
+          LINCE_REVISION: ${{ github.sha }}
         run: |
           set -euo pipefail
           export RUSTFLAGS="-D warnings"
@@ -126,6 +128,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           RUSTFLAGS: "-D warnings"
+          LINCE_REVISION: ${{ github.sha }}
         with:
           projectPath: crates/desktop
           args: --verbose
@@ -155,13 +158,20 @@ jobs:
 
           test -n "$(find desktop-artifacts -maxdepth 1 -type f)"
 
+          artifact_slug="${{ matrix.artifact }}"
+          target_triple="${artifact_slug%-desktop}"
+
           cd desktop-artifacts
           for asset in *; do
+            case "$asset" in
+              *.sha256|*.target) continue ;;
+            esac
             if command -v sha256sum >/dev/null 2>&1; then
               sha256sum "$asset" > "${asset}.sha256"
             else
               shasum -a 256 "$asset" > "${asset}.sha256"
             fi
+            printf '%s\n' "$target_triple" > "${asset}.target"
           done
 
       - name: Upload desktop artifact (temp)
@@ -390,14 +400,16 @@ jobs:
             for asset_path in release-artifacts/*; do
               [ -f "$asset_path" ] || continue
               case "$asset_path" in
-                *.sha256|*/lince-update.json) continue ;;
+                *.sha256|*.target|*/lince-update.json) continue ;;
               esac
               asset="$(basename "$asset_path")"
               sum="$(awk '{print $1}' "${asset_path}.sha256")"
+              target=""
+              [ -f "${asset_path}.target" ] && target="$(tr -d '\r\n' < "${asset_path}.target")"
               if [ "$first" -eq 0 ]; then printf ',\n'; fi
               first=0
-              printf '    {"name":"%s","url":"https://github.com/%s/releases/download/%s/%s","sha256":"%s","target":"","kind":"desktop"}' \
-                "$asset" "$GITHUB_REPOSITORY" "$ROLLING_TAG" "$asset" "$sum"
+              printf '    {"name":"%s","url":"https://github.com/%s/releases/download/%s/%s","sha256":"%s","target":"%s","kind":"desktop"}' \
+                "$asset" "$GITHUB_REPOSITORY" "$ROLLING_TAG" "$asset" "$sum" "$target"
             done
             printf '\n  ]\n'
             printf '}\n'
@@ -462,14 +474,16 @@ jobs:
             for asset_path in release-artifacts/*; do
               [ -f "$asset_path" ] || continue
               case "$asset_path" in
-                *.sha256|*/lince-update.json) continue ;;
+                *.sha256|*.target|*/lince-update.json) continue ;;
               esac
               asset="$(basename "$asset_path")"
               sum="$(awk '{print $1}' "${asset_path}.sha256")"
+              target=""
+              [ -f "${asset_path}.target" ] && target="$(tr -d '\r\n' < "${asset_path}.target")"
               if [ "$first" -eq 0 ]; then printf ',\n'; fi
               first=0
-              printf '    {"name":"%s","url":"https://github.com/%s/releases/download/%s/%s","sha256":"%s","target":"","kind":"desktop"}' \
-                "$asset" "$GITHUB_REPOSITORY" "$CHANNEL" "$asset" "$sum"
+              printf '    {"name":"%s","url":"https://github.com/%s/releases/download/%s/%s","sha256":"%s","target":"%s","kind":"desktop"}' \
+                "$asset" "$GITHUB_REPOSITORY" "$CHANNEL" "$asset" "$sum" "$target"
             done
             printf '\n  ]\n'
             printf '}\n'

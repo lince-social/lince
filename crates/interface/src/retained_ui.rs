@@ -38,6 +38,7 @@ pub struct RetainedNode {
     pub description: Option<String>,
     pub rect: RetainedRect,
     pub interactive: bool,
+    pub editable: bool,
     pub focused: bool,
     pub show_text: bool,
     pub depth: usize,
@@ -214,15 +215,30 @@ fn append_definition(
         definition.element,
         &inputs,
     );
+    let editable = inputs
+        .get("editable")
+        .is_some_and(|value| matches!(value, SandValue::Boolean(true)));
+    let role = if editable {
+        AccessibilityRole::TextInput
+    } else {
+        definition.accessibility.role
+    };
     nodes.push(RetainedNode {
         key: key.into(),
         definition_uid: definition_uid.into(),
         element: definition.element,
-        role: definition.accessibility.role,
+        role,
         label,
-        description: definition.accessibility.description.clone(),
+        description: inputs
+            .get("description")
+            .and_then(|value| match value {
+                SandValue::Text(value) => Some(value.clone()),
+                _ => None,
+            })
+            .or_else(|| definition.accessibility.description.clone()),
         rect,
-        interactive: is_interactive(definition.element, definition.accessibility.role),
+        interactive: is_interactive(definition.element, role),
+        editable,
         focused: false,
         show_text: shows_text(definition.element),
         depth,

@@ -19,17 +19,26 @@ Read when: publishing, importing/exporting, or connecting the interface to exter
 
 ## Interoperability
 
-The [CEF-free delivery rule](build.md) does not defer static HTML export, content-addressed archives or an externally viewed Live Facade. Their own publication and privacy gates still apply. Only embedded browser execution and previews move to the final v1 CEF lane; package bytes and projection semantics remain independent of an installed renderer.
+Bevy owns new native interface code and its authored component model. Import,
+export, existing domain transport and public browser delivery are real places
+for translation; they do not justify a renderer-neutral layer around ordinary
+Bevy Sands. Native plugins use Bevy directly, with an explicit trust decision
+for externally supplied executable code. A future portable file format does
+not constrain the in-process API.
+
+
+The [no-embedded-browser rule](build.md#no-embedded-browser) does not touch static HTML export, content-addressed archives or an externally viewed Live Facade: those run in the visitor's browser, not inside Lince. Their own publication and privacy gates still apply. What is gone is embedded execution and in-desktop previews; any future version of those needs a way to run without embedding a browser in Lince. Package bytes and projection semantics were always independent of an installed renderer.
 
 Lince interoperates through explicit boundaries rather than pretending every
 foreign system is native Ledger truth. Blood owns system-to-system exchange;
-external Sands own embedded interaction; Facades own public presentation;
+external integrations own explicitly admitted interaction; Facades own public presentation;
 portable canvas formats are future import/export adapters, not Lince's schema.
 
 ### Playground and Organ Facades
 
-A workspace or Sand can already be exported as a self-contained `file.html`
-archive of one state. That static mode makes no requests and carries no access
+The earlier implementation could export a workspace or Sand as a self-contained
+`file.html` archive of one state. Export from the Bevy replacement needs its own
+supported-component mapping and acceptance evidence. That static mode makes no requests and carries no access
 tokens. It remains the safest portable artifact and can be opened without a
 running Lince host.
 

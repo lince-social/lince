@@ -400,7 +400,7 @@ jobs:
             for asset_path in release-artifacts/*; do
               [ -f "$asset_path" ] || continue
               case "$asset_path" in
-                *.sha256|*.target|*/lince-update.json) continue ;;
+                *.sha256|*.target|*.sig|*/lince-update.json) continue ;;
               esac
               asset="$(basename "$asset_path")"
               sum="$(awk '{print $1}' "${asset_path}.sha256")"
@@ -414,6 +414,24 @@ jobs:
             printf '\n  ]\n'
             printf '}\n'
           } > release-artifacts/lince-update.json
+
+      - name: Sign update manifest
+        env:
+          SIGNING_KEY: ${{ secrets.LINCE_UPDATE_SIGNING_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${SIGNING_KEY:-}" ]; then
+            echo "LINCE_UPDATE_SIGNING_KEY is not set; refusing to publish an unsigned manifest" >&2
+            exit 1
+          fi
+          key_hex="$(printf '%s' "$SIGNING_KEY" | tr -d '[:space:]')"
+          { printf '302e020100300506032b657004220420'; printf '%s' "$key_hex"; } \
+            | xxd -r -p > signing-key.der
+          openssl pkeyutl -sign -inkey signing-key.der -keyform DER -rawin \
+            -in release-artifacts/lince-update.json \
+            | xxd -p | tr -d '\n' > release-artifacts/lince-update.json.sig
+          rm -f signing-key.der
 
       - name: Publish rolling release
         env:
@@ -474,7 +492,7 @@ jobs:
             for asset_path in release-artifacts/*; do
               [ -f "$asset_path" ] || continue
               case "$asset_path" in
-                *.sha256|*.target|*/lince-update.json) continue ;;
+                *.sha256|*.target|*.sig|*/lince-update.json) continue ;;
               esac
               asset="$(basename "$asset_path")"
               sum="$(awk '{print $1}' "${asset_path}.sha256")"
@@ -488,6 +506,24 @@ jobs:
             printf '\n  ]\n'
             printf '}\n'
           } > release-artifacts/lince-update.json
+
+      - name: Sign update manifest
+        env:
+          SIGNING_KEY: ${{ secrets.LINCE_UPDATE_SIGNING_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${SIGNING_KEY:-}" ]; then
+            echo "LINCE_UPDATE_SIGNING_KEY is not set; refusing to publish an unsigned manifest" >&2
+            exit 1
+          fi
+          key_hex="$(printf '%s' "$SIGNING_KEY" | tr -d '[:space:]')"
+          { printf '302e020100300506032b657004220420'; printf '%s' "$key_hex"; } \
+            | xxd -r -p > signing-key.der
+          openssl pkeyutl -sign -inkey signing-key.der -keyform DER -rawin \
+            -in release-artifacts/lince-update.json \
+            | xxd -p | tr -d '\n' > release-artifacts/lince-update.json.sig
+          rm -f signing-key.der
 
       - name: Publish tagged release
         uses: softprops/action-gh-release@v2

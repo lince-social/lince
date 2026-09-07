@@ -25,6 +25,30 @@ production dependency and added no waterfall stage.
 
 The [coverage map](coverage.md) routes the complete v1 promise without loading it into each implementation step. Part A now explicitly preserves existing collaborative text editing, native authenticated privacy and any owner-accepted locked-description behavior at launch. Additional Note/scalar-binding and Program-backed Karma surfaces have a named later native lane. Work proceeds sequentially from an accepted source revision with focused Cargo proofs.
 
+## Owner revision, 2026-09-07: Bevy owns the interface
+
+The owner confirmed a 3D-capable foundation with a flat, stationary Part A
+experience; later surface/free-space motion uses Avian 3D. Native extensions
+start with editable registered components/effects and trusted Rust plugins;
+untrusted executable extensions are deferred. In 3D, Sands keep their authored
+facing by default, with a toggle to face the viewer. The owner's current
+machine is the minimum target; see [the hardware baseline](build.md#minimum-machine-and-resource-baseline).
+
+Bevy is the base for the application loop, window, rendering, UI, text, input,
+assets and animation. Lince adds Bevy plugins for Sands, Box, Protein/Actions,
+styling, idle scheduling and large-content handling. New interface code uses
+Bevy directly; no portable renderer API, separate retained scene or paired
+HTML constructor is required. Existing backend/data boundaries may be
+translated, and the prototype interface may be rewritten rather than wrapped.
+
+Scoped custom plugins, internal/external crates and pure WGPU work are allowed
+when a Lince need requires them, normally within Bevy's resource lifecycle.
+Use matching AccessKit types and needed platform services. Specialist content
+engines are end-of-v1 work. Flair is the preferred CSS integration on Bevy
+components, subject to correctness and idle/resource acceptance. Avian 3D is
+selected for later collision/settling work, not the stationary Part A workspace. [Architecture](architecture.md#bevy-native-interface) owns these
+rules. They are a new target, not an already completed migration.
+
 ## Owner revision, 2026-09-06
 
 The Interface Record changes the next v1 work, not the implementation evidence
@@ -41,17 +65,18 @@ owns their order. None of these new tasks is certified by an older report.
 
 ## Where work stands
 
-The owner now wants a CEF-free default throughout the native v1 work. [The build rule](build.md) defines the required feature and packaging split; [Part A](plans/part-a.md) implements it before parallel native migration. Twenty roots are in scope. Website, Document Viewer, Terminal, Freedoom and Logo LED, plus Installed HTML and embedded browser previews, are retained but unavailable until [the final v1 CEF lane](plans/cef.md). The following joined-runtime description and measurements are historical source facts, not evidence that the new native default already exists or a demand to test CEF now.
+The embedded browser is gone. It was removed from the repository on 2026-09-07, and [the build rule](build.md#no-embedded-browser) records why it will not come back. Twenty roots are in scope. Website, Document Viewer, Terminal, Freedoom and Logo LED, plus Installed HTML and in-desktop previews, are unavailable until each has a way to run without embedding a browser in Lince. The following joined-runtime description and measurements are historical source facts about a prototype that no longer exists, not evidence that the new native default already exists.
 
-Plan A has been accepted. Lince has a joined Wayland-only Linux runtime in
+The historical Plan A prototype was accepted as a joined Wayland-only Linux runtime in
 which Winit owns the event loop, WGPU/Vulkan owns composition, Lince owns the
 semantic and frame coordination layers, selected Bevy resources remain
 subordinate, Avian supplies collision work behind an adapter, Glyphon/
-cosmic-text supplies native text, AccessKit supplies accessibility, and CEF
-supplies accelerated external HTML surfaces.
+cosmic-text supplies native text and AccessKit supplies accessibility. The
+embedded browser that used to supply accelerated external HTML surfaces has
+been removed, and nothing replaces it.
 
-CEF content reaches Lince-owned GPU memory through the accelerated DMA-BUF
-path. Installed HTML Sands and Website Sands have separate authority. Website
+Embedded browser content reached Lince-owned GPU memory through the accelerated
+DMA-BUF path. Installed HTML Sands and Website Sands have separate authority. Website
 content cannot call the Lince bridge. Off-camera semantic, physics, media,
 timer and browser activity remains live; only extraction, copying and
 presentation are suppressed.
@@ -72,10 +97,8 @@ its legacy URL, but does not embed that privileged first-party page as an
 external Website Sand. Migration therefore keeps one backend and two explicit
 interface entry points without weakening Website authority.
 
-The production desktop release builds and packages. The pinned CEF payload is
-copied into a writable content-versioned development cache because
-`cef-dll-sys` copies runtime files during Cargo builds and cannot use an
-immutable Nix store path directly. On 2026-08-30 the owner authorized the
+The production desktop release builds and packages. It no longer fetches or
+copies a browser payload at all; on Linux it does not even compile `lince-web`. On 2026-08-30 the owner authorized the
 minimum Record repair: Ailuros gained its required quantity, the six chapters
 stopped pointing at the intentionally non-ingested First Steps draft, and
 Ailuros was left as a root rather than assigned a guessed parent. `lingua
@@ -89,7 +112,7 @@ zbus async-I/O family and keeping the native event loop independent of an
 ambient Tokio reactor. This is a correctness repair to the landed runtime,
 not C3 work. The corrected 2026-08-30 production desktop report passed on
 Wayland at 1920×1052 with 200 visible Sands, 1,000 continuously eligible
-120 Hz bodies, 10,000 resident nodes and two accelerated CEF surfaces. It
+120 Hz bodies, 10,000 resident nodes and two accelerated embedded browser surfaces. It
 measured 10.861 ms frame p95, 11.967 ms p99, 1.098 ms fixed-step p95 and zero
 backlog. The source fingerprint is
 `1fd02aec9ca85626bc4cd33685c80b23da84f205bd23c0fe6c825022641ab97b`.
@@ -103,8 +126,8 @@ The first product kernel after the laboratory has landed. Contract version 1
 defines 92 typed canonical style roles, Dark and Light Lynx, partial themes,
 safe local theme assets and a seven-scope cascade with per-value provenance.
 The joined Gallery applies it to native WGPU nodes, borders, background and
-retained text and projects the same result into Installed CEF without reload.
-Website CEF receives no projection or bridge. The legacy source boundary is in
+retained text and projects the same result into Installed HTML without reload.
+Website receives no projection or bridge. The legacy source boundary is in
 [visual-inventory.md](visual-inventory.md); those Web surfaces have not yet
 been migrated.
 
@@ -112,7 +135,7 @@ The second product kernel has landed. Sand schema and ABI version 1 define the
 renderer-neutral definition graph, persisted projection selection, disposable
 runtime binding, artifact validation and bounded host messages. The native
 Gallery exposes 19 reusable primitive Sands through keyboard, pointer and
-AccessKit, while Installed CEF renders the same package as accessible HTML,
+AccessKit, while Installed HTML renders the same package as accessible HTML,
 external CSS and native JavaScript modules. Its package closes the relative
 static-import graph, its JavaScript ABI rejects unknown fields, and its valid
 Protein-shaped mount and granted `record-clicked` route passed alongside the
@@ -159,7 +182,7 @@ exports idempotently; its persisted receipt focuses the existing placement on
 reopen and contains no renderer handle.
 
 The 2026-09-01 real joined report passed at 1920×1052 with the accepted
-200/1,000/10,000 workload and two accelerated CEF surfaces. Configuration
+200/1,000/10,000 workload and two accelerated embedded browser surfaces. Configuration
 applied and restored its live preview without changing the Installed
 document's one-load count. The run measured 10.879 ms frame p95, 6.986 ms
 CPU-frame p95, 0.752 ms fixed-step p95 with zero backlog and 5.619 ms
@@ -200,7 +223,7 @@ receipt. With no turn running, timing is visibly and behaviorally “send now.�
 The 2026-09-02 schema-10 Wayland/Vulkan report passed at 1920×1052. All 72
 interface tests and release parity pass. Under the accepted 200 visible Sands,
 1,000 continuously eligible bodies, 10,000 resident nodes and two accelerated
-CEF surfaces it measured 10.090 ms frame p95, 11.378 ms p99, 5.364 ms
+embedded browser surfaces it measured 10.090 ms frame p95, 11.378 ms p99, 5.364 ms
 CPU-frame p95, 0.686 ms fixed-step p95 with zero backlog and 4.058 ms
 input-to-present-call p95. The exact 72-definition official package hash is
 `sha256:15d668d8add7ba5bbca6bc81f91c17d9c18c2d464c453a89273a24d17f69b3c5`;
@@ -212,7 +235,7 @@ Wayland/Vulkan at 1920×1052. It started the real local Lince server, connected
 the native runtime to `ws://127.0.0.1:6174/host/transport/ws`, received one
 Protein snapshot containing one Record and reported no domain refusals or
 errors. All 76 joined-runtime tests pass. Under the same accepted
-200/1,000/10,000 workload and two accelerated CEF surfaces it measured
+200/1,000/10,000 workload and two accelerated embedded browser surfaces it measured
 10.612 ms frame p95, 12.427 ms p99, 5.722 ms CPU-frame p95, 0.674 ms
 fixed-step p95 with zero backlog and 4.563 ms input-to-present-call p95. Its
 source fingerprint is
@@ -222,7 +245,7 @@ The next 2026-09-05 production Conversation checkpoint passed report schema 12
 on Wayland/Vulkan at 1920×1052. Record and Conversation subscriptions were
 live with two accepted snapshots, no refusal and no error; representative
 Conversation operations were exercised without sending their drained intents
-to production. The same 200/1,000/10,000 workload and two CEF surfaces measured
+to production. The same 200/1,000/10,000 workload and two embedded browser surfaces measured
 13.047 ms frame p95, 16.384 ms p99, 7.791 ms CPU-frame p95, 0.511 ms fixed-step
 p95 with zero backlog and 7.916 ms input-to-present-call p95. The official
 package hash is
@@ -234,7 +257,7 @@ same Wayland/Vulkan host at 1920×1052. It received all three live Protein
 snapshots—Record, Conversation and private drafts—with no refusal or error, and
 exercised durable draft creation, revision, ordering, pinning and send intent
 without mutating production data. At 200 visible Sands, 1,000 continuously
-eligible bodies, 10,000 resident nodes and two accelerated CEF surfaces it
+eligible bodies, 10,000 resident nodes and two accelerated embedded browser surfaces it
 measured 9.897 ms frame p95, 11.460 ms p99, 4.721 ms CPU-frame p95, 0.535 ms
 fixed-step p95 with zero backlog and 3.936 ms input-to-present-call p95. The
 report is `target/interface-laboratory/c4-conversation-drafts/report.json`;
@@ -254,7 +277,7 @@ fail closed, and Todo's Open selected control reuses the card's typed
 `record-clicked` Behavior. The diagnostic exercised three `record-clicked`
 events and two write intents; live replacement correctly cleared its stale
 fixture selection. At the accepted 200/1,000/10,000 workload and two
-accelerated CEF surfaces it measured 10.463 ms frame p95, 12.006 ms p99,
+accelerated embedded browser surfaces it measured 10.463 ms frame p95, 12.006 ms p99,
 5.369 ms CPU-frame p95, 0.559 ms fixed-step p95 with zero backlog and 4.535 ms
 input-to-present-call p95. The report is
 `target/interface-laboratory/c4-record-collections/report.json`; its
@@ -283,21 +306,19 @@ input-to-present-call p95. The exact official package hash is
 the report source fingerprint is
 `96ed221508394d3dd9856205e99c785b194681d0e5085fa2aba6528674abee31`.
 
-The 30-entry Pulsar/Helio study is complete. Its active result is deliberately
-small: preserve stable Lince identities above disposable runtime handles; keep
-one explicit frame coordinator; move bounded revisions and dirty changes
-between adapters; cull presentation without suspending semantics; expose
-human-readable causal measurements; share authoritative coordinate frames
-across subsystems; and consider dense GPU work only after a representative
-measurement. The canonical boundary and sourcing order are in
+The 30-entry Pulsar/Helio study is complete. Its active lessons now apply
+inside Bevy: stable user ids, ordered schedules, targeted changes,
+presentation-only culling, understandable measurements, shared coordinate
+meaning and measured GPU optimization. It does not require a custom outer
+frame coordinator or adapter handoffs between native interface subsystems. The canonical boundary and sourcing order are in
 [architecture.md](architecture.md#completed-pulsarhelio-study-and-carry-forward-boundary);
 the complete positive and negative evidence remains in [links.md](links.md).
 
 ## Active sequence
 
-The next milestone is [Dogfeeding](plans/part-a.md), covering steps 1–2 below and [Backend Part A](../backend-part-A.md). Shared native bootstrap and company identity/access foundations precede their consumers; full native catalog migration and shared live Box layout are separate work.
+The next milestone is [Dogfeeding](plans/part-a.md), covering steps 1–2 below and [Backend Part A](../backend-part-A.md). The Bevy-native bootstrap and company identity/access foundations precede their consumers; full native catalog migration and shared live Box layout are separate work.
 
-1. Deliver the native Interface client and private Linux server with Backend Part A's identity/access foundations, usable project/task controls and authenticated remote live work. Preserve CEF exclusion, stable editing and shared controls; additional native roots remain later.
+1. Replace the custom host/retained UI with the Bevy application and plugins, preserving useful existing backend/data boundaries but no speculative renderer interface. Deliver the native Interface client and private Linux server with Backend Part A's identity/access foundations, usable project/task controls and authenticated remote live work. Preserve the no-embedded-browser rule, stable editing and shared controls; additional native roots remain later.
 2. Pass the native quality gates and Backend Part A's company pilot, access-loss and recovery proofs; full native catalog completion is separate.
 3. Build stationary Box navigation, layers, anchors, base pattern and input
    together with snapshots, operations, undo and restart recovery.
@@ -305,14 +326,14 @@ The next milestone is [Dogfeeding](plans/part-a.md), covering steps 1–2 below 
    children, Sand/Castle switching, editing facets, sizing and temporary focus.
 5. Build stationary property Areas, native Calendar and the Clock/spiral.
 6. Pass the stable everyday-use gate in the master plan.
-7. Finish native live workspace collaboration and the read-only Facade using their existing boundaries. Exporting to somebody's browser does not require embedding CEF.
+7. Finish native live workspace collaboration and the read-only Facade using their existing boundaries. Exporting to somebody's browser runs in that browser, not inside Lince.
 8. Enable later opt-in moving Areas and topology, with spatial checkpoints and
-   measured physics selection. Preserve the stationary default.
+   Avian 3D selected for contact solving in surface-constrained and free-space modes. Keep Lince's Area/terrain rules in Bevy systems and preserve the stationary default.
 9. Add bounded surface effects and supported WGSL authoring.
 10. Complete Action/Rule/Transfer simulation views when their domain support
     is ready. This separate lane can start after step 6 without waiting for
     motion, shaders or Facade.
-11. Finish the optional CEF adapter, its five deferred roots, Installed HTML, embedded previews and browser administration/security/performance proofs. Native defaults stay CEF-free.
+11. At the end of v1, design the unavailable roots, specialized document/terminal/video engines and browserless previews. Prefer Bevy presentation and use scoped content crates or explicit system-browser handoff where needed; earn fresh acceptance evidence. Preserve Installed HTML metadata without executing unavailable children. Untrusted executable installation and its sandbox remain deferred to a separate decision. Nothing here reintroduces an embedded browser.
 
 Fiote Phase 0 can proceed beside C4-C5. Its Phase 2 prototype opens after C5
 and consumes the general domain-compound and Conversation foundation. Its full terminal-bearing session surface also needs the late-v1 terminal lane; native C5 does not supply that renderer. Fiote is not an Interface prerequisite and does not delay Box.
@@ -332,18 +353,19 @@ are not another implementation checklist.
   landed artifact, catalog and normalized workbench operations.
 - Do not create a new `LynxUI` abstraction. The old name is migration
   inventory; every reusable control, layout, editor, and compound interface is
-  a Sand with renderer projections.
-- Do not turn Bevy into the window/application owner or retain GPUI as a
-  production dependency or fallback. Study its visual, interaction, text, and
-  retained-UI techniques and reimplement or reuse only bounded licensed parts
-  that fit the Lince-owned host.
+  a Bevy-native Sand or private Bevy implementation detail, not another renderer-neutral widget layer.
+- Bevy owns the window/application and presentation. Do not retain the old
+  custom host or add an engine-neutral API for new interface work. GPUI is
+  research only; scoped extensions meet a specific Lince need.
 - Do not activate the unused root-workspace GPUI declarations from interface
   work. The interface package and resolved runtime do not contain GPUI; remove
   stale declarations during source cleanup instead of treating them as an
   architectural option.
-- Do not add an X11 path. Linux support is the tested Wayland/Ozone path.
-- Do not turn CEF into the renderer for thousands of nodes. It is a
-  heavyweight admitted surface; ordinary Sands stay native.
+- Do not add an X11 path. Linux targets Wayland through Bevy; the old Ozone path no longer exists.
+- Do not embed a browser in Lince. It was tried and rejected; see [the build
+  rule](build.md#no-embedded-browser). Whatever renders external HTML later is a
+  heavyweight admitted surface, never the renderer for thousands of nodes;
+  ordinary Sands stay native.
 - Do not give Website Sands Lince authority.
 - Do not make TypeScript or Datastar part of the first-party runtime.
 - Do not use SceneDB runtime handles or snapshots as durable Box identity or
@@ -363,7 +385,7 @@ are not another implementation checklist.
 
 ## Minimal reading set for the next implementation
 
-Start with [Part A](plans/part-a.md) and [the build rule](build.md). Read only the relevant behavior references below. The actual native feature boundary still needs its bootstrap proof; a passing bare-crate check does not establish native desktop coverage. Joined-runtime coverage is explicitly deferred, not inferred from a native-only Cargo check.
+Start with [Part A](plans/part-a.md) and [the build rule](build.md). Read only the relevant behavior references below. The actual native feature boundary still needs its bootstrap proof; a passing bare-crate check does not establish native desktop coverage. Old joined-runtime reports are history, not a pending browser gate and not evidence for the new Bevy host.
 
 Read:
 

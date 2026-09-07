@@ -15,6 +15,24 @@ Read when: changing what v1 exposes to a person or how the base interface should
 
 ## Interface scope notes
 
+The implementation base is Bevy, as selected on 2026-09-07. Use it directly for
+the application, ordinary Sands, Box and editing tools. Extend or replace a
+specific capability with a Bevy plugin, internal/external crate or pure WGPU
+only where Lince needs it. There is no requirement for a new renderer-neutral
+interface layer, a second UI runtime or matching HTML for each native Sand.
+Existing data and authorization boundaries remain; frontend code may be
+rewritten. [Architecture](architecture.md) and [the build rule](build.md) own
+this implementation decision without weakening the product requirements below.
+
+The 2026-09-07 follow-up chooses a 3D-capable foundation with a flat stationary
+Part A experience, Avian 3D for later motion, and the owner's current machine
+as the minimum target. Sands in 3D retain their pinned authored facing by
+default, with a Face viewer toggle. Current extensions are editable registered
+components/effects and trusted Rust plugins; untrusted executable extensions
+are deferred. Flair is preferred for CSS authoring over Bevy, subject to
+integration acceptance; it is not a second UI renderer.
+
+
 The 2026-09-06 Interface Record makes stable everyday use the first v1 delivery.
 Individual appearances, released group children, presentation switching,
 focused editing and native time views are required. Existing movement code
@@ -22,7 +40,7 @@ stays intact while inactive; the [master plan](plans/interface.md#v1-master-wate
 places moving Areas and topology later. This revises the earlier spatial order.
 The details live in [Box](box.md), [Time](time.md) and [Shaders](shaders.md).
 
-[Part A — Dogfeeding](plans/part-a.md) exercises general Lince knowledge/work capabilities in a private company through the new native live Interface Sands, governed by [Backend Part A](../backend-part-A.md). Roles use Protein to select Records and control property writes; projects and teams remain ordinary Records and Assertions. Manual setup is enough: no company starter, required project ownership, lince-desktop wrapper, all-twenty-root migration, Karma/Transfer Castles or calls. Extra native migrations remain in [native follow-through](plans/native-follow-through.md); [the build rule](build.md) retains CEF-free defaults and late browser work. The archetypes below describe the wider design, not extra Dogfeeding gates.
+[Part A — Dogfeeding](plans/part-a.md) exercises general Lince knowledge/work capabilities in a private company through the new native live Interface Sands, governed by [Backend Part A](../backend-part-A.md). Roles use Protein to select Records and control property writes; projects and teams remain ordinary Records and Assertions. Manual setup is enough: no company starter, required project ownership, lince-desktop wrapper, all-twenty-root migration, Karma/Transfer Castles or calls. Extra native migrations remain in [native follow-through](plans/native-follow-through.md); [the build rule](build.md#no-embedded-browser) forbids an embedded browser. The archetypes below describe the wider design, not extra Dogfeeding gates.
 
 - [ ] [Sand](sand-model.md#sand): Sand is the recursively composable unit of interface.
   A button, form, Record view, graph, game, or complete workflow may all be
@@ -40,7 +58,7 @@ The details live in [Box](box.md), [Time](time.md) and [Shaders](shaders.md).
   - [ ] The picker separates basic Sands and packaged Castles. Changing the
     presentation of one Protein previews field mappings and affected local
     overrides before applying it; hidden fields remain in the data.
-- [ ] [Box: Base Capabilities](box.md#box-workspace-and-canvas): Box is the application host and the
+- [ ] [Box: Base Capabilities](box.md#box-workspace-and-canvas): Box is the workspace inside the Bevy application and the
   spatial playground for building, connecting, and using Sands. It is a
   holistic environment rather than a sidebar of separate applications. Its
   canvas, recursive base pattern, Protein areas, spatial behaviors, topology

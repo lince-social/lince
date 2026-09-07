@@ -13,7 +13,25 @@ Read when: the owner reopens one of these subjects; do not load for ordinary v1 
 
 ---
 
-CEF is deferred differently from the unscheduled features in this file: it has a named [final v1 lane](plans/cef.md), after the native v1 work. Its five browser-backed roots and embedded HTML remain in source behind the [optional capability boundary](build.md). They are not v2 research and do not block native C5 or Box.
+The five formerly browser-backed roots and installed HTML differ from the
+unscheduled features below: the embedded browser they used is gone, and their
+references remain unavailable until a browserless replacement exists.
+[The build rule](build.md#no-embedded-browser) schedules specialized content
+engines as low-priority end-of-v1 work. Start with Bevy; allow a narrow content
+crate or custom plugin where needed, not another general UI runtime. These
+replacements are not v2 research and do not block native C5 or stationary Box.
+Installed HTML still needs an explicit execution decision; this plan does not
+silently reintroduce a browser.
+
+### Untrusted executable extensions
+
+The owner deferred untrusted executable installation and its sandbox on
+2026-09-07. Current native extensions use registered editable components and
+named effects, plus trusted Rust plugins. Do not add Wasm, dynamic native
+library loading or a general scripting runtime as an interface prerequisite.
+Package metadata may still be inspected and preserved without execution.
+Reopening this work requires explicit isolation, authority and resource rules;
+it is distinct from the end-of-v1 native content-engine integrations.
 
 ### Deferred workspace replicas and failover
 
@@ -92,7 +110,7 @@ projection between them. Their canonical semantics live in
 [Box topology editing](box.md#topology-editing-and-effective-terrain). The
 first stable Box does not enable that motion. The following extensions remain
 deferred so that the later motion implementation has one
-active deterministic simulation at a time and an understandable reference
+active authoritative simulation at a time and an understandable reference
 plane.
 
 The included free-space mode is workspace-wide and does not create several

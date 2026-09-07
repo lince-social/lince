@@ -9,13 +9,27 @@ homepage = "https://lince.social"
 description = "Native Interface runtime and instrumented acceptance laboratory for Lince."
 
 [features]
+default = ["native-runtime"]
 bevy-preflight = ["dep:bevy"]
 browser-parity = ["dep:maud"]
-candidate-audit = ["joined-runtime"]
-cef-runtime = ["dep:ash", "dep:cef", "dep:libc"]
 physics-preflight = ["dep:avian2d", "bevy-preflight"]
 native-runtime = [
-    "browser-parity",
+    "dep:bevy",
+    "bevy/bevy_core_pipeline",
+    "bevy/bevy_input_focus",
+    "bevy/bevy_text",
+    "bevy/bevy_ui",
+    "bevy/bevy_ui_render",
+    "bevy/bevy_ui_widgets",
+    "bevy/bevy_winit",
+    "bevy/ui_picking",
+    "bevy/wayland",
+    "bevy/accesskit_unix",
+    "bevy/system_clipboard",
+    "bevy/png",
+]
+legacy-runtime = [
+    "native-runtime",
     "semantic-spatial",
     "dep:accesskit",
     "dep:accesskit_winit",
@@ -24,8 +38,20 @@ native-runtime = [
     "dep:futures",
     "dep:tokio-tungstenite",
     "dep:transport",
+    "dep:reqwest",
+    "dep:chrono",
+    "dep:dirs",
+    "dep:glyphon",
+    "dep:pollster",
+    "dep:schemars",
+    "dep:serde",
+    "dep:serde_json",
+    "dep:sha2",
+    "dep:url",
+    "dep:utils",
+    "dep:wgpu",
+    "dep:winit",
 ]
-joined-runtime = ["native-runtime", "cef-runtime"]
 semantic-spatial = [
     "physics-preflight",
     "dep:nucleus",
@@ -38,56 +64,62 @@ semantic-spatial = [
 avian2d = { version = "=0.7.0", default-features = false, features = ["2d", "f32", "parallel", "parry-f32"], optional = true }
 accesskit = { version = "=0.24.1", optional = true }
 accesskit_winit = { version = "=0.33.2", default-features = false, features = ["accesskit_unix", "async-io", "rwh_06"], optional = true }
-ash = { version = "=0.38.0", optional = true }
 bevy = { version = "=0.19.1", default-features = false, features = ["async_executor", "bevy_asset", "bevy_log", "bevy_render", "multi_threaded", "std"], optional = true }
 bytemuck = { version = "=1.25.2", features = ["derive"], optional = true }
-cef = { version = "=151.8.0", default-features = false, features = ["resources", "sandbox"], optional = true }
-dirs = "=6.0.0"
+chrono = { workspace = true, optional = true }
+dirs = { version = "=6.0.0", optional = true }
 engine = { path = "../engine", optional = true }
 futures = { workspace = true, optional = true }
-glyphon = "=0.11.0"
-libc = { version = "=0.2.189", optional = true }
+glyphon = { version = "=0.11.0", optional = true }
 maud = { version = "=0.27.0", optional = true }
-pollster = "=0.4.0"
+pollster = { version = "=0.4.0", optional = true }
 nucleus = { path = "../nucleus", optional = true }
 protein = { path = "../protein", optional = true }
-schemars.workspace = true
-serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.149"
-sha2 = "0.10.9"
+reqwest = { workspace = true, optional = true }
+schemars = { workspace = true, optional = true }
+serde = { version = "1.0.228", features = ["derive"], optional = true }
+serde_json = { version = "1.0.149", optional = true }
+sha2 = { version = "0.10.9", optional = true }
 store = { path = "../store", optional = true }
 tokio = { version = "=1.49.0", features = ["macros", "net", "rt-multi-thread", "sync", "time"], optional = true }
 tokio-tungstenite = { version = "=0.28.0", optional = true }
 transport = { workspace = true, optional = true }
-url = "=2.5.8"
-wgpu = "=29.0.4"
-winit = { version = "=0.30.12", default-features = false, features = ["rwh_06", "wayland", "wayland-csd-adwaita", "wayland-dlopen"] }
+url = { version = "=2.5.8", optional = true }
+utils = { workspace = true, optional = true }
+wgpu = { version = "=29.0.4", optional = true }
+winit = { version = "=0.30.12", default-features = false, features = ["rwh_06", "wayland", "wayland-csd-adwaita", "wayland-dlopen"], optional = true }
 
 [[bin]]
 name = "lince-interface"
 path = "src/main.rs"
+required-features = ["native-runtime"]
+
+[[bin]]
+name = "lince-interface-legacy-laboratory"
+path = "src/legacy_main.rs"
+required-features = ["legacy-runtime"]
 
 [[bin]]
 name = "lince-interface-dependency-audit"
 path = "src/dependency_audit.rs"
-
-[[bin]]
-name = "lince-interface-cef-diagnostic"
-path = "src/cef_diagnostic_main.rs"
-required-features = ["cef-runtime"]
+required-features = ["legacy-runtime"]
 
 [[bin]]
 name = "lince-interface-spatial-diagnostic"
 path = "src/spatial_diagnostic.rs"
-required-features = ["semantic-spatial"]
+required-features = ["legacy-runtime", "semantic-spatial"]
 
 [[bin]]
 name = "lince-interface-parity-diagnostic"
 path = "src/parity_diagnostic.rs"
-required-features = ["browser-parity"]
+required-features = ["legacy-runtime", "browser-parity"]
 
 [build-dependencies]
 sensei = { workspace = true }
+
+[[example]]
+name = "square_smoke"
+required-features = ["native-runtime"]
 
 [lints]
 workspace = true

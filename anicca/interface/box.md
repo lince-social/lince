@@ -7,7 +7,7 @@ and local durability.
 Owner source: [Interface in Lince](../Lince.lingua); no separate Sands Record
 currently exists.
 
-Status: Planned; implementation opens after Part A's native C5 gate, without waiting for CEF.
+Status: Planned; implementation opens after Part A's native C5 gate.
 
 Read when: working on the spatial product after composition foundations pass.
 
@@ -17,16 +17,27 @@ Read when: working on the spatial product after composition foundations pass.
 
 ### Box, workspace, and canvas
 
-The first Box consumes the CEF-free host and native Sands defined by [the build rule](build.md). Composition, persistence and field wiring do not require embedded HTML. A saved group with an unavailable browser child preserves its references and explains the unavailable projection; native siblings remain usable within their declared scope. Mixed native/HTML execution returns only in the final v1 CEF lane.
+Box is implemented directly inside the Bevy application. Authored Sands use
+Bevy components, resources and relationships; cameras, picking, UI, meshes,
+materials and retained gizmos provide the default presentation. No separate
+world adapter or renderer-neutral UI tree is required. Logical ownership,
+movement attachment and event scope are distinct relationships: releasing a
+child must not change its owning result or let pointer bubbling escape its
+exported ports. Viewport virtualization may remove visual work, not logical
+ownership or required off-camera behavior.
 
-**Box** is the application host and composition environment. A **workspace**
+The first Box consumes the browserless host and native Sands defined by [the build rule](build.md#no-embedded-browser). Composition, persistence and field wiring do not require embedded HTML. A saved group with an unavailable browser child preserves its references and explains the unavailable projection; native siblings remain usable within their declared scope. Mixed native/HTML execution does not return until installed HTML has a way to run without embedding a browser in Lince.
+
+**Box** is the workspace and composition environment inside the Bevy application. A **workspace**
 is one persisted spatial document. Its **canvas** is conceptually unbounded and
 uses spatial indexing and viewport virtualisation rather than a fixed world
 rectangle. **Sandbox** is the metaphor for the complete environment; `board`
 is legacy implementation terminology.
 
-The first v1 view is an orthographic, paper-like 2D workspace with stable
-placement and restrained motion. Keep existing movement code, but leave
+The foundation uses Bevy's 3D scene/transform model, with planar placements
+and an orthographic, paper-like 2D view for Part A and the first stable Box.
+This is a simple presentation of a 3D-capable workspace, not a separate 2D
+engine to replace later. Placement is stable and motion restrained. Keep existing movement code, but leave
 automatic attraction, collision settling and terrain motion inactive in this
 first delivery. Later motion follows the stable everyday-use gate in the
 [Interface plan](plans/interface.md).
@@ -36,6 +47,52 @@ a corner triangle and change its color or transparency. Keyboard discovery
 and recovery remain reachable even with a transparent triangle. Controls
 recenter, locate a Sand and bring a selection into view; a minimap keeps the
 unbounded workspace navigable.
+
+### Later motion implementation
+
+The stationary Box needs no rigid-body solver. When later work introduces
+contact settling, kinematic dragging and free-space collisions, the
+selected solver is Avian 3D as a Bevy plugin. The owner accepted this choice
+on 2026-09-07. Use the same solver for flat/surface-constrained motion and later
+free space, one mode at a time. Do not
+build a general collision/constraint solver from scratch without a demonstrated
+need. In planar mode constrain the 3D bodies to the plane; filtered terrain
+requires a Lince surface constraint. A perspective Calendar still needs no
+physics. Keep the earlier 2D preflight as regression material, not as a second
+product solver or a reason to introduce a physics-neutral adapter.
+
+Protein membership, sorting, immunity, mutation Actions and filtered terrain
+potentials remain Lince Bevy systems. They are not features that a physics
+engine supplies. A single shared collider heightfield cannot represent different
+effective terrain for differently filtered Sands. Keep one authoritative
+simulation for the workspace's active spatial mode, with fixed-step scheduling,
+sleeping and explicit wakeups. Solver sleep alone does not stop rendering or
+application systems. See [the physics boundary](architecture.md#physics-application-rules-and-collision-solving).
+
+### Sand facing in 3D
+
+Pinned facing is the default in 3D: a Sand keeps its authored direction in the
+workspace (or its declared attachment frame), so people can arrange groups
+in different directions. It does not automatically turn with the camera.
+Pinned facing does not pin position or anchor a Sand to the viewport.
+A per-Sand facing-mode toggle switches between Pinned and Face viewer. In
+Face viewer mode, only the reading face follows the active viewer's camera;
+returning to Pinned restores the saved direction. A multi-selection may apply
+the same choice deliberately to several Sands.
+
+Keep authored face orientation, physical support orientation and camera-derived
+reading orientation separate. On terrain, the support still follows the sampled
+normal while the reading face obeys the chosen mode. Changing facing does not
+rotate the collider, move the body, change forces or release an attached child.
+A specialized 3D Sand can separately expose actual physical rotation. Hit tests
+must use the displayed face, and the toggle must preserve focus, caret and
+selection. Offer the focused reading view when a pinned face is edge-on.
+
+Persist the pinned direction and facing mode with normal overrides, undo and
+workspace sharing. Each viewer derives Face viewer orientation locally; camera
+movement does not emit durable Box operations or change another viewer's camera.
+Switching top/perspective views preserves the setting. This is a later spatial
+control, not a prerequisite for the flat Part A company workflows.
 
 ### Protein areas and result-template groups
 
@@ -384,9 +441,10 @@ normal, so a card really climbs, tilts across, or falls into the visible slope
 and always touches its floor. Nonmatching groups remain on their own effective
 surface, which the current lens can render as the neutral/base plane or
 visually subdue rather than falsely placing them on the selected cohort's
-terrain. An ordinary text card may mount a crisp screen-facing reading face on
-that terrain-bound body; this preserves legibility without changing its
-contact point, collider, group motion, or topology force.
+terrain. An ordinary text card mounts its reading face on that terrain-bound
+body with the saved Pinned/Face viewer choice above. The visible face need
+not inherit the body's tilt. This preserves deliberate orientation and
+legibility without changing contact, collider, group motion or topology force.
 
 The top view shows the same surface-mode state from above. Groups keep the
 same `(x, y)` simulation positions while contours, gradient arrows, color and
@@ -416,9 +474,9 @@ Area-linked pit or hill was only its surface-mode explanation.
 
 Every movement body owns one authoritative free-space position
 and, where its projection needs it, orientation. Ordinary cards translate in
-three dimensions but do not have to tumble: their default visual face remains
-camera-facing or gravity-upright, while a specialized native 3D Sand may expose
-rotation. Attached children remain one body; released children move independently.
+three dimensions but do not have to tumble: their visual face keeps its
+pinned authored direction by default, with Face viewer available as a toggle.
+A specialized native 3D Sand may separately expose physical rotation. Attached children remain one body; released children move independently.
 Protein spawn Areas, force Areas, sorting
 Areas, mutation Areas and immunity Areas become declared volumes with a local
 3D transform. Radial forces use a 3D direction, directional forces use an
@@ -602,7 +660,7 @@ from the current topology after loading. Space mode stores the full free-space
 transform. Velocity and angular velocity are stored only for an explicit
 continuous-simulation resume policy; ordinary work Sands reopen at rest. Area
 membership, contact manifolds, solver caches, dense runtime handles, topology
-meshes, GPU buffers, visibility and CEF textures remain derived.
+meshes, GPU buffers and visibility remain derived.
 
 Append, fsync, spatial checkpoint, snapshot compaction, File projection, and
 contact delivery are separate rates; making an external delivery rate slower

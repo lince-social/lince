@@ -1,11 +1,11 @@
 # Behavior source and execution boundary
 
-Purpose: Define how native Rust and shipped JavaScript implement the same logical Sand Behavior without TypeScript, bundler, or framework requirements.
+Purpose: Define native Bevy Behavior and the separate validation rules for existing external-browser boundaries.
 
 Owner source: [Interface in Lince](../Lince.lingua); no separate Customization or
 Sands Record currently exists.
 
-Status: Accepted boundary; Plan B remains browser/Facade projection rather than Linux desktop fallback.
+Status: Bevy-native implementation selected on 2026-09-07; browser material below applies only to external publication or historical packages.
 
 Read when: changing Behavior modules, browser assets, Wasm renderer packaging, or CSP expectations.
 
@@ -13,43 +13,66 @@ Read when: changing Behavior modules, browser assets, Wasm renderer packaging, o
 
 ---
 
-### Plan B and installed-HTML JavaScript Behavior
+### Native Bevy Behavior
 
-These browser execution and Wasm packaging rules apply to enabled browser projections, not to the default native desktop. [Part A](plans/part-a.md) uses native Rust and pure package/export validation; it does not acquire a JavaScript or Wasm runtime requirement because a retained external package contains those assets. Embedded execution and its live parity tests return in [the final CEF lane](plans/cef.md). A general browser client remains outside the product plan.
+Use Bevy systems, observers, messages, components and resources directly.
+Simple `.on(...)` effects expose named typed operations that Box can inspect
+and persist. Richer trusted native behavior can be Rust; it need not pass
+through a portable module ABI or a JSON message for each widget operation.
 
-Under Plan B, ordinary first-party interface Behavior is authored and shipped
-as native JavaScript ES modules. Under Plan A, the same logical Behavior ports
-may be implemented by native Rust systems, while installed external HTML still
-uses JavaScript behind the CEF bridge. There is no TypeScript requirement,
-generated DOM implementation, UI framework, or mandatory JavaScript bundler.
-The JavaScript inspected in the repository is the JavaScript embedded or
-packaged by Rust and executed by the browser runtime.
+The owner chose this simpler extension model for current work on 2026-09-07:
+people compose registered components and named effects; reviewed/trusted Rust
+plugins add native capabilities. Arbitrary untrusted executable installation,
+a scripting runtime and its sandbox are deferred to an explicit later design.
+Do not require them to finish editable Sands or treat a manifest as isolation.
 
-Plan B's shared Box world renderer and compute-heavy Worker kernels are one
-deliberate exception: Rust compiles to a content-addressed WebAssembly artifact,
-with narrowly scoped generated loader glue, so `wgpu` can use WebGPU or its
-supported WebGL2 path in the browser. Plan A uses native Rust and `wgpu` for the
-equivalent world work. Neither plan turns external HTML into Wasm, requires a
-third-party author to use Rust, or silently moves DOM Behavior out of
-JavaScript. Sources, generated boundaries, hashes, licenses, build commands,
-and debugging artifacts remain separately visible.
+Sand ownership, movement attachment and exported event scope are distinct.
+Bevy pointer bubbling is useful for UI interaction, but crossing a Castle's
+logical boundary still requires an exported Sand route. Durable writes still
+use backend Actions and permissions; native Rust plugins are trusted code,
+not capability sandboxes. The existing backend, saved-data and network
+boundaries retain validation and may have narrow translators.
+
+Lince plugins decide when work is due. Use Bevy's reactive loop, real timer
+deadlines, targeted Protein updates and animation completion to stop needless
+presentation work. Camera culling may reduce visuals, not suspend Behavior,
+media, subscriptions or admitted physics.
+
+No JavaScript engine, WIT layer, paired Maud fragment or renderer-neutral
+Behavior runtime is required for new native code. Custom plugins,
+internal/external crates or WGPU passes are scoped exceptions under
+[Architecture](architecture.md#extensions-and-exceptions).
+
+### Existing external-browser JavaScript Behavior
+
+These browser execution and Wasm packaging rules apply to externally viewed projections, not to the native desktop. [Part A](plans/part-a.md) uses native Rust and pure package/export validation; it does not acquire a JavaScript or Wasm runtime requirement because a retained external package contains those assets. Embedded execution and its live parity tests do not return: [the build rule](build.md#no-embedded-browser) removed the browser they ran in, so installed HTML needs an execution story that does not run HTML inside Lince. A general browser client remains outside the product plan.
+
+The earlier Plan B is not a second native implementation. JavaScript rules
+below apply only where an existing or explicitly selected external-browser
+export actually executes it. Installed HTML has no runtime inside Lince.
+Native Sands use Bevy Rust implementations and do not carry a parallel
+JavaScript version to prove portability.
+
+A future Bevy web target or external HTML exporter has its own packaging
+checks. Do not prebuild a Worker physics layer or standalone WGPU Wasm
+renderer for the native interface. A browser client for using a Cell remains
+unplanned. External projection never gains native World or device access.
 
 This keeps the asset path direct:
 
 - ordinary HTML, CSS, and Behavior edits need no frontend transpilation or
   JavaScript bundle step;
 - browser stack traces and development tools point at the editable source;
-- first-party modules, installed Sand modules, and external author examples use
-  the same runtime language;
+- external-browser modules and their author examples use the same runtime
+  language; native Bevy Behavior does not;
 - module loading, source order, and content-security policy are visible rather
   than being transformed by a hidden build stage;
 - Node remains a testing and development tool rather than a prerequisite for
   compiling the Lince binary.
 
-The renderer changes the Rust packaging path honestly: release packaging must
-compile and optimize its Wasm target and generated loader, while `cargo check`
-remains the required Rust correctness command and gains a dedicated check for
-the Wasm target. Checked-in or packaged artifacts must never conceal a stale
+If an external delivery actually selects Wasm, its release packaging must
+compile and optimize that target and loader, with a focused `cargo check` for
+that target. Native interface work has no such build requirement. Checked-in or packaged artifacts must never conceal a stale
 source/artifact hash mismatch.
 
 The costs are equally explicit:
@@ -86,7 +109,7 @@ annotations:
   cover absent fields, wrong scalar/container kinds, unknown operations,
   duplicate identities, invalid port connections, excessive nesting, and
   untrusted extra fields;
-- first-party behavior moves out of inline scripts and HTML event attributes
+- external-browser behavior stays out of inline scripts and HTML event attributes
   into small ES modules with explicit imports, exports, ownership, and teardown.
   This also permits a strict Facade content-security policy;
 - vendored libraries remain in their distributed JavaScript with licenses and
@@ -95,7 +118,8 @@ annotations:
   runtime schemas, ports, and capabilities. Their internal authoring tools are
   irrelevant to Lince and do not become part of its build.
 
-C2 exercises this boundary rather than leaving it aspirational. The recursive
+The historical C2 prototype exercised this external boundary; it does not
+prescribe a native Bevy lifecycle or certify a currently available HTML runtime. The recursive
 video-call definition declares a content-addressed native ES module with
 separate `mountComposition` and `teardownComposition` exports. The Rust host
 tracks its Behavior handle beside native renderer handles; the Installed
@@ -107,5 +131,5 @@ active and retired Behavior handles.
 Native JavaScript Behavior does not forbid a future bundling step if measured
 request or packaging costs justify one. Bundling would remain an asset
 optimization, not a source-language change or a place to hide contract
-behavior. Plan B's `wgpu` Wasm pipeline is a renderer build, not precedent
-for generated implementations of ordinary Sand Behavior.
+behavior. Any future external renderer build remains separate from ordinary
+native Bevy Behavior.

@@ -322,14 +322,18 @@ pub enum DeclarativeBehavior {
         source_output: String,
         action: String,
     },
+    TogglePresentationOnEvent {
+        event: String,
+    },
 }
 
 impl DeclarativeBehavior {
-    fn source_output(&self) -> &str {
+    fn source_output(&self) -> Option<&str> {
         match self {
             Self::EmitEvent { source_output, .. }
             | Self::SetLocalState { source_output, .. }
-            | Self::RequestAction { source_output, .. } => source_output,
+            | Self::RequestAction { source_output, .. } => Some(source_output),
+            Self::TogglePresentationOnEvent { .. } => None,
         }
     }
 }
@@ -463,7 +467,10 @@ impl SandDefinition {
         for binding in &self.behaviors {
             match binding {
                 BehaviorBinding::Declarative { behavior } => {
-                    if !outputs.contains(behavior.source_output()) {
+                    if behavior
+                        .source_output()
+                        .is_some_and(|source| !outputs.contains(source))
+                    {
                         return Err(SandError::new("Behavior names an unknown output"));
                     }
                     match behavior {
@@ -488,6 +495,9 @@ impl SandDefinition {
                                     action: action.clone(),
                                 },
                             )?;
+                        }
+                        DeclarativeBehavior::TogglePresentationOnEvent { event } => {
+                            validate_identifier("event", event)?;
                         }
                     }
                 }

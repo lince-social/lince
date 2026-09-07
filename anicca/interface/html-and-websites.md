@@ -5,17 +5,30 @@ Purpose: Define external package identity, capabilities, isolation, storage, net
 Owner source: [Interface in Lince](../Lince.lingua); no separate Sands or
 Interoperability Record currently exists.
 
-Status: Historical joined authority/composition evidence retained. Embedded HTML, Website and their product surfaces are scheduled only in the final v1 CEF lane.
+Status: Historical joined authority/composition evidence retained. Embedded HTML, Website and their product surfaces are unavailable: the embedded browser they were designed against is gone, and each needs a way to run without embedding a browser in Lince before it returns. See [the build rule](build.md#no-embedded-browser). The contract below records what was designed, not what ships.
 
-Read when: changing CEF, bridge ABI, external packages, Website permissions, or runtime admission.
+Read when: changing the bridge ABI, external packages, Website permissions, or runtime admission.
 
 [Corpus map](README.md) · [Current context](current.md) · [Sand plan](plans/sands.md)
 
 ---
 
+### Bevy target and historical boundary
+
+New native Sands use Bevy directly. The old external package/bridge design
+below does not require a native projection ABI, renderer-neutral tree or
+matching HTML for every Bevy component. An actual external integration still
+needs validation, isolation and explicit authority. A native Bevy plugin is
+trusted code, not a sandbox for an installed package. Current extensions are
+registered editable components/effects and trusted Rust plugins. Untrusted
+executable installation and sandbox design are explicitly deferred; the old
+requirements below must not become a hidden prerequisite. Specialized content
+replacements are low-priority end-of-v1 work; arbitrary HTML execution is not
+provided by Bevy or authorized by this decision.
+
 ### External HTML and Sand packages
 
-This contract applies when the optional adapter is enabled. [The build rule](build.md) keeps CEF and its dependent features out of native Part A and the following native work; [the CEF plan](plans/cef.md) owns their later delivery. Without that capability, importing or restoring browser-backed content may inspect its metadata and preserve a non-executing unavailable reference, but never start a hidden browser. Static HTML export and a Facade viewed in an external browser do not require embedding CEF.
+This contract described an optional embedded adapter that no longer exists; [the build rule](build.md#no-embedded-browser) removed it, and installed HTML needs an execution story that does not run HTML inside Lince before any of this applies again. With no such capability, importing or restoring browser-backed content may inspect its metadata and preserve a non-executing unavailable reference, but never start a hidden browser. Static HTML export and a Facade viewed in an external browser never needed an embedded runtime at all.
 
 External HTML is a first-class Sand source, but visual integration and trust
 are separate concerns. Imported content can look and behave like it has always
@@ -70,17 +83,19 @@ inside a live Website:
 An installed external Sand may therefore declare an input such as
 `record: RecordSummary`, receive it from a visible Protein field mapping, and
 emit `record-clicked: RecordRef` into Box. Another Sand or Castle may consume
-that event, and an explicitly connected route may request a typed Action. CEF
+that event, and an explicitly connected route may request a typed Action. Host
 IPC or `postMessage` is only transport: the host validates the port, value,
 instance, rate, size, capability, actor, and Action request before delivery.
 The event name does not grant access to the Record table, and the external Sand
 cannot subscribe to a Protein or invoke an Action that its definition and Box
 connections did not expose.
 
-Under Plan A, Website is a separate CEF browser surface and request context
-whose accelerated texture is composited by the native runtime. It remains
-mounted and executing when outside the camera even though Lince does not draw
-its texture. Because the CEF page is a browser surface rather than a child
+Under Plan A, Website was a separate embedded browser surface and request
+context whose accelerated texture was composited by the native runtime. That
+surface is gone with the embedded browser; a Website Sand now needs a way to
+show a remote site without embedding a browser in Lince. In that former
+implementation it remained mounted and executing outside the camera even when
+Lince did not draw its texture. Because the page was a browser surface rather than a child
 iframe, framing headers do not apply in the same way; sites may still reject
 embedded browsers, protected media, authentication, automation, or unsupported
 Chromium builds, and Lince offers an explicit open-in-browser fallback.
@@ -117,7 +132,7 @@ requests; CORS and the browser's
 [same-origin policy](https://developer.mozilla.org/en-US/docs/Web/Security/Defenses/Same-origin_policy)
 are not treated as CSRF protection.
 
-Where CEF or a dedicated WebView exposes reliable request interception, Website mode
+Where an embedded engine or dedicated WebView exposes reliable request interception, Website mode
 also blocks loopback, link-local, and private-network destinations and
 rechecks redirects and DNS resolution against rebinding. A normal browser
 iframe does not give its parent complete control over the destinations its
@@ -157,8 +172,8 @@ nodes, and a closed graph of local relative static JavaScript imports. Remote,
 absolute, parent-traversing, dynamic, missing, non-module and projection-
 undeclared imports fail admission. The joined Gallery's JavaScript decoder
 refused an inbound mount with an unknown field and then accepted the valid
-version-1 Protein-shaped mount, so this boundary is exercised in CEF as well as
-Rust tests.
+version-1 Protein-shaped mount, so this boundary was exercised in the embedded
+browser as well as Rust tests.
 
 The landed C2 fixture also proves recursive Installed composition without
 giving JavaScript semantic authority. Rust supplies the normalized

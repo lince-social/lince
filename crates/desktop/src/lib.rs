@@ -1,4 +1,6 @@
+#[cfg(not(target_os = "linux"))]
 mod bootstrap_config;
+#[cfg(not(target_os = "linux"))]
 mod runtime;
 #[cfg(not(target_os = "linux"))]
 mod tauri_shell;
@@ -12,11 +14,6 @@ use utils::desktop_setup::{DesktopInstallSetup, detected_language_default, write
 )]
 pub fn run() {
     let args = std::env::args().collect::<Vec<_>>();
-    #[cfg(target_os = "linux")]
-    if args.iter().any(|argument| argument.starts_with("--type=")) {
-        lince_interface::run_native_interface();
-        return;
-    }
     if args
         .iter()
         .any(|arg| arg == "--stage-desktop-install-setup")
@@ -50,17 +47,9 @@ pub fn run() {
 
     #[cfg(target_os = "linux")]
     {
-        match tokio_runtime.block_on(runtime::start_desktop_server(desktop_options.listen_addr)) {
-            Ok(runtime) => {
-                eprintln!("Legacy Lince interface available at {}", runtime.url);
-                let _runtime_guard = tokio_runtime.enter();
-                lince_interface::run_native_interface();
-            }
-            Err(error) => {
-                eprintln!("Failed to start Lince desktop server: {error}");
-                std::process::exit(1);
-            }
-        }
+        let _listen_addr = desktop_options.listen_addr;
+        let _runtime_guard = tokio_runtime.enter();
+        lince_interface::run_native_interface();
         return;
     }
 

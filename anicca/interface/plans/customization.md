@@ -5,8 +5,9 @@ Purpose: Define the strict pre-Box dependency waterfall and its completion gates
 Owner source: no dedicated Customization Record currently exists;
 [Interface in Lince](../../Lince.lingua) governs shared interface decisions.
 
-Status: customization, semantic primitive-Sand, C2 recursive-composition and
-C3 Configuration/external-authoring kernels landed; C4 migration is next.
+Status: prototype customization and composition evidence is retained below.
+The owner selected a Bevy-native rebuild on 2026-09-07; old reports do not
+certify it or freeze the old projection/ABI implementation.
 
 Read when: executing the active interface refactor.
 
@@ -29,15 +30,23 @@ delivery. Moving Areas, topology, free-space conversion and decorative effects
 follow the stable gate in [the Interface plan](interface.md#v1-master-waterfall).
 Planetary work and general scene construction are outside this revision.
 
-The completed Pulsar/Helio study added no prerequisite or framework migration
-to C3–C5. Configuration and official Sands use the landed Lince-owned
-retained projections. Focused UI crates or bounded licensed techniques may be
-used where they satisfy that ownership, but GPUI, Pulsar, Helio and SceneDB do
-not enter this waterfall. C5 consumes the study's causal runtime-health and
+The owner now requires Bevy as the native interface base. Configuration and
+official Sands use Bevy UI, text, scenes and observers directly. Existing
+interface code can be rewritten; no portable renderer or separate retained UI
+layer is a prerequisite. Use Flair for stylesheet authoring and resolution on
+Bevy components; [its integration checks](../customization.md#flair-as-the-styling-integration)
+cover scope, editor overrides and idle cost without a second style engine.
+Internal/external crates, custom plugins and WGPU
+passes require a real Lince need. GPUI, Pulsar, Helio and SceneDB remain
+research, not an adoption stage. C5 consumes the study's causal runtime-health and
 frame-boundary constraints; renderer optimizations remain measured work under
 [the Interface plan](interface.md#completed-engine-study-and-its-place-in-the-waterfall).
 
 ## Landed customization kernel
+
+Historical prototype evidence follows. Preserve product meanings and useful
+backend/data contracts, not the old host, renderer or native ABI. Fresh
+Bevy-native visual, editor, accessibility and idle-work tests are required.
 
 The completed task has been deleted from the remaining checklist. Contract
 version 1 provides 92 typed `--lynx-*` tokens, complete Dark and Light Lynx
@@ -49,16 +58,15 @@ have migrated.
 
 The joined native Gallery applies the same resolved style to WGPU nodes,
 borders, compositor background and retained text. F1/F2/F3/F4/F7 expose
-workspace, group, instance, partial-theme and mode changes. Installed CEF gets
-the resolved CSS declarations without reload; Website CEF gets no style or
+workspace, group, instance, partial-theme and mode changes. Installed HTML got
+the resolved CSS declarations without reload; Website got no style or
 bridge authority. The first release report passed with 91 resolved tokens, two style
 projections and one Installed document load.
 
-The first-party runtime remains pure JavaScript where JavaScript is needed;
-TypeScript and Datastar are absent. Native Plan A uses Rust. Plan B and browser
-projections use ordinary HTML/CSS, Rust/Maud structural authoring where useful,
-and native ES modules. Maud is not a browser runtime and external authors never
-need it.
+The new first-party runtime uses Bevy and Rust. Existing external-browser
+exports may retain ordinary HTML/CSS/ES modules, with Rust/Maud where useful.
+They require no paired HTML output from new native Sands. TypeScript and
+Datastar do not become native build dependencies.
 
 ## What is left
 
@@ -95,7 +103,7 @@ F5 moves focus between native and HTML; Tab/Shift-Tab traverses primitives;
 Enter/Space, pointer and AccessKit actions reach the same retained state. The
 WGPU pass and retained text use the same resolved token cascade.
 
-The installed CEF Gallery is served from the same content-addressed package as
+The installed HTML Gallery is served from the same content-addressed package as
 ordinary accessible HTML, external CSS and native JavaScript modules. It
 uses a strict JavaScript decoder that refuses unknown or missing fields before
 accepting a version-1 mount carrying Protein-shaped Record fields, and emits
@@ -141,7 +149,7 @@ remain disposable.
 
 The F10 composition workbench places one Button alone, the same Button inside
 a video-call compound, that compound inside a locked video-call-room, and the
-same graph through Installed CEF. Tab and Shift-Tab select ten operations and
+same graph through Installed HTML. Tab and Shift-Tab select ten operations and
 Enter runs nested activation, lock, override/reset, shared edit, invalid-edit
 refusal, save as definition, save/reopen, fork and teardown/remount. Its panel
 shows the recursive tree and visually distinct `READ`, `EVENT` and `WRITE`
@@ -162,7 +170,7 @@ handles and one observed instance of every workbench mutation. The catalog had
 23 active definitions after save and fork; the immutable source package had 21
 definitions and hash
 `sha256:b90813aac80ab7c0fb2da5ba2c198c142a252a7ca813ca3baa2025e3fc1bcafd`.
-Installed CEF reported two instances, eight unique scoped DOM ids and one
+Installed HTML reported two instances, eight unique scoped DOM ids and one
 teardown. Under the representative load, frame p95 was 10.265 ms and the
 120 Hz fixed-step p95 was 1.078 ms. Evidence lives under
 `target/interface-laboratory/parity/` and
@@ -194,7 +202,7 @@ are selected by uid plus manifest SHA-256; assets retain relative path, kind
 and content-hash validation. Typed `--lynx-local-*` extensions participate in
 the normal cascade. Native, shared HTML, isolated Installed HTML and browser
 roots receive the same declarations without replacing local patches or
-reloading CEF.
+reloading a document.
 
 Developer CSS is a bounded presentation-declaration list. Imports, URLs,
 executable/extension schemes, selector braces, root escape, dynamic bindings,
@@ -208,8 +216,8 @@ reads and exported Action writes. Materialization creates ordinary composition
 entries and a durable domain receipt. The same launch after save/reopen focuses
 the existing placement and advances its provenance count; no recipe or receipt
 contains a renderer handle. The release parity gate and 61-test joined suite
-pass. The real Wayland/WGPU/CEF report passed at 1920×1052 under the accepted
-200/1,000/10,000 workload with two accelerated CEF surfaces. It applied and
+pass. The real Wayland/WGPU report passed at 1920×1052 under the accepted
+200/1,000/10,000 workload with two accelerated embedded browser surfaces. It applied and
 restored the live Configuration projection without changing the Installed
 document's one-load count, measured 10.879 ms frame p95 and 0.752 ms
 fixed-step p95 with no backlog, and carries source fingerprint
@@ -250,16 +258,19 @@ bulk selection/actions and swimlanes unchecked within C4.
 
 The company-workflow slice and native quality gate are owned by [Part A — Dogfeeding](part-a.md); other native migrations remain in [native follow-through](native-follow-through.md). This document preserves the verified foundation and its historical evidence, not a duplicate active checklist.
 
-C4's CEF-free host/package bootstrap and shared native, editor and domain boundaries are certified before their consumers. Independent native workflows may then migrate in parallel in isolated checkouts; a workflow waits for its actual dependencies, not every unrelated root. Each in-scope migration reaches the running native surface before certification. Native-path legacy deletion follows replacement proofs, while gated browser implementations remain for the final v1 lane. Dogfeeding applies the native quality gate to its selected company workflows together with Backend Part A's remote-access and recovery gates. Other native migrations remain in [native follow-through](native-follow-through.md); full catalog count is not the Part A finish line.
+C4's browserless host/package bootstrap and shared native, editor and domain boundaries are certified before their consumers. Then implement native workflows sequentially in the current checkout, following their actual dependencies; no parallel checkout or worktree is required. Each in-scope migration reaches the running native surface before certification. Native-path legacy deletion follows replacement proofs. The browser-backed surfaces stay unavailable until each has a browserless design. Dogfeeding applies the native quality gate to its selected company workflows together with Backend Part A's remote-access and recovery gates. Other native migrations remain in [native follow-through](native-follow-through.md); full catalog count is not the Part A finish line.
 
-Conversation's general authorship, live state and private-draft queue already exist in the native runtime and domain seam. Part A completes shared-editor integration and regression coverage rather than rebuilding that foundation or introducing a Fiote harness.
+Conversation's general authorship, live state and private-draft queue have existing domain and native implementations. Preserve their behavior while allowing the native interface to be rebuilt in Bevy; the old retained projection is not a mandatory translation layer. Part A adds shared-editor integration and regression coverage, not a Fiote harness.
 
 ### C5 — Enforcement, authoring and completion gate
 
-[Part A's completion checks](part-a.md#prove-the-foundation-a-person-will-use) own native visual rules, themes, accessibility, author guidance, lifecycle, runtime health, package conformance, scale and quiet-machine measurements. [The build rule](../build.md) assigns focused Cargo checks and tests plus the Cargo/Nix production lane; fresh runtime and measurement evidence still closes C5, not compilation alone. Live native/HTML parity and all browser-specific proofs belong to [the final CEF lane](cef.md).
+[Part A's completion checks](part-a.md#prove-the-foundation-a-person-will-use) own native visual rules, themes, accessibility, author guidance, lifecycle, runtime health, package conformance, scale and quiet-machine measurements. [The build rule](../build.md) assigns focused Cargo checks and tests plus the Cargo/Nix production lane; fresh runtime and measurement evidence still closes C5, not compilation alone. Live native/HTML parity and browser-specific proofs are gone with the embedded browser; whatever replaces those surfaces brings its own evidence. See [the build rule](../build.md#no-embedded-browser).
 
 The later Box additions retain their separate [stable everyday-use gate](interface.md#stable-everyday-use-gate). C5 certifies the foundation they consume, not per-appearance release, presentation switching, Calendar, Clock or future spatial behavior.
 
-Physics selection is not hidden in Customization. Avian versus a narrow SoA
-force/sort/group/boundary solver belongs to the later measured Area/topology stage
-under [the Interface plan](interface.md), using the same adapter and workload.
+Physics selection is not hidden in Customization. Stationary Box and time
+views use a 3D-capable Bevy scene with planar placement and no active general
+solver. Avian 3D is selected for later surface/free-space contacts and settling;
+Lince keeps Area filters, potentials and mutation rules in Bevy systems. Do not build a competing
+general solver or physics-neutral adapter in advance. See
+[Physics](../architecture.md#physics-application-rules-and-collision-solving).

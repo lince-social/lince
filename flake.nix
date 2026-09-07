@@ -86,66 +86,6 @@
               vulkan-loader
               wayland
             ];
-          cefLinuxArchive =
-            if system == "x86_64-linux" then
-              {
-                name = "cef_binary_151.3.24+g2384915+chromium-151.0.7922.174_linux64_minimal.tar.bz2";
-                hash = "sha256-21PEP9rOi37krw8AUSARbWlzqp2Ot3AsBhe635voaE4=";
-                sha1 = "b1e99d3e3ff4213f99f7cda0211db89454398811";
-              }
-            else if system == "aarch64-linux" then
-              {
-                name = "cef_binary_151.3.24+g2384915+chromium-151.0.7922.174_linuxarm64_minimal.tar.bz2";
-                hash = "sha256-R5ZbnDallYvdbW/bP+M2DzjRfWWRTvY2q63hSIHNxZs=";
-                sha1 = "95acd2a46975e2c60afa6b427ec50c0a3be6236f";
-              }
-            else
-              null;
-          cefLinuxRuntime =
-            if cefLinuxArchive == null then
-              null
-            else
-              pkgs.stdenvNoCC.mkDerivation {
-                pname = "lince-cef-runtime";
-                version = "151.3.24";
-                src = pkgs.fetchurl {
-                  url = "https://cef-builds.spotifycdn.com/${cefLinuxArchive.name}";
-                  inherit (cefLinuxArchive) hash;
-                };
-                nativeBuildInputs = with pkgs; [
-                  autoPatchelfHook
-                  bzip2
-                ];
-                buildInputs = interfaceLinuxBuildInputs;
-                sourceRoot = ".";
-                unpackPhase = ''
-                  tar -xjf "$src" --strip-components=1
-                '';
-                installPhase = ''
-                  mkdir -p "$out"
-                  cp CMakeLists.txt CREDITS.html LICENSE.txt "$out/"
-                  cp -R cmake include libcef_dll "$out/"
-                  cp -R Release/. "$out/"
-                  cp -R Resources/. "$out/"
-                  printf '%s\n' '${
-                    builtins.toJSON {
-                      type = "minimal";
-                      inherit (cefLinuxArchive) name sha1;
-                    }
-                  }' > "$out/archive.json"
-                '';
-              };
-          interfaceCefShellHook = lib.optionalString pkgs.stdenv.isLinux ''
-            cef_work_path="$PWD/target/interface-cef/${cefLinuxRuntime.name}"
-            if [[ ! -e "$cef_work_path/.ready" ]]; then
-              mkdir -p "$cef_work_path"
-              chmod -R u+w "$cef_work_path"
-              cp -R --reflink=auto ${cefLinuxRuntime}/. "$cef_work_path/"
-              chmod -R u+w "$cef_work_path"
-              touch "$cef_work_path/.ready"
-            fi
-            export CEF_PATH="$cef_work_path"
-          '';
 
           mkLince =
             { pname }:
@@ -395,7 +335,6 @@
             shellHook = ''
               export LINCE_MIGRATION_PREFLIGHT=1
             ''
-            + interfaceCefShellHook
             + lib.optionalString pkgs.stdenv.isLinux ''
               export LD_LIBRARY_PATH="${
                 lib.makeLibraryPath (
@@ -427,9 +366,7 @@
               )
               ++ interfaceLinuxBuildInputs;
 
-            shellHook =
-              interfaceCefShellHook
-            + lib.optionalString pkgs.stdenv.isLinux ''
+            shellHook = lib.optionalString pkgs.stdenv.isLinux ''
               export LD_LIBRARY_PATH="${lib.makeLibraryPath interfaceLinuxBuildInputs}:''${LD_LIBRARY_PATH:-}"
               export LINCE_AT_SPI_BUS_LAUNCHER="${pkgs.at-spi2-core}/libexec/at-spi-bus-launcher"
             '';

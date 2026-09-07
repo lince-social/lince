@@ -4,7 +4,7 @@ members = [
     "crates/lince",
     "crates/desktop",
     "crates/utils",
-    "crates/web",
+    "crates/web-aka-museum-dont-touch",
     "crates/nucleus",
     "crates/store",
     "crates/engine",
@@ -34,7 +34,7 @@ homepage = "https://lince.social"
 [workspace.dependencies]
 lince = { version = "=0.7.0", path = "crates/lince" }
 utils = { version = "=0.7.0", path = "crates/utils", package = "lince-utils" }
-web = { version = "=0.7.0", path = "crates/web", package = "lince-web" }
+web = { version = "=0.7.0", path = "crates/web-aka-museum-dont-touch", package = "lince-web-aka-museum-dont-touch" }
 anicca = { version = "=0.7.0", path = "crates/anicca" }
 nucleus = { version = "=0.7.0", path = "crates/nucleus" }
 store = { version = "=0.7.0", path = "crates/store" }

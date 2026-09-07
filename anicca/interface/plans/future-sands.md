@@ -22,7 +22,7 @@ Read when: the owner promotes one of these ideas into planned work.
       privacy, map-data licensing, the distinction between geographic and
       data-derived height, and the game/world rules retained in
       [Interface](../v2-world.md#long-horizon-world-direction). This is
-      capability motivation for Plan A, not current implementation work.
+      capability motivation for the Bevy-native interface, not current implementation work. If promoted, use Bevy directly and add only the specific map/content integrations needed; no engine-neutral world adapter is a prerequisite.
 
 - [ ] Transparent stock control
 - [ ] Logistic distribution and instant correction from a flicker of operational change of the brute mineral extractor to the chip manufacturer.

@@ -1,4 +1,3 @@
-use crate::input::{ButtonState, InputEnvelope, NormalizedInput, Point, PointerButton, ScrollUnit};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{BTreeSet, VecDeque},
@@ -264,7 +263,7 @@ impl BridgeSession {
         let surface_id = surface_id.into();
         validate_identifier("HTML surface", &surface_id)?;
         if browser_id <= 0 {
-            return Err(BridgeError::new("CEF browser id must be positive"));
+            return Err(BridgeError::new("browser id must be positive"));
         }
         manifest.validate()?;
         Ok(Self {
@@ -364,177 +363,6 @@ impl BridgeSession {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum CefInputCommand {
-    PointerMoved {
-        x: i32,
-        y: i32,
-        modifiers: crate::input::InputModifiers,
-    },
-    PointerButton {
-        x: i32,
-        y: i32,
-        button: CefPointerButton,
-        state: ButtonState,
-        modifiers: crate::input::InputModifiers,
-    },
-    Scroll {
-        x: i32,
-        y: i32,
-        delta_x: i32,
-        delta_y: i32,
-        modifiers: crate::input::InputModifiers,
-    },
-    Key {
-        logical_key: String,
-        text: Option<String>,
-        state: ButtonState,
-        modifiers: crate::input::InputModifiers,
-    },
-    Focus {
-        focused: bool,
-    },
-    ImePreedit {
-        text: String,
-        cursor: Option<[usize; 2]>,
-    },
-    ImeCommit {
-        text: String,
-    },
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum CefPointerButton {
-    Left,
-    Right,
-    Middle,
-}
-
-pub fn route_cef_input(envelope: &InputEnvelope) -> Result<CefInputCommand, BridgeError> {
-    envelope
-        .validate()
-        .map_err(|error| BridgeError::new(error.to_string()))?;
-    if envelope.target.adapter != "cef" {
-        return Err(BridgeError::new("input target is not a CEF adapter"));
-    }
-    let local = envelope.target_local_position();
-    if let Some(point) = local {
-        validate_local_point(envelope, point)?;
-    }
-    match &envelope.event {
-        NormalizedInput::PointerMoved { modifiers, .. } => {
-            let (x, y) = cef_point(local)?;
-            Ok(CefInputCommand::PointerMoved {
-                x,
-                y,
-                modifiers: *modifiers,
-            })
-        }
-        NormalizedInput::PointerButton {
-            button,
-            state,
-            modifiers,
-            ..
-        } => {
-            let (x, y) = cef_point(local)?;
-            Ok(CefInputCommand::PointerButton {
-                x,
-                y,
-                button: cef_button(*button)?,
-                state: *state,
-                modifiers: *modifiers,
-            })
-        }
-        NormalizedInput::Scroll {
-            delta,
-            unit,
-            modifiers,
-            ..
-        } => {
-            let (x, y) = cef_point(local)?;
-            let multiplier = if *unit == ScrollUnit::Lines {
-                40.0
-            } else {
-                1.0
-            };
-            let transformed = envelope
-                .target
-                .local_from_surface
-                .transform_vector(Point::new(delta.x * multiplier, delta.y * multiplier));
-            Ok(CefInputCommand::Scroll {
-                x,
-                y,
-                delta_x: cef_coordinate(transformed.x)?,
-                delta_y: cef_coordinate(transformed.y)?,
-                modifiers: *modifiers,
-            })
-        }
-        NormalizedInput::Key {
-            logical_key,
-            text,
-            state,
-            modifiers,
-            ..
-        } => Ok(CefInputCommand::Key {
-            logical_key: logical_key.clone(),
-            text: text.clone(),
-            state: *state,
-            modifiers: *modifiers,
-        }),
-        NormalizedInput::ImePreedit { text, cursor } => Ok(CefInputCommand::ImePreedit {
-            text: text.clone(),
-            cursor: *cursor,
-        }),
-        NormalizedInput::ImeCommit { text } => {
-            Ok(CefInputCommand::ImeCommit { text: text.clone() })
-        }
-        NormalizedInput::Focus { focused } => Ok(CefInputCommand::Focus { focused: *focused }),
-        NormalizedInput::ModifiersChanged { .. }
-        | NormalizedInput::Touch { .. }
-        | NormalizedInput::ImeEnabled
-        | NormalizedInput::ImeDisabled => Err(BridgeError::new(
-            "normalized input kind has no direct CEF command",
-        )),
-    }
-}
-
-fn validate_local_point(envelope: &InputEnvelope, point: Point) -> Result<(), BridgeError> {
-    let clip = envelope.target.local_clip;
-    let maximum_x = clip.origin.x + clip.extent.x;
-    let maximum_y = clip.origin.y + clip.extent.y;
-    if point.x < clip.origin.x
-        || point.y < clip.origin.y
-        || point.x >= maximum_x
-        || point.y >= maximum_y
-    {
-        return Err(BridgeError::new("input is outside the CEF surface clip"));
-    }
-    Ok(())
-}
-
-fn cef_point(point: Option<Point>) -> Result<(i32, i32), BridgeError> {
-    let point = point.ok_or_else(|| BridgeError::new("CEF pointer input has no position"))?;
-    Ok((cef_coordinate(point.x)?, cef_coordinate(point.y)?))
-}
-
-fn cef_coordinate(value: f64) -> Result<i32, BridgeError> {
-    if !value.is_finite() || value < f64::from(i32::MIN) || value > f64::from(i32::MAX) {
-        return Err(BridgeError::new("CEF input coordinate is out of range"));
-    }
-    Ok(value.round() as i32)
-}
-
-fn cef_button(button: PointerButton) -> Result<CefPointerButton, BridgeError> {
-    match button {
-        PointerButton::Left => Ok(CefPointerButton::Left),
-        PointerButton::Right => Ok(CefPointerButton::Right),
-        PointerButton::Middle => Ok(CefPointerButton::Middle),
-        PointerButton::Back | PointerButton::Forward | PointerButton::Other(_) => Err(
-            BridgeError::new("pointer button is unsupported by CEF route"),
-        ),
-    }
-}
-
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct BridgeError {
     message: String,
@@ -613,9 +441,6 @@ fn validate_payload(value: &str) -> Result<(), BridgeError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::input::{
-        AffineTransform, InputModifiers, InputSource, InputSurface, InputTarget, Rect,
-    };
 
     fn installed() -> HtmlSurfaceManifest {
         HtmlSurfaceManifest::Installed {
@@ -728,106 +553,6 @@ mod tests {
         ));
         assert!(
             matches!(session.handle_json(&valid, "lince-sand://weather.sand", 1), BridgeDecision::Refused { reason, .. } if reason == "bridge sequence is not newer")
-        );
-    }
-
-    #[test]
-    fn transformed_pointer_and_scroll_reach_cef_local_coordinates() {
-        let surface = InputSurface::new("box", 1600, 1000, 2.0);
-        let target = InputTarget {
-            semantic_id: "external-weather".into(),
-            adapter: "cef".into(),
-            local_from_surface: AffineTransform {
-                xx: 0.0,
-                xy: -0.5,
-                yx: 0.5,
-                yy: 0.0,
-                tx: 0.0,
-                ty: 400.0,
-            },
-            local_clip: Rect {
-                origin: Point::new(0.0, 0.0),
-                extent: Point::new(500.0, 400.0),
-            },
-        };
-        let pointer = InputEnvelope::new(
-            1,
-            InputSource::LinceWinit,
-            surface.clone(),
-            target.clone(),
-            NormalizedInput::PointerMoved {
-                surface_physical: Point::new(200.0, 600.0),
-                buttons: Vec::new(),
-                modifiers: InputModifiers::default(),
-            },
-        );
-        let scroll = InputEnvelope::new(
-            2,
-            InputSource::LinceWinit,
-            surface,
-            target,
-            NormalizedInput::Scroll {
-                surface_physical: Point::new(200.0, 600.0),
-                delta: Point::new(0.0, 3.0),
-                unit: ScrollUnit::Lines,
-                modifiers: InputModifiers::default(),
-            },
-        );
-
-        assert_eq!(
-            route_cef_input(&pointer).expect("pointer route"),
-            CefInputCommand::PointerMoved {
-                x: 300,
-                y: 300,
-                modifiers: InputModifiers::default(),
-            }
-        );
-        assert_eq!(
-            route_cef_input(&scroll).expect("scroll route"),
-            CefInputCommand::Scroll {
-                x: 300,
-                y: 300,
-                delta_x: 60,
-                delta_y: 0,
-                modifiers: InputModifiers::default(),
-            }
-        );
-    }
-
-    #[test]
-    fn pointer_outside_transformed_clip_is_refused() {
-        let surface = InputSurface::new("box", 800, 600, 1.0);
-        let target = InputTarget {
-            semantic_id: "external-weather".into(),
-            adapter: "cef".into(),
-            local_from_surface: AffineTransform {
-                xx: 1.0,
-                xy: 0.0,
-                yx: 0.0,
-                yy: 1.0,
-                tx: -300.0,
-                ty: 0.0,
-            },
-            local_clip: Rect {
-                origin: Point::new(0.0, 0.0),
-                extent: Point::new(200.0, 200.0),
-            },
-        };
-        let input = InputEnvelope::new(
-            1,
-            InputSource::LinceWinit,
-            surface,
-            target,
-            NormalizedInput::PointerMoved {
-                surface_physical: Point::new(250.0, 100.0),
-                buttons: Vec::new(),
-                modifiers: InputModifiers::default(),
-            },
-        );
-
-        assert_eq!(
-            route_cef_input(&input).expect_err("outside clip"),
-            BridgeError::new("input is outside the CEF surface clip")
         );
     }
 }

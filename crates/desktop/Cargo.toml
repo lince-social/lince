@@ -15,18 +15,16 @@ tauri-build = { workspace = true }
 
 [dependencies]
 utils = { workspace = true }
-# native-picker: the "/image" slash block's system file dialog (2026-07-18,
-# runs server-side via rfd's xdg-portal backend — see
-# web::presentation::http::media_assets::pick_and_store_image). Only the
-# desktop shell enables it; the plain lince CLI doesn't need a local display.
-web = { workspace = true, features = ["native-picker"] }
-sqlx = { workspace = true }
 tokio = { workspace = true, features = ["rt-multi-thread", "process", "time", "macros", "sync"] }
+
+# The Cell server and its bootstrap live in the Tauri shell only. On Linux the
+# desktop binary is the native interface and nothing else, so lince-web — and
+# with it every HTML asset, maud and the board routes — is not compiled at all.
+[target.'cfg(not(target_os = "linux"))'.dependencies]
+web = { workspace = true, features = ["native-picker"] }
 serde = { workspace = true, features = ["derive"] }
 toml = { workspace = true }
 uuid = { workspace = true, features = ["v4"] }
-
-[target.'cfg(not(target_os = "linux"))'.dependencies]
 anyhow = "1.0"
 tauri = { workspace = true, features = ["image-png", "tray-icon"] }
 

@@ -1,5 +1,5 @@
 [package]
-name = "lince-web"
+name = "lince-web-aka-museum-dont-touch"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -33,7 +33,6 @@ nucleus = { workspace = true }
 protein = { workspace = true }
 reqwest = { workspace = true }
 rfd = { workspace = true, optional = true }
-sha2 = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 socket2 = { workspace = true }

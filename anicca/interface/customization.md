@@ -22,6 +22,55 @@ Read when: implementing themes, token resolution, configuration, native visual c
 
 ## Customization
 
+The owner selected Bevy as the interface base on 2026-09-07. New native
+controls use Bevy UI/widgets/text and scenes directly. The landed sections
+below preserve prototype behavior and evidence, not its separate retained UI,
+portable rendering API or paired HTML authoring requirement. Rewriting that
+interface code is allowed; preserve the intended scopes and human control.
+
+Resolve Lince's style roles and overrides into Bevy components and materials.
+Use ordinary Configuration controls for simple edits and Flair for CSS
+stylesheets and advanced authoring. Direct Rust/Bevy construction remains
+available. This replaces the earlier first-party-only styling assumption;
+do not build our own general CSS parser/cascade merely to avoid a dependency.
+
+### Flair as the styling integration
+
+Use [bevy_flair](https://github.com/eckz/bevy_flair) as the preferred CSS
+integration with Bevy UI, subject to integration acceptance. Its 0.8 release
+supports Bevy 0.19. Stylesheets, selectors, variables, inheritance, transitions
+and hot reload can reduce Lince's styling code without adding another UI
+renderer or changing how Sands are constructed. Keep embedded licenses and
+credits with the relevant distribution.
+
+Flair is not a browser or a promise of full CSS. Document the supported
+property/selector profile and give visible diagnostics for rejected input;
+do not rely on unsupported syntax being silently ignored. Check the pinned
+release rather than assuming every browser stylesheet works. Package imports,
+font/image URLs, selector complexity, stylesheet size and animation costs
+remain bounded by Lince's authoring and asset policy. CSS is not permission
+to read arbitrary files, fetch the network or change backend authority.
+
+Keep one owner for each styled component property. Configuration/Box controls
+edit the corresponding stored style input or override, not a second system
+that fights Flair by writing the same component every frame. Map the existing
+Lynx theme/workspace/group/instance precedence into explicit stylesheet roots,
+layers, variables and overrides, with an inspectable winning source. Released
+children retain their logical style scope even if movement reparenting changes
+Bevy's transform hierarchy. Do not assume the CSS parent is always the
+movement parent. Test inheritance, reparenting, copy/release, override/reset,
+keyboard focus and core-widget interaction states together.
+
+Flair's [style systems](https://raw.githubusercontent.com/eckz/bevy_flair/main/crates/bevy_flair_style/src/systems.rs)
+request redraws for active animations, but some systems still visit styled
+entities when a frame runs. This is not evidence of zero idle overhead.
+Measure fully idle, one animated control among many static Sands, theme reload,
+targeted overrides and repeated creation/removal on the minimum machine.
+A narrow upstream fix, local patch or optimized style system is allowed for a
+measured failure; do not prebuild an alternative styling framework. Be ready
+to maintain a scoped patch if this community dependency cannot follow a needed
+Bevy release promptly.
+
 ### Landed customization kernel
 
 Contract version 1 is executable in the joined native runtime. It defines 92
@@ -41,8 +90,8 @@ assets, undeclared extensions and invalid asset hashes are refused.
 The native joined Gallery uses that resolved set for compositor background,
 world nodes, borders and retained text. Its F1, F2, F3, F4 and F7 controls
 exercise workspace palette, group density, instance radius, partial-theme and
-mode changes. The Installed CEF fixture receives the same resolved set as CSS
-without a page reload; Website CEF receives neither style authority nor the
+mode changes. The Installed HTML fixture received the same resolved set as CSS
+without a page reload; Website received neither style authority nor the
 Lince bridge. The first release evidence resolved 91 tokens, performed two Installed
 HTML updates while its document load count remained one, and passed on the
 Wayland/Vulkan host. C3 added the Sand-margin role; the generated reference and
@@ -126,7 +175,7 @@ remote URL. Manifest assets retain relative path, kind and hash validation.
 Declared `--lynx-local-*` extensions carry a type and participate in the same
 resolver. Native data, shared HTML, isolated Installed HTML and browser roots
 receive identical resolved declarations; the joined probe changes the
-Configuration preview in Installed CEF and returns to the Gallery style
+Configuration preview in Installed HTML and returns to the Gallery style
 without reloading its document.
 
 Developer CSS is a bounded declaration list scoped to a declared root. The
@@ -159,13 +208,12 @@ panel does not satisfy the requirement merely because it is fast.
 That feeling is a system property rather than a GPUI brand property. It comes
 from a small visual grammar, semantic tokens, correct native text shaping,
 high-DPI geometry, consistent one-pixel decisions, low input-to-frame latency,
-stable layout, restrained motion and complete keyboard/focus behavior. P0b
-selected a Lince-owned retained UI for application chrome, inspectors, editors
-and rich native Sand surfaces because the measured GPUI source could not render
-into the host-owned frame. GPUI remains the strongest behavior and quality
-reference. Bevy UI is not the default visual vocabulary. The world renderer
-consumes the same resolved tokens through dedicated Sand primitives, while
-CEF-backed Sands receive their allowed projection as CSS variables.
+stable layout, restrained motion and complete keyboard/focus behavior.
+The earlier P0b custom-host decision is superseded: Bevy UI, text and widgets
+now provide application controls and rich Sands. Apply Lince's visual grammar
+rather than copying Bevy's example theme. Bevy scene materials consume the
+same resolved tokens; external publication translates the supported subset at
+its own boundary. GPUI remains a quality reference, not a production path.
 
 [Zed's account of GPUI](https://zed.dev/blog/videogame) is useful engineering
 direction: a small set of data-driven GPU primitives and platform text shaping
@@ -180,7 +228,7 @@ The first native Gallery must test 1× and the fractional scale factors
 available on the owner's hardware; light and dark themes; moving, scaling and
 rotating a Sand; text while the world moves beneath it; keyboard-only
 navigation; pointer capture; focus transfer between retained native UI, the
-world and CEF; and p95/p99 input-to-present latency. A 4K display is not a
+world and any external surface; and p95/p99 input-to-present latency. A 4K display is not a
 current test prerequisite. Layout, clipping, text rasterization, surface
 allocation, and quality selection must remain resolution- and
 device-scale-aware so the architecture introduces no known 4K ceiling.
@@ -211,11 +259,12 @@ Sand is the sole compositional vocabulary. The `LynxUI` name describes only
 the legacy Web component library being inventoried and removed during
 migration; it does not name a layer underneath or beside Sands in the new
 interface. Every reusable control is a Sand definition with typed inputs,
-outputs, state, configuration, accessibility semantics, renderer projections,
-and optional Behavior. A button used by itself and the same button inside a
+outputs, state, configuration, accessibility semantics and optional Bevy
+Behavior. Private Bevy helper entities do not require separate Sand identity. A button used by itself and the same button inside a
 video-call composition are the same definition, not two implementations.
-Native Rust and HTML/Maud may implement different projections of that
-definition without creating a second component identity.
+New native controls use Bevy directly. Existing HTML/Maud or public export
+may translate a supported subset without requiring paired output from every
+native constructor.
 
 A locked group is not a special application type. It is a recursive Sand
 composition with stable child identities, local layout, explicit connections,
@@ -273,45 +322,36 @@ neither token coverage nor a benchmark alone proves that Sands feel good.
 
 ### Design system work
 
-The implementation order is binding and closes behind us:
+The active order follows Part A and the master plan:
 
-1. V1's productivity scope, v2's permanent architectural invariants and the
-   native ownership boundary are frozen by Interface. The joined laboratory
-   accepted the Lince-owned Wayland/WGPU host, selected Bevy rendering, retained
-   UI, CEF and Web/Facade projections, and rejected GPUI as a production
-   dependency. Linux has no second desktop runtime or fallback. Implementation
-   size remains an accepted cost, not a reason to lower the capability or feel
-   target.
-2. The current visual sources, renderer-neutral token taxonomy, scope cascade,
-   manifest rules, Dark/Light defaults, partial-theme behavior and native/CEF
-   projection have landed as contract version 1. Browser projection will
-   consume generated declarations when its adapter is rebuilt; it does not own
-   another cascade.
-3. Sand definition, persisted instance, projection, package and host-message
-   schemas have landed as version 1. Recursive composition uses that graph;
-   the future Box operation model remains a later consumer and is not implied
-   by the laboratory replay format. Native Rust, installed HTML/JavaScript,
-   Websites, GPU leaves and browser Plan B are projections of one semantic
-   contract.
-4. The first-party authoring paths selected by the prototype are frozen. Plan A
-   uses native Rust retained-UI and world-renderer implementations paired with Sand
-   definitions. Plan B uses Rust/Maud paired accessible fragments and native ES
-   modules. Maud remains an authoring DSL, never a browser runtime or a
-   requirement imposed on external Sands.
-5. The compositor/simulation ownership and logical ABI adapters are frozen,
-   including CEF texture/input/lifecycle handling and the absolute rule that
-   camera culling affects presentation only.
-6. Nineteen primitive native Sands and their Installed HTML projection have
-   landed on the Lynx contract with retained state, AccessKit, Dark, Light,
-   partial-theme, density and isolated-root coverage. The old Web component
-   library remains migration inventory only.
-7. Recursive composition, group locking, saved compound Sands/Castles,
-   overrides, exported ports and explicit teardown have landed in the F10
-   composition workbench.
-8. Make the common native host and production defaults CEF-free, then deliver the company-workflow subset on shared pieces under [Part A — Dogfeeding](plans/part-a.md); other native roots remain in [native follow-through](plans/native-follow-through.md). Remove replaced native-path legacy APIs, but preserve gated browser sources needed by the five deferred roots and Installed HTML. Browser Facades keep the projection adapter selected for their capabilities.
-9. Land native official-Sand author documentation, accessibility, behavior, theme and lifecycle tests, runtime validation and automated design-system checks. Fresh native-only desktop and quiet-machine proofs close C5. CEF/iframe execution, theme parity and browser recovery belong to [the final v1 CEF lane](plans/cef.md), not this pre-Box gate.
+1. Replace the custom native host/UI with one Bevy application. Use first-party
+   Bevy UI, widgets, text, scenes, picking, curves and materials; no generic
+   renderer adapter or separate native text/layout integration.
+2. Carry the canonical tokens, Dark/Light defaults, partial themes and seven
+   inspectable scopes into Bevy components/materials. Preserve inherit/reset,
+   source provenance and bounded advanced styling.
+3. Make native Sand/Effect composition editable through Bevy data directly.
+   Keep stable ids, explicit ownership, exported ports and durable overrides;
+   do not freeze the prototype's projection manifest or native ABI.
+4. Rebuild or reuse primitives and Configuration through those Bevy pieces.
+   Existing backend/data formats may have translators. Required editor
+   extensions and custom accessibility semantics stay in Lince plugins.
+5. Complete [Dogfeeding](plans/part-a.md) and its fresh visual, keyboard, IME,
+   accessibility, lifecycle and resource gates. Include sleeping presentation,
+   one-active/many-static workloads and bounded memory; old joined evidence
+   does not certify the new application.
+6. Continue the existing native follow-through and Box/time sequence. At the
+   end of v1 choose specialized browserless content engines where needed.
+   Public Facade/export has its own read-only boundary, not a second native
+   style or widget framework.
+
+A custom Bevy plugin, focused internal/external crate or pure WGPU pass is
+allowed when a named Lince need requires it. Matching AccessKit types and
+native platform services are accepted. Ordinary styling, text and curves
+start with Bevy; a community crate is not first-party simply because it has
+`bevy_` in its name.
 
 Box canvas, Protein-area, grouping, wiring, and spatial-area implementation
-does not begin before steps 1–9 are complete. The later Box editor consumes
+does not begin before Part A's Bevy-native foundation gate is complete. The later Box editor consumes
 the already-proven composition contract; it is not where that contract is
 invented or where basic components are finally repaired.

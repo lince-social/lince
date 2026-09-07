@@ -1,10 +1,10 @@
 # Runtime architecture
 
-Purpose: Define v1/v2 horizons, Plan A ownership, retained alternatives, and the engine boundary.
+Purpose: Define the Bevy-native interface, its v1/v2 scope, and the few places where Lince needs an extension.
 
 Owner source: [Interface in Lince](../Lince.lingua).
 
-Status: Plan A ownership accepted through historical joined evidence. The next delivery makes its common native host CEF-free by default; the optional browser adapter returns only at the end of v1.
+Status: the owner selected Bevy as the interface base on 2026-09-07. This replaces the prototype's custom Winit/WGPU host, subordinate Bevy adapter and separate retained UI. The migration is planned, not certified by the old reports. The no-embedded-browser decision remains; see [the build rule](build.md#no-embedded-browser).
 
 Read when: changing window, renderer, engine, physics, HTML-compositor, or platform ownership.
 
@@ -14,7 +14,7 @@ Read when: changing window, renderer, engine, physics, HTML-compositor, or platf
 
 ## Preserved implementation specification
 
-The current milestone is [Part A — Dogfeeding](plans/part-a.md) with [backend foundations](../backend-part-A.md): new native Interface Sands entering a private Organ live on a headless Linux server, locally or on a VPS. Role-associated Protein Record selection and property-write permissions govern knowledge/work Records; the company is the first acceptance case, not a second project/team or permission model. Manual configuration is sufficient. This does not require legacy desktop Sands, lince-desktop, a browser client, database replication onto employee devices or shared live Box layout. The [build rule](build.md) keeps CEF optional and late; reuse the existing common native host, not a second runtime. Later Box/time, additional native roots and CEF retain separate delivery.
+The current milestone is [Part A — Dogfeeding](plans/part-a.md) with [backend foundations](../backend-part-A.md): new native Interface Sands entering a private Organ live on a headless Linux server, locally or on a VPS. Role-associated Protein Record selection and property-write permissions govern knowledge/work Records; the company is the first acceptance case, not a second project/team or permission model. Manual configuration is sufficient. This does not require legacy desktop Sands, lince-desktop, a browser client, database replication onto employee devices or shared live Box layout. The [build rule](build.md#no-embedded-browser) forbids an embedded browser; use one Bevy application for production and diagnostics. Existing backend and data boundaries may be translated; new interface code uses Bevy directly, and existing interface code may be rewritten rather than wrapped. Later Box/time, additional native roots and the browserless replacements retain separate delivery.
 
 ## Base
 
@@ -23,7 +23,8 @@ The current milestone is [Part A — Dogfeeding](plans/part-a.md) with [backend 
 #### Product horizons: v1 productivity and v2 world
 
 The product has two explicit interface horizons. They are scopes, not two
-unrelated applications and not permission to throw the first one away.
+unrelated applications. Product meaning and user data survive implementation
+changes; preserving the prototype's interface framework is not a requirement.
 
 **Lince v1.0.0** is the productivity Box already being planned: composable
 Sands and compound Sands/Castles, the current Protein capabilities, visual
@@ -45,77 +46,80 @@ through capability adapters; none is the definition of the feature or a
 mandatory dependency. The detailed target is retained in
 [Long-horizon world direction](v2-world.md#long-horizon-world-direction).
 
-The existing names **Plan A** and **Plan B** remain runtime implementation
-choices for v1, not aliases for v1 and v2. Plan A is the preferred GPU-first
-native vertical slice. Plan B is the preserved Maud/HTML browser hybrid and
-Facade path. V2 is neither a fallback nor a reason to implement the v1 world
-features early.
+**Bevy is the native interface base**, not one candidate behind an engine
+adapter. Plan A and Plan B name earlier research and prototype designs only.
+External HTML export and Facade remain separate delivery requirements; they
+do not require another native renderer or paired HTML output from every new
+Sand. V2 is not a reason to build its world features early.
 
 V1 is a vertical slice of v2 in four permanent respects:
 
-- it uses the final Sand definition, port, Action, Customization and external
-  HTML contracts;
+- it preserves Sand identity, ports, Actions, Customization and explicit
+  external-data authority, without freezing the prototype's Rust API or ABI;
 - a v1 workspace is a local spatial frame rather than an unrelated coordinate
   system that v2 must later translate;
-- the native path exercises the intended single-device compositor, retained UI,
-  world-runtime and CEF boundaries even while its world is only a simple desk;
+- one Bevy application owns UI, scene rendering and presentation, with scoped
+  integration for genuinely external producers even while the world is a simple desk;
   and
-- v1 placements and renderer handles never become Ledger identity or engine
-  save data, so a Sand can later appear on Earth or in an authored world without
-  being redefined.
+- runtime entity and renderer handles never become Ledger identity. Authored
+  placements may be saved Bevy component data with stable Sand references, so
+  a Sand can later appear on Earth or in an authored world without being
+  redefined.
 
 V1 does not need planet streaming, general scene-authoring tools, reality
 reconstruction or a universal world format to satisfy these invariants. It
-needs a small permanent kernel and an honest capability boundary, followed by
-the simple human-usable Box.
+needs durable product meaning and a simple human-usable Box, not an
+engine-neutral kernel built in anticipation of replacing Bevy.
 
-The ownership proof and initial Customization/composition kernels have landed. The development course now follows the [master waterfall](plans/interface.md#v1-master-waterfall): CEF-free production bootstrap and native C4/C5; stationary Box, durable composition and native time; the other planned native v1 work; then optional CEF and its dependent features. V2 remains research, and the rejected GPUI path remains reference evidence. Preserving an HTML contract does not require running its adapter during native work.
+The prototype ownership proof and initial Customization/composition kernels have landed; they are historical evidence, not acceptance of the new Bevy host. The development course now follows the [master waterfall](plans/interface.md#v1-master-waterfall): browserless production bootstrap and native C4/C5; stationary Box, durable composition and native time; the other planned native v1 work; then browserless designs for the surfaces that used to need an embedded browser. V2 remains research, and the rejected GPUI path remains reference evidence. Preserving an HTML contract does not require running its adapter during native work.
 
 Research proofs live behind development tooling and leave no dormant public
 schema field, compatibility branch or half-supported button in v1. What v1
 learns is written into the shared contracts and benchmarks rather than hidden
 inside a disposable demo.
 
-The runtime decision now has an ordered Plan A and Plan B. The normalized Sand
-definition, Protein and Action boundaries, typed ports, capability model,
-Customization cascade, Box document, and recursive composition semantics are
-shared by both plans. A renderer may change without changing what a Sand means.
-The Web remains first-class as DATA, COMPOSITION and PROJECTION; Plan A is a
-native desktop/runtime decision, not permission to make Web data, composition,
-or external HTML second-class.
+New interface work uses Bevy components, resources, relationships, scenes,
+systems and observers directly. Sand identities, Protein/Action authority,
+customization scopes and recursive composition are product requirements, not
+a reason to route native calls through a portable rendering ABI. Existing
+backend, saved-data and external publication boundaries may have translators.
+Web data and publication remain wanted without dictating native implementation.
 
 #### Reaching this Cell's own interface through a browser: NOT PLANNED
 
 Decided 2026-09-01, and indefinite rather than deferred to a date. **A person
 opening a web browser and pointing it at a Lince Cell to use that Cell's
 interface is not planned work, and no task may depend on it, until the owner
-says otherwise.** It is not cancelled and not deleted: the model below stays
-written down, stays consistent with the shared contracts, and can be picked up
-unchanged on the day it is wanted.
+says otherwise.** The old model below is retained as research. Reopening it
+would require review against the Bevy-native design and the later
+no-embedded-browser decision, not an unchanged implementation.
 
 What this decision does NOT touch, because none of it is a browser reaching a
 Cell's interface:
 
-- **HTML as a Sand source.** Local HTML files, Sand packages and `.lince`
-  packages remain first-class, and raw HTML remains supported.
-- **Website Sands and CEF.** Embedding a remote site as a deliberately
-  untrusted surface is unaffected, as is the joined CEF authority and
-  composition that carries it.
+- **HTML package preservation.** Local HTML and Sand package metadata can be
+  inspected and preserved without execution. Running them inside Lince is
+  unavailable without a browserless design; ordinary native Sands need no HTML.
+- **Website Sands.** Showing a remote site as a deliberately untrusted surface
+  remains wanted, but the embedded browser that carried it is gone. The
+  authority and composition rules survive as requirements on whatever renders a
+  remote site without embedding a browser in Lince — including the option that
+  Lince simply opens the system browser.
 - **The public Facade.** A Facade is a published, read-only PROJECTION that a
   stranger looks at. It is not someone using this Cell, and it stays planned.
 - **The exported archive.** A workspace exported as one self-contained file is
   opened in a browser by design and is untouched.
-- **Maud/HTML authoring and the shared normalized definition.** Plan B's
-  authoring constraints continue to shape what a Sand IS.
+- **Existing HTML authoring and export data.** Translate these at their real
+  import/export boundary; they do not constrain new Bevy Sand constructors.
 
 What it does gate, until the owner lifts it: browser-based login and session to
 a Cell you are using as a client; the ordinary HTTPS deployment whose purpose
 is that login; and any surface, protocol or capability whose only justification
 is a browser acting as a Lince client.
 
-**The model is kept, not erased.** Plan B below, `html-and-websites.md` and
-`facade.md` continue to describe how a browser client would work if it returned.
-Nothing here removes a contract; it removes a commitment.
+The earlier browser-client model remains historical context in
+`html-and-websites.md`. Its resumption would need a fresh design; new native
+Sands do not maintain an unused DOM projection in preparation for it.
 
 #### V1 final product boundary
 
@@ -147,7 +151,7 @@ engine demonstration. A person opening v1 receives:
   separate Top/Perspective camera controls, and a visible, previewable,
   undoable projection between the modes;
 - lightweight native GPU Sands for large populations, retained rich native
-  controls and editors, installed CEF HTML Sands with declared Protein/event/
+  controls and editors, installed HTML Sands with declared Protein/event/
   Action capabilities, and Website Sands with ordinary web networking and
   storage but no Lince authority;
 - a human-readable runtime-health and resource surface that identifies the
@@ -195,387 +199,251 @@ shared-world product. A future capability may be represented by a prototype
 fixture, stable id, port or adapter boundary only when that seam is also needed
 by the v1 Box; it does not acquire a dormant schema field or public button.
 
-The native architecture is accepted on the owner's NixOS/Wayland machine.
-Linux is Wayland-only: Winit is built without its X11 backend, the event loop is
-forced to Wayland, and Linux has no Tauri, WebKitGTK, XWayland or automatic fallback desktop. When the optional CEF adapter is enabled, it is forced through Ozone Wayland; its prebuilt shared object declares some X11-family system libraries as upstream binary dependencies. Those libraries belong to the optional package, not a Lince X11 code path or the native default. A machine without a usable Wayland compositor reaches an honest launch
+The previous native prototype was accepted on the owner's NixOS/Wayland
+machine; the Bevy replacement must earn fresh acceptance on that target.
+Linux is Wayland-only: Bevy's Winit integration is configured without its X11 backend, the event loop is
+forced to Wayland, and Linux has no Tauri, WebKitGTK, XWayland or automatic fallback desktop. The removed browser adapter used to force Ozone Wayland while its prebuilt shared object still declared X11-family system libraries as upstream binary dependencies — one of the concrete costs that decided against it. A machine without a usable Wayland compositor reaches an honest launch
 failure instead of negotiating down. V1 names any further supported operating
-systems and graphics backends only after separate native build, launch, input, recovery and accessibility evidence, with additional CEF evidence before that optional adapter is offered there. An untested Metal or Direct3D path is not
+systems and graphics backends only after separate native build, launch, input, recovery and accessibility evidence. An untested Metal or Direct3D path is not
 called supported merely because `wgpu` has that backend.
 
-#### Plan A: GPU-first native prototype
+#### Bevy-native interface
 
-Plan A is the accepted native runtime. A Lince-owned real-time compositor uses
-Rust and `wgpu`; the currently accepted Linux path is Wayland plus Vulkan. A Lince-owned retained UI
-layer supplies native application UI, text, editor surfaces, accessibility, and
-reusable first-party controls over the same device and frame assembly. Its
-first text path uses Glyphon/cosmic-text and its semantic projection uses
-AccessKit; GPUI remains a behavior, visual-quality and implementation reference
-rather than a production runtime dependency. A world renderer supplies the
-retained 2D/3D scene, instanced Box material, maps, games, terrain, specialised
-shaders, and future immersive visualisations. When enabled, CEF supplies real Chromium HTML
-as accelerated offscreen textures. These are projections behind the same Sand
-graph rather than separate application models.
+Bevy owns the application, window lifecycle and event loop, input, ECS
+schedules, assets, UI, text, scene rendering, GPU resources and final
+presentation. Production and the laboratory use the same Bevy plugins.
+There is no Lince-owned Winit/WGPU shell around a subordinate Bevy application,
+no separate Glyphon UI renderer, and no generic engine or renderer adapter
+for new work.
 
-The native path begins with one candidate ownership constitution:
+Build on a 3D-capable Bevy scene and transform model from the foundation.
+Part A v1.0.0 remains a flat, stationary software-house workspace, using
+planar placement and an orthographic view rather than a separate 2D-only
+engine. This does not bring terrain, orbit tools or moving bodies into Part A.
+Ordinary Bevy UI and overlay controls remain appropriate; not every label
+needs a 3D mesh or physics body.
 
-- the Lince shell owns the `winit` event loop, window lifecycle, `wgpu`
-  instance/adapter/device/queue, final compositor and input router;
-- the Bevy adapter runs without owning another window loop and receives the
-  shared render resources through its supported manual-render initialization;
-- the native UI projection receives normalized input, contributes display work
-  to the host frame assembly, and publishes one AccessKit tree without owning a
-  second window, surface, device, or queue submission;
-- the optional CEF adapter remains in its required browser processes and exports accelerated
-  offscreen surfaces to that same device topology; and
-- the Lince frame coordinator defines when input, fixed simulation, semantic
-  diffs, UI layout, world extraction, browser paint and composition occur.
+Use Bevy's first-party features with the selected scoped integrations:
 
-The laboratory proved this constitution rather than treating it as true because
-it was desirable. Its diagnostic baseline let the pinned GPUI renderer own a test
-window and final submission while it composited one Lince/world texture. The
-ownership comparison selected the Lince-owned candidate and rejected that GPUI source
-as the v1 host or an embedded production dependency: its public seam points
-from an external texture into a GPUI-owned window, while the required inverse
-Linux GPU scene/command-buffer seam is absent. The GPUI-owned executable stays
-only as reproducible input, IME, AccessKit, visual and lifecycle evidence. A
-future exact source may reopen the dependency choice if it exposes the required
-ownership without restoring a second production desktop.
+| Work | Base |
+| --- | --- |
+| Layout and controls | Bevy UI, core widgets and suitable Feathers pieces; Flair for stylesheet authoring over Bevy components |
+| Native authoring | Bevy scenes and `bsn!`, ordinary components and systems; small Sand conveniences only where they remove repetition |
+| Text, selection and IME | Bevy text and `EditableText`, extended for the shared Record editor |
+| Click, hover, drag and focus | Bevy picking, input focus and observers |
+| Box and Clock geometry | Bevy cameras, transforms, meshes and materials |
+| Connections and outlines | Bevy curves and retained `GizmoAsset`/`Gizmo`; a custom Bevy mesh/material if required |
+| Images and ordinary sound | Bevy assets and audio |
+| Visual effects | Bevy materials, shaders and custom rendering systems |
 
-Native UI nodes, Bevy ECS entities and CEF browser ids are local implementation
-state. They do not point directly at one another or share arbitrary mutable
-objects. Stable Lince ids and bounded snapshots, diffs and typed events cross
-their adapters at declared frame boundaries. This permits several excellent
-subsystems without creating several competing applications.
+Lince's black/white/purple design, sharp text, accessibility and restrained
+motion remain requirements. Bevy's example styling is not a product design.
+Bevy UI already uses Taffy and its text stack uses Parley; these internal
+dependencies do not justify separate Lince integrations.
 
-The durable Sand model is separated into three layers even when one generated
-artifact carries all of them: a semantic graph owns identity, composition,
-ports, Behavior, state planes, configuration and capabilities; a projection
-manifest declares one or more compatible presentations such as retained native
-UI, world GPU, installed HTML or browser DOM; and a runtime instance owns the
-selected adapter and disposable local handles. Persisted definitions may name
-a projection key and required capabilities, but never a Bevy entity, native UI
-node, CEF browser id, GPU resource or an assumption that only one renderer can
-present the Sand.
+Select the Bevy features and plugins the product actually uses. Adopting Bevy
+does not mean enabling every 3D, audio, asset-format or development feature.
+Do not introduce Lyon, Vello or a second UI toolkit merely to duplicate Bevy.
+Flair is the selected CSS-authoring integration, subject to the same correctness
+and resource gates as other dependencies. It styles Bevy components; it does
+not replace Bevy's layout/rendering or prescribe Sand constructors. See
+[Customization](customization.md#flair-as-the-styling-integration).
 
-Runtime selection prioritizes capability, visual and interaction quality,
-correctness, security, performance and architectural freedom over implementation
-size or short-term convenience. A large refactor, pinned fork or substantial
-native subsystem is acceptable when it protects those properties. Cost alone
-does not select Plan B. An integration still needs a named owner, tests and an
-upgrade path: accepting work is different from accepting unknowable behavior
-or permanent accidental coupling.
+#### New code and existing boundaries
 
-The intended native architecture gives the Lince shell the final frame. Bevy
-supplies world passes using the shared device, the Lince UI renderer supplies
-native controls and editor work, and optional CEF supplies browser surfaces. This
-follows the lesson from Pulsar's failed direct GPUI/game-loop integration
-without making Bevy itself the outer application owner. The laboratory retained the
-GPUI-owned diagnostic below as measured comparison evidence, not as an adapter
-waiting to enter the product graph.
+New native Sands may use Bevy types directly, share components and resources,
+and compose through ordinary Bevy relationships and scenes. Do not insert
+snapshot handoffs, runtime traits, renderer-neutral view trees or projection
+manifests between Lince code and Bevy solely to preserve hypothetical engine
+replacement. Rewriting existing interface code is allowed when simpler than
+carrying its prototype framework forward. No old-version compatibility work
+is required.
 
-A GPUI-owned window that embeds one external world texture remains a useful
-diagnostic and may serve a future application-only experiment, but it is not
-the main Box architecture. The v1 prototype validates the Lince-owned path
-with frame pacing, input, IME, accessibility, texture sharing, resize,
-device-loss, and arbitrary Sand-transform evidence. The comparison found that making the
-pinned source obey the inverse ownership would not be a small compositor hook:
-renderer construction, Linux platform-window input, surface acquisition,
-command handoff, presentation, AccessKit window integration and shared recovery
-would all become maintained extraction seams. Lince therefore builds the
-narrow retained UI it needs over its compositor and reuses only bounded,
-licensed techniques whose lifecycle is separable.
+The Sand model still needs stable definition, instance and child identities,
+editable composition, ports, overrides and declared effects. Box edits the
+same authored components and relationships used by code-built Sands, not a
+second UI tree. Movement attachment and logical ownership remain separate;
+Bevy parentage or pointer bubbling alone must not decide a Castle's exported
+event scope or a released child's lifetime.
 
-The external-compositor work in the
-[referenced GPUI fork](https://github.com/zed-industries/zed/compare/main...MSIsunny:zed:feat/external-compositor)
-demonstrated an external `wgpu` texture on Linux/RADV without CPU readback and
-later added Metal and DirectX bridges. It was credible prototype material, but
-it did not expose the inverse ownership seam Lince needs. It remains evidence,
-not a production dependency or an alternative Linux window path.
+Persist selected authored data and stable references, not raw runtime entity
+ids, GPU handles, subscriptions, closures or credentials. Bevy-authored
+components and scene data are allowed in that representation. Saving and
+loading require validation and entity-reference remapping; they do not
+require a portable renderer schema.
 
-CEF remains native HTML rather than an HTML-to-GPUI translation. Blink lays out
-the page, V8 runs its JavaScript, and Chromium owns Web APIs, media, storage,
-networking, focus, and document semantics. Lince imports the accelerated CEF
-surface into `wgpu`, composites it as a Sand, transforms pointer coordinates
-back into its browser surface, and forwards keyboard, IME, focus, clipboard,
-drag, popup, and accessibility information. Where a shared handle cannot be
-held safely after the CEF callback, Lince makes a GPU-to-GPU copy into an owned
-texture; it never makes a per-frame CPU screenshot the accepted path.
+Existing Protein, Actions, authentication, collaborative text, storage and
+transport contracts stay owned by their backend modules. A narrow translator
+at these real boundaries is appropriate. First-party Bevy code is trusted
+application code, not a security sandbox: permissions are still enforced by
+the backend. The current extension model is editable composition of registered components
+and named effects plus trusted Rust plugins. Untrusted executable installation
+and its sandbox are deferred until an explicit later decision. Preserving
+package metadata does not execute it; no package receives unrestricted ECS
+World or device access merely by being called a plugin.
 
-“One device” means one host rendering device, queue policy, frame coordinator
-and final compositor for first-party Lince and world rendering. Chromium keeps
-its required GPU process and may produce a surface from a different graphics
-context or logical device. The CEF adapter must import or copy that surface
-through explicit external-memory and synchronization rules, preserving format,
-color space, alpha, damage, transform and lifetime without framebuffer CPU
-readback. A producer process is not a competing application owner merely
-because safe process isolation gives it its own graphics context.
+HTML export and public Facade consume a deliberate public subset through
+their own boundary. They need not mirror every native component or influence
+new Sand constructors. Unsupported publication must explain the missing
+capability rather than silently dropping content or authority checks.
 
-Installed external HTML Sands receive the complete declared Sand bridge. They
-may subscribe to mapped Protein inputs, emit typed outputs such as
-`record-clicked`, receive Box events, request granted Actions, and participate
-inside Castles. Every message is versioned, schema-checked, size- and
-rate-bounded, attributed to its definition and instance, and capability-checked
-by the host. An arbitrary Website remains different: it gets normal browser
-network/storage behavior and host-owned navigation/focus/bounds ports, but no
-Protein, Action, Lince identity, or ambient bridge unless it is deliberately
-installed as a reviewed external Sand.
+#### Extensions and exceptions
 
-Feature unavailability is not camera culling. A disabled CEF projection is never admitted or executed; the following liveness rule applies to admitted, enabled runtimes.
+The normal extension is a Lince Bevy plugin, not another runtime. It supplies
+Sand/Protein bindings, scoped effects, Box operations, Areas, styling, editor
+features and resource policy using Bevy's existing systems.
 
-Camera visibility is presentation information only. An off-camera native Sand,
-game, CEF Sand, video call, Protein subscription, Behavior, event route, Area
-interaction, and physics body remain logically active exactly as if the camera
-covered them. The native renderer culls their pixels and draw work, not their
-runtime or simulation. CEF pages remain mounted and live even when Lince does
-not composite their textures. The prototype must test CEF's client-controlled
-begin-frame path to suppress off-camera browser painting without marking the
-page hidden or throttling its script, media, network, layout semantics, or
-events. If Chromium couples those concerns on a target platform, functional
-activity wins and the remaining internal browser render cost is reported
-honestly. Media capture, calls, audio, network sessions, timers, and game
-simulation do not stop merely because the camera moved.
+An internal or external crate, bounded fork or pure WGPU pass may replace or
+extend a specific Bevy subsystem when Lince's required correctness, usability,
+accessibility, quality or measured resource use needs it. Record the reason,
+scope, license/credits, maintenance owner and acceptance test. Prefer the
+smallest change that solves the actual need; do not add a generic replacement
+framework around it.
 
-This does not prohibit a solver from sleeping a body that is genuinely settled
-or a rule engine from evaluating only changed dependencies. Such optimisations
-must be based on state and apply identically on- and off-camera; every relevant
-Protein update, Area change, collision, connection, or event wakes or evaluates
-the same work. There is no visibility-triggered suspension or unloading of a
-runtime entity, CEF page, Behavior, media session, game, or physics semantics,
-and no timer-throttling or reduced simulation tier. Replaceable visual cache
-entries may follow the independent world-streaming policy. A world-scale
-system therefore needs spatial indices, event-driven rules, parallel islands,
-fixed subsystem rates, and GPU/CPU batching rather than hiding cost by
-deactivating unseen data.
+Pure WGPU work belongs inside Bevy's rendering lifecycle by default, sharing
+its device, queue, resources and presentation. Do not start an independent
+window loop, GPU device or compositor for each Sand. An external producer with
+an unavoidable separate device/process needs an explicit synchronization,
+lifetime, color/alpha, recovery and resource-budget contract; it does not
+become the interface owner.
 
-The real-time runtime owns one bounded compositor/device topology, not a device,
-event loop, CEF process, or game engine per Sand. Lightweight native Sands are
-instanced into retained buffers. Rich native editors remain retained UI nodes
-in that same host. CEF surfaces are heavyweight and may be numerous only to the
-degree measured resources allow; being off-camera removes composition cost but
-deliberately does not remove their execution cost.
+Accepted supporting exceptions:
 
-Physics and rendering remain separate. Native CPU ECS systems with a spatial
-broad phase, parallel work and deterministic fixed steps are the first physics
-path. GPU compute is used for measured large regular kernels, culling,
-compaction, particles, height fields, splat sorting, or other work that can stay
-on the GPU. It is not assumed to improve branch-heavy collision resolution when
-upload, synchronization, or readback costs dominate.
+- Use Flair for CSS authoring and style resolution on Bevy components. Keep
+  the Lynx scope rules, editor overrides and asset restrictions explicit;
+  measure static and animated workloads before certifying its integration.
 
-#### Engine boundary: native UI, Bevy, and completed GPUI/Pulsar research
+- Use the AccessKit version matching Bevy where custom Sand roles and actions
+  need its types; keep Bevy's platform accessibility integration and one
+  coordinated accessibility tree.
+- Use narrow native platform libraries for required dialogs, portals,
+  clipboard gaps or system integration; they do not own another application.
+- Put terminal emulation, PDF/EPUB interpretation, video decoding and other
+  specialized content engines at the end of v1. Choose a browserless library
+  per real Sand need; Bevy still owns the surrounding UI and composition.
+  This is not a prerequisite for Dogfeeding, stable Box or native time.
+- Use Avian 3D for the later collision/settling stage below. The owner accepted
+  this choice on 2026-09-07; it is not a dependency of every widget or a reason
+  to run physics in the stationary Part A workspace.
 
-The Lince retained UI layer is the selected native application-UI path, not the
-persistent Sand schema and never a second owner of the final frame. It must
-earn GPUI's sharp feel through shared tokens, deterministic layout and paint,
-high-quality text, immediate focus response and a complete AccessKit/IME path;
-the decision does not lower that quality bar. The world engine sits behind a
-narrow Lince-owned contract for scene entities, cameras, viewports, textures,
-picking, input, frame timing, device recovery, and typed Sand events. This
-boundary is further-looking than choosing one engine for the whole product:
-Lince can improve or replace either projection without rewriting Protein
-bindings, Castles, external HTML, or Box documents.
+The embedded-browser rejection remains absolute. External content that has no
+browserless design stays unavailable, or is explicitly opened in the system
+browser. No new exception here restores CEF or an embedded WebView.
 
-[Pulsar](https://pulsarnative.com/) was the closest architectural research
-reference: GPUI editor surfaces, a separately scheduled game renderer, an ECS,
-fixed-rate physics, and a final compositor. The completed source-audited study
-is retained in [links.md](links.md). It did not select Pulsar, Helio, SceneDB,
-GPUI, WGPUI or their formats, plugins and editor lifecycle as production
-dependencies. Their value is bounded repertoire and negative evidence, not a
-second engine plan.
+#### Idle work and large Boxes
 
-[Bevy 0.19.1](https://bevy.org/news/bevy-0-19/) is the default world-runtime
-candidate today: it has a much larger ecosystem, improved GPU-driven rendering,
-composable scenes, mature ECS scheduling, custom render systems, render-device
-recovery, Web targets, and current experiments for
-[CEF surfaces](https://docs.rs/crate/bevy_cef_core/latest) and
-[Gaussian splatting](https://github.com/mosure/bevy_gaussian_splatting). Its
-cost is ownership and coupling: its world extraction, schedule, renderer, asset
-model, release cadence, and window assumptions must fit the compositor rather
-than becoming Lince's domain architecture. The first implementation therefore
-uses a deliberately selected Bevy feature set behind a Lince adapter, not
-unexamined `DefaultPlugins`. Bevy's window runner is optional, its high-level
-2D/3D API is separable from render backends, and its renderer supports manual
-initialization with an externally created device and queue. This makes the
-single-owner constitution an intended integration path rather than a source
-tree trick. Lince retains narrow custom `wgpu` passes as escape hatches and
-comparisons instead of attempting to build a complete second engine.
+The owner's current machine is the minimum acceptance target for now, as
+selected on 2026-09-07. [Build](build.md#minimum-machine-and-resource-baseline)
+records its observed hardware and how reports must identify the actual runtime
+and graphics device. This is a target, not a new benchmark pass or permission
+to consume all available memory.
 
-No v1 stage waits for Pulsar or Helio adoption. An individual bounded technique
-may be reimplemented or reused only after the existing Bevy, Avian, focused UI
-crate or direct WGPU path exposes a representative measured gap. Marketing
-claims such as an O(1) CPU hot path are not performance evidence because the
-corresponding culling and scene work still happens on the GPU.
+The default stationary workspace must not run a continuous game/render loop.
+Configure Bevy's reactive event loop and wake it for actual input, a completed
+background task, a Protein change, a media frame or the next due timer.
+Animations request frames only while active. A cursor blink has a deadline;
+it does not require all Sands to update at display rate.
 
-The completed [SceneDB 2.0 and EngineFS review](research/scenedb.md) narrows
-that decision. SceneDB is useful repertoire for generation-checked dense
-handles, structure-of-arrays pages, explicit relocation boundaries, dirty
-ranges and spatial residency. It is not the durable Box database: the formal
-specification omits crash persistence, current spatial snapshot restore
-allocates new handles, and collaboration authority/transport remain outside
-the crate. Lince retains stable semantic ids, its own snapshot/journal and one
-authoritative live simulation, then considers SceneDB-like hot storage only
-after the real Box workload exposes a measured bottleneck.
+Measure two different cases: a completely idle application, and one active
+Sand among many unchanged Sands. Bevy change detection can avoid rebuilding
+content without avoiding every entity scan; UI layout can traverse unchanged
+nodes when the schedule runs. Retained geometry likewise does not promise
+zero draw work. Add scoped dirty work, view reuse or selective custom passes
+only where representative measurements show the need.
+
+Keep fully idle, focused/unfocused, minimized, live-data, one-animation and
+repeated open/close measurements. Record CPU and GPU work, submissions,
+wakeups, input latency, RAM and VRAM separately. Sleeping is not deallocation.
+Fonts, textures and view caches need explicit bounds. Reuse the historical
+200-visible/1,000-active/10,000-resident stress shape where applicable, but
+earn new Bevy-native results and do not make continuous 120 Hz simulation the
+ordinary idle workload.
+
+Visibility affects presentation only. Off-camera Protein, Behavior, events,
+media, games, Areas and admitted physics keep their intended semantics.
+Visual entities and caches may be virtualized independently of stable Sand
+identity, ownership and active behavior. Never use camera culling as a hidden
+pause, timer-throttling policy or way to discard a dirty editor.
+
+A genuinely settled body may sleep, and unchanged dependencies need not be
+reevaluated. Relevant Area, Protein, contact or input changes must wake the
+same work on- and off-camera. Backend activity continues independently of
+whether the interface needs to present another frame.
+
+#### Physics: application rules and collision solving
+
+The first stationary Box, property grouping, Calendar and Clock need no
+general physics solver. Implement their placement and ordering as Bevy
+systems. Preserve existing movement code as regression material without
+running it continuously in the ordinary workspace.
+
+The turning point is the later motion contract: many bodies must collide and
+settle together, dragging switches bodies to kinematic motion, fast movement
+must not pass through obstacles, and free-space mode adds 3D contact behavior.
+That is contact solving, not just moving a transform toward a target.
+
+Selected for that stage: Avian 3D for rigid bodies, contacts, damping,
+sleep/wake and collision queries instead of a new general solver. Use the
+same 3D simulation for surface-constrained and later free-space motion, one
+active mode at a time. Flat mode constrains movement to its plane; terrain
+mode needs Lince's effective-surface constraint, not a competing 2D solver.
+The earlier optional Avian 2D preflight is historical code, not the chosen
+product dimension. Preserve useful regression evidence without wrapping both
+solvers into a new portability layer. Avian 0.7 supports the current Bevy 0.19
+family; verify the selected versions again when implementing the motion stage.
+[Avian compatibility](https://github.com/avianphysics/avian).
+
+In 3D, a Sand's visible face is pinned to its authored direction by default.
+A per-Sand facing-mode toggle can make that face follow the viewer instead.
+Save the pinned orientation and chosen mode; do not save a camera-derived
+rotation every frame. Facing changes presentation, not the collider, terrain
+support, group ownership or Area forces. The detailed rule lives in
+[Box](box.md#sand-facing-in-3d).
+
+Keep Protein selection, sorting, mutation visits, immunity, filtered
+potentials, terrain stamps and Why-is-it-here in Lince Bevy systems. Avian
+does not know those rules. Per-group effective terrain is not one universal
+heightfield collider; evaluate and explain that constraint in Lince, and test
+how it interacts with contacts before claiming topology support.
+
+One workspace has one active simulation authority and spatial mode. Do not
+run separate 2D and 3D solvers that both write the same Sand. Fixed-step
+ordering, bounded catch-up, deliberate sleep/wake and server-authoritative
+collaboration remain explicit. Fixed steps alone do not promise bitwise
+determinism across machines. Replays must state the tested platform,
+configuration and tolerances.
+
+Bevy's [physics ecosystem](https://bevy.org/assets/#physics) lists Avian and
+Rapier; it does not make Avian the engine's compulsory or exclusive solver.
+Its [Breakout example](https://bevy.org/examples/games/breakout/) demonstrates
+small custom collision logic. [Avian's solver plugins](https://docs.rs/avian2d/latest/avian2d/dynamics/solver/struct.SolverPlugins.html)
+covers the contact and sleeping machinery that the later Box would otherwise
+need to build. These are the reasons for the recommendation, not a benchmark
+claim that Avian is always faster.
 
 #### Completed Pulsar/Helio study and carry-forward boundary
 
-The 30 reviews do not create 30 implementation commitments. They leave seven
-ideas in active interface development:
+The dated studies in [links.md](links.md) remain historical research, not
+instructions to retain the old Lince compositor or an engine-neutral layer.
+Their useful lessons apply inside Bevy: stable user identities, ordered
+schedules, targeted changes, presentation-only culling, understandable runtime
+health, consistent coordinate frames and measured GPU optimization.
 
-1. Stable Lince identities remain above disposable Bevy entities, CEF browser
-   ids, dense runtime slots and GPU handles.
-2. One Lince frame coordinator owns ordered boundaries between input, fixed
-   simulation, semantic revisions, retained UI, world extraction, browser
-   paint, GPU work and presentation.
-3. Adapters exchange bounded revisioned snapshots, typed events and dirty
-   changes instead of sharing arbitrary mutable state or rebuilding everything
-   unconditionally.
-4. Visibility removes presentation work only. Off-camera Protein, Behavior,
-   media, browser execution, Areas and physics retain the same semantics.
-5. Runtime health attributes a displayed result to the responsible input,
-   semantic revision, simulation work, browser copy and render work in language
-   a person can act on.
-6. Hierarchical coordinate frames are authoritative Box/spatial data shared by
-   rendering, physics, picking, accessibility, CEF input mapping, persistence
-   and collaboration; renderer-only sublevels are insufficient.
-7. Dense GPU storage, compaction, indirect work, dirty ranges and generated
-   detail are performance options for disposable projections. They enter only
-   after the accepted Box workload identifies the bottleneck and never move
-   semantic authority onto the GPU.
+No GPUI, Pulsar, Helio or SceneDB adoption is implied. Study or reuse a bounded
+technique only for a demonstrated Lince need, retaining licenses, provenance
+and focused correctness/performance evidence. Prefer Bevy's public APIs;
+a custom plugin, focused crate, fork or WGPU pass is an exception with a
+specific owner, not an alternate interface architecture.
 
-Stable identity, authoritative ownership, ordered frame handoff, off-camera
-semantics, causal status and shared coordinate meaning are correctness or
-explanation constraints where their owning feature appears. Revision matching
-is also correctness; dirty-range coalescing and the seventh idea are measured
-performance work. A simple typed frame schedule is sufficient until resource
-dependencies require a compiled graph; a CPU solver is sufficient until
-Area/topology measurements justify a different kernel. The research therefore
-strengthens boundaries without prepaying for Helio's renderer, SceneDB's hot
-store, GPUI's application model, Fusor, Corona, probe lighting, foliage,
-portals, XR or a Behavior compiler.
+#### External publication and the former Plan B
 
-Implementation sourcing remains ordered:
+Plan B is historical browser research, not a parallel native authoring or
+runtime obligation. Existing Maud/HTML data and export code may have a
+translation boundary. Public Facade remains read-only and static archives
+remain externally viewable; their security and privacy rules remain in
+[Facade](facade.md) and [Interoperability](interoperability.md).
 
-1. Keep Protein, Sands, Actions, Box transactions, permissions, durable ids and
-   coordinate meaning in Lince.
-2. Use selected Bevy and Avian public modules for ordinary world rendering,
-   scheduling, collision and spatial queries where they satisfy the owned
-   adapter.
-3. Use focused crates for text, accessibility, layout or rendering primitives
-   when they fit the Lince-owned frame and Sand model more cleanly than a full
-   UI framework.
-4. Use direct WGPU for final composition, CEF interop and specialized measured
-   passes that belong to Lince's host.
-5. Reimplement, fork or vendor a bounded studied technique only when the prior
-   routes fail a named correctness, capability, quality or performance gate;
-   retain license, provenance, behavior tests and update ownership.
-
-This boundary means inspiration never silently becomes GPUI ownership or a
-Pulsar dependency. The active waterfall maps these ideas to existing stages;
-the detailed article findings remain reference material and not active tasks.
-
-`winit` and `wgpu` are foundation pieces, not a world engine. Starting from
-them alone would give Lince perfect ownership while also making it responsible
-immediately for a render graph, batching, culling, materials, animation,
-lighting, asset loading, picking, cameras, physics integration, profiling,
-device recovery, and editor tooling. Lince uses `wgpu` directly where the
-shared compositor or a specialised pass requires it, and keeps enough
-engine-neutral tests to replace Bevy modules later. It does not prepay the cost
-or delay user-facing capability by rebuilding a general-purpose subsystem
-before an actual Bevy boundary fails on visual quality, correctness,
-performance or freedom.
-
-Pulling the pieces that serve Lince is acceptable and expected when done in
-this order:
-
-1. use a dependency through its public modular API when it already exposes the
-   required ownership seam;
-2. pin a small auditable fork when Lince needs a missing compositor, input or
-   rendering hook, and maintain rebase and behavior tests for that fork;
-3. upstream generally useful hooks where project direction and review allow;
-4. vendor or copy only a bounded self-contained implementation whose license,
-   credits, provenance and update ownership are explicit; and
-5. replace a subsystem only after a representative Lince scene proves the
-   existing one compromises capability, quality or performance.
-
-Randomly copying internal types from several moving repositories would be a
-mess. Reusing algorithms and crates behind one Lince-owned lifecycle is not.
-The integration test is more important than whether all code originates in
-one upstream repository.
-
-The ownership boundary is the important final decision:
-
-| Capability | Default owner | What must not own it |
-| --- | --- | --- |
-| Records, Protein, Actions, Sand/Castle graph, permissions | Lince semantic kernel | Bevy scenes, GPUI views, CEF DOM |
-| Box snapshots, operation journal, canonical revisions and spatial recovery checkpoints | Lince Box store | SceneDB handles, Bevy entities, renderer buffers or a remote filesystem provider |
-| Current in-session Sand transforms, velocities, contacts and Area/topology physics | Lince spatial runtime behind its adapter | The renderer or an independently simulating collaboration guest |
-| Worlds, coordinate frames, layer/version graph, privacy and provenance | Lince spatial kernel | A game-engine save file or map provider |
-| Native scene runtime, ECS scheduling, ordinary 2D/3D rendering | Bevy adapter | Persisted Lince truth |
-| Window, event loop, shared GPU resources and final frame | Lince `winit`/`wgpu` shell and compositor | Bevy, GPUI or CEF independently |
-| Cross-renderer texture composition | Lince compositor, with Bevy render systems supplying world passes | GPUI widget nesting or CPU screenshots |
-| Inspectors, text-heavy editors, menus and accessible application chrome | Lince retained UI using shared text/input/AccessKit services | The 3D world renderer or a second application host |
-| Genuine external HTML and Websites | CEF accelerated offscreen surfaces | HTML-to-native translation |
-| Planetary/map data, authored geometry, captured representations and later simulation kernels | Specialised capability adapters | One universal engine abstraction |
-
-This is not an anemic lowest-common-denominator renderer interface. Lince owns
-small stable semantic contracts and capability discovery; a Bevy-backed world
-may expose Bevy-specific advanced rendering internally. Persisted definitions
-name the required capability and portable parameters, never a Bevy `Entity`,
-component type, asset handle, schedule label, or Pulsar SceneDB object. Runtime
-adapters maintain the temporary mapping from stable Lince ids to engine ids.
-
-The intended Rust ecosystem shape is correspondingly explicit:
-
-```text
-lince-semantics      Records · Protein · Actions · Rules · Trust
-lince-sands          definitions · ports · Castles · configuration
-lince-spatial        worlds · frames · placement · layers · disclosure
-lince-runtime        frame coordination · ids · diffs · capability routing
-lince-render         winit/wgpu ownership · passes · composition · input
-lince-ui             retained layout · text · focus · IME · AccessKit · controls
-adapters/bevy        ECS/world projection · ordinary 2D/3D · physics
-adapters/cef         installed HTML and Website surfaces
-adapters/geospatial  planetary/tile selection · terrain · maps
-adapters/scene       scene construction · geometry · derived render/collision forms
-adapters/capture     images · video · spatial capture · reconstruction
-```
-
-These are ownership directions, not a requirement to create empty crates in
-advance. A boundary earns a crate when its contract and independent tests are
-real.
-
-Pulsar can mature alongside Lince without becoming Lince's constitution.
-Lince may compare later work with its shared-device composition, multiple
-viewports, frame pacing, recovery, CEF surfaces and GPU measurements, but a
-comparison does not reopen the host decision. Lince would skew GPUI badly by
-asking it to become a globe/game renderer and would skew Pulsar badly by
-putting geospatial privacy, scenario history, Protein or Sand persistence
-inside its game schema. GPUI remains a measured application/editor reference,
-Bevy is used substantially as intended as a game/world runtime, and the
-unusual work stays in Lince adapters and domain kernels.
-
-#### Plan B: Maud/HTML-first hybrid
-
-**Gated by the decision above.** Plan B's Facade and portable-authoring halves
-stay planned; its browser-as-client half is modelled here and not planned. The
-description is kept in full so it can be resumed unchanged.
-
-The existing Maud/HTML-first design is retained in full as Plan B, not erased.
-Rust/Maud emits ordinary accessible HTML fragments paired with recursive Sand
-nodes; native ES modules provide browser Behavior; one shared Rust/`wgpu`
-WebAssembly surface supplies spatial rendering; and a Worker supplies batched
-simulation. Plan A passed its prototype, so Plan B is the browser/Facade
-projection and portable authoring path, not a Linux desktop fallback and not a
-reason to carry a second WebView runtime.
-
-Plan B keeps the same authoring constraints already documented: bare `Markup`
-is not a composable child, Box and Maud produce the same normalized definition,
-third-party HTML does not require Rust, and raw HTML remains supported. Its
-known limit is that browser compositing and large populations of rich DOM nodes
-cannot become a game-class world merely because a WebGPU canvas sits behind
-them. Plan A is attempted first because Lince's intended maps, simulations,
-large graphs, games, terrain and future spatial models make that ceiling
-material.
-
-[CanvasUI](https://canvasui.dev/) remains useful design research, but is not a
-foundation choice. It does not remove the need for genuine browser semantics
-for external HTML or the Lince-owned semantic Sand protocol.
+Choose the external projection needed by that publication feature when it is
+built. A Bevy web target or a limited HTML exporter can be evaluated there;
+neither a general browser client nor automatic HTML parity for every Bevy
+Sand is assumed. The native API is allowed to be fully Bevy-specific.

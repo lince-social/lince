@@ -10,7 +10,7 @@ Configuration is landed; edit controls, zoom controls, Record, Conversation,
 Table, Todo and Kanban have native retained Behavior. Record, Conversation and
 private message drafts are bound to live production Protein subscriptions,
 the collection roots reuse the general Record result, and 17 roots remain
-structure-only at that source checkpoint. Delivery now splits them between Dogfeeding, later native follow-through and the final CEF lane.
+structure-only at that source checkpoint. Delivery now splits them between Dogfeeding, later native follow-through and the surfaces that still need a browserless design.
 
 Read when: migrating or regression-testing Record, Kanban, Relation, Table, or another official Sand.
 
@@ -18,9 +18,26 @@ Read when: migrating or regression-testing Record, Kanban, Relation, Table, or a
 
 ---
 
+## Bevy-native migration rule
+
+The catalog and reports below describe the earlier source checkpoint, not a
+completed Bevy migration. Rebuild ordinary Sands directly with Bevy UI, text,
+input, picking and rendering, retaining their user-visible behavior and real
+Protein/Action boundaries. Existing frontend implementations may be replaced;
+there is no requirement to preserve their renderer-neutral tree, Glyphon path,
+projection package or paired HTML implementation. Only real existing domain
+boundaries need translation. Private Bevy helper entities need not be exposed
+as editable Sands.
+
+Specialized content engines are low-priority end-of-v1 work. A leaf uses Bevy
+first; an external/internal crate, custom Bevy plugin or pure WGPU work must
+serve a named need and integrate with Bevy's lifecycle and presentation. Include
+embedded dependency licenses and credits. This is not permission to embed a
+browser or run untrusted native code in-process.
+
 ## Landed C4 structural catalog boundary
 
-[The build rule](build.md) accounts for all 25 source roots, but [Dogfeeding](plans/part-a.md) qualifies only the reusable knowledge/work and access controls needed by the company acceptance case. Vocabulary, Role/Protein/property policies and views can be authored manually in the new native Sands; no company starter or legacy desktop surface substitutes for them. Other native roots remain in [native follow-through](plans/native-follow-through.md); Website, Document Viewer, Terminal, Freedoom and Logo LED remain in [late CEF](plans/cef.md). A catalog label is not a running workflow; unavailable references preserve data without executing.
+[The build rule](build.md) accounts for all 25 source roots, but [Dogfeeding](plans/part-a.md) qualifies only the reusable knowledge/work and access controls needed by the company acceptance case. Vocabulary, Role/Protein/property policies and views can be authored manually in the new native Sands; no company starter or legacy desktop surface substitutes for them. Other native roots remain in [native follow-through](plans/native-follow-through.md); Website, Document Viewer, Terminal, Freedoom and Logo LED each need a way to run without embedding a browser in Lince before they return, as [the build rule](build.md#no-embedded-browser) sets out. A catalog label is not a running workflow; unavailable references preserve data without executing.
 
 `crates/interface/src/official_sands.rs` is the Rust-owned migration catalog.
 It names the 25 current official roots and builds one validated package of 72
@@ -31,9 +48,9 @@ columns, Messages, Conversation threads and private draft/preset queues. The
 roots are recursive compounds over those pieces and the 19 primitive Sands.
 
 Documents, games, LEDs, Websites, terminals, graphs, Ontology and Karma use
-explicit specialized leaf definitions. A specialized leaf is the narrow part
-allowed to retain its own renderer; its surrounding controls, state and
-inspection remain ordinary Sands. No official workflow root is a specialized
+explicit specialized leaf definitions. In the Bevy target, a specialized leaf
+uses first-party Bevy facilities unless a specific need justifies an exception;
+its surrounding controls, state and inspection remain ordinary Bevy Sands. No official workflow root is a specialized
 monolith. All catalog records have Rust code-owned lineage.
 
 F12 opens the native catalog. Tab/Shift-Tab, pointer and AccessKit select an
@@ -48,7 +65,7 @@ The catalog does not replace or disable the legacy Web Sands yet. Those remain
 the behavioral reference below until each Protein read, Action, local state,
 specialized renderer and honest empty/failure state has moved to its selected replacement. Native-path cleanup happens in Part A; browser-dependent implementations and needed support sources remain gated until their late-v1 replacements pass.
 
-### First native retained runtime
+### Historical first native retained runtime
 
 `crates/interface/src/retained_ui.rs` recursively projects exact definitions
 and input exports to one renderer-neutral scene with stable semantic paths.
@@ -101,8 +118,8 @@ available for a person to operate rather than existing only in a test.
 
 The 2026-09-05 production desktop Conversation checkpoint passed joined report
 schema 12 on Wayland/Vulkan at 1920×1052. It retained the accepted 200 visible
-Sands, 1,000 continuously eligible bodies, 10,000 resident nodes and two CEF
-surfaces while measuring 13.047 ms frame p95, 16.384 ms p99, 7.791 ms CPU-frame
+Sands, 1,000 continuously eligible bodies, 10,000 resident nodes and two
+embedded browser surfaces while measuring 13.047 ms frame p95, 16.384 ms p99, 7.791 ms CPU-frame
 p95, 0.511 ms fixed-step p95 with zero backlog and 7.916 ms input-to-present-call
 p95. The exact 72-definition package hash is
 `sha256:c06be5a4c17ab85d590e96a87bea45b1b0a48544b37f2dde0e69a39522630347`;
@@ -112,8 +129,8 @@ The final 2026-09-05 Conversation checkpoint passed schema 13 on the same
 Wayland/Vulkan host. All three live Protein snapshots—Record, Conversation and
 private drafts—arrived with zero refusal and no error. Durable draft creation,
 revision, ordering, pinning and send intent were exercised without mutating
-production data. At the same 200/1,000/10,000 workload and two accelerated CEF
-surfaces it measured 9.897 ms frame p95, 11.460 ms p99, 4.721 ms CPU-frame p95,
+production data. At the same 200/1,000/10,000 workload and two accelerated
+embedded browser surfaces it measured 9.897 ms frame p95, 11.460 ms p99, 4.721 ms CPU-frame p95,
 0.535 ms fixed-step p95 with zero backlog and 3.936 ms input-to-present-call
 p95. The report is
 `target/interface-laboratory/c4-conversation-drafts/report.json`; the package
@@ -146,7 +163,7 @@ closed, and Todo's Open selected control emits the same typed Record event as
 its cards. It exercised three stable Record selections and two collection
 write intents, then accepted all three live Protein snapshots without error.
 At 200 visible Sands, 1,000 continuously eligible bodies, 10,000 resident nodes
-and two accelerated CEF surfaces it measured 10.463 ms frame p95, 12.006 ms
+and two accelerated embedded browser surfaces it measured 10.463 ms frame p95, 12.006 ms
 p99, 5.369 ms CPU-frame p95, 0.559 ms fixed-step p95 with zero backlog and
 4.535 ms input-to-present-call p95. The report is
 `target/interface-laboratory/c4-record-collections/report.json`; its package

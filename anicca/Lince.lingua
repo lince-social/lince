@@ -219,7 +219,6 @@ graph TD
   C["Organ"] --> O
   D["Cell"] --> O
 ```
-
 This is why the frontend keeps **areas** (in the workspace menu) separate from each other, and why a Protein can filter by organ. The boundary is real, and it is the same boundary the next chapter has to cross.
 
 Other Organs can be saved as contacts, with unknown, known and blocked states, and a numeric Proximity property that you can use to indicate the value of your bond with them. In Transfers, you may use it to offer to people you have only a certain level of Proximity with, perhaps increasing the range of which you may donate something over time by increasing needed proximity to see such donation if closer contacts dont immediatelly want it.
@@ -238,7 +237,6 @@ Lingua (@lingua: 0, #instinct, #part-of @ontology) {
 A Language for turning Lince's data into file versions with File Sync.
 
 ## Vocabulary
-
 We call a Vocabulary the bundle of Assertions that come from an Organ, as if we create some dialect, some units, and they mean something to us. When people use the same Vocabulary it is expected that they are speaking about the same thing. So if a Lingua file is for talking to the file system with sync, a Lingua Vocabulary is for talking with other people with common ground. Like a dictionary, with the meanings you give it and Records as examples with text, photo, video, links, all that Records have to make the Vocabulary an encyclopedia of knowledge, each thing that is an identity can be consulted to understand from the Vocabulary this identity belongs to what is it's definition, it's meaning. We can have an Organ deemed by us as the official when talking about a subject, we just such and such Vocabulary. Like a standard, ISO.
 }
 
@@ -249,11 +247,8 @@ This is a good step in interoperability of systems, less isolation and complex A
 }
 
 Ontology (@ontology: 0, is #chapter, #instinct, #done) { r_S8PQ17MQ3WBWM53ZN700K89V9F
-
 ## 3. Organ management, discovery, relay and Facade
-
 The profile editor lands with the profile work (interface plan). Relay Cells begin with the role; everything else there is shaped by it.
-
 ### Organ Profile — T0 and T1
 
 - [ ] Make T0 carry a structured pair — display name and profile version — in 245 bytes of text. No image ever; T0 lasts forever.
@@ -491,24 +486,69 @@ When interacting with other parties, it is important to know how much you can tr
 Interface (@interface: 1, is #chapter, #instinct, #done) { r_99NWECF19VKV94HQQ3G3ASMC4M
 
 The brand is black and white by default, with purple as the supporting color.
-
 Purple Cobalt — CMYK: 66, 71, 0, 36; HEX: `#3730A3`; RGB: 55, 48, 163.
 Nocturnal Purple — CMYK: 59, 58, 0, 5; HEX: `#6366F1`; RGB: 99, 102, 241.
 Deep Lead — CMYK: 10, 10, 0, 92; HEX: `#121214`; RGB: 18, 18, 20.
 Gray — CMYK: 10, 5, 0, 12; HEX: `#A7B4C2`; RGB: 167, 180, 194.
 Ice White — CMYK: 2, 1, 0, 1; HEX: `#F8FAFC`; RGB: 248, 250, 252.
 
-- [ ] Choices can be done quickly. Full control is always available.
-	- [ ] Customization
-- [ ] Built-in UI is minimal, not taking screenspace from users and flexible, fitting many Needs.
-	- [ ] Sands: the widgets/components that live in the Box. Smaller pieces can be composed into groups, with interactions between them and other sands, receiving data from a Protein stream and executing Protein Actions in certain interactions. We should have the fundamental blocks to construct several types of workflows:
-		- [ ] Basic elements of buttons, dropdowns, tooltips of an UI library.
-		- [ ] Ready made Sands, combined to form Castles: Kanban, Table, Calendar, Graphs, Clock, Games, Transfer and Karma built as the features around it stabilize in backend.
-	- [ ] Box
-		- [ ] Being able to edit sands, adding more properties associated with them, shown by them, events leaving from them, being read by them, and their consequences. Also editing the UI to use different tokens, or delve into custom CSS styling.
-		- [ ] Fundamental areas of data manipulation to emulate the ready made sands: areas to spawn data, areas to pull data in or push away, areas to sort data, areas for immunitiy to those effects. Maintaining everything built as a package from interacting with these Areas of Influence, so buttons can change areas and areas can move buttons around associated with properties that the areas affect.
-- [ ] Interfaces should ask for as little attention as possible throughout the user's life. The best interface is Interfaceless.
-	- [ ] Interoperability.
+Choices can be done quickly. Full control is always available.
+
+- [ ] Customization of many aspects of Sands.
+
+Built-in UI is minimal, not taking screenspace from users and flexible, fitting many Needs.
+
+Components are flat by default, preffering 2D forces us to convey information only with flat data, not layers and composition, constraining the space forces minimalism. Shadows and hints can be used for subtle differentiation of areas, components and data.
+
+Sands: the widgets/components that live in the Box. Smaller pieces can be composed into groups, with interactions between them and other sands, receiving data from a Protein stream and executing Protein Actions in certain interactions. We should have the fundamental blocks to construct several types of workflows:
+
+We are using Bevy, with Avian for physics, Flair for css-like features.
+
+- [ ] Areas of Influence to add a pull to some Sands according to some property. Does not bring them to area, adds one force that is being applied to the sand.
+	- [ ] Set area of it, square, circle, shape drawn.
+	- [ ] Set property/ies that is attracted/repulsed by.
+	- [ ] Set attraction/repulsion force.
+	- [ ] Set properties the Records associated with the Sand gain when entering and lose by leaving, or lose by entering and gain by leaving.
+Add all the Sand/Castles we might want, removing from the Web version the workflows that are complete (manual by humans):
+- [ ] Basic Sands:
+	- [/] Square
+- [ ] Effects:
+	- [/] Record Clicked (any property of any attatched to the sand sends out event of such record clicked).
+- [ ] Content
+	- [ ] Putting plain text somewhere in Sands.
+	- [ ] Putting Record properties in Sands:
+		- [ ] Title
+		- [ ] Description
+		- [ ] Slug
+		- [ ] Quantity
+		- [ ] Assertions
+- [ ] Castles: 
+	- [ ] Kanban Castle
+		- [ ] Spawn Areas of Influence specific for a Kanban (#concept: quantity): #Backlog: 0, #Todo: -1, #Next: -2, #WIP: -3, #Review: -4, #Done: 1, #Documented: 2.
+			- [ ] We can hardcode the spawning of those areas of influence, that can pull many possible properties, for each lets do the assertion and the quantity associated. After putting those areas that attract those records and change records.
+	- [ ] Access Control Castle:
+		- [ ] Actors
+		- [ ] Permissions
+		- [ ] Role
+- [ ] Collaboration:
+	- [ ] Be able to edit a Record with Loro, CRDT, so someone that is syncing with the Lince owner of the Record I am editing can see my edits. Includes Record title, description and other properties like quantity, assertions, slug, work metadata...
+		- [ ] Cursor position so the edits dont look like a ghost.
+
+	- [x] Have controls in bottom-right of Box, the first one is the Information Button, that is a Square Sand with the Effect of toggleOpenInformationPanel.
+		- [x] Build the Information Panel Sand that listens to such Event and shows/hides itself based on such Event. It has version (cargo), port, and directory of Lince
+		- [x] Change the Square sand to be editable. Use it in the workspace name.
+		- [x] Add a "Delete" Square Sand that has Effect of deleteWorkspace.
+	- [x] Add a "Laboratory" workspace when clicking a button inside information panel sand.
+	- [ ] Add to Information panel info on commit downloaded version of Lince, last updated info, updates available button to download and restart Lince (if possible, according to OS, i understand that NixOS might not work, it's ok, show message if it cant).
+	- [ ] Laboratory can run in headless mode to simulate if the movement of things and physics are as intended.
+	- [ ] Migrate every wanted Web Sand into an Interface Sand/Castle.
+	- [ ] Basic elements of buttons, dropdowns, tooltips of an UI library.
+	- [ ] Clustered Sands, pre-built into a group are called Castles, they are not only building blocks, the represent workflows or are just for composition: Kanban, Table, Calendar, Graphs, Clock, Games, Transfer and Karma built as the features around it stabilize in backend.
+- [ ] Box
+	- [ ] Being able to edit sands, adding more properties associated with them, shown by them, events leaving from them, being read by them, and their consequences. Also editing the UI to use different tokens, or delve into custom CSS styling.
+	- [ ] Fundamental areas of data manipulation to emulate the ready made sands: areas to spawn data, areas to pull data in or push away, areas to sort data, areas for immunitiy to those effects. Maintaining everything built as a package from interacting with these Areas of Influence, so buttons can change areas and areas can move buttons around associated with properties that the areas affect.
+
+Interfaces should ask for as little attention as possible throughout the user's life. The best interface is Interfaceless.
 
 - [ ] Have a way to edit one sand based on it's uid or the uid of one record it has a property of, not all the sands that spawn from the protein of that record. So if i want to edit a circle i made, or the sand of my record Apple it feels like im just editing singular stuff that will be persisted if we have an update on protein that serves the Apple record.
 - [ ] Castles should be separated from sand in the picker. Basic blocks and packaged workflows. One can select a protein and change the way it's data is shown from a sand to a castle, castle to castle... If i change the way i present the protein and it is missing a field, i can choose to only show the properties that appear in the original or fill the remaining ones. If i have more properties than the new castle shows, it can discard it or add to the final piece.
@@ -531,10 +571,8 @@ Ice White — CMYK: 2, 1, 0, 1; HEX: `#F8FAFC`; RGB: 248, 250, 252.
 
 - [ ] We may embed the LICENSE and credits to the sand, ethical. We should have an easy to access part of Lince, not a hidden one, that is talking about the interface and is saying that we use such and such dependencies (the ones that ask us to give the LICENSE, users dont care). In that part we include the LICENSES, if we put it in the sand it's going to be work to take only the rust of it, and drop the LICENSE from the queried bytes.
 
-Components are flat by default, preffering 2D forces us to convey information only with flat data, not layers and composition, constraining the space forces minimalism. Shadows and hints can be used for subtle differentiation of areas, components and data.
-
 - [ ] The interface must keep it's state in memory, and backup to a file with a frequency per configuration.
-
+- [ ] Be able to embed a website, can we do it without CEF? It would be good to be able to have storage for it, permissions of that isolated frame, not reading/writting to anything in the Box.
 
 
 } r_99NWECF19VKV94HQQ3G3ASMC4M

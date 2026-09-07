@@ -15,7 +15,7 @@ use crate::{
 use serde::Serialize;
 use std::collections::{BTreeMap, BTreeSet};
 
-pub const OFFICIAL_SAND_COUNT: usize = 25;
+pub const OFFICIAL_SAND_COUNT: usize = 27;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -59,6 +59,20 @@ pub const OFFICIAL_SANDS: [OfficialSandSpec; OFFICIAL_SAND_COUNT] = [
         display_name: "Zoom controls",
         legacy_source: "sand/shell.rs::zoom_source",
         purpose: "Navigate Box scale and recenter the workspace",
+        state: OfficialMigrationState::NativeBehavior,
+    },
+    OfficialSandSpec {
+        uid: "information",
+        display_name: "Lince information",
+        legacy_source: "native-only",
+        purpose: "Inspect this Lince and start isolated laboratory workspaces",
+        state: OfficialMigrationState::NativeBehavior,
+    },
+    OfficialSandSpec {
+        uid: "workspace-controls",
+        display_name: "Workspace controls",
+        legacy_source: "native-only",
+        purpose: "Name or delete the active workspace and open Lince information",
         state: OfficialMigrationState::NativeBehavior,
     },
     OfficialSandSpec {
@@ -340,6 +354,7 @@ impl OfficialSandGalleryState {
 
 fn shared_definitions() -> Vec<SandDefinition> {
     let mut definitions = vec![
+        square_definition(),
         trigger_definition(),
         action_definition(),
         record_action_definition(),
@@ -402,6 +417,56 @@ fn shared_definitions() -> Vec<SandDefinition> {
         ),
     ]);
     definitions
+}
+
+fn square_definition() -> SandDefinition {
+    let event = "something-happened";
+    SandDefinition {
+        uid: "square".into(),
+        revision: 1,
+        display_name: "Square".into(),
+        element: SandElement::Button,
+        inputs: vec![
+            text_input("value", "Square"),
+            text_input("description", "Do something"),
+            boolean_input("editable", false),
+        ],
+        outputs: vec![boolean_output("pressed"), text_output("changed")],
+        children: Vec::new(),
+        connections: Vec::new(),
+        exports: Vec::new(),
+        behaviors: vec![BehaviorBinding::Declarative {
+            behavior: DeclarativeBehavior::EmitEvent {
+                source_output: "pressed".into(),
+                event: event.into(),
+            },
+        }],
+        configuration: Vec::new(),
+        style: StyleLayer::default(),
+        accessibility: AccessibilitySpec {
+            role: AccessibilityRole::Button,
+            label: "Square".into(),
+            description: Some("A reusable square that emits an Event or edits its value".into()),
+            live: false,
+        },
+        capabilities: BTreeSet::from([SandCapability::EmitEvent {
+            event: event.into(),
+        }]),
+        projections: vec![ProjectionManifest {
+            key: "native-retained".into(),
+            kind: ProjectionKind::NativeRetained,
+            isolation: Isolation::Trusted,
+            required: BTreeSet::from([
+                RendererCapability::RetainedControls,
+                RendererCapability::Accessibility,
+            ]),
+            capabilities: BTreeSet::from([SandCapability::EmitEvent {
+                event: event.into(),
+            }]),
+            assets: Vec::new(),
+            projected_nodes: BTreeSet::from(["root".into()]),
+        }],
+    }
 }
 
 fn record_identity_definition() -> SandDefinition {
@@ -1033,11 +1098,17 @@ fn specialized_definition(uid: &str, name: &str, kind: ProjectionKind) -> SandDe
 
 fn official_definition(spec: OfficialSandSpec) -> SandDefinition {
     let children = official_children(spec.uid);
+    let is_native_system_sand = matches!(spec.uid, "information" | "workspace-controls");
+    let inputs = if is_native_system_sand {
+        Vec::new()
+    } else {
+        vec![record_input("source", "unbound-record")]
+    };
     let mut definition = compound(
         spec.uid,
         spec.display_name,
         children,
-        vec![record_input("source", "unbound-record")],
+        inputs,
         Vec::new(),
         Vec::new(),
         vec![ConfigurationField {
@@ -1048,7 +1119,9 @@ fn official_definition(spec: OfficialSandSpec) -> SandDefinition {
         }],
         spec.purpose,
     );
-    definition.capabilities.insert(SandCapability::ProteinRead);
+    if !is_native_system_sand {
+        definition.capabilities.insert(SandCapability::ProteinRead);
+    }
     match spec.uid {
         "shell-edit" => {
             definition.inputs.extend([
@@ -1101,6 +1174,117 @@ fn official_definition(spec: OfficialSandSpec) -> SandDefinition {
             add_action_behavior(&mut definition, "zoom-out", "interface.camera.zoom-out");
             add_action_behavior(&mut definition, "zoom-in", "interface.camera.zoom-in");
             add_action_behavior(&mut definition, "recenter", "interface.camera.recenter");
+        }
+        "information" => {
+            definition.inputs.extend([
+                text_input("title", "Lince information"),
+                text_input("port-label", "Port"),
+                text_input("port", "6174"),
+                text_input("data-directory-label", "Lince directory"),
+                text_input("data-directory", "Unavailable"),
+                text_input("tests-directory-label", "Tests directory"),
+                text_input("tests-directory", "Unavailable"),
+                text_input("version-label", "Version"),
+                text_input("version", env!("CARGO_PKG_VERSION")),
+                text_input("revision-label", "Commit"),
+                text_input("revision", "Unknown"),
+                text_input("last-updated-label", "Last updated"),
+                text_input("last-updated", "Unknown"),
+                text_input("updates-label", "Updates"),
+                text_input("updates", "Not checked"),
+                text_input("self-apply-label", "Install"),
+                text_input("self-apply", "Not checked"),
+                text_input("check-label", "Check for updates"),
+                text_input("install-label", "Download and restart"),
+                text_input("laboratory-label", "New laboratory workspace"),
+                text_input("status", "Ready"),
+            ]);
+            definition.outputs.push(boolean_output("start-laboratory"));
+            definition.outputs.push(boolean_output("check-updates"));
+            definition.outputs.push(boolean_output("install-update"));
+            definition.exports.extend([
+                input_export("title", "title", "value"),
+                input_export("port-label", "port", "label"),
+                input_export("port", "port", "value"),
+                input_export("data-directory-label", "data-directory", "label"),
+                input_export("data-directory", "data-directory", "value"),
+                input_export("tests-directory-label", "tests-directory", "label"),
+                input_export("tests-directory", "tests-directory", "value"),
+                input_export("version-label", "version", "label"),
+                input_export("version", "version", "value"),
+                input_export("revision-label", "revision", "label"),
+                input_export("revision", "revision", "value"),
+                input_export("last-updated-label", "last-updated", "label"),
+                input_export("last-updated", "last-updated", "value"),
+                input_export("updates-label", "updates", "label"),
+                input_export("updates", "updates", "value"),
+                input_export("self-apply-label", "self-apply", "label"),
+                input_export("self-apply", "self-apply", "value"),
+                input_export("check-label", "check", "label"),
+                input_export("install-label", "install", "label"),
+                input_export("laboratory-label", "laboratory", "label"),
+                input_export("status", "status", "detail"),
+                output_export("start-laboratory", "laboratory", "pressed"),
+                output_export("check-updates", "check", "pressed"),
+                output_export("install-update", "install", "pressed"),
+            ]);
+            add_action_behavior(
+                &mut definition,
+                "start-laboratory",
+                "interface.workspace.laboratory.create",
+            );
+            add_action_behavior(&mut definition, "check-updates", "interface.update.check");
+            add_action_behavior(
+                &mut definition,
+                "install-update",
+                "interface.update.install",
+            );
+            definition.behaviors.push(BehaviorBinding::Declarative {
+                behavior: DeclarativeBehavior::TogglePresentationOnEvent {
+                    event: "toggleOpenInformationPanel".into(),
+                },
+            });
+        }
+        "workspace-controls" => {
+            definition.inputs.extend([
+                text_input("workspace-name", "Workspace 1"),
+                boolean_input("workspace-editable", true),
+                text_input("workspace-description", "Rename the active workspace"),
+                text_input("delete-label", "×"),
+                text_input("delete-description", "Delete the active workspace"),
+                text_input("information-label", "i"),
+                text_input("information-description", "Open Lince information"),
+            ]);
+            definition.outputs.extend([
+                text_output("workspace-name-changed"),
+                boolean_output("delete-workspace"),
+                boolean_output("open-information"),
+            ]);
+            definition.exports.extend([
+                input_export("workspace-name", "workspace", "value"),
+                input_export("workspace-editable", "workspace", "editable"),
+                input_export("workspace-description", "workspace", "description"),
+                input_export("delete-label", "delete", "value"),
+                input_export("delete-description", "delete", "description"),
+                input_export("information-label", "information", "value"),
+                input_export("information-description", "information", "description"),
+                output_export("workspace-name-changed", "workspace", "changed"),
+                output_export("delete-workspace", "delete", "pressed"),
+                output_export("open-information", "information", "pressed"),
+            ]);
+            add_event_behavior(&mut definition, "delete-workspace", "deleteWorkspace");
+            add_event_behavior(
+                &mut definition,
+                "open-information",
+                "toggleOpenInformationPanel",
+            );
+            definition.behaviors.push(BehaviorBinding::Declarative {
+                behavior: DeclarativeBehavior::SetLocalState {
+                    source_output: "workspace-name-changed".into(),
+                    key: "workspace-name".into(),
+                    value: SandValue::Text("changed".into()),
+                },
+            });
         }
         "record" => {
             definition.inputs.extend([
@@ -1340,6 +1524,18 @@ fn add_record_event_behavior(definition: &mut SandDefinition, output: &str) {
     });
 }
 
+fn add_event_behavior(definition: &mut SandDefinition, output: &str, event: &str) {
+    definition.capabilities.insert(SandCapability::EmitEvent {
+        event: event.into(),
+    });
+    definition.behaviors.push(BehaviorBinding::Declarative {
+        behavior: DeclarativeBehavior::EmitEvent {
+            source_output: output.into(),
+            event: event.into(),
+        },
+    });
+}
+
 fn official_children(uid: &str) -> Vec<DefinitionChild> {
     if uid == "shell-zoom" {
         return vec![
@@ -1347,6 +1543,71 @@ fn official_children(uid: &str) -> Vec<DefinitionChild> {
             child("level", "quantity", 112.0, 0.0, 80.0, 28.0, 1),
             child("zoom-in", "official-action", 200.0, 0.0, 104.0, 28.0, 2),
             child("recenter", "official-action", 312.0, 0.0, 108.0, 28.0, 3),
+        ];
+    }
+    if uid == "information" {
+        return vec![
+            child("surface", "panel", 0.0, 0.0, 460.0, 396.0, 0),
+            child("title", "title", 12.0, 12.0, 436.0, 26.0, 1),
+            child("port", "official-property", 12.0, 46.0, 436.0, 22.0, 2),
+            child(
+                "data-directory",
+                "official-property",
+                12.0,
+                70.0,
+                436.0,
+                22.0,
+                3,
+            ),
+            child(
+                "tests-directory",
+                "official-property",
+                12.0,
+                94.0,
+                436.0,
+                22.0,
+                4,
+            ),
+            child("version", "official-property", 12.0, 118.0, 436.0, 22.0, 5),
+            child("revision", "official-property", 12.0, 142.0, 436.0, 22.0, 6),
+            child(
+                "last-updated",
+                "official-property",
+                12.0,
+                166.0,
+                436.0,
+                22.0,
+                7,
+            ),
+            child("updates", "official-property", 12.0, 190.0, 436.0, 22.0, 8),
+            child(
+                "self-apply",
+                "official-property",
+                12.0,
+                214.0,
+                436.0,
+                40.0,
+                9,
+            ),
+            child("check", "official-action", 12.0, 260.0, 214.0, 28.0, 10),
+            child("install", "official-action", 234.0, 260.0, 214.0, 28.0, 11),
+            child(
+                "laboratory",
+                "official-action",
+                12.0,
+                296.0,
+                436.0,
+                28.0,
+                12,
+            ),
+            child("status", "official-status", 12.0, 330.0, 436.0, 24.0, 13),
+        ];
+    }
+    if uid == "workspace-controls" {
+        return vec![
+            child("workspace", "square", 0.0, 0.0, 220.0, 28.0, 0),
+            child("delete", "square", 228.0, 0.0, 28.0, 28.0, 1),
+            child("information", "square", 264.0, 0.0, 28.0, 28.0, 2),
         ];
     }
     let definitions: &[(&str, &str)] = match uid {
@@ -1695,6 +1956,119 @@ fn projection_key(kind: ProjectionKind) -> &'static str {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::retained_ui::{RetainedRect, RetainedScene};
+
+    #[test]
+    fn native_workspace_controls_and_information_mount_as_separate_sands() {
+        let package = official_sand_package();
+        let controls = RetainedScene::from_package(
+            &package,
+            "workspace-controls",
+            BTreeMap::new(),
+            RetainedRect {
+                x: 0.0,
+                y: 0.0,
+                width: 328.0,
+                height: 28.0,
+            },
+            0,
+        )
+        .unwrap();
+        let control_keys = controls
+            .nodes
+            .iter()
+            .filter(|node| node.interactive)
+            .map(|node| node.key.as_str())
+            .collect::<BTreeSet<_>>();
+        assert_eq!(
+            control_keys,
+            BTreeSet::from([
+                "workspace-controls/workspace",
+                "workspace-controls/delete",
+                "workspace-controls/information",
+            ])
+        );
+        let workspace = controls
+            .nodes
+            .iter()
+            .find(|node| node.key == "workspace-controls/workspace")
+            .unwrap();
+        assert!(workspace.editable);
+        assert_eq!(workspace.role, AccessibilityRole::TextInput);
+        for key in [
+            "workspace-controls/delete",
+            "workspace-controls/information",
+        ] {
+            let node = controls.nodes.iter().find(|node| node.key == key).unwrap();
+            assert_eq!(node.rect.width, node.rect.height);
+        }
+
+        let information = RetainedScene::from_package(
+            &package,
+            "information",
+            BTreeMap::new(),
+            RetainedRect {
+                x: 0.0,
+                y: 0.0,
+                width: 460.0,
+                height: 396.0,
+            },
+            0,
+        )
+        .unwrap();
+        let information_keys = information
+            .nodes
+            .iter()
+            .filter(|node| node.interactive)
+            .map(|node| node.key.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            information_keys,
+            vec![
+                "information/check/control",
+                "information/install/control",
+                "information/laboratory/control",
+            ]
+        );
+    }
+
+    #[test]
+    fn square_emits_an_event_and_workspace_effects_are_declarative() {
+        let package = official_sand_package();
+        let square = &package.graph.definitions["square"];
+        assert!(square.inputs.iter().any(|input| input.name == "editable"));
+        assert!(square.outputs.iter().any(|output| output.name == "pressed"));
+        assert!(square.outputs.iter().any(|output| output.name == "changed"));
+        assert!(square.behaviors.iter().any(|binding| matches!(
+            binding,
+            BehaviorBinding::Declarative {
+                behavior: DeclarativeBehavior::EmitEvent { event, .. },
+            } if event == "something-happened"
+        )));
+
+        let controls = &package.graph.definitions["workspace-controls"];
+        for (output, expected_event) in [
+            ("open-information", "toggleOpenInformationPanel"),
+            ("delete-workspace", "deleteWorkspace"),
+        ] {
+            assert!(controls.behaviors.iter().any(|binding| matches!(
+                binding,
+                BehaviorBinding::Declarative {
+                    behavior: DeclarativeBehavior::EmitEvent {
+                        source_output,
+                        event,
+                    },
+                } if source_output == output && event == expected_event
+            )));
+        }
+        let information = &package.graph.definitions["information"];
+        assert!(information.behaviors.iter().any(|binding| matches!(
+            binding,
+            BehaviorBinding::Declarative {
+                behavior: DeclarativeBehavior::TogglePresentationOnEvent { event },
+            } if event == "toggleOpenInformationPanel"
+        )));
+    }
 
     #[test]
     fn official_catalog_is_valid_rust_owned_and_recursively_decomposed() {
@@ -1762,7 +2136,7 @@ mod tests {
             gallery.selected().state,
             OfficialMigrationState::NativeBehavior
         );
-        gallery.focus_at(23);
+        gallery.focus_at(25);
         assert_eq!(gallery.selected().uid, "configuration");
         assert_eq!(gallery.selected().state, OfficialMigrationState::Landed);
         assert!(!gallery.tree_lines().is_empty());
@@ -1774,6 +2148,8 @@ mod tests {
         for uid in [
             "shell-edit",
             "shell-zoom",
+            "information",
+            "workspace-controls",
             "record",
             "conversation",
             "table",
@@ -1791,6 +2167,33 @@ mod tests {
                 OfficialMigrationState::NativeBehavior
             );
         }
+        let information = &package.graph.definitions["information"];
+        for output in ["start-laboratory"] {
+            assert!(information.outputs.iter().any(|port| port.name == output));
+        }
+        assert!(
+            !information
+                .capabilities
+                .contains(&SandCapability::ProteinRead)
+        );
+        let workspace_controls = &package.graph.definitions["workspace-controls"];
+        for output in [
+            "workspace-name-changed",
+            "delete-workspace",
+            "open-information",
+        ] {
+            assert!(
+                workspace_controls
+                    .outputs
+                    .iter()
+                    .any(|port| port.name == output)
+            );
+        }
+        assert!(
+            !workspace_controls
+                .capabilities
+                .contains(&SandCapability::ProteinRead)
+        );
         let record = &package.graph.definitions["record"];
         for input in [
             "source",

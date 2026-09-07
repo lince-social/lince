@@ -12,8 +12,6 @@ const CRITICAL_PACKAGES: &[&str] = &[
     "avian2d",
     "bevy",
     "bevy_render",
-    "cef",
-    "cef-dll-sys",
     "naga",
     "raw-window-handle",
     "wgpu",
@@ -23,7 +21,7 @@ const CRITICAL_PACKAGES: &[&str] = &[
     "winit",
 ];
 
-const SOURCE_SURFACE_PACKAGES: &[&str] = &["avian2d", "bevy_render", "cef", "cef-dll-sys"];
+const SOURCE_SURFACE_PACKAGES: &[&str] = &["avian2d", "bevy_render"];
 
 const PLATFORM_MARKERS: &[(&str, &str)] = &[
     ("android", "android"),
@@ -143,8 +141,6 @@ impl DependencyAudit {
             ("base", Vec::new()),
             ("bevy", vec!["bevy-preflight"]),
             ("physics", vec!["physics-preflight"]),
-            ("cef", vec!["cef-runtime"]),
-            ("joined-production", vec!["candidate-audit"]),
         ];
         let profiles = specifications
             .into_iter()
@@ -173,7 +169,6 @@ impl DependencyAudit {
             source_findings: source_findings(),
             limitations: vec![
                 "Metadata proves source and feature resolution, not runtime interoperability.".into(),
-                "CEF remains source-audit-only; no Chromium process or accelerated surface is launched.".into(),
                 "Lexical unsafe-token counts locate review surfaces; they are not a semantic Rust unsafe-code audit.".into(),
                 "Platform-marker counts show source branches, not whether every branch compiles or runs on its named platform.".into(),
                 "Bevy manual rendering, shared-device construction and frame ordering are not exercised by this audit.".into(),
@@ -330,13 +325,7 @@ fn source_surface(package: CargoPackage) -> Result<SourceSurface, String> {
             }
         }
     }
-    let mut license_files = license_files(source_root)?;
-    if matches!(package.name.as_str(), "cef" | "cef-dll-sys") {
-        let bundled = Path::new(env!("CARGO_MANIFEST_DIR")).join("licenses/cef/LICENSE.txt");
-        if bundled.is_file() {
-            license_files.push(bundled.display().to_string());
-        }
-    }
+    let license_files = license_files(source_root)?;
     let state = if rust_files.is_empty() {
         "source unavailable".into()
     } else if lexical_unsafe_token_count == 0 {
@@ -364,7 +353,6 @@ fn source_owner(name: &str) -> &'static str {
     match name {
         "avian2d" => "Lince physics adapter",
         "bevy_render" => "Lince native-world adapter",
-        "cef" | "cef-dll-sys" => "Lince installed-HTML runtime adapter",
         _ => "unassigned",
     }
 }
@@ -376,9 +364,6 @@ fn retention_boundary(name: &str) -> &'static str {
         }
         "bevy_render" => {
             "Retain only manual rendering on host resources; no engine-owned window or final compositor."
-        }
-        "cef" | "cef-dll-sys" => {
-            "Confine CEF FFI, subprocess lifecycle and GPU-handle import to one fail-closed adapter."
         }
         _ => "Do not retain without an assigned adapter boundary.",
     }
@@ -542,35 +527,9 @@ fn audit_assertions(
     source_surfaces: &[SourceSurface],
 ) -> Vec<AuditAssertion> {
     let mut assertions = Vec::new();
-    for name in ["base", "bevy", "physics", "joined-production"] {
+    for name in ["base", "bevy", "physics"] {
         assertions.push(single_wgpu_29_assertion(profile(profiles, name), name));
     }
-    let cef = profile(profiles, "cef");
-    let cef_versions = package_versions(cef, "wgpu");
-    let cef_helper_enabled = cef
-        .critical_packages
-        .iter()
-        .find(|package| package.name == "cef")
-        .is_some_and(|package| {
-            package
-                .activated_features
-                .iter()
-                .any(|feature| feature == "accelerated_osr")
-        });
-    assertions.push(AuditAssertion {
-        name: "CEF accelerated paint boundary".into(),
-        state: if cef_versions == BTreeSet::from(["29.0.4"]) && !cef_helper_enabled {
-            "pass"
-        } else {
-            "fail"
-        }
-        .into(),
-        detail: format!(
-            "resolved WGPU versions {}; the WGPU-30 convenience importer is {}; CEF accelerated paint metadata remains available for the Lince-owned host importer",
-            join_versions(&cef_versions),
-            if cef_helper_enabled { "enabled" } else { "disabled" }
-        ),
-    });
     let expected_sources = SOURCE_SURFACE_PACKAGES
         .iter()
         .copied()
@@ -714,12 +673,6 @@ fn source_findings() -> Vec<SourceFinding> {
             state: "rejected as production owner".into(),
             detail: "The exact-source diagnostic proved GPUI's compositor path but also retained GPUI ownership of the event loop and final presentation. Lince keeps only its visual and behavioral reference, not the dependency, in the joined runtime.".into(),
             evidence: "target/interface/reports/gpui-diagnostic-v7.json and the GPUI findings in anicca/interface/architecture.md".into(),
-        },
-        SourceFinding {
-            subject: "CEF Linux accelerated surface".into(),
-            state: "passed in joined runtime".into(),
-            detail: "The bounded Linux adapter validates CEF DMA-BUF metadata, imports through the host Vulkan device, completes a GPU copy before callback-owned handles expire, and refuses every CPU paint path.".into(),
-            evidence: "target/interface-laboratory/joined/report.json and recovery/report.json".into(),
         },
         SourceFinding {
             subject: "Avian comparison".into(),

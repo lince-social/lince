@@ -5,4 +5,5 @@ pub mod desktop_setup;
 pub mod file_access;
 pub mod logging;
 pub mod macros;
+pub mod self_update;
 pub mod vault;

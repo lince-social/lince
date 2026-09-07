@@ -4,6 +4,16 @@ Owner source: [Interface in Lince](../Lince.lingua), updated 2026-09-06.
 Status: planned v1 work. The [Interface plan](plans/interface.md) owns the order
 and completion checks. These surfaces are not claimed as implemented.
 
+## Bevy implementation
+
+Build Calendar and Clock directly as Bevy Sands: ordinary UI/text controls,
+Bevy curves and meshes for the timeline/spiral, and Bevy cameras for its views.
+A custom Bevy plugin can own the temporal layout without introducing a second
+rendering API or a physics dependency. Use Bevy scheduling for presentation
+updates, but Lince's domain clock and occurrence projection remain authoritative
+for dates and recurrence. Sleep until an actual visible-time deadline or data
+change; an idle agenda does not need a permanent animation loop.
+
 ## Calendar and timeline
 
 A Calendar is a Castle made of ordinary navigation, date, selection and

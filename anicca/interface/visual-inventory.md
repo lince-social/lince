@@ -1,7 +1,7 @@
 # Visual inventory and token migration boundary
 
 Purpose: Record every first-party visual source that must converge on the
-renderer-neutral Lynx style contract and distinguish governed style from
+Lynx style roles in Bevy controls and materials and distinguish governed style from
 content and runtime geometry.
 
 Owner source: no dedicated Customization Record currently exists;
@@ -18,13 +18,25 @@ a hardcoded visual value.
 
 ---
 
+## Bevy implementation
+
+This inventory preserves visual meaning, not the old frontend implementation.
+Apply Lynx roles through typed Bevy resources and components, using Bevy UI and
+text as the base. Do not add a second general UI toolkit, a renderer-neutral
+style adapter or a separate Glyphon renderer. Existing Web files are read-only
+migration references; their HTML/CSS/JavaScript is not the native authoring API.
+Flair supplies CSS authoring and style resolution on these Bevy components,
+not another renderer. Keep Lynx scope precedence and Configuration overrides
+inspectable; stylesheet support is bounded, not a promise of full browser
+layout or arbitrary CSS compatibility. Do not create a competing style writer.
+
 ## Governing distinction
 
 The style contract governs values chosen to make Lince chrome and reusable
 Sands visually coherent: palette roles, surfaces, ink, intent, state, space,
 size, borders, radii, typography, icons, elevation, opacity, density, stacking,
 truth lines and direct-manipulation motion. The canonical spelling is always
-`--lynx-*`; a native projection receives the same typed values without
+`--lynx-*`; Bevy components receive typed values with these roles without
 pretending that CSS is its source of truth.
 
 The contract does not absorb runtime coordinates, transforms, measured
@@ -112,7 +124,7 @@ number or color the product can display.
 
 The joined laboratory previously used local node, border, panel, text and
 clear colors. Its active native nodes, border, retained text and compositor
-background now resolve through the typed contract. Diagnostic-only CEF page
+background now resolve through the typed contract. The diagnostic-only page
 content remains a fixture, while its surrounding Installed projection consumes
 the same CSS declaration set. Workload geometry, semantic fixture colors that
 represent test cohorts, timestamps and instrumentation graphs remain test
@@ -161,7 +173,7 @@ values and invalid hashes fail closed.
 
 ## Migration rule
 
-[Part A](plans/part-a.md) applies this rule to the enabled native path. Browser-backed leaves and the support code they still need are retained behind the CEF boundary for [the final v1 lane](plans/cef.md). Their presence in this inventory is not a demand to migrate or delete them before native C5. Exclusions must name the retained source and disabled dependency; they cannot excuse copied controls in an active native workflow.
+[Part A](plans/part-a.md) applies this rule to the native path. Browser-backed leaves and the support code they needed are listed in [the build rule](build.md#no-embedded-browser) as surfaces that must first find a way to run without embedding a browser in Lince. Their presence in this inventory is not a demand to migrate or delete them before native C5. Exclusions must name the retained source and disabled dependency; they cannot excuse copied controls in an active native workflow.
 
 The inventory is complete as a source boundary, not as a claim that the old
 Web UI has already migrated. During the official-Sand rebuild, each listed

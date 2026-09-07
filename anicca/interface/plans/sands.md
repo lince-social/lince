@@ -1,5 +1,13 @@
 # Sand implementation plan
 
+Implementation decision, 2026-09-07: new native Sands use Bevy directly,
+including scenes, components, widgets, text, observers, picking and rendering.
+The landed sections below are prototype evidence, not a frozen native
+projection ABI. Existing backend/data boundaries may be translated; existing
+interface code may be rewritten. No paired HTML constructor, generic renderer
+interface or separate retained view tree is required. The [architecture](../architecture.md#bevy-native-interface)
+defines scoped plugin/crate/WGPU exceptions.
+
 Purpose: Define production Sand schema, authoring, composition, package, HTML, Website, and migration work.
 
 Owner source: no dedicated Sands Record currently exists;
@@ -20,7 +28,7 @@ Read when: implementing the Sand contract or external runtime surface.
 Sand schema and ABI version 1, persisted/runtime separation, projection
 manifests, package/hash/license validation, generated JSON Schemas and
 valid/stale fixtures have landed. The 19-definition retained Gallery and its
-Installed CEF HTML/CSS/ES-module projection use that contract; the Website
+Installed HTML/CSS/ES-module projection use that contract; the Website
 companion retains no Lince authority. Keyboard, pointer and AccessKit actions
 reach the retained state, a Protein-shaped mount reaches Installed HTML and
 `record-clicked` returns through its exact event grant. Release parity and the
@@ -111,31 +119,41 @@ correctness, not a C4 workaround.
 
 ### Sand
 
-The active native migration, constructor/package conformance and author guidance are owned once by [Part A](part-a.md). [The build rule](../build.md) makes the native client/server products CEF-free. Part A is now Dogfeeding's company-workflow subset with [backend foundations](../../backend-part-A.md); other roots remain in [native follow-through](native-follow-through.md). Pure Maud/HTML export and metadata validation do not require CEF, but installed HTML execution, Website and embedded browser previews wait for [the final v1 lane](cef.md). The boxes below preserve later Box and external-authoring work, not a second C4 checklist. Correctness needed by an existing Part A workflow is repaired in its owning node rather than postponed under this heading. Browser portions of a shared ABI never make its native portion wait for a browser runtime.
+First-party Bevy is the baseline, not every community crate named `bevy_*`.
+No Lyon, Vello or parallel text/layout toolkit is selected by default. Flair
+is the preferred CSS-authoring integration on Bevy components; it does not
+replace Bevy UI or require a portable Sand constructor.
+Use matching AccessKit types for custom accessible roles and necessary native
+platform libraries without creating another interface host. Build spatial
+Sands on the 3D-capable scene model; Part A remains planar and stationary.
+Avian 3D belongs to later moving Box work. Pinned/Face viewer orientation is
+specified in [Box](../box.md#sand-facing-in-3d).
 
-- [ ] Define the Sand artifact compiler that normalizes the selected authored
-  graph (Rust/Maud or declared raw HTML metadata),
-  validates it through the authoritative Rust schema, renders and hashes
-  fragments, gathers native JavaScript modules, Wasm modules, generated loader
-  glue, shaders and other assets, and enforces manifest, capability, source to
-  artifact hash, LICENSE, NOTICE, and credit completeness.
-- [ ] Define the logical Sand runtime ABI once and generate its adapter
-  projections: native Rust retained-UI calls, retained world-scene handles, validated
-  size- and rate-bounded CEF messages for installed external HTML,
-  wrapper-only Website ports, Plan B scoped DOM/`MessagePort` calls, and an
-  optional WIT projection for Wasm Behavior. Prove the adapters agree on
-  lifecycle, typed ports, attribution, capabilities, state planes, Action
-  requests, errors, camera-only presentation culling, and teardown while
-  passing no raw DOM, GPU object, pointer, credential, or global Box store
-  through the portable boundary.
-- [ ] Define the GPU renderer vocabulary and package rules for built-in
-  patterns, sprites/glyphs, zones, connections, drawings, selection, and
-  specialized leaves. Use one host rendering device, queue/submission policy
-  and retained scene with stable visual-node uids and partial buffer updates;
-  isolated CEF GPU producer contexts cross only the synchronized external-
-  surface boundary. An arbitrary shader is installed
-  executable content with an exact hash, declared GPU capability, resource
-  budget, validation, license, credits, and deterministic disposal.
+Current extensions expose registered editable components and named effects,
+plus trusted Rust plugins. Untrusted executable installation and sandbox work
+are deferred until an explicit later decision, not needed for native authoring.
+
+The active native migration, constructor/package conformance and author guidance are owned once by [Part A](part-a.md). [The build rule](../build.md#no-embedded-browser) makes the native client/server products free of any embedded browser. Part A is now Dogfeeding's company-workflow subset with [backend foundations](../../backend-part-A.md); other roots remain in [native follow-through](native-follow-through.md). Pure Maud/HTML export and metadata validation never needed a browser runtime. Installed HTML execution, Website and in-desktop previews do not wait for a lane: they each need a way to run without embedding a browser in Lince. The boxes below preserve later Box and external-authoring work, not a second C4 checklist. Correctness needed by an existing Part A workflow is repaired in its owning node rather than postponed under this heading. External package boundaries never make native Bevy widgets wait for a browser runtime or portable ABI.
+
+- [ ] Define the Bevy-native authoring and saved-composition path using
+  components, scenes and stable Sand ids directly. Register editable fields,
+  typed ports and named effects; validate allowed persisted values, exact
+  definition references, assets and licenses, and remap entity references on
+  load. Private helper entities and ordinary Rust callbacks need no portable
+  schema. Box and code-built Sands share the same composition, not two trees.
+- [ ] Keep translation and generated validators at actual existing backend,
+  storage, network or external-package boundaries. Do not generate native UI
+  and world adapters merely to normalize Bevy. Preserve ownership, exported
+  scope, permission checks, last-good state and teardown in direct Bevy code.
+- [ ] Use Bevy UI/text, retained gizmos and curves, meshes/materials and assets
+  for patterns, zones, connections, drawings, selection and native leaves.
+  Feed custom line/area hit tests into Bevy picking. Add a custom plugin,
+  internal/external crate or pure WGPU pass only for a named need, normally
+  sharing Bevy's device, resource lifetime and presentation.
+- [ ] Preserve the bounded shader-authoring and external-code security rules.
+  A native plugin is trusted process code, not a sandbox. Validate resource
+  budgets, executable hashes/capabilities and LICENSE/NOTICE/credits at the
+  actual external boundary, not through per-widget native ABI envelopes.
 - [ ] After the Customization completion gate and official-Sand migration,
   prove the Box model vertically with one current Protein item, visual result
   fields, a mixed bound/unbound result-template group, repeated row instances,
@@ -178,14 +196,14 @@ The active native migration, constructor/package conformance and author guidance
   later v1 effect stage. The existing GPU capability/package checks are a
   foundation, not a completed WGSL editor or a guarantee of bounded GPU work.
 
-### Final-v1 embedded HTML and Website hardening
+### End-of-v1 external-content design and retained requirements
 
-These detailed package, permission and browser tasks belong to [the final CEF lane](cef.md), not C4/C5 or the stationary Box gate. The native schema and package inspection already needed by Part A stay in Part A. Browser/Plan B cases here test portable projections; they do not authorize a general browser client for a Cell.
+At the end of v1, choose browserless designs or explicit system-browser handoff for specialized content. This does not schedule an untrusted executable plugin system; the owner deferred that separate decision. Its historical package/execution tasks below are retained research requirements, not work to perform automatically at the end of v1. The detailed package, permission and browser cases below are retained requirement/research material, not an instruction to rebuild their former execution machinery. The embedded browser they assumed is gone, so none of them can be built until installed HTML and Website each have a way to run without embedding a browser in Lince; see [the build rule](../build.md#no-embedded-browser). They are kept because whatever replaces those surfaces inherits the same obligations. The native schema and package inspection already needed by Part A stay in Part A. Browser/Plan B cases here test portable projections; they do not authorize a general browser client for a Cell.
 
 - [ ] Define and version the Sand manifest, bridge handshake, typed ports,
   capability vocabulary, provenance record, resource limits, CSP, and package
   signature/integrity rules together.
-- [ ] Prove the installed external path with one CEF HTML Sand that receives a
+- [ ] Prove the installed external path with one installed HTML Sand that receives a
   mapped Protein Record summary, emits `record-clicked`, consumes a Box event,
   keeps local browser state, and requests one granted typed Action. Run the same
   semantic fixture through Plan B `MessagePort`. Reject undeclared ports,
@@ -200,16 +218,15 @@ These detailed package, permission and browser tasks belong to [the final CEF la
   process and texture cost, configured budget, denied starts, renderer crashes,
   recovery attempts and the exact unavailable reason; keep retry, disable and
   clear-storage controls reachable without opening developer tools.
-- [ ] Build the Website Sand with an isolated CEF browser surface and request
-  context under Plan A and a sandboxed iframe in browsers. Keep origin/security chrome above
+- [ ] Build the Website Sand without embedding a browser in Lince, and a sandboxed iframe in browsers. Keep origin/security chrome above
   remote pixels and prove that Website content cannot invoke Lince native
   APIs, overlap system chrome, or receive a privileged parent message. Moving
   it off-camera culls composition only and does not unload, suspend, or throttle
   its browser execution.
 - [ ] Enforce HTTPS navigation; deny custom protocols, filesystem access, and
   all Lince native capabilities; and harden every local HTTP/WebSocket
-  endpoint against foreign origins, unauthenticated requests, and CSRF. In CEF
-  or dedicated WebViews, additionally intercept requests to block loopback,
+  endpoint against foreign origins, unauthenticated requests, and CSRF. Where an
+  engine or dedicated WebView allows it, additionally intercept requests to block loopback,
   link-local, private-network destinations, unsafe redirects, and DNS
   rebinding. In a browser iframe, disclose that broader private-network egress
   cannot be guaranteed rather than presenting it as enforced.
@@ -223,13 +240,13 @@ These detailed package, permission and browser tasks belong to [the final CEF la
   have honest in-Sand explanations.
 - [ ] Test malicious Websites for local-network requests, CSRF against Lince,
   navigation spoofing, popup escape, downloads, resource exhaustion, tracking
-  identifiers crossing profiles, and frame/IPC confusion. Keep CEF, WebView,
-  and browser runtimes patched; sandboxing does not eliminate engine exploits.
+  identifiers crossing profiles, and frame/IPC confusion. Keep any WebView or
+  browser runtime patched; sandboxing does not eliminate engine exploits.
 - [ ] In browser/Plan B iframe mode, detect sites that prohibit framing and
   offer an explicit open-in-browser fallback. Never strip or proxy around
-  `frame-ancestors` or `X-Frame-Options`. In Plan A CEF mode, detect sites,
-  authentication, protected media, or browser policies that still reject the
-  embedded runtime and offer the same fallback.
+  `frame-ancestors` or `X-Frame-Options`. In any Plan A surface, detect sites,
+  authentication, protected media, or policies that reject the runtime and
+  offer the same fallback.
 - [ ] Remove the legacy nested-payload frame and old Lynx component API during
   the rebuild. Route `.lince` imports by inspected content rather than a
   legacy filename suffix; unknown shapes fail closed.
@@ -258,10 +275,10 @@ The design reasoning lives in [Fiote's session model](../../Fiote.md#the-session
 split across the existing pre-Box waterfall rather than inserted as another
 framework or milestone:
 
-- landed C3 owns renderer-neutral domain launch recipes and typed Record bindings;
+- the historical C3 recipes establish launch identity and typed Record bindings; new native work may instantiate Bevy composition directly without preserving their projection layer;
 - C4 owns Conversation authorship, live message state, private drafts and the native Conversation/Record projections;
 - C5 proves those native surfaces through keyboard, pointer and AccessKit;
-- the current browser Ghostty Terminal and its task binding return in the final v1 CEF lane; no replacement native terminal engine is a Part A prerequisite;
+- the terminal pane needs a native terminal renderer before it returns, since no embedded browser will supply one; it is not a Part A prerequisite;
 - Fiote Phase 2 then adds the agent-specific session permission, tool timeline
   and session-control Sands without blocking Box.
 
@@ -271,10 +288,10 @@ semantics or assistive-technology support in the native Sands.
 
 ### Task-bound terminal Sand
 
-The requirements below are retained for the terminal work in [the final CEF lane](cef.md). Its current browser/Wasm renderer is not a native retained renderer merely because the Rust catalog names a native projection. The typed task binding and host-owned identity remain renderer-neutral. A future native terminal can be chosen separately, but neither C4/C5 nor Fiote may assume one has already been selected or built.
+The requirements below are retained for the low-priority end-of-v1 terminal work. Select a terminal emulation/PTY crate as needed, with Bevy handling presentation and surrounding controls; no library is selected merely by this plan. Its old browser/Wasm renderer is gone with the embedded browser, and a native terminal renderer must be chosen and built before the pane returns; see [the build rule](../build.md#no-embedded-browser). The typed task binding and host-owned identity remain independent of terminal emulation details. A future Bevy terminal integration can be chosen separately, but neither C4/C5 nor Fiote may assume one has already been selected or built.
 
 The legacy `BoardCard.widget_state`, `groupId` and JavaScript grouping path is
-not part of Plan A. The landed contract already has the correct primitive: a
+not part of the native interface foundation. The landed contract already has the correct primitive: a
 `SandInstance` or `CompositionPlacement` receives a typed `Record` input and
 the composition document persists the binding, while the Record remains the
 truth. C3 added the launch recipe and provenance around that primitive; it does
@@ -429,7 +446,7 @@ the code-owned definition.
 | --- | --- |
 | The thread | **`conversation`**, rebuilt in C4. It reads Conversation → Thread → Message over Protein and sends through ordinary Actions. A session thread is an ordinary thread. |
 | The task | **`record`**, rebuilt in C4 and bound through its typed Record input. |
-| A real terminal | **`terminal`**, retained browser Ghostty implementation migrated in the final v1 CEF lane with its typed task input. A separate native renderer is not assumed. |
+| A real terminal | **`terminal`**, blocked on a native terminal renderer with its typed task input. The old browser Ghostty implementation is gone with the embedded browser. |
 | What the agent ran | **New.** A tool timeline: each call with its arguments, its result, diffs it produced, folded by default. Command output renders through the same VT path the terminal Sand already uses, read-only. |
 | Session control | **New.** The cub tree, spawn and stop, model and thinking level, tokens / context / cost, compaction. |
 | Drafts and queue | Part of the composer, not its own Sand. |

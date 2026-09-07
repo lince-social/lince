@@ -9,10 +9,28 @@ original. This file is evidence and repertoire, not an implementation queue.
 
 ## Carry-forward decision
 
+The owner's 2026-09-07 Bevy decision supersedes the implementation assumptions
+inside these dated reviews. Bevy now owns the application and renderer; new
+interface code uses it directly. References below to an accepted Lince-owned
+compositor, subordinate Bevy, renderer-neutral inspector/pass APIs or separate
+retained UI describe the old research context, not requirements. Do not
+implement them unless a current scoped need independently justifies the work.
+Custom Bevy plugins, focused internal/external crates and pure WGPU passes
+remain possible exceptions under the current architecture. The source audits
+and historical verdicts below are preserved rather than rewritten as new
+measurements.
+
+The embedded browser these readings assume is gone. CEF was removed from the
+repository on 2026-09-07 and rejected as an approach; [the build
+rule](build.md#no-embedded-browser) records why. Every technique below that
+crosses an "embedded browser" boundary is retained as a constraint on whatever
+renders external HTML without embedding a browser in Lince, not as a plan to
+embed one again.
+
 The study selected no Pulsar, Helio, SceneDB, GPUI or WGPUI production
 dependency. Active interface development carries only stable semantic identity
-above disposable handles, explicit Lince-owned frame boundaries, bounded
-revisioned and dirty adapter state, presentation-only culling, human-readable
+above disposable handles, ordered Bevy schedules, targeted changes at real
+backend/external boundaries, presentation-only culling, human-readable
 causal measurements, authoritative shared coordinate frames and measured-only
 GPU acceleration of disposable projections. The canonical architectural
 meaning and sourcing order live in
@@ -66,7 +84,7 @@ described as a zero-contribution fallback on the `wgpu` version discussed.
 
 - A Lince-owned frame graph can make resource reads, writes, order, lifetime
   and profiling explicit across topology mesh generation, native Sand
-  instances, world rendering, CEF texture import/copy, retained UI, selection
+  instances, world rendering, embedded browser texture import/copy, retained UI, selection
   overlays and final composition.
 - Typed runtime handles and generation counters fit Lince's existing rule that
   renderer ids are disposable projections. Sand definition identity stays in
@@ -81,7 +99,7 @@ described as a zero-contribution fallback on the `wgpu` version discussed.
   health Sand. A frame spike should identify the responsible pass and workload
   instead of merely reporting low FPS.
 - Separate internal resolution is useful for terrain, shadows and expensive
-  world effects, but native text, retained controls and CEF composition should
+  world effects, but native text, retained controls and embedded browser composition should
   remain at output/device resolution unless their own measured policy says
   otherwise.
 - A small/default/custom graph is a useful capability pattern. Lince can keep a
@@ -99,7 +117,7 @@ The fixed roughly 256 MiB shadow atlas favors predictable renderer timing but
 is inappropriate as an unconditional cost for Lince's minimal desk. Deferred
 lighting, a G-buffer, water, atmospheric sky, TAA and global illumination are
 not prerequisites for crisp cards and may cost more bandwidth than a simpler
-UI/world path. The article does not cover CEF external-memory synchronization,
+UI/world path. The article does not cover embedded-browser external-memory synchronization,
 text/IME, accessibility, topology or Area physics, Protein, Sand composition,
 device loss, or Lince's authority boundaries. Its multi-backend and GI details
 are tied to the versions discussed; the black GI fallback is an interface slot,
@@ -109,7 +127,7 @@ not evidence that the feature works.
 narrow Lince frame-graph experiment with declared resources and timestamps;
 add allocation generations and dirty ranges to instanced Sand and topology
 buffers; compare CPU-built visibility with indirect GPU compaction at the
-accepted 10,000-node workload; keep a full-resolution text/CEF/UI pass over a
+accepted 10,000-node workload; keep a full-resolution text/browser/UI pass over a
 scalable world pass; and expose adapter capabilities and disabled quality
 features honestly in runtime health. Study Helio's implementation before
 copying any mechanism and benchmark the calm 2D desk separately from the
@@ -292,9 +310,9 @@ not a translated assumption that an integer handle is sufficient.
 The ownership direction is also the inverse of accepted Lince Plan A. The
 article makes GPUI own the window and final presentation while sampling an
 external world texture. Lince already measured that direction and selected its
-own Winit/WGPU host so native UI, Bevy world passes and imported CEF surfaces
+own Winit/WGPU host so native UI, Bevy world passes and imported embedded browser surfaces
 share one Lince-owned frame policy. Native world/UI work on the same WGPU
-device should hand over texture views and command work directly; CEF remains a
+device should hand over texture views and command work directly; the embedded browser remained a
 separate producer and follows the already-proven DMA-BUF import, GPU copy and
 fence boundary. This article gives no reason to put GPUI back into the
 production dependency graph.
@@ -360,7 +378,7 @@ groups, static/stationary/movable caching and automatic CPU/GPU pass timing.
 This gives a useful separation between an application's semantic scene, a
 dense runtime scene, and disposable GPU projections. A rigid object's mesh can
 remain upload-once while only its instance transform changes. A high-polygon
-world object can use meshlets without forcing lightweight cards, text or CEF
+world object can use meshlets without forcing lightweight cards, text or browser surfaces
 surfaces through that representation. Optional passes can be absent from the
 calm desk graph and present in a world graph without changing the Box document.
 
@@ -426,7 +444,7 @@ literal contracts:
 **What to borrow for Box.** Keep the Lince-owned semantic/runtime/renderer
 three-layer split. Project thousands of simple native Sands into dense
 instance columns with dirty spatial ranges. Let richer native UI remain
-retained nodes and CEF remain an imported browser surface. Use independent
+retained nodes and the embedded browser remain an imported browser surface. Use independent
 presentation masks for editor chrome, 2D surface, 3D free-space, selection and
 debugging, but never confuse them with Castle grouping or Protein filtering.
 Give topology tiles, native Sand instances and world geometry separate update
@@ -483,7 +501,7 @@ The healthy core is dependency inversion, not the claim that the engine knows
 literally nothing. A small semantic kernel can know service contracts and
 orchestration rules while a composition root chooses implementations. That can
 make a headless Lince, renderer tests and alternative capability sets possible
-without making every Sand aware of WGPU, CEF, persistence or networking.
+without making every Sand aware of WGPU, the embedded browser, persistence or networking.
 
 **Needed for Lince to work.** There must be one authoritative composition
 phase that gathers every built-in and extension declaration, rejects duplicate
@@ -499,7 +517,7 @@ Capabilities given to Sand behaviors must be narrow, typed and mediated. A
 native Sand can request, for example, record selection, Box event publication,
 local presentation state or an approved external-call channel. It should not
 receive a raw renderer, database, filesystem, network client or mutable bag of
-all services. Website Sands cross a process/CEF boundary and receive the same
+all services. Website Sands cross a process and browser boundary and receive the same
 semantic ports through a versioned message protocol. Rust `Any`, `TypeId` and
 trait objects are suitable conveniences only inside the same compiled Lince;
 they are not a stable ABI for external Sands or independently built dynamic
@@ -575,7 +593,7 @@ use a stable protocol and process isolation.
 
 **Concrete Lince shape.** Give every capability and Sand definition a
 namespaced stable id and a typed declaration. A definition owns its data
-schema, editor/inspector surface, native or CEF presentation adapter, event
+schema, editor/inspector surface, native or browser presentation adapter, event
 ports, Protein bindings, behavior requirements, permissions, persistence
 projection and runtime-health description. “Castle” remains composition of
 those definitions rather than a privileged subsystem kind. At startup, a
@@ -595,7 +613,7 @@ affected definition unavailable; they never resolve by registration order.
 **Ideas to test.** Build lifecycle conformance tests that deliberately create a
 missing dependency, cycle, duplicate provider, middle-of-chain init failure
 and several shutdown failures. Verify rollback, complete teardown and visible
-health. Build one native Sand and one CEF Sand against equivalent Record/event
+health. Build one native Sand and one embedded browser Sand against equivalent Record/event
 ports without exposing internal services. Benchmark a full component scan
 against uid-keyed dirty dispatch only after correctness is established, using
 the same high-churn Protein and physics fixtures planned for Box.
@@ -672,7 +690,7 @@ Use two descriptor sources behind one inspector interface:
   inspector descriptor without requiring a corresponding Rust struct.
 
 The shared descriptor points to semantic editor kinds and customization tokens,
-not GPUI types, CEF DOM, WGPU handles or `TypeId`. Native retained editors then
+not GPUI types, an embedded browser DOM, WGPU handles or `TypeId`. Native retained editors then
 implement those kinds with Lince's own sharp UI; installed HTML may provide a
 package-local editor only through the same capability and validation boundary.
 
@@ -1168,7 +1186,7 @@ on chip. A wrapper pass illustrates cross-cutting instrumentation by enclosing
 another pass with pre/post GPU analysis.
 
 **What should shape Lince.** A compiled frame plan is the right foundation for
-native Sands, topology, the 2D/3D Box views, CEF surfaces, picking, lighting and
+native Sands, topology, the 2D/3D Box views, embedded browser surfaces, picking, lighting and
 diagnostics. Rendering dependencies should be stated once and validated before
 the first frame. Optional capabilities should compile into a valid variant of
 the plan rather than leave every pass guessing whether an input happens to be
@@ -1177,7 +1195,7 @@ which projection failed or consumed the frame.
 
 Native passes should be typed Rust code. Recompilation is acceptable for this
 project, and an external HTML Sand does not imply an externally authored GPU
-pass: CEF produces an imported/composited surface that enters through one
+pass: the embedded browser produces an imported/composited surface that enters through one
 mediated adapter. Sand definitions, customization and Box configuration must
 not serialize renderer implementation order. A future trusted shader/plugin
 system can compile a restricted declaration into the internal plan; it should
@@ -1204,7 +1222,7 @@ The graph is locked only after mandatory validation succeeds. Registration
 order may break ties but does not define dependencies: the compiler constructs
 a DAG, derives a deterministic topological order, and shows that order in the
 running diagnostic Sand. Structural changes produce a new immutable plan and
-swap it at a frame boundary. Per-frame values—camera, transforms, CEF frame,
+swap it at a frame boundary. Per-frame values—camera, transforms, embedded browser frame,
 selection and customization—update resources without rebuilding the graph.
 
 Start with one command timeline/encoder whose recorded order is the compiled
@@ -1214,8 +1232,8 @@ render commands separately and submitting all compute first can reverse a
 render-to-compute dependency. Pass code does not choose an escape-hatch encoder
 that the graph cannot reason about.
 
-Imported CEF and eventual native external-memory surfaces declare acquire,
-usable extent/format/color space, last-use and release. A failed or late CEF
+Imported browser and eventual native external-memory surfaces declare acquire,
+usable extent/format/color space, last-use and release. A failed or late embedded browser
 frame reuses the last accepted surface or shows an explicit placeholder; it
 does not stall Box semantics. Swapchain acquisition, minimized/zero extent,
 resize, device loss and adapter-capability changes have similarly explicit
@@ -1322,21 +1340,21 @@ does not substantiate several of its central claims:
 **Concrete Lince frame plan.** Compile a `NativeFramePlan` from a fixed registry
 of native pass factories and current adapter capabilities. It contains typed
 nodes for world simulation upload, native Sand geometry, terrain/topology,
-opaque/transparent 3D, CEF surface import/upload, effects, picking ids,
+opaque/transparent 3D, embedded browser surface import/upload, effects, picking ids,
 selection/debug overlays, color composition and presentation. The exact pass
 set may differ between the planar, 3D and mixed view, but their outputs meet a
 common compositor contract and swaps occur only at frame boundaries.
 
 Box simulation remains outside this graph. It advances its complete fixed-step
 world and publishes an immutable render snapshot. The graph can omit
-off-camera draws, but it cannot decide whether behavior advances. CEF similarly
+off-camera draws, but it cannot decide whether behavior advances. A browser surface similarly
 continues according to the Sand lifecycle; its latest presentable surface is
 only one graph input. This keeps frame-graph failure, aliasing and renderer
 reconfiguration from becoming database or collaboration behavior.
 
 Ship a `Renderer Health` Sand with the mechanism. It shows the compiled pass
 order, required/optional edges, resource descriptors, logical/physical bytes,
-allocation generations, view/CEF imports, cache rebuilds, CPU/GPU timings and
+allocation generations, view and browser imports, cache rebuilds, CPU/GPU timings and
 the last validation/runtime error. It can select a pass output for inspection
 and states honest empty cases such as “3D lighting is disabled in this plan” or
 “website has not produced its first frame.”
@@ -1349,7 +1367,7 @@ physical ids for every live overlap. Snapshot the compiled plan so a pass edit
 cannot silently reorder the frame.
 
 Run wgpu validation tests for minimized/restored windows, repeated resize,
-render-scale changes, CEF frame loss/replacement, device recreation and each
+render-scale changes, embedded browser frame loss/replacement, device recreation and each
 adapter capability profile. Inject a recording failure in every pass and prove
 the frame is abandoned with a visible diagnostic while Box continues. Compare
 one-encoder correctness with any proposed multi-encoder schedule before
@@ -1403,7 +1421,7 @@ rendering patterns. The atlas and all temporal samples remain disposable
 projections; they are never Records, topology, physics, Area membership or
 collaboration state.
 
-The material boundary matters more than GI ambition. Pinned/HUD Sands and CEF
+The material boundary matters more than GI ambition. Pinned/HUD Sands and embedded browser
 web surfaces should be color-managed, sharp and normally unlit/emissive so a
 website or control does not change contrast as a virtual lamp moves. Native
 Sands placed on the topology may opt into a world-lit shell, cast/receive
@@ -1415,7 +1433,7 @@ This is not required for the v1 interface. Direct lighting, ambient/environment
 light, shadows and careful material/color treatment are sufficient to validate
 the planar-to-3D Box. The frame plan from entry 9 should reserve an optional
 indirect-light capability and fallback edge; building a ray-query GI system
-before native Sands, topology and CEF composition are correct would validate
+before native Sands, topology and embedded browser composition are correct would validate
 the wrong risk.
 
 **Needed for an eventual GI capability to work.** The producer and consumer
@@ -1538,7 +1556,7 @@ Use topology and Sand transforms only through the immutable render snapshot.
 Geometry changes mark affected lighting regions dirty, but GI never writes
 back into Box. A topology valley can look darker because presentation computes
 occlusion; its Area attraction and persisted shape remain identical with GI
-disabled. CEF textures normally composite after world lighting. An explicitly
+disabled. embedded browser textures normally composite after world lighting. An explicitly
 world-integrated website panel may light only its frame/backing mesh while the
 HTML pixels remain color-correct emissive content.
 
@@ -1604,7 +1622,7 @@ developer intuition. The `Renderer Health` Sand proposed in entries 8–10
 should ship with the native interface and combine render-plan inspection with
 timings, budgets, queue/readback state and failure explanations. It is how the
 owner tells whether moving one Sand is expensive because of Box simulation,
-snapshot extraction, native UI tessellation, CEF upload/composition, culling,
+snapshot extraction, native UI tessellation, browser upload/composition, culling,
 topology, world rendering, GPU submission, presentation or synchronization.
 
 Automatic graph instrumentation is the right default, but “zero
@@ -1618,7 +1636,7 @@ optimization toward the wrong subsystem.
 unique scope ids, labels and parent relationships. Names are display text, not
 identity; several instances of the same pass or Sand projection remain
 distinct. CPU spans separately measure simulation, render-snapshot extraction,
-prepare/upload, command recording, submit/present and CEF work. Per-pass CPU
+prepare/upload, command recording, submit/present and browser work. Per-pass CPU
 recording is not reported as total frame CPU, and `Instant` scopes are never
 labelled GPU time.
 
@@ -1746,7 +1764,7 @@ render thread; an explicit recording action copies selected snapshots into a
 bounded capture.
 
 Renderer Health has three levels. The default shows frame pacing, input-to-
-present latency, CPU/GPU root time, Box fixed-step backlog, CEF frame age and
+present latency, CPU/GPU root time, Box fixed-step backlog, embedded browser frame age and
 the dominant scope. Expanding shows the frame-plan tree and percentile/history
 charts. Capture mode enables heavier views—overdraw, tile occupancy, topology
 field, allocation map, picking and pass outputs—with their own measured cost.
@@ -1770,7 +1788,7 @@ Measure profiler overhead with timestamps/counters/overlay independently
 enabled and disabled over long alternating runs on named hardware. Report
 median, p95 and p99 frame pacing, not one frame. Saturate the render thread and
 GPU separately to show non-blocking readback does not serialize them. Verify
-the health UI remains responsive and bounded when CEF stops producing frames,
+the health UI remains responsive and bounded when the embedded browser stops producing frames,
 the window is minimized, Box contains 10,000 actors, and a heavy capture mode
 is activated.
 
@@ -1836,7 +1854,7 @@ resize and Z-order/elevation controls rather than pretending that an
 edge-on Z arrow is usable.
 
 **Needed for the capability to work.** Input first passes through one routing
-and capture system. Native Sand controls, CEF surfaces, world selection,
+and capture system. Native Sand controls, embedded browser surfaces, world selection,
 gizmos and camera navigation receive explicit priority. Pressing an active
 handle captures that pointer until commit/cancel/focus loss; moving outside
 the window cannot leave a drag latched. Mouse, touch and pen share pointer
@@ -1901,7 +1919,7 @@ pixel-perfect pointing.
 
 Selection and manipulation remain separate. Scene/Sand picking returns stable
 workspace identities; the active tool generates only its few handle tests.
-CEF receives pointer input only when its external Sand is the routed target,
+the embedded browser receives pointer input only when its external Sand is the routed target,
 and an untrusted page cannot synthesize a privileged Box manipulation. The
 `Why is it here?` surface can explain a selected Sand's saved placement,
 surface attachment, active Area forces and current manipulation override.
@@ -1997,7 +2015,7 @@ pivots, rich snapping and topology brushes expand the handle set.
 **Ideas to test.** Exercise centered/off-axis perspective and orthographic
 views, near/far clips, camera crossing the target, zero/minimized viewport,
 non-uniform/zero/sheared transforms and an axis aligned with the camera. Test
-overlapping handles, obscured handles, selection behind CEF, high-DPI scale,
+overlapping handles, obscured handles, selection behind a browser surface, high-DPI scale,
 multi-pointer input, cursor/focus loss, Escape and device loss.
 
 During a drag, inject Area forces, a topology update, actor deletion, permission
@@ -2046,7 +2064,7 @@ system must be conservative and observable.
 **Where it helps Lince.** The owner has set a precise invariant: a Sand outside
 the camera must not be rendered, but its behavior must remain normally active.
 Culling therefore belongs only to presentation extraction. It may suppress
-native vertices, text, shadows, topology fragments, CEF texture upload and
+native vertices, text, shadows, topology fragments, embedded browser texture upload and
 composition, but it cannot remove the corresponding workspace actor from
 physics, Area influence, Protein evaluation, event delivery, collaboration,
 persistence, website execution, call/audio lifetime or game logic.
@@ -2057,7 +2075,7 @@ render-eligibility result. Camera culling changes neither the actor nor the
 saved spatial state. Returning the camera to an actor simply derives a fresh
 presentation from the state that continued evolving off screen.
 
-CEF needs the same split at a different boundary. An off-camera external Sand
+the embedded browser needs the same split at a different boundary. An off-camera external Sand
 keeps its browser context, JavaScript, permitted network/local storage, events,
 audio and call participation active. Lince may stop importing or uploading new
 video frames and omit its textured quad from composition. A video decoder may
@@ -2075,7 +2093,7 @@ Bounds are authored and updated as part of each presentation kind. A native
 Sand has its actual visual rectangle/rounded volume and elevation; a Castle can
 use a conservative union bound only when all children share the same render
 policy; an Area includes its visible field/outline while editing; topology uses
-spatial tiles; a CEF surface uses its composed quad; a pinned Sand belongs to
+spatial tiles; a embedded browser surface uses its composed quad; a pinned Sand belongs to
 screen space. Selected, manipulated and diagnostic actors can opt into an
 explicit X-ray/editor pass without lying to normal visibility.
 
@@ -2118,7 +2136,7 @@ and interaction handles have explicit minimum presentation rules.
 
 The renderer and picker consume compatible visibility snapshots. By default a
 world object occluded by topology is not front-clickable through it; an
-editor/X-ray selection mode can intentionally broaden candidates. A CEF Sand
+editor/X-ray selection mode can intentionally broaden candidates. A embedded browser Sand
 cannot intercept input when its composed surface is not the routed visible hit.
 This avoids a hidden web surface capturing clicks while preserving its off-
 camera runtime.
@@ -2126,7 +2144,7 @@ camera runtime.
 Culling counters use a generated/versioned Rust/WGSL layout rather than
 independent integer literals. Each stage defines its input population, survivor
 population, rejection population, unit (`actor`, `draw group`, `instance`,
-`meshlet`, `topology tile`, `CEF surface`) and whether categories partition the
+`meshlet`, `topology tile`, `embedded browser surface`) and whether categories partition the
 input. The invariant is tested before percentages are shown. Entry 11's bounded
 asynchronous telemetry carries the counters to Renderer Health without a
 per-frame map-and-wait.
@@ -2156,11 +2174,11 @@ render list than to dispatch several GPU passes.
 Use a coarse-to-fine hierarchy so expensive tests see fewer candidates. Reuse
 stable static bounds, update only dirty spatial chunks, keep opaque and ordered
 presentation paths separate, and use bounded capacity with a visible overflow
-fallback. CEF frame dropping should happen before copy/upload where possible.
+fallback. embedded browser frame dropping should happen before copy/upload where possible.
 None of these optimizations authorizes sleeping behavior.
 
 Benchmark at the current development resolution with representative native
-Sands, text, topology and CEF surfaces. Vary candidate count, visible ratio,
+Sands, text, topology and embedded browser surfaces. Vary candidate count, visible ratio,
 overdraw, camera motion and bound quality; compare culling cost against work
 actually avoided. The math and resource sizing must remain resolution-derived
 so the architecture is not limited to the current monitor, but a 4K performance
@@ -2241,11 +2259,11 @@ produce a per-view `RenderCandidate` stream containing stable id, presentation
 kind, conservative bounds, layer/order key, bounds generation and resource
 references. A `VisibilityPipeline` returns stable visible lists for ordered
 native Sands, opaque world geometry, transparent world geometry, topology,
-CEF surfaces, shadows and diagnostic overlays. Each output retains rejection
+embedded browser surfaces, shadows and diagnostic overlays. Each output retains rejection
 telemetry without mutating the inputs.
 
 The v1 slice needs CPU/spatial-index 2D clipping and conservative 3D frustum
-culling for native Sands/topology, plus composition culling for CEF. Demonstrate
+culling for native Sands/topology, plus composition culling for browser surfaces. Demonstrate
 an off-camera Sand continuing fixed-step Area motion and re-entering at its
 evolved position; an off-camera external Sand continuing a timer/event/audio
 test while its texture-import counter stops; and a pinned Sand remaining in the
@@ -2318,12 +2336,12 @@ target than the post: a Wayland/Ozone, Vulkan-first Linux host. It should not
 add X11, Metal, Direct3D or browser-WebGPU branches to Plan A in pursuit of an
 abstract portability score. Nevertheless, Linux is not one GPU. Mesa AMD,
 Mesa Intel, NVIDIA, software Vulkan, driver versions and device limits still
-differ, and CEF DMA-BUF interoperability adds another capability dimension
+differ, and embedded browser DMA-BUF interoperability adds another capability dimension
 that `wgpu::Features` does not describe.
 
 The useful result is a first-class `RendererPlatformReport`, built once from
 the selected adapter before device creation and completed after surface and
-CEF-interoperability probing. It records backend, adapter/driver identity,
+embedded-browser-interoperability probing. It records backend, adapter/driver identity,
 limits, surface formats and present modes, per-format usage features, enabled
 WGSL extensions, selected implementations, unavailable enhancements and
 reasons. The report is immutable for a device generation and is replaced
@@ -2338,7 +2356,7 @@ vendor features. The host either supplies the promised projection, selects a
 semantically equivalent projection, or presents an explicit unavailable state.
 
 The Renderer Health Sand exposes the report in human language: selected GPU
-and driver, Vulkan/device generation, native and CEF status, active rendering
+and driver, Vulkan/device generation, native and browser status, active rendering
 paths, measured degradation and a copyable diagnostic. Exact low-level fields
 can expand on demand. A Website receives none of this through the Lince bridge;
 Installed HTML receives only normalized host capabilities it was granted, not
@@ -2354,14 +2372,14 @@ limit becomes a contract, and asking for values the renderer never needs makes
 device creation and validation unnecessarily brittle.
 
 Compile-time platform selection remains only at real native integration
-boundaries such as Wayland handles and Linux CEF/Vulkan interop. Rendering
+boundaries such as Wayland handles and Linux embedded browser/Vulkan interop. Rendering
 algorithms use runtime capabilities. Each chosen path is represented by a
 typed enum or prepared strategy, so passes do not scatter feature probes and
 conditional assumptions through command recording. Pipeline compilation,
 format selection and buffer-layout validation happen before the path is
 admitted into a frame plan.
 
-CEF requires a sibling interoperability report: accelerated-paint support,
+the embedded browser requires a sibling interoperability report: accelerated-paint support,
 DMA-BUF fourcc/modifier, plane layout, importable Vulkan format, external-memory
 handle support, explicit synchronization path, producer/consumer device match,
 and the last import failure. These cannot be inferred from `wgpu` feature bits.
@@ -2386,7 +2404,7 @@ uninitialized padding in a Rust type, but it cannot prove that an independently
 written WGSL type has the same offsets.
 
 Device loss and surface loss are capability transitions, not panics. Stop
-submitting the affected generation, retain semantic/physics/CEF lifecycle
+submitting the affected generation, retain semantic, physics and browser lifecycle
 state, recreate the adapter/device resources, build a new report and resume
 presentation. Renderer Health distinguishes unsupported, temporarily lost,
 degraded and deliberately disabled states.
@@ -2495,7 +2513,7 @@ mandates linear filtering for `R32Float` and that bindless arrays are always
 
 **Concrete v1 contract.** Add a capability fixture format used only by tests
 and diagnostics, not durable Box state. A fixture contains adapter features,
-limits, format features, surface capabilities and CEF interop outcomes. Feed
+limits, format features, surface capabilities and embedded browser interop outcomes. Feed
 it through one pure planner that produces a required-device request, chosen
 surface/depth formats, node submission path, material binding path, profiler
 availability and external-surface path. The same input must always produce the
@@ -2503,7 +2521,7 @@ same plan and typed rejection reasons.
 
 Use at least these profiles: the actual development Vulkan adapter; a reduced
 but valid baseline with no optional features; no GPU-counted multi-draw; low
-sampled-texture/sampler limits; unfilterable `R32Float`; no timestamps; CEF
+sampled-texture/sampler limits; unfilterable `R32Float`; no timestamps; the embedded browser
 DMA-BUF import unavailable; and an invalid baseline. The reduced valid profiles
 must render the same stable actor ids and picking ids. The invalid profile must
 name the exact missing requirement before frame construction.
@@ -2514,7 +2532,7 @@ hardware becomes available; use software Vulkan for validation coverage, not
 as performance evidence. Shader variants compile through Naga and `wgpu`
 validation. ABI tests compare Rust `size_of`/offsets with generated layout
 metadata. Device/surface loss tests verify that simulation, Protein, events,
-physics and CEF browser lifetimes continue while only presentation is rebuilt.
+physics and browser lifetimes continue while only presentation is rebuilt.
 
 Do not add a physical 4K benchmark gate without the hardware. Do keep all
 extent, scale, clip, atlas and allocation decisions dynamic and run synthetic
@@ -2523,7 +2541,7 @@ into a supposedly portable path.
 
 **Verdict:** adopt runtime negotiation, explicit mandatory versus optional
 features, typed selected paths, semantic-equivalence tests and a visible
-renderer/CEF capability report. Keep Plan A Wayland/Vulkan-focused instead of
+renderer/browser capability report. Keep Plan A Wayland/Vulkan-focused instead of
 maintaining unrelated platform branches. Reject the article's guessed limits,
 invalid API shapes and undocumented performance constants. For Lince, the
 fallback is part of the product only when it preserves the same Sand/Box
@@ -2628,7 +2646,7 @@ The 2D surface-bound and 3D floating modes share this ownership model. A
 surface-bound body receives its topology height/normal and force field in the
 solver, while a free-space body receives volumetric forces. Switching view or
 projection does not copy semantic state. GPU transforms can feed instanced
-native Sands, topology and selection/picking directly; CEF quads use the same
+native Sands, topology and selection/picking directly; browser quads use the same
 resolved transform while browser execution remains independent.
 
 Every variable-size output has an explicit capacity, count, overflow flag and
@@ -2653,7 +2671,7 @@ applied to a different Record.
 
 Interaction needs an explicit authority override. While a person drags a Sand,
 the captured transaction supplies the body's target/constraint to the next
-solver tick; physics does not race the pointer. Selected or CEF-backed surfaces
+solver tick; physics does not race the pointer. Selected or browser-backed surfaces
 that require immediate CPU hit-coordinate mapping retain a small synchronized
 interaction record rather than forcing a readback of all bodies.
 
@@ -2761,7 +2779,7 @@ lose the last acknowledged durable state.
 
 Keep all off-camera bodies active in every run and verify their tick counters
 and results. Measure 2D surface-bound topology, Perspective view and free-space
-3D separately. Include moving CEF surfaces without making browser execution
+3D separately. Include moving embedded browser surfaces without making browser execution
 part of the solver. Physical 4K remains outside the present gate, while render
 extent stays dynamic and large synthetic extents remain correctness tests.
 
@@ -2826,7 +2844,7 @@ topology and ordinary scene objects may receive world lighting. A native Sand
 surface should use a hybrid treatment: its transform and occlusion belong to
 the world, while text, controls and important chrome remain unlit or
 display-referred so the configured colors preserve contrast. A subtle backing
-or contact shadow can anchor it to the surface. A CEF texture follows the same
+or contact shadow can anchor it to the surface. A embedded browser texture follows the same
 rule; the composited HTML must not become dim, color-shifted or illegible under
 a world light. Pinned Sands and the HUD are composited after world lighting and
 never participate in the shadow atlas.
@@ -2858,7 +2876,7 @@ When shadows are added, their contract should be expressed in Lince terms:
 - Shadow quality is a presentation/customization policy with honest modes such
   as off, crisp, soft and automatic. Contrast/accessibility policy may suppress
   noisy or strong world shadows without changing spatial meaning. Per-Sand
-  cast/receive policy is explicit, with safe defaults for native and CEF
+  cast/receive policy is explicit, with safe defaults for native and browser
   interface surfaces.
 - Every capacity has an overflow report and defined behavior. Exceeding the
   local-light budget must not index outside a buffer or silently map two lights
@@ -2969,7 +2987,7 @@ invalidation, measure shimmer or enforce the real atlas allocation. The post
 offers no reproducible frame timing, memory capture or visual-error corpus.
 
 **Ideas to test.** First build a small deterministic scene containing a sloped
-topology tile, a pit and ridge, one surface-bound native Sand, one CEF Sand, one
+topology tile, a pit and ridge, one surface-bound native Sand, one embedded browser Sand, one
 floating Sand and one directional light. Capture Top and Perspective views with
 shadows off and on. Native text and HTML colors must be unchanged; world
 placement, picking and occlusion must agree; a topology edit must be visible in
@@ -3050,7 +3068,7 @@ that three kinds of traffic have different loss and ordering rules:
   The renderer may skip it as long as 43 is a complete projection of all
   accumulated authoritative state.
 - GPU/resource lifecycle traffic is ordered and non-droppable. Texture import,
-  glyph or image readiness, CEF frame release, device-generation change,
+  glyph or image readiness, embedded browser frame release, device-generation change,
   submission completion and resource retirement cannot disappear merely
   because the visual snapshot which first referenced them was replaced.
 
@@ -3059,7 +3077,7 @@ the runtime. The Wayland/winit platform loop can remain responsive to input,
 IME, configure, scale and lifecycle events while a render coordinator owns the
 frame graph and expensive preparation. A bounded latest-snapshot mailbox
 prevents render backlog. One explicit submission coordinator establishes the
-order among world rendering, native Sand rendering, CEF import/copy, overlays,
+order among world rendering, native Sand rendering, browser import/copy, overlays,
 swapchain composition and retirement. “`wgpu` is thread-safe” is not a frame
 protocol.
 
@@ -3068,7 +3086,7 @@ window image:
 
 - topology/world and native spatial instances;
 - native Sand surfaces and Castle chrome;
-- each visible CEF external surface by imported-frame generation;
+- each visible browser external surface by imported-frame generation;
 - selection, edit arrows, Area/topology tools and diagnostics;
 - pinned HUD and accessibility overlays.
 
@@ -3096,7 +3114,7 @@ frame from making the user click the new invisible position of an object while
 its old image is still on screen.
 
 Use separate bounded paths for snapshot replacement and lifecycle completion.
-A replaced snapshot releases every CEF frame/import lease and retained resource
+A replaced snapshot releases every embedded browser frame/import lease and retained resource
 reference it held. An off-camera Website Sand remains normally executing, as
 required, but the renderer does not import/sample/draw a new browser frame for
 it. The browser producer coalesces to its latest frame and receives all required
@@ -3126,7 +3144,7 @@ synchronously, which supplies the correctness oracle for the threaded path.
 For Box camera movement, persistent geometry plus a changed camera uniform is
 usually better than a pixel overscroll buffer. Orthographic pan, Perspective
 orbit, zoom, topology deformation, lighting, moving Sands, edit overlays and
-CEF frames invalidate different portions of a finished image. Re-rendering the
+browser frames invalidate different portions of a finished image. Re-rendering the
 currently visible native instances can be cheap while preserving sharp text and
 correct depth. Pixel retention is most plausible inside a stable 2D Sand with a
 large document or list; there it should be local, tiled and combined with data
@@ -3187,7 +3205,7 @@ shipping code:
   bandwidth and adds a stage on every presented frame. It may still buy
   decoupling, but it is not near-zero work. The stated memory totals count only
   one RGBA8 image: a 3× factor in each dimension is nine times viewport pixels,
-  before HDR, depth, retained layers, CEF surfaces, buffering and the rest of
+  before HDR, depth, retained layers, embedded browser surfaces, buffering and the rest of
   the renderer budget. “Fine on any 4 GB GPU” is not a capability decision.
 - Screen-space hitbox translation is valid only for a proven pure translation.
   Nested scrollers, sticky/fixed content, hover changes, transforms, scale,
@@ -3206,12 +3224,12 @@ handle protection, device-recreation notification and GPU-lifetime retention.
 Its Wayland path uses the wgpu renderer directly; macOS and Windows require
 backend-specific sharing work. These details support Lince's external-surface
 ABI thinking, but the GPUI trait is wgpu-producer-specific and event-thread-
-resident. CEF DMA-BUF import, permissions, input, audio/video lifetime and Box
+resident. embedded browser DMA-BUF import, permissions, input, audio/video lifetime and Box
 events still require the broader Lince-owned Website Sand contract.
 
 **Ideas to test.** First make synchronous and threaded render coordinators
 consume the same recorded snapshots. Randomly delay scene preparation, GPU
-submission, CEF frame readiness and presentation; the displayed revision must
+submission, embedded browser frame readiness and presentation; the displayed revision must
 never go backward, no stable handle may resolve to a newer occupant, and every
 dropped frame lease must retire exactly once. Resize, scale change and device
 loss while a frame is in flight. The platform loop must continue receiving
@@ -3221,7 +3239,7 @@ Measure platform-event latency, input-to-present latency, dropped snapshots,
 CPU preparation, queue depth, upload bytes, full-screen-copy time, retained
 texture bytes and p95/p99 frame pacing for the accepted 1,000-active/10,000-
 resident/200-visible workload. Include all-moving physics, calm desk, topology
-editing, Perspective navigation, CEF video and a large text/list Sand. Verify
+editing, Perspective navigation, browser video and a large text/list Sand. Verify
 that off-camera tick/media counters advance while their draw/import counts do
 not. Leave the window idle and require zero redraw/present spin.
 
@@ -3288,7 +3306,7 @@ and presets while the runtime remains free to lower them differently on each
 adapter.
 
 The layer boundary is important. World/topology rendering may receive a world
-post-process before native readable Sands, CEF surfaces, edit controls, pinned
+post-process before native readable Sands, embedded browser surfaces, edit controls, pinned
 HUD and accessibility overlays are composed. A stylized Sand or Castle may opt
 into a scoped effect layer, but a global world effect must not silently change
 browser pixels, text contrast, focus indication or selection colors. An
@@ -3306,7 +3324,7 @@ visual preset from becoming an accidental Behavior.
 
 **Needed for it to work.** The minimum correct contract is a linear/HDR world
 color space, an explicit display transform and output format, stable
-world/native/CEF/overlay layer ordering, typed effect parameters, deterministic
+world/native/browser/overlay layer ordering, typed effect parameters, deterministic
 blend and order rules, visible compilation diagnostics, an unchanged previous
 pipeline on compile failure, and recovery after device loss. A calm 2D desk
 can initially use only the correct display transform; bloom, grain and cinematic
@@ -3410,7 +3428,7 @@ interpolating the source parameters.
 **Ideas to test.** Build a CPU reference for the typed graph and compare fused
 and deliberately unfused GPU lowering for representative pure nodes, including
 linear/HDR boundaries, alpha and final display encoding. Golden captures must
-show that native text, focus, CEF pixels and accessibility overlays are
+show that native text, focus, browser pixels and accessibility overlays are
 unchanged by world effects. Malformed and oversized graphs, raw shader compile
 failure, an intentionally excessive shader and device reset must retain a
 usable previous presentation and expose a human-readable diagnostic.
@@ -3485,9 +3503,9 @@ This does not mean one pass per Sand. Lince should first extract visible native
 Sands into persistent instance buffers and sort/batch by render phase,
 material, clip/depth policy and pipeline. Thousands of similar cards, labels or
 topology marks then become a small number of draws inside a few intentional
-passes. Each visible CEF surface contributes a composited external texture;
+passes. Each visible embedded browser surface contributes a composited external texture;
 external HTML never contributes GPU passes or frame-graph declarations. The
-world, native readable Sand, CEF, edit-overlay and pinned-HUD layer boundary
+world, native readable Sand, the embedded browser, edit-overlay and pinned-HUD layer boundary
 from the compositor plan remains explicit.
 
 The graph compiler may later combine adjacent compatible render nodes, fuse
@@ -3725,7 +3743,7 @@ only commands the principal could meaningfully request in that context. It
 must never imply that seeing a command grants permission to execute it; the
 authoritative handler checks again at invocation and commit.
 
-This preserves the external-HTML boundary. A Website Sand runs in its CEF
+This preserves the external-HTML boundary. A Website Sand runs in its browser
 security context and talks to a narrow broker using its Sand-instance identity.
 It may subscribe to granted Protein projections, receive permitted Box events,
 hold explicitly granted web storage and network capabilities, and request
@@ -3883,7 +3901,7 @@ but not the architecture the prose says is running:
   the loader supports an allow-unlisted switch. Treating marketplace code as
   “the same risk as native” merely names full code execution. Trusted built-ins
   may be in-process; community code needs a real isolation and permission
-  design. Website Sands remain in CEF and never graduate to native trust for
+  design. Website Sands remain in the browser and never graduate to native trust for
   speed.
 - Toolbelt has broad unit coverage for registry and macro mechanics, but the
   Pulsar integration tests found here do not exercise duplicate-provider
@@ -4033,7 +4051,7 @@ boundary and retains the last known-good plan if any stage fails. Copying a
 matching Rust offset is not a migration rule. A renamed, removed or changed
 field needs a declared reset/conversion and a visible diagnostic.
 
-Website Sands stay on the CEF side of the broker. They may emit and subscribe
+Website Sands stay on the browser side of the broker. They may emit and subscribe
 to granted typed events and commands, but cannot register a native function,
 provide a pointer shim or extend the in-process node library. Trusted built-in
 Rust can register node descriptors through a safe adapter to the same Behavior
@@ -4524,7 +4542,7 @@ Each render domain needs an explicit output contract. A native UI Sand may
 produce coverage, color and optional picking data. Box topology may produce a
 surface material plus a separately defined displacement visualization. An
 opaque world surface targets the deferred geometry contract, while transparent
-objects, sprites, video textures, pinned HUD content and CEF surfaces have
+objects, sprites, video textures, pinned HUD content and embedded browser surfaces have
 different ordering and blending rules. A graph valid for one contract is not
 silently accepted by another merely because both eventually emit pixels.
 
@@ -4572,7 +4590,7 @@ digest/content mismatch rather than overwrite an existing identity. Removing a
 graph must either retain an immutable referenced artifact until unused or
 invalidate every dependent pipeline deterministically.
 
-External HTML remains behind the CEF texture/event boundary. It can request a
+External HTML remains behind browser texture/event boundary. It can request a
 declared visual effect through the same capability-checked Box protocol, but it
 cannot supply WGSL, choose bindings, read renderer resources or share native
 pipeline authority. Trusted imported material packages carry provenance,
@@ -4886,7 +4904,7 @@ with CPU hit testing rather than hundreds of ordinary UI elements.
 architecture we control. One interaction should be traceable through Wayland
 event receipt, hit testing, focus/gesture resolution, Behavior dispatch,
 Protein query or update, scene-state commit, physics/topology step, visibility
-and draw-plan construction, CEF texture acquisition, GPU upload/passes,
+and draw-plan construction, embedded browser texture acquisition, GPU upload/passes,
 submission and presentation. Stable Sand, Castle, Area, Protein and scene
 entity ids let a person answer both “which stage was slow?” and “why was this
 Sand involved?”
@@ -4901,7 +4919,7 @@ instanced native primitive while controls and detail panes reuse normal Sands.
 Use two capture levels. A bounded timeline stores cheap spans, counters and
 artifact identities. An explicitly armed frame snapshot may copy selected
 scene/draw resources for visual diagnosis. The second is expensive and
-privacy-sensitive, especially because CEF, video, maps and Record content can
+privacy-sensitive, especially because the embedded browser, video, maps and Record content can
 appear in textures. It is local-only by default, says exactly what it will
 capture, supports redaction/exclusion by Sand capability and never enters
 Workspace Sync or a bug report without deliberate confirmation.
@@ -4932,7 +4950,7 @@ where supported and a visible “uncorrelated” state where not. GPU durations
 within one timestamp domain remain useful even without cross-clock placement.
 
 Frame correlation is explicit rather than inferred from “most recently
-opened.” Multiple windows, CEF producers and overlapping background tasks need
+opened.” Multiple windows, browser producers and overlapping background tasks need
 their own frame/task ids. A span can cross several frames and is shown as such;
 it is not assigned solely by its start time to whichever frame closes after it
 finishes. Buffers have bounded event counts and report dropped/truncated data,
@@ -4943,7 +4961,7 @@ digest and revision, capture used byte ranges rather than entire reusable
 allocations, and either zero unused storage or never export it. Record actual
 bind/resource identities, dynamic offsets, render targets, viewport/scissor,
 blend/depth state, push/uniform data, draw/dispatch parameters and pass order
-for any path claiming render replay. Dynamic material and CEF surfaces need
+for any path claiming render replay. Dynamic material and embedded browser surfaces need
 domain-specific capture rules.
 
 A trace reader treats the file as hostile: bounded lengths/counts, checked
@@ -5025,7 +5043,7 @@ duration queries against an external profiler on supported adapters.
 
 Run Lince fixtures for 1, 100, 1,000 and several thousand native Sands with
 stationary and active physics; topology editing; large Protein result arrival;
-mixed native and CEF Sands; camera culling; 2D/3D transition; and off-camera
+mixed native and browser Sands; camera culling; 2D/3D transition; and off-camera
 active behavior. Record p50/p95/p99/worst event-to-visible latency, CPU/GPU
 stages, allocations, draw counts and resource memory. Repeat with capture
 compiled out, idle and active to quantify observer effect.
@@ -5078,7 +5096,7 @@ table length.
 
 **What helps Lince.** Evaluation point is a useful name for a versioned render
 contract. Native Sand surface, glyph/icon, Box plane/topology, opaque world,
-transparent world, shadow/depth, picking, video/CEF composite and post-effect
+transparent world, shadow/depth, picking, video and browser composite and post-effect
 are separate domains with declared inputs, outputs, ordering, resources and
 device requirements. A material/effect graph targets a contract; it does not
 splice itself into an arbitrary pass or infer compatibility from function
@@ -5155,7 +5173,7 @@ flags, bindless parameter access, incremental updates and prewarmed pipeline
 caches are optimizations. Template/instance separation and typed contracts are
 correctness and composition architecture; the particular GPU dispatch scheme
 is not. Use the profiler from review 25 to compare them on native Sands,
-topology/world content and mixed CEF composition.
+topology/world content and mixed embedded browser composition.
 
 **Specification audit.** Several claims conflict with GPU pipeline semantics,
 the draft's own structures or basic arithmetic:
@@ -5438,7 +5456,7 @@ changes the viewer transform unless an explicit edit moves a Sand or world
 object.
 
 Website Sands and native Sands keep the same event and Protein contracts in
-XR. CEF still produces an HTML texture; a world or HUD Sand presents that
+XR. An embedded browser still produced an HTML texture; a world or HUD Sand presents that
 texture on a surface and maps an authorized ray hit to local CSS pixels.
 Pointer focus, capture, scrolling, text input, keyboard ownership and surface
 resolution must be explicit. XR does not make arbitrary HTML native 3D, and a
@@ -5540,7 +5558,7 @@ it and fail clearly.
 On hardware, record missed compositor deadlines, CPU/GPU pass timings,
 motion-to-visible latency and device/extension diagnostics. Test asymmetric
 frustums, stage absence, recentering, session focus/loss and adapter mismatch.
-Then place one native Sand and one CEF Website Sand in space and verify ray
+Then place one native Sand and one browser Website Sand in space and verify ray
 focus, click, scroll, text input, event delivery and permissions without
 changing their Box identity.
 
@@ -5597,7 +5615,7 @@ continues to simulate all slots also demonstrates the owner's required
 off-camera distinction: invisible does not mean asleep.
 
 It is not a universal Sand renderer. Text glyphs require their own atlases and
-clipping; native controls need retained interaction and accessibility; CEF
+clipping; native controls need retained interaction and accessibility; the embedded browser
 Website Sands are independently produced textures with lifecycle and
 synchronization; video has color-space and update-rate requirements; arbitrary
 materials and transparent overlaps require compatible batching/order rules.
@@ -5630,7 +5648,7 @@ pass. Passing raw buffers between crates does not remove their dependency on
 the byte contract.
 
 Sort order must encode Lince semantics. Equal-depth native Sands need stable
-z-order and group/clip boundaries; transparent CEF and video surfaces may need
+z-order and group/clip boundaries; transparent browser and video surfaces may need
 different compositor batches. A key can combine layer, group, z order and a
 stable tie-break rather than treating arbitrary float depth as the whole
 contract. Surface-perspective mode may depth-test opaque elements while
@@ -5719,7 +5737,7 @@ semantic transition, checkpoint it, restart and verify the restored state and
 authority is needed rather than assuming it.
 
 Finally composite one native proxy population, real output-resolution text
-and several CEF/video surfaces. This verifies that batching dense native work
+and several browser and video surfaces. This verifies that batching dense native work
 improves the whole interface without sacrificing external Sand correctness or
 turning the single-draw count into a design objective.
 
@@ -5809,7 +5827,7 @@ transactions: adding, removing, dissolving and overlapping groups cannot leave
 a child silently attached to a recycled renderer slot.
 
 All semantic consumers derive the same world pose from that graph. Rendering,
-culling, picking, focus, accessibility geometry, pointer routing, CEF surface
+culling, picking, focus, accessibility geometry, pointer routing, embedded browser surface
 composition, physics, collisions, Areas of Influence, Protein spawn placement,
 topology adhesion, event coordinates, saving and collaboration cannot each
 invent a nearby transform calculation. Current and previous poses advance at
@@ -5906,7 +5924,7 @@ article's broader moving-world claims:
   also leaks a newly boxed attachment slice every frame.
 - Duplicate portal content uses the default opaque G-buffer material rather
   than every source material family. It has no general path for transparent
-  content, CEF Website Sands or video. Portal duplicates do not cast portal
+  content, browser Website Sands or video. Portal duplicates do not cast portal
   shadows, and the article correctly identifies both that and missing portal
   Hi-Z as limitations. VR was also explicitly untested.
 - Streaming remains a proposed policy. It has no source implementation to
@@ -5925,7 +5943,7 @@ presentation strategies and choose from the view contract.
 **Ideas to test.** Build one Castle from native Sands and one from a Box-edited
 group. Nest them, reparent while preserving world pose, dissolve a group and
 restart Lince. Move the root through an Area and verify collision, picking,
-CEF pointer coordinates, saved positions, collaboration operations and “Why
+browser pointer coordinates, saved positions, collaboration operations and “Why
 is it here?” all agree. Remove a member immediately before destroying a group,
 reuse every renderer slot and prove no stale child moves.
 
@@ -5938,7 +5956,7 @@ room and desk scales with camera-relative rendering to expose precision loss.
 Benchmark 1, 32, 1,000 and deeply nested frames under sparse and all-moving
 loads. Measure transform resolution, upload bytes, culling, picking and frame
 percentiles separately. Then prototype one portal between two Box regions with
-native opaque Sands, transparent content and a CEF surface. Compare remapped
+native opaque Sands, transparent content and a embedded browser surface. Compare remapped
 geometry and a composited view, force every capacity limit and make incomplete
 presentation visible rather than silently dropping it.
 

@@ -113,6 +113,8 @@ pub struct ViewerBootstrap {
 pub struct AppRuntimeInfo {
     pub port: u16,
     pub version: &'static str,
+    pub revision: &'static str,
+    pub update: Option<crate::self_update::UpdateStatus>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -169,6 +171,8 @@ impl Default for AppBootstrap {
             AppRuntimeInfo {
                 port: 6174,
                 version: env!("CARGO_PKG_VERSION"),
+                revision: utils::build_info::revision(),
+                update: None,
             },
             None,
         )

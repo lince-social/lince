@@ -28,7 +28,6 @@ const BLACK_IN_WHITE_SVG: &[u8] = include_bytes!("../../../../../assets/logo/bla
 const BLACK_IN_WHITE_PNG: &[u8] = include_bytes!("../../../../../assets/logo/preto_no_branco.png");
 const BLACK_IN_WHITE_ICO: &[u8] = include_bytes!("../../../../../assets/logo/black_in_white.ico");
 const BLACK_IN_WHITE_ICNS: &[u8] = include_bytes!("../../../../../assets/logo/black_in_white.icns");
-const EXCALIDRAW_SOURCE: &[u8] = include_bytes!("../../../../../assets/lince.excalidraw");
 const LATO_REGULAR: &[u8] = include_bytes!("../../../../../assets/fonts/Lato/Lato-Regular.ttf");
 const LATO_BOLD: &[u8] = include_bytes!("../../../../../assets/fonts/Lato/Lato-Bold.ttf");
 const LATO_LICENSE: &[u8] = include_bytes!("../../../../../assets/fonts/Lato/OFL.txt");
@@ -43,7 +42,7 @@ fn manifest() -> PackageManifest {
         author: "Lince Institute".into(),
         version: "1.0.0".into(),
         description: "The Lince website and downloadable visual-identity kit.".into(),
-        details: "A self-contained, multilingual Maud site with bundled styles, logos, editable artwork, fonts, and license notices. External resources open in a new tab.".into(),
+        details: "A self-contained, multilingual Maud site with bundled styles, logos, fonts, and license notices. External resources open in a new tab.".into(),
         initial_width: 8,
         initial_height: 7,
         requires_server: false,
@@ -125,7 +124,6 @@ pub(crate) fn package() -> LincePackage {
             "assets/black_in_white.icns".into(),
             BLACK_IN_WHITE_ICNS.to_vec(),
         ),
-        ("assets/lince.excalidraw".into(), EXCALIDRAW_SOURCE.to_vec()),
         (
             "assets/fonts/Lato-Regular.ttf".into(),
             LATO_REGULAR.to_vec(),
@@ -195,7 +193,6 @@ mod tests {
             "assets/logo/black_in_white.png",
             "assets/black_in_white.ico",
             "assets/black_in_white.icns",
-            "assets/lince.excalidraw",
             "assets/fonts/Lato-OFL.txt",
             "assets/fonts/Aleo-OFL.txt",
         ] {

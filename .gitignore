@@ -2,6 +2,7 @@ target/
 /logs
 mprocs.log
 .env
+!.env.example
 .config/lince/
 .rustup/
 .codex
@@ -9,6 +10,3 @@ trash/
 .claude
 .agents/*
 !.agents/skills/
-node_modules/
-test-results/
-playwright-report/

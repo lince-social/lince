@@ -1,6 +1,6 @@
 use {
     crate::{
-        binary::PiBinary,
+        binary::FioteBinary,
         credential::ProviderCredential,
         cub::{Cub, CubSpec, CubStatus},
     },
@@ -14,13 +14,13 @@ use {
 };
 
 pub struct Supervisor {
-    binary: PiBinary,
+    binary: FioteBinary,
     cubs: Mutex<BTreeMap<String, Arc<Cub>>>,
     next: AtomicU64,
 }
 
 impl Supervisor {
-    pub fn new(binary: PiBinary) -> Self {
+    pub fn new(binary: FioteBinary) -> Self {
         Self {
             binary,
             cubs: Mutex::new(BTreeMap::new()),
@@ -28,7 +28,7 @@ impl Supervisor {
         }
     }
 
-    pub fn binary(&self) -> &PiBinary {
+    pub fn binary(&self) -> &FioteBinary {
         &self.binary
     }
 

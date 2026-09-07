@@ -3,6 +3,10 @@ description = "Automated release workflow"
 tools = { "cargo:git-cliff" = "latest", "cargo:cargo-edit" = "latest", "gh" = "latest" }
 run = "./scripts/other/release.sh"
 
+[tasks.dev]
+description = "Run an independent Lince and open its native interface"
+run = "bash scripts/interface/run-dev.sh"
+
 [tasks.test]
 run = """
 systemctl --user stop lince.service

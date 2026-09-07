@@ -133,6 +133,8 @@ A record's quantity can name its **unit** — kilograms, hours, a currency — b
 - [ ] Maybe a Record can have longitute,latitude, and be given a name, so we can use it as an address, and in the links of a record of party we put like location or address link so Party #address Street4 (that has a longitude) or just plainly in the Party record, since it will also have latitude longitude. It's good to be able to use both.
 
 It remembers which **Organ** it came from, which is how you know whether something arrived from a group you are in or you wrote it yourself. And it keeps **when it was created and last changed**.
+
+- [ ] Vault is when we lock description of record behind a password, in the future it can be used to give agents a place to save access tokens to LLM providers.
 }
 
 Assertion (@assertion: 0, #instinct, #part-of @ontology) {
@@ -224,6 +226,13 @@ Other Organs can be saved as contacts, with unknown, known and blocked states, a
 
 } r_VAX3HA21RXF9AENHMCJTSEF1AT
 
+Sync (@sync: 0, #instinct, #part-of @ontology) {
+- [ ] FileSync to disk in General File mode, respecting .gitignore. So record title is file name and description is contents.
+	- [ ] LSP walks the files to generate links between them if they are of a certain language, usage of some resource that comes from another file is a link: struct, trait, function, mod... all links. 
+	- [ ] Send binary files in such a folder to the blob store, since Record bodies are text.
+	- [ ] Keep derived links distinguishable from hand-made ones. A refresh must never wipe a person's manual link and must never add a second copy of one it made before
+- [ ] PeerSync to random binary blobs, so i can send a bunch of files, or only one or a bunch of dirs, or only one. See if iroh supports this.
+}
 
 Lingua (@lingua: 0, #instinct, #part-of @ontology) {
 A Language for turning Lince's data into file versions with File Sync.
@@ -240,6 +249,89 @@ This is a good step in interoperability of systems, less isolation and complex A
 }
 
 Ontology (@ontology: 0, is #chapter, #instinct, #done) { r_S8PQ17MQ3WBWM53ZN700K89V9F
+
+## 3. Organ management, discovery, relay and Facade
+
+The profile editor lands with the profile work (interface plan). Relay Cells begin with the role; everything else there is shaped by it.
+
+### Organ Profile — T0 and T1
+
+- [ ] Make T0 carry a structured pair — display name and profile version — in 245 bytes of text. No image ever; T0 lasts forever.
+- [ ] Keep the published organ key off T0. The key arrives after connect, so a nearby row shows no card until then.
+- [ ] Build T1, the card (a few KB, the only tier that gossips): name, description, organ key, coarse area if set, inline 128px webp avatar at 4–8KB, pronouns and language as first-class fields, a reachability hint (direct / relay-only / always-on Cell exists) that never names Cells, and offering/looking-for as OPEN promises.
+- [ ] Make the card degrade to its text half over low-bandwidth radio rather than fail.
+- [ ] Sign the card with the organ key (integrity, not identity); drop a card whose signature fails, silently.
+- [ ] Give the card a version number, a TTL, a cache eviction lifetime separate from the card's, and a last-updated timestamp.
+- [ ] Content-address every image and every Facade.
+- [ ] Take the coarse area as a self-declared country/region/city/neighbourhood; never derive it from IP or GPS.
+- [ ] Make gossiping your card opt-in per tier, with none implying the next.
+- [ ] Default the coarse area to unset, and to its coarsest granularity when set.
+- [ ] Make the seen-set, the per-source budget and the age expiry mandatory, not tunable.
+- [ ] Make publishing into a directory a separate explicit act from gossiping.
+- [ ] Keep the invite door default-closed.
+
+### Multi-hop discovery, gossip and the directory
+
+- [ ] Propagate OPEN promises past direct contacts, hop by hop, with a TTL and a per-hop visibility check. Payload and route exist (`GET /organ/open-promises`); this is propagation, not a new message type.
+- [ ] Build the gossip cache and the delegated ask-around search — asking a contact to ask onward under the same hop and TTL limits, and holding what comes back.
+- [ ] Design world-reach discovery beyond gossip and the directory before building anything for it.
+- [ ] Dedup the flood on content hash with a seen-set.
+- [ ] Forward to a random subset, not to everyone.
+- [ ] Enforce a per-source rate budget.
+- [ ] Expire by age, independently of remaining hops.
+- [ ] Depend on nothing a sender says about hop count; a relay drops past the limit it chose itself. Keep hop count, `nearness` and `proximity` distinct in the UI.
+- [ ] Build a directory Cell: a queryable index an Organ publishes into and others search. (`directory.rs` is not this.)
+- [ ] State the directory's disclosure where someone searches — an index sees every query, who, what, when, from where, and that lands on the searcher.
+- [ ] Make several independent directories the mitigation and bless none of them.
+- [ ] Resolve an area search against the self-declared coarse area and nothing else.
+
+### Relay Cells
+
+- [ ] Build the relay role: a Cell willing to carry other Organs' traffic onward. Distinct from `iroh-relay` rendezvous/fallback — new infrastructure, not a mode switch.
+- [ ] Keep a relay and a townsquare separate in configuration and in the interface.
+- [ ] Make consent to relay explicit per Cell, with a test that a Cell which never opted in forwards nothing.
+- [ ] Make relay mode use `relay_capabilities()`, with a test that a published relay Cell is refused capabilities outside that set.
+- [ ] Give a relayed batch a signed batch envelope — one signature per batch, never per op.
+- [ ] Make relaying a contact's ops per-contact, default to forwarding nothing, with a test.
+- [ ] Add a per-peer connection cap (`services.lince.relay.*` does not exist yet).
+- [ ] Add byte accounting against a configurable ceiling.
+- [ ] Decide the one option namespace for relay and townsquare, alongside the role.
+- [ ] Say in the Discovery panel when a peer is being throttled.
+- [ ] Give long-range low-bandwidth radio (LoRa) its own transport adapter from the start.
+
+### LAST — T2, the Facade
+
+An HTML page fetched on demand by hash, never gossiped.
+
+- [ ] Reconcile T2's no-network wording with the static/dynamic delivery modes in `anicca/interface/interoperability.md` before implementing dynamic Facades.
+- [ ] Close the beacon channels with a CSP and an empty sandbox (`<img src>`, CSS `url()`, `<link>`, webfonts, form actions).
+- [ ] Sanitise on receipt, not on export, and refuse a Facade that fails sanitisation instead of cleaning it.
+- [ ] Render a Facade inside a bounded card that visibly belongs to someone else — never fullscreen, never chrome-shaped, never able to imitate a Lince prompt.
+- [ ] Fetch only on an explicit click.
+- [ ] Draw links inside a Facade as inert visible URL text that does not navigate; click-to-confirm shows the full URL as a per-viewer setting.
+- [ ] Fetch by hash from any holder, never from the origin Organ; render nothing on a cache miss and say so.
+- [ ] Bound Facade storage with a per-Facade size cap shown before the fetch, plus relay-side eviction.
+- [ ] Reduce fetch-side leakage by fetching through the relay you already use.
+
+### LAST — the public face of an Organ
+
+- [ ] Show a published-subset view: what the public Organ actually holds, shown as data.
+- [ ] Generate the Facade from the public Organ, not the internal one.
+
+### LAST — Deployments, as Resenha scenarios
+
+- [ ] `iroh-relay` on the VPS — needs a public IP, a DNS name and TLS.
+- [ ] A Cell on the VPS as a roster member (`mode = "server"`), on a different machine from the relay's user and state.
+- [ ] The blind mailbox actually deployed (`mode = "front-door"`); only the deployment is missing.
+- [ ] "Where this Cell is reachable from" in the Discovery panel.
+
+## 4. Sync, login and sessions
+
+The pending-offers UI (one list, all four handshakes, accept/refuse per row, honest empty state, one delivery state per row, refusal never looking like an unanswered offer) is in `interface/plans/interface.md`, reading `offers::pending`.
+
+- [ ] Build the "did it arrive?" surface, where receipts and checkpoints answer one user question two ways. Keep delivery semantics and domain objects apart.
+- [ ] Give the Facade a secure origin — a name and a certificate — as part of the Facade work.
+- [ ] LAST — Close the off-LAN camera gap when there is a mobile Lince (`getUserMedia` needs a secure context). No second device exists to hit it yet.
 } r_S8PQ17MQ3WBWM53ZN700K89V9F
 
 Trail (@trail: 0, is #chapter, #instinct, #part-of @ontology, #done) { r_Q46Z5FZHZFACPNSNPJP2GEDC1D
@@ -406,9 +498,6 @@ Deep Lead — CMYK: 10, 10, 0, 92; HEX: `#121214`; RGB: 18, 18, 20.
 Gray — CMYK: 10, 5, 0, 12; HEX: `#A7B4C2`; RGB: 167, 180, 194.
 Ice White — CMYK: 2, 1, 0, 1; HEX: `#F8FAFC`; RGB: 248, 250, 252.
 
-# The Zen on Interfaces.
-
-
 - [ ] Choices can be done quickly. Full control is always available.
 	- [ ] Customization
 - [ ] Built-in UI is minimal, not taking screenspace from users and flexible, fitting many Needs.
@@ -440,16 +529,11 @@ Ice White — CMYK: 2, 1, 0, 1; HEX: `#F8FAFC`; RGB: 248, 250, 252.
 - [ ] Make the controls of the workspace shown by default, with configuration to hide them in the triangle corner (configurable too for making triangle transparent or colored).
 - [ ]  Lets make the stable placement and restricted motion the first implementation then. Dont delete the code already built to make the sands move. Just dont use it for now while we make the more basic features done.
 
-# Tasks
 - [ ] We may embed the LICENSE and credits to the sand, ethical. We should have an easy to access part of Lince, not a hidden one, that is talking about the interface and is saying that we use such and such dependencies (the ones that ask us to give the LICENSE, users dont care). In that part we include the LICENSES, if we put it in the sand it's going to be work to take only the rust of it, and drop the LICENSE from the queried bytes.
 
 Components are flat by default, preffering 2D forces us to convey information only with flat data, not layers and composition, constraining the space forces minimalism. Shadows and hints can be used for subtle differentiation of areas, components and data.
 
 - [ ] The interface must keep it's state in memory, and backup to a file with a frequency per configuration.
-
-
-
-
 
 
 
@@ -714,6 +798,14 @@ With #fruit, a rule keeps catching Records asserted after it was written — you
 
 } r_K7T3ZG08G5EBWRSTF8NBWMTZYV
 
+Communication (@communication: 0, #instinct, #part-of @record) {
+- [ ] A thread can be given access to several users to write in, just like we do with organ discovery to chat with someone, but this can be permanent, only to such thread, or the record of the thread. That way a lot of people can create threads in the record and send messages.
+	- [ ] One can also enter a thread in a live mode of streaming of video/audio/screenshare. Many people can participate in it:
+		- [ ] Audio
+		- [ ] Video
+		- [ ] Screenshare
+}
+
 Fiote (@fiote: 0, #instinct, #part-of @karma) { r_137BM4Q7GV2707HBTRQ3GTJ9E5
 
 Doing a harness for Lince with Fiote may be a good way of making Lince's development more slopped more faster. While they slop in the dev checkout the nixos flake may get from github main branch.
@@ -722,10 +814,10 @@ The AI agent of Lince, firstly a harness, then maybe a model running locally. It
 
 - [ ] When Fiote suggests stuff, the suggestion may be seen as sands of the data being added. It can also run a Simulation to understand how things will change with that proposal before it shows you it's recommendation.
 	- [ ] If it violates some rule we added it can think of something else and report what ideas it thought but didnt work out.
-- [ ] Pi for now.
+- [ ] We should look for something rust based to be holistic with our crate system, not a node dependency, probably going to use some rust harness, not pi.
 - [ ] MCP for the actions the model takes.
 - [ ] in the future use the genai crate for abstracting providers?
-- [ ] Pi has session information that will be a cache, ephemeral, what remains are the messages we send it, and the messages it sends back. These are Message Records, the thread is the session.
+- [ ] Fiote has session information that will be a cache, ephemeral, what remains are the messages we send it, and the messages it sends back. These are Message Records, the thread is the session.
 	- [ ] When i add a photo in a message we need to try and send that to the model, if it has vision it will receive it well.
 
 - [ ] Agency (with user control):
@@ -752,6 +844,181 @@ The AI agent of Lince, firstly a harness, then maybe a model running locally. It
 
 
 - [ ] What if the actions people do on board, are events, like moving things around are Karma Consequences? That way karma can control the appearance/disappearance of sands the interaction with them. It could even control the position of records with some properties. Like moving them up and down. Agents doing actions in board can also fire these events so Fiote can move sands around to tidy them, add things it thinks you need for your workflows, call people (activating the Communication of a Record-message with someone). So when you interact with the board as a user you are not calling js directly, you are interacting with things that fire events and these events have consequences, Karma once again in frontend.
+
+
+# Fiote
+
+Fiote is Lince's agent. A person talks to it, it works out what they want, and it either does the work or hands it to smaller agents called cubs. Each Fiote is an Agent Record. Its behaviour is the text in that Record, so a receptionist, a builder and an architect are three descriptions, not three programs. A Fiote orchestrates and never edits code. It only has Lince's own tools: make and link Records, read the graph, assert and retract, propose field candidates, spawn or steer or stop a cub. A cub is one session of work on one task. It is a real coding agent with a shell, an editor and a working directory. It has no identity: its writes belong to the Fiote that spawned it, stamped with the session. A cub with a shell can do anything the person can, so permission work is real work. The session is a thread. Your prompt is a Message, the agent's finished turn is a Message, the session hangs off the Record that holds the plan. Streaming text, tool progress and terminal bytes are not messages: they are lane traffic that never touches the Ledger. Message text grows inside the Record's own Loro document so a person on another Organ can watch it being written over a grant they already had. Fiote is meant to be off by default and today it is off only because it is unwired. The provider layer is taken (`genai`); everything above it is ours, because that is where Records, assertions, grants and the Ledger have to live. An ACP backend stays optional for bring-your-own-agent and subscription auth.
+
+## Where things stand
+
+`crates/fiote` has a working supervisor: child process, line framing, replayable backlog, attach and detach, send and kill, one passing integration test on a real session. The supervisor is host-owned and must survive a browser reload, a closed lid and a second board on the phone; detaching is not killing.
+
+`Action::CreateAgent { head, operated_by }` ships, and so does `assigned-to`. The answerable predicate is `operated-by`, resolved before anything is created. Predicates are Concepts with per-language names and a DAG behind them, so never compare a predicate string; resolve the Concept and match anything beneath or equivalent to it. Saved Protein views work as Karma rule inputs, `TriggerSource::Fact` fires on a Record or a Concept, and the `Ask` route is frozen in the vocabulary. `effect_queue` is durable with claim and finish helpers in `store/src/misc.rs`. `replica_grant` is keyed `(root_record, contact_organ)` and fans one root out to every contact. `start_conversation` needs no contact for a local conversation.
+
+Known walls, all real today:
+
+- Karma cannot dispatch anything. Its intents are inert, so every notification lands on `effect_queue` until dispatch exists.
+- Sand feature-flag strings are labels, not gates. `sand::FEATURE_FLAG`, `OfficialWidgetBuilder::feature_flag()` and the registry all build and offer every sand. Fiote must prove its own opt-in and permission boundary when it lands; do not write `sand.fiote` into the registry and call it opt-in.
+- No secret-at-rest story. The one precedent is `engine::trust::load_or_create_secret`: 32 raw bytes in a `0600` file, not in the database. Provider keys follow that.
+- `nucleus::CauseKind::Fiote` and `Cause { kind, uid }` exist but are constructed nowhere.
+- `store::visibility::grant` documents a `fiote` subject kind but `visible_targets` honours only a subject uid or `public`. A `fiote` class grant grants nothing.
+- There is no `Agent` in `RecordKind`. An actor uid is a `Person` Record bound to an `app_user`.
+
+## Rules that hold across the work
+
+- A conclusion belongs to an Actor, never to a session. Cubs may talk freely and may not decide; when two cubs work something out, a Fiote writes it down.
+- Reading is governed by grants. A Fiote Actor is granted broadly on a personal Cell and the grant stays visible and revocable.
+- Retrieval, budget and permission are never instructions. Retrieval is a deterministic graph walk decided before the model sees anything, budget is arithmetic, permission is a gate. Instructions only shape what the model does with what already arrived.
+- The source checkout is permissive and git is the undo. The Lince database is only ever written through Actions. The harness has no undo and no boundary: change it in a separate checkout, never against the running build, never by a cub of the Fiote whose code is changing.
+- An allowlist a shell command can walk around is a convention, not a wall. Real boundaries are OS-level. The surface says "convention".
+- An item belongs to the Interface refactor only if two people talking would want it. If it is only useful because an agent exists, it is Fiote's work. The interface side is in `anicca/interface/plans/sands.md`.
+
+Fiote resumes its native prototype after the Interface's C5 pre-Box foundation gate. The cleanups below run beside C4 and C5. The full terminal-bearing session group also depends on the final v1 CEF lane; native thread and control work do not. Fiote never becomes a prerequisite for Box.
+
+## Cleanups to do first
+
+- [ ] Delete `OfficialWidgetBuilder::feature_flag()` and the dead-code allowance around it. It looks like a gate and gates nothing.
+- [ ] Delete the wrong `subject_kind` comment at `0001_init.sql:225`. It lists grant types that do not work; only a subject uid or `public` is honoured, and source comments are forbidden here anyway.
+- [ ] Make `cargo test -p lince-fiote` opt-in instead of failing on a fresh checkout with no harness. It must still refuse to pass silently when the harness is missing.
+- [ ] Add a `fiote` cargo feature and gate the crate dependency, the transport messages and the sand registration behind it. Nothing depends on `crates/fiote` today, so it is off by being unwired, which looks the same until the first import.
+- [ ] Build the runtime switch that lets a build which has Fiote still run without it, or stop calling the sand opt-in.
+
+## The thread, which any conversation wants
+
+- [ ] Show who wrote every message, and when the author is an Agent, whose agent it is.
+- [ ] Give a message a state: being written, finished, interrupted. A person typing is the same state as a model writing.
+- [ ] Render a message body while it grows and hold it read-only until it settles. Only the model appends to an assistant message. Editable once finished.
+- [ ] Make a message land when the turn is complete, not while it streams, so the Record log does not fill with partial text.
+- [ ] Make an interrupted turn set the message state, not just stop the writes, so a partial body is never read as finished.
+- [ ] Decide how often streamed text is committed by measuring, and keep that cadence out of the Message contract. Ordered state, interruption and restart are what belong in the contract.
+- [ ] Build a composer that says what sending will do, with a drafts list beside it holding presets and queued messages.
+
+## The message queue
+
+- [ ] Keep the queue in Lince and hand the harness one message at a time. Then reorder, promote, edit and delete stay local and atomic, and "the model does not know about the queue" is true by construction.
+- [ ] Store a queued message as a Record its author alone can see. It survives a reload and works across devices; browser state does not.
+- [ ] Give the model an explicit tool to read what is pending.
+- [ ] Make a queued draft and a pinned preset the same object with one flag: a draft is consumed on send, a preset is copied and survives. Same Record, same list, same UI.
+- [ ] Express delivery as tags on the draft, not new columns on Message: steer, next, now, pinned. Predicates are already Concepts.
+- [ ] Offer two insertion points and one cancel, named honestly. **Steer** inserts between a tool result and the model's next thought, so it can change course, but calls already in flight still land. **Next** appends after the turn finishes. **Abort** cancels instead of delivering anything.
+- [ ] Map a stop control to abort, and Ctrl-C in a terminal view to killing the running command. Stopping and steering are two things that sound like one.
+- [ ] Never promise "immediately". While a build runs the honest maximum is when the tool returns, so the control says "next".
+- [ ] Mark an aborted turn as interrupted in the model's context, or it reads its own half-finished work as finished.
+- [ ] Show steering and follow-up as one ordered list, marking where each entry will land. Promoting an entry to "next" retags it from a follow-up into a steer.
+- [ ] Make abort-and-send look destructive if it exists at all. It must not sit on the send control as a third way to send.
+- [ ] Keep Shift+Tab moving focus out of the composer once Tab queues.
+- [ ] Show the extra controls only while a turn is running. When inert, keep them reachable and honest ("no turn running: this sends now"), not hidden. One send button by default; presets always shown; one draft Record with tags in both cases.
+
+## The first Fiote a person can use
+
+- [ ] Render a session's system prompt from Records: one shared `Agent` Record every Fiote is assigned to, plus that Fiote's own body. Following that shared Record's links is also how a notification finds who to notify. The harness never holds the source.
+- [ ] Stamp which revision of those Records a session ran on.
+- [ ] Show a diff when the shared `Agent` Record changes, and let agents pick a new prompt up at session start, not mid-turn.
+- [ ] Expose Lince's Actions as an MCP server, with at least one Action reachable from a cub. No privileged path.
+- [ ] Run one Fiote managing several cubs at once, each with its own context and token count.
+- [ ] Build the session Sand group: the conversation Sand for the thread, the record Sand for the task, a terminal for a real shell, plus a tool timeline and a session control (roster, state, tokens, context, stop), first cut only.
+- [ ] Offer three views of a session and keep them distinct: **the thread** (durable, synced, what others see); **what the agent ran** (commands and output, rebuilt from the event stream, read-only); **a real terminal for the person** (their own interactive shell in the working directory). Where our rendering is thinner than a harness TUI, list the gap.
+- [ ] Keep the agent's output pane from acting like the person's shell. Either read-only, or make typing into it visibly exceptional and write a line into the thread saying a person stepped in.
+- [ ] Keep the terminal out of the queue entirely. Terminal input is not a message; the Ghostty sand owns its keys, so Tab-to-queue lives only in the composer.
+- [ ] Say which it is when a tool pane is empty: "output not kept" and "no output" are different.
+- [ ] Declare a real permission for session Sands, the way the terminal session one is declared. This is a gate, not a label.
+- [ ] Store provider credentials in a `0600` file under the Cell's config directory, one per provider, following the node-secret precedent: never in a Record, the op log or `configuration`, so never synced or backed up. Build a panel that sets a key through a narrow host call and reports only whether it is present and whether it works; the sand never reads a key back. Keep env vars for the developer path and say which source is in use.
+- [ ] Survive a reload: close the board, reopen it, sessions still running and their backlog replayed.
+- [ ] Measure the backlog before fixing its size. Attach replays a 2000-line ring buffer; that is a guess and a line cap, so a session emitting a line per token may cover seconds. Measure a real run, then likely a byte budget holding assembled messages, not deltas.
+- [ ] Make the system prompt and tool set settable per session at creation, not only per process.
+
+## Our own turn loop
+
+- [ ] Take the provider layer: `genai`, one API over many providers on their native protocols, with streaming, tool calls and reasoning content, and no agent loop of its own.
+- [ ] Write our own message and content model: turns, and content parts for text, thinking, tool call, tool result, image. Provider types must not leak past this.
+- [ ] Build a tool registry and dispatch: a trait with a name, a JSON schema and a run function, with `rmcp` so an external MCP server registers as an ordinary tool. Lince's Actions are tools here too.
+- [ ] Write the turn loop: send, stream deltas, collect tool calls, run them, append results, repeat until no calls remain or the budget stops it. Cancellation and mid-turn abort in the first version.
+- [ ] Make the session an append-only event log, so replay, fork and resume fall out of the design.
+- [ ] Assemble the context: the shared prompt, the Fiote's body, the task brief, the traversal results, the tool schemas. This is the Lince-specific part.
+- [ ] Account for tokens and cost per session and per Fiote, with ceilings that stop rather than warn.
+- [ ] Apply a permission policy per tool call (allow, ask, deny) with a callback to the surface.
+- [ ] Add a steering queue that delivers after the current tool call, not into the middle of a stream.
+- [ ] Add compaction that summarises and replaces behind a pinned prefix, recording what was dropped. Never silently.
+- [ ] Emit one typed event stream that the Sand, the lane and any Ledger writer subscribe to. Headless is just nobody subscribing.
+- [ ] Write a scripted provider for tests: deterministic, no network, no key.
+- [ ] Never route one cub's streaming deltas into another cub's context. A cub reports its result; the deltas are for the human's screen only.
+- [ ] Keep the spend levers in reach: compaction and auto-compaction on a plain gesture, thinking level per cub, scoped skills instead of all of `anicca/`, a narrow tool allowlist, real numbers from session stats. A shared markdown mailbox is more expensive than structured messages, not less.
+
+## Accountability
+
+- [ ] Stamp writes with the cub they came from: `Cause::fiote(session_uid)` and the write path behind it.
+- [ ] State in the surface which grants each Fiote Actor holds, including the broad read, and make them revocable.
+- [ ] Publish a key for an agent uid so another Organ can verify its words instead of trusting a column the sender filled in. An Agent is a Person Record, so the key table path exists.
+- [ ] Build a panel listing what each Fiote has done.
+
+## Tasks and orchestration
+
+- [ ] Make tasks Records, decomposed with `part-of`, assigned to a Fiote or a cub, with results written back onto the task. Fiote reads results, not transcripts. State is a Concept.
+- [ ] Spawn each cub with one task uid and a narrow brief: the task, its parent's statement of done, and the skills it was given. Nothing else.
+- [ ] Send questions up, never sideways. A cub asks its Fiote, which answers from what it holds or asks the person.
+- [ ] Store the traversal policy as data on the Agent Record's `lince.fiote` extension: Concept uid, direction, depth, and glance or summarise or read in full. The prompt renders a sentence from it and is never its source.
+- [ ] Build the context walk. Carry a visited set because it is a graph with cycles. Guard depth and breadth-per-node cheaply and let a token budget be the real limit. Order breadth-first from the starting Record so far material is what gets dropped. Say what was cut ("12 more children not included") inside the context. Make it deterministic: same Record, policy and data give a byte-identical context.
+- [ ] Write back what a model had to work out because the graph did not say it, as an assertion, so it is never paid for twice.
+- [ ] Create many Fiotes, each an Agent Record with an operator and behaviour in its body.
+- [ ] Route mechanically first and wake a model only for the ambiguous cases.
+- [ ] Name the task's zone on the task Record before the cub starts.
+- [ ] Check whether the agent work board is the kanban Sand, or the relations Sand with a filter, before building a new one.
+
+## Initiative, and its bounds
+
+- [ ] Build the wake: a saved Protein view as the filter, a tag write as what makes it look, a recipient Record whose assignees hear about it, and one `effect_queue` row every recipient sees and the first free one claims.
+- [ ] Make the wake tag pair configuration, not constants: `#fiote` and `#wip` as editable defaults, so when Karma dispatch lands this becomes one rule among many.
+- [ ] Keep one live row per rule, Record and recipient. Tag and untag five times and you get one row, not five cubs.
+- [ ] Never fire on an assertion that arrived from a contact's sync. A peer must not be able to spend our tokens.
+- [ ] Never fire on our own agents' writes unless a rule says so, or a cub tagging its own output wakes itself forever.
+- [ ] Cap each rule per window, and when it is hit, pause and say which rule and cycle. Not silently killed, not silently infinite.
+- [ ] Show the queue: what is waiting, who claimed it, what failed and why.
+- [ ] Cap each agent's concurrent cubs, so capacity stays a number.
+- [ ] Only after all of the above: anything autonomous.
+
+## Other people, and their agents
+
+A machine somewhere else is just another Organ. A remote thread is one that is replica-granted to this Cell; the agent reads the local copy and its writes sync back. The transport already does multi-party; the semantics are two-party, so a room is a Conversation-like root granted to several contacts.
+
+- [ ] Build the room: one root granted to several contacts, so two people and two agents can share one thread.
+- [ ] State membership as a Record everyone can read and disagree with, written by the room's creator. Nobody else can enumerate who holds the root.
+- [ ] Say plainly what revoking does not undo: it stops future ops, it does not recall what was delivered.
+- [ ] Say who can see a thread and who is in it, so a person about to type knows it is not local.
+- [ ] Have agents post under their `operated-by` delegation, so every member's Lince can render and verify "Ana's reviewer agent, acting for Ana".
+- [ ] Verify agent authorship across Organs, not just display it.
+- [ ] Remember fan-out is not free: every message is an op to every outbox, so agent chatter stays off the Record path.
+
+## Code, and the merge
+
+Lince holds the reasoning, git holds the code, Forgejo holds the merge. There is no blob sync on the op path, so "Lince as a git remote" is a whole subsystem, not a feature. Three levels: a reference (remote, branch, sha) is a tiny string expressible as ops today; a patch is text, so it can be a Record body; a bundle needs blob sync. Reference now, patch at review time, bundle never by default. The owner's workflow does not change: code on the laptop, commit locally, push to GitHub.
+
+- [ ] Read branch and sha with `gix`, and hold a remote, a branch and a sha on the task Record.
+- [ ] Put the patch text on the Record at review time, so the thing being discussed travels with the discussion.
+- [ ] Open the pull request with `forgejo-api` on accept, link the Record from the PR body, and hold the PR url on the Record. GitHub stays the main remote.
+- [ ] Check whether Forgejo's mirror should pull or push before committing to a direction.
+
+## Later, and deliberately unscheduled
+
+- [ ] Add ACP as a second backend with `agent-client-protocol`: bring-your-own-agent and the only route to a subscription. A client path for auth, never a surface we expose.
+- [ ] Put files in messages over `iroh-blobs` (already resolvable alongside the workspace's `iroh 1.0.3`): an attachment is a tiny op with hash, name, size and mime type, bytes moving out of band. Say out loud when a file cannot be fetched because its sender is offline, never a spinner that looks like corruption.
+- [ ] Persist a summarised envelope per tool call (name, what it acted on, ok or error, duration, size), promotable into the thread when one matters, if losing them turns out to hurt. Payloads stay ephemeral.
+- [ ] Do the privacy of what an agent touched last of all. Tool arguments carry file paths, command lines and the shape of a machine. Ship it with a per-folder and per-Fiote setting, summarised not verbatim, closed by default.
+
+## Three questions for the owner
+
+- [ ] What happens when a turn ends with three things queued: merge them into one message (cheap, but the model can conflate three asks) or deliver one at a time (three turns, three times the cost). One at a time is the safer, costlier default.
+- [ ] How the harness runtime is obtained for the bring-your-own path: a flake input for development, bundled with the desktop build, or required on PATH. The default path no longer needs one.
+- [ ] Whether code sharing settles at reference, patch or bundle. Reference now and patch at review time is the recommendation; a bundle needs a content-addressed blob store first.
+
+## An idea, recorded and not scheduled
+
+A File Sync mode that takes every file in a directory, respects `.gitignore`, makes each one a Record, and gives a visual text editor over those Records. Then a developer flag that turns the code's own structure into links from a language server (not a model, not our parsers): a module declaration becomes an import link, a call becomes a link between Records. Hand-added links stay hand-made. This matters for Fiote because the traversal policy would then walk code with the same primitive: "read this function's Record, glance at everything it calls, summarise everything that calls it" becomes one policy over a graph.
+
+- [ ] Support nested paths, arbitrary extensions and a file's own name as identity. A sync folder is flat today, one `head.md` per Record, `FileFormat` of only Markdown or Lingua.
+- [ ] Send binary files in such a folder to the blob store, since Record bodies are text.
+- [ ] Keep derived links distinguishable from hand-made ones. A refresh must never wipe a manual link or add a second copy of one it made before. `asserted_by` plus a provenance marker is the shape. Getting this wrong silently eats work.
+
 
 } r_137BM4Q7GV2707HBTRQ3GTJ9E5
 

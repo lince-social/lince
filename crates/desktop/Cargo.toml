@@ -35,7 +35,7 @@ tauri-plugin-autostart = { workspace = true }
 tauri-plugin-single-instance = { workspace = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
-lince-interface = { path = "../interface", features = ["joined-runtime"] }
+lince-interface = { path = "../interface", features = ["native-runtime"] }
 
 [[bin]]
 name = "lince-desktop"

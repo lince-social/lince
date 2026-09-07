@@ -61,9 +61,9 @@ dirs = "6.0.0"
 dotenvy = "0.15.7"
 ed25519-dalek = "2.2.0"
 futures = "0.3.31"
-gpui = { version = "0.2.2" }
-gpui-component = { version = "0.5.0" }
-gpui-component-assets = { version = "0.5.0" }
+# gpui = { version = "0.2.2" }
+# gpui-component = { version = "0.5.0" }
+# gpui-component-assets = { version = "0.5.0" }
 include_dir = "0.7.4"
 # Exact-pinned (Ontology §11 "Compatibility and revocation floor"): two Cells on
 # different iroh builds is a silent protocol change between peers. Bump

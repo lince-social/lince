@@ -13,7 +13,7 @@ use tauri_plugin_autostart::ManagerExt;
 const MAIN_WINDOW_LABEL: &str = "main";
 const APP_ICON_PNG: &[u8] = include_bytes!("../../../assets/logo/black_in_white.png");
 
-pub fn run(tokio_runtime: tokio::runtime::Runtime, args: Vec<String>) {
+pub fn run(tokio_runtime: tokio::runtime::Runtime, args: Vec<String>, listen_addr: String) {
     tauri::async_runtime::set(tokio_runtime.handle().clone());
     let builder = tauri::Builder::default();
     #[cfg(not(any(target_os = "android", target_os = "ios")))]
@@ -31,7 +31,7 @@ pub fn run(tokio_runtime: tokio::runtime::Runtime, args: Vec<String>) {
         let handle = app.handle().clone();
         let autostart_launch = args.iter().any(|arg| arg == "--desktop-autostart");
         tauri::async_runtime::spawn(async move {
-            match runtime::start_desktop_server().await {
+            match runtime::start_desktop_server(listen_addr).await {
                 Ok(runtime) => {
                     eprintln!("Lince desktop serving {}", runtime.url);
                     #[cfg(any(target_os = "macos", windows))]

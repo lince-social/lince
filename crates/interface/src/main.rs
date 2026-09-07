@@ -40,7 +40,7 @@ use winit::{
 
 const LATO_REGULAR: &[u8] = include_bytes!("../../../assets/fonts/Lato/Lato-Regular.ttf");
 
-fn main() {
+pub fn run_native_interface() {
     let event_loop = match EventLoop::new() {
         Ok(event_loop) => event_loop,
         Err(error) => {
@@ -73,6 +73,11 @@ fn main() {
     event_loop
         .run_app(&mut application)
         .expect("run interface laboratory");
+}
+
+#[allow(dead_code)]
+fn main() {
+    run_native_interface();
 }
 
 struct LaboratoryApplication {

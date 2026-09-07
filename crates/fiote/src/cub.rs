@@ -51,50 +51,6 @@ impl CubSpec {
             persist_session: true,
         }
     }
-
-    fn arguments(&self) -> Vec<String> {
-        let mut args = vec!["--mode".into(), "rpc".into()];
-        if self.persist_session {
-            args.push("--name".into());
-            args.push(self.name.clone());
-        }
-        if let Some(provider) = &self.provider {
-            args.push("--provider".into());
-            args.push(provider.clone());
-        }
-        if let Some(model) = &self.model {
-            args.push("--model".into());
-            args.push(model.clone());
-        }
-        if let Some(thinking) = &self.thinking {
-            args.push("--thinking".into());
-            args.push(thinking.clone());
-        }
-        if let Some(tools) = &self.tools {
-            args.push("--tools".into());
-            args.push(tools.join(","));
-        }
-        for skill in &self.skills {
-            args.push("--skill".into());
-            args.push(skill.display().to_string());
-        }
-        for extension in &self.extensions {
-            args.push("--extension".into());
-            args.push(extension.display().to_string());
-        }
-        if !self.context_files {
-            args.push("--no-context-files".into());
-        }
-        match (&self.session_dir, self.persist_session) {
-            (_, false) => args.push("--no-session".into()),
-            (Some(directory), true) => {
-                args.push("--session-dir".into());
-                args.push(directory.display().to_string());
-            }
-            (None, true) => {}
-        }
-        args
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -148,7 +104,6 @@ impl Cub {
             command.env(credential.variable(), credential.secret());
         }
         let mut child = command
-            .args(spec.arguments())
             .current_dir(&spec.cwd)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
@@ -160,15 +115,15 @@ impl Cub {
         let stdin = child
             .stdin
             .take()
-            .ok_or_else(|| "the pi process gave no stdin".to_string())?;
+            .ok_or_else(|| "the Fiote process gave no stdin".to_string())?;
         let stdout = child
             .stdout
             .take()
-            .ok_or_else(|| "the pi process gave no stdout".to_string())?;
+            .ok_or_else(|| "the Fiote process gave no stdout".to_string())?;
         let stderr = child
             .stderr
             .take()
-            .ok_or_else(|| "the pi process gave no stderr".to_string())?;
+            .ok_or_else(|| "the Fiote process gave no stderr".to_string())?;
 
         let (events, _) = broadcast::channel(BROADCAST_CAPACITY);
         let (exit_tx, exit_rx) = watch::channel(None);

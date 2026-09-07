@@ -7,6 +7,7 @@ mod domain;
 mod infrastructure;
 mod presentation;
 pub mod sand;
+pub mod self_update;
 
 pub use crate::domain::lince_package::{LincePackage, slugify};
 
@@ -60,6 +61,7 @@ struct CellApiState {
     packages: PackageCatalogStore,
     store: Store,
     remote_logins: Arc<tokio::sync::RwLock<HashMap<String, live_proxy::RemoteLogin>>>,
+    update_status: crate::self_update::SharedUpdateStatus,
 }
 
 pub async fn serve_cell_api_only(
@@ -256,6 +258,7 @@ pub async fn serve_cell_api_only(
         let board_state = state.board_state.snapshot().await;
         let viewer = viewer_from_headers(&state, &headers).await;
         let servers = local_server_bootstrap(&state, viewer.is_some()).await;
+        let update = state.update_status.read().await.clone();
         let bootstrap = AppBootstrap::new(
             WidgetBridgeSnapshot::default(),
             board_state,
@@ -263,6 +266,8 @@ pub async fn serve_cell_api_only(
             AppRuntimeInfo {
                 port: state.listening_port,
                 version: env!("CARGO_PKG_VERSION"),
+                revision: utils::build_info::revision(),
+                update,
             },
             viewer,
         );
@@ -1671,6 +1676,10 @@ pub async fn serve_cell_api_only(
     }
     let _file_sync_supervisor = engine::file_sync::spawn_supervisor(engine.clone());
     let _heartbeat = engine.clone().run(HEARTBEAT_PERIOD_SECS);
+    let update_status: crate::self_update::SharedUpdateStatus = Arc::default();
+    if mode == HttpServeMode::FullUi {
+        crate::self_update::spawn_poller(update_status.clone());
+    }
     let state = CellApiState {
         board_state: BoardStateStore::new().map_err(IoError::other)?,
         engine,
@@ -1682,6 +1691,7 @@ pub async fn serve_cell_api_only(
         packages,
         store: cell_store,
         remote_logins: Arc::new(tokio::sync::RwLock::new(HashMap::new())),
+        update_status,
     };
 
     let static_dir = crate::infrastructure::paths::static_dir();

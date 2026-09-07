@@ -4758,7 +4758,7 @@ fn surface_report(shared: &SurfaceShared) -> CefSurfaceReport {
     }
 }
 
-pub fn run_native_interface(website_url: Option<String>, domain_url: Option<String>) {
+pub fn run_cef_native_interface(website_url: Option<String>, domain_url: Option<String>) {
     let process_started = Instant::now();
     let cef_guard = match initialize_cef() {
         Ok(Some(guard)) => guard,

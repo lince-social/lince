@@ -94,7 +94,7 @@ pub fn page_visual_identity() -> String {
             section.content-block {
                 h1.content-block__title { "Visual Identity" }
                 p.content-block__body {
-                    "Official logo files for download in SVG, PNG, ICO, and editable formats."
+                    "Official logo files for download in SVG, PNG, ICO, and ICNS formats."
                 }
             }
 
@@ -119,10 +119,8 @@ pub fn page_visual_identity() -> String {
             }
 
             section.content-block {
-                h2.content-block__title { "Editable source" }
+                h2.content-block__title { "Application icon" }
                 p.content-block__body {
-                    a href="assets/lince.excalidraw" download { "Download the Excalidraw artwork" }
-                    " • "
                     a href="assets/black_in_white.icns" download { "Download the macOS icon" }
                 }
             }

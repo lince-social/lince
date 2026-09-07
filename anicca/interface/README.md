@@ -107,7 +107,6 @@ owning either design.
 | [communication.md](communication.md) | Communication Sand domain and staged implementation | Separate Sand backlog |
 | [future-sands.md](future-sands.md) | Unplanned 2D Map and Ergon ideas | Future |
 | [deferred.md](deferred.md) | Offline workspace replicas/failover, richer Protein, portals and advanced topology extensions | Explicitly deferred |
-| [v2-world.md](v2-world.md) | Globe-to-desk worlds, terrain, scenes, time and capture-to-work | V2 research |
 | [research/runtime-alternatives.md](research/runtime-alternatives.md) | Maud, raw HTML, Datastar and renderer alternatives | Reference only |
 | [research/scenedb.md](research/scenedb.md) | SceneDB runtime, Box durability, EngineFS, sync lanes and live collaboration review | Accepted research direction |
 | [links.md](links.md) | Complete Pulsar/Helio research ledger, relevance judgments and focused source snapshots | 30 reviews complete; reference only |

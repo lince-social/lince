@@ -47,24 +47,12 @@
           interfaceLinuxNativeBuildInputs =
             with pkgs;
             lib.optionals stdenv.isLinux [
-              cmake
               makeWrapper
-              ninja
               pkg-config
             ];
           interfaceLinuxBuildInputs =
             with pkgs;
             lib.optionals stdenv.isLinux [
-              alsa-lib
-              atk
-              cairo
-              cups
-              dbus
-              expat
-              fontconfig
-              freetype
-              glib
-              gtk3
               libGL
               libdrm
               libgbm
@@ -79,16 +67,12 @@
               libxkbcommon
               libxrandr
               mesa
-              nspr
-              nss
-              pango
-              systemdLibs
               vulkan-loader
               wayland
             ];
 
           mkLince =
-            { pname }:
+            { pname, ui }:
             pkgs.rustPlatform.buildRustPackage {
               inherit pname version;
               src = cleanSrc;
@@ -101,26 +85,45 @@
 
               RUSTFLAGS = "-D warnings";
 
+              dontUseNinjaBuild = ui;
+              dontUseNinjaCheck = ui;
+              dontUseNinjaInstall = ui;
+
               cargoBuildFlags = [
                 "--package"
                 "lince"
-              ];
+              ]
+              ++ lib.optional (!ui) "--no-default-features";
               cargoTestFlags = [
                 "--package"
                 "lince"
-              ];
+              ]
+              ++ lib.optional (!ui) "--no-default-features";
 
-              nativeBuildInputs = with pkgs; [
-                pkg-config
-              ];
+              nativeBuildInputs =
+                (with pkgs; [ pkg-config ])
+                ++ lib.optionals ui (
+                  [ pkgs.makeWrapper ] ++ lib.remove pkgs.pkg-config interfaceLinuxNativeBuildInputs
+                );
 
-              buildInputs = with pkgs; [
-                openssl
-                sqlite
-              ];
+              buildInputs =
+                (with pkgs; [
+                  openssl
+                  sqlite
+                ])
+                ++ lib.optionals ui interfaceLinuxBuildInputs;
+
+              postFixup = lib.optionalString (ui && pkgs.stdenv.isLinux) ''
+                wrapProgram "$out/bin/lince" \
+                  --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath interfaceLinuxBuildInputs}"
+              '';
 
               meta = {
-                description = "Lince binary";
+                description =
+                  if ui then
+                    "Lince: the Cell runtime and its native interface, one process"
+                  else
+                    "Lince, headless: the Cell runtime with no window";
                 mainProgram = "lince";
                 license = lib.licenses.gpl3Plus;
                 platforms = supportedSystems;
@@ -129,77 +132,31 @@
 
           lince = mkLince {
             pname = "lince";
+            ui = false;
           };
 
-          lince-desktop = pkgs.rustPlatform.buildRustPackage {
-            pname = "lince-desktop";
-            inherit version;
-            src = cleanSrc;
-
-            dontUseNinjaBuild = true;
-            dontUseNinjaCheck = true;
-            dontUseNinjaInstall = true;
-
-            cargoLock = {
-              lockFile = ./Cargo.lock;
-            };
-
-            LINCE_REVISION = self.rev or self.dirtyRev or "unknown";
-
-            RUSTFLAGS = "-D warnings";
-            cargoBuildFlags = [
-              "--package"
-              "lince-desktop"
-            ];
-            cargoTestFlags = [
-              "--package"
-              "lince-desktop"
-            ];
-
-            nativeBuildInputs =
-              with pkgs;
-              [
-                pkg-config
-              ]
-              ++ lib.remove pkg-config interfaceLinuxNativeBuildInputs;
-
-            buildInputs =
-              (with pkgs; [
-                openssl
-                sqlite
-              ])
-              ++ interfaceLinuxBuildInputs;
-
-            postFixup = lib.optionalString pkgs.stdenv.isLinux ''
-              wrapProgram "$out/bin/lince-desktop" \
-                --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath interfaceLinuxBuildInputs}"
-            '';
-
-            meta = {
-              description = "Lince native desktop application";
-              mainProgram = "lince-desktop";
-              license = lib.licenses.gpl3Plus;
-              platforms = supportedSystems;
-            };
+          lince-ui = mkLince {
+            pname = "lince-ui";
+            ui = true;
           };
         in
         {
           packages = {
-            default = lince;
-            inherit lince lince-desktop;
+            default = lince-ui;
+            inherit lince lince-ui;
           };
 
           apps = {
             default = flake-utils.lib.mkApp {
-              drv = lince;
+              drv = lince-ui;
             };
 
             lince = flake-utils.lib.mkApp {
-              drv = lince;
+              drv = lince-ui;
             };
 
-            lince-desktop = flake-utils.lib.mkApp {
-              drv = lince-desktop;
+            lince-headless = flake-utils.lib.mkApp {
+              drv = lince;
             };
           };
 
@@ -322,13 +279,10 @@
           devShells.default = pkgs.mkShell {
             packages =
               (with pkgs; [
-                cmake
-                ninja
                 openssl
                 pkg-config
                 sqlite
               ])
-              ++ lib.optionals (!pkgs.stdenv.isLinux) [ pkgs.cargo-tauri ]
               ++ interfaceLinuxNativeBuildInputs
               ++ interfaceLinuxBuildInputs;
 
@@ -353,10 +307,10 @@
               (
                 with pkgs;
                 [
-                  cmake
-                  ninja
+                  openssl
                   pkg-config
                   python3
+                  sqlite
                 ]
                 ++ lib.optionals stdenv.isLinux [
                   at-spi2-core
@@ -364,40 +318,6 @@
                   orca
                 ]
               )
-              ++ interfaceLinuxBuildInputs;
-
-            shellHook = lib.optionalString pkgs.stdenv.isLinux ''
-              export LD_LIBRARY_PATH="${lib.makeLibraryPath interfaceLinuxBuildInputs}:''${LD_LIBRARY_PATH:-}"
-              export LINCE_AT_SPI_BUS_LAUNCHER="${pkgs.at-spi2-core}/libexec/at-spi-bus-launcher"
-            '';
-          };
-
-          devShells.legacy = pkgs.mkShell {
-            packages = with pkgs; [
-              cmake
-              curl
-              ninja
-              openssl
-              pkg-config
-              sqlite
-              xdg-utils
-            ];
-
-            shellHook = ''
-              export LINCE_MIGRATION_PREFLIGHT=1
-            '';
-          };
-
-          devShells.desktop = pkgs.mkShell {
-            packages =
-              (with pkgs; [
-                cmake
-                ninja
-                openssl
-                pkg-config
-                sqlite
-              ])
-              ++ lib.optionals (!pkgs.stdenv.isLinux) [ pkgs.cargo-tauri ]
               ++ interfaceLinuxNativeBuildInputs
               ++ interfaceLinuxBuildInputs;
 
@@ -414,6 +334,7 @@
                   ])
                 )
               }:''${LD_LIBRARY_PATH:-}"
+              export LINCE_AT_SPI_BUS_LAUNCHER="${pkgs.at-spi2-core}/libexec/at-spi-bus-launcher"
             '';
           };
         }
@@ -421,17 +342,17 @@
     in
     eachSystem
     // {
-      # One module for both postures. `services.lince.mode` picks between
-      # `--server` (API only, login forced) and the full board; the desktop app
-      # is a separate package (`lince-desktop`) rather than a mode of this one.
+      # One module for every posture. `services.lince.mode` picks between
+      # `--server` (headless, login forced) and the windowed application, which
+      # is the same binary built with its `ui` feature.
       nixosModules.default =
         { pkgs, ... }:
         {
           imports = [ ./scripts/deploy/nixos/lince-module.nix ];
-          # Both, lazily: `lince-desktop` is only
-          # evaluated if desktop mode actually asks for it.
+          # Both, lazily: the windowed build is only evaluated if desktop mode
+          # actually asks for it.
           services.lince.serverPackage = nixpkgs.lib.mkDefault self.packages.${pkgs.system}.lince;
-          services.lince.desktopPackage = nixpkgs.lib.mkDefault self.packages.${pkgs.system}.lince-desktop;
+          services.lince.uiPackage = nixpkgs.lib.mkDefault self.packages.${pkgs.system}.lince-ui;
         };
       nixosModules.lince = self.nixosModules.default;
 
@@ -452,7 +373,7 @@
         {
           imports = [ ./scripts/deploy/nixos/vps-module.nix ];
           services.lince.serverPackage = nixpkgs.lib.mkDefault self.packages.${pkgs.system}.lince;
-          services.lince.desktopPackage = nixpkgs.lib.mkDefault self.packages.${pkgs.system}.lince-desktop;
+          services.lince.uiPackage = nixpkgs.lib.mkDefault self.packages.${pkgs.system}.lince-ui;
         };
 
       nixosConfigurations.manas-organ = nixpkgs.lib.nixosSystem {

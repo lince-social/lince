@@ -21,7 +21,7 @@ Options:
   --repo-dir <dir>       Working directory for the service. Defaults to cwd.
   --service-name <name>  systemd unit name without .service. Default: lince
   --description <text>   Unit description.
-  --data-dir <path>      Lince data directory. Default: $XDG_CONFIG_HOME/lince
+  --directory <path>     Lince data directory. Default: $XDG_CONFIG_HOME/lince
   --port <port>          HTTP port. Default: 6174
   --binary-path <path>   Run an existing binary instead of `cargo run --release`.
   --http-api-only        Start with --http-api-only.
@@ -43,7 +43,7 @@ while (($# > 0)); do
             description="$2"
             shift 2
             ;;
-        --data-dir)
+        --directory)
             data_dir="$2"
             shift 2
             ;;
@@ -75,10 +75,10 @@ service_path="${service_dir}/${service_name}.service"
 mkdir -p "$service_dir"
 
 if [[ -n "$binary_path" ]]; then
-    exec_start="${binary_path} --data-dir ${data_dir} --port ${port}"
+    exec_start="${binary_path} --directory ${data_dir} --port ${port}"
 else
     cargo_bin="$(command -v cargo)"
-    exec_start="${cargo_bin} run --release -- --data-dir ${data_dir} --port ${port}"
+    exec_start="${cargo_bin} run --release -- --directory ${data_dir} --port ${port}"
 fi
 
 if [[ "$http_api_only" -eq 1 ]]; then

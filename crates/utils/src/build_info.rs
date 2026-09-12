@@ -67,6 +67,10 @@ impl SelfApplyBlock {
 }
 
 pub fn self_apply_block() -> SelfApplyBlock {
+    self_apply_block_for(false)
+}
+
+pub fn self_apply_block_for(server: bool) -> SelfApplyBlock {
     if OS == "windows" {
         return SelfApplyBlock::Windows;
     }
@@ -92,7 +96,8 @@ pub fn self_apply_block() -> SelfApplyBlock {
                 }
                 return SelfApplyBlock::None;
             }
-            None => return SelfApplyBlock::NotAppImage,
+            None if !server => return SelfApplyBlock::NotAppImage,
+            None => {}
         }
     }
     let Some(parent) = exe.parent() else {

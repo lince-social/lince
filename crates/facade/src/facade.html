@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Facade</title>
+  <link rel="stylesheet" href="/facade.css">
+  <script type="module" src="/facade.js"></script>
+</head>
+<body data-signals="{ready:false,connected:false,signedin:false,name:'',error:'',notice:'',records:[],record:{},selected:'',threads:[],messages:[],assertions:[],canedit:false,cancomment:false,truncated:false,search:'',head:'',body:'',slug:'',quantity:'0',unit:'',identity:'',predicate:'',object:'',comment:'',thread:'',dirty:false,busy:false,remotechanged:false}"
+      data-signals:creating="false"
+      data-signals:page="'kanban'"
+      data-signals:settings="false"
+      data-signals:customtitle="'Facade'"
+      data-signals:language="'pt-BR'"
+      data-signals:canadmin="false"
+      data-signals:columns="[]"
+      data-signals:templates="[]"
+      data-signals:users="[]"
+      data-signals:roles="[]"
+      data-signals:permissions="[]"
+      data-signals:canusers="false"
+      data-signals:canconfigure="false"
+      data-signals:canmove="false"
+      data-signals:canrules="false"
+      data-signals:filterconcepts="[]"
+      data-signals:cancreate="false"
+      data-signals:candelete="false"
+      data-effect="window.facade.render($records, $record, $messages, $threads, $assertions, $columns, $templates, $users, $roles, $permissions, $language, $customtitle, $canadmin)">
+  <nav class="sidebar" data-i18n-aria-label="Main navigation" aria-label="Navegação principal">
+    <button aria-label="Kanban" title="Kanban" data-show="$ready" data-on:click="window.facade.navigate('kanban')"><span aria-hidden="true">▥</span><span class="nav-label">Kanban</span></button>
+    <button data-i18n-aria-label="Users" aria-label="Usuários" data-i18n-title="Users" title="Usuários" data-show="$canusers" data-on:click="window.facade.navigate('users')"><span aria-hidden="true">♙</span><span class="nav-label"><span data-i18n="Users">Usuários</span></span></button>
+    <button data-i18n-aria-label="Settings" aria-label="Configurações" data-i18n-title="Settings" title="Configurações" data-show="$canadmin" data-on:click="window.facade.navigate('general')"><span aria-hidden="true">⚙</span><span class="nav-label"><span data-i18n="Settings">Configurações</span></span></button>
+    <div class="sidebar-bottom">
+      <button id="theme" aria-label="Mudar para o modo claro" data-on:click="window.facade.theme()"><span aria-hidden="true">☀</span><span class="nav-label"><span data-i18n="Light">Claro</span></span></button>
+      <button data-i18n-aria-label="Log in" aria-label="Entrar" data-i18n-title="Log in" title="Entrar" data-show="!$ready" data-on:click="document.querySelector('#login input').focus()"><span aria-hidden="true">⇥</span><span class="nav-label"><span data-i18n="Log in">Entrar</span></span></button>
+    <button class="logout" data-i18n-aria-label="Log out" aria-label="Sair" data-i18n-title="Log out" title="Sair" data-show="$signedin" data-on:click="window.facade.logout()"><span aria-hidden="true">⇥</span><span class="nav-label"><span data-i18n="Log out">Sair</span></span></button>
+    </div>
+  </nav>
+  <p id="error" role="alert" data-show="$error" data-text="$error" style="display:none"></p>
+  <p class="notice" role="status" data-show="$notice" data-text="$notice" style="display:none"></p>
+  <main>
+    <a href="/" class="brand" data-show="$customtitle" data-text="$customtitle ? $customtitle + ' ·' : ''"></a>
+    <section id="login" class="login" data-show="!$ready">
+      <h1><span data-i18n="Welcome">Boas-vindas</span></h1>
+      <p><span data-i18n="Log in to continue.">Entre para continuar.</span></p>
+      <form data-on:submit="evt.preventDefault(); window.facade.login(evt.target)">
+        <label><span data-i18n="Username">Nome de usuário</span><input name="username" autocomplete="username" maxlength="256" required></label>
+        <label><span data-i18n="Password">Senha</span><input name="password" type="password" autocomplete="current-password" maxlength="1024" required></label>
+        <button type="submit" class="primary" data-attr:disabled="$busy"><span data-i18n="Log in">Entrar</span></button>
+      </form>
+    </section>
+    <section data-show="$ready &amp;&amp; !$selected &amp;&amp; !$creating &amp;&amp; $page === 'kanban'" style="display:none">
+      <div class="toolbar"><button data-show="$canconfigure" data-on:click="$settings = !$settings"><span data-i18n="Customize">Personalizar</span></button><label class="search"><span data-i18n="Search">Buscar</span><input type="search" data-bind:search data-on:input__debounce.300ms="window.facade.search($search)"></label></div>
+      <section data-show="$settings &amp;&amp; $canconfigure" style="display:none">
+        <label><span data-i18n="Column template">Modelo de colunas</span><select id="templates" data-on:change="window.facade.chooseTemplate(evt.target.value)"></select></label>
+        <form id="column-form" data-on:submit="evt.preventDefault(); window.facade.saveColumns(evt.target)">
+          <label><span data-i18n="Template name">Nome do modelo</span><input name="name" maxlength="200" required value="Minhas colunas"></label>
+          <div id="column-editor"></div><button type="button" data-on:click="window.facade.addColumn()"><span data-i18n="+ Add column">+ Adicionar coluna</span></button>
+          <div class="toolbar"><button name="save" value="apply"><span data-i18n="Save and apply">Salvar e aplicar</span></button><button name="save" value="template" data-on:click="evt.preventDefault(); window.facade.saveColumns(evt.target.form, true)" data-show="$cancreate"><span data-i18n="Save as new template">Salvar como novo modelo</span></button></div>
+        </form>
+      </section>
+      <p data-show="$truncated"><span data-i18n="Showing the first 500 cards. Search to narrow the board.">Exibindo os primeiros 500 registros. Use a busca para filtrar o quadro.</span></p>
+      <p data-show="!$records.length"><span data-i18n="No cards to show.">Nenhum registro para exibir.</span></p>
+      <div id="board" class="board"></div>
+    </section>
+    <section class="general-settings" data-show="$ready &amp;&amp; $page === 'general' &amp;&amp; $canadmin" style="display:none">
+      <h1><span data-i18n="General settings">Configurações gerais</span></h1>
+      <form id="general-form" data-on:submit="evt.preventDefault(); window.facade.customize(evt.target)">
+        <fieldset data-attr:disabled="!$connected || $busy || !$canadmin">
+          <label><span data-i18n="App title">Nome do aplicativo</span><input name="title" maxlength="200" required></label>
+          <label><span data-i18n="Language">Idioma</span><select name="language"><option value="pt-BR">Português</option><option value="en">English</option></select></label>
+          <button class="primary"><span data-i18n="Save settings">Salvar configurações</span></button>
+        </fieldset>
+      </form>
+    </section>
+    <section data-show="$ready &amp;&amp; $page === 'users'" style="display:none"><h1><span data-i18n="Users">Usuários</span></h1><div id="user-management"></div></section>
+    <section id="detail" data-show="$ready &amp;&amp; ($selected || $creating) &amp;&amp; $page === 'kanban'" style="display:none">
+      <div class="toolbar"><button data-on:click="window.facade.select('')">← Kanban</button><button data-show="$record.uid" data-on:click="window.facade.copyLink()"><span data-i18n="Copy link">Copiar link</span></button><button data-show="$candelete" data-on:click="window.facade.deleteCard()"><span data-i18n="Delete card">Excluir registro</span></button></div>
+      <p data-show="!$record.uid &amp;&amp; !$creating"><span data-i18n="This item is unavailable or has not been shared with you.">Este item está indisponível ou não foi compartilhado com você.</span></p>
+      <article data-show="$record.uid || $creating">
+        <form id="create-record" data-show="$creating" data-on:submit="evt.preventDefault(); window.facade.submitRecord()">
+          <fieldset data-attr:disabled="!$connected || $busy || !$cancreate">
+            <label><span data-i18n="Title">Título</span><input id="create-title" data-bind:head data-on:input="$dirty = true" maxlength="500" required></label>
+            <label><span data-i18n="Description">Descrição</span><textarea data-bind:body data-on:input="$dirty = true" rows="8" maxlength="40000"></textarea></label>
+            <label><span data-i18n="Column">Coluna</span><select id="create-column" data-bind:quantity data-on:change="$dirty = true"></select></label>
+            <label><span data-i18n="Tags">Marcadores</span><select id="create-tags" multiple data-on:change="$dirty = true"></select></label>
+            <button class="primary"><span data-i18n="Create record">Criar registro</span></button>
+          </fieldset>
+        </form>
+        <div data-show="!$creating">
+        <h1 data-text="$record.head || window.facade.t('Untitled', $language)"></h1>
+        <p class="description" data-text="$record.body || window.facade.t('No description.', $language)"></p>
+        <dl class="properties">
+          <div><dt>Slug</dt><dd data-text="$record.slug || '—'"></dd></div>
+          <div><dt><span data-i18n="Quantity">Quantidade</span></dt><dd data-text="$record.quantity ?? '—'"></dd></div>
+          <div><dt><span data-i18n="Unit">Unidade</span></dt><dd data-text="$record.unit || '—'"></dd></div>
+          <div><dt><span data-i18n="Identity">Identidade</span></dt><dd data-text="$record.concept_name || '—'"></dd></div>
+        </dl>
+        <ul id="assertions" class="assertions"></ul>
+        <details data-show="$canedit">
+          <summary><span data-i18n="Edit properties">Editar propriedades</span></summary>
+          <fieldset data-attr:disabled="!$connected || $busy || !$canedit">
+            <p data-show="$remotechanged"><span data-i18n="This item changed while you were editing. Your draft is kept. Reload it before saving if needed.">Este item mudou enquanto você editava. Seu rascunho foi mantido. Recarregue antes de salvar, se necessário.</span></p>
+            <button type="button" data-on:click="window.facade.reloadDraft()"><span data-i18n="Reload draft">Recarregar rascunho</span></button>
+            <form data-on:submit="evt.preventDefault(); window.facade.saveText()">
+              <label><span data-i18n="Title">Título</span><input data-bind:head data-on:input="$dirty = true" maxlength="500" required></label>
+              <label><span data-i18n="Description">Descrição</span><textarea data-bind:body data-on:input="$dirty = true" rows="8" maxlength="40000"></textarea></label>
+              <button class="primary"><span data-i18n="Save text">Salvar texto</span></button>
+            </form>
+            <div class="edit-properties">
+              <form data-on:submit="evt.preventDefault(); window.facade.property('set-slug', {slug:$slug || null})"><label>Slug<input data-bind:slug data-on:input="$dirty = true" maxlength="200"></label><button><span data-i18n="Save slug">Salvar slug</span></button></form>
+              <form data-on:submit="evt.preventDefault(); window.facade.property('set-quantity-exact', {amount:$quantity})"><label><span data-i18n="Quantity">Quantidade</span><input data-bind:quantity data-on:input="$dirty = true" inputmode="decimal" required></label><button><span data-i18n="Save quantity">Salvar quantidade</span></button></form>
+              <form data-on:submit="evt.preventDefault(); window.facade.property('set-unit', {unit:$unit || null})"><label><span data-i18n="Unit slug or ID">Slug ou ID da unidade</span><input data-bind:unit data-on:input="$dirty = true" maxlength="200"></label><button><span data-i18n="Save unit">Salvar unidade</span></button></form>
+              <form data-on:submit="evt.preventDefault(); window.facade.identity($identity)"><label><span data-i18n="Identity">Identidade</span><input data-bind:identity data-on:input="$dirty = true" maxlength="200"></label><button><span data-i18n="Save identity">Salvar identidade</span></button></form>
+            </div>
+            <form data-on:submit="evt.preventDefault(); window.facade.assertion(false)"><h3><span data-i18n="Labels and links">Marcadores e links</span></h3><label><span data-i18n="Label">Marcador</span><input data-bind:predicate maxlength="200" required></label><label><span data-i18n="Related item (optional)">Item relacionado (opcional)</span><input data-bind:object maxlength="200"></label><div class="toolbar"><button><span data-i18n="Add">Adicionar</span></button><button type="button" data-on:click="window.facade.assertion(true)"><span data-i18n="Remove">Remover</span></button></div></form>
+            <label><span data-i18n="Move to column">Mover para a coluna</span><select id="move-column" data-on:change="if (evt.target.value !== '') window.facade.property('set-quantity', {value:Number(evt.target.value)}); evt.target.value = ''"></select></label>
+          </fieldset>
+        </details>
+        <section class="comments">
+          <h2><span data-i18n="Threads">Conversas</span></h2>
+          <label><span data-i18n="Thread">Conversa</span><select id="thread-view" data-on:change="window.facade.filterThread(evt.target.value)"></select></label>
+          <button data-show="$cancomment" data-on:click="window.facade.createThread()"><span data-i18n="+ New thread">+ Nova conversa</span></button>
+          <p data-show="!$messages.length"><span data-i18n="No visible comments yet.">Nenhum comentário visível ainda.</span></p>
+          <div id="messages"></div>
+          <form data-show="$cancomment" data-on:submit="evt.preventDefault(); window.facade.comment()">
+            <fieldset data-attr:disabled="!$connected || $busy || !$cancomment">
+              <label><span data-i18n="Conversation">Conversa</span><select id="threads" data-bind:thread><option value="" data-i18n="New conversation">Nova conversa</option></select></label>
+              <label><span data-i18n="Comment">Comentário</span><textarea data-bind:comment rows="3" maxlength="20000" required></textarea></label>
+              <button class="primary"><span data-i18n="Post comment">Publicar comentário</span></button>
+            </fieldset>
+          </form>
+        </section>
+        </div>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

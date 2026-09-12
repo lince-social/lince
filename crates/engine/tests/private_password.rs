@@ -205,11 +205,13 @@ fn private_password_output_has_exact_decoded_size_and_canonical_base64() {
 
 #[test]
 fn private_password_canonical_base64_supports_standard_plus_and_slash() {
-    let salt = argon2::password_hash::SaltString::encode_b64(&[255; 16]).unwrap();
-    let output = argon2::password_hash::Output::new(&[251; 32]).unwrap();
+    let salt = argon2::password_hash::phc::Salt::new(&[255; 16])
+        .unwrap()
+        .to_salt_string();
+    let output = argon2::password_hash::phc::Output::new(&[251; 32]).unwrap();
     let mut encoded = [0; 43];
-    let output = output.b64_encode(&mut encoded).unwrap();
-    let raw = phc("argon2id", "v=19", "m=19456,t=2,p=1", salt.as_str(), output);
+    let output = output.encode(&mut encoded).unwrap();
+    let raw = phc("argon2id", "v=19", "m=19456,t=2,p=1", &salt, output);
     assert!(raw.contains('/'));
     assert!(raw.contains('+'));
     assert!(PasswordHash::from_phc(raw).is_ok());
@@ -271,11 +273,7 @@ async fn private_password_new_hashes_use_fresh_sixteen_byte_salts() {
     let second = argon2::PasswordHash::new(second.as_phc()).unwrap();
     assert_ne!(first.salt, second.salt);
     for parsed in [first, second] {
-        let mut salt = [0; 16];
-        assert_eq!(
-            parsed.salt.unwrap().decode_b64(&mut salt).unwrap().len(),
-            16
-        );
+        assert_eq!(parsed.salt.unwrap().len(), 16);
         assert_eq!(parsed.hash.unwrap().len(), 32);
     }
 }

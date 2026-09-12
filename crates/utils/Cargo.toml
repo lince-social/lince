@@ -10,6 +10,12 @@ description = "Internal utilities for the lince binary."
 [lib]
 name = "utils"
 
+[features]
+# The network side of self-update (poll GitHub, download, apply). Off by
+# default so the lean crates that only need auth/config/build_info do not
+# pull reqwest. Enabled by the `lince` binary and the interface.
+update-net = ["dep:reqwest", "dep:tokio"]
+
 [dependencies]
 argon2.workspace = true
 base64.workspace = true
@@ -19,14 +25,21 @@ dirs.workspace = true
 ed25519-dalek.workspace = true
 getrandom.workspace = true
 jsonwebtoken.workspace = true
+reqwest = { workspace = true, optional = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json.workspace = true
 sha2.workspace = true
+tokio = { workspace = true, optional = true }
 toml.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
 zeroize.workspace = true
 
 [build-dependencies]
 sensei = { workspace = true }
+
+[dev-dependencies]
+tempfile = "=3.27.0"
 
 [lints]
 workspace = true

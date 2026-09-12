@@ -1251,7 +1251,11 @@ fn format_karma(output: &mut String, karma: &ast::Karma) {
 }
 
 pub fn hash(bytes: &[u8]) -> String {
-    format!("{:x}", Sha256::digest(bytes))
+    let mut output = String::with_capacity(64);
+    for byte in Sha256::digest(bytes) {
+        write!(output, "{byte:02x}").unwrap();
+    }
+    output
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -1323,6 +1327,14 @@ Karma home {
  }
 }
 "#;
+
+    #[test]
+    fn hashes_use_fixed_width_lowercase_sha256() {
+        assert_eq!(
+            hash(b"abc"),
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        );
+    }
 
     #[test]
     fn nested_schema_round_trips_canonically() {

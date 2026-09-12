@@ -1,7 +1,7 @@
 use std::fmt;
 use std::sync::Arc;
 
-use argon2::password_hash::{Output, SaltString};
+use argon2::password_hash::phc::{Output, Salt};
 use argon2::{Algorithm, Argon2, Params, PasswordHasher, PasswordVerifier, Version};
 use tokio::runtime::Handle;
 use tokio::sync::Semaphore;
@@ -105,24 +105,15 @@ fn validate_phc(encoded: &str) -> Result<(), PasswordError> {
     if fields.next().is_some() || salt.len() != 22 || output.len() != 43 {
         return Err(invalid());
     }
-    let salt_value = SaltString::from_b64(salt).map_err(|_| invalid())?;
-    let mut salt_bytes = [0; SALT_BYTES];
-    let salt_bytes = salt_value
-        .decode_b64(&mut salt_bytes)
-        .map_err(|_| invalid())?;
-    if salt_bytes.len() != SALT_BYTES
-        || SaltString::encode_b64(salt_bytes)
-            .map_err(|_| invalid())?
-            .as_str()
-            != salt
-    {
+    let salt_value = Salt::from_b64(salt).map_err(|_| invalid())?;
+    if salt_value.len() != SALT_BYTES || &*salt_value.to_salt_string() != salt {
         return Err(invalid());
     }
-    let output_value = Output::b64_decode(output).map_err(|_| invalid())?;
+    let output_value = Output::decode(output).map_err(|_| invalid())?;
     let mut output_text = [0; 43];
     if output_value.len() != OUTPUT_BYTES
         || output_value
-            .b64_encode(&mut output_text)
+            .encode(&mut output_text)
             .map_err(|_| invalid())?
             != output
     {
@@ -140,9 +131,8 @@ fn hasher() -> Result<Argon2<'static>, PasswordError> {
 fn hash_password(password: PasswordInput) -> Result<PasswordHash, PasswordError> {
     let mut salt_bytes = [0; SALT_BYTES];
     getrandom::fill(&mut salt_bytes).map_err(|_| PasswordError::RandomUnavailable)?;
-    let salt = SaltString::encode_b64(&salt_bytes).map_err(|_| PasswordError::WorkerFailed)?;
     let encoded = hasher()?
-        .hash_password(&password.bytes, &salt)
+        .hash_password_with_salt(&password.bytes, &salt_bytes)
         .map_err(|_| PasswordError::WorkerFailed)?
         .to_string();
     PasswordHash::from_phc(encoded)
@@ -153,7 +143,7 @@ fn verify_password(password: PasswordInput, expected: PasswordHash) -> Result<bo
         argon2::PasswordHash::new(expected.as_phc()).map_err(|_| PasswordError::InvalidHash)?;
     match hasher()?.verify_password(&password.bytes, &parsed) {
         Ok(()) => Ok(true),
-        Err(argon2::password_hash::Error::Password) => Ok(false),
+        Err(argon2::password_hash::Error::PasswordInvalid) => Ok(false),
         Err(_) => Err(PasswordError::WorkerFailed),
     }
 }

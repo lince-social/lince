@@ -485,99 +485,250 @@ When interacting with other parties, it is important to know how much you can tr
 
 Interface (@interface: 1, is #chapter, #instinct, #done) { r_99NWECF19VKV94HQQ3G3ASMC4M
 
-The brand is black and white by default, with purple as the supporting color.
-Purple Cobalt — CMYK: 66, 71, 0, 36; HEX: `#3730A3`; RGB: 55, 48, 163.
-Nocturnal Purple — CMYK: 59, 58, 0, 5; HEX: `#6366F1`; RGB: 99, 102, 241.
-Deep Lead — CMYK: 10, 10, 0, 92; HEX: `#121214`; RGB: 18, 18, 20.
-Gray — CMYK: 10, 5, 0, 12; HEX: `#A7B4C2`; RGB: 167, 180, 194.
-Ice White — CMYK: 2, 1, 0, 1; HEX: `#F8FAFC`; RGB: 248, 250, 252.
-
-Choices can be done quickly. Full control is always available.
-
-- [ ] Customization of many aspects of Sands.
+Interfaces should ask for as little attention as possible throughout the user's life. The best interface is Interfaceless.
 
 Built-in UI is minimal, not taking screenspace from users and flexible, fitting many Needs.
 
+Choices can be done quickly. Full control is always available.
+
 Components are flat by default, preffering 2D forces us to convey information only with flat data, not layers and composition, constraining the space forces minimalism. Shadows and hints can be used for subtle differentiation of areas, components and data.
 
-Sands: the widgets/components that live in the Box. Smaller pieces can be composed into groups, with interactions between them and other sands, receiving data from a Protein stream and executing Protein Actions in certain interactions. We should have the fundamental blocks to construct several types of workflows:
+Built-in castles shoudld be focused in displaying mainly inputs or buttons, never phrases or paragraphs, to force self-explanatory design. Tooltips and placeholders should contain minimal text.
 
-We are using Bevy, with Avian for physics, Flair for css-like features.
+The defaults are flat, quiet and mostly black and white, with the purple palette already in the Record. Common choices should be quick, and the person should be able to inspect and change the details.
 
-- [ ] Areas of Influence to add a pull to some Sands according to some property. Does not bring them to area, adds one force that is being applied to the sand.
-	- [ ] Set area of it, square, circle, shape drawn.
-	- [ ] Set property/ies that is attracted/repulsed by.
-	- [ ] Set attraction/repulsion force.
+Lince's visual identity is black and white by default, with purple as the supporting color. Purple Cobalt: #3730A3, Nocturnal Purple: #6366F1, Deep Lead: #121214, Gray: #A7B4C2, Ice White: #F8FAFC.
+
+Sands: the widgets/components that live in the Box. Smaller pieces can be composed into groups, with interactions between them and other sands, receiving data from a Protein stream and executing Protein Actions in certain interactions. We should have the fundamental blocks to construct several types of workflows.
+
+Protein supplies authorized reads. Backend Actions remain responsible for writes and permissions. Files, network messages and imported packages are validated where they enter Lince.
+
+# Part A - Dogfeeding:
+- [ ] Task management
+	- [ ] Full CRUD with kanban workflows.
+	- [ ] Time Tracking.
+	- [ ] Calendar features.
+	- [ ] Custom columns for labeling data state: dropdowns with many custom made options.
+	- [ ] Having threads in a Record, being able to send messages seing who sent it.
+		- [ ] Seeing images, gifs and emojis inside messages. Reactions with emojis (only?).
+- [ ] Users and Access control: selecting who can read/write what.
+	- [ ] If i set users to be able to log in my Organ, i must allow them to see the Organs they have logins into. So full Organ discovery and management and login is one of the tasks of Part A. 
+	- [/] External users being able to access a browser in real time to read/write data: Facade.
+
+This pc workflow:
+- [ ] Be able to run Lince not from the cloned git, but from a release in origin so local builts dont restart the default service. Then pint at a dir for File Sync, read .lingua files that are Lince's tasks and have real time collaboration with Fiote by asking it to do X, it moves to some WIP state and reboots Lince for one to use/test when ready, then takes local personal data to test if this change maintains same expected information to still exist correctly, as one more test inside the suite to securely push to main or some earlier staging/testing branch.
+
+## Tasks: 
+- [ ] Control crates used: Regarding jwt, how do we plan on making access control in new interface? I feel like jwt is the go-to, so even though we dont have the login/organ/accesscontrol(role-permission-user) part we will need in the future, is there a plan to use something better, more performant than jwt? Even if they are leftovers from web, in the new interface, what should we use? If we dont go for it we should discard, if we do it should be minimal machinery and shouldnt introduce http bc of it, communication between interface backend locally shouldnt use http and between organs shouldnt use it too, but still having full access control for different actions of users, gated by permisison/role. What is the minimal we can use to accomplish that? Do whatever you want in relation to parser and icons (seeded sands) to remove unnecessary computation of unchanged source.
+
+- [x] Edit mode: Being able to ctrl+right-click drag to form an area (web has some unoptimized implementation of this), all the sands inside that rectangle formed will be selected. I can then group/ungroup them (as options of controls next to sand).
+
+- [x] Build the Information tab. It has version (cargo), port, and directory of Lince. In that same tab also have:
+	- [x] Add to Information panel info on commit downloaded version of Lince, last updated info, updates available button to download and restart Lince (if possible, according to OS, i understand that NixOS might not work, it's ok, show message if it cant).
+	- [x] The Bevy interface (native.rs) has no update UI yet. That's the one thing waiting on the frontend/backend channel you're building (crates/cell). When it lands: call utils::self_update::net::run_watch_loop with AssetKind::Desktop, automatic = <setting>, and render on_available as a panel notice + Download-and-restart action. Everything it needs is already in utils. Staying current. Lince keeps itself up to date from its own published builds — one shared checker in the backend; server mode and the Box both use it. It checks the release feed about once a day and verifies the update list against Lince's signing key before trusting it; a list that fails is refused. In server mode, when updates are allowed, it downloads the new build, verifies its checksum, replaces the running program and restarts — it never asks. In the Box the same finding is a quiet notice in the Information panel: the new version and a button to download and restart; when updates are automatic it applies the same way without asking. The Box notice should arrive through the frontend/backend channel once that exists; until then the Box runs its own copy of the checker. When Lince cannot replace its own file — system package manager, or the Nix store — it says so and gives the one command instead. The running version and commit show in the panel, and a build with no version stamp is marked so it is clear why an update cannot be compared. People receive notification when can update, and clicking it brings them to information tab with update related ui and interactions.
+
+- [x] Add a "Laboratory" workspace when clicking a button inside information panel sand.
+	- [x] Laboratory can run in headless mode to simulate if the movement of things and physics are as intended.
+	- [/] Show which graphics device Lince is using, which Sands are consuming resources and why a Sand could not start.
+
+Basic Sands: Building blocks
+- [x] Square
+- [/] Editable Text or Plaintext Text: needs configuration to do an invisible box of the text area, so when users write we know if we scroll down, up, or grow the textarea vertically down.
+- [ ] Add sand for start/pause on the time tracking spent on that sand of work log metadata property. Maybe it can be always showing total time when paused and time of current play when play (common behavior).
+
+Effects: Events between Sands and internal action in Sand/Castle (like Protein Action). 
+- [x] Record Clicked (any property of any attatched to the sand sends out event of such record clicked).
+- [ ] Protein Actions, each part of a Record when interacted in a way can 
+
+Areas of Influence
+- [/] Tab in edit panel to add many types of areas, i can add a specific shape or draw it on canvas, must be one complete perimeter, cant be an open line, must be closed.
+- [ ] When adding an area i can click in it to change what it is, change area type, forces, whatever features of areas of influence we have.
+	- [/] Add a pull to some Sands according to some property. Does not bring them to area, adds one force that is being applied to the sand.
+	- [/] Set area of it, square, circle, shape drawn.
+	- [/] Set attraction/repulsion force.
+	- [/] Set property/ies that is attracted/repulsed by.
 	- [ ] Set properties the Records associated with the Sand gain when entering and lose by leaving, or lose by entering and gain by leaving.
-Add all the Sand/Castles we might want, removing from the Web version the workflows that are complete (manual by humans):
-- [ ] Basic Sands:
-	- [/] Square
-- [ ] Effects:
-	- [/] Record Clicked (any property of any attatched to the sand sends out event of such record clicked).
-- [ ] Content
-	- [ ] Putting plain text somewhere in Sands.
-	- [ ] Putting Record properties in Sands:
+	- [ ] Making an Area of Influence that is a Protein Area, that gives interface access to real data, it must be given the choice to the user to use local data or make that a live mode protein so I can show data of other Organs i have login and fill them in sands the same way as normal.  That filling is like this: It will give the frontend a schema of the data returned, so in edit mode one can take those properties of each row in schema and decide what sands/castles we want to create with each property. So we can fill a Square sand with a Record's Title, and make each row put it's title in that kind of sand, so if i configure the Protein Area to link the Record Title to a Square sand and the Record Description below that Square i will see for 3 "rows" of data coming from protein 3 Squares with title on top and description on bottom, editing finely the size of that potential square, and how each property is shown when it passes the width/height of the sand or the size that it is given/configured to occupy, growing downwards with scroll, right scroll, right width until reaching outer sand width (if it grows). This is a potential sand that exists when clicking a Protein Area. Here are the types of data we want to be able to show about records for now Proteins should be configurable to send only some of them per row to the interface (do we do that already for Peer Sync to inspire ourselves or just ativate it for interface sync (aka normal protein) if its not already?).
 		- [ ] Title
 		- [ ] Description
 		- [ ] Slug
 		- [ ] Quantity
 		- [ ] Assertions
-- [ ] Castles: 
-	- [ ] Kanban Castle
-		- [ ] Spawn Areas of Influence specific for a Kanban (#concept: quantity): #Backlog: 0, #Todo: -1, #Next: -2, #WIP: -3, #Review: -4, #Done: 1, #Documented: 2.
-			- [ ] We can hardcode the spawning of those areas of influence, that can pull many possible properties, for each lets do the assertion and the quantity associated. After putting those areas that attract those records and change records.
-	- [ ] Access Control Castle:
-		- [ ] Actors
-		- [ ] Permissions
-		- [ ] Role
-- [ ] Collaboration:
+		- [ ] Kind
+		- [ ] Assignees
+		- [ ] All our worklog properties of time spent, dates...
+		- [ ] Be able to turn properties from information shown in a sand to areas of influence, sorted by some heuristic. If i have a task title, it's assignee and due date, instead of showing a bundle of sands i can show a task title grouped by assignee in areas of influence going in one direction (downwards and alphabetically along a strip) and another (attracting area of influence + sorting area of influence) leftwards for the due date. I can even combine having them grouped by a property, like assignee, as an area of influence and showing the property redundantly either way in the group of title+assignee.
+
+Castles - Pre-packaged groups of Sands for specific workflows:
+- [ ] Colorpicker, use it in the colors of Customization tab of edit panel.
+- [ ] Kanban Castle
+	- [ ] Spawn Areas of Influence specific for a Kanban (#concept: quantity): #Backlog: 0, #Todo: -1, #Next: -2, #WIP: -3, #Review: -4, #Done: 1, #Documented: 2.
+		- [ ] We can hardcode the spawning of those areas of influence, that can pull many possible properties, for each lets do the assertion and the quantity associated. After putting those areas that attract those records and change records.
+- [ ] Access Control Castle:
+	- [ ] Actors
+	- [ ] Permissions
+	- [ ] Role
+- [ ] Instinct, grabs the #instinct records when building to embed in the Instinct sand, that is in seed of first workspace. It should include content to explain what Lince is in a high level (humans' job).
+
+- [ ] Save a group as a reusable Castle.
+- [ ] Collaboration: Use one editor wherever a Record's information appears so when changes are made by another person to a common data between both of you it is felt instantly: in the Record Sand, a card, a table cell or a conversation. Writing in one place should be visible in the others and to people who share that Record.
 	- [ ] Be able to edit a Record with Loro, CRDT, so someone that is syncing with the Lince owner of the Record I am editing can see my edits. Includes Record title, description and other properties like quantity, assertions, slug, work metadata...
-		- [ ] Cursor position so the edits dont look like a ghost.
+	- [ ] Cursor position so the edits dont look like a ghost.
+	- [ ] Edit titles, descriptions and other supported properties collaboratively, with visible cursors. Use the same field binding everywhere while preserving each property's rules for quantities, unique slugs and permissions.
+	- [ ] Show recent changes that displaced a local edit, including the previous value so the person can recover it. Explain when this short-lived record of changes expires.
+	- [ ] Add Text Sand that starts as a local draft and creates a Record when interaction X happens: dunno.
+		- [ ] One can take an existing text sand and connect a protein property to it, overwriting what was there with the incoming data.
+	- [ ] Show who wrote each message in threads.
+	- [ ] In threads, keep private drafts and reusable replies together, and say what sending will do.
+------------------------ End of Part A's 100% certain features. Ideas below. -----------------------------------------
 
-	- [x] Have controls in bottom-right of Box, the first one is the Information Button, that is a Square Sand with the Effect of toggleOpenInformationPanel.
-		- [x] Build the Information Panel Sand that listens to such Event and shows/hides itself based on such Event. It has version (cargo), port, and directory of Lince
-		- [x] Change the Square sand to be editable. Use it in the workspace name.
-		- [x] Add a "Delete" Square Sand that has Effect of deleteWorkspace.
-	- [x] Add a "Laboratory" workspace when clicking a button inside information panel sand.
-	- [ ] Add to Information panel info on commit downloaded version of Lince, last updated info, updates available button to download and restart Lince (if possible, according to OS, i understand that NixOS might not work, it's ok, show message if it cant).
-	- [ ] Laboratory can run in headless mode to simulate if the movement of things and physics are as intended.
-	- [ ] Migrate every wanted Web Sand into an Interface Sand/Castle.
-	- [ ] Basic elements of buttons, dropdowns, tooltips of an UI library.
-	- [ ] Clustered Sands, pre-built into a group are called Castles, they are not only building blocks, the represent workflows or are just for composition: Kanban, Table, Calendar, Graphs, Clock, Games, Transfer and Karma built as the features around it stabilize in backend.
-- [ ] Box
-	- [ ] Being able to edit sands, adding more properties associated with them, shown by them, events leaving from them, being read by them, and their consequences. Also editing the UI to use different tokens, or delve into custom CSS styling.
-	- [ ] Fundamental areas of data manipulation to emulate the ready made sands: areas to spawn data, areas to pull data in or push away, areas to sort data, areas for immunitiy to those effects. Maintaining everything built as a package from interacting with these Areas of Influence, so buttons can change areas and areas can move buttons around associated with properties that the areas affect.
+- [ ] Castles should be separated from sand in the picker. Basic blocks and packaged workflows. One can select a protein and change the way it's data is shown from a sand to a castle, castle to castle... If i change the way i present the protein and it is missing a field, i can choose to only show the properties that appear in the original or fill the remaining ones. If i have more properties than the new castle shows, it can discard it or add to the final piece.
 
-Interfaces should ask for as little attention as possible throughout the user's life. The best interface is Interfaceless.
+- [ ] We have castles (group of sands, locked, one bundle of data coming from protein, with every bundle showing as the same castle we made). It would be good to be able to maintain a group, meaning we still maintain the sands as being generated in a certain way, filling certain sands per bundle, but one sand of the group is unlocked, meaning it is not glued to the group. I will move the glued sands of the group and it will not follow along necessairily. It is detatched. If i end up changing the protein and not showing a certain "row" of data, the bundle/group will be gone, the locked and unlocked parts of that "row", it is still part of the group, just unlocked. I can unlock all of the group or just one sand.
 
 - [ ] Have a way to edit one sand based on it's uid or the uid of one record it has a property of, not all the sands that spawn from the protein of that record. So if i want to edit a circle i made, or the sand of my record Apple it feels like im just editing singular stuff that will be persisted if we have an update on protein that serves the Apple record.
-- [ ] Castles should be separated from sand in the picker. Basic blocks and packaged workflows. One can select a protein and change the way it's data is shown from a sand to a castle, castle to castle... If i change the way i present the protein and it is missing a field, i can choose to only show the properties that appear in the original or fill the remaining ones. If i have more properties than the new castle shows, it can discard it or add to the final piece.
-- [ ] We have castles (group of sands, locked, one bundle of data coming from protein, with every bundle showing as the same castle we made). It would be good to be able to maintain a group, meaning we still maintain the sands as being generated in a certain way, filling certain sands per bundle, but one sand of the group is unlocked, meaning it is not glued to the group. I will move the glued sands of the group and it will not follow along necessairily. It is detatched. If i end up changing the protein and not showing a certain "row" of data, the bundle/group will be gone, the locked and unlocked parts of that "row", it is still part of the group, just unlocked. I can unlock all of the group or just one sand.
-	- [ ] Be able to copy a sand from the group, duplicating the showing of one property in two sands (should be normal behavior, it's not 1 on 1 data-sand) and detatching it from the group, so it maintains the original sands, plus an unlocked that is a copy of a sand of the castle, still belonging to the group, but unlocked.
+
+- [ ] Be able to copy a sand from the group, duplicating the showing of one property in two sands (should be normal behavior, it's not 1 on 1 data-sand) and detatching it from the group, so it maintains the original sands, plus an unlocked that is a copy of a sand of the castle, still belonging to the group, but unlocked.
 - [ ] When editing we should have a way to edit a part of the sand, just it's visuals of the sand, just the links, the protein, the visual and links... no need to bombard them with all of the information at once.
 - [ ] When composing sands, we might choose to give it it's normal size as the minimal one, if we give a maximum it will have some respective form of scroll of the content inside if it occupies it all. If we dont give it a max it will grow, so we can have either our full documents or a scrollable version of them.
 	- [ ] The focus can be a way to take a sand with a maximum and showing it with no limit, in the center of the screen, it is different from editing a sand to have no limit, the focus is like entering the data being shown. It's like the current Record sand, that shows everything. But this would be showing all the contents of one sand, no scroll or anything, maybe centered and occupying a big portion of the screen, a focus, really.
 		- [ ] We can also take a property and show a focused view of the Record it belongs to. Similar to today's html Record sand.
-- [ ] Be able to turn properties from information shown in a sand to areas of influence, sorted by some heuristic. If i have a task title, it's assignee and due date, instead of showing a bundle of sands i can show a task title grouped by assignee in areas of influence going in one direction (downwards and alphabetically along a strip) and another (attracting area of influence + sorting area of influence) leftwards for the due date. I can even combine having them grouped by a property, like assignee, as an area of influence and showing the property redundantly either way in the group of title+assignee.
+
 - [ ] The temporal part of the needs is central to Lince. The interface should find a smart way to deal with it. We can start with a simple calendar sand, that is a castle sand made of some buttons and one special made calendar one that can take time related properties of records and show as first class citizens of it, because it is a native calendar/timeline sand, not an area of influence for time properties. In the future we might want to discover a way to turn it into lower primitives, but a ready made calendar sand is ok too.
-	- [ ] Also make a sand clock to show the next things i need to do, so i can organize my life. In 2d i see from the top only the next our, but it is not a clock really, it is a spiral when seeing from the 3d camera. And the tasks (if they have the hour:minute in them are in one point of this timeline that was warped to show the things in the next hour only, when seeing from 2d. That way i can see other stuff i have to do and the height of the spiral is the amount of time i want to glimpse in the future when in 3d.
-		- [ ] If something takes not a point in time but a range it is seen taking a part of the strip.
-		- [ ] If it is recurrent i might see it a bunch of times in the strip. 
+
 - [ ] What if we could put shaders in the sand? We have wgpu, shouldnt be too hard to slap a custom WGSL into the surface of the sand, maybe even making the sand be the actual body and the wgsl going out of it, if it glowed it could show as a light outside of the sand. If we are using compute/vertex shaders in the interface, putting something custom to make it pretty should be fairly straightforward to the users.
+
 - [ ] Using Simulation to see the how things would change if we performed some action, or some rule where enacted, or some transfer completed could all be simulation related visualizations.
+
 - [ ] The Record editor’s five-second return from source to rendered text (anicca/interface/ official-sands.md:178) would go. I’d keep the current block stable until the person leaves it or deliberately changes presentation. Thinking for five seconds should not cause the editor to transform beneath the caret.
-- [ ] Make the controls of the workspace shown by default, with configuration to hide them in the triangle corner (configurable too for making triangle transparent or colored).
-- [ ]  Lets make the stable placement and restricted motion the first implementation then. Dont delete the code already built to make the sands move. Just dont use it for now while we make the more basic features done.
+- [ ] Explain which forces, sorting rules, pins and immunity affect a Sand. Provide limits and pause controls when rules conflict or keep triggering one another.
 
-- [ ] We may embed the LICENSE and credits to the sand, ethical. We should have an easy to access part of Lince, not a hidden one, that is talking about the interface and is saying that we use such and such dependencies (the ones that ask us to give the LICENSE, users dont care). In that part we include the LICENSES, if we put it in the sand it's going to be work to take only the rust of it, and drop the LICENSE from the queried bytes.
+- [ ] Explore if there is a way to use some pandoc equivalent in bevy so we can have document showing out of the box.
+	- [ ] In any way, we should have mostly compliant with markdown syntax for record descriptions and provide Raw, Pretty and Pragmatic views of Markdown, with slash commands, images, checkboxes and Record references. Keep the current source block stable until the person leaves it or deliberately changes presentation. Also would be good to write mermaid, typst is cool too.
 
-- [ ] The interface must keep it's state in memory, and backup to a file with a frequency per configuration.
+- [ ] Connect to an Organ, sign in, reconnect and sign out from the native interface. Show which Person and Organ are active, and keep work intended for that Organ there.
+- [ ] Create vocabulary, saved Protein views and workspaces from an empty Organ. Let people arrange their own work without requiring a company template or a project for every Record.
+- [ ] Make Record, Table, Todo and Kanban work together: search, create, edit, assign, filter, sort and act on several Records. Show which changes succeeded and which were refused.
+- [ ] Build the Access Control Castle with Actors, Roles and Permissions. Let an administrator choose which Records and properties each Role can read or change, preview the result, recover access and revoke it from already-open clients.
+- [ ] Show activity and Trash, with ways to restore permitted Records and recover useful drafts. Give administrators the server's health, backup and recovery information.
+
+## Box and saving
+
+- [ ] Drop a supported file or URL onto Box and choose a suitable Sand. Explain unavailable formats; displaying something must not silently create a Record.
+- [ ] Keep interface state in memory and save it to a readable file at a configurable frequency. Show unsaved changes and the last saved state; recover from an interrupted save.
+- [ ] Undo and redo complete gestures, including group, connection and appearance changes. Save reusable composition separately from personal camera, focus and selection.
+- [ ] Let other programs and Fiote inspect and arrange Box through the same checked operations. Their changes must be attributed, visible and undoable.
+## Showing Protein data
+
+A Protein area uses one group as a template and fills it once for each result. For example, each task might become a title, an assignee and a quantity. Showing the same property twice creates two views of the same data.
+
+- [ ] Choose a Protein, see the fields it returns and connect them to Sands in a result template. Keep room for labels, buttons and decoration that have no data binding.
+- [ ] Keep each result's appearance stable through edits, reordering and refresh. When a result disappears, remove its appearances and keep their settings for the stated recovery period.
+- [ ] Explain why a Sand is here: its source, field, group, local changes and layout. Show empty, loading, withheld and broken data as different states, with ways to repair a connection.
+- [ ] Change the presentation of a Protein between Sands and Castles. Preview matching, missing and extra fields, including affected local edits, and let the person cancel or undo the change. Hiding a field only changes its presentation.
+
+## Editing one appearance
+
+Editing Apple's title Sand should feel like editing that one thing. Pear and another appearance of Apple should keep their own settings. The Record uid can help find appearances; the person chooses which one to edit.
+
+- [ ] Edit one loose Sand or one child of a Protein result, and keep that change after refresh and restart.
+- [ ] Release one or all children from moving with a group while keeping their data and ownership. Reattach them without a jump. If the result disappears, its released children disappear too.
+- [ ] Copy and release a property Sand so both copies show the same data. A click or edit must still cause only one intended Action.
+
+## Organ, contacts and devices
+
+People should be able to see and control the sharing that already happens behind the interface.
+
+- [ ] Show every contact and what they can see of this Organ in one place, with a link to change each contact's settings.
+- [ ] Give each device separate controls for what it can see and what it can do. Let the owner narrow a device's access while keeping it connected.
+- [ ] Show the identity succession chain so changes of Organ identity can be understood.
+- [ ] Choose direct or mailbox delivery per contact. Explain delivery limits and reconnect when a contact's device list is missing.
+- [ ] Move a Record to another Organ through an offer the recipient can accept, with progress and cancellation controls.
+- [ ] Put invitations, replica grants, Record moves and Transfer invitations in one pending-offers list. Show the local outcome clearly while respecting any rule that keeps refusal private from the sender.
+- [ ] Show when Lince last checked its stored view against its log, what it found and what needs attention. An unchecked state must not look healthy.
+
+## Grouping, Calendar and Clock
+
+Start with arrangements that stay still. Assignee and due date can organize tasks along two directions while those properties also remain visible on the cards.
+
+- [ ] Turn displayed properties into grouping and sorting Areas. Preview the arrangement, handle missing and multiple values, and let a manually moved Sand return to following the layout.
+- [ ] Build Calendar with agenda, day, week and timeline views over Record dates. Show points, intervals, all-day work, unscheduled work and overlapping entries.
+- [ ] Use Karma's occurrences for repeated work, with timezone and date editing support. Distinguish changing one occurrence from changing its series, and provide keyboard alternatives to dragging.
+- [ ] Build the Clock over the same entries: the next hour from above, and a spiral with a chosen future horizon in perspective. Show intervals, repetitions and overdue work; holding the view's time must not stop Karma.
+
+## More workflows
+
+The remaining workflows reuse the same controls, editor, Protein and Actions. Each needs a usable interface and any missing backend operation together.
+- [ ] Complete Ontology and Relations for exploring Concepts, directed Assertions, Trails and progress. Moving the graph's layout must not change its relationships.
+- [ ] Bring Transfer inspection and lifecycle controls into native Sands, showing participants, quantities, direction, permissions and delivery outcomes.
+- [ ] Build Karma's Program, Frequency, candidate and grant controls. Show cycles and other refusals beside their cause, and distinguish a proposed effect from one that actually ran.
+- [ ] Complete contact and conversation workflows, then calls and media with their own backend support. Keep ordinary discussion usable independently of calls or Fiote.
+- [ ] Make Instinct readable and let a person deliberately import its tutorial Records. Explain when tutorial content is unavailable.
+- [ ] Complete Archive and Sand Publisher for inspecting, validating, importing, exporting and publishing the selected content. Show scope, package identity and notices before acting.
+- [ ] Share published Sand packages between connected Organs without requiring a central registry. Preserve their author, identity, origin, permissions and licenses even when a recipient cannot run them yet.
+- [ ] Let the AI composition surface show a proposal for review and apply it through ordinary authorized operations. Explain unavailable providers and unapplied changes.
+
+## Sharing a workspace
+
+Sharing Records and sharing a Box layout are different choices. Protein's Synchronization area should make both understandable alongside File Sync.
+
+- [ ] Invite viewers and editors into a live workspace, with one hosting Cell saving the agreed changes. Give each person their own camera and selection, with optional shared presence.
+- [ ] Show pending changes, refusals, reconnect progress and access loss. If the host is unavailable, explain what the saved read-only view contains. Offline editing and replacing the host need a separate design.
+- [ ] Keep workspace editing permission separate from permission to read or change the Records shown inside it.
+
+## Movement and spatial views
+
+After ordinary editing is comfortable, Areas can make Box move. Avian handles contact physics; Lince decides which data an Area affects and what entering it means.
+
+- [ ] Build the Kanban Castle from configured Areas, including the Concept and quantity choices already listed in the Record. Keep a direct, stationary arrangement available.
+- [ ] Shape terrain with raise, lower, flatten and smooth tools. Allow effects fixed in the workspace or attached to a Sand, and show which Records each effect applies to.
+- [ ] Switch between top and perspective views of the same surface. Add free 3D placement with a previewable, undoable conversion back to a flat workspace.
+- [ ] Keep a Sand facing its authored direction by default, with a Face viewer option. Changing the camera or reading face must not change its physical behavior.
+- [ ] Choose whether Protein results appear directly, travel from a spawn point or settle before appearing, and how quickly they arrive. Save useful settled positions without writing every animation frame.
+- [ ] Let Laboratory run headlessly to check motion and replay problems. Keep off-camera behavior consistent and state the limits of repeatability.
+
+## Effects and simulation
+
+Visual effects change appearance. Simulation previews possible changes to Lince data. Both should remain understandable and easy to leave.
+
+- [ ] Add shader presets and a supported WGSL editor for Sand surfaces, including bounded outward glow. Keep text readable, preserve the last working effect and provide Reset and Disable outside the customized content.
+- [ ] Preview an Action, Karma Rule or Transfer beside the current state. Show assumptions, affected Records, dates and unknown consequences without making real changes.
+- [ ] Apply an accepted proposal through ordinary Actions after checking that its source data is still current. Calendar and Clock should work before these previews are available.
+
+## Specialized content
+
+Some old Sands relied on a browser inside Lince. Each needs a suitable native implementation or an explicit external opening option before returning.
+
+- [ ] Add native document reading, terminal, video, game and animation support as needed. Keep the surrounding controls in Bevy and include each embedded dependency's notices.
+- [ ] Bind a terminal to a task Record, open it from that Record and change the binding without killing the shell. Keep the person's interactive shell separate from an agent's read-only command output.
+- [ ] Explore the website wish in Lince.lingua without assuming CEF. Any proposed embedded view must explain how it isolates storage and permissions from Box; the current no-browser direction and this wish still need a workable answer.
+
+## Checking the result
+
+Each feature is finished when a person can use it through the real controls and backend. An entry in the picker, an old checkmark or a test fixture alone does not establish that.
+
+- [ ] Check editing, navigation and recovery with keyboard, pointer, text composition and a screen reader. Review light, dark and custom themes, reduced motion and the available display scales.
+- [ ] Check collaboration with two people, including rejected edits, live access revocation, reconnect, restart and backup recovery. Preserve locked content and author-private drafts.
+- [ ] Keep an idle workspace quiet and one active Sand from updating every static one. Measure responsiveness and memory on the owner's machine, including large workspaces and repeated opening and closing.
+- [ ] Walk through the real controls before suggesting tutorial text for the owner to add to Lince.lingua.
+
+One useful walkthrough is Apple and Pear from the same Protein: customize only Apple, copy and release its quantity, move the remaining group, remove and restore the result, change Castle with a missing field, focus and edit, then restart. Check that the intended appearance, data and unfinished work survive each step. Repeat the important operations with keyboard and assistive technology.
+
+Fiote's session controls, tool timeline, model settings, budgets and agent orchestration belong with Fiote in Lince.lingua. The shared conversation and terminal requirements above stay here. [The remaining Fiote interface details](sands.md) are kept as prose for that section's manual review. Shallow collaborative-text snapshots are a backend storage improvement, also separate from interface completion.
+
+# Complete v1.0.0 (may have things pushed to part A):
+
+These remain possibilities for the owner to consider, without an implementation order: offline editable workspace copies and host replacement; portals between stacked workspaces; richer Protein filters; formulas; drawing inside Record bodies; previewing the Records and Assertions that a description would create; maps and world scenes; production, stock, logistics and ordering views; and public commerce. [Future ideas](../deferred.md) and [world and production notes](../future-sands.md) retain their meaning.
+
 - [ ] Be able to embed a website, can we do it without CEF? It would be good to be able to have storage for it, permissions of that isolated frame, not reading/writting to anything in the Box.
 
-
+- [ ] Also make a sand clock to show the next things i need to do, so i can organize my life. In 2d i see from the top only the next our, but it is not a clock really, it is a spiral when seeing from the 3d camera. And the tasks (if they have the hour:minute in them are in one point of this timeline that was warped to show the things in the next hour only, when seeing from 2d. That way i can see other stuff i have to do and the height of the spiral is the amount of time i want to glimpse in the future when in 3d.
+	- [ ] If something takes not a point in time but a range it is seen taking a part of the strip.
+	- [ ] If it is recurrent i might see it a bunch of times in the strip. 
 } r_99NWECF19VKV94HQQ3G3ASMC4M
 
 Interfaceless (@interfaceless: 0, #part-of @interface, #v2.0.0) {
+- [ ] For funsies, use Ithkuil as one of the languages
 
 We need to model everything, and be able to not interact with Lince to have our needs met. Not necessairly knowing Lince exists, not necessairly continuing the project with the name Lince, quietly disappearing, being absorved by a bigger project, giving it capabilites of Lince. Modeling things in Lince is also a Need. So if i have a Need to model something as big as the observable universe or bigger i should, computers handle scale well, an i128 is enough. Setting a boundary on a part of the universe gives us a sandbox, if we have an Earth globe at our disposal to create these areas we may edit them to escape to fantasy land. I take the place that is my house on the map and put all my Needs and Contributions, relay it as being from my city for privacy. I look at things that are Needed in the areas close to me, or in the other side of the planet, I make transfers with them, of physical resources, information, services... I automate workflows, and I create scenarios on top of visualizations of the real world. I take tools like Gaussian Splatting, photos, videos to see what the world is like in the present, and I overlap it, mesh it together with my assets, the structures I create, using tools like game engines, blender, CAD, Generative World Models to transform the digital representation of the world, taking the real version or the simulated, gamified one and create the Needs and model the Contributions related to it, assign Actors to take care of them. Possibly doing that without interacting with Lince. That's the goal.
 
@@ -912,7 +1063,7 @@ Known walls, all real today:
 - An allowlist a shell command can walk around is a convention, not a wall. Real boundaries are OS-level. The surface says "convention".
 - An item belongs to the Interface refactor only if two people talking would want it. If it is only useful because an agent exists, it is Fiote's work. The interface side is in `anicca/interface/plans/sands.md`.
 
-Fiote resumes its native prototype after the Interface's C5 pre-Box foundation gate. The cleanups below run beside C4 and C5. The full terminal-bearing session group also depends on the final v1 CEF lane; native thread and control work do not. Fiote never becomes a prerequisite for Box.
+Fiote resumes its native prototype after the Interface's C5 pre-Box foundation gate. The cleanups below run beside C4 and C5. The full terminal-bearing session group also depends on the final v1 CEF alternative; native thread and control work do not. Fiote never becomes a prerequisite for Box.
 
 ## Cleanups to do first
 
@@ -1145,5 +1296,4 @@ What if we could make the smallest piece of it, that could connect with others, 
 - [ ] Connectable to other parts of it physically.
 - [ ] Wireless connection with devices around it.
 - [ ] Screen parts, chassi parts or an all-in-one.
-
 }

@@ -17,6 +17,8 @@ sha2 = { workspace = true }
 [build-dependencies]
 sensei = { workspace = true }
 rust-sitter-tool = { workspace = true }
+cc = "1.4.5"
+tree-sitter-generate = { version = "0.27.0", default-features = false }
 
 [[bin]]
 name = "lingua"

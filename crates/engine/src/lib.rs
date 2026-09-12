@@ -1,6 +1,9 @@
+#![recursion_limit = "256"]
+
 pub mod access;
 pub mod action_intent;
 pub mod actions;
+pub mod area_transition;
 pub mod append;
 pub mod body_links;
 pub mod checkpoint;
@@ -32,6 +35,7 @@ pub mod private_password;
 pub mod private_requests;
 pub mod private_work;
 pub mod read_filter;
+mod tagged_record;
 pub mod rebuild;
 pub mod roster;
 pub mod seal;
@@ -83,6 +87,7 @@ pub use error::EngineError;
 pub struct Engine {
     pub store: Store,
     bus: broadcast::Sender<Fact>,
+    query_changed: watch::Sender<u64>,
     pub(crate) signer: Mutex<Option<trust::Signer>>,
     pub(crate) organ_signer: Mutex<Option<trust::Signer>>,
     karma_deadline_changed: watch::Sender<u64>,
@@ -121,12 +126,14 @@ impl Engine {
             nucleus::hlc::observe(max);
         }
         let (bus, _) = broadcast::channel(1024);
+        let (query_changed, _) = watch::channel(0);
         let (karma_deadline_changed, _) = watch::channel(0);
         let (notifications_changed, _) = watch::channel(0);
         let (config_changed, _) = watch::channel(0);
         let engine = Engine {
             store,
             bus,
+            query_changed,
             signer: Mutex::new(None),
             organ_signer: Mutex::new(None),
             karma_deadline_changed,
@@ -157,6 +164,10 @@ impl Engine {
 
     pub fn subscribe(&self) -> broadcast::Receiver<Fact> {
         self.bus.subscribe()
+    }
+
+    pub fn watch_query_changes(&self) -> watch::Receiver<u64> {
+        self.query_changed.subscribe()
     }
 
     pub fn watch_notifications(&self) -> watch::Receiver<u64> {

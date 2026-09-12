@@ -26,7 +26,7 @@ pub fn within_drift(seen: i64) -> bool {
 pub fn next() -> i64 {
     let floor = chrono::Utc::now().timestamp_millis() << COUNTER_BITS;
     let prev = LAST
-        .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |last| {
+        .try_update(Ordering::SeqCst, Ordering::SeqCst, |last| {
             Some(if floor > last {
                 floor
             } else {

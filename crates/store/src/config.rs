@@ -16,6 +16,65 @@ pub struct Configuration {
     pub transfer_reservation_default: String,
     pub transfer_application_formula: String,
     pub transfer_remainder_policy: String,
+    pub interface_close_suspends: bool,
+    pub interface_storage: InterfaceStorage,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct InterfaceStorage {
+    pub snapshot_seconds: u64,
+    pub history_seconds: u64,
+    pub history_count: usize,
+}
+
+impl Default for InterfaceStorage {
+    fn default() -> Self {
+        Self {
+            snapshot_seconds: 30,
+            history_seconds: 300,
+            history_count: 10,
+        }
+    }
+}
+
+impl InterfaceStorage {
+    pub fn validate(self) -> Result<Self, StoreError> {
+        if !(1..=86400).contains(&self.snapshot_seconds)
+            || !(self.snapshot_seconds..=604800).contains(&self.history_seconds)
+            || !(1..=100).contains(&self.history_count)
+        {
+            return Err(sqlx::Error::Protocol(
+                "invalid interface snapshot or history settings".into(),
+            ));
+        }
+        Ok(self)
+    }
+}
+
+pub async fn interface_storage(pool: &SqlitePool) -> Result<InterfaceStorage, StoreError> {
+    ensure_default(pool).await?;
+    let row = sqlx::query("SELECT interface_snapshot_seconds, interface_history_seconds, interface_history_count FROM configuration WHERE id = 1")
+        .fetch_one(pool).await?;
+    InterfaceStorage {
+        snapshot_seconds: row.get::<i64, _>("interface_snapshot_seconds") as u64,
+        history_seconds: row.get::<i64, _>("interface_history_seconds") as u64,
+        history_count: row.get::<i64, _>("interface_history_count") as usize,
+    }
+    .validate()
+}
+
+pub async fn set_interface_storage(
+    pool: &SqlitePool,
+    settings: InterfaceStorage,
+) -> Result<(), StoreError> {
+    settings.validate()?;
+    ensure_default(pool).await?;
+    sqlx::query("UPDATE configuration SET interface_snapshot_seconds = ?, interface_history_seconds = ?, interface_history_count = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1")
+        .bind(settings.snapshot_seconds as i64)
+        .bind(settings.history_seconds as i64)
+        .bind(settings.history_count as i64)
+        .execute(pool).await?;
+    Ok(())
 }
 
 pub async fn ensure_default(pool: &SqlitePool) -> Result<(), StoreError> {
@@ -70,7 +129,36 @@ pub async fn get(pool: &SqlitePool) -> Result<Option<Configuration>, StoreError>
             transfer_reservation_default: r.get("transfer_reservation_default"),
             transfer_application_formula: r.get("transfer_application_formula"),
             transfer_remainder_policy: r.get("transfer_remainder_policy"),
+            interface_close_suspends: r.get::<i64, _>("interface_close_suspends") != 0,
+            interface_storage: InterfaceStorage {
+                snapshot_seconds: r.get::<i64, _>("interface_snapshot_seconds") as u64,
+                history_seconds: r.get::<i64, _>("interface_history_seconds") as u64,
+                history_count: r.get::<i64, _>("interface_history_count") as usize,
+            },
         }))
+}
+
+pub async fn interface_close_suspends(pool: &SqlitePool) -> Result<bool, StoreError> {
+    ensure_default(pool).await?;
+    Ok(
+        sqlx::query_scalar("SELECT interface_close_suspends FROM configuration WHERE id = 1")
+            .fetch_one(pool)
+            .await?,
+    )
+}
+
+pub async fn set_interface_close_suspends(
+    pool: &SqlitePool,
+    enabled: bool,
+) -> Result<(), StoreError> {
+    ensure_default(pool).await?;
+    sqlx::query(
+        "UPDATE configuration SET interface_close_suspends = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1",
+    )
+    .bind(i64::from(enabled))
+    .execute(pool)
+    .await?;
+    Ok(())
 }
 
 pub async fn transfer_reservation_default(pool: &SqlitePool) -> Result<String, StoreError> {

@@ -1,0 +1,6 @@
+Lucide icons, lucide-static 1.43.0.
+Lucide contributors and the original Feather contributors.
+https://lucide.dev
+https://github.com/lucide-icons/lucide
+SVG license headers are collected in LICENSE beside these files.
+The build converts currentColor to white for runtime tinting.

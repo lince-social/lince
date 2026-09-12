@@ -25,7 +25,7 @@ Install a system-level systemd service for Lince.
 Generic mode:
   ./scripts/install/install-system-service.sh \
     --working-directory /path/to/repo \
-    --exec-start "/path/to/lince --http-api-only --data-dir /path --port 6174"
+    --exec-start "/path/to/lince --http-api-only --directory /path --port 6174"
 
 Profile mode:
   ./scripts/install/install-system-service.sh --profile institute --lince-bin /path/to/lince
@@ -34,7 +34,7 @@ Profile mode:
 Options:
   --profile <name>           One of: institute, global
   --lince-bin <path>         Binary path used by profile mode.
-  --data-dir <path>          Override profile data dir.
+  --directory <path>         Override profile data dir.
   --port <port>              Override profile port.
   --http-api-only            Add --http-api-only in profile mode (default).
   --no-http-api-only         Skip --http-api-only in profile mode.
@@ -62,7 +62,7 @@ while (($# > 0)); do
             lince_bin="$2"
             shift 2
             ;;
-        --data-dir)
+        --directory)
             data_dir="$2"
             shift 2
             ;;
@@ -159,7 +159,7 @@ if [[ -n "$profile" ]]; then
         working_directory="$(dirname "$lince_bin")"
     fi
 
-    exec_start="${lince_bin} --data-dir ${data_dir} --port ${port}"
+    exec_start="${lince_bin} --directory ${data_dir} --port ${port}"
     if [[ "$http_api_only" -eq 1 ]]; then
         exec_start="${exec_start} --http-api-only"
     fi

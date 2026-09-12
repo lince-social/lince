@@ -6,15 +6,28 @@ rust-version = "1.95"
 license = "MIT"
 repository = "https://github.com/lince-social/lince"
 homepage = "https://lince.social"
-description = "Native Interface runtime and instrumented acceptance laboratory for Lince."
+description = "Native Interface runtime for Lince."
 
 [features]
 default = ["native-runtime"]
-bevy-preflight = ["dep:bevy"]
-browser-parity = ["dep:maud"]
-physics-preflight = ["dep:avian2d", "bevy-preflight"]
 native-runtime = [
     "dep:bevy",
+    "dep:cell",
+    "dep:tokio",
+    "dep:protein",
+    "dep:engine",
+    "dep:serde_json",
+    "dep:serde",
+    "dep:image",
+    "dep:ksni",
+    "dep:tray-icon",
+    "dep:muda",
+    "dep:rustix",
+    "dep:getrandom",
+    "dep:avian3d",
+    "dep:toml",
+    "dep:nucleus",
+    "dep:tempfile",
     "bevy/bevy_core_pipeline",
     "bevy/bevy_input_focus",
     "bevy/bevy_text",
@@ -28,98 +41,111 @@ native-runtime = [
     "bevy/system_clipboard",
     "bevy/png",
 ]
-legacy-runtime = [
-    "native-runtime",
-    "semantic-spatial",
-    "dep:accesskit",
-    "dep:accesskit_winit",
-    "dep:bytemuck",
-    "dep:engine",
-    "dep:futures",
-    "dep:tokio-tungstenite",
-    "dep:transport",
-    "dep:reqwest",
-    "dep:chrono",
-    "dep:dirs",
-    "dep:glyphon",
-    "dep:pollster",
-    "dep:schemars",
-    "dep:serde",
-    "dep:serde_json",
-    "dep:sha2",
-    "dep:url",
-    "dep:utils",
-    "dep:wgpu",
-    "dep:winit",
-]
-semantic-spatial = [
-    "physics-preflight",
-    "dep:nucleus",
-    "dep:protein",
-    "dep:store",
-    "dep:tokio",
-]
 
 [dependencies]
-avian2d = { version = "=0.7.0", default-features = false, features = ["2d", "f32", "parallel", "parry-f32"], optional = true }
-accesskit = { version = "=0.24.1", optional = true }
-accesskit_winit = { version = "=0.33.2", default-features = false, features = ["accesskit_unix", "async-io", "rwh_06"], optional = true }
+nucleus = { workspace = true, optional = true }
+tempfile = { version = "=3.27.0", optional = true }
 bevy = { version = "=0.19.1", default-features = false, features = ["async_executor", "bevy_asset", "bevy_log", "bevy_render", "multi_threaded", "std"], optional = true }
-bytemuck = { version = "=1.25.2", features = ["derive"], optional = true }
-chrono = { workspace = true, optional = true }
-dirs = { version = "=6.0.0", optional = true }
-engine = { path = "../engine", optional = true }
-futures = { workspace = true, optional = true }
-glyphon = { version = "=0.11.0", optional = true }
-maud = { version = "=0.27.0", optional = true }
-pollster = { version = "=0.4.0", optional = true }
-nucleus = { path = "../nucleus", optional = true }
+cell = { workspace = true, optional = true }
+tokio = { workspace = true, optional = true }
 protein = { path = "../protein", optional = true }
-reqwest = { workspace = true, optional = true }
-schemars = { workspace = true, optional = true }
-serde = { version = "1.0.228", features = ["derive"], optional = true }
-serde_json = { version = "1.0.149", optional = true }
-sha2 = { version = "0.10.9", optional = true }
-store = { path = "../store", optional = true }
-tokio = { version = "=1.49.0", features = ["macros", "net", "rt-multi-thread", "sync", "time"], optional = true }
-tokio-tungstenite = { version = "=0.28.0", optional = true }
-transport = { workspace = true, optional = true }
-url = { version = "=2.5.8", optional = true }
-utils = { workspace = true, optional = true }
-wgpu = { version = "=29.0.4", optional = true }
-winit = { version = "=0.30.12", default-features = false, features = ["rwh_06", "wayland", "wayland-csd-adwaita", "wayland-dlopen"], optional = true }
+engine = { path = "../engine", optional = true }
+serde_json = { workspace = true, optional = true }
+serde = { workspace = true, optional = true }
+image = { version = "=0.25.10", default-features = false, features = ["png"], optional = true }
+getrandom = { workspace = true, optional = true }
+avian3d = { version = "=0.7.0", default-features = false, features = ["3d", "f64", "parry-f64", "enhanced-determinism", "xpbd_joints"], optional = true }
+toml = { workspace = true, optional = true }
 
-[[bin]]
-name = "lince-interface"
-path = "src/main.rs"
-required-features = ["native-runtime"]
+[target.'cfg(unix)'.dependencies]
+rustix = { version = "=1.1.4", features = ["process", "fs"], optional = true }
 
-[[bin]]
-name = "lince-interface-legacy-laboratory"
-path = "src/legacy_main.rs"
-required-features = ["legacy-runtime"]
+[target.'cfg(target_os = "linux")'.dependencies]
+ksni = { version = "=0.3.6", default-features = false, features = ["async-io"], optional = true }
 
-[[bin]]
-name = "lince-interface-dependency-audit"
-path = "src/dependency_audit.rs"
-required-features = ["legacy-runtime"]
-
-[[bin]]
-name = "lince-interface-spatial-diagnostic"
-path = "src/spatial_diagnostic.rs"
-required-features = ["legacy-runtime", "semantic-spatial"]
-
-[[bin]]
-name = "lince-interface-parity-diagnostic"
-path = "src/parity_diagnostic.rs"
-required-features = ["legacy-runtime", "browser-parity"]
+[target.'cfg(any(target_os = "macos", target_os = "windows"))'.dependencies]
+tray-icon = { version = "=0.25.0", default-features = false, optional = true }
+muda = { version = "=0.20.0", default-features = false, optional = true }
 
 [build-dependencies]
 sensei = { workspace = true }
+resvg = { version = "0.48.1", default-features = false }
+
+[dev-dependencies]
+nucleus = { workspace = true }
+tempfile = "=3.27.0"
+
+[[example]]
+name = "frontend_smoke"
+required-features = ["native-runtime"]
 
 [[example]]
 name = "square_smoke"
 required-features = ["native-runtime"]
 
+[[example]]
+name = "workspace_smoke"
+required-features = ["native-runtime"]
+
+[[example]]
+name = "canvas_pan_smoke"
+required-features = ["native-runtime"]
+
+[[example]]
+name = "canvas_colors_smoke"
+required-features = ["native-runtime"]
+
+[[example]]
+name = "edit_mode_smoke"
+required-features = ["native-runtime"]
+
+[[example]]
+name = "actions_smoke"
+required-features = ["native-runtime"]
+
+[[example]]
+name = "notifications_smoke"
+required-features = ["native-runtime"]
+
 [lints]
 workspace = true
+
+[[example]]
+name = "castle_smoke"
+required-features = ["native-runtime"]
+
+[[example]]
+name = "store_resize_smoke"
+required-features = ["native-runtime"]
+
+[[example]]
+name = "inspection_smoke"
+required-features = ["native-runtime"]
+
+[[example]]
+name = "placement_smoke"
+required-features = ["native-runtime"]
+
+[[example]]
+name = "areas_smoke"
+required-features = ["native-runtime"]
+
+[[example]]
+name = "physics_smoke"
+required-features = ["native-runtime"]
+
+[[example]]
+name = "area_changes_smoke"
+required-features = ["native-runtime"]
+
+[[example]]
+name = "store_credits_smoke"
+required-features = ["native-runtime"]
+
+[[example]]
+name = "selection_smoke"
+required-features = ["native-runtime"]
+
+[[example]]
+name = "laboratory_smoke"
+required-features = ["native-runtime"]

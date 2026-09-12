@@ -381,6 +381,152 @@ async fn a_session_without_an_ephemeral_source_arms_no_tick() {
     assert!(s.tick_ephemeral().await.is_empty());
 }
 
+#[tokio::test]
+async fn refresh_keeps_the_accepted_query_after_a_rejected_replacement() {
+    let (engine, hub) = setup().await;
+    let mut session = Session::new(engine.clone(), hub, "refresh", None);
+    session.handle(subscribe_focus("view")).await;
+    let rejected = session
+        .handle(ClientMessage::SubscribeSaved {
+            id: "view".into(),
+            name: "missing-query".into(),
+        })
+        .await;
+    assert!(matches!(rejected.as_slice(), [ServerMessage::Error { .. }]));
+    engine
+        .act(
+            Action::CreateRecord {
+                slug: Some("new-need".into()),
+                kind: RecordKind::Plain,
+                head: "New need".into(),
+                body: String::new(),
+                quantity: -1.0,
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let refreshed = session.refresh().await;
+    assert!(
+        matches!(refreshed.as_slice(), [ServerMessage::Snapshot { id, rows }]
+        if id == "view" && rows.len() == 1 && rows[0]["slug"] == "new-need")
+    );
+    session
+        .handle(ClientMessage::Unsubscribe { id: "view".into() })
+        .await;
+    assert!(session.refresh().await.is_empty());
+}
+
+#[tokio::test]
+async fn refresh_restores_joined_documents_after_missed_facts() {
+    let (engine, hub) = setup().await;
+    let uid = engine
+        .act(
+            Action::CreateRecord {
+                slug: None,
+                kind: RecordKind::Plain,
+                head: "Note".into(),
+                body: "Before".into(),
+                quantity: 0.0,
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    let mut session = Session::new(engine.clone(), hub, "refresh-collab", None);
+    let joined = session
+        .handle(ClientMessage::CollabJoin {
+            id: "doc".into(),
+            record_uid: uid.clone(),
+        })
+        .await;
+    let [
+        ServerMessage::CollabState {
+            snapshot_base64: before,
+            ..
+        },
+    ] = joined.as_slice()
+    else {
+        panic!("expected joined document")
+    };
+    engine
+        .act(
+            Action::EditRecordText {
+                target: uid.clone(),
+                head: None,
+                body: Some("After".into()),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let refreshed = session.refresh().await;
+    assert!(
+        matches!(refreshed.as_slice(), [ServerMessage::CollabChange { record_uid, snapshot_base64 }]
+        if record_uid == &uid && snapshot_base64 != before)
+    );
+    session
+        .handle(ClientMessage::CollabLeave { record_uid: uid })
+        .await;
+    assert!(session.refresh().await.is_empty());
+}
+
+#[tokio::test]
+async fn actions_without_facts_signal_a_protein_refresh() {
+    let (engine, hub) = setup().await;
+    let mut changes = engine.watch_query_changes();
+    let mut session = Session::new(engine.clone(), hub, "concepts", None);
+    session
+        .handle(ClientMessage::Subscribe {
+            id: "concepts".into(),
+            protein: serde_json::from_value(serde_json::json!({ "source": "concept" })).unwrap(),
+        })
+        .await;
+    let created = engine
+        .act(
+            Action::CreateConcept {
+                lingua: "g_local".into(),
+                name: "created-outside-ui".into(),
+                parents: Vec::new(),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    assert!(created.facts.is_empty());
+    let uid = created.created.unwrap();
+    tokio::time::timeout(std::time::Duration::from_secs(1), changes.changed())
+        .await
+        .unwrap()
+        .unwrap();
+    let refreshed = session.refresh().await;
+    assert!(
+        matches!(refreshed.as_slice(), [ServerMessage::Snapshot { rows, .. }]
+        if rows.iter().any(|row| row["uid"] == uid))
+    );
+    engine
+        .act(
+            Action::DeleteConcept {
+                concept: uid.clone(),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    tokio::time::timeout(std::time::Duration::from_secs(1), changes.changed())
+        .await
+        .unwrap()
+        .unwrap();
+    let refreshed = session.refresh().await;
+    assert!(
+        matches!(refreshed.as_slice(), [ServerMessage::Snapshot { rows, .. }]
+        if rows.iter().all(|row| row["uid"] != uid))
+    );
+    assert!(!changes.has_changed().unwrap());
+}
+
 #[test]
 fn a_lane_frame_without_an_organ_still_parses() {
     let old: ClientMessage = serde_json::from_str(

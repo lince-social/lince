@@ -10,64 +10,22 @@ run = "bash scripts/interface/run-dev.sh"
 [tasks.test]
 run = """
 systemctl --user stop lince.service
-mprocs --names lince,test,lynxui-web,lynxui-package \
+mprocs --names lince,test \
     "cargo watch -x run" \
-    "cargo watch -x 'run -- --port 6176 --data-dir /home/user/.config/test_lince'" \
-    # "mise run lynxui-serve" \
-    # "mise run lynxui-watch"
+    "cargo watch -x 'run -- --directory /home/user/.config/test_lince'"
 """
 
-[tasks.lynxui]
-description = "Run the LynxUI Gallery at http://127.0.0.1:6175 and hot-swap its Sand package"
-run = """
-mprocs --names web,package \
-    "mise run lynxui-serve" \
-    "mise run lynxui-watch"
-"""
+[tasks.lince]
+description = "Run Lince: the Cell runtime plus its native interface, one process"
+run = "nix develop .#interface -c cargo run --release -p lince"
 
-[tasks.interface]
-description = "Run the favored native Lince interface on NixOS"
-run = "nix develop .#interface -c cargo run --release -p lince-interface --bin lince-interface"
+[tasks.server]
+description = "Run Lince headless (no window)"
+run = "cargo run --release -p lince --no-default-features -- --server"
 
-[tasks.interface-native]
-description = "Run the favored native Lince interface on NixOS"
-run = "nix develop .#interface -c cargo run --release -p lince-interface --bin lince-interface"
-
-[tasks.interface-legacy]
-description = "Run the legacy Web interface at http://127.0.0.1:6174 and open it in the default browser"
-run = "nix develop .#legacy -c bash scripts/interface/run-legacy.sh"
-
-[tasks.interface-lab]
-description = "Run the Bevy-native Square hello world"
-run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface/Cargo.toml --bin lince-interface"
-
-[tasks.interface-lab-report]
-description = "Render one ownership-preflight frame, export its report, and exit"
-run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface/Cargo.toml --features legacy-runtime --bin lince-interface-legacy-laboratory -- --export-report-and-exit"
-
-[tasks.interface-lab-audit]
-description = "Audit every native-interface candidate dependency graph and export a report"
-run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface/Cargo.toml --features legacy-runtime --bin lince-interface-dependency-audit"
-
-[tasks.interface-lab-bevy]
-description = "Run the Lince-owned host with manually initialized Bevy render resources"
-run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface/Cargo.toml --bin lince-interface-legacy-laboratory --features legacy-runtime,bevy-preflight"
-
-[tasks.interface-lab-bevy-report]
-description = "Render the manual-Bevy host, export its ownership report and exit"
-run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface/Cargo.toml --bin lince-interface-legacy-laboratory --features legacy-runtime,bevy-preflight -- --export-report-and-exit"
-
-[tasks.interface-lab-bevy-stress]
-description = "Run the manual-Bevy host resize stress, export its report, and exit"
-run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface/Cargo.toml --bin lince-interface-legacy-laboratory --features legacy-runtime,bevy-preflight -- --stress-resize-and-exit"
-
-[tasks.interface-lab-spatial-report]
-description = "Exercise current Protein, Sand composition, Areas and physics candidates"
-run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface/Cargo.toml --features legacy-runtime,semantic-spatial --bin lince-interface-spatial-diagnostic"
-
-[tasks.interface-lab-parity-report]
-description = "Export browser and read-only Facade projections of the shared Sand fixture"
-run = "nix develop .#interface -c cargo run --release --manifest-path crates/interface/Cargo.toml --features legacy-runtime,browser-parity --bin lince-interface-parity-diagnostic"
+[tasks.facade]
+description = "Run Lince headless with the browser Facade"
+run = "cargo run --release -p lince --no-default-features --features facade -- --server --facade"
 
 [tasks.test-all]
 description = "Run all Rust tests in the workspace"

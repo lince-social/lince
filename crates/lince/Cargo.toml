@@ -9,11 +9,20 @@ homepage.workspace = true
 readme = "README.md"
 keywords = ["registry", "automation", "self-hosted"]
 
+[features]
+default = ["ui"]
+# The native window. Off for a headless server build:
+# `cargo build -p lince --no-default-features`.
+ui = ["dep:lince-interface"]
+facade = ["dep:lince-facade"]
+
 [dependencies]
-web = { workspace = true }
-utils = { workspace = true }
+cell = { workspace = true }
+lince-facade = { workspace = true, optional = true }
+lince-interface = { workspace = true, optional = true }
+utils = { workspace = true, features = ["update-net"] }
 store = { workspace = true }
-tokio = { workspace = true, features = ["rt-multi-thread", "process", "time", "macros"] }
+tokio = { workspace = true, features = ["rt-multi-thread", "process", "time", "macros", "signal"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
 dirs = { workspace = true }

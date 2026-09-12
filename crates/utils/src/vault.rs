@@ -2,7 +2,7 @@ use {
     argon2::{Algorithm, Argon2, Params, Version},
     base64::Engine as _,
     chacha20poly1305::{
-        Key, XChaCha20Poly1305, XNonce,
+        XChaCha20Poly1305,
         aead::{Aead, KeyInit, Payload},
     },
     zeroize::Zeroize,
@@ -125,9 +125,9 @@ pub fn lock(record_uid: &str, password: &str, description: &str) -> Result<Strin
     let salt = random_bytes::<SALT_LEN>();
     let nonce = random_bytes::<NONCE_LEN>();
     let key = derive(password, &salt, MEMORY_KIB, ITERATIONS, PARALLELISM)?;
-    let ciphertext = XChaCha20Poly1305::new(Key::from_slice(&key.0))
+    let ciphertext = XChaCha20Poly1305::new((&key.0).into())
         .encrypt(
-            XNonce::from_slice(&nonce),
+            (&nonce).into(),
             Payload {
                 msg: description.as_bytes(),
                 aad: &aad(record_uid),
@@ -152,9 +152,13 @@ pub fn unlock(record_uid: &str, password: &str, description: &str) -> Result<Str
         envelope.parallelism,
     )
     .map_err(|_| VaultError::Unopenable)?;
-    let mut plaintext = XChaCha20Poly1305::new(Key::from_slice(&key.0))
+    let mut plaintext = XChaCha20Poly1305::new((&key.0).into())
         .decrypt(
-            XNonce::from_slice(&envelope.nonce),
+            envelope
+                .nonce
+                .as_slice()
+                .try_into()
+                .map_err(|_| VaultError::Unopenable)?,
             Payload {
                 msg: &envelope.ciphertext,
                 aad: &aad(record_uid),

@@ -1,0 +1,3 @@
+ALTER TABLE configuration RENAME COLUMN interface_save_seconds TO interface_snapshot_seconds;
+ALTER TABLE configuration RENAME COLUMN interface_backup_seconds TO interface_history_seconds;
+ALTER TABLE configuration RENAME COLUMN interface_backup_count TO interface_history_count;

@@ -1,0 +1,5 @@
+Datastar v1.0.3 by Star Federation and contributors.
+https://github.com/starfederation/datastar/tree/v1.0.3
+Bundle: https://cdn.jsdelivr.net/gh/starfederation/datastar@v1.0.3/bundles/datastar.js
+License: MIT, included in LICENSE.txt and served at /licenses/datastar.
+The source map reference is omitted because the map is not bundled.

@@ -12,7 +12,7 @@ pub async fn dispatch(args: &[String]) -> Option<Result<(), Error>> {
 }
 
 const VALUE_FLAGS: [&str; 5] = [
-    "--data-dir",
+    "--directory",
     "--port",
     "--listen-addr",
     "--initial-admin-password",
@@ -33,7 +33,7 @@ fn positional(args: &[String]) -> Vec<&str> {
 }
 
 async fn open() -> Result<Store, Error> {
-    Store::open(&web::default_lince_db_url())
+    Store::open(&cell::default_lince_db_url()?)
         .await
         .map_err(|error| Error::other(format!("Cannot open the store: {error}")))
 }

@@ -1,6 +1,6 @@
 use base64::Engine as _;
 use chacha20poly1305::aead::{Aead, KeyInit, Payload};
-use chacha20poly1305::{ChaCha20Poly1305, Key, Nonce};
+use chacha20poly1305::{ChaCha20Poly1305, Key};
 use ed25519_dalek::{Signature, Signer as _, SigningKey, Verifier as _, VerifyingKey};
 use hkdf::Hkdf;
 use serde::{Deserialize, Serialize};
@@ -139,7 +139,7 @@ fn wrap_key(shared: &[u8; 32], ephemeral: &[u8; 32], recipient: &[u8; 32], key_i
     let mut out = [0u8; 32];
     hk.expand(&info, &mut out)
         .expect("32 bytes is a valid HKDF-SHA256 length");
-    *Key::from_slice(&out)
+    out.into()
 }
 
 pub fn seal(
@@ -160,11 +160,11 @@ pub fn seal(
 
     let content_key = random_bytes::<32>();
     let content_nonce = random_bytes::<12>();
-    let aead = ChaCha20Poly1305::new(Key::from_slice(&content_key));
+    let aead = ChaCha20Poly1305::new((&content_key).into());
     let aad = content_aad(SEAL_VERSION, &batch.from_organ, to_organ);
     let ciphertext = aead
         .encrypt(
-            Nonce::from_slice(&content_nonce),
+            (&content_nonce).into(),
             Payload {
                 msg: &plaintext,
                 aad: &aad,
@@ -188,7 +188,7 @@ pub fn seal(
         let nonce = random_bytes::<12>();
         let wrapped = ChaCha20Poly1305::new(&key)
             .encrypt(
-                Nonce::from_slice(&nonce),
+                (&nonce).into(),
                 Payload {
                     msg: &content_key,
                     aad: recipient.key_id.as_bytes(),
@@ -268,7 +268,10 @@ pub fn open(
         .map_err(|_| SealError::Undecipherable)?;
     let content_key = ChaCha20Poly1305::new(&key)
         .decrypt(
-            Nonce::from_slice(&nonce),
+            nonce
+                .as_slice()
+                .try_into()
+                .map_err(|_| SealError::Undecipherable)?,
             Payload {
                 msg: &wrapped,
                 aad: wrap.key_id.as_bytes(),
@@ -285,9 +288,12 @@ pub fn open(
         .decode(&bundle.ciphertext)
         .map_err(|_| SealError::Undecipherable)?;
     let aad = content_aad(bundle.v, &bundle.from_organ, &bundle.to_organ);
-    let plaintext = ChaCha20Poly1305::new(Key::from_slice(&content_key))
+    let plaintext = ChaCha20Poly1305::new((&content_key).into())
         .decrypt(
-            Nonce::from_slice(&content_nonce),
+            content_nonce
+                .as_slice()
+                .try_into()
+                .map_err(|_| SealError::Undecipherable)?,
             Payload {
                 msg: &ciphertext,
                 aad: &aad,

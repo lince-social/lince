@@ -2,9 +2,7 @@
 resolver = "3"
 members = [
     "crates/lince",
-    "crates/desktop",
     "crates/utils",
-    "crates/web-aka-museum-dont-touch",
     "crates/nucleus",
     "crates/store",
     "crates/engine",
@@ -14,14 +12,16 @@ members = [
     "crates/sensei",
     "crates/interface",
     "crates/fiote",
+    "crates/cell",
+    "crates/facade",
 ]
+exclude = ["examples"]
 
-# desktop is a real workspace member so it inherits workspace fields and
-# `cargo metadata` parses it (the tauri/nix build needs this). It builds
-# under `nix develop`, which supplies the GTK/Tauri system libs. A plain
-# `cargo build`/`cargo run` operates on `default-members` only (the lince
-# binary), so it does not pull GTK and works outside the nix shell. The new
-# core crates are built/tested explicitly with `-p` (e.g. `cargo test -p engine`).
+# `cargo build` / `cargo run` operate on `default-members` (the lince binary),
+# which pulls the Cell runtime always and the Bevy interface behind the default
+# `ui` feature. The interface links Wayland/Vulkan system libs, so a UI build
+# wants `nix develop .#interface`; `cargo build -p lince --no-default-features`
+# is the headless server binary. Core crates are checked with `-p`.
 default-members = ["crates/lince"]
 
 [workspace.package]
@@ -34,7 +34,9 @@ homepage = "https://lince.social"
 [workspace.dependencies]
 lince = { version = "=0.7.0", path = "crates/lince" }
 utils = { version = "=0.7.0", path = "crates/utils", package = "lince-utils" }
-web = { version = "=0.7.0", path = "crates/web-aka-museum-dont-touch", package = "lince-web-aka-museum-dont-touch" }
+cell = { version = "=0.7.0", path = "crates/cell", package = "lince-cell" }
+lince-interface = { version = "=0.7.0", path = "crates/interface" }
+lince-facade = { version = "=0.7.0", path = "crates/facade" }
 anicca = { version = "=0.7.0", path = "crates/anicca" }
 nucleus = { version = "=0.7.0", path = "crates/nucleus" }
 store = { version = "=0.7.0", path = "crates/store" }
@@ -43,24 +45,24 @@ protein = { version = "=0.7.0", path = "crates/protein" }
 transport = { version = "=0.7.0", path = "crates/transport" }
 fiote = { version = "=0.7.0", path = "crates/fiote", package = "lince-fiote" }
 
-argon2 = "0.5.3"
+argon2 = "0.6.0"
 async-stream = "0.3.6"
-async-trait = "0.1.89"
-aws-config = "1.8.10"
-aws-sdk-s3 = "1.112.0"
-axum = "0.8.4"
-base64 = "0.22.1"
+async-trait = "0.1.92"
+aws-config = "1.12.0"
+aws-sdk-s3 = "1.146.1"
+axum = "0.8.9"
+base64 = "0.23.1"
 # Sealing for the blind mailbox (Ontology C4). Ordinary primitives on purpose:
 # the alternative considered was Keyhive/Beelay, which is pre-alpha and would
 # have replaced both the sync protocol and the CRDT.
-chacha20poly1305 = "0.10.1"
-chrono = "0.4.43"
+chacha20poly1305 = "0.11.0"
+chrono = "0.4.45"
 color-eyre = "0.6.5"
 crossterm = "0.29.0"
-dirs = "6.0.0"
+dirs = "7.0.0"
 dotenvy = "0.15.7"
-ed25519-dalek = "2.2.0"
-futures = "0.3.31"
+ed25519-dalek = "3.0.0"
+futures = "0.3.34"
 # gpui = { version = "0.2.2" }
 # gpui-component = { version = "0.5.0" }
 # gpui-component-assets = { version = "0.5.0" }
@@ -68,65 +70,61 @@ include_dir = "0.7.4"
 # Exact-pinned (Ontology §11 "Compatibility and revocation floor"): two Cells on
 # different iroh builds is a silent protocol change between peers. Bump
 # deliberately, never via a caret range.
-iroh = "=1.0.3"
+iroh = "=1.2.0"
 # mDNS left iroh core at 1.0; LAN discovery now needs this companion crate.
-iroh-mdns-address-lookup = "=0.4.0"
+iroh-mdns-address-lookup = "=0.5.0"
 # QR rendering for pairing codes. Server-side because the sand runs under a CSP
 # that blocks external scripts.
 qrcode = { version = "0.14.1", default-features = false, features = ["svg"] }
-rqrr = "=0.10.1"
+rqrr = "=0.11.0"
 # Only the two formats a browser canvas actually produces. The default feature
 # set pulls a dozen codec crates that would never be called.
 image = { version = "0.25.10", default-features = false, features = ["png", "jpeg"] }
 postcard = { version = "1.1.3", features = ["alloc"] }
-jsonwebtoken = { version = "10.3.0", features = ["rust_crypto"] }
+jsonwebtoken = { version = "11.0.0", features = ["rust_crypto"] }
 # Exact-pinned (Ontology §11 Collab): the record-doc CRDT engine. Upgrades are
 # deliberate — bump together with the vendored loro-wasm browser asset.
-loro = "=1.13.9"
+loro = "=1.16.0"
 maud = "0.27.0"
 portable-pty = "0.9.0"
-proc-macro2 = "1.0"
-quote = "1.0"
-ratatui = { version = "0.30.0" }
-regex = "1.12.2"
-schemars = "1.2.1"
-reqwest = { version = "0.12.24", default-features = false, features = ["json", "rustls-tls"] }
+proc-macro2 = "1.0.107"
+quote = "1.0.47"
+ratatui = { version = "0.30.2" }
+regex = "1.13.1"
+schemars = "1.2.2"
+reqwest = { version = "0.13.5", default-features = false, features = ["json", "rustls"] }
 # xdg-portal only, no gtk3 feature: talks to xdg-desktop-portal via ashpd
 # (pure Rust D-Bus client) with zero GTK/WebKit involvement — see
 # presentation::http::media_assets::pick_image's doc comment for why this
 # specific feature choice matters (a GTK-based picker is what crashes).
-rfd = { version = "0.15", default-features = false, features = ["xdg-portal", "async-std"] }
-rhai = "1.24.0"
+rfd = { version = "0.17.2", default-features = false, features = ["xdg-portal", "wayland"] }
+rhai = "1.26.1"
 ropey = "1.6.1"
-semver = "1.0.27"
-serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.149"
-sha2 = "0.10.9"
+semver = "1.0.28"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.151"
+sha2 = "0.11.0"
 sensei = { version = "=0.7.0", path = "crates/sensei" }
 rust-sitter = "0.4.5"
 rust-sitter-tool = "0.4.5"
-hkdf = "0.12.4"
-getrandom = "0.3.4"
-x25519-dalek = { version = "2.0.1", features = ["static_secrets"] }
-socket2 = "0.6.1"
+hkdf = "0.13.0"
+getrandom = "0.4.3"
+x25519-dalek = { version = "3.0.0", features = ["static_secrets"] }
+socket2 = "0.6.5"
 sqlx = { version = "0.8.6" }
-syn = { version = "2.0", features = ["full"] }
-tokio = { version = "1.49.0", features = ["io-util", "macros", "process", "rt-multi-thread", "signal", "sync", "time"] }
-tokio-stream = { version = "0.1.17", features = ["sync"] }
-tokio-util = "0.7.18"
-toml = "0.9.8"
-tower-http = { version = "0.6.6", features = ["cors"] }
-tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.20", features = ["env-filter", "fmt"] }
+syn = { version = "3.0.5", features = ["full"] }
+tokio = { version = "1.53.1", features = ["io-util", "macros", "process", "rt-multi-thread", "signal", "sync", "time"] }
+tokio-stream = { version = "0.1.19", features = ["sync"] }
+tokio-util = "0.7.19"
+toml = "1.1.6"
+tower-http = { version = "0.7.1", features = ["cors"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["fmt"] }
 urlencoding = "2.1.3"
-utoipa = { version = "5.4.0" }
-uuid = { version = "1.18.1", features = ["v4"] }
+utoipa = { version = "5.5.0" }
+uuid = { version = "1.26.1", features = ["v4"] }
 zeroize = "1.9.0"
-zip = { version = "4.6.1", default-features = false, features = ["deflate"] }
-tauri = { version = "2.11.2" }
-tauri-build = { version = "2.6.2" }
-tauri-plugin-single-instance = "2.3.4"
-tauri-plugin-autostart = "2.5.0"
+zip = { version = "8.6.0", default-features = false, features = ["deflate"] }
 
 [workspace.lints.rust]
 warnings = "deny"

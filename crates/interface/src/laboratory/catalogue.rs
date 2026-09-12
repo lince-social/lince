@@ -1,0 +1,45 @@
+pub fn catalogue() -> Vec<super::Case> {
+    let mut cases = Vec::new();
+    crate::actions::tests::laboratory_cases(&mut cases);
+    crate::area::tests::laboratory_cases(&mut cases);
+    crate::area_drawing::tests::laboratory_cases(&mut cases);
+    crate::area_input::tests::laboratory_cases(&mut cases);
+    crate::area_mutation_panel::tests::laboratory_cases(&mut cases);
+    crate::area_mutation::tests::laboratory_cases(&mut cases);
+    crate::area_panel::tests::laboratory_cases(&mut cases);
+    crate::canvas::tests::laboratory_cases(&mut cases);
+    crate::canvas_background::tests::laboratory_cases(&mut cases);
+    crate::canvas_clip::tests::laboratory_cases(&mut cases);
+    crate::canvas_colors::tests::laboratory_cases(&mut cases);
+    crate::canvas_controls::tests::laboratory_cases(&mut cases);
+    crate::canvas_resize::tests::laboratory_cases(&mut cases);
+    crate::canvas_selection::tests::laboratory_cases(&mut cases);
+    crate::castle::tests::laboratory_cases(&mut cases);
+    crate::cell_bridge::tests::laboratory_cases(&mut cases);
+    crate::credits::tests::laboratory_cases(&mut cases);
+    crate::customization::tests::laboratory_cases(&mut cases);
+    crate::edit_mode::tests::laboratory_cases(&mut cases);
+    crate::effect::tests::laboratory_cases(&mut cases);
+    crate::icons::tests::laboratory_cases(&mut cases);
+    crate::information::tests::laboratory_cases(&mut cases);
+    crate::inspection::tests::laboratory_cases(&mut cases);
+    crate::instance::tests::laboratory_cases(&mut cases);
+    crate::notifications::tests::laboratory_cases(&mut cases);
+    crate::physics::tests::laboratory_cases(&mut cases);
+    crate::record_view::tests::laboratory_cases(&mut cases);
+    crate::sand::tests::laboratory_cases(&mut cases);
+    crate::sand_placement::tests::laboratory_cases(&mut cases);
+    crate::slider::tests::laboratory_cases(&mut cases);
+    crate::time_limit::tests::laboratory_cases(&mut cases);
+    crate::token_metrics::tests::laboratory_cases(&mut cases);
+    crate::token_style::tests::laboratory_cases(&mut cases);
+    crate::tokens::tests::laboratory_cases(&mut cases);
+    crate::tray::tests::laboratory_cases(&mut cases);
+    crate::workspace::storage::tests::laboratory_cases(&mut cases);
+    crate::workspace::tests::laboratory_cases(&mut cases);
+    crate::workspace_config::tests::laboratory_cases(&mut cases);
+    super::tests::laboratory_cases(&mut cases);
+    super::stress::tests::laboratory_cases(&mut cases);
+    super::resource_tests::laboratory_cases(&mut cases);
+    cases
+}

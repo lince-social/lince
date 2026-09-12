@@ -57,6 +57,16 @@ pub enum Action {
         target: String,
         amount: String,
     },
+    PreviewAreaTransition {
+        target: String,
+        changes: crate::area_transition::RecordChanges,
+        #[serde(default)]
+        constraints: crate::area_transition::RecordChanges,
+    },
+    ApplyAreaTransition {
+        request_id: String,
+        preview: crate::area_transition::TransitionPreview,
+    },
     TransitionRecord {
         subject: String,
         #[serde(default)]
@@ -993,6 +1003,17 @@ pub enum Action {
         #[serde(default)]
         filter: Option<protein::Predicate>,
     },
+    SetRoleReadRules {
+        role: String,
+        rules: protein::read_rules::ReadRules,
+        expected_revision: i64,
+    },
+    CreateRecordWithTags {
+        head: String,
+        body: String,
+        quantity: f64,
+        tags: Vec<String>,
+    },
     GrantPermission {
         role: String,
         permission: String,
@@ -1738,16 +1759,24 @@ impl Engine {
         now: DateTime<Utc>,
         verified_authorship: Option<VerifiedActionAuthorship>,
     ) -> Result<ActionOutcome, EngineError> {
-        if matches!(action, Action::ApplyRecurrenceOccurrence { .. }) && !crate::already_firing() {
-            return Box::pin(crate::as_one_firing(self.act_at_inner(
+        let outcome = if matches!(action, Action::ApplyRecurrenceOccurrence { .. })
+            && !crate::already_firing()
+        {
+            Box::pin(crate::as_one_firing(self.act_at_inner(
                 action,
                 actor,
                 now,
                 verified_authorship,
             )))
-            .await;
+            .await?
+        } else {
+            Box::pin(self.act_at_inner(action, actor, now, verified_authorship)).await?
+        };
+        if outcome.facts.is_empty() {
+            self.query_changed
+                .send_modify(|revision| *revision = revision.wrapping_add(1));
         }
-        Box::pin(self.act_at_inner(action, actor, now, verified_authorship)).await
+        Ok(outcome)
     }
 
     async fn act_at_inner(
@@ -1769,6 +1798,16 @@ impl Engine {
         self.refuse_unreadable(actor.as_deref(), &touched).await?;
         let mut outcome = ActionOutcome::default();
         match action {
+            Action::CreateRecordWithTags {
+                head,
+                body,
+                quantity,
+                tags,
+            } => {
+                outcome = self
+                    .create_tagged_record(head, body, quantity, tags, actor, now)
+                    .await?;
+            }
             Action::CreateRecord {
                 slug,
                 kind,
@@ -1797,6 +1836,12 @@ impl Engine {
                     )
                     .await?;
                 outcome.created = Some(rec.uid);
+            }
+            Action::PreviewAreaTransition { target, changes, constraints } => {
+                outcome.data = Some(serde_json::to_value(self.preview_area_transition(target, changes, constraints).await?).map_err(EngineError::Json)?);
+            }
+            Action::ApplyAreaTransition { request_id, preview } => {
+                outcome = self.apply_area_transition(request_id, preview, actor, now).await?;
             }
             Action::SetQuantityExact { target, amount } => {
                 let uid = self.resolve(&target).await?;
@@ -8893,6 +8938,72 @@ impl Engine {
                 }
                 self.set_read_filter(&person_uid, filter.as_ref()).await?;
             }
+            Action::SetRoleReadRules {
+                role,
+                rules,
+                expected_revision,
+            } => {
+                self.require_permission(actor.as_deref(), "role:update")
+                    .await?;
+                self.require_permission(actor.as_deref(), "permission:assign")
+                    .await?;
+                if let Some(actor) = actor.as_deref()
+                    && self.actor_user(actor).await?.role != "admin"
+                {
+                    return Err(EngineError::Forbidden(
+                        "Only admins may change role read rules".into(),
+                    ));
+                }
+                if role == "admin" {
+                    return Err(EngineError::Forbidden(
+                        "Admin access cannot be restricted here".into(),
+                    ));
+                }
+                rules.validate()?;
+                let mut pending = vec![&rules.allow, &rules.block];
+                while let Some(predicate) = pending.pop() {
+                    match predicate {
+                        protein::Predicate::All(children) | protein::Predicate::Any(children) => {
+                            pending.extend(children)
+                        }
+                        protein::Predicate::Not(child) => pending.push(child),
+                        protein::Predicate::ConceptIn(uid) => {
+                            if store::concepts::resolve(&self.store.pool, uid)
+                                .await?
+                                .is_none()
+                            {
+                                return Err(EngineError::Consequence(
+                                    "Choose an existing tag".into(),
+                                ));
+                            }
+                        }
+                        _ => unreachable!(),
+                    }
+                }
+                let id = store::auth::role_by_name(&self.store.pool, &role)
+                    .await?
+                    .ok_or_else(|| EngineError::Consequence("Unknown role".into()))?;
+                let previous = store::role_policies::get(&self.store.pool, id).await?;
+                if previous.as_ref().map_or(0, |row| row.revision) != expected_revision {
+                    return Err(EngineError::Conflict {
+                        code: "role_policy_changed",
+                        message: "The role rules changed. Reload them before saving.".into(),
+                    });
+                }
+                let mut policy = if let Some(value) = previous.and_then(|row| row.policy) {
+                    serde_json::from_value::<protein::authority::RolePolicy>(value)
+                        .map_err(|error| EngineError::Consequence(error.to_string()))?
+                } else {
+                    protein::authority::RolePolicy {
+                        read: protein::Predicate::All(vec![]),
+                        grants: vec![],
+                    }
+                };
+                policy.read = rules.predicate();
+                let value = serde_json::to_value(policy)
+                    .map_err(|error| EngineError::Consequence(error.to_string()))?;
+                store::role_policies::set(&self.store.pool, id, &value, expected_revision).await?;
+            }
             Action::SetPersonStanding {
                 person,
                 active,
@@ -10257,7 +10368,7 @@ impl Engine {
         Ok(())
     }
 
-    async fn reject_direct_transfer_record_mutation(
+    pub(crate) async fn reject_direct_transfer_record_mutation(
         &self,
         record_uid: &str,
     ) -> Result<(), EngineError> {
@@ -10427,11 +10538,14 @@ impl Engine {
     fn generic_write_permission(action: &Action) -> Option<&'static str> {
         Some(match action {
             Action::CreateRecord { .. }
+            | Action::CreateRecordWithTags { .. }
             | Action::CreateAgent { .. }
             | Action::CreateMessageDraft { .. }
             | Action::SendMessageDraft { .. }
             | Action::ImportInstinct => "record:create",
             Action::SetQuantity { .. }
+            | Action::PreviewAreaTransition { .. }
+            | Action::ApplyAreaTransition { .. }
             | Action::SetQuantityExact { .. }
             | Action::TransitionRecord { .. }
             | Action::AddQuantity { .. }
@@ -10597,6 +10711,7 @@ impl Engine {
             | Action::AssignRole { .. }
             | Action::SetPersonStanding { .. }
             | Action::SetPersonReadFilter { .. }
+            | Action::SetRoleReadRules { .. }
             | Action::GrantPermission { .. }
             | Action::RevokePermission { .. } => return None,
         })

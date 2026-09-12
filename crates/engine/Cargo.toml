@@ -23,7 +23,7 @@ hkdf = { workspace = true }
 x25519-dalek = { workspace = true }
 iroh = { workspace = true }
 iroh-mdns-address-lookup = { workspace = true }
-n0-future = "0.3"
+n0-future = "0.3.2"
 qrcode = { workspace = true }
 rqrr = { workspace = true }
 image = { workspace = true }
@@ -36,7 +36,7 @@ tokio = { workspace = true }
 utils = { workspace = true }
 uuid = { workspace = true }
 zeroize = { workspace = true }
-pkarr = { version = "8", default-features = false, features = ["relays"] }
+pkarr = { version = "8.0.1", default-features = false, features = ["relays"] }
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["macros", "rt"] }

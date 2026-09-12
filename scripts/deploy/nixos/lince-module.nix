@@ -1,8 +1,7 @@
-# A NixOS service for a Lince Cell, in any of its four postures.
+# A NixOS service for a Lince Cell, in any of its three postures.
 #
-#   mode = "server"   `lince --server`: API only, no board, login forced on.
-#   mode = "board"    `lince`: the full board over HTTP, for a browser.
-#   mode = "desktop"  `lince-desktop`: the Tauri window, in your session.
+#   mode = "server"   `lince --server`: headless Cell, login forced on.
+#   mode = "desktop"  `lince`: the native window, in your session.
 #   mode = "front-door"  a Cell of YOUR Organ that carries and authors nothing.
 #
 # **This mode was called "relay" until 2026-08-15, and the rename is a
@@ -15,20 +14,20 @@
 # precisely the blurring the design says must never happen.
 #
 # It is a MODE and not a flag on server, because almost nothing about it is a
-# server with a switch flipped: it serves no board, needs no admin password
+# server with a switch flipped: it needs no admin password
 # (the assertion demanding one for `server` must not extend to it, and a
 # matching one refuses a front door that is given one), and wants its own
 # resource limits. What makes a Cell a front door is not this module at all —
 # it is the Organ's signed roster giving that Cell no capabilities, which the
 # database enforces. This module only shapes the unit around that fact.
 #
-# A server has no board, so the things the board configures are set from the
-# shell instead, as the unit's own user:
+# A headless Cell has no window, so the things the window would configure are
+# set from the shell instead, as the unit's own user:
 #
-#   sudo -u lince lince --data-dir /var/lib/lince discovery accept-unknown on
-#   sudo -u lince lince --data-dir /var/lib/lince organ list
-#   sudo -u lince lince --data-dir /var/lib/lince organ trust <uid> known
-#   sudo -u lince lince --data-dir /var/lib/lince organ login <uid> <username>
+#   sudo -u lince lince --directory /var/lib/lince discovery accept-unknown on
+#   sudo -u lince lince --directory /var/lib/lince organ list
+#   sudo -u lince lince --directory /var/lib/lince organ trust <uid> known
+#   sudo -u lince lince --directory /var/lib/lince organ login <uid> <username>
 #
 # Those three decisions — open the pairing door, trust a contact, say which
 # Person they act as — are what a peer needs before "Enter their Lince" works
@@ -36,10 +35,11 @@
 # be shut again after pairing, and a declarative `acceptUnknown = true` would
 # hold it open for the life of the machine.
 #
-# Server and board are the SAME binary and differ by one runtime flag. Desktop
-# is a genuinely different package (Tauri + GTK/webkit) and belongs to a user
-# session, not to the system — so it requires `scope = "user"`, which is what
-# the assertions below enforce rather than leave you to discover.
+# Server and front-door are the same headless binary and differ by authority,
+# not by a flag on the command line. Desktop is the SAME crate built with its
+# `ui` feature, which links Wayland/Vulkan and belongs to a user session, not
+# to the system — so it requires `scope = "user"`, which is what the assertions
+# below enforce rather than leave you to discover.
 {
   config,
   lib,
@@ -57,26 +57,26 @@ let
     if cfg.package != null then
       cfg.package
     else if isDesktop then
-      cfg.desktopPackage
+      cfg.uiPackage
     else
       cfg.serverPackage;
 
-  # `lince-desktop` takes no --data-dir or --listen-addr: it binds its own
-  # loopback port and finds its store through XDG. Passing them would be args
-  # it silently ignores — the failure mode this module exists to avoid.
+  # Desktop mode is given no --directory: it finds its store through the
+  # session's own XDG, which is the whole reason it can share one with your
+  # shell. Passing --listen-addr would be an argument it does not need.
   execStart =
     if isDesktop then
-      "${package}/bin/lince-desktop --desktop-autostart"
+      "${package}/bin/lince"
     else
       lib.concatStringsSep " " (
         [
           "${package}/bin/lince"
-          "--data-dir"
+          "--directory"
           cfg.dataDir
           "--listen-addr"
           cfg.listenAddr
         ]
-        # A front door serves no board either, so it takes the same flag. The
+        # A front door is headless too, so it takes the same flag. The
         # difference between them is authority, not UI.
         ++ lib.optional (cfg.mode == "server" || cfg.mode == "front-door") "--server"
         ++ lib.optionals (cfg.initialAdminPasswordFile != null) [
@@ -134,7 +134,7 @@ let
   }
   // {
     # `lince_data_dir()` falls back to $XDG_CONFIG_HOME/lince when no
-    # --data-dir is given; --data-dir is passed above, so this only keeps
+    # --directory is given; --directory is passed above, so this only keeps
     # anything else the process writes inside the state directory. The desktop
     # app gets no default here deliberately: it finds its store through the
     # session's own XDG, which is the whole reason it can share one with your
@@ -150,17 +150,16 @@ in
     mode = lib.mkOption {
       type = lib.types.enum [
         "server"
-        "board"
         "desktop"
         "front-door"
       ];
       default = "server";
       description = ''
-        "server" passes --server: no board UI, no sands, no static assets, and
-        login is forced on. "board" serves the whole UI over HTTP — only bind
-        that to loopback. "desktop" runs the Tauri app and requires
-        scope = "user". "front-door" is a carrier for YOUR OWN Organ: same binary
-        as server, no admin password, tighter limits. It holds no signing
+        "server" passes --server: the Cell runs headless, with no window, and
+        login is forced on. "desktop" runs the same crate built with its `ui`
+        feature — one process holding the Cell and its native window — and
+        requires scope = "user". "front-door" is a carrier for YOUR OWN Organ:
+        same headless binary as server, no admin password, tighter limits. It holds no signing
         material because your Organ's roster gives it no capabilities — enrol
         it, then remove every capability from a device that holds your root key.
       '';
@@ -181,12 +180,12 @@ in
 
     serverPackage = lib.mkOption {
       type = lib.types.package;
-      description = "The headless `lince` package. Used by server and board modes.";
+      description = "The headless `lince` package. Used by server and front-door modes.";
     };
 
-    desktopPackage = lib.mkOption {
+    uiPackage = lib.mkOption {
       type = lib.types.package;
-      description = "The `lince-desktop` (Tauri) package. Used by desktop mode.";
+      description = "The windowed `lince` package (its `ui` feature). Used by desktop mode.";
     };
 
     package = lib.mkOption {
@@ -219,8 +218,8 @@ in
       type = lib.types.str;
       default = "127.0.0.1:6174";
       description = ''
-        host:port to bind. Put a TLS reverse proxy in front of it. Ignored in
-        desktop mode, which binds its own loopback port.
+        host:port this Cell names as its own local base URL. Ignored in desktop
+        mode, which resolves its own.
       '';
     };
 
@@ -324,7 +323,7 @@ in
           || (cfg.initialAdminPasswordFile == null && cfg.initialAdminPassword == null);
         message = ''
           services.lince.mode = "front-door" must NOT be given an admin password.
-          A front door has no board to log into and no authority to exercise — it
+          A front door has nothing to log into and no authority to exercise — it
           carries traffic and authors nothing — so a password on it is either a
           misunderstanding of what a front door is, or a login wall on a machine
           that should not have one. Use mode = "server" if you meant a Cell
@@ -339,18 +338,6 @@ in
           the file and silently ignores the other, which is exactly the kind of
           thing you would rather learn now than while wondering why a password
           does not work.
-        '';
-      }
-      {
-        assertion =
-          cfg.mode != "board"
-          || lib.hasPrefix "127.0.0.1:" cfg.listenAddr
-          || lib.hasPrefix "localhost:" cfg.listenAddr
-          || lib.hasPrefix "[::1]:" cfg.listenAddr;
-        message = ''
-          services.lince.mode = "board" serves the full board — anyone reaching
-          ${cfg.listenAddr} gets a working board on this Cell's store and can put
-          sands on it. Bind it to loopback, or use mode = "server".
         '';
       }
       {

@@ -1,0 +1,32 @@
+[package]
+name = "lince-facade"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+axum = { workspace = true, features = ["ws"] }
+base64 = { workspace = true }
+cell = { workspace = true }
+engine = { workspace = true }
+nucleus = { workspace = true }
+protein = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+store = { workspace = true }
+tokio = { workspace = true, features = ["net"] }
+tracing = { workspace = true }
+utils = { workspace = true }
+uuid = { workspace = true }
+
+[build-dependencies]
+sensei = { workspace = true }
+
+[dev-dependencies]
+ed25519-dalek = { workspace = true }
+reqwest = { workspace = true }
+tokio-tungstenite = "0.30.0"
+futures = { workspace = true }
+
+[lints]
+workspace = true

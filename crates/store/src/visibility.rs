@@ -76,6 +76,39 @@ pub async fn rules_for_target(
     .collect())
 }
 
+pub async fn role_targets(
+    pool: &SqlitePool,
+    subject_uid: &str,
+    role_id: i64,
+) -> Result<HashSet<String>, StoreError> {
+    Ok(sqlx::query_scalar::<_, String>(
+        "WITH local AS (
+             SELECT uid FROM record WHERE slug = ? AND kind = 'organ' AND deleted_at IS NULL
+         ), rules AS (
+             SELECT target_uid, field, grant_level,
+                    (subject_kind = 'public'
+                     OR (subject_kind = 'actor' AND subject_uid = ?)
+                     OR (subject_kind = 'role' AND subject_uid = CAST(? AS TEXT))
+                     OR (subject_kind = 'organ' AND subject_uid IN (SELECT uid FROM local))) AS matches
+               FROM visibility_rule
+         )
+         SELECT r.uid FROM record r
+          WHERE r.deleted_at IS NULL AND r.kind != 'message_draft'
+            AND r.replica_root IS NULL AND r.organ_uid IN (SELECT uid FROM local)
+            AND NOT EXISTS (SELECT 1 FROM rules v WHERE v.target_uid = r.uid
+                            AND (v.field IS NOT NULL OR (v.grant_level = 'hidden' AND v.matches)))
+            AND (NOT EXISTS (SELECT 1 FROM rules v WHERE v.target_uid = r.uid AND v.grant_level = 'visible')
+                 OR EXISTS (SELECT 1 FROM rules v WHERE v.target_uid = r.uid AND v.grant_level = 'visible' AND v.matches))",
+    )
+    .bind(crate::organs::LOCAL_ORGAN_SLUG)
+    .bind(subject_uid)
+    .bind(role_id)
+    .fetch_all(pool)
+    .await?
+    .into_iter()
+    .collect())
+}
+
 pub async fn hidden_from_organ(
     pool: &SqlitePool,
     organ_uid: &str,

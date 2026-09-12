@@ -2,6 +2,7 @@
 
 pub mod authority;
 mod decimal_operand;
+pub mod read_rules;
 pub mod record_query;
 
 use base64::Engine as _;
@@ -335,7 +336,17 @@ pub async fn execute_for_with_context(
         None => None,
         Some(s) => {
             let mut allowed = store::visibility::visible_targets(&store.pool, s).await?;
-            if let Some(readable) = read_filter_targets(store, s).await? {
+            if let Some(access) = store::auth::person_access(&store.pool, s).await? {
+                if let Some(role) = access.role_id {
+                    if store::role_policies::get(&store.pool, role)
+                        .await?
+                        .is_some_and(|row| row.policy.is_some())
+                    {
+                        allowed = store::visibility::role_targets(&store.pool, s, role).await?;
+                    }
+                }
+            }
+            if let Some(readable) = read_filter_targets(store, s, &allowed).await? {
                 allowed.retain(|uid| readable.contains(uid));
             }
             Some(allowed)
@@ -414,12 +425,10 @@ pub async fn execute_for_with_context(
 async fn read_filter_targets(
     store: &Store,
     person_uid: &str,
+    ceiling: &HashSet<String>,
 ) -> Result<Option<HashSet<String>>, ProteinError> {
-    let Some(raw) = store::read_filter::get(&store.pool, person_uid).await? else {
+    let Some(predicate) = read_rules::effective_predicate(store, person_uid).await? else {
         return Ok(None);
-    };
-    let Ok(predicate) = serde_json::from_str::<Predicate>(&raw) else {
-        return Ok(Some(HashSet::new()));
     };
     let narrowed = Protein {
         source: Source::Record,
@@ -430,13 +439,30 @@ async fn read_filter_targets(
         order: vec![],
         limit: None,
     };
-    Ok(Some(
-        matching_records(store, &narrowed, None)
-            .await?
-            .into_iter()
-            .map(|row| row.uid)
-            .collect(),
-    ))
+    let roots = matching_records(store, &narrowed, None)
+        .await?
+        .into_iter()
+        .map(|row| row.uid)
+        .filter(|uid| ceiling.contains(uid))
+        .collect::<Vec<_>>();
+    let threads = store::concepts::resolve(&store.pool, "thread-of").await?;
+    let messages = store::concepts::resolve(&store.pool, "message-in").await?;
+    let roots = serde_json::to_string(&roots)
+        .map_err(|error| store::sqlx::Error::Protocol(error.to_string()))?;
+    let ceiling = serde_json::to_string(ceiling)
+        .map_err(|error| store::sqlx::Error::Protocol(error.to_string()))?;
+    let visible = store::sqlx::query_scalar::<_, String>(
+        "WITH RECURSIVE admitted(uid) AS (
+             SELECT value FROM json_each(?)
+             UNION
+             SELECT a.subject_uid FROM record_assertion a JOIN admitted parent ON a.object_uid = parent.uid
+             JOIN record child ON child.uid = a.subject_uid
+             WHERE a.retracted_at IS NULL AND child.deleted_at IS NULL
+               AND a.subject_uid IN (SELECT value FROM json_each(?))
+               AND ((child.kind = 'thread' AND a.predicate_uid = ?) OR (child.kind = 'message' AND a.predicate_uid = ?))
+         ) SELECT uid FROM admitted",
+    ).bind(roots).bind(ceiling).bind(threads).bind(messages).fetch_all(&store.pool).await?;
+    Ok(Some(visible.into_iter().collect()))
 }
 
 fn read_permission_keys(source: Source) -> Option<&'static [&'static str]> {
@@ -722,19 +748,7 @@ pub async fn execute_saved_with_signer(
 }
 
 pub fn affects(protein: &Protein, _fact: &nucleus::Fact) -> bool {
-    matches!(
-        protein.source,
-        Source::Record
-            | Source::Promise
-            | Source::Decision
-            | Source::Transfer
-            | Source::TransferSettlementPreview
-            | Source::TransferBulkCompletionPreview
-            | Source::Karma
-            | Source::Timeline
-            | Source::Entry
-            | Source::Recurrence
-    )
+    !is_ephemeral(protein)
 }
 
 pub fn is_ephemeral(protein: &Protein) -> bool {

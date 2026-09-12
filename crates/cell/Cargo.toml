@@ -1,0 +1,28 @@
+[package]
+name = "lince-cell"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "The running Lince Cell: engine, wire and every supervisor that keeps working with no interface attached."
+
+[lib]
+name = "cell"
+
+[dependencies]
+async-trait = { workspace = true }
+chrono = { workspace = true }
+crossterm = { workspace = true }
+engine = { workspace = true }
+nucleus = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+store = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "sync", "time"] }
+tracing = { workspace = true }
+transport = { workspace = true }
+utils = { workspace = true, features = ["update-net"] }
+
+[lints]
+workspace = true

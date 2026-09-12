@@ -105,6 +105,7 @@ impl Session {
             ClientMessage::SubscribeSaved { id, name } => self.subscribe_saved(id, name).await,
             ClientMessage::Unsubscribe { id } => {
                 self.subscriptions.remove(&id);
+                self.last_ephemeral.remove(&id);
                 vec![]
             }
             ClientMessage::Act { id, action } => {
@@ -300,6 +301,8 @@ impl Session {
             Ok(rows) => {
                 if protein::is_ephemeral(&protein) {
                     self.last_ephemeral.insert(id.clone(), rows.clone());
+                } else {
+                    self.last_ephemeral.remove(&id);
                 }
                 self.subscriptions.insert(id.clone(), protein);
                 vec![ServerMessage::Snapshot { id, rows }]
@@ -314,6 +317,30 @@ impl Session {
 
     pub fn has_ephemeral_subscriptions(&self) -> bool {
         self.subscriptions.values().any(protein::is_ephemeral)
+    }
+
+    pub async fn refresh(&mut self) -> Vec<ServerMessage> {
+        let mut out = Vec::new();
+        for (id, protein) in self.subscriptions.clone() {
+            out.extend(self.subscribe(id, protein).await);
+        }
+        for record_uid in &self.collab_records {
+            if self
+                .engine
+                .may_read_record(self.subject.as_deref(), record_uid)
+                .await
+                .unwrap_or(false)
+            {
+                match self.engine.collab_snapshot(record_uid).await {
+                    Ok(snapshot_base64) => out.push(ServerMessage::CollabChange {
+                        record_uid: record_uid.clone(),
+                        snapshot_base64,
+                    }),
+                    Err(error) => out.push(action_error(record_uid.clone(), error)),
+                }
+            }
+        }
+        out
     }
 
     pub async fn tick_ephemeral(&mut self) -> Vec<ServerMessage> {

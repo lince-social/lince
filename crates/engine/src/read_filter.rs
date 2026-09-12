@@ -12,14 +12,11 @@ impl Engine {
         &self,
         person_uid: &str,
     ) -> Result<Option<PersonFilter>, EngineError> {
-        let Some(raw) = store::read_filter::get(&self.store.pool, person_uid).await? else {
+        let Some(predicate) =
+            protein::read_rules::effective_predicate(&self.store, person_uid).await?
+        else {
             return Ok(None);
         };
-        let predicate: protein::Predicate = serde_json::from_str(&raw).map_err(|error| {
-            EngineError::Consequence(format!(
-                "the read filter saved for {person_uid} cannot be read: {error}"
-            ))
-        })?;
         Ok(Some(PersonFilter { predicate }))
     }
 
@@ -46,6 +43,30 @@ impl Engine {
         let Some(filter) = self.read_filter_of(person_uid).await? else {
             return Ok(None);
         };
+        if let Some(access) = store::auth::person_access(&self.store.pool, person_uid).await? {
+            if let Some(role) = access.role_id {
+                if store::role_policies::get(&self.store.pool, role)
+                    .await?
+                    .is_some_and(|row| row.policy.is_some())
+                {
+                    let query = protein::Protein {
+                        source: protein::Source::Record,
+                        filter: vec![],
+                        fields: Some(vec!["uid".into()]),
+                        include: Default::default(),
+                        aggregate: None,
+                        order: vec![],
+                        limit: None,
+                    };
+                    let rows = protein::execute_for(&self.store, &query, Some(person_uid)).await?;
+                    return Ok(Some(
+                        rows.into_iter()
+                            .filter_map(|row| row["uid"].as_str().map(str::to_string))
+                            .collect(),
+                    ));
+                }
+            }
+        }
         let protein = protein::Protein {
             source: protein::Source::Record,
             filter: vec![filter.predicate],
@@ -72,6 +93,7 @@ impl Engine {
                 ..
             } => vec![conversation, thread],
             Action::SetQuantity { target, .. }
+            | Action::PreviewAreaTransition { target, .. }
             | Action::SetQuantityExact { target, .. }
             | Action::EditRecordText { target, .. }
             | Action::ReviseMessage {
@@ -83,6 +105,7 @@ impl Engine {
             | Action::DeleteRecord { target }
             | Action::MoveRecordTo { record: target, .. }
             | Action::CancelRecordMove { record: target } => vec![target],
+            Action::ApplyAreaTransition { preview, .. } => vec![&preview.target],
             _ => Vec::new(),
         };
         let mut out = Vec::new();

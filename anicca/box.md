@@ -1,5 +1,3 @@
-# Box
-
 Box is the workspace where Sands are placed, grouped and connected. Begin with stable placement, navigation and saving. Keep optional motion for later without deleting the existing experiments.
 
 ## Data and appearances

@@ -28,24 +28,27 @@ fn fixture() -> (World, Entity, Entity, Entity) {
 }
 
 #[cfg_attr(test, test)]
-fn simple_forces_reuse_the_sum_during_motion_and_invalidate_for_changes() {
+fn simple_forces_reuse_destinations_during_motion_and_invalidate_for_changes() {
     let (mut world, root, owner, sand) = fixture();
     update(&mut world);
     let record = world.get::<RecordProperties>(sand).unwrap().clone();
     let mut runtime = world.resource_mut::<Influences>();
     let evaluated = runtime.evaluations;
     for i in 0..1000 {
-        let (_, total) = runtime.forces(
-            sand,
-            root,
-            1,
-            DVec2::new(-100.0, i as f64),
-            Some(&record),
-            None,
-        );
-        assert_eq!(total, DVec2::new(-100.0, 0.0));
+        let point = DVec2::new(-100.0, i as f64);
+        let (_, total) = runtime.forces(sand, root, 1, point, Some(&record), None);
+        assert!((total - -point.normalize() * 100.0).length() < 1e-10);
+        assert_eq!(runtime.cache[&sand].simple[&owner].point, DVec2::ZERO);
     }
     assert_eq!(runtime.evaluations, evaluated);
+    assert_eq!(
+        runtime.total(sand, root, 1, DVec2::ZERO, Some(&record), None),
+        DVec2::ZERO
+    );
+    assert_eq!(
+        runtime.total(sand, root, 1, DVec2::X, Some(&record), None),
+        -DVec2::X * 100.0
+    );
     world.get_mut::<InfluenceArea>(owner).unwrap().strength = 250.0;
     update(&mut world);
     assert_eq!(
@@ -58,6 +61,35 @@ fn simple_forces_reuse_the_sum_during_motion_and_invalidate_for_changes() {
     world.despawn(sand);
     refresh(&mut world);
     assert!(world.resource::<Influences>().cache.is_empty());
+}
+
+#[cfg_attr(test, test)]
+fn combined_simple_destinations_keep_their_individual_strengths() {
+    let (mut world, root, owner, sand) = fixture();
+    world.get_mut::<InfluenceArea>(owner).unwrap().center = [-100.0, 0.0];
+    let mut other = InfluenceArea::new(
+        AreaShape::Square,
+        DVec2::new(100.0, 0.0),
+        DVec2::splat(100.0),
+    );
+    other.strength = 100.0;
+    other.reach.mode = ReachMode::Unlimited;
+    other.rules = world.get::<InfluenceArea>(owner).unwrap().rules.clone();
+    spawn_area(&mut world, root, 1, other).unwrap();
+    world.get_mut::<CanvasItem>(sand).unwrap().position = DVec2::ZERO;
+    update(&mut world);
+    let record = world.get::<RecordProperties>(sand).unwrap().clone();
+    let mut runtime = world.resource_mut::<Influences>();
+    let evaluations = runtime.evaluations;
+    assert_eq!(
+        runtime.total(sand, root, 1, DVec2::ZERO, Some(&record), None),
+        DVec2::ZERO
+    );
+    let total = runtime.total(sand, root, 1, DVec2::new(0.0, 100.0), Some(&record), None);
+    assert!(total.x.abs() < 1e-10);
+    assert!((total.y + 100.0 * 2.0_f64.sqrt()).abs() < 1e-10);
+    assert_eq!(runtime.evaluations, evaluations);
+    assert_eq!(runtime.cache[&sand].simple.len(), 2);
 }
 
 #[cfg_attr(test, test)]
@@ -95,12 +127,12 @@ fn newtonian_force_uses_distance_while_simple_reach_still_stops_at_the_boundary(
             .resource_mut::<Influences>()
             .forces(sand, root, 1, DVec2::new(-20.0, 0.0), Some(&record), None)
             .1,
-        DVec2::new(-100.0, 0.0)
+        DVec2::new(100.0, 0.0)
     );
 }
 
 #[cfg_attr(test, test)]
-fn moving_targets_invalidates_simple_vectors_and_newtonian_distance_uses_the_target() {
+fn moving_targets_invalidates_destinations_and_newtonian_distance_uses_the_target() {
     let (mut world, _, owner, sand) = fixture();
     update(&mut world);
     world.get_mut::<InfluenceArea>(owner).unwrap().target =
@@ -114,7 +146,7 @@ fn moving_targets_invalidates_simple_vectors_and_newtonian_distance_uses_the_tar
     update(&mut world);
     assert_eq!(
         world.get::<AreaForces>(sand).unwrap().total(),
-        DVec2::new(100.0, 0.0)
+        DVec2::new(-100.0, 0.0)
     );
     world.get_mut::<InfluenceArea>(owner).unwrap().force_mode = ForceMode::Newtonian;
     update(&mut world);
@@ -281,8 +313,9 @@ fn independent_sorting_steers_existing_sands_and_immunity_stops_it() {
 }
 
 crate::laboratory_cases! {
-    moving_targets_invalidates_simple_vectors_and_newtonian_distance_uses_the_target,
-    simple_forces_reuse_the_sum_during_motion_and_invalidate_for_changes,
+    combined_simple_destinations_keep_their_individual_strengths,
+    moving_targets_invalidates_destinations_and_newtonian_distance_uses_the_target,
+    simple_forces_reuse_destinations_during_motion_and_invalidate_for_changes,
     newtonian_force_uses_distance_while_simple_reach_still_stops_at_the_boundary,
     immunity_scopes_use_centers_and_do_not_cross_workspaces_or_disable_other_shields,
     size_effects_combine_restore_and_leave_authored_sizes_untouched,

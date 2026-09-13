@@ -62,6 +62,76 @@ fn change(quantity: &str, add: bool) -> RecordChanges {
     }
 }
 
+#[tokio::test]
+async fn quantity_arithmetic_is_exact_replay_safe_and_checks_current_state() {
+    let (engine, uid) = fixture().await;
+    for (index, (operation, expected)) in [
+        ("1.5", "1.5"),
+        ("+=2.25", "3.75"),
+        ("-=0.25", "3.50"),
+        ("*=4", "14"),
+        ("/=8", "1.75"),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let transition = preview(&engine, &uid, change(operation, true)).await;
+        let action = Action::ApplyAreaTransition {
+            request_id: format!("arithmetic-{index}"),
+            preview: transition,
+        };
+        engine.act(action.clone(), None).await.unwrap();
+        engine.act(action, None).await.unwrap();
+        let actual = nucleus::DecimalValue::parse_inferred(&quantity(&engine, &uid).await).unwrap();
+        let expected = nucleus::DecimalValue::parse_inferred(expected).unwrap();
+        assert_eq!(
+            actual.exact_numeric_cmp(expected),
+            std::cmp::Ordering::Equal
+        );
+    }
+    for invalid in ["/=0", "/=3", "*=99999999999999999999999999999999999999"] {
+        assert!(
+            engine
+                .act(
+                    Action::PreviewAreaTransition {
+                        target: uid.clone(),
+                        changes: change(invalid, true),
+                        constraints: Default::default()
+                    },
+                    None
+                )
+                .await
+                .is_err()
+        );
+    }
+    let stale = preview(&engine, &uid, change("+=1", true)).await;
+    let other = preview(&engine, &uid, change("*=2", true)).await;
+    engine
+        .act(
+            Action::ApplyAreaTransition {
+                request_id: "other-arithmetic".into(),
+                preview: other,
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    assert_eq!(
+        engine
+            .act(
+                Action::ApplyAreaTransition {
+                    request_id: "stale-arithmetic".into(),
+                    preview: stale
+                },
+                None
+            )
+            .await
+            .unwrap_err()
+            .code(),
+        Some("area_transition_stale")
+    );
+}
+
 async fn quantity(engine: &Engine, uid: &str) -> String {
     store::records::quantity(&engine.store.pool, uid)
         .await

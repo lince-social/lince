@@ -9,6 +9,8 @@ use bevy::text::EditableText;
 
 #[derive(Clone)]
 enum Command {
+    Tasks,
+    ClosestDate,
     Enable,
     Remove,
     Query,
@@ -247,6 +249,11 @@ impl Action for Command {
             configuration = None;
         } else if let Some(config) = configuration.as_mut() {
             match self {
+                Self::ClosestDate => config.closest_end_date = !config.closest_end_date,
+                Self::Tasks => {
+                    config.task_cards = true;
+                    config.bindings = Config::tasks().bindings;
+                }
                 Self::ToggleRun => config.enabled = !config.enabled,
                 Self::Source(remote) => {
                     config.source = if *remote {
@@ -611,11 +618,36 @@ pub(crate) fn controls(world: &mut World, _: Entity, panel: Entity, owner: Entit
             "Log in to the selected Organ",
         );
     }
+    label(world, panel, "End date order", 14.0);
+    button(
+        world,
+        panel,
+        owner,
+        Command::ClosestDate,
+        if config.closest_end_date {
+            Icon::Recenter
+        } else {
+            Icon::Forward
+        },
+        if config.closest_end_date {
+            "Nearest to today first; click to use query order"
+        } else {
+            "Query order; click to put dates nearest to today first"
+        },
+    );
     if filtering {
         return;
     }
     grouping_controls(world, panel, owner, &config);
     label(world, panel, "Row template", 18.0);
+    text_button(
+        world,
+        panel,
+        owner,
+        Command::Tasks,
+        "Task Castle",
+        "Use editable title, assignees, dates, Assertions, and quantity",
+    );
     input(
         world,
         panel,

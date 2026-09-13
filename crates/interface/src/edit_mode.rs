@@ -162,6 +162,9 @@ impl Plugin for EditModePlugin {
 #[derive(Component)]
 struct EditTabs;
 
+#[derive(Component)]
+struct EditClose;
+
 fn expand_tabs(
     settings: Res<crate::tokens::ThemeSettings>,
     hover: Option<Res<bevy::picking::hover::HoverMap>>,
@@ -313,7 +316,23 @@ fn anchor_panel(
     geometry: Query<(&ComputedNode, &UiGlobalTransform)>,
     mut nodes: Query<&mut Node>,
     wake: Option<Res<crate::wake::WakeSignal>>,
+    closes: Query<(Entity, &ChildOf), With<EditClose>>,
 ) {
+    for (close, parent) in &closes {
+        let top = px(16.0
+            + geometry.get(parent.parent()).map_or(0.0, |(node, _)| {
+                node.scroll_position.y * node.inverse_scale_factor()
+            }));
+        if let Ok(mut node) = nodes.get_mut(close)
+            && (node.position_type != PositionType::Absolute
+                || node.right != px(16)
+                || node.top != top)
+        {
+            node.position_type = PositionType::Absolute;
+            node.right = px(16);
+            node.top = top;
+        }
+    }
     for (root, mode) in &modes {
         let Ok((root_node, root_transform)) = geometry.get(root) else {
             continue;
@@ -881,7 +900,8 @@ pub(crate) fn control(
         | EditAction::Text(TextAction::Remove) => Some(Icon::Close),
         EditAction::CreateWorkspace => Some(Icon::Plus),
         EditAction::ConfirmRemoveWorkspace => Some(Icon::Check),
-        EditAction::Credits | EditAction::Information => Some(Icon::Info),
+        EditAction::Credits => Some(Icon::Credits),
+        EditAction::Information => Some(Icon::Info),
         EditAction::General => Some(Icon::General),
         EditAction::Workspaces => Some(Icon::Workspaces),
         EditAction::Store => Some(Icon::Store),
@@ -983,7 +1003,7 @@ pub(crate) fn render_panel(world: &mut World, root: Entity) {
         .copied()
         .find(|child| world.get::<EditTabs>(*child).is_some());
     for child in children {
-        if Some(child) != existing_tabs {
+        if Some(child) != existing_tabs && world.get::<EditClose>(child).is_none() {
             world.despawn(child);
         }
     }
@@ -1008,6 +1028,7 @@ pub(crate) fn render_panel(world: &mut World, root: Entity) {
                     overflow: Overflow::clip(),
                     column_gap: px(8),
                     width: percent(100),
+                    padding: UiRect::right(px(48)),
                     flex_wrap: FlexWrap::Wrap,
                     align_content: AlignContent::FlexStart,
                     row_gap: px(8),
@@ -1043,14 +1064,8 @@ pub(crate) fn render_panel(world: &mut World, root: Entity) {
             EditAction::Credits,
             "Licenses and credits",
         );
-        world.spawn((
-            Node {
-                flex_grow: 1.0,
-                ..default()
-            },
-            ChildOf(tabs),
-        ));
-        control(world, root, tabs, EditAction::Close, "Close edit mode");
+        let close = control(world, root, panel, EditAction::Close, "Close edit mode");
+        world.entity_mut(close).insert((EditClose, ZIndex(2)));
     }
     if information {
         crate::information::panel(world, root, panel);
@@ -1248,10 +1263,16 @@ pub(crate) fn render_panel(world: &mut World, root: Entity) {
             node.set_label("Starting text for the new Sand");
         }
         world.get_mut::<EditMode>(root).unwrap().content = Some(content);
+        label(world, panel, "Sands", 18.0);
         for kind in SandKind::ALL {
             crate::sand_store::entry(world, root, panel, kind, None);
         }
+        label(world, panel, "Castles", 18.0);
         crate::protein_castle::store_entries(world, root, panel);
+        crate::calendar::store_entry(world, root, panel);
+        crate::kanban::store_entry(world, root, panel);
+        crate::custom_castle::store_entries(world, root, panel);
+        crate::topology::ui::store_controls(world, root, panel);
         let sands: Vec<_> = world
             .query::<(Entity, &ChildOf, &workspace::WorkspaceMember, &StoredSand)>()
             .iter(world)
@@ -1321,6 +1342,16 @@ pub(crate) mod tests {
             .single(app.world())
             .unwrap();
         assert_eq!(app.world().get::<Node>(tabs).unwrap().max_height, px(40));
+        let close = app
+            .world_mut()
+            .query_filtered::<Entity, With<EditClose>>()
+            .single(app.world())
+            .unwrap();
+        assert_eq!(
+            app.world().get::<ChildOf>(close).unwrap().parent(),
+            app.world().get::<EditMode>(root).unwrap().panel
+        );
+
         EditAction::General.apply(app.world_mut(), root);
         assert!(app.world().get::<EditMode>(root).unwrap().general);
         assert!(app.world().get_entity(tabs).is_ok());
@@ -1349,6 +1380,11 @@ pub(crate) mod tests {
                 bevy::picking::backend::HitData::new(root, 0.0, None, None),
             );
         app.update();
+        assert!(app.world().get_entity(close).is_ok());
+        assert_eq!(
+            app.world().get::<Node>(close).unwrap().position_type,
+            PositionType::Absolute
+        );
         assert_eq!(app.world().get::<Node>(tabs).unwrap().max_height, Val::Auto);
         app.world_mut()
             .resource_mut::<bevy::picking::hover::HoverMap>()

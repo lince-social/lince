@@ -186,22 +186,28 @@ pub(crate) fn apply(world: &mut World, root: Entity, action: TextAction) -> bool
                 return false;
             };
             let mut area = world.get::<SandText>(selected).unwrap().clone();
-            area.offset = [numbers[0], numbers[1]];
-            area.size = [numbers[2], numbers[3]];
+            let managed =
+                area.layout.is_some() || world.get::<crate::layout::LayoutBox>(sand).is_some();
+            if !managed {
+                area.offset = [numbers[0], numbers[1]];
+                area.size = [numbers[2], numbers[3]];
+            }
             area.overflow = overflow;
             if !area.validate() {
                 error(
                     world,
                     panel,
-                    "Position must be 0–100000. Width and height must be 24–100000.",
+                    "Position must be 0–100000. Width and height must be 1–100000.",
                 );
                 return false;
             }
-            let mut node = world.get_mut::<Node>(selected).unwrap();
-            node.left = px(area.offset[0]);
-            node.top = px(area.offset[1]);
-            node.width = px(area.size[0]);
-            node.height = px(area.size[1]);
+            if !managed {
+                let mut node = world.get_mut::<Node>(selected).unwrap();
+                node.left = px(area.offset[0]);
+                node.top = px(area.offset[1]);
+                node.width = px(area.size[0]);
+                node.height = px(area.size[1]);
+            }
             world.entity_mut(selected).insert(area);
             sand_text::fit_sand(world, sand);
             error(world, panel, "");
@@ -317,6 +323,21 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) -> bool {
     let Some(area) = world.get::<SandText>(selected).cloned() else {
         return true;
     };
+    let managed = area.layout.is_some() || world.get::<crate::layout::LayoutBox>(sand).is_some();
+    crate::layout::panel::button(
+        world,
+        panel,
+        selected,
+        crate::layout::panel::LayoutAction::Open,
+        "Text sizing and scrolling",
+    );
+    crate::layout::panel::button(
+        world,
+        panel,
+        sand,
+        crate::layout::panel::LayoutAction::Open,
+        "Enclosing Sand layout",
+    );
     let entries = [
         ("Text", sand_text::value(world, selected)),
         ("Distance from left", area.offset[0].to_string()),
@@ -327,7 +348,9 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) -> bool {
     let original = entries[0].1.clone();
     let mut fields = Vec::new();
     for (index, (name, value)) in entries.into_iter().enumerate() {
-        label(world, panel, name, 14.0);
+        if index == 0 || !managed {
+            label(world, panel, name, 14.0);
+        }
         let bundle = text_editor(&value, world.resource::<Typography>(), 0);
         let entity = world
             .spawn((
@@ -343,6 +366,9 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) -> bool {
         if let Some(mut node) = world.get_mut::<AccessibilityNode>(entity) {
             node.set_label(name);
         }
+        if index > 0 && managed {
+            world.get_mut::<Node>(entity).unwrap().display = Display::None;
+        }
         fields.push(entity);
     }
     let notice = label(world, panel, "", 14.0);
@@ -350,7 +376,14 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) -> bool {
     state.fields = fields;
     state.error = Some(notice);
     state.original = original;
-    if area.editable {
+    if managed {
+        label(
+            world,
+            panel,
+            "Sizing and scrolling are set in the layout controls.",
+            14.0,
+        );
+    } else if area.editable {
         label(
             world,
             panel,

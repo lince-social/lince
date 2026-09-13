@@ -1,3 +1,4 @@
+mod date_order;
 pub(crate) mod filter;
 pub(crate) mod grouping;
 mod model;
@@ -18,6 +19,63 @@ pub use model::{Binding, Config, OverflowMode, Source};
 use serde_json::Value;
 use std::collections::{HashMap, VecDeque};
 pub(crate) use ui::controls;
+
+pub(crate) fn open_query(world: &mut World, owner: Entity) {
+    let Some(parent) = world.get::<ChildOf>(owner) else {
+        return;
+    };
+    let root = parent.parent();
+    if !crate::area_panel::owns(world, root, owner) {
+        return;
+    }
+    let existing: Vec<_> = world
+        .query::<(Entity, &QueryEditor)>()
+        .iter(world)
+        .filter(|(_, editor)| editor.0 == owner)
+        .map(|(entity, _)| entity)
+        .collect();
+    for editor in existing {
+        world.despawn(editor);
+    }
+    let Some(config) = world
+        .get::<InfluenceArea>(owner)
+        .and_then(|area| area.protein.clone())
+    else {
+        return;
+    };
+    let workspace = world
+        .get::<crate::workspace::WorkspaceMember>(owner)
+        .unwrap()
+        .0;
+    let position = world
+        .get::<crate::canvas::CanvasView>(root)
+        .map_or(bevy::math::DVec2::ZERO, |view| view.center);
+    let entity = crate::protein_castle::spawn(world, root, workspace, position, config.draft);
+    world.entity_mut(entity).insert(QueryEditor(owner));
+    crate::protein_castle::refresh_editor(world, entity);
+}
+
+pub(crate) fn calendar_feed(world: &World, owner: Entity) -> Option<(&[Value], String)> {
+    let state = world.get_resource::<Runtime>()?.areas.get(&owner)?;
+    Some((
+        &state.data,
+        format!(
+            "{:?}:{}:{}",
+            state.subscription, state.revision, state.status
+        ),
+    ))
+}
+
+pub(crate) fn calendar_status(world: &World, owner: Entity) -> &str {
+    world
+        .get_resource::<Runtime>()
+        .and_then(|r| r.areas.get(&owner))
+        .map_or("Stopped", |s| s.status.as_str())
+}
+
+pub(crate) fn save_date(world: &mut World, editor: Entity, date: &str) -> Result<(), String> {
+    rows::pick_date(world, editor, date)
+}
 
 #[derive(Component, Clone, Debug)]
 pub struct RecordBinding {
@@ -53,6 +111,7 @@ impl Drop for Remote {
 
 #[derive(Default)]
 struct State {
+    revision: u64,
     applied: Option<Config>,
     subscription: Option<String>,
     remote: Option<Remote>,
@@ -60,6 +119,7 @@ struct State {
     login: bool,
     status: String,
     data: Vec<Value>,
+    ordered_day: Option<chrono::NaiveDate>,
     order: std::sync::Arc<Vec<String>>,
     row_entities: HashMap<String, Entity>,
     groups: HashMap<(bool, String), Entity>,
@@ -79,6 +139,9 @@ struct Runtime {
 }
 
 pub struct ProteinAreaPlugin;
+
+#[derive(SystemSet, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct UpdateProteinAreas;
 impl Plugin for ProteinAreaPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Runtime>()
@@ -86,6 +149,7 @@ impl Plugin for ProteinAreaPlugin {
             .add_systems(
                 Update,
                 update
+                    .in_set(UpdateProteinAreas)
                     .after(ReceiveCell)
                     .before(crate::physics::SimulateWorkspaces),
             )
@@ -256,6 +320,7 @@ fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
         ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows }
             if state.subscription.as_ref() == Some(&id) =>
         {
+            state.revision = state.revision.wrapping_add(1);
             if rows.len() > 100_000
                 || rows
                     .iter()
@@ -272,6 +337,7 @@ fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
                         .collect(),
                 );
                 state.data = rows;
+                date_order::sort(state);
                 state.dirty = true;
                 state.status = "Live".into();
             }
@@ -471,10 +537,12 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
                 }
             }
         }
+        date_order::sort(&mut state);
         world.resource_mut::<Runtime>().areas.insert(owner, state);
         rows::reconcile(world, owner);
     }
     filter::publish(world);
+    date_order::wake(world);
     while let Some(message) = world.resource_mut::<Runtime>().outgoing.pop_front() {
         let Some(bridge) = world.get_non_send::<CellBridge>() else {
             break;

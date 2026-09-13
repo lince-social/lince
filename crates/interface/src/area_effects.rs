@@ -7,7 +7,10 @@ use crate::{
 };
 use bevy::{math::DVec2, prelude::*};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::{BTreeMap, HashMap},
+    sync::Arc,
+};
 
 pub(crate) mod tests;
 pub(crate) mod ui;
@@ -92,11 +95,34 @@ struct Identity {
     source: Source,
 }
 
+struct Destination {
+    point: DVec2,
+    strength: f64,
+}
+
+impl Destination {
+    fn new(area: &InfluenceArea) -> Self {
+        Self {
+            point: area.target_position(),
+            strength: area.strength
+                * if area.direction == crate::area::Direction::Attract {
+                    1.0
+                } else {
+                    -1.0
+                },
+        }
+    }
+
+    fn force(&self, point: DVec2) -> DVec2 {
+        (self.point - point).normalize_or_zero() * self.strength
+    }
+}
+
 struct Cached {
     revision: u64,
     identity: Identity,
     point: DVec2,
-    simple: HashMap<Entity, DVec2>,
+    simple: BTreeMap<Entity, Destination>,
     forces: AreaForces,
     total: DVec2,
     spatial: bool,
@@ -301,6 +327,14 @@ pub(crate) fn refresh(world: &mut World) {
 }
 
 impl Influences {
+    pub(crate) fn topology_target(&self, area: Entity, sand: Entity) -> Option<DVec2> {
+        self.fields
+            .iter()
+            .find(|field| field.entity == area)?
+            .targets
+            .get(&sand)
+            .copied()
+    }
     pub(crate) fn forget(&mut self, sand: Entity) {
         self.cache.remove(&sand);
     }
@@ -331,7 +365,7 @@ impl Influences {
         record: Option<&RecordProperties>,
         binding: Option<&RecordBinding>,
     ) -> &Cached {
-        if let Some(cache) = self.cache.get(&sand)
+        if let Some(cache) = self.cache.get_mut(&sand)
             && cache.revision == self.revision
             && cache.identity.root == root
             && cache.identity.workspace == workspace
@@ -339,6 +373,17 @@ impl Influences {
             && &cache.identity.source == binding.map_or(&Source::Local, |b| &b.source)
             && (!cache.spatial || cache.point == point)
         {
+            if cache.point != point {
+                cache.point = point;
+                cache.forces.0.clear();
+                for (area, destination) in &cache.simple {
+                    let force = destination.force(point);
+                    if force.is_finite() && force != DVec2::ZERO {
+                        cache.forces.0.push(AreaForce { area: *area, force });
+                    }
+                }
+                cache.total = bounded_total(&cache.forces);
+            }
             return self.cache.get(&sand).unwrap();
         }
         let identity = Identity {
@@ -350,7 +395,7 @@ impl Influences {
         let old = self.cache.remove(&sand);
         let mut simple = old
             .filter(|c| c.revision == self.revision && c.identity == identity)
-            .map_or_else(HashMap::new, |c| c.simple);
+            .map_or_else(BTreeMap::new, |c| c.simple);
         let mut forces = AreaForces::default();
         let spatial = self.fields.iter().any(|f| {
             f.root == root
@@ -375,9 +420,10 @@ impl Influences {
                 force += group.force(&field.area, sand, point);
             } else if field.matches(record, binding, false) {
                 force += match field.area.force_mode {
-                    ForceMode::Simple => *simple
+                    ForceMode::Simple => simple
                         .entry(field.entity)
-                        .or_insert_with(|| field.area.force_for_match(point, true)),
+                        .or_insert_with(|| Destination::new(&field.area))
+                        .force(point),
                     ForceMode::Newtonian => {
                         let radius = DVec2::from_array(field.area.size).min_element() * 0.5;
                         let distance = point.distance(field.area.target_position());
@@ -401,12 +447,8 @@ impl Influences {
                 });
             }
         }
-        let total = forces.total();
-        let total = if total.is_finite() {
-            total.clamp_length_max(1_000_000.0)
-        } else {
-            DVec2::ZERO
-        };
+        forces.0.sort_by_key(|force| force.area);
+        let total = bounded_total(&forces);
         self.cache.insert(
             sand,
             Cached {
@@ -472,8 +514,21 @@ impl Influences {
     }
 }
 
+fn bounded_total(forces: &AreaForces) -> DVec2 {
+    let total = forces.total();
+    if total.is_finite() {
+        total.clamp_length_max(1_000_000.0)
+    } else {
+        DVec2::ZERO
+    }
+}
+
 pub(crate) fn update(world: &mut World) {
     refresh(world);
+    if world.contains_resource::<crate::topology::physics::Runtime>() {
+        crate::topology::influence::update(world);
+        return;
+    }
     let sands: Vec<_> = world
         .query_filtered::<(
             Entity,

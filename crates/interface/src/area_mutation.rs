@@ -5,7 +5,10 @@ use crate::{
     sand_placement::Pinned,
     workspace::{WorkspaceMember, Workspaces},
 };
-use bevy::{math::DVec2, prelude::*};
+use bevy::{
+    math::{DVec2, DVec3},
+    prelude::*,
+};
 use cell::{ClientMessage, ServerMessage};
 use engine::{
     actions::Action,
@@ -38,6 +41,9 @@ impl AreaChanges {
 pub struct MutationStatus(pub String);
 
 #[derive(Component)]
+pub(crate) struct HeldPoint(pub DVec3);
+
+#[derive(Component)]
 pub(crate) struct StatusLabel(pub Entity);
 
 #[derive(Component)]
@@ -54,14 +60,15 @@ struct Grant {
     root: Entity,
     workspace: u64,
     area: InfluenceArea,
+    placement: crate::topology::Spatial,
     visits: HashMap<String, Visit>,
-    remaining: usize,
 }
 
 struct Pending {
     target: String,
     areas: Vec<(Entity, bool)>,
     applying: bool,
+    retry: Option<TransitionPreview>,
 }
 
 #[derive(Resource, Default)]
@@ -102,6 +109,18 @@ pub fn armed(world: &World, entity: Entity) -> bool {
     world
         .get_resource::<Mutations>()
         .is_some_and(|state| state.grants.contains_key(&entity))
+}
+
+pub(crate) fn pending(world: &World, entity: Entity) -> bool {
+    let Some(uid) = world
+        .get::<RecordProperties>(entity)
+        .and_then(|record| record.0["uid"].as_str())
+    else {
+        return false;
+    };
+    world
+        .get_resource::<Mutations>()
+        .is_some_and(|state| state.pending.values().any(|pending| pending.target == uid))
 }
 
 pub fn previewed(world: &World, entity: Entity) -> bool {
@@ -220,8 +239,8 @@ pub fn arm(world: &mut World, root: Entity, entity: Entity) {
         root,
         workspace,
         area,
+        placement: crate::topology::spatial(world, entity),
         visits: HashMap::new(),
-        remaining: 128,
     };
     baseline(&mut grant, &records);
     world
@@ -231,7 +250,7 @@ pub fn arm(world: &mut World, root: Entity, entity: Entity) {
     status(
         world,
         entity,
-        "Armed for future crossings. Stops after 128 requests, an edit, a workspace switch, or an error.",
+        "Armed for future crossings. Stops after an edit, a workspace switch, an error, or disarming.",
     );
 }
 
@@ -239,7 +258,7 @@ struct Record {
     root: Entity,
     workspace: u64,
     uid: String,
-    points: Vec<DVec2>,
+    points: Vec<DVec3>,
     immune: HashSet<Entity>,
     properties: RecordProperties,
     filters: HashSet<Entity>,
@@ -247,8 +266,14 @@ struct Record {
 
 fn records(world: &mut World) -> Vec<Record> {
     let mut records = BTreeMap::<(Entity, u64, String), Record>::new();
-    for (item, properties, parent, member) in world
-        .query_filtered::<(&CanvasItem, &RecordProperties, &ChildOf, &WorkspaceMember), (
+    for (entity, item, properties, parent, member) in world
+        .query_filtered::<(
+            Entity,
+            &CanvasItem,
+            &RecordProperties,
+            &ChildOf,
+            &WorkspaceMember,
+        ), (
             Without<Pinned>,
             Without<crate::protein_area::RemoteRecord>,
             bevy::ecs::query::Allow<bevy::ecs::entity_disabling::Disabled>,
@@ -279,7 +304,15 @@ fn records(world: &mut World) -> Vec<Record> {
                 filters: HashSet::new(),
             })
             .points
-            .push(item.position);
+            .push(
+                world
+                    .get::<HeldPoint>(entity)
+                    .map(|held| held.0)
+                    .or_else(|| crate::layout::membership(world, entity))
+                    .unwrap_or_else(|| {
+                        crate::topology::spatial(world, entity).position(item.position)
+                    }),
+            );
     }
     let filters: Vec<_> = world
         .query::<(
@@ -317,7 +350,7 @@ fn records(world: &mut World) -> Vec<Record> {
     for record in records.values_mut() {
         for source in &sources {
             if record.points.iter().all(|point| {
-                crate::area_effects::blocked(
+                crate::topology::influence::blocked(
                     world,
                     record.root,
                     record.workspace,
@@ -339,10 +372,9 @@ fn baseline(grant: &mut Grant, records: &[Record]) {
         .iter()
         .filter(|record| record.root == grant.root && record.workspace == grant.workspace)
     {
-        let inside = record
-            .points
-            .iter()
-            .any(|point| grant.area.contains(*point));
+        let inside = record.points.iter().any(|point| {
+            crate::topology::influence::contains(&grant.area, grant.placement, *point)
+        });
         grant.visits.insert(
             record.uid.clone(),
             Visit {
@@ -355,6 +387,7 @@ fn baseline(grant: &mut Grant, records: &[Record]) {
 
 fn valid_grant(world: &World, entity: Entity, grant: &Grant) -> bool {
     world.get::<InfluenceArea>(entity) == Some(&grant.area)
+        && crate::topology::spatial(world, entity) == grant.placement
         && world
             .get::<ChildOf>(entity)
             .is_some_and(|parent| parent.parent() == grant.root)
@@ -395,6 +428,17 @@ fn stop_pending(world: &mut World, pending: &Pending, message: &str) {
 }
 
 fn receive(world: &mut World, messages: Vec<ServerMessage>, records: &[Record]) {
+    let retries: Vec<_> = world
+        .resource_mut::<Mutations>()
+        .pending
+        .iter_mut()
+        .filter_map(|(id, pending)| pending.retry.take().map(|preview| (id.clone(), preview)))
+        .collect();
+    for (id, preview) in retries {
+        if let Some(pending) = world.resource_mut::<Mutations>().pending.remove(&id) {
+            submit(world, records, id, pending, preview);
+        }
+    }
     for message in messages {
         if let ServerMessage::Error { ref id, .. } = message
             && id == crate::cell_bridge::CONNECTION
@@ -420,7 +464,7 @@ fn receive(world: &mut World, messages: Vec<ServerMessage>, records: &[Record]) 
             ServerMessage::Error { id, message, .. } => (id, Err(message)),
             _ => continue,
         };
-        let Some(mut pending) = world.resource_mut::<Mutations>().pending.remove(&id) else {
+        let Some(pending) = world.resource_mut::<Mutations>().pending.remove(&id) else {
             continue;
         };
         let data = match result {
@@ -436,49 +480,10 @@ fn receive(world: &mut World, messages: Vec<ServerMessage>, records: &[Record]) 
         };
         if pending.applying {
             for (area, _) in pending.areas {
-                if world
-                    .resource::<Mutations>()
-                    .grants
-                    .get(&area)
-                    .is_some_and(|grant| grant.remaining == 0)
-                {
-                    disarm(
-                        world,
-                        area,
-                        "Disarmed after 128 requests. Review before arming again.",
-                    );
-                } else if armed(world, area) {
+                if armed(world, area) {
                     status(world, area, "Armed. Last Record change saved.");
                 }
             }
-            continue;
-        }
-        let valid = pending.areas.iter().all(|(area, inside)| {
-            world
-                .resource::<Mutations>()
-                .grants
-                .get(area)
-                .is_some_and(|grant| {
-                    valid_grant(world, *area, grant)
-                        && records.iter().any(|record| {
-                            record.root == grant.root
-                                && record.workspace == grant.workspace
-                                && record.uid == pending.target
-                                && !record.immune.contains(area)
-                                && record
-                                    .points
-                                    .iter()
-                                    .any(|point| grant.area.contains(*point))
-                                    == *inside
-                        })
-                })
-        });
-        if !valid {
-            stop_pending(
-                world,
-                &pending,
-                "Disarmed. The Area, Sand or immunity changed before submission.",
-            );
             continue;
         }
         let preview = data.and_then(|data| serde_json::from_value::<TransitionPreview>(data).ok());
@@ -490,28 +495,82 @@ fn receive(world: &mut World, messages: Vec<ServerMessage>, records: &[Record]) 
             );
             continue;
         };
-        let apply_id = request_id();
-        if !send(
+        submit(world, records, id, pending, preview);
+    }
+}
+
+fn submit(
+    world: &mut World,
+    records: &[Record],
+    id: String,
+    mut pending: Pending,
+    preview: TransitionPreview,
+) {
+    let valid = pending.areas.iter().all(|(area, inside)| {
+        world
+            .resource::<Mutations>()
+            .grants
+            .get(area)
+            .is_some_and(|grant| {
+                valid_grant(world, *area, grant)
+                    && records.iter().any(|record| {
+                        record.root == grant.root
+                            && record.workspace == grant.workspace
+                            && record.uid == pending.target
+                            && !record.immune.contains(area)
+                            && record.points.iter().any(|point| {
+                                crate::topology::influence::contains(
+                                    &grant.area,
+                                    grant.placement,
+                                    *point,
+                                )
+                            }) == *inside
+                    })
+            })
+    });
+    if !valid {
+        stop_pending(
             world,
-            apply_id.clone(),
-            Action::ApplyAreaTransition {
-                request_id: apply_id.clone(),
-                preview,
-            },
-        ) {
+            &pending,
+            "Disarmed. The Area, Sand or immunity changed before submission.",
+        );
+        return;
+    }
+    let apply_id = request_id();
+    if !send(
+        world,
+        apply_id.clone(),
+        Action::ApplyAreaTransition {
+            request_id: apply_id.clone(),
+            preview: preview.clone(),
+        },
+    ) {
+        if world
+            .get_non_send::<CellBridge>()
+            .is_some_and(|bridge| !bridge.outgoing.is_closed())
+        {
+            pending.retry = Some(preview);
+            world
+                .resource_mut::<Mutations>()
+                .pending
+                .insert(id, pending);
+            if let Some(wake) = world.get_resource::<crate::wake::WakeSignal>() {
+                wake.ring();
+            }
+        } else {
             stop_pending(
                 world,
                 &pending,
                 "Disarmed. The Cell could not accept this change.",
             );
-            continue;
         }
-        pending.applying = true;
-        world
-            .resource_mut::<Mutations>()
-            .pending
-            .insert(apply_id, pending);
+        return;
     }
+    pending.applying = true;
+    world
+        .resource_mut::<Mutations>()
+        .pending
+        .insert(apply_id, pending);
 }
 
 fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor<CellMessage>>) {
@@ -575,10 +634,9 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
             if pending_uids.contains(record.uid.as_str()) {
                 continue;
             }
-            let inside = record
-                .points
-                .iter()
-                .any(|point| grant.area.contains(*point));
+            let inside = record.points.iter().any(|point| {
+                crate::topology::influence::contains(&grant.area, grant.placement, *point)
+            });
             let next = Visit {
                 inside,
                 eligible: inside && record.matches(grant),
@@ -598,6 +656,7 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
                 continue;
             };
             if previous.inside == inside {
+                previous.eligible |= next.eligible;
                 continue;
             }
             let eligible = if inside {
@@ -623,9 +682,16 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
     let mut stopped = Vec::new();
     for (uid, contributions) in candidates {
         let mut changes = RecordChanges::default();
-        let mut conflict = contributions
+        let entering_quantity = contributions
             .iter()
-            .any(|(_, _, change)| !changes.merge(change));
+            .any(|(_, inside, change)| *inside && change.quantity.is_some());
+        let mut conflict = contributions.iter().any(|(_, inside, change)| {
+            let mut change = change.clone();
+            if !inside && entering_quantity {
+                change.quantity = None;
+            }
+            !changes.merge(&change)
+        });
         let mut constraints = changes.clone();
         let mut involved: Vec<_> = contributions.iter().map(|(entity, _, _)| *entity).collect();
         for (entity, grant) in &state.grants {
@@ -641,19 +707,26 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
                 involved.push(*entity);
             }
         }
-        let exhausted = involved
-            .iter()
-            .any(|entity| state.grants[entity].remaining == 0)
-            || state.pending.len() >= 64;
-        if conflict || exhausted {
+        let exhausted = state.pending.len() >= 64;
+        if exhausted && !conflict {
+            for (entity, inside, _) in &contributions {
+                if let Some(grant) = state.grants.get_mut(entity) {
+                    grant.visits.insert(
+                        uid.clone(),
+                        Visit {
+                            inside: !inside,
+                            eligible: !inside,
+                        },
+                    );
+                }
+            }
+            continue;
+        }
+        if conflict {
             for area in involved {
                 stopped.push((
                     area,
-                    if conflict {
-                        "Disarmed. Overlapping Areas request conflicting Record changes."
-                    } else {
-                        "Disarmed at the change limit. Review the Records before arming again."
-                    },
+                    "Disarmed. Overlapping Areas request conflicting Record changes.",
                 ));
             }
             continue;
@@ -668,9 +741,6 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
                 constraints,
             },
         ) {
-            for (entity, _, _) in &contributions {
-                state.grants.get_mut(entity).unwrap().remaining -= 1;
-            }
             state.pending.insert(
                 id,
                 Pending {
@@ -680,8 +750,27 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
                         .map(|(entity, inside, _)| (entity, inside))
                         .collect(),
                     applying: false,
+                    retry: None,
                 },
             );
+        } else if world
+            .get_non_send::<CellBridge>()
+            .is_some_and(|bridge| !bridge.outgoing.is_closed())
+        {
+            for (entity, inside, _) in &contributions {
+                if let Some(grant) = state.grants.get_mut(entity) {
+                    grant.visits.insert(
+                        uid.clone(),
+                        Visit {
+                            inside: !inside,
+                            eligible: !inside,
+                        },
+                    );
+                }
+            }
+            if let Some(wake) = world.get_resource::<crate::wake::WakeSignal>() {
+                wake.ring();
+            }
         } else {
             for area in involved {
                 stopped.push((

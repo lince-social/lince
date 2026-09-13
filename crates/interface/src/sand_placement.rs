@@ -36,18 +36,38 @@ impl Pinned {
     }
 }
 
-#[derive(Component, Clone, Copy, Default, Serialize, Deserialize)]
+#[derive(Component, Clone, Default, Serialize, Deserialize)]
 pub struct Placement {
+    #[serde(default)]
+    pub layout: Option<crate::layout::LayoutBox>,
+    #[serde(default)]
+    pub events: crate::scoped_events::EventBoundary,
     pub pinned: Option<Pinned>,
     pub order: i32,
     #[serde(default)]
     pub group: Option<crate::canvas_selection::SandGroup>,
+    #[serde(default)]
+    pub spatial: crate::topology::Spatial,
+    #[serde(default)]
+    pub attachment: Option<crate::topology::Attachment>,
+    #[serde(default)]
+    pub group_pose: Option<crate::topology::groups::GroupPose>,
 }
 
 impl Placement {
     pub(crate) fn capture(world: &World, entity: Entity) -> Self {
         Self {
+            layout: world.get::<crate::layout::LayoutBox>(entity).copied(),
+            events: world
+                .get::<crate::scoped_events::EventBoundary>(entity)
+                .cloned()
+                .unwrap_or_default(),
             pinned: world.get::<Pinned>(entity).copied(),
+            spatial: crate::topology::spatial(world, entity),
+            attachment: world.get::<crate::topology::Attachment>(entity).copied(),
+            group_pose: world
+                .get::<crate::topology::groups::GroupPose>(entity)
+                .copied(),
             group: world
                 .get::<crate::canvas_selection::SandGroup>(entity)
                 .copied(),
@@ -56,7 +76,21 @@ impl Placement {
     }
 
     pub(crate) fn restore(self, world: &mut World, entity: Entity) {
+        if let Some(layout) = self.layout {
+            world.entity_mut(entity).insert(layout);
+            if world.get::<crate::area::InfluenceArea>(entity).is_some() {
+                world.entity_mut(entity).insert(Pickable::default());
+            }
+        }
+        world.entity_mut(entity).insert(self.events);
         world.entity_mut(entity).insert(ZIndex(self.order));
+        world.entity_mut(entity).insert(self.spatial);
+        if let Some(pose) = self.group_pose {
+            world.entity_mut(entity).insert(pose);
+        }
+        if let Some(attachment) = self.attachment {
+            world.entity_mut(entity).insert(attachment);
+        }
         if let Some(group) = self.group {
             world.entity_mut(entity).insert(group);
         }
@@ -67,6 +101,11 @@ impl Placement {
 
     pub(crate) fn valid(&self) -> bool {
         self.pinned.is_none_or(|pin| pin.valid())
+            && self.layout.is_none_or(|layout| layout.valid())
+            && self.events.valid()
+            && self.spatial.valid()
+            && self.group_pose.is_none_or(|pose| pose.valid())
+            && self.attachment.is_none_or(|attachment| attachment.valid())
     }
 }
 
@@ -121,6 +160,9 @@ impl Action for PlacementAction {
                     editor.cancel();
                 }
                 crate::edit_mode::render_panel(world, parent);
+            } else if world.get::<crate::topology::assets::ImportedAsset>(entity).is_some() {
+                crate::canvas_selection::clear(world, parent);
+                world.despawn(entity);
             } else if world.get::<crate::sand_store::StoredSand>(entity).is_some() {
                 crate::edit_mode::EditAction::RemoveSand(entity).apply(world, parent);
             }
@@ -149,6 +191,15 @@ impl Action for PlacementAction {
             return;
         }
         if matches!(self, Self::Pin) {
+            if world.get::<crate::topology::presentation::SpatialRoot>(parent).is_some()
+                && (world.get::<crate::canvas_selection::SandGroup>(entity).is_some()
+                    || world.get::<crate::topology::assets::ImportedAsset>(entity).is_some()) {
+                crate::notifications::report(world, "Topology", "Screen pinning is available for individual content Sands. Use world pinning for this object.");
+                return;
+            }
+            if crate::layout::linked(world, entity) && world.get::<Pinned>(entity).is_none() {
+                return;
+            }
             let Some(viewport) = crate::inspection::bounds(world, parent).map(|rect| rect.size())
             else {
                 return;
@@ -249,6 +300,8 @@ struct Menu {
     entity: Option<Entity>,
     pinned: bool,
     grouping: (bool, bool),
+    layout_linked: bool,
+    date_boundary: bool,
 }
 
 pub struct PlacementPlugin;
@@ -298,10 +351,27 @@ fn menu(world: &mut World) {
     let grouping = target.map_or((false, false), |(root, target)| {
         crate::canvas_selection::options(world, root, target)
     });
+    let date_boundary = target.is_some_and(|(root, target)| {
+        crate::canvas_selection::group_members(world, root, target)
+            .iter()
+            .any(|entity| {
+                world
+                    .get::<crate::scoped_events::EventBoundary>(*entity)
+                    .is_some_and(|boundary| {
+                        boundary
+                            .0
+                            .iter()
+                            .any(|name| name == crate::calendar::DATE_SELECTED)
+                    })
+            })
+    });
     let current = world.resource::<Menu>();
+    let layout_linked = target.is_some_and(|(_, entity)| crate::layout::linked(world, entity));
     if current.target == target.map(|(_, entity)| entity)
         && current.pinned == pinned
         && current.grouping == grouping
+        && current.layout_linked == layout_linked
+        && current.date_boundary == date_boundary
         && current
             .entity
             .is_none_or(|entity| world.get_entity(entity).is_ok())
@@ -318,11 +388,14 @@ fn menu(world: &mut World) {
         target: target.map(|(_, entity)| entity),
         pinned,
         grouping,
+        layout_linked,
+        date_boundary,
         entity: None,
     };
     let Some((root, target)) = target else { return };
     let area = world.get::<crate::area::InfluenceArea>(target).is_some();
-    let deletable = area || world.get::<crate::sand_store::StoredSand>(target).is_some();
+    let deletable = area || world.get::<crate::sand_store::StoredSand>(target).is_some()
+        || world.get::<crate::topology::assets::ImportedAsset>(target).is_some();
     let panel = world
         .spawn((
             PlacementMenu,
@@ -331,12 +404,13 @@ fn menu(world: &mut World) {
             Node {
                 position_type: PositionType::Absolute,
                 width: px((if area {
-                    48
+                    84
                 } else if deletable {
-                    252
+                    288
                 } else {
-                    216
-                }) + 36 * (i32::from(grouping.0) + i32::from(grouping.1))),
+                    252
+                }) + 36
+                    * (i32::from(grouping.0) + i32::from(grouping.1) + i32::from(!area))),
                 height: px(48),
                 align_items: AlignItems::Center,
                 justify_content: JustifyContent::Center,
@@ -352,6 +426,19 @@ fn menu(world: &mut World) {
         ))
         .id();
     use crate::icons::{Icon, IconButton, IconStyle};
+    world.spawn((
+        IconButton::new(Icon::Grow, "Layout: size, growth, scrolling and parent"),
+        IconStyle {
+            size: 20.0,
+            padding: 6.0,
+            ..default()
+        },
+        ActionButton::new(
+            target,
+            crate::actions![crate::layout::panel::LayoutAction::Open],
+        ),
+        ChildOf(panel),
+    ));
     let mut buttons = Vec::new();
     if !area {
         buttons.extend([
@@ -374,6 +461,9 @@ fn menu(world: &mut World) {
         buttons.push((PlacementAction::Delete, Icon::Delete, "Delete"));
     }
     for (action, icon, name) in buttons {
+        if matches!(action, PlacementAction::Pin) && layout_linked && !pinned {
+            continue;
+        }
         world.spawn((
             IconButton::new(icon, name),
             IconStyle {
@@ -411,6 +501,32 @@ fn menu(world: &mut World) {
                 ChildOf(panel),
             ));
         }
+    }
+    if !area {
+        world.spawn((
+            IconButton::new(
+                if date_boundary {
+                    Icon::Group
+                } else {
+                    Icon::Ungroup
+                },
+                if date_boundary {
+                    "Date events stay in this group. Click to let them leave."
+                } else {
+                    "Date events can leave this group. Click to keep them inside."
+                },
+            ),
+            IconStyle {
+                size: 20.0,
+                padding: 6.0,
+                ..default()
+            },
+            ActionButton::new(
+                target,
+                crate::actions![crate::scoped_events::ToggleDateBoundary],
+            ),
+            ChildOf(panel),
+        ));
     }
     world.resource_mut::<Menu>().entity = Some(panel);
     position_menu(world, root, target, panel);

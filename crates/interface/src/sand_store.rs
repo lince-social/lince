@@ -344,12 +344,14 @@ pub fn spawn_sand(
     text: &str,
     position: DVec2,
 ) -> Entity {
+    let elevation = world.get::<crate::topology::view::View>(root).map_or(0.0, |view| view.plane);
     let sand = world
         .spawn((
             Square,
             InBox(root),
             ChildOf(root),
             WorkspaceMember(workspace),
+            crate::topology::Spatial { elevation, ..default() },
             SandCredits(crate::credits::ATTRIBUTIONS),
             CanvasItem {
                 position,

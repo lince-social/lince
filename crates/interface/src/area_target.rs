@@ -6,7 +6,7 @@ use crate::{
 };
 use bevy::{
     ecs::message::MessageCursor,
-    math::DVec2,
+    math::{DVec2, DVec3},
     picking::{
         hover::{HoverMap, generate_hovermap},
         pointer::{Location, PointerAction, PointerButton, PointerId, PointerInput, PointerPress},
@@ -25,6 +25,9 @@ struct Drag {
     handle: Handle,
     location: Location,
     view: CanvasView,
+    placement: crate::topology::Spatial,
+    camera: Option<(Entity, Mat4, Mat4, Rect)>,
+    cursor: DVec2,
     original: InfluenceArea,
     last: AttractionTarget,
 }
@@ -64,6 +67,67 @@ fn allowed(world: &World, handle: Handle) -> bool {
             .is_some_and(|e| e.selected == Some(handle.area) && e.tool.is_none())
 }
 
+fn camera(world: &World, root: Entity) -> Option<(Entity, Mat4, Mat4, Rect)> {
+    world.get::<crate::topology::presentation::SpatialRoot>(root)?;
+    let entity = world
+        .get_resource::<crate::topology::presentation::SceneCamera>()?
+        .0;
+    Some((
+        entity,
+        world.get::<GlobalTransform>(entity)?.to_matrix(),
+        world.get::<Camera>(entity)?.clip_from_view(),
+        world.get::<Camera>(entity)?.logical_viewport_rect()?,
+    ))
+}
+
+fn projected(world: &World, handle: Handle, size: Vec2) -> Option<Vec2> {
+    let area = world.get::<InfluenceArea>(handle.area)?;
+    if world
+        .get::<crate::topology::presentation::SpatialRoot>(handle.root)
+        .is_some()
+    {
+        let (entity, ..) = camera(world, handle.root)?;
+        let placement = crate::topology::spatial(world, handle.area);
+        let offset = area.target_position() - DVec2::from_array(area.center);
+        let point = placement.position(DVec2::from_array(area.center))
+            + placement.rotation() * DVec3::new(offset.x, 0.0, offset.y)
+            - crate::topology::presentation::origin(world, handle.root);
+        world
+            .get::<Camera>(entity)?
+            .world_to_viewport(world.get::<GlobalTransform>(entity)?, point.as_vec3())
+            .ok()
+    } else {
+        let view = world.get::<CanvasView>(handle.root)?;
+        Some(((area.target_position() - view.center) * view.zoom).as_vec2() + size * 0.5)
+    }
+}
+
+fn cursor_point(world: &World, handle: Handle, screen: Vec2) -> Option<DVec2> {
+    if world
+        .get::<crate::topology::presentation::SpatialRoot>(handle.root)
+        .is_none()
+    {
+        return Some(screen.as_dvec2() / world.get::<CanvasView>(handle.root)?.zoom);
+    }
+    let area = world.get::<InfluenceArea>(handle.area)?;
+    let placement = crate::topology::spatial(world, handle.area);
+    let ray = crate::topology::input::ray(world, screen)?;
+    let center = placement.position(DVec2::from_array(area.center))
+        - crate::topology::presentation::origin(world, handle.root);
+    let normal = placement.rotation() * DVec3::Y;
+    let denominator = normal.dot(ray.direction.as_dvec3());
+    if denominator.abs() < 1e-6 {
+        return None;
+    }
+    let distance = normal.dot(center - ray.origin.as_dvec3()) / denominator;
+    if !distance.is_finite() || distance < 0.0 {
+        return None;
+    }
+    let local = placement.rotation().inverse()
+        * (ray.origin.as_dvec3() + ray.direction.as_dvec3() * distance - center);
+    local.is_finite().then_some(DVec2::new(local.x, local.z))
+}
+
 fn draw(world: &mut World) {
     let old: Vec<_> = world
         .query::<(Entity, &Handle)>()
@@ -89,11 +153,7 @@ fn draw(world: &mut World) {
             continue;
         };
         let size = computed.size() * computed.inverse_scale_factor();
-        let target = world
-            .get::<InfluenceArea>(handle.area)
-            .unwrap()
-            .target_position();
-        let position = ((target - view.center) * view.zoom).as_vec2() + size * 0.5;
+        let position = projected(world, handle, size).unwrap_or(Vec2::splat(f32::NAN));
         let visible = position.is_finite()
             && view.zoom.is_finite()
             && view.zoom > 0.0
@@ -191,6 +251,8 @@ fn input(
         .just_pressed(KeyCode::Escape);
     let invalid = world.resource::<Gesture>().0.as_ref().is_some_and(|drag| {
         !allowed(world, drag.handle)
+            || crate::topology::spatial(world, drag.handle.area) != drag.placement
+            || camera(world, drag.handle.root) != drag.camera
             || world
                 .get::<CanvasView>(drag.handle.root)
                 .is_none_or(|view| view.center != drag.view.center || view.zoom != drag.view.zoom)
@@ -244,6 +306,11 @@ fn input(
                 continue;
             }
             let original = world.get::<InfluenceArea>(handle.area).unwrap().clone();
+            let Some(start) = cursor_point(world, handle, event.location.position) else {
+                continue;
+            };
+            let placement = crate::topology::spatial(world, handle.area);
+            let camera = camera(world, handle.root);
             let last = AttractionTarget::Point(
                 (original.target_position() - DVec2::from_array(original.center)).to_array(),
             );
@@ -258,6 +325,9 @@ fn input(
                 handle,
                 location: event.location.clone(),
                 view,
+                placement,
+                camera,
+                cursor: start,
                 original,
                 last,
             });
@@ -274,11 +344,12 @@ fn input(
                 if matches!(
                     event.action,
                     PointerAction::Move { .. } | PointerAction::Release(PointerButton::Primary)
-                ) {
+                ) && let Some(point) = cursor_point(world, drag.handle, event.location.position)
+                {
                     let offset = drag.original.target_position()
                         - DVec2::from_array(drag.original.center)
-                        + (event.location.position - drag.location.position).as_dvec2()
-                            / drag.view.zoom;
+                        + point
+                        - drag.cursor;
                     let target = AttractionTarget::Point(offset.to_array());
                     let mut area = world
                         .get::<InfluenceArea>(drag.handle.area)
@@ -504,7 +575,130 @@ pub(crate) mod tests {
     }
 
     crate::laboratory_cases! {
+        spatial_target_handles_project_and_drag_on_the_rotated_area_plane,
         target_drag_is_zoom_correct_consumes_input_and_does_not_move_the_boundary,
         target_drag_cancels_on_escape_and_workspace_switch_and_stale_handles_cannot_edit,
+    }
+
+    #[cfg_attr(test, test)]
+    fn spatial_target_handles_project_and_drag_on_the_rotated_area_plane() {
+        use bevy::camera::{CameraProjection, ComputedCameraValues, RenderTargetInfo};
+        for perspective in [false, true] {
+            let (mut app, root, area, handle) = fixture(1.0);
+            let transform = if perspective {
+                Transform::from_xyz(0.0, 450.0, 400.0).looking_at(Vec3::ZERO, Vec3::Y)
+            } else {
+                Transform::from_xyz(0.0, 500.0, 0.0).looking_at(Vec3::ZERO, Vec3::NEG_Z)
+            };
+            let clip_from_view = if perspective {
+                PerspectiveProjection {
+                    aspect_ratio: 1.0,
+                    ..default()
+                }
+                .get_clip_from_view()
+            } else {
+                OrthographicProjection {
+                    area: Rect::new(-500.0, -500.0, 500.0, 500.0),
+                    ..OrthographicProjection::default_3d()
+                }
+                .get_clip_from_view()
+            };
+            let camera = app
+                .world_mut()
+                .spawn((
+                    Camera {
+                        computed: ComputedCameraValues {
+                            clip_from_view,
+                            target_info: Some(RenderTargetInfo {
+                                physical_size: UVec2::splat(1000),
+                                scale_factor: 1.0,
+                            }),
+                            ..default()
+                        },
+                        ..default()
+                    },
+                    GlobalTransform::from(transform),
+                ))
+                .id();
+            app.world_mut()
+                .insert_resource(crate::topology::presentation::SceneCamera(camera));
+            app.world_mut()
+                .entity_mut(root)
+                .insert(crate::topology::presentation::SpatialRoot);
+            let placement = crate::topology::Spatial {
+                elevation: 35.0,
+                rotation: bevy::math::DQuat::from_rotation_z(0.4).to_array(),
+                ..default()
+            };
+            app.world_mut().entity_mut(area).insert(placement);
+            app.world_mut()
+                .get_mut::<InfluenceArea>(area)
+                .unwrap()
+                .target = AttractionTarget::Point([10.0, 15.0]);
+            app.update();
+            let screen = |world: &World, offset: DVec2| {
+                let point = placement.position(DVec2::ZERO)
+                    + placement.rotation() * DVec3::new(offset.x, 0.0, offset.y);
+                world
+                    .get::<Camera>(camera)
+                    .unwrap()
+                    .world_to_viewport(
+                        world.get::<GlobalTransform>(camera).unwrap(),
+                        point.as_vec3(),
+                    )
+                    .unwrap()
+            };
+            let start = screen(app.world(), DVec2::new(10.0, 15.0));
+            let node = app.world().get::<Node>(handle).unwrap();
+            assert_eq!(node.left, px(start.x - 11.0));
+            assert_eq!(node.top, px(start.y - 11.0));
+            let end = screen(app.world(), DVec2::new(40.0, -10.0));
+            send(
+                &mut app,
+                root,
+                PointerAction::Press(PointerButton::Primary),
+                start,
+            );
+            send(
+                &mut app,
+                root,
+                PointerAction::Move { delta: end - start },
+                end,
+            );
+            send(
+                &mut app,
+                root,
+                PointerAction::Release(PointerButton::Primary),
+                end,
+            );
+            let saved = app.world().get::<InfluenceArea>(area).unwrap();
+            assert!((saved.target_position() - DVec2::new(40.0, -10.0)).length() < 0.001);
+            assert_eq!(saved.center, [0.0; 2]);
+            assert_eq!(saved.depth, 100.0);
+            assert_eq!(crate::topology::spatial(app.world(), area), placement);
+            let original = saved.target;
+            send(
+                &mut app,
+                root,
+                PointerAction::Press(PointerButton::Primary),
+                end,
+            );
+            send(
+                &mut app,
+                root,
+                PointerAction::Move { delta: start - end },
+                start,
+            );
+            app.world_mut()
+                .get_mut::<crate::topology::Spatial>(area)
+                .unwrap()
+                .elevation = 60.0;
+            app.update();
+            assert!(app.world().resource::<Gesture>().0.is_none());
+            assert_eq!(
+                app.world().get::<InfluenceArea>(area).unwrap().target,
+                original
+            );
+        }
     }
 }

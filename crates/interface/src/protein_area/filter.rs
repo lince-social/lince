@@ -37,7 +37,11 @@ pub(super) fn query(config: &Config) -> Result<protein::Protein, String> {
     }
     let mut draft = config.draft.clone();
     draft.query["include"] = serde_json::json!({});
-    draft.query["fields"] = serde_json::json!(["uid"]);
+    draft.query["fields"] = if config.closest_end_date {
+        serde_json::json!(["uid", "due_date"])
+    } else {
+        serde_json::json!(["uid"])
+    };
     draft.query["aggregate"] = Value::Null;
     draft.query["limit"] = Value::Null;
     draft.compile()

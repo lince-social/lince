@@ -43,10 +43,18 @@ struct BodyLink {
 #[derive(SystemParam)]
 struct WorkspaceContacts<'w, 's> {
     bodies: Query<'w, 's, &'static BodyLink>,
+    spatial: Query<'w, 's, &'static crate::topology::physics::Body>,
+    colliders: Query<'w, 's, &'static ColliderOf>,
 }
 
 impl CollisionHooks for WorkspaceContacts<'_, '_> {
     fn filter_pairs(&self, first: Entity, second: Entity, _: &mut Commands) -> bool {
+        let first = self.colliders.get(first).map_or(first, |collider| collider.body);
+        let second = self.colliders.get(second).map_or(second, |collider| collider.body);
+        if first == second { return false; }
+        if let Ok([first, second]) = self.spatial.get_many([first, second]) {
+            return first.root == second.root && first.workspace == second.workspace;
+        }
         let Ok([first, second]) = self.bodies.get_many([first, second]) else {
             return false;
         };
@@ -127,7 +135,9 @@ impl Plugin for WorkspacePhysicsPlugin {
         .add_plugins(
             PhysicsPlugins::new(WorkspaceStep)
                 .with_length_unit(100.0)
-                .with_collision_hooks::<WorkspaceContacts>(),
+                .with_collision_hooks::<WorkspaceContacts>()
+                .build()
+                .disable::<ColliderHierarchyPlugin>(),
         )
         .insert_resource(Gravity(DVec3::ZERO))
         .init_resource::<Simulation>()
@@ -142,7 +152,7 @@ impl Plugin for WorkspacePhysicsPlugin {
     }
 }
 
-fn held(world: &World, sand: Entity) -> bool {
+pub(crate) fn held(world: &World, sand: Entity) -> bool {
     if crate::canvas_pan::dragged(world) == Some(sand) {
         return true;
     }
@@ -177,6 +187,9 @@ fn synchronize(world: &mut World) -> bool {
         .iter(world)
         .filter(|(entity, item, parent, member, pin)| {
             world.get::<crate::area::InfluenceArea>(*entity).is_none()
+                && world
+                    .get::<crate::layout::LayoutBox>(*entity)
+                    .is_none_or(|layout| layout.parent.is_none())
                 && pin.is_none()
                 && item.position.is_finite()
                 && item.size.is_finite()
@@ -326,12 +339,14 @@ fn synchronize(world: &mut World) -> bool {
                     ActiveCollisionHooks::FILTER_PAIRS,
                 ))
                 .id();
+            world.entity_mut(body).insert(ColliderOf { body });
             retained.insert(body);
         }
     }
     for body in existing.into_values() {
         if !retained.contains(&body) && world.get_entity(body).is_ok() {
             changed = true;
+            world.entity_mut(body).remove::<Collider>();
             world.despawn(body);
         }
     }
@@ -422,11 +437,14 @@ fn apply_forces(
 
 fn simulate(world: &mut World) {
     crate::area_effects::update(world);
-    let changed = synchronize(world);
+    let spatial = world.contains_resource::<crate::topology::physics::Runtime>();
+    let changed = if spatial {
+        crate::topology::physics::synchronize(world)
+    } else { synchronize(world) };
     world
         .run_system_cached(apply_forces)
         .expect("update workspace forces");
-    let awake = world
+    let awake = spatial && crate::topology::physics::awake(world) || world
         .query::<(&BodyLink, Has<Sleeping>)>()
         .iter(world)
         .any(|(body, sleeping)| !body.held && !sleeping);
@@ -456,6 +474,7 @@ fn simulate(world: &mut World) {
     } else {
         world.resource_mut::<Simulation>().accumulated = Duration::ZERO;
     }
+    if spatial { crate::topology::physics::apply(world); }
     let updates: Vec<_> = world
         .query::<(Entity, &BodyLink, &Position)>()
         .iter(world)
@@ -486,7 +505,7 @@ fn simulate(world: &mut World) {
             ));
         }
     }
-    let active = world
+    let active = spatial && crate::topology::physics::awake(world) || world
         .query::<(&BodyLink, Has<Sleeping>)>()
         .iter(world)
         .any(|(body, sleeping)| !body.held && !sleeping);
@@ -545,6 +564,20 @@ pub(crate) mod tests {
         for _ in 0..ticks {
             app.update();
         }
+    }
+
+    #[cfg(test)]
+    #[test]
+    fn layout_children_resume_independent_motion_only_after_detaching() {
+        let (mut app, root, area, sand) = fixture(DVec2::ZERO);
+        crate::workspace_config::set_physics(app.world_mut(), root, 1, true);
+        crate::layout::attach(app.world_mut(), sand, area).unwrap();
+        let before = app.world().get::<CanvasItem>(sand).unwrap().position;
+        advance(&mut app, 120);
+        assert_eq!(app.world().get::<CanvasItem>(sand).unwrap().position, before);
+        crate::layout::detach(app.world_mut(), sand);
+        advance(&mut app, 120);
+        assert_ne!(app.world().get::<CanvasItem>(sand).unwrap().position, before);
     }
 
     #[cfg_attr(test, test)]

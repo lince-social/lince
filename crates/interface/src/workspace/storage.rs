@@ -275,8 +275,12 @@ pub(crate) mod tests {
         let mut workspaces = super::super::Workspaces::default().entries;
         workspaces[0].name = name.into();
         Document {
+            layouts: Vec::new(),
+            imports: Vec::new(),
             areas: Vec::new(),
             proteins: Vec::new(),
+            calendars: Vec::new(),
+            kanbans: Vec::new(),
             theme: Default::default(),
             active: 1,
             workspaces,

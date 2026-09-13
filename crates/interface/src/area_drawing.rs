@@ -54,6 +54,7 @@ fn dirty(
             With<CanvasView>,
             Or<(
                 Changed<CanvasView>,
+                Changed<crate::topology::view::View>,
                 Changed<ComputedNode>,
                 Changed<EditMode>,
                 Changed<AreaEditor>,
@@ -67,6 +68,7 @@ fn dirty(
             Changed<InfluenceArea>,
             Changed<AreaForces>,
             Changed<CanvasItem>,
+            Changed<crate::topology::Spatial>,
             Changed<crate::workspace::WorkspaceMember>,
             Changed<ChildOf>,
         )>,
@@ -263,6 +265,10 @@ fn draw(world: &mut World) {
         })
         .collect();
     for (root, enabled, view, size) in roots {
+        let enabled = enabled
+            && !world
+                .get::<crate::topology::view::View>(root)
+                .is_some_and(|v| v.spatial);
         if !size.is_finite() || size.min_element() <= 0.0 {
             continue;
         }
@@ -282,15 +288,38 @@ fn draw(world: &mut World) {
             areas.sort_by(|a, b| a.1.id.cmp(&b.1.id));
             let mut reach_marks = Vec::new();
             for (entity, area) in areas {
+                let placement = crate::topology::spatial(world, entity);
+                let center = DVec2::from_array(area.center);
+                let project = |point: DVec2| {
+                    let local = point - center;
+                    let point = placement.position(center)
+                        + placement.rotation() * bevy::math::DVec3::new(local.x, 0.0, local.y);
+                    DVec2::new(point.x, point.z)
+                };
                 if selected == Some(entity) {
                     reach_marks = reach(world, root, &area, &view, size);
+                    for mark in &mut reach_marks {
+                        if let Mark::Reach(a, b) = mark {
+                            let project_screen = |point: Vec2| {
+                                screen(
+                                    &view,
+                                    size,
+                                    project(
+                                        view.center + (point - size * 0.5).as_dvec2() / view.zoom,
+                                    ),
+                                )
+                            };
+                            *a = project_screen(*a);
+                            *b = project_screen(*b);
+                        }
+                    }
                 }
-                let points = area.outline();
+                let points: Vec<_> = area.outline().into_iter().map(project).collect();
                 outline(&mut marks, &view, size, &points, selected == Some(entity));
                 let position = screen(
                     &view,
                     size,
-                    DVec2::from_array(area.center) - DVec2::from_array(area.size) * 0.5,
+                    project(center - DVec2::from_array(area.size) * 0.5),
                 );
                 if Rect::from_corners(Vec2::ZERO, size).contains(position) {
                     marks.push(Mark::Label(

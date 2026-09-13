@@ -18,6 +18,7 @@ pub fn catalogue() -> Vec<super::Case> {
     crate::canvas_resize::tests::laboratory_cases(&mut cases);
     crate::canvas_selection::tests::laboratory_cases(&mut cases);
     crate::castle::tests::laboratory_cases(&mut cases);
+    crate::calendar::tests::laboratory_cases(&mut cases);
     crate::color_picker::tests::laboratory_cases(&mut cases);
     crate::cell_bridge::tests::laboratory_cases(&mut cases);
     crate::credits::tests::laboratory_cases(&mut cases);

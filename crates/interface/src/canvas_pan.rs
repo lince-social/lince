@@ -63,7 +63,7 @@ fn pan(
     keys: Res<ButtonInput<KeyCode>>,
     hover: Res<HoverMap>,
     mut gesture: ResMut<CanvasPan>,
-    mut views: Query<&mut CanvasView>,
+    mut views: Query<&mut CanvasView, Without<crate::topology::presentation::SpatialRoot>>,
     mut items: Query<(
         &mut CanvasItem,
         Option<&mut crate::sand_placement::Pinned>,
@@ -385,6 +385,7 @@ fn edges_at(
 fn move_selection(world: &mut World) {
     let moves = std::mem::take(&mut world.resource_mut::<CanvasPan>().2);
     for (entity, before, after) in moves {
+        crate::layout::edited(world, entity, before, after);
         crate::canvas_selection::transform_members(world, entity, before, after);
     }
 }

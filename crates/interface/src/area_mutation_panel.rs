@@ -6,6 +6,23 @@ use crate::{
 use bevy::{a11y::AccessibilityNode, prelude::*, text::EditableText};
 use engine::area_transition::RecordChanges;
 
+#[derive(Clone)]
+struct QuantityMode(Entity, engine::area_transition::QuantityOperation);
+
+impl crate::actions::Action for QuantityMode {
+    fn apply(&self, world: &mut World, _: Entity) {
+        let Some(mut text) = world.get_mut::<EditableText>(self.0) else {
+            return;
+        };
+        let value = text.value().to_string();
+        let operand = engine::area_transition::QuantityOperation::parse(&value)
+            .map(|(_, operand)| operand.to_string())
+            .unwrap_or_else(|| "0".into());
+        text.editor
+            .set_text(&format!("{}{operand}", self.1.prefix()));
+    }
+}
+
 #[derive(Clone, Copy)]
 enum Property {
     Quantity,
@@ -69,7 +86,7 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity, entity: Ent
                 .id();
             world.entity_mut(input).insert((
                 crate::icons::Tooltip(match property {
-                    Property::Quantity => "Set quantity on this crossing. Blank keeps the current value.",
+                    Property::Quantity => "Set or calculate quantity on this crossing. Blank keeps it unchanged. Division by zero, overflow, and inexact results are rejected.",
                     Property::Assert => "Add Assertion names separated by commas. Remove them on the opposite crossing for a temporary Assertion.",
                     Property::Retract => "Remove Assertion names separated by commas. Add them on the opposite crossing to restore them.",
                 }.into()),
@@ -101,6 +118,29 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity, entity: Ent
                 status,
                 valid: true,
             });
+            if matches!(property, Property::Quantity) {
+                let row = crate::area_panel::row(world, panel);
+                for operation in engine::area_transition::QuantityOperation::ALL {
+                    let button = world
+                        .spawn((
+                            crate::sand::Square,
+                            crate::sand::button(0),
+                            ChildOf(row),
+                            Node {
+                                min_width: px(32),
+                                min_height: px(28),
+                                ..default()
+                            },
+                            crate::icons::Tooltip(format!("{operation:?} quantity")),
+                            crate::actions::ActionButton::new(
+                                input,
+                                crate::actions![QuantityMode(input, operation)],
+                            ),
+                        ))
+                        .id();
+                    label(world, button, operation.symbol(), 18.0);
+                }
+            }
         }
     }
     let controls = crate::area_panel::row(world, panel);
@@ -129,7 +169,7 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity, entity: Ent
                 root,
                 controls,
                 EditAction::Area(crate::area_panel::AreaAction::ArmChanges),
-                "Grant the previewed Record changes for future crossings in this workspace, up to 128 requests. Existing Records are not changed now. Disarm stays available beside Edit mode.",
+                "Grant the previewed Record changes for future crossings in this workspace. Existing Records are not changed now. Disarm stays available beside Edit mode.",
             );
         }
     }

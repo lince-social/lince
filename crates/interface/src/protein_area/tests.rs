@@ -2,6 +2,58 @@ use super::*;
 use bevy::math::DVec2;
 use serde_json::json;
 
+#[test]
+fn growing_nested_records_keep_valid_layout_and_expand_column_content() {
+    let mut app = App::new();
+    app.add_plugins((MinimalPlugins, crate::layout::LayoutPlugin));
+    let root = app.world_mut().spawn_empty().id();
+    let mut items = Vec::new();
+    for height in [300.0, 160.0] {
+        items.push(
+            app.world_mut()
+                .spawn((
+                    crate::canvas::CanvasItem {
+                        position: DVec2::ZERO,
+                        size: Vec2::new(300.0, height),
+                    },
+                    ChildOf(root),
+                    crate::workspace::WorkspaceMember(1),
+                ))
+                .id(),
+        );
+    }
+    let [column, card] = items.try_into().unwrap();
+    let mut rules = crate::layout::Rules::fixed(Vec2::splat(300.0));
+    rules.arrangement = crate::layout::Arrangement::Column;
+    rules.axes[1].overflow = crate::layout::Overflow::Scroll;
+    crate::layout::configure(app.world_mut(), column, rules).unwrap();
+    crate::layout::attach(app.world_mut(), card, column).unwrap();
+    let mut rules = crate::layout::Rules::fixed(Vec2::new(300.0, 160.0));
+    rules.axes[1].sizing = crate::layout::Sizing::Fit;
+    crate::layout::configure(app.world_mut(), card, rules).unwrap();
+    rows::place(app.world_mut(), card, DVec2::ZERO, Vec2::new(300.0, 600.0));
+    assert!(
+        app.world()
+            .get::<crate::layout::LayoutBox>(card)
+            .unwrap()
+            .valid()
+    );
+    app.update();
+    let runtime = app
+        .world()
+        .get::<crate::layout::LayoutRuntime>(column)
+        .unwrap();
+    assert_eq!(runtime.size.y, 300.0);
+    assert!(runtime.content.y >= 600.0);
+    assert_eq!(
+        app.world()
+            .get::<crate::layout::LayoutRuntime>(card)
+            .unwrap()
+            .parent,
+        Some(column)
+    );
+}
+
 fn fixture() -> (App, Entity, Entity) {
     let mut app = App::new();
     crate::laboratory::isolate(app.world_mut());

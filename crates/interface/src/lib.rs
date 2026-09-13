@@ -25,6 +25,9 @@ pub mod color_picker;
 pub mod canvas;
 
 #[cfg(feature = "native-runtime")]
+pub mod topology;
+
+#[cfg(feature = "native-runtime")]
 pub mod sand_placement;
 
 #[cfg(feature = "native-runtime")]
@@ -67,7 +70,13 @@ pub mod area_effects;
 pub mod sand_store;
 
 #[cfg(feature = "native-runtime")]
+pub mod custom_castle;
+
+#[cfg(feature = "native-runtime")]
 pub mod sand_text;
+
+#[cfg(feature = "native-runtime")]
+pub mod layout;
 
 #[cfg(feature = "native-runtime")]
 mod sand_text_editor;
@@ -80,6 +89,14 @@ pub mod credits;
 
 #[cfg(feature = "native-runtime")]
 pub mod effect;
+
+#[cfg(feature = "native-runtime")]
+pub mod scoped_events;
+
+#[cfg(feature = "native-runtime")]
+pub mod calendar;
+#[cfg(feature = "native-runtime")]
+pub mod kanban;
 
 #[cfg(feature = "native-runtime")]
 pub mod time_limit;

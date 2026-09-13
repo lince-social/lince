@@ -20,7 +20,12 @@ pub fn run_native_interface(
     let storage = tokio::runtime::Handle::current().block_on(runtime.interface_storage())?;
     let close_suspends =
         tokio::runtime::Handle::current().block_on(runtime.interface_close_suspends())?;
-    let mut app = connected_app(runtime);
+    let mut app = interface_app_at(data_dir.join("interface-assets"));
+    app.insert_resource(CellHandle(runtime)).add_plugins((
+        crate::cell_bridge::CellBridgePlugin,
+        crate::record_view::RecordViewPlugin,
+        crate::tray::TrayPlugin,
+    ));
     app.insert_resource(crate::workspace::WorkspaceFile::with_settings(
         data_dir.join("interface.json"),
         storage,
@@ -42,7 +47,23 @@ pub fn connected_app(runtime: cell::CellRuntime) -> App {
 }
 
 pub fn interface_app() -> App {
+    interface_app_at(
+        std::env::temp_dir().join(format!("lince-interface-assets-{}", std::process::id())),
+    )
+}
+
+fn interface_app_at(directory: std::path::PathBuf) -> App {
+    use bevy::asset::{
+        AssetApp,
+        io::{AssetSource, AssetSourceBuilder},
+    };
     let mut app = App::new();
+    let reader_path = directory.to_string_lossy().into_owned();
+    app.register_asset_source(
+        "topology",
+        AssetSourceBuilder::new(move || AssetSource::get_default_reader(reader_path.clone())()),
+    );
+    app.insert_resource(crate::topology::assets::AssetDirectory(directory));
     app.add_plugins(
         DefaultPlugins
             .build()
@@ -84,7 +105,10 @@ pub fn interface_app() -> App {
         crate::information::InformationPlugin,
         crate::protein_castle::ProteinCastlePlugin,
         crate::protein_area::ProteinAreaPlugin,
+        crate::calendar::CalendarPlugin,
+        crate::kanban::KanbanPlugin,
         crate::laboratory::LaboratoryPlugin,
+        crate::topology::TopologyPlugin,
     ))
     .insert_resource(idle_settings())
     .add_systems(Startup, camera);
@@ -96,10 +120,40 @@ pub fn interface_app() -> App {
 }
 
 fn camera(mut commands: Commands) {
+    let camera = commands
+        .spawn((
+            Camera3d::default(),
+            crate::topology::presentation::WorldCamera,
+            Camera {
+                clear_color: ClearColorConfig::Custom(Color::NONE),
+                output_mode: bevy::camera::CameraOutputMode::Write {
+                    blend_state: Some(bevy::render::render_resource::BlendState::ALPHA_BLENDING),
+                    clear_color: ClearColorConfig::None,
+                },
+                ..default()
+            },
+            IsDefaultUiCamera,
+            Tonemapping::None,
+            Projection::Orthographic(OrthographicProjection::default_3d()),
+            Transform::from_xyz(0.0, 10000.0, 0.0).looking_at(Vec3::ZERO, -Vec3::Z),
+        ))
+        .id();
+    commands.insert_resource(crate::topology::presentation::SceneCamera(camera));
+    let background = commands
+        .spawn((
+            Camera2d,
+            Camera {
+                order: -2,
+                ..default()
+            },
+        ))
+        .id();
+    commands.insert_resource(crate::topology::presentation::BackgroundCamera(background));
     commands.spawn((
-        Camera3d::default(),
-        Tonemapping::None,
-        Projection::Orthographic(OrthographicProjection::default_3d()),
-        Transform::from_xyz(0.0, 0.0, 10.0).looking_at(Vec3::ZERO, Vec3::Y),
+        DirectionalLight {
+            illuminance: 10000.0,
+            ..default()
+        },
+        Transform::from_rotation(Quat::from_euler(EulerRot::XYZ, -0.8, 0.4, 0.0)),
     ));
 }

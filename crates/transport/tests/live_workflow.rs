@@ -21,6 +21,23 @@ async fn cell(base_url: &str) -> (Arc<Engine>, String) {
     (Arc::new(e), organ)
 }
 
+async fn guest_role(engine: &Engine, person: &str) {
+    let role = store::auth::ensure_role(&engine.store.pool, "guest")
+        .await
+        .unwrap();
+    for action in ["read", "create"] {
+        let permission = store::auth::ensure_permission(&engine.store.pool, "record", action)
+            .await
+            .unwrap();
+        store::auth::grant(&engine.store.pool, role, permission)
+            .await
+            .unwrap();
+    }
+    store::auth::set_user_role(&engine.store.pool, person, role)
+        .await
+        .unwrap();
+}
+
 fn loopback(wire: &Wire) -> EndpointAddr {
     let port = wire
         .endpoint()
@@ -232,6 +249,7 @@ async fn a_contact_with_a_login_drives_a_live_session_over_iroh() {
         .expect("grant")
         .created
         .expect("the Person uid comes back");
+    guest_role(&host, &person).await;
 
     assert_eq!(
         store::logins::person_for_organ(&host.store.pool, &guest_organ)
@@ -277,6 +295,58 @@ async fn a_contact_with_a_login_drives_a_live_session_over_iroh() {
         "a live guest sees what their Person may see — granting a login is not \
          granting sight of everything: {rows:?}"
     );
+
+    tokio::time::timeout(std::time::Duration::from_secs(30), async {
+        for index in 0..40 {
+            say(
+                &mut send,
+                &ClientMessage::Subscribe {
+                    id: format!("many-{index}"),
+                    protein: serde_json::from_value(
+                        serde_json::json!({"source": "record", "fields": ["uid"]}),
+                    )
+                    .unwrap(),
+                },
+            )
+            .await;
+            assert!(matches!(
+                hear(&mut recv).await,
+                ServerMessage::Snapshot { .. }
+            ));
+        }
+        let partial = serde_json::to_vec(&ClientMessage::Subscribe {
+            id: "after-fragment".into(),
+            protein: serde_json::from_value(serde_json::json!({"source": "record", "fields": ["uid"]})).unwrap(),
+        }).unwrap();
+        let header = (partial.len() as u32).to_be_bytes();
+        send.write_all(&header[..2]).await.unwrap();
+        tokio::time::sleep(std::time::Duration::from_millis(50)).await;
+        let result = host
+            .act(
+                Action::CreateConcept {
+                    lingua: "g_local".into(),
+                    name: "live-refresh".into(),
+                    parents: Vec::new(),
+                },
+                None,
+            )
+            .await
+            .unwrap();
+        assert!(result.facts.is_empty());
+        let mut refreshed = std::collections::HashSet::new();
+        for _ in 0..41 {
+            let ServerMessage::Snapshot { id, .. } = hear(&mut recv).await else {
+                panic!("expected recovered view")
+            };
+            refreshed.insert(id);
+        }
+        assert_eq!(refreshed.len(), 41);
+        send.write_all(&header[2..]).await.unwrap();
+        send.write_all(&partial).await.unwrap();
+        assert!(matches!(hear(&mut recv).await, ServerMessage::Snapshot { id, .. } if id == "after-fragment"));
+    })
+    .await
+    .expect("a refresh larger than the outbound queue must finish");
 
     host.act(
         Action::RevokeOrganLogin {
@@ -437,6 +507,7 @@ async fn a_live_guest_acts_on_the_host_and_the_write_lands_there() {
         .expect("grant")
         .created
         .expect("the Person uid comes back");
+    guest_role(&host, &person).await;
 
     let connection = guest_wire
         .endpoint()
@@ -659,6 +730,20 @@ async fn a_stranger_with_a_password_gets_in_and_a_wrong_one_never_does() {
             "the refusal must not reveal whether the username exists"
         );
         connection2.close(0u32.into(), b"refused");
+
+        let oversized = guest_wire
+            .endpoint()
+            .connect(host_addr.clone(), ALPN_LIVE)
+            .await
+            .unwrap();
+        let (mut send, mut recv) = oversized.accept_bi().await.unwrap();
+        let _ = hear(&mut recv).await;
+        send.write_all(&1_000_000u32.to_be_bytes()).await.unwrap();
+        assert!(matches!(
+            hear(&mut recv).await,
+            ServerMessage::LiveLoginError { .. }
+        ));
+        oversized.close(0u32.into(), b"refused");
     }
 
     let connection = guest_wire
@@ -700,5 +785,39 @@ async fn a_stranger_with_a_password_gets_in_and_a_wrong_one_never_does() {
         "the session is bound to the Person the password proved, not to any key"
     );
 
+    serving.abort();
+}
+
+#[tokio::test]
+async fn native_live_client_authenticates_signs_actions_and_obeys_revocation() {
+    let (host, _) = cell("http://native-host.test").await;
+    let (guest, guest_organ) = cell("http://native-guest.test").await;
+    let host_wire = Arc::new(Wire::bind(host.clone(), SecretKey::from_bytes(&[81;32]), Reach::Local).await.unwrap());
+    let guest_wire = Wire::bind(guest.clone(), SecretKey::from_bytes(&[82;32]), Reach::Local).await.unwrap();
+    know(&host, &guest_organ, &guest_wire.node_id().to_string()).await;
+    let person = host.act(Action::GrantOrganLogin { organ: guest_organ.clone(), person_name: "Native visitor".into() }, None).await.unwrap().created.unwrap();
+    guest_role(&host, &person).await;
+    host_wire.set_live_handler(LiveHost::new(host.clone(), Arc::new(transport::LaneHub::new())));
+    let serving = { let wire = host_wire.clone(); tokio::spawn(async move { wire.serve().await }) };
+    let connection = guest_wire.endpoint().connect(loopback(&host_wire), ALPN_LIVE).await.unwrap();
+    let (requests, outgoing) = tokio::sync::mpsc::channel(16);
+    let (responses, mut incoming) = tokio::sync::mpsc::channel(16);
+    let client = tokio::spawn(transport::live_client::drive(connection, outgoing, responses, || {}));
+    tokio::time::timeout(std::time::Duration::from_secs(30), async {
+        assert!(matches!(incoming.recv().await.unwrap(), ServerMessage::SessionAuthenticated { person: actor, .. } if actor == person));
+        requests.send(ClientMessage::Subscribe { id: "native-view".into(), protein: serde_json::from_value(serde_json::json!({"source":"record","fields":["head","quantity_exact"]})).unwrap() }).await.unwrap();
+        assert!(matches!(incoming.recv().await.unwrap(), ServerMessage::Snapshot { rows, .. } if rows.is_empty()));
+        requests.send(ClientMessage::Act { id: "native-create".into(), action: Action::CreateRecord { slug: Some("native-created".into()), kind: nucleus::RecordKind::Plain, head: "From native".into(), body: String::new(), quantity: 1.0 } }).await.unwrap();
+        loop {
+            match incoming.recv().await.unwrap() {
+                ServerMessage::ActionOk { id, .. } if id == "native-create" => break,
+                ServerMessage::Error { message, .. } => panic!("{message}"),
+                _ => {}
+            }
+        }
+        assert!(store::records::resolve(&host.store.pool, "native-created").await.unwrap().is_some());
+        host.act(Action::RevokeOrganLogin { organ: guest_organ }, None).await.unwrap();
+        assert!(client.await.unwrap().is_err());
+    }).await.unwrap();
     serving.abort();
 }

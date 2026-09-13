@@ -10,6 +10,21 @@ async fn setup() -> (Arc<Engine>, Arc<LaneHub>) {
     (engine, Arc::new(LaneHub::new()))
 }
 
+async fn allow_person(engine: &Engine, person: &str, subject: &str, action: &str) {
+    let role = store::auth::ensure_role(&engine.store.pool, person)
+        .await
+        .unwrap();
+    let permission = store::auth::ensure_permission(&engine.store.pool, subject, action)
+        .await
+        .unwrap();
+    store::auth::grant(&engine.store.pool, role, permission)
+        .await
+        .unwrap();
+    store::auth::set_user_role(&engine.store.pool, person, role)
+        .await
+        .unwrap();
+}
+
 fn subscribe_focus(id: &str) -> ClientMessage {
     ClientMessage::Subscribe {
         id: id.into(),
@@ -120,6 +135,7 @@ async fn visibility_subject_gates_the_session() {
         .await
         .unwrap();
 
+    allow_person(&engine, &guest_uid, "record", "read").await;
     let mut guest = Session::new(engine.clone(), hub, "guest-conn", Some(guest_uid));
     let p = protein::Protein {
         source: protein::Source::Record,
@@ -241,12 +257,22 @@ async fn collab_join_is_refused_for_a_record_the_subject_cannot_see() {
     .expect("record")
     .uid;
 
-    let mut remote = Session::new(
-        engine.clone(),
-        hub.clone(),
-        "conn-remote",
-        Some("p-someone".into()),
-    );
+    let person = store::records::create(
+        &engine.store.pool,
+        store::records::NewRecord {
+            slug: None,
+            kind: RecordKind::Person,
+            head: "Remote",
+            body: "",
+            quantity: store::exact::zero(),
+        },
+    )
+    .await
+    .unwrap()
+    .uid;
+    allow_person(&engine, &person, "record", "read").await;
+    allow_person(&engine, &person, "record", "update").await;
+    let mut remote = Session::new(engine.clone(), hub.clone(), "conn-remote", Some(person));
     let out = remote
         .handle(ClientMessage::CollabJoin {
             id: "j".into(),
@@ -288,12 +314,21 @@ async fn collab_join_is_refused_for_a_record_the_subject_cannot_see() {
 #[tokio::test]
 async fn presence_lane_events_carry_the_sender_subject_for_gating() {
     let (engine, hub) = setup().await;
-    let mut s = Session::new(
-        engine.clone(),
-        hub.clone(),
-        "conn-a",
-        Some("p-alice".into()),
-    );
+    let person = store::records::create(
+        &engine.store.pool,
+        store::records::NewRecord {
+            slug: None,
+            kind: RecordKind::Person,
+            head: "Alice",
+            body: "",
+            quantity: store::exact::zero(),
+        },
+    )
+    .await
+    .unwrap()
+    .uid;
+    allow_person(&engine, &person, "view", "stream").await;
+    let mut s = Session::new(engine.clone(), hub.clone(), "conn-a", Some(person.clone()));
     let mut rx = hub.join("room-1");
 
     s.handle(ClientMessage::LaneJoin {
@@ -311,7 +346,7 @@ async fn presence_lane_events_carry_the_sender_subject_for_gating() {
     assert_eq!(event.payload, serde_json::json!({ "cursor": 42 }));
     assert_eq!(
         event.from_subject.as_deref(),
-        Some("p-alice"),
+        Some(person.as_str()),
         "the sender's subject must travel so the RECEIVER can decide whether to name it"
     );
 }

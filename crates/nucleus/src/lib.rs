@@ -11,6 +11,7 @@ pub mod nearby;
 pub mod place;
 pub mod promise;
 pub mod record;
+pub mod sync;
 pub mod transfer;
 pub mod transfer_delivery;
 

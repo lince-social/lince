@@ -82,6 +82,8 @@ pub fn interface_app() -> App {
     .insert_resource(ClearColor(PAPER))
     .add_plugins((
         crate::information::InformationPlugin,
+        crate::protein_castle::ProteinCastlePlugin,
+        crate::protein_area::ProteinAreaPlugin,
         crate::laboratory::LaboratoryPlugin,
     ))
     .insert_resource(idle_settings())

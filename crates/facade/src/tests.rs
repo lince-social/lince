@@ -21,6 +21,18 @@ async fn fixture() -> State {
     store::seed::seed(&engine.store.pool, &permissions)
         .await
         .unwrap();
+    engine
+        .act(
+            Action::CreateUser {
+                username: "fixture-admin".into(),
+                name: "Administrator".into(),
+                password: "fixture-password".into(),
+                role: "admin".into(),
+            },
+            None,
+        )
+        .await
+        .unwrap();
     let (_, stop) = tokio::sync::watch::channel(false);
     State {
         cell: cell::CellRuntime {
@@ -33,7 +45,22 @@ async fn fixture() -> State {
         auth: Arc::new(auth::Auth::default()),
         connections: Arc::new(tokio::sync::Semaphore::new(8)),
         stop,
+        security: crate::security::Security::new("http://localhost", false).unwrap(),
     }
+}
+
+async fn allowed(
+    state: &State,
+    user: Option<&store::auth::AuthUser>,
+    _selected: &str,
+    action: &Action,
+) -> Result<(), auth::Failure> {
+    state
+        .cell
+        .engine
+        .authorize_action(action, user.map(|user| user.uid.as_str()))
+        .await
+        .map_err(|error| (axum::http::StatusCode::FORBIDDEN, error.to_string()))
 }
 
 async fn record(state: &State, title: &str) -> String {
@@ -103,11 +130,7 @@ async fn visibility_and_read_filters_gate_details_comments_and_writes() {
         head: Some("Changed".into()),
         body: None,
     };
-    assert!(
-        records::allow(&state, Some(&guest), &shown, &edit)
-            .await
-            .is_err()
-    );
+    assert!(allowed(&state, Some(&guest), &shown, &edit).await.is_err());
     let hidden_view = records::snapshot(&state, Some(&guest), &hidden, "")
         .await
         .unwrap();
@@ -116,13 +139,9 @@ async fn visibility_and_read_filters_gate_details_comments_and_writes() {
     store::visibility::grant(&state.cell.store.pool, "actor", Some(&writer.uid), &shown)
         .await
         .unwrap();
+    assert!(allowed(&state, Some(&writer), &shown, &edit).await.is_ok());
     assert!(
-        records::allow(&state, Some(&writer), &shown, &edit)
-            .await
-            .is_ok()
-    );
-    assert!(
-        records::allow(
+        allowed(
             &state,
             Some(&writer),
             &hidden,
@@ -135,7 +154,7 @@ async fn visibility_and_read_filters_gate_details_comments_and_writes() {
         .is_err()
     );
     assert!(
-        records::allow(
+        allowed(
             &state,
             Some(&writer),
             &shown,
@@ -190,11 +209,7 @@ async fn visibility_and_read_filters_gate_details_comments_and_writes() {
         .await
         .unwrap();
     assert!(view["record"]["uid"].is_null());
-    assert!(
-        records::allow(&state, Some(&writer), &shown, &edit)
-            .await
-            .is_err()
-    );
+    assert!(allowed(&state, Some(&writer), &shown, &edit).await.is_err());
 }
 
 type Socket =
@@ -250,15 +265,11 @@ async fn configuration_templates_and_management_enforce_permissions() {
         fds: template.clone(),
     };
     assert!(
-        records::allow(&state, Some(&writer), &facade.uid, &config)
+        allowed(&state, Some(&writer), &facade.uid, &config)
             .await
             .is_err()
     );
-    assert!(
-        records::allow(&state, None, &facade.uid, &config)
-            .await
-            .is_ok()
-    );
+    assert!(allowed(&state, None, &facade.uid, &config).await.is_ok());
     state.cell.engine.act(config, None).await.unwrap();
     state
         .cell
@@ -296,7 +307,7 @@ async fn configuration_templates_and_management_enforce_permissions() {
     );
     assert!(crate::settings::validate("unrelated.namespace", &template).is_err());
     assert!(
-        records::allow(
+        allowed(
             &state,
             None,
             &facade.uid,
@@ -305,10 +316,10 @@ async fn configuration_templates_and_management_enforce_permissions() {
             }
         )
         .await
-        .is_err()
+        .is_ok()
     );
     assert!(
-        records::allow(
+        allowed(
             &state,
             Some(&writer),
             "",
@@ -333,7 +344,7 @@ async fn configuration_templates_and_management_enforce_permissions() {
         .unwrap()
         .unwrap();
     assert!(
-        records::allow(
+        allowed(
             &state,
             Some(&writer),
             "",
@@ -346,7 +357,7 @@ async fn configuration_templates_and_management_enforce_permissions() {
         .is_err()
     );
     assert!(
-        records::allow(
+        allowed(
             &state,
             Some(&writer),
             "",
@@ -359,7 +370,7 @@ async fn configuration_templates_and_management_enforce_permissions() {
         .is_err()
     );
     assert!(
-        records::allow(
+        allowed(
             &state,
             Some(&writer),
             "",
@@ -378,117 +389,9 @@ async fn configuration_templates_and_management_enforce_permissions() {
     let delete = Action::DeleteRecord {
         target: card.clone(),
     };
-    assert!(records::allow(&state, None, "", &delete).await.is_ok());
+    assert!(allowed(&state, None, "", &delete).await.is_ok());
     state.cell.engine.act(delete, None).await.unwrap();
     assert!(!records::visible(&state, None, &card).await.unwrap());
-}
-
-#[tokio::test]
-async fn account_updates_deletion_and_csrf_are_checked() {
-    let state = fixture().await;
-    let admin = user(&state, "owner", true).await;
-    let admin_role = store::auth::role_by_name(&state.cell.store.pool, "admin")
-        .await
-        .unwrap()
-        .unwrap();
-    store::auth::set_user_role(&state.cell.store.pool, &admin.uid, admin_role)
-        .await
-        .unwrap();
-    let target = user(&state, "target", false).await;
-    let facade = Facade::start(state.cell.clone(), "127.0.0.1:0")
-        .await
-        .unwrap();
-    let origin = format!("http://{}", facade.address);
-    let client = reqwest::Client::new();
-    let response = client
-        .post(format!("{origin}/login"))
-        .header("Origin", &origin)
-        .json(&json!({"username":"owner","password":"facade-test-password"}))
-        .send()
-        .await
-        .unwrap();
-    assert_eq!(response.status(), 200);
-    let cookie = response.headers()["set-cookie"]
-        .to_str()
-        .unwrap()
-        .split(';')
-        .next()
-        .unwrap()
-        .to_string();
-    let data =
-        json!({"uid":target.uid,"username":"renamed","name":"New name","password":"new-password"});
-    assert_eq!(
-        client
-            .post(format!("{origin}/users"))
-            .header("Origin", "https://evil.invalid")
-            .header("Cookie", &cookie)
-            .json(&data)
-            .send()
-            .await
-            .unwrap()
-            .status(),
-        403
-    );
-    assert_eq!(
-        client
-            .post(format!("{origin}/users"))
-            .header("Origin", &origin)
-            .json(&data)
-            .send()
-            .await
-            .unwrap()
-            .status(),
-        401
-    );
-    assert_eq!(
-        client
-            .post(format!("{origin}/users"))
-            .header("Origin", &origin)
-            .header("Cookie", &cookie)
-            .json(&data)
-            .send()
-            .await
-            .unwrap()
-            .status(),
-        200
-    );
-    let changed = store::auth::user_by_uid(&state.cell.store.pool, &target.uid)
-        .await
-        .unwrap()
-        .unwrap();
-    assert_eq!(changed.username, "renamed");
-    assert_eq!(changed.name, "New name");
-    assert!(utils::auth::verify_password("new-password", &changed.password_hash).unwrap());
-    assert_eq!(
-        client
-            .post(format!("{origin}/users"))
-            .header("Origin", &origin)
-            .header("Cookie", &cookie)
-            .json(&json!({"uid":admin.uid,"delete":true}))
-            .send()
-            .await
-            .unwrap()
-            .status(),
-        400
-    );
-    assert_eq!(
-        client
-            .post(format!("{origin}/users"))
-            .header("Origin", &origin)
-            .header("Cookie", &cookie)
-            .json(&json!({"uid":target.uid,"delete":true}))
-            .send()
-            .await
-            .unwrap()
-            .status(),
-        200
-    );
-    assert!(
-        store::auth::user_by_uid(&state.cell.store.pool, &target.uid)
-            .await
-            .unwrap()
-            .is_none()
-    );
 }
 
 async fn receive(socket: &mut Socket, kind: &str) -> Value {
@@ -512,6 +415,280 @@ async fn send(socket: &mut Socket, value: Value) {
         .send(Message::Text(value.to_string().into()))
         .await
         .unwrap();
+}
+
+async fn signed_action(
+    socket: &mut Socket,
+    proof: &nucleus::action_intent::ActionIntentSessionProof,
+    key: &ed25519_dalek::SigningKey,
+    sequence: u64,
+    action: Value,
+) -> Value {
+    let mut intent = nucleus::action_intent::SignedActionIntent {
+        session_id: proof.session_id.clone(),
+        session_challenge: proof.session_challenge.clone(),
+        sequence,
+        message_id: format!("account-{sequence}"),
+        action_base64: STANDARD.encode(action.to_string()),
+        signature: String::new(),
+    };
+    intent.signature = STANDARD.encode(key.sign(&intent.signing_bytes()).to_bytes());
+    send(socket, json!({"type":"signed_act","id":intent.message_id,"session_id":intent.session_id,"session_challenge":intent.session_challenge,"sequence":sequence,"action_base64":intent.action_base64,"signature":intent.signature})).await;
+    receive(socket, "action_ok").await
+}
+
+#[tokio::test]
+async fn browser_account_changes_use_signed_backend_actions_without_journaling_passwords() {
+    let state = fixture().await;
+    let owner = store::auth::user_by_username(&state.cell.store.pool, "fixture-admin")
+        .await
+        .unwrap()
+        .unwrap();
+    store::auth::ensure_role(&state.cell.store.pool, "limited")
+        .await
+        .unwrap();
+    let server = Facade::start(state.cell.clone(), "127.0.0.1:0")
+        .await
+        .unwrap();
+    let origin = format!("http://{}", server.address);
+    let response = reqwest::Client::new()
+        .post(format!("{origin}/login"))
+        .header("Origin", &origin)
+        .json(&json!({"username":"fixture-admin","password":"fixture-password"}))
+        .send()
+        .await
+        .unwrap();
+    let cookie = response.headers()["set-cookie"]
+        .to_str()
+        .unwrap()
+        .split(';')
+        .next()
+        .unwrap();
+    let mut request = format!("ws://{}/live", server.address)
+        .into_client_request()
+        .unwrap();
+    request
+        .headers_mut()
+        .insert("Origin", origin.parse().unwrap());
+    request
+        .headers_mut()
+        .insert("Cookie", cookie.parse().unwrap());
+    let (mut socket, _) = connect_async(request).await.unwrap();
+    let challenge = receive(&mut socket, "session_challenge").await;
+    let key = ed25519_dalek::SigningKey::from_bytes(&[17; 32]);
+    let mut proof = nucleus::action_intent::ActionIntentSessionProof {
+        session_id: challenge["session_id"].as_str().unwrap().into(),
+        session_challenge: challenge["challenge"].as_str().unwrap().into(),
+        person_uid: owner.uid,
+        key_id: "account-test-key".into(),
+        public_key_base64: STANDARD.encode(key.verifying_key().to_bytes()),
+        signature: String::new(),
+    };
+    proof.signature = STANDARD.encode(key.sign(&proof.signing_bytes()).to_bytes());
+    let mut message = serde_json::to_value(&proof).unwrap();
+    message["type"] = json!("session_authenticate");
+    message["id"] = json!("auth");
+    send(&mut socket, message).await;
+    receive(&mut socket, "session_authenticated").await;
+    let created = signed_action(&mut socket, &proof, &key, 1, json!({"action":"create-user","username":"new-account","name":"New account","password":"initial-secret","role":"limited"})).await;
+    let uid = created["created"].as_str().unwrap();
+    signed_action(&mut socket, &proof, &key, 2, json!({"action":"update-user","user":uid,"username":"renamed","name":"Changed account","password":"replacement-secret"})).await;
+    let target = store::auth::user_by_uid(&state.cell.store.pool, uid)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(target.username, "renamed");
+    assert!(utils::auth::verify_password("replacement-secret", &target.password_hash).unwrap());
+    let journaled: i64 =
+        store::sqlx::query_scalar("SELECT COUNT(*) FROM signed_action_intent WHERE session_id = ?")
+            .bind(&proof.session_id)
+            .fetch_one(&state.cell.store.pool)
+            .await
+            .unwrap();
+    assert_eq!(journaled, 0);
+    signed_action(
+        &mut socket,
+        &proof,
+        &key,
+        3,
+        json!({"action":"delete-user","user":uid}),
+    )
+    .await;
+    assert!(
+        store::auth::user_by_uid(&state.cell.store.pool, uid)
+            .await
+            .unwrap()
+            .is_none()
+    );
+}
+
+#[tokio::test]
+async fn public_facade_requires_its_https_origin_and_issues_a_host_only_secure_cookie() {
+    let state = fixture().await;
+    let public = "https://lince.mycompany.example";
+    assert!(
+        Facade::start_public(
+            state.cell.clone(),
+            "127.0.0.1:0",
+            "http://lince.mycompany.example"
+        )
+        .await
+        .is_err()
+    );
+    assert!(
+        Facade::start_public(state.cell.clone(), "0.0.0.0:0", public)
+            .await
+            .is_err()
+    );
+    let server = Facade::start_public(state.cell.clone(), "127.0.0.1:0", public)
+        .await
+        .unwrap();
+    let url = format!("http://{}/login", server.address);
+    let client = reqwest::Client::new();
+    let credentials = json!({"username":"fixture-admin", "password":"fixture-password"});
+    for (host, origin, forwarded) in [
+        ("wrong.example", public, "https"),
+        (
+            "lince.mycompany.example",
+            "https://attacker.example",
+            "https",
+        ),
+        ("lince.mycompany.example", public, "http"),
+    ] {
+        let response = client
+            .post(&url)
+            .header("Host", host)
+            .header("Origin", origin)
+            .header("X-Forwarded-Proto", forwarded)
+            .json(&credentials)
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(response.status(), 403);
+    }
+    let response = client
+        .post(&url)
+        .header("Host", "lince.mycompany.example")
+        .header("Origin", public)
+        .header("X-Forwarded-Proto", "https")
+        .json(&credentials)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(response.status(), 200);
+    let cookie = response.headers()["set-cookie"].to_str().unwrap();
+    assert!(cookie.starts_with("__Host-lince_facade="));
+    for flag in ["Secure", "HttpOnly", "SameSite=Strict", "Path=/"] {
+        assert!(cookie.contains(flag));
+    }
+    assert!(!cookie.contains("Domain="));
+    assert_eq!(
+        response.headers()["strict-transport-security"],
+        "max-age=31536000"
+    );
+    assert_eq!(response.headers()["cache-control"], "no-store");
+    let cookie = cookie.split(';').next().unwrap();
+    let mut request = format!("ws://{}/live", server.address)
+        .into_client_request()
+        .unwrap();
+    for (key, value) in [
+        ("Host", "lince.mycompany.example"),
+        ("Origin", "https://attacker.example"),
+        ("X-Forwarded-Proto", "https"),
+        ("Cookie", cookie),
+    ] {
+        request.headers_mut().insert(
+            axum::http::HeaderName::from_bytes(key.as_bytes()).unwrap(),
+            value.parse().unwrap(),
+        );
+    }
+    assert!(connect_async(request).await.is_err());
+}
+
+#[tokio::test]
+async fn facade_never_opens_anonymous_owner_access() {
+    let state = fixture().await;
+    assert!(
+        auth::viewer(&state, &axum::http::HeaderMap::new())
+            .await
+            .is_err()
+    );
+    let engine = Arc::new(engine::Engine::open_memory().await.unwrap());
+    let mut cell = state.cell;
+    cell.store = engine.store.clone();
+    cell.engine = engine;
+    assert!(Facade::start(cell, "127.0.0.1:0").await.is_err());
+}
+
+#[tokio::test]
+async fn browser_sessions_reject_duplicate_cookies_and_close_when_credentials_change() {
+    let state = fixture().await;
+    let viewer = user(&state, "revoked-browser", true).await;
+    let facade = Facade::start(state.cell.clone(), "127.0.0.1:0")
+        .await
+        .unwrap();
+    let origin = format!("http://{}", facade.address);
+    let client = reqwest::Client::new();
+    let response = client
+        .post(format!("{origin}/login"))
+        .header("Origin", &origin)
+        .json(&json!({"username":viewer.username,"password":"facade-test-password"}))
+        .send()
+        .await
+        .unwrap();
+    let cookie = response.headers()["set-cookie"]
+        .to_str()
+        .unwrap()
+        .split(';')
+        .next()
+        .unwrap()
+        .to_string();
+    let session = client
+        .get(format!("{origin}/session"))
+        .header("Cookie", format!("{cookie}; {cookie}"))
+        .send()
+        .await
+        .unwrap()
+        .json::<Value>()
+        .await
+        .unwrap();
+    assert_eq!(session["ready"], false);
+    let mut request = format!("ws://{}/live", facade.address)
+        .into_client_request()
+        .unwrap();
+    request
+        .headers_mut()
+        .insert("Origin", origin.parse().unwrap());
+    request
+        .headers_mut()
+        .insert("Cookie", cookie.parse().unwrap());
+    let (mut socket, _) = connect_async(request).await.unwrap();
+    receive(&mut socket, "session_challenge").await;
+    state
+        .cell
+        .engine
+        .act(
+            Action::UpdateUser {
+                user: viewer.uid,
+                username: viewer.username,
+                name: "Changed".into(),
+                password: "changed-password".into(),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    receive(&mut socket, "logout").await;
+    let session = client
+        .get(format!("{origin}/session"))
+        .header("Cookie", cookie)
+        .send()
+        .await
+        .unwrap()
+        .json::<Value>()
+        .await
+        .unwrap();
+    assert_eq!(session["ready"], false);
 }
 
 #[tokio::test]
@@ -600,7 +777,7 @@ async fn browser_login_signed_edit_live_updates_and_logout() {
     let mut intent = nucleus::action_intent::SignedActionIntent {
         session_id: proof.session_id,
         session_challenge: proof.session_challenge,
-        sequence: 1,
+        sequence: 2,
         message_id: "edit".into(),
         action_base64: STANDARD.encode(
             json!({"action":"edit-record-text", "target":target,"head":"After"}).to_string(),
@@ -608,17 +785,15 @@ async fn browser_login_signed_edit_live_updates_and_logout() {
         signature: String::new(),
     };
     intent.signature = STANDARD.encode(key.sign(&intent.signing_bytes()).to_bytes());
-    let message = json!({"type":"signed_act", "id":"edit", "session_id":intent.session_id, "session_challenge":intent.session_challenge, "sequence":1, "action_base64":intent.action_base64, "signature":intent.signature});
+    let message = json!({"type":"signed_act", "id":"edit", "session_id":intent.session_id, "session_challenge":intent.session_challenge, "sequence":2, "action_base64":intent.action_base64, "signature":intent.signature});
     let mut denied_intent = intent.clone();
     denied_intent.message_id = "denied".into();
+    denied_intent.sequence = 1;
     denied_intent.action_base64 =
         STANDARD.encode(json!({"action":"delete-record", "target":target}).to_string());
     denied_intent.signature = STANDARD.encode(key.sign(&denied_intent.signing_bytes()).to_bytes());
     send(&mut socket, json!({"type":"signed_act", "id":"denied", "session_id":denied_intent.session_id, "session_challenge":denied_intent.session_challenge, "sequence":1, "action_base64":denied_intent.action_base64, "signature":denied_intent.signature})).await;
-    assert_eq!(
-        receive(&mut socket, "error").await["code"],
-        "facade_request_rejected"
-    );
+    assert_eq!(receive(&mut socket, "error").await["code"], "forbidden");
     send(&mut socket, message.clone()).await;
     receive(&mut socket, "action_ok").await;
     let view = receive(&mut socket, "signals").await;
@@ -629,11 +804,11 @@ async fn browser_login_signed_edit_live_updates_and_logout() {
     receive(&mut socket, "signals").await;
     let mut move_intent = intent.clone();
     move_intent.message_id = "move".into();
-    move_intent.sequence = 2;
+    move_intent.sequence = 3;
     move_intent.action_base64 =
         STANDARD.encode(json!({"action":"set-quantity","target":target,"value":1.0}).to_string());
     move_intent.signature = STANDARD.encode(key.sign(&move_intent.signing_bytes()).to_bytes());
-    send(&mut socket, json!({"type":"signed_act","id":"move","session_id":move_intent.session_id,"session_challenge":move_intent.session_challenge,"sequence":2,"action_base64":move_intent.action_base64,"signature":move_intent.signature})).await;
+    send(&mut socket, json!({"type":"signed_act","id":"move","session_id":move_intent.session_id,"session_challenge":move_intent.session_challenge,"sequence":3,"action_base64":move_intent.action_base64,"signature":move_intent.signature})).await;
     receive(&mut socket, "action_ok").await;
     let board = receive(&mut socket, "signals").await;
     assert_eq!(board["signals"]["records"][0]["quantity"], 1.0);
@@ -650,7 +825,7 @@ async fn browser_login_signed_edit_live_updates_and_logout() {
         .unwrap()
         .error_for_status()
         .unwrap();
-    send(&mut socket, json!({"type":"select", "uid":target})).await;
+    receive(&mut socket, "logout").await;
     let closed = tokio::time::timeout(Duration::from_secs(5), socket.next())
         .await
         .unwrap();
@@ -670,16 +845,14 @@ async fn browser_login_signed_edit_live_updates_and_logout() {
 }
 
 #[tokio::test]
-async fn open_organ_actions_and_comments_remain_in_the_selected_record() {
+async fn backend_comment_access_does_not_depend_on_browser_selection() {
     let state = fixture().await;
     let target = record(&state, "Task").await;
     let create = Action::CreateThread {
         target: target.clone(),
         head: "General".into(),
     };
-    records::allow(&state, None, &target, &create)
-        .await
-        .unwrap();
+    allowed(&state, None, &target, &create).await.unwrap();
     let thread = state
         .cell
         .engine
@@ -696,19 +869,13 @@ async fn open_organ_actions_and_comments_remain_in_the_selected_record() {
         parent: None,
         references: vec![],
     };
-    records::allow(&state, None, &target, &comment)
-        .await
-        .unwrap();
+    allowed(&state, None, &target, &comment).await.unwrap();
     state.cell.engine.act(comment.clone(), None).await.unwrap();
     let view = records::snapshot(&state, None, &target, "").await.unwrap();
     assert_eq!(view["messages"][0]["body"], "A comment");
     assert_eq!(view["messages"][0]["thread_uid"], thread);
     let other = record(&state, "Another task").await;
-    assert!(
-        records::allow(&state, None, &other, &comment)
-            .await
-            .is_err()
-    );
+    assert!(allowed(&state, None, &other, &comment).await.is_ok());
     let view = records::snapshot(&state, None, "", "Another")
         .await
         .unwrap();
@@ -716,7 +883,7 @@ async fn open_organ_actions_and_comments_remain_in_the_selected_record() {
 }
 
 #[tokio::test]
-async fn general_settings_are_persisted_publicly_readable_and_admin_only() {
+async fn general_settings_use_shared_record_access_and_keep_public_login_labels() {
     let state = fixture().await;
     crate::settings::ensure(&state).await.unwrap();
     assert_eq!(
@@ -754,18 +921,15 @@ async fn general_settings_are_persisted_publicly_readable_and_admin_only() {
         namespace: crate::settings::CUSTOM.into(),
         fds: json!({"title":"Equipe <Azul>","language":"en"}),
     };
-    for viewer in [None, Some(&editor)] {
-        assert!(records::allow(&state, viewer, "", &action).await.is_err());
-        assert_eq!(
-            crate::settings::snapshot(&state, viewer).await.unwrap()["canadmin"],
-            false
-        );
-    }
-    assert!(
-        records::allow(&state, Some(&owner), "", &action)
+    assert!(allowed(&state, None, "", &action).await.is_ok());
+    assert!(allowed(&state, Some(&editor), "", &action).await.is_ok());
+    assert_eq!(
+        crate::settings::snapshot(&state, Some(&editor))
             .await
-            .is_ok()
+            .unwrap()["canadmin"],
+        true
     );
+    assert!(allowed(&state, Some(&owner), "", &action).await.is_ok());
     assert_eq!(
         crate::settings::snapshot(&state, Some(&owner))
             .await
@@ -893,11 +1057,7 @@ async fn role_allow_and_block_rules_gate_reads_moves_and_role_changes() {
         rules: rules.clone(),
         expected_revision: 0,
     };
-    assert!(
-        records::allow(&state, Some(&editor), "", &set)
-            .await
-            .is_err()
-    );
+    assert!(allowed(&state, Some(&editor), "", &set).await.is_err());
     assert!(
         state
             .cell
@@ -919,11 +1079,7 @@ async fn role_allow_and_block_rules_gate_reads_moves_and_role_changes() {
             target: target.clone(),
             value: 1.0,
         };
-        assert!(
-            records::allow(&state, Some(&editor), "", &action)
-                .await
-                .is_err()
-        );
+        assert!(allowed(&state, Some(&editor), "", &action).await.is_err());
         assert!(
             state
                 .cell
@@ -938,12 +1094,12 @@ async fn role_allow_and_block_rules_gate_reads_moves_and_role_changes() {
         value: 1.0,
     };
     assert!(
-        records::allow(&state, Some(&editor), "", &move_allowed)
+        allowed(&state, Some(&editor), "", &move_allowed)
             .await
             .is_ok()
     );
     assert!(
-        records::allow(&state, Some(&reader), "", &move_allowed)
+        allowed(&state, Some(&reader), "", &move_allowed)
             .await
             .is_err()
     );
@@ -1084,9 +1240,7 @@ async fn tagged_creation_is_visible_immediately_and_invalid_drafts_leave_no_reco
         .is_empty()
     );
     let action = make(vec![project, done]);
-    records::allow(&state, Some(&editor), "", &action)
-        .await
-        .unwrap();
+    allowed(&state, Some(&editor), "", &action).await.unwrap();
     let created = state
         .cell
         .engine
@@ -1107,7 +1261,7 @@ async fn tagged_creation_is_visible_immediately_and_invalid_drafts_leave_no_reco
         target: created.clone(),
         head: "Discussion".into(),
     };
-    records::allow(&state, Some(&editor), &created, &thread_action)
+    allowed(&state, Some(&editor), &created, &thread_action)
         .await
         .unwrap();
     let thread = state
@@ -1126,7 +1280,7 @@ async fn tagged_creation_is_visible_immediately_and_invalid_drafts_leave_no_reco
         parent: None,
         references: vec![],
     };
-    records::allow(&state, Some(&editor), &created, &comment)
+    allowed(&state, Some(&editor), &created, &comment)
         .await
         .unwrap();
     state

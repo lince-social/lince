@@ -988,6 +988,16 @@ pub enum Action {
         password: String,
         role: String,
     },
+    UpdateUser {
+        user: String,
+        username: String,
+        name: String,
+        #[serde(default)]
+        password: String,
+    },
+    DeleteUser {
+        user: String,
+    },
     AssignRole {
         user: String,
         role: String,
@@ -1759,6 +1769,20 @@ impl Engine {
         now: DateTime<Utc>,
         verified_authorship: Option<VerifiedActionAuthorship>,
     ) -> Result<ActionOutcome, EngineError> {
+        self.access_scope(
+            true,
+            Box::pin(self.act_authorized(action, actor, now, verified_authorship)),
+        )
+        .await
+    }
+
+    async fn act_authorized(
+        &self,
+        action: Action,
+        actor: Option<String>,
+        now: DateTime<Utc>,
+        verified_authorship: Option<VerifiedActionAuthorship>,
+    ) -> Result<ActionOutcome, EngineError> {
         let outcome = if matches!(action, Action::ApplyRecurrenceOccurrence { .. })
             && !crate::already_firing()
         {
@@ -1790,12 +1814,7 @@ impl Engine {
             self.require_transfer_origin_authority(&transfer_uid)
                 .await?;
         }
-        if let Some(permission) = Self::generic_write_permission(&action) {
-            self.require_permission_lenient(actor.as_deref(), permission)
-                .await?;
-        }
-        let touched = self.record_targets_of(&action).await?;
-        self.refuse_unreadable(actor.as_deref(), &touched).await?;
+        self.authorize_action(&action, actor.as_deref()).await?;
         let mut outcome = ActionOutcome::default();
         match action {
             Action::CreateRecordWithTags {
@@ -1837,11 +1856,26 @@ impl Engine {
                     .await?;
                 outcome.created = Some(rec.uid);
             }
-            Action::PreviewAreaTransition { target, changes, constraints } => {
-                outcome.data = Some(serde_json::to_value(self.preview_area_transition(target, changes, constraints).await?).map_err(EngineError::Json)?);
+            Action::PreviewAreaTransition {
+                target,
+                changes,
+                constraints,
+            } => {
+                outcome.data = Some(
+                    serde_json::to_value(
+                        self.preview_area_transition(target, changes, constraints)
+                            .await?,
+                    )
+                    .map_err(EngineError::Json)?,
+                );
             }
-            Action::ApplyAreaTransition { request_id, preview } => {
-                outcome = self.apply_area_transition(request_id, preview, actor, now).await?;
+            Action::ApplyAreaTransition {
+                request_id,
+                preview,
+            } => {
+                outcome = self
+                    .apply_area_transition(request_id, preview, actor, now)
+                    .await?;
             }
             Action::SetQuantityExact { target, amount } => {
                 let uid = self.resolve(&target).await?;
@@ -3116,8 +3150,7 @@ impl Engine {
                 .await?;
                 store::logins::grant(&self.store.pool, &organ_uid, &person.uid).await?;
                 outcome.warnings.push(
-                    "they can now read and edit as this Person whatever that Person can see. \
-                     Nothing is shared until you grant visibility."
+                    "Assign this Person a role and grant visibility to the records they may use."
                         .into(),
                 );
                 outcome.created = Some(person.uid);
@@ -4091,20 +4124,25 @@ impl Engine {
                     let uid = store::concepts::ensure(&self.store.pool, child).await?;
                     store::concepts::add_parent(&self.store.pool, &uid, &actor_concept).await?;
                 }
-                let record = store::records::create(
-                    &self.store.pool,
-                    store::records::NewRecord {
-                        slug: None,
-                        kind: RecordKind::Person,
-                        head,
-                        body: "",
-                        quantity: store::exact::zero(),
-                    },
-                )
-                .await?;
+                let created = self
+                    .act(
+                        Action::CreateRecord {
+                            slug: None,
+                            kind: RecordKind::Person,
+                            head: head.into(),
+                            body: String::new(),
+                            quantity: 0.0,
+                        },
+                        actor.clone(),
+                    )
+                    .await?;
+                let uid = created
+                    .created
+                    .ok_or_else(|| EngineError::Consequence("Agent was not created".into()))?;
+                outcome.facts.extend(created.facts);
                 self.act(
                     Action::AssertRecord {
-                        subject: record.uid.clone(),
+                        subject: uid.clone(),
                         predicate: "agent".into(),
                         object: None,
                         quantity: None,
@@ -4115,7 +4153,7 @@ impl Engine {
                 .await?;
                 self.act(
                     Action::SetIdentity {
-                        subject: record.uid.clone(),
+                        subject: uid.clone(),
                         predicate: Some("agent".into()),
                     },
                     actor.clone(),
@@ -4125,7 +4163,7 @@ impl Engine {
                     store::concepts::ensure(&self.store.pool, "operated-by").await?;
                     self.act(
                         Action::AssertRecord {
-                            subject: record.uid.clone(),
+                            subject: uid.clone(),
                             predicate: "operated-by".into(),
                             object: Some(operator),
                             quantity: None,
@@ -4135,7 +4173,7 @@ impl Engine {
                     )
                     .await?;
                 }
-                outcome.created = Some(record.uid);
+                outcome.created = Some(uid);
             }
             Action::RetractAssertion { assertion } => {
                 let row = store::assertions::get(&self.store.pool, &assertion)
@@ -8886,13 +8924,19 @@ impl Engine {
                 let role_id = store::auth::role_by_name(&self.store.pool, &role)
                     .await?
                     .ok_or_else(|| EngineError::Consequence(format!("unknown role `{role}`")))?;
-                let password_hash =
-                    utils::auth::hash_password(&password).map_err(EngineError::Io)?;
+                let password_hash = self
+                    .passwords
+                    .hash(
+                        crate::private_password::PasswordInput::new(password.into_bytes())
+                            .map_err(|error| EngineError::Consequence(error.to_string()))?,
+                    )
+                    .await
+                    .map_err(|error| EngineError::Consequence(error.to_string()))?;
                 let person_uid = store::auth::create_person_login(
                     &self.store.pool,
                     &name,
                     &username,
-                    &password_hash,
+                    password_hash.as_phc(),
                     role_id,
                 )
                 .await?;
@@ -8907,6 +8951,18 @@ impl Engine {
                     .await?;
                 outcome.created = Some(person_uid);
             }
+            Action::UpdateUser {
+                user,
+                username,
+                name,
+                password,
+            } => {
+                self.change_login(actor.as_deref(), &user, Some((username, name, password)))
+                    .await?;
+            }
+            Action::DeleteUser { user } => {
+                self.change_login(actor.as_deref(), &user, None).await?;
+            }
             Action::AssignRole { user, role } => {
                 self.require_permission(actor.as_deref(), "user:assign_role")
                     .await?;
@@ -8914,9 +8970,9 @@ impl Engine {
                 let role_id = store::auth::role_by_name(&self.store.pool, &role)
                     .await?
                     .ok_or_else(|| EngineError::Consequence(format!("unknown role `{role}`")))?;
-                if !store::auth::has_credential(&self.store.pool, &person).await? {
+                if !store::people::is_active(&self.store.pool, &person).await? {
                     return Err(EngineError::Consequence(format!(
-                        "`{user}` has no login here, so there is no role to set"
+                        "`{user}` is not an active Person"
                     )));
                 }
                 store::auth::set_user_role(&self.store.pool, &person, role_id).await?;
@@ -9096,13 +9152,222 @@ impl Engine {
             .ok_or_else(|| EngineError::UnknownRecord(token.to_string()))
     }
 
-    async fn actor_user(&self, actor: &str) -> Result<store::auth::AuthUser, EngineError> {
-        store::auth::user_by_uid(&self.store.pool, actor)
+    pub fn authorize_action<'a>(
+        &'a self,
+        action: &'a Action,
+        actor: Option<&'a str>,
+    ) -> impl std::future::Future<Output = Result<(), EngineError>> + 'a {
+        Box::pin(self.authorize_action_inner(action, actor))
+    }
+
+    async fn authorize_action_inner(
+        &self,
+        action: &Action,
+        actor: Option<&str>,
+    ) -> Result<(), EngineError> {
+        if let Some(actor) = actor {
+            self.actor_user(actor).await?;
+        }
+        if let Some(permission) = Self::generic_write_permission(action) {
+            self.require_permission(actor, permission).await?;
+        }
+        let touched = self.record_targets_of(action).await?;
+        self.refuse_unreadable(actor, &touched).await?;
+        let edited = match action {
+            Action::AssertRecord { subject, .. } | Action::RefineAssertion { subject, .. } => {
+                vec![self.resolve(subject).await?]
+            }
+            Action::CreateThread { .. }
+            | Action::CreateMessage { .. }
+            | Action::CreateMessageDraft { .. }
+            | Action::PreviewAreaTransition { .. } => vec![],
+            _ => touched,
+        };
+        if let Some(actor) = actor {
+            for uid in &edited {
+                if store::records::get(&self.store.pool, uid)
+                    .await?
+                    .is_some_and(|record| record.kind == "person")
+                    && store::auth::person_access(&self.store.pool, uid)
+                        .await?
+                        .is_some()
+                {
+                    self.require_permission(
+                        Some(actor),
+                        if uid == actor {
+                            "user:update_self"
+                        } else {
+                            "user:update"
+                        },
+                    )
+                    .await?;
+                    self.require_manageable_person(Some(actor), uid).await?;
+                }
+            }
+        }
+        match action {
+            Action::CreateUser {
+                username,
+                name,
+                password,
+                role,
+            } => {
+                if username.trim().is_empty()
+                    || username.len() > 256
+                    || name.len() > 500
+                    || password.is_empty()
+                    || password.len() > 1024
+                {
+                    return Err(EngineError::Consequence("Invalid account details".into()));
+                }
+                self.require_permission(actor, "user:create").await?;
+                self.require_permission(actor, "user:assign_role").await?;
+                self.require_assignable_role(actor, role).await?;
+            }
+            Action::CreateRole { name } => {
+                self.require_permission(actor, "role:create").await?;
+                if name.trim().is_empty() || name.len() > 100 {
+                    return Err(EngineError::Consequence("Invalid role name".into()));
+                }
+            }
+            Action::UpdateUser { user, .. } | Action::DeleteUser { user } => {
+                self.require_permission(
+                    actor,
+                    if matches!(action, Action::DeleteUser { .. }) {
+                        "user:delete"
+                    } else {
+                        "user:update"
+                    },
+                )
+                .await?;
+                self.require_manageable_person(actor, &self.resolve(user).await?)
+                    .await?;
+            }
+            Action::AssignRole { user, role } => {
+                self.require_permission(actor, "user:assign_role").await?;
+                self.require_assignable_role(actor, role).await?;
+                let uid = self.resolve(user).await?;
+                self.require_manageable_person(actor, &uid).await?;
+                if let Some(target) = store::auth::principal(&self.store.pool, &uid).await?
+                    && target.role == "admin"
+                    && role != "admin"
+                {
+                    self.require_other_admin(&uid).await?;
+                }
+            }
+            Action::GrantPermission { role, permission }
+            | Action::RevokePermission { role, permission } => {
+                self.require_permission(actor, "permission:assign").await?;
+                self.require_permission(actor, permission).await?;
+                self.require_assignable_role(actor, role).await?;
+                if role == "admin" || !utils::auth::all_permission_keys().contains(permission) {
+                    return Err(EngineError::Forbidden(
+                        "Admin permissions are fixed; choose an existing permission".into(),
+                    ));
+                }
+            }
+            Action::SetPersonReadFilter { person, .. }
+            | Action::SetPersonStanding { person, .. } => {
+                self.require_permission(actor, "user:update").await?;
+                self.require_manageable_person(actor, &self.resolve(person).await?)
+                    .await?;
+            }
+            Action::SetRoleReadRules { role, .. } => {
+                self.require_permission(actor, "role:update").await?;
+                self.require_permission(actor, "permission:assign").await?;
+                self.require_assignable_role(actor, role).await?;
+                if role == "admin"
+                    || (actor.is_some() && self.actor_user(actor.unwrap()).await?.role != "admin")
+                {
+                    return Err(EngineError::Forbidden(
+                        "Only admins may change non-admin role rules".into(),
+                    ));
+                }
+            }
+            Action::DeleteRecord { target } | Action::DeleteMessageDraft { draft: target } => {
+                let uid = self.resolve(target).await?;
+                self.check_delete_permission(&uid, actor).await?;
+                if store::auth::person_access(&self.store.pool, &uid)
+                    .await?
+                    .is_some()
+                {
+                    self.require_permission(actor, "user:delete").await?;
+                    self.require_manageable_person(actor, &uid).await?;
+                    if store::auth::principal(&self.store.pool, &uid)
+                        .await?
+                        .is_some_and(|user| user.role == "admin")
+                    {
+                        self.require_other_admin(&uid).await?;
+                    }
+                }
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+
+    async fn require_assignable_role(
+        &self,
+        actor: Option<&str>,
+        role: &str,
+    ) -> Result<(), EngineError> {
+        let Some(actor) = actor else {
+            return Ok(());
+        };
+        let viewer = self.actor_user(actor).await?;
+        let permissions = store::auth::role_permission_keys(&self.store.pool, role).await?;
+        if (role == "admin" && viewer.role != "admin")
+            || permissions.iter().any(|key| !viewer.permits(key))
+        {
+            return Err(EngineError::Forbidden(
+                "You cannot manage permissions beyond your own access".into(),
+            ));
+        }
+        Ok(())
+    }
+
+    pub(crate) async fn require_manageable_person(
+        &self,
+        actor: Option<&str>,
+        person: &str,
+    ) -> Result<(), EngineError> {
+        let Some(actor) = actor else {
+            return Ok(());
+        };
+        let viewer = self.actor_user(actor).await?;
+        let target = {
+            let mut connection = self.store.pool.acquire().await?;
+            store::auth::assigned_role_on(&mut connection, person).await?
+        };
+        if let Some(target) = target
+            && ((target.role == "admin" && viewer.role != "admin")
+                || target.permissions.iter().any(|key| !viewer.permits(key)))
+        {
+            return Err(EngineError::Forbidden(
+                "You cannot manage a person with greater access".into(),
+            ));
+        }
+        Ok(())
+    }
+
+    pub(crate) async fn require_other_admin(&self, person: &str) -> Result<(), EngineError> {
+        for uid in store::auth::admins(&self.store.pool).await? {
+            if uid != person && store::people::is_active(&self.store.pool, &uid).await? {
+                return Ok(());
+            }
+        }
+        Err(EngineError::Forbidden(
+            "Keep at least one active administrator".into(),
+        ))
+    }
+
+    async fn actor_user(&self, actor: &str) -> Result<store::auth::Principal, EngineError> {
+        store::auth::principal(&self.store.pool, actor)
             .await?
             .ok_or_else(|| EngineError::Forbidden("unrecognized actor".into()))
     }
 
-    pub(crate) async fn require_permission(
+    pub async fn require_permission(
         &self,
         actor: Option<&str>,
         permission: &str,
@@ -9111,25 +9376,6 @@ impl Engine {
             return Ok(());
         };
         let user = self.actor_user(actor).await?;
-        if user.permissions.iter().any(|p| p == permission) {
-            return Ok(());
-        }
-        Err(EngineError::Forbidden(format!(
-            "missing {permission} permission"
-        )))
-    }
-
-    async fn require_permission_lenient(
-        &self,
-        actor: Option<&str>,
-        permission: &str,
-    ) -> Result<(), EngineError> {
-        let Some(actor) = actor else {
-            return Ok(());
-        };
-        let Some(user) = store::auth::user_by_uid(&self.store.pool, actor).await? else {
-            return Ok(());
-        };
         if user.permissions.iter().any(|p| p == permission) {
             return Ok(());
         }
@@ -10708,6 +10954,8 @@ impl Engine {
             | Action::CompensateTransferOccurrenceSettlement { .. }
             | Action::CreateRole { .. }
             | Action::CreateUser { .. }
+            | Action::UpdateUser { .. }
+            | Action::DeleteUser { .. }
             | Action::AssignRole { .. }
             | Action::SetPersonStanding { .. }
             | Action::SetPersonReadFilter { .. }

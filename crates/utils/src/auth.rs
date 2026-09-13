@@ -1,10 +1,7 @@
 use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
-use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
-use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeSet,
     io::{Error, ErrorKind},
-    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -107,17 +104,6 @@ where
         .collect()
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AuthClaims {
-    pub sub: String,
-    pub username: String,
-    pub role_id: u64,
-    pub role: String,
-    #[serde(default)]
-    pub permissions: Vec<String>,
-    pub exp: usize,
-}
-
 pub fn hash_password(password: &str) -> Result<String, Error> {
     Argon2::default()
         .hash_password(password.as_bytes())
@@ -136,57 +122,4 @@ pub fn verify_password(password: &str, password_hash: &str) -> Result<bool, Erro
     Ok(Argon2::default()
         .verify_password(password.as_bytes(), &parsed_hash)
         .is_ok())
-}
-
-pub fn issue_jwt(
-    secret: &str,
-    person_uid: &str,
-    username: &str,
-    role_id: u64,
-    role: &str,
-    permissions: &[String],
-    ttl: Duration,
-) -> Result<String, Error> {
-    let expires_at = SystemTime::now()
-        .checked_add(ttl)
-        .ok_or_else(|| Error::other("JWT expiration overflow"))?
-        .duration_since(UNIX_EPOCH)
-        .map_err(Error::other)?
-        .as_secs() as usize;
-
-    let claims = AuthClaims {
-        sub: person_uid.to_string(),
-        username: username.to_string(),
-        role_id,
-        role: role.to_string(),
-        permissions: normalized_permissions(permissions),
-        exp: expires_at,
-    };
-
-    encode(
-        &Header::new(Algorithm::HS256),
-        &claims,
-        &EncodingKey::from_secret(secret.as_bytes()),
-    )
-    .map_err(|error| Error::other(format!("Failed to encode JWT: {error}")))
-}
-
-fn normalized_permissions(permissions: &[String]) -> Vec<String> {
-    let mut permissions = permissions.to_vec();
-    permissions.sort();
-    permissions.dedup();
-    permissions
-}
-
-pub fn decode_jwt(secret: &str, token: &str) -> Result<AuthClaims, Error> {
-    let mut validation = Validation::new(Algorithm::HS256);
-    validation.validate_exp = true;
-
-    decode::<AuthClaims>(
-        token,
-        &DecodingKey::from_secret(secret.as_bytes()),
-        &validation,
-    )
-    .map(|data| data.claims)
-    .map_err(|error| Error::new(ErrorKind::PermissionDenied, format!("Invalid JWT: {error}")))
 }

@@ -3,8 +3,8 @@
 pub mod access;
 pub mod action_intent;
 pub mod actions;
-pub mod area_transition;
 pub mod append;
+pub mod area_transition;
 pub mod body_links;
 pub mod checkpoint;
 pub mod collab;
@@ -24,6 +24,7 @@ pub mod karma_grants;
 pub mod karma_runtime;
 pub mod karma_timezone;
 pub mod lingua_file;
+pub mod login;
 pub mod mailbox;
 pub mod pairing;
 pub mod peers;
@@ -35,7 +36,6 @@ pub mod private_password;
 pub mod private_requests;
 pub mod private_work;
 pub mod read_filter;
-mod tagged_record;
 pub mod rebuild;
 pub mod roster;
 pub mod seal;
@@ -43,6 +43,8 @@ pub mod senses;
 pub mod share;
 pub mod signals;
 pub mod sync;
+pub mod sync_service;
+mod tagged_record;
 pub mod threads;
 pub mod transfer;
 pub mod transfer_delivery;
@@ -86,6 +88,10 @@ pub use error::EngineError;
 
 pub struct Engine {
     pub store: Store,
+    pub passwords: private_password::PasswordWork,
+    access_gate: tokio::sync::RwLock<()>,
+    login_attempts: tokio::sync::Mutex<login::LoginAttempts>,
+    pub sync_service: sync_service::SyncService,
     bus: broadcast::Sender<Fact>,
     query_changed: watch::Sender<u64>,
     pub(crate) signer: Mutex<Option<trust::Signer>>,
@@ -132,6 +138,11 @@ impl Engine {
         let (config_changed, _) = watch::channel(0);
         let engine = Engine {
             store,
+            passwords: private_password::PasswordWork::new(2)
+                .map_err(|error| EngineError::Consequence(error.to_string()))?,
+            access_gate: tokio::sync::RwLock::new(()),
+            login_attempts: tokio::sync::Mutex::new(login::LoginAttempts::default()),
+            sync_service: sync_service::SyncService::default(),
             bus,
             query_changed,
             signer: Mutex::new(None),
@@ -436,6 +447,9 @@ impl Engine {
     }
 
     pub async fn heartbeat(&self, now: DateTime<Utc>) -> Result<Vec<Fact>, EngineError> {
+        if let Err(error) = store::sync_activity::prune(&self.store.pool, now.timestamp()).await {
+            tracing::warn!(%error, "Could not expire sync history");
+        }
         let mut facts = self.expire_promises(now).await?;
         facts.extend(self.expire_due_transfer_invitations(now).await?);
         facts.extend(self.expire_decisions(now).await?);

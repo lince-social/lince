@@ -100,6 +100,8 @@ fn exercise(world: &mut World) {
             let area = world.query::<&InfluenceArea>().single(world).unwrap();
             assert_eq!(area.size, [260.0; 2]);
             assert_eq!(area.shape.kind(), ShapeKind::Square);
+            assert_eq!(area.strength, 0.0);
+            assert!(area.changes.is_empty());
             activate(world, EditAction::Area(AreaAction::Draw(ShapeKind::Drawn)));
         }
         62 => {
@@ -120,7 +122,15 @@ fn exercise(world: &mut World) {
             );
             assert_eq!(
                 world.get::<InfluenceArea>(selected).unwrap().center,
-                [-310.0, -80.0]
+                (bevy::math::DVec2::new(240.0, 320.0)
+                    - (world.get::<ComputedNode>(root).unwrap().size()
+                        * world
+                            .get::<ComputedNode>(root)
+                            .unwrap()
+                            .inverse_scale_factor())
+                    .as_dvec2()
+                        * 0.5)
+                    .to_array()
             );
             activate(world, EditAction::Area(AreaAction::AddRule));
         }
@@ -150,6 +160,23 @@ fn exercise(world: &mut World) {
                 .insert(lince_interface::area::RecordProperties(
                     serde_json::json!({"quantity":0}),
                 ));
+        }
+        86 => {
+            assert!(
+                world
+                    .query::<&AreaForces>()
+                    .iter(world)
+                    .all(|forces| forces.0.is_empty())
+            );
+            let slider = world
+                .query_filtered::<Entity, With<lince_interface::slider::SliderSand>>()
+                .single(world)
+                .unwrap();
+            world.trigger(bevy::ui_widgets::ValueChange {
+                source: slider,
+                value: 100.0_f32,
+                is_final: true,
+            });
         }
         90 => {
             assert_eq!(world.query::<&InfluenceArea>().iter(world).count(), 3);
@@ -192,6 +219,49 @@ fn exercise(world: &mut World) {
                 .unwrap()
                 .0;
             world.trigger(Activate { entity: button });
+        }
+        94 => {
+            let selected = world.get::<AreaEditor>(root).unwrap().selected.unwrap();
+            world
+                .get_mut::<InfluenceArea>(selected)
+                .unwrap()
+                .reach
+                .radius = 80.0;
+            activate(
+                world,
+                EditAction::Area(AreaAction::ReachShape(
+                    lince_interface::area::ReachShape::Square,
+                )),
+            );
+        }
+        96 => activate(
+            world,
+            EditAction::Area(AreaAction::ReachShape(
+                lince_interface::area::ReachShape::FollowShape,
+            )),
+        ),
+        100 => activate(
+            world,
+            EditAction::Area(AreaAction::Reach(
+                lince_interface::area::ReachMode::Unlimited,
+            )),
+        ),
+        102 => {
+            let path = format!("{}.unlimited.png", world.resource::<CapturePath>().0);
+            world
+                .spawn(Screenshot::primary_window())
+                .observe(save_to_disk(path));
+        }
+        104 => {
+            activate(
+                world,
+                EditAction::Area(AreaAction::Reach(lince_interface::area::ReachMode::Limited)),
+            );
+            let selected = world.get::<AreaEditor>(root).unwrap().selected.unwrap();
+            assert_eq!(
+                world.get::<InfluenceArea>(selected).unwrap().reach.radius,
+                80.0
+            );
         }
         110 => {
             assert_eq!(world.query::<&InfluenceArea>().iter(world).count(), 2);
@@ -278,7 +348,8 @@ fn exercise(world: &mut World) {
     }
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     interface_app()
         .insert_resource(CapturePath(
             std::env::args().nth(1).expect("provide screenshot path"),

@@ -51,6 +51,9 @@ pub struct Protein {
     pub limit: Option<usize>,
 }
 
+mod conjunction;
+pub mod record_schema;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Aggregate {
@@ -332,6 +335,8 @@ pub async fn execute_for_with_context(
     context: Context<'_>,
 ) -> Result<Vec<Value>, ProteinError> {
     validate(protein)?;
+    let prepared = conjunction::prepare(protein)?;
+    let protein = prepared.as_ref();
     let visible = match subject {
         None => None,
         Some(s) => {
@@ -399,14 +404,7 @@ pub async fn execute_for_with_context(
             )
             .await?
         }
-        Source::Auth => {
-            if let Some(actor) = subject {
-                if !actor_can_read_auth(store, actor).await? {
-                    return Ok(vec![]);
-                }
-            }
-            execute_auth(store).await?
-        }
+        Source::Auth => execute_auth(store, subject).await?,
         Source::Karma => {
             if visible.is_some() {
                 return Ok(vec![]);
@@ -672,53 +670,54 @@ async fn actor_can_read_source(
     let Some(subject) = subject else {
         return Ok(true);
     };
-    let Some(user) = store::auth::user_by_uid(&store.pool, subject).await? else {
-        return Ok(true);
+    let Some(user) = store::auth::principal(&store.pool, subject).await? else {
+        return Ok(false);
     };
     Ok(user.permissions.iter().any(|p| keys.contains(&p.as_str())))
 }
 
-async fn actor_can_read_auth(store: &Store, actor: &str) -> Result<bool, ProteinError> {
-    let Some(user) = store::auth::user_by_uid(&store.pool, actor).await? else {
-        return Ok(false);
+async fn execute_auth(store: &Store, subject: Option<&str>) -> Result<Vec<Value>, ProteinError> {
+    let principal = match subject {
+        Some(actor) => store::auth::principal(&store.pool, actor).await?,
+        None => None,
     };
-    Ok(user
-        .permissions
-        .iter()
-        .any(|p| p == "role:read" || p == "user:read" || p == "permission:read"))
-}
-
-async fn execute_auth(store: &Store) -> Result<Vec<Value>, ProteinError> {
+    let can = |key| subject.is_none() || principal.as_ref().is_some_and(|user| user.permits(key));
     let mut out = Vec::new();
-    for (id, name, permissions) in store::auth::list_roles(&store.pool).await? {
+    if can("role:read") {
+        for (id, name, permissions) in store::auth::list_roles(&store.pool).await? {
+            out.push(json!({
+                "kind": "role",
+                "id": id.to_string(),
+                "name": name,
+                "permissions": if can("permission:read") { permissions } else { vec![] },
+            }));
+        }
+    }
+    if can("user:read") {
+        for (uid, username, name, role) in store::auth::list_users(&store.pool).await? {
+            let person_record = store::records::get(&store.pool, &uid).await?;
+            let standing = store::people::standing(&store.pool, &uid).await?;
+            out.push(json!({
+                "kind": "user",
+                "active": standing.as_ref().is_none_or(|standing| standing.active),
+                "deactivated_at": standing.as_ref().and_then(|s| s.at.clone()),
+                "standing_note": standing.as_ref().and_then(|s| s.note.clone()),
+                "id": uid,
+                "username": username,
+                "name": name,
+                "role": role,
+                "person": uid,
+                "person_head": person_record.as_ref().map(|record| record.head.as_str()),
+                "person_slug": person_record.as_ref().and_then(|record| record.slug.as_deref()),
+            }));
+        }
+    }
+    if can("permission:read") {
         out.push(json!({
-            "kind": "role",
-            "id": id.to_string(),
-            "name": name,
-            "permissions": permissions,
+            "kind": "permission_catalog",
+            "keys": utils::auth::all_permission_keys(),
         }));
     }
-    for (uid, username, name, role) in store::auth::list_users(&store.pool).await? {
-        let person_record = store::records::get(&store.pool, &uid).await?;
-        let standing = store::people::standing(&store.pool, &uid).await?;
-        out.push(json!({
-            "kind": "user",
-            "active": standing.as_ref().is_none_or(|standing| standing.active),
-            "deactivated_at": standing.as_ref().and_then(|s| s.at.clone()),
-            "standing_note": standing.as_ref().and_then(|s| s.note.clone()),
-            "id": uid,
-            "username": username,
-            "name": name,
-            "role": role,
-            "person": uid,
-            "person_head": person_record.as_ref().map(|record| record.head.as_str()),
-            "person_slug": person_record.as_ref().and_then(|record| record.slug.as_deref()),
-        }));
-    }
-    out.push(json!({
-        "kind": "permission_catalog",
-        "keys": utils::auth::all_permission_keys(),
-    }));
     Ok(out)
 }
 
@@ -1502,6 +1501,7 @@ async fn execute_records(
         .map(|concept| (concept.uid, concept.canonical_name))
         .collect();
     let work = store::records::all_extensions(&store.pool, "work").await?;
+    let mut projected = record_schema::attach(store, protein, &rows, visible, &work).await?;
     for r in rows {
         let record_unit_uid = r.unit_uid.clone();
         let mut row = json!({
@@ -1530,6 +1530,9 @@ async fn execute_records(
             &protein.include,
         )
         .await?;
+        if let Some(Value::Object(fields)) = projected.remove(&r.uid) {
+            row.as_object_mut().unwrap().extend(fields);
+        }
         narrow_to_fields(&mut row, protein.fields.as_deref());
         out.push(row);
     }

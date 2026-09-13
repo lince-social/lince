@@ -39,10 +39,13 @@ pub async fn visible_targets(
 ) -> Result<HashSet<String>, StoreError> {
     Ok(sqlx::query(
         "SELECT target_uid AS uid FROM visibility_rule
-          WHERE grant_level = 'visible' AND (subject_uid = ? OR subject_kind = 'public')
+          WHERE grant_level = 'visible' AND (subject_kind = 'public'
+             OR (subject_kind = 'actor' AND subject_uid = ?)
+             OR (subject_kind = 'role' AND subject_uid = CAST((SELECT role_id FROM person_access WHERE person_uid = ?) AS TEXT)))
          UNION
          SELECT DISTINCT record_uid AS uid FROM fact WHERE actor_uid = ?",
     )
+    .bind(subject_uid)
     .bind(subject_uid)
     .bind(subject_uid)
     .fetch_all(pool)

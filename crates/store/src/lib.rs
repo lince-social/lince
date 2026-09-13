@@ -44,6 +44,7 @@ pub mod roster;
 pub mod seed;
 pub mod senses;
 pub mod session_access;
+pub mod sync_activity;
 pub mod sync_apply;
 pub mod sync_ops;
 pub mod transfer_delivery;

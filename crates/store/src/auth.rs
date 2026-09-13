@@ -961,6 +961,69 @@ pub struct AuthUser {
     pub permissions: Vec<String>,
 }
 
+impl AuthUser {
+    pub fn permits(&self, permission: &str) -> bool {
+        self.permissions.iter().any(|key| key == permission)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Principal {
+    pub uid: String,
+    pub role_id: i64,
+    pub role: String,
+    pub permissions: Vec<String>,
+}
+
+impl Principal {
+    pub fn permits(&self, permission: &str) -> bool {
+        self.permissions.iter().any(|key| key == permission)
+    }
+}
+
+pub async fn principal(pool: &SqlitePool, person: &str) -> Result<Option<Principal>, StoreError> {
+    let mut tx = pool.begin().await?;
+    let result = principal_on(&mut tx, person).await?;
+    tx.commit().await?;
+    Ok(result)
+}
+
+pub async fn principal_on(
+    connection: &mut SqliteConnection,
+    person: &str,
+) -> Result<Option<Principal>, StoreError> {
+    if !crate::people::is_active_on(connection, person).await? {
+        return Ok(None);
+    }
+    assigned_role_on(connection, person).await
+}
+
+pub async fn assigned_role_on(
+    connection: &mut SqliteConnection,
+    person: &str,
+) -> Result<Option<Principal>, StoreError> {
+    let Some(access) = person_access_on(connection, person).await? else {
+        return Ok(None);
+    };
+    let Some(role_id) = access.role_id else {
+        return Ok(None);
+    };
+    let role = sqlx::query_scalar::<_, String>("SELECT name FROM role WHERE id = ?")
+        .bind(role_id)
+        .fetch_optional(&mut *connection)
+        .await?;
+    let Some(role) = role else {
+        return Ok(None);
+    };
+    let permissions = role_permission_keys_by_id_on(connection, role_id).await?;
+    Ok(Some(Principal {
+        uid: person.into(),
+        role_id,
+        role,
+        permissions,
+    }))
+}
+
 const CREDENTIAL_SELECT: &str = "
     SELECT c.person_uid, c.username, p.head, c.password_hash, a.role_id, r.name
     FROM person_credential c

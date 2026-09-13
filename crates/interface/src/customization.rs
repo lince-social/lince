@@ -553,6 +553,37 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
             .entity_mut(status)
             .insert(OverrideSummary { root, scope, token });
         let fields = row(world, group);
+        if let TokenValue::Color(rgba) = current {
+            world.get_mut::<Node>(fields).unwrap().width = percent(100);
+            world.get_mut::<Node>(fields).unwrap().align_items = AlignItems::FlexStart;
+            let picker = crate::color_picker::spawn(
+                world,
+                fields,
+                definition.name,
+                rgba,
+                !token.is_canvas(),
+            );
+            let picker = world
+                .get::<crate::color_picker::ColorPicker>(picker)
+                .unwrap();
+            let (editor, preview) = (picker.editor, picker.preview);
+            world.entity_mut(editor).insert(TokenField {
+                root,
+                scope,
+                token,
+                observed: current.display(),
+                status,
+                preview,
+            });
+            control(
+                world,
+                root,
+                fields,
+                CustomizationAction::Reset(token),
+                "Reset",
+            );
+            continue;
+        }
         let bundle = crate::sand::text_editor(
             &current.display(),
             world.resource::<crate::theme::Typography>(),
@@ -825,9 +856,11 @@ pub(crate) mod tests {
         );
         let slider = app
             .world_mut()
-            .query_filtered::<Entity, With<crate::slider::SliderSand>>()
-            .single(app.world())
+            .query::<(Entity, &AccessibilityNode)>()
+            .iter(app.world())
+            .find(|(_, node)| node.label() == Some("Pattern"))
             .unwrap();
+        let slider = slider.0;
         app.world_mut().trigger(bevy::ui_widgets::ValueChange {
             source: slider,
             value: 33.0_f32,
@@ -973,5 +1006,81 @@ pub(crate) mod tests {
     crate::laboratory_cases! {
         panel_lists_compiled_tokens_saves_valid_edits_and_resets_each_scope,
         global_scheme_keeps_workspace_colors_until_overwrite_is_requested,
+        color_picker_saves_and_resets_global_kind_sand_and_workspace_colors,
+    }
+
+    #[cfg_attr(test, test)]
+    fn color_picker_saves_and_resets_global_kind_sand_and_workspace_colors() {
+        let mut app = App::new();
+        crate::laboratory::isolate(app.world_mut());
+        app.init_resource::<Assets<Font>>().add_plugins((
+            ThemePlugin,
+            WorkspacePlugin,
+            EditModePlugin,
+        ));
+        let root = app.world_mut().spawn(BoxRoot).id();
+        app.update();
+        let sand = spawn_sand(app.world_mut(), root, 1, SandKind::Square, "", DVec2::ZERO);
+        app.world_mut()
+            .trigger(GlobalCustomizationPanelToggle { entity: root });
+        app.update();
+        for (scope, token) in [
+            (Scope::All, Token::SandBackground),
+            (Scope::Kind(SandStyleKind::Square), Token::SandBackground),
+            (Scope::Sand(sand), Token::SandBackground),
+            (Scope::Workspace(root, 1), Token::CanvasBackground),
+        ] {
+            CustomizationAction::Scope(scope).apply(app.world_mut(), root);
+            app.update();
+            let initial = value(app.world(), scope, token).0;
+            let field = app
+                .world_mut()
+                .query::<(Entity, &TokenField)>()
+                .iter(app.world())
+                .find(|(_, field)| field.token == token)
+                .unwrap()
+                .0;
+            let picker = app
+                .world_mut()
+                .query::<&crate::color_picker::ColorPicker>()
+                .iter(app.world())
+                .find(|picker| picker.editor == field)
+                .unwrap()
+                .clone();
+            app.world_mut()
+                .get_mut::<EditableText>(field)
+                .unwrap()
+                .editor
+                .set_text("#123456");
+            app.update();
+            for (index, value) in [(0, 201.0_f32), (2, 42.0)] {
+                app.world_mut().trigger(bevy::ui_widgets::ValueChange {
+                    source: picker.channels[index],
+                    value,
+                    is_final: true,
+                });
+            }
+            app.update();
+            assert_eq!(
+                value(app.world(), scope, token).0,
+                TokenValue::Color([201, 52, 42, 255])
+            );
+            if !token.is_canvas() {
+                app.world_mut().trigger(bevy::ui_widgets::ValueChange {
+                    source: picker.channels[3],
+                    value: 50.0_f32,
+                    is_final: true,
+                });
+                app.update();
+                assert_eq!(
+                    value(app.world(), scope, token).0,
+                    TokenValue::Color([201, 52, 42, 128])
+                );
+            }
+            CustomizationAction::Reset(token).apply(app.world_mut(), root);
+            app.update();
+            assert_eq!(value(app.world(), scope, token).0, initial);
+            assert!(app.world().get_entity(picker.editor).is_err());
+        }
     }
 }

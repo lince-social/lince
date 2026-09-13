@@ -81,7 +81,6 @@ rqrr = "=0.11.0"
 # set pulls a dozen codec crates that would never be called.
 image = { version = "0.25.10", default-features = false, features = ["png", "jpeg"] }
 postcard = { version = "1.1.3", features = ["alloc"] }
-jsonwebtoken = { version = "11.0.0", features = ["rust_crypto"] }
 # Exact-pinned (Ontology §11 Collab): the record-doc CRDT engine. Upgrades are
 # deliberate — bump together with the vendored loro-wasm browser asset.
 loro = "=1.16.0"

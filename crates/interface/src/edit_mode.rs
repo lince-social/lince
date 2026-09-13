@@ -107,6 +107,9 @@ impl Plugin for EditModePlugin {
         if !app.is_plugin_added::<ActionsPlugin>() {
             app.add_plugins(ActionsPlugin);
         }
+        if !app.is_plugin_added::<crate::color_picker::ColorPickerPlugin>() {
+            app.add_plugins(crate::color_picker::ColorPickerPlugin);
+        }
         app.init_resource::<crate::tokens::ThemeSettings>()
             .add_observer(crate::customization::toggle)
             .add_systems(
@@ -340,7 +343,11 @@ fn anchor_panel(
 
 fn setup(world: &mut World) {
     let roots: Vec<_> = world
-        .query_filtered::<Entity, (With<Workspaces>, Without<EditMode>, Without<crate::laboratory::LaboratoryRoot>)>()
+        .query_filtered::<Entity, (
+            With<Workspaces>,
+            Without<EditMode>,
+            Without<crate::laboratory::LaboratoryRoot>,
+        )>()
         .iter(world)
         .collect();
     for root in roots {
@@ -723,7 +730,24 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
             .entity_mut(panel)
             .remove::<crate::sand_text_editor::TextPanel>();
     }
+    let scroll = if matches!(
+        action,
+        EditAction::Area(
+            crate::area_panel::AreaAction::TargetCenter
+                | crate::area_panel::AreaAction::TargetPoint
+        )
+    ) {
+        world
+            .get::<ScrollPosition>(world.get::<EditMode>(root).unwrap().panel)
+            .map(|scroll| scroll.0)
+    } else {
+        None
+    };
     render_panel(world, root);
+    if let Some(scroll) = scroll {
+        let panel = world.get::<EditMode>(root).unwrap().panel;
+        world.entity_mut(panel).insert(ScrollPosition(scroll));
+    }
 }
 
 pub(crate) fn toggle_customization(world: &mut World, root: Entity) {
@@ -863,10 +887,33 @@ pub(crate) fn control(
         EditAction::Store => Some(Icon::Store),
         EditAction::Canvas | EditAction::Customization => Some(Icon::Palette),
         EditAction::Areas => Some(Icon::Circle),
-        EditAction::Area(_) => None,
-        EditAction::TogglePhysics
-        | EditAction::ReloadWorkspaceSettings
-        | EditAction::DisarmAreaChanges => None,
+        EditAction::Area(action) => {
+            use crate::area::{Direction, ShapeKind};
+            use crate::area_panel::AreaAction;
+            match action {
+                AreaAction::Add(kind) | AreaAction::Draw(kind) | AreaAction::Shape(kind) => {
+                    Some(match kind {
+                        ShapeKind::Square => Icon::Square,
+                        ShapeKind::Circle => Icon::Circle,
+                        ShapeKind::Drawn => Icon::Pencil,
+                    })
+                }
+                AreaAction::Redraw => Some(Icon::Pencil),
+                AreaAction::TargetCenter => Some(Icon::Reset),
+                AreaAction::TargetPoint => Some(Icon::Recenter),
+                AreaAction::Direction(Direction::Attract) => Some(Icon::Attract),
+                AreaAction::Direction(Direction::Repel) => Some(Icon::Repel),
+                AreaAction::AddRule => Some(Icon::Plus),
+                AreaAction::RemoveRule(_) | AreaAction::Remove => Some(Icon::Delete),
+                AreaAction::Finish | AreaAction::ArmChanges => Some(Icon::Check),
+                AreaAction::Cancel | AreaAction::DisarmChanges => Some(Icon::Close),
+                AreaAction::PreviewChanges => Some(Icon::Info),
+                _ => None,
+            }
+        }
+        EditAction::ReloadWorkspaceSettings => Some(Icon::Reset),
+        EditAction::DisarmAreaChanges => Some(Icon::Close),
+        EditAction::TogglePhysics => None,
         EditAction::Notifications => Some(Icon::Bell),
         EditAction::ResetCanvasColors => Some(Icon::Reset),
         EditAction::CanvasColor(_, rgb) => {
@@ -902,6 +949,9 @@ pub(crate) fn control(
                 .insert(crate::notifications::NotificationCount);
         }
     } else {
+        world
+            .entity_mut(entity)
+            .insert(crate::icons::Tooltip(value.into()));
         let text = label(world, entity, value, 15.0);
         if action == EditAction::Notifications {
             world
@@ -1201,6 +1251,7 @@ pub(crate) fn render_panel(world: &mut World, root: Entity) {
         for kind in SandKind::ALL {
             crate::sand_store::entry(world, root, panel, kind, None);
         }
+        crate::protein_castle::store_entries(world, root, panel);
         let sands: Vec<_> = world
             .query::<(Entity, &ChildOf, &workspace::WorkspaceMember, &StoredSand)>()
             .iter(world)

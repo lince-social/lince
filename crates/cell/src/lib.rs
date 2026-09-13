@@ -15,7 +15,8 @@ use store::Store;
 
 pub use admin_bootstrap::{AdminBootstrap, ensure_admin};
 pub use store::config::InterfaceStorage;
-pub use transport::{ClientMessage, LaneEvent, LaneHub, ServerMessage, Session};
+pub use transport::{ClientMessage, LaneEvent, LaneHub, ServerMessage, Session, SyncEvents};
+pub use transport::live_client;
 pub use utils::diagnostics::{
     Diagnostics, Journal as DiagnosticJournal, Notice, Subscription as DiagnosticSubscription,
 };
@@ -46,11 +47,10 @@ impl CellRuntime {
     }
 
     pub fn local_session(&self) -> Session {
-        Session::new(
+        Session::local(
             self.engine.clone(),
             self.lanes.clone(),
             nucleus::new_uid("local-ui"),
-            None,
         )
     }
 }

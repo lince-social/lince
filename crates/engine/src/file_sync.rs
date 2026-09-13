@@ -73,6 +73,53 @@ impl Engine {
         organ_uid: &str,
         state: &mut FileSyncState,
     ) -> Result<FileSyncReport, EngineError> {
+        use nucleus::sync::{Activity, Direction, Instance, Outcome, Summary, Update};
+        self.sync_service
+            .run(
+                &self.store,
+                Activity {
+                    instance: Instance::files(organ_uid, dir),
+                    direction: Direction::Both,
+                    update: Update::Reconcile,
+                },
+                self.file_sync_pass(dir, organ_uid, state),
+                |report| {
+                    let mut summary = Summary::new(
+                        if report.conflicts.is_empty() {
+                            Outcome::Applied
+                        } else {
+                            Outcome::Conflict
+                        },
+                        report.created.len()
+                            + report.updated_from_disk.len()
+                            + report.deleted.len()
+                            + report.written_to_disk.len(),
+                    );
+                    summary.subjects = report
+                        .created
+                        .iter()
+                        .chain(&report.updated_from_disk)
+                        .chain(&report.deleted)
+                        .chain(&report.written_to_disk)
+                        .take(32)
+                        .cloned()
+                        .collect();
+                    summary.message = report
+                        .conflicts
+                        .first()
+                        .map(|conflict| conflict.reason.clone());
+                    summary
+                },
+            )
+            .await
+    }
+
+    async fn file_sync_pass(
+        &self,
+        dir: &Path,
+        organ_uid: &str,
+        state: &mut FileSyncState,
+    ) -> Result<FileSyncReport, EngineError> {
         std::fs::create_dir_all(dir).map_err(EngineError::Io)?;
         let mut report = FileSyncReport::default();
         let config =

@@ -28,9 +28,11 @@ struct Probe {
 
 fn slider(world: &mut World) -> Entity {
     world
-        .query_filtered::<Entity, With<SliderSand>>()
-        .single(world)
+        .query_filtered::<(Entity, &bevy::a11y::AccessibilityNode), With<SliderSand>>()
+        .iter(world)
+        .find(|(_, node)| node.label() == Some("Pattern"))
         .unwrap()
+        .0
 }
 
 fn mouse(world: &mut World, fraction: Option<f32>, state: Option<ButtonState>) {
@@ -83,7 +85,17 @@ fn capture(world: &mut World, name: &str) {
         .observe(save_to_disk(path))
         .observe(
             move |event: On<ScreenshotCaptured>, mut probe: ResMut<Probe>| {
-                let red = |x, y| event.image.get_color_at(x, y).unwrap().to_srgba().red * 255.0;
+                let size = event.image.texture_descriptor.size;
+                let origin = (size.width / 2 % 32 + 32, size.height / 2 % 32 + 32);
+                let red = |x, y| {
+                    event
+                        .image
+                        .get_color_at(origin.0 + x - 16, origin.1 + y - 32)
+                        .unwrap()
+                        .to_srgba()
+                        .red
+                        * 255.0
+                };
                 assert!(red(16, 32) > 40.0, "missing pattern center");
                 assert!(red(22, 38) < 20.0, "pattern filled the space between arms");
                 match name.as_str() {

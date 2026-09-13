@@ -94,6 +94,8 @@ struct Document {
     records: Vec<SavedRecord>,
     #[serde(default)]
     areas: Vec<crate::area::SavedArea>,
+    #[serde(default)]
+    proteins: Vec<crate::protein_castle::SavedProteinCastle>,
 }
 
 impl Document {
@@ -101,6 +103,10 @@ impl Document {
         let ids: HashSet<_> = self.workspaces.iter().map(|space| space.id).collect();
         let area_ids: HashSet<_> = self.areas.iter().map(|saved| &saved.area.id).collect();
         self.theme.validate()
+            && self
+                .proteins
+                .iter()
+                .all(|saved| ids.contains(&saved.workspace) && saved.valid())
             && self.areas.len() <= crate::area::MAX_AREAS
             && area_ids.len() == self.areas.len()
             && self
@@ -222,6 +228,9 @@ fn initialize(world: &mut World) {
                     .collect();
                 for saved in document.areas {
                     crate::area::spawn_area(world, root, saved.workspace, saved.area);
+                }
+                for saved in document.proteins {
+                    saved.restore(world, root);
                 }
                 for sand in document.sands {
                     let entity = crate::sand_store::spawn_sand(
@@ -510,7 +519,7 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
     let mut records: Vec<_> = records.into_values().collect();
     records.sort_by(|a, b| a.uid.cmp(&b.uid));
     let mut areas: Vec<_> = world
-        .query::<(&crate::area::InfluenceArea, &WorkspaceMember, &ChildOf)>()
+        .query_filtered::<(&crate::area::InfluenceArea, &WorkspaceMember, &ChildOf), Without<crate::protein_area::grouping::GeneratedGroup>>()
         .iter(world)
         .filter(|(_, _, parent)| parent.parent() == root)
         .map(|(area, member, _)| crate::area::SavedArea {
@@ -526,6 +535,7 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
         sands,
         records,
         areas,
+        proteins: crate::protein_castle::snapshot(world, root),
     }
 }
 
@@ -744,6 +754,11 @@ pub(crate) mod tests {
                 .unwrap();
         area.direction = Direction::Repel;
         area.strength = 42.5;
+        area.reach = crate::area::Reach {
+            mode: crate::area::ReachMode::Unlimited,
+            shape: crate::area::ReachShape::Square,
+            radius: 75.5,
+        };
         area.rules = vec![PropertyRule {
             property: Property::Quantity,
             value: "-3".into(),
@@ -824,6 +839,38 @@ pub(crate) mod tests {
                 .size,
             [216.0, 152.0]
         );
+    }
+
+    #[cfg_attr(test, test)]
+    fn protein_castles_restore_workspace_geometry_and_unfinished_queries() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("interface.json");
+        let (mut app, root) = fixture(Some(path.clone()));
+        create(app.world_mut(), root);
+        let workspace = app.world().get::<Workspaces>(root).unwrap().active;
+        let mut draft = crate::protein_castle::ProteinDraft::default();
+        draft.name = "My unfinished query".into();
+        draft.query["limit"] = serde_json::json!("12x");
+        let position = DVec2::new(-850.0, 300.0);
+        let castle =
+            crate::protein_castle::spawn(app.world_mut(), root, workspace, position, draft.clone());
+        app.world_mut().get_mut::<CanvasItem>(castle).unwrap().size = Vec2::new(780.0, 620.0);
+        flush(&mut app);
+        drop(app);
+        let (mut app, _) = fixture(Some(path));
+        let (restored, item, member) = app
+            .world_mut()
+            .query::<(
+                &crate::protein_castle::ProteinCastle,
+                &CanvasItem,
+                &WorkspaceMember,
+            )>()
+            .single(app.world())
+            .unwrap();
+        assert_eq!(restored.draft, draft);
+        assert_eq!(item.position, position);
+        assert_eq!(item.size, Vec2::new(780.0, 620.0));
+        assert_eq!(member.0, workspace);
     }
 
     #[cfg_attr(test, test)]
@@ -1214,10 +1261,70 @@ pub(crate) mod tests {
         assert_eq!(std::fs::read(&path).unwrap(), b"previous");
     }
 
+    #[cfg_attr(test, test)]
+    fn protein_group_settings_are_saved_without_generated_areas() {
+        use crate::protein_area::{Config, GroupAxis, grouping::GeneratedGroup};
+        let (mut app, root) = fixture(None);
+        let mut area = crate::area::InfluenceArea::new(
+            crate::area::AreaShape::Square,
+            DVec2::ZERO,
+            DVec2::splat(800.0),
+        );
+        let mut config = Config::default();
+        config.grouping.vertical = Some(GroupAxis::new("assignees"));
+        area.protein = Some(config.clone());
+        area.filter = Some(config.clone());
+        area.sorting = Some(crate::area_effects::Sorting::default());
+        area.immunity = crate::area_effects::Immunity::External;
+        area.scale = 0.5;
+        area.force_mode = crate::area_effects::ForceMode::Newtonian;
+        area.depth = 27.0;
+        area.target = crate::area::AttractionTarget::Point([950.0, -30.0]);
+        let owner = crate::area::spawn_area(app.world_mut(), root, 1, area.clone()).unwrap();
+        area.protein = None;
+        let generated = crate::area::spawn_area(app.world_mut(), root, 1, area).unwrap();
+        app.world_mut()
+            .entity_mut(generated)
+            .insert(GeneratedGroup {
+                owner,
+                horizontal: false,
+                index: 0,
+                targets: Default::default(),
+            });
+        let saved = snapshot(app.world_mut(), root);
+        assert_eq!(saved.areas.len(), 1);
+        assert_eq!(saved.areas[0].area.protein.as_ref(), Some(&config));
+        let restored: Document =
+            serde_json::from_value(serde_json::to_value(saved).unwrap()).unwrap();
+        assert!(restored.validate());
+        assert_eq!(restored.areas[0].area.protein.as_ref(), Some(&config));
+        assert_eq!(restored.areas[0].area.filter.as_ref(), Some(&config));
+        assert_eq!(
+            restored.areas[0].area.sorting,
+            Some(crate::area_effects::Sorting::default())
+        );
+        assert_eq!(
+            restored.areas[0].area.immunity,
+            crate::area_effects::Immunity::External
+        );
+        assert_eq!(restored.areas[0].area.scale, 0.5);
+        assert_eq!(restored.areas[0].area.depth, 27.0);
+        assert_eq!(
+            restored.areas[0].area.target,
+            crate::area::AttractionTarget::Point([950.0, -30.0])
+        );
+        assert_eq!(
+            restored.areas[0].area.force_mode,
+            crate::area_effects::ForceMode::Newtonian
+        );
+    }
+
     crate::laboratory_cases! {
+        protein_group_settings_are_saved_without_generated_areas,
         sand_groups_survive_workspace_restart_and_saved_record_regrouping,
         areas_restore_identity_shape_properties_and_workspace_and_reject_invalid_snapshots,
         resized_bounds_survive_restart_without_changing_text_areas,
+        protein_castles_restore_workspace_geometry_and_unfinished_queries,
         switching_restores_each_camera_and_keeps_live_drafts,
         removing_workspace_moves_sands_without_deleting_record_drafts_or_other_boxes,
         restart_restores_notes_workspaces_cameras_and_record_layouts_without_idle_writes,

@@ -266,31 +266,25 @@ pub(crate) fn next_id(world: &World, root: Entity, mut id: u64) -> Option<u64> {
 pub(crate) fn controls(world: &mut World, root: Entity, panel: Entity) {
     let active = world.get::<Workspaces>(root).unwrap().active;
     let enabled = enabled(world, root, active);
-    crate::edit_mode::control(
+    crate::edit_mode::label(world, panel, "Physics", 14.0);
+    let row = crate::area_panel::row(world, panel);
+    let toggle = crate::edit_mode::control(
         world,
         root,
-        panel,
+        row,
         crate::edit_mode::EditAction::TogglePhysics,
-        if enabled {
-            "Physics: on — turn off"
-        } else {
-            "Physics: off — turn on"
-        },
+        if enabled { "On" } else { "Off" },
     );
-    crate::edit_mode::label(
-        world,
-        panel,
-        "Physics runs in the open workspace. Turning it off keeps every Sand in place.",
-        14.0,
-    );
+    world.entity_mut(toggle).insert(crate::icons::Tooltip(
+        "Toggle physics in the open workspace. Turning it off keeps every Sand in place.".into(),
+    ));
     if let Some(path) = path(world, active) {
-        crate::edit_mode::label(world, panel, &path.display().to_string(), 12.0);
         crate::edit_mode::control(
             world,
             root,
-            panel,
+            row,
             crate::edit_mode::EditAction::ReloadWorkspaceSettings,
-            "Reload workspace settings",
+            &format!("Reload workspace settings from {}", path.display()),
         );
     }
     let error = world
@@ -298,7 +292,10 @@ pub(crate) fn controls(world: &mut World, root: Entity, panel: Entity) {
         .and_then(|settings| settings.0.get(&active))
         .and_then(|setting| setting.error.clone());
     if let Some(error) = error {
-        crate::edit_mode::label(world, panel, &error, 14.0);
+        let status = crate::edit_mode::label(world, panel, "Settings error", 14.0);
+        world
+            .entity_mut(status)
+            .insert(crate::icons::Tooltip(error));
     }
 }
 

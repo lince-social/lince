@@ -46,6 +46,12 @@ pub enum Icon {
     General,
     Group,
     Ungroup,
+    Attract,
+    Repel,
+    Play,
+    Stop,
+    Previous,
+    Next,
 }
 
 #[derive(Component, Clone)]
@@ -119,10 +125,11 @@ struct IconAtlas {
 
 impl FromWorld for IconAtlas {
     fn from_world(world: &mut World) -> Self {
+        let rows = (Icon::Next as u32 + 1).div_ceil(5);
         let image = world.resource_mut::<Assets<Image>>().add(Image::new(
             Extent3d {
                 width: 640,
-                height: 768,
+                height: rows * 128,
                 depth_or_array_layers: 1,
             },
             TextureDimension::D2,
@@ -136,7 +143,7 @@ impl FromWorld for IconAtlas {
                 .add(TextureAtlasLayout::from_grid(
                     UVec2::splat(128),
                     5,
-                    6,
+                    rows,
                     None,
                     None,
                 ));
@@ -531,7 +538,7 @@ pub(crate) mod tests {
     #[cfg_attr(test, test)]
     fn atlas_contains_every_icon_and_straight_alpha_for_tinting() {
         let pixels = include_bytes!(concat!(env!("OUT_DIR"), "/icons.rgba"));
-        for index in 0..=Icon::Ungroup as usize {
+        for index in 0..=Icon::Next as usize {
             let mut ink = false;
             for y in index / 5 * 128..(index / 5 + 1) * 128 {
                 for x in index % 5 * 128..(index % 5 + 1) * 128 {

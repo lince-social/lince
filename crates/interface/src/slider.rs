@@ -202,33 +202,44 @@ pub fn spawn(
     Some(slider)
 }
 
-fn change(
-    event: On<ValueChange<f32>>,
-    sliders: Query<(&SliderSand, &SliderValue, &SliderParts)>,
-    mut nodes: Query<&mut Node>,
-    mut texts: Query<&mut Text>,
-    mut commands: Commands,
-) {
-    let Ok((config, current, parts)) = sliders.get(event.source) else {
-        return;
+fn change(event: On<ValueChange<f32>>, mut commands: Commands) {
+    let entity = event.source;
+    let value = event.value;
+    commands.queue(move |world: &mut World| {
+        if set_value(world, entity, value) {
+            world.trigger(SliderChanged {
+                entity,
+                value: world.get::<SliderValue>(entity).unwrap().0,
+            });
+        }
+    });
+}
+
+pub fn set_value(world: &mut World, entity: Entity, value: f32) -> bool {
+    let Some(config) = world.get::<SliderSand>(entity).copied() else {
+        return false;
     };
-    let Some(value) = config.snap(event.value) else {
-        return;
+    let Some(value) = config.snap(value) else {
+        return false;
     };
-    if value == current.0 {
-        return;
+    if world
+        .get::<SliderValue>(entity)
+        .is_none_or(|current| current.0 == value)
+    {
+        return false;
     }
-    if let Ok(mut node) = nodes.get_mut(parts.thumb) {
+    let Some(parts) = world.get::<SliderParts>(entity) else {
+        return false;
+    };
+    let (thumb, readout, suffix) = (parts.thumb, parts.readout, parts.suffix.clone());
+    if let Some(mut node) = world.get_mut::<Node>(thumb) {
         node.left = percent(100.0 * (value - config.start) / (config.end - config.start));
     }
-    if let Ok(mut text) = texts.get_mut(parts.readout) {
-        text.0 = format!("{:.*}{}", usize::from(config.decimals), value, parts.suffix);
+    if let Some(mut text) = world.get_mut::<Text>(readout) {
+        text.0 = format!("{:.*}{suffix}", usize::from(config.decimals), value);
     }
-    commands.entity(event.source).insert(SliderValue(value));
-    commands.trigger(SliderChanged {
-        entity: event.source,
-        value,
-    });
+    world.entity_mut(entity).insert(SliderValue(value));
+    true
 }
 
 pub(crate) mod tests {

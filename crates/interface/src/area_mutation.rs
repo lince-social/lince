@@ -50,6 +50,7 @@ struct Visit {
 }
 
 struct Grant {
+    entity: Entity,
     root: Entity,
     workspace: u64,
     area: InfluenceArea,
@@ -168,7 +169,13 @@ pub fn preview(world: &mut World, root: Entity, entity: Entity) {
     let area = world.get::<InfluenceArea>(entity).unwrap().clone();
     if !area.validate()
         || area.changes.is_empty()
-        || area.rules.is_empty()
+        || (area.filter.is_none() && area.rules.is_empty())
+        || (area.filter.is_some()
+            && !world
+                .get::<crate::protein_area::filter::Matches>(entity)
+                .is_some_and(|filter| {
+                    filter.current && filter.source == crate::protein_area::Source::Local
+                }))
         || crate::area_mutation_panel::invalid_fields(world, entity)
     {
         status(
@@ -209,6 +216,7 @@ pub fn arm(world: &mut World, root: Entity, entity: Entity) {
     let workspace = world.get::<WorkspaceMember>(entity).unwrap().0;
     let records = records(world);
     let mut grant = Grant {
+        entity,
         root,
         workspace,
         area,
@@ -232,7 +240,9 @@ struct Record {
     workspace: u64,
     uid: String,
     points: Vec<DVec2>,
+    immune: HashSet<Entity>,
     properties: RecordProperties,
+    filters: HashSet<Entity>,
 }
 
 fn records(world: &mut World) -> Vec<Record> {
@@ -240,6 +250,7 @@ fn records(world: &mut World) -> Vec<Record> {
     for (item, properties, parent, member) in world
         .query_filtered::<(&CanvasItem, &RecordProperties, &ChildOf, &WorkspaceMember), (
             Without<Pinned>,
+            Without<crate::protein_area::RemoteRecord>,
             bevy::ecs::query::Allow<bevy::ecs::entity_disabling::Disabled>,
         )>()
         .iter(world)
@@ -263,10 +274,62 @@ fn records(world: &mut World) -> Vec<Record> {
                 workspace: member.0,
                 uid: uid.into(),
                 points: Vec::new(),
+                immune: HashSet::new(),
                 properties: properties.clone(),
+                filters: HashSet::new(),
             })
             .points
             .push(item.position);
+    }
+    let filters: Vec<_> = world
+        .query::<(
+            Entity,
+            &crate::protein_area::filter::Matches,
+            &ChildOf,
+            &WorkspaceMember,
+        )>()
+        .iter(world)
+        .collect();
+    for record in records.values_mut() {
+        for (entity, filter, parent, member) in &filters {
+            if parent.parent() == record.root
+                && member.0 == record.workspace
+                && filter.allows(&record.properties, None)
+            {
+                record.filters.insert(*entity);
+            }
+        }
+    }
+    let shields = world
+        .query::<&InfluenceArea>()
+        .iter(world)
+        .any(|area| area.immunity != crate::area_effects::Immunity::None);
+    let sources: Vec<_> = if shields {
+        world
+            .query::<(Entity, &InfluenceArea)>()
+            .iter(world)
+            .filter(|(_, area)| !area.changes.is_empty())
+            .map(|(entity, _)| entity)
+            .collect()
+    } else {
+        Vec::new()
+    };
+    for record in records.values_mut() {
+        for source in &sources {
+            if record.points.iter().all(|point| {
+                crate::area_effects::blocked(
+                    world,
+                    record.root,
+                    record.workspace,
+                    *source,
+                    *point,
+                    Some(&record.properties),
+                    None,
+                )
+            }) {
+                record.immune.insert(*source);
+            }
+        }
     }
     records.into_values().collect()
 }
@@ -284,7 +347,7 @@ fn baseline(grant: &mut Grant, records: &[Record]) {
             record.uid.clone(),
             Visit {
                 inside,
-                eligible: inside && grant.area.matches(&record.properties),
+                eligible: inside && record.matches(grant),
             },
         );
     }
@@ -401,6 +464,7 @@ fn receive(world: &mut World, messages: Vec<ServerMessage>, records: &[Record]) 
                             record.root == grant.root
                                 && record.workspace == grant.workspace
                                 && record.uid == pending.target
+                                && !record.immune.contains(area)
                                 && record
                                     .points
                                     .iter()
@@ -413,7 +477,7 @@ fn receive(world: &mut World, messages: Vec<ServerMessage>, records: &[Record]) 
             stop_pending(
                 world,
                 &pending,
-                "Disarmed. The Area or Sand moved before its change was submitted.",
+                "Disarmed. The Area, Sand or immunity changed before submission.",
             );
             continue;
         }
@@ -517,8 +581,18 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
                 .any(|point| grant.area.contains(*point));
             let next = Visit {
                 inside,
-                eligible: inside && grant.area.matches(&record.properties),
+                eligible: inside && record.matches(grant),
             };
+            if record.immune.contains(entity) {
+                grant.visits.insert(
+                    record.uid.clone(),
+                    Visit {
+                        inside,
+                        eligible: false,
+                    },
+                );
+                continue;
+            }
             let Some(previous) = grant.visits.get_mut(&record.uid) else {
                 grant.visits.insert(record.uid.clone(), next);
                 continue;
@@ -628,17 +702,27 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
 }
 
 fn labels(
-    mut labels: Query<(&StatusLabel, &mut Text)>,
+    mut labels: Query<(&StatusLabel, &mut Text, &mut crate::icons::Tooltip)>,
     statuses: Query<&MutationStatus>,
     state: Res<Mutations>,
     mut controls: Query<(&DisarmControl, &mut Node)>,
 ) {
-    for (label, mut text) in &mut labels {
+    for (label, mut text, mut tooltip) in &mut labels {
         let value = statuses
             .get(label.0)
             .map_or("Disarmed", |status| status.0.as_str());
-        if text.0 != value {
-            text.0 = value.into();
+        if tooltip.0 != value {
+            tooltip.0 = value.into();
+        }
+        let title = if state.grants.contains_key(&label.0) {
+            "Armed"
+        } else if state.previews.contains_key(&label.0) {
+            "Preview"
+        } else {
+            "Disarmed"
+        };
+        if text.0 != title {
+            text.0 = title.into();
         }
     }
     for (control, mut node) in &mut controls {
@@ -649,6 +733,19 @@ fn labels(
         };
         if node.display != display {
             node.display = display;
+        }
+    }
+}
+
+impl Record {
+    fn matches(&self, grant: &Grant) -> bool {
+        if self.immune.contains(&grant.entity) {
+            return false;
+        }
+        if grant.area.filter.is_some() {
+            self.filters.contains(&grant.entity)
+        } else {
+            grant.area.matches(&self.properties)
         }
     }
 }

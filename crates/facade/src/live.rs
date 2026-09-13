@@ -8,7 +8,6 @@ use axum::{
     http::HeaderMap,
     response::Response,
 };
-use base64::{Engine as _, engine::general_purpose::STANDARD};
 use cell::{ClientMessage, ServerMessage};
 use serde_json::{Value, json};
 
@@ -23,8 +22,18 @@ pub(crate) async fn upgrade(
     headers: HeaderMap,
     ws: WebSocketUpgrade,
 ) -> Result<Response, Failure> {
-    auth::same_origin(&headers)?;
-    let user = auth::viewer(&state, &headers).await?;
+    state.security.same_origin(&headers)?;
+    let browser = auth::authenticated(&state, &headers).await?;
+    let browser_permit = browser
+        .connections
+        .clone()
+        .try_acquire_owned()
+        .map_err(|_| {
+            (
+                axum::http::StatusCode::TOO_MANY_REQUESTS,
+                "Too many connections for this login".into(),
+            )
+        })?;
     let permit = state.connections.clone().try_acquire_owned().map_err(|_| {
         (
             axum::http::StatusCode::SERVICE_UNAVAILABLE,
@@ -36,7 +45,8 @@ pub(crate) async fn upgrade(
         .max_frame_size(128 * 1024)
         .on_upgrade(move |socket| async move {
             let _permit = permit;
-            drive(socket, state, headers, user).await;
+            let _browser_permit = browser_permit;
+            drive(socket, state, headers, browser.login).await;
         }))
 }
 
@@ -58,17 +68,20 @@ async fn drive(
     mut socket: WebSocket,
     state: State,
     headers: HeaderMap,
-    initial_user: Option<store::auth::AuthUser>,
+    login: engine::login::LoginSession,
 ) {
-    let subject = initial_user.as_ref().map(|u| u.uid.clone());
-    let mut session = cell::Session::new(
+    let subject = Some(login.person_uid().to_string());
+    let mut session = cell::Session::authenticated(
         state.cell.engine.clone(),
         state.cell.lanes.clone(),
         uuid::Uuid::new_v4().to_string(),
-        subject.clone(),
+        login.clone(),
     );
-    let mut facts = state.cell.engine.subscribe();
-    let mut changes = state.cell.engine.watch_query_changes();
+    let mut events = cell::SyncEvents::new(&state.cell.engine);
+    let mut revoked = login.watch_revocation();
+    let mut rate_window = std::time::Instant::now();
+    let mut message_count = 0;
+    let mut last_received = std::time::Instant::now();
     let mut stop = state.stop.clone();
     let mut timer = tokio::time::interval(Duration::from_secs(15));
     timer.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
@@ -79,45 +92,65 @@ async fn drive(
         return;
     }
     loop {
-        let current = match auth::viewer(&state, &headers).await {
-            Ok(user) if user.as_ref().map(|u| &u.uid) == subject.as_ref() => user,
-            _ => {
-                let _ = send(&mut socket, &json!({"type": "logout"})).await;
-                break;
-            }
+        match auth::viewer(&state, &headers).await {
+            Ok(user) if user.as_ref().map(|u| &u.uid) == subject.as_ref() => {}
+            _ => break,
         };
-        match records::snapshot(&state, current.as_ref(), &selected, &search).await {
-            Ok(signals) => {
+        let snapshot = login
+            .run(&state.cell.engine, false, async {
+                let current = store::auth::user_by_uid(&state.cell.store.pool, login.person_uid())
+                    .await?
+                    .ok_or_else(|| engine::EngineError::Forbidden("Login unavailable".into()))?;
+                let signals = records::snapshot(&state, Some(&current), &selected, &search)
+                    .await
+                    .map_err(|_| engine::EngineError::Forbidden("Cannot read this view".into()))?;
                 if signals != previous {
-                    if !send(&mut socket, &json!({"type": "signals", "signals": signals})).await {
-                        break;
+                    if !login.is_live()
+                        || !send(&mut socket, &json!({"type": "signals", "signals": signals})).await
+                    {
+                        return Err(engine::EngineError::Forbidden("Connection ended".into()));
                     }
                     previous = signals;
                 }
-            }
-            Err(_) => {
-                let _ = send(&mut socket, &json!({"type": "logout"})).await;
-                break;
-            }
+                Ok(())
+            })
+            .await;
+        match snapshot {
+            Ok(()) => {}
+            Err(_) => break,
         }
         tokio::select! {
             _ = stop.changed() => break,
-            _ = timer.tick() => { if !send_ping(&mut socket).await { break; } },
-            _ = changes.changed() => {},
-            fact = facts.recv() => {
-                if matches!(fact, Err(tokio::sync::broadcast::error::RecvError::Closed)) { break; }
+            _ = revoked.changed() => break,
+            _ = tokio::time::sleep_until(tokio::time::Instant::from_std(login.expires())) => break,
+            _ = timer.tick() => { if last_received.elapsed() > Duration::from_secs(60) || !send_ping(&mut socket).await { break; } },
+            event = events.next(session.has_ephemeral_subscriptions()) => {
+                let Some(event) = event else { break; };
+                if !session.subject_may_act().await { break; }
+                let sent = login.run(&state.cell.engine, false, async {
+                    for message in session.on_sync_event(event).await {
+                        if !send(&mut socket, &message).await { return Ok(false); }
+                    }
+                    Ok(true)
+                }).await.unwrap_or(false);
+                if !sent { break; }
             },
             incoming = socket.recv() => {
                 let Some(Ok(message)) = incoming else { break; };
+                last_received = std::time::Instant::now();
+                if rate_window.elapsed() >= Duration::from_secs(10) { rate_window = last_received; message_count = 0; }
+                message_count += 1;
+                if message_count > 120 { break; }
                 let Message::Text(text) = message else {
                     if matches!(message, Message::Close(_)) { break; }
                     continue;
                 };
-                let user = match auth::viewer(&state, &headers).await {
-                    Ok(user) if user.as_ref().map(|u| &u.uid) == subject.as_ref() => user,
+                match auth::viewer(&state, &headers).await {
+                    Ok(user) if user.as_ref().map(|u| &u.uid) == subject.as_ref() => {},
                     _ => break,
                 };
                 let value = serde_json::from_str::<Value>(&text).unwrap_or(Value::Null);
+                login.touch();
                 if value["type"] == "select" {
                     selected = value["uid"].as_str().filter(|s| s.is_empty() || nucleus::valid_uid(s, "r")).unwrap_or("").to_string();
                     continue;
@@ -127,14 +160,19 @@ async fn drive(
                     continue;
                 }
                 let id = value["id"].as_str().unwrap_or("request").chars().take(100).collect::<String>();
-                let result = process(&state, user.as_ref(), &selected, &mut session, value).await;
-                let messages = result.unwrap_or_else(|message| vec![ServerMessage::Error { id, message, code: Some("facade_request_rejected".into()) }]);
-                for message in messages {
-                    if !send(&mut socket, &message).await { return; }
-                }
+                let sent = login.run(&state.cell.engine, true, async {
+                    let result = process(&mut session, value).await;
+                    let messages = result.unwrap_or_else(|message| vec![ServerMessage::Error { id, message, code: Some("invalid_request".into()) }]);
+                    for message in messages {
+                        if !send(&mut socket, &message).await { return Ok(false); }
+                    }
+                    Ok(true)
+                }).await.unwrap_or(false);
+                if !sent { break; }
             }
         }
     }
+    let _ = send(&mut socket, &json!({"type":"logout"})).await;
     let _ = tokio::time::timeout(Duration::from_secs(2), socket.send(Message::Close(None))).await;
 }
 
@@ -149,52 +187,8 @@ async fn send_ping(socket: &mut WebSocket) -> bool {
     )
 }
 
-async fn process(
-    state: &State,
-    user: Option<&store::auth::AuthUser>,
-    selected: &str,
-    session: &mut cell::Session,
-    value: Value,
-) -> Result<Vec<ServerMessage>, String> {
+async fn process(session: &mut cell::Session, value: Value) -> Result<Vec<ServerMessage>, String> {
     let message: ClientMessage =
         serde_json::from_value(value).map_err(|_| "Invalid request.".to_string())?;
-    let action = match &message {
-        ClientMessage::SessionAuthenticate { .. } => return Ok(session.handle(message).await),
-        ClientMessage::SignedAct { action_base64, .. } => {
-            let bytes = STANDARD
-                .decode(action_base64)
-                .map_err(|_| "Invalid Action.".to_string())?;
-            serde_json::from_slice(&bytes).map_err(|_| "Invalid Action.".to_string())?
-        }
-        ClientMessage::Act { action, .. } if user.is_none() => action.clone(),
-        _ => return Err("This request is not available in Facade.".into()),
-    };
-    let _management = if matches!(
-        &action,
-        engine::actions::Action::CreateUser { .. }
-            | engine::actions::Action::CreateRole { .. }
-            | engine::actions::Action::AssignRole { .. }
-            | engine::actions::Action::GrantPermission { .. }
-            | engine::actions::Action::RevokePermission { .. }
-            | engine::actions::Action::SetPersonReadFilter { .. }
-            | engine::actions::Action::SetRoleReadRules { .. }
-    ) {
-        Some(state.auth.management.lock().await)
-    } else {
-        None
-    };
-    let current = if let Some(user) = user {
-        Some(
-            store::auth::user_by_uid(&state.cell.store.pool, &user.uid)
-                .await
-                .map_err(|_| "Could not check permissions.".to_string())?
-                .ok_or_else(|| "Please log in.".to_string())?,
-        )
-    } else {
-        None
-    };
-    records::allow(state, current.as_ref(), selected, &action)
-        .await
-        .map_err(|(_, message)| message)?;
     Ok(session.handle(message).await)
 }

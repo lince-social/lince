@@ -152,9 +152,21 @@ fn main() -> Result<(), Error> {
     #[cfg(feature = "facade")]
     let _facade = if has_arg(&args, "--facade") {
         let address = listen_addr.as_deref().unwrap_or("127.0.0.1:6174");
-        match runtime.block_on(lince_facade::Facade::start(cell.runtime().clone(), address)) {
+        let origin = arg_value(&args, "--facade-origin")
+            .or_else(|| std::env::var("LINCE_FACADE_ORIGIN").ok());
+        let started = runtime.block_on(async {
+            if let Some(origin) = origin.as_deref() {
+                lince_facade::Facade::start_public(cell.runtime().clone(), address, origin).await
+            } else {
+                lince_facade::Facade::start(cell.runtime().clone(), address).await
+            }
+        });
+        match started {
             Ok(facade) => {
-                println!("Facade: http://{}", facade.address);
+                println!(
+                    "Facade: {}",
+                    origin.unwrap_or_else(|| format!("http://{}", facade.address))
+                );
                 Some(facade)
             }
             Err(error) => {
@@ -250,6 +262,9 @@ fn print_help() {
     #[cfg(feature = "facade")]
     {
         println!("      --facade         Serve the browser Kanban and record view");
+        println!(
+            "      --facade-origin <https://domain>  Public origin behind a local HTTPS reverse proxy"
+        );
         println!("                       at http://127.0.0.1:6174 (or --listen-addr / --port)");
     }
     println!();

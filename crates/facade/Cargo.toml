@@ -6,7 +6,6 @@ license.workspace = true
 
 [dependencies]
 axum = { workspace = true, features = ["ws"] }
-base64 = { workspace = true }
 cell = { workspace = true }
 engine = { workspace = true }
 nucleus = { workspace = true }
@@ -23,6 +22,7 @@ uuid = { workspace = true }
 sensei = { workspace = true }
 
 [dev-dependencies]
+base64 = { workspace = true }
 ed25519-dalek = { workspace = true }
 reqwest = { workspace = true }
 tokio-tungstenite = "0.30.0"

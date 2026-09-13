@@ -143,6 +143,12 @@ async fn create_role_then_create_user_wires_a_working_login() {
         store::auth::create_person_login(&e.store.pool, "Creator", "creator", "hash", role_id)
             .await
             .unwrap();
+    let assign = store::auth::ensure_permission(&e.store.pool, "user", "assign_role")
+        .await
+        .unwrap();
+    store::auth::grant(&e.store.pool, role_id, assign)
+        .await
+        .unwrap();
 
     let outcome = e
         .act(

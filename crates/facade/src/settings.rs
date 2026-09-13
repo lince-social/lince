@@ -53,7 +53,7 @@ pub(crate) async fn ensure(state: &State) -> Result<(), Failure> {
         .map_err(internal)?
         .is_none()
     {
-        state
+        let created = state
             .cell
             .engine
             .act(
@@ -68,6 +68,25 @@ pub(crate) async fn ensure(state: &State) -> Result<(), Failure> {
             )
             .await
             .map_err(internal)?;
+        if let Some(uid) = created.created
+            && let Some(role) = store::auth::role_by_name(&state.cell.store.pool, "admin")
+                .await
+                .map_err(internal)?
+        {
+            state
+                .cell
+                .engine
+                .act(
+                    Action::GrantVisibility {
+                        subject_kind: "role".into(),
+                        subject: Some(role.to_string()),
+                        target: uid,
+                    },
+                    None,
+                )
+                .await
+                .map_err(internal)?;
+        }
     }
     if let Some(record) = store::records::resolve(&state.cell.store.pool, SLUG)
         .await
@@ -184,7 +203,7 @@ pub(crate) async fn snapshot(
     templates.sort_by(|a, b| a["name"].as_str().cmp(&b["name"].as_str()));
     Ok(
         json!({"facadeuid":uid,"customtitle":general["title"],"language":general["language"],"columns":configuration["columns"],"templates":templates,
-        "canadmin":!uid.is_empty() && administrator(user),
-        "canconfigure":!uid.is_empty() && records::permits(user,"configuration:update") && records::permits(user,"record:update")}),
+        "canadmin":!uid.is_empty() && records::permits(user,"record:update") && records::visible(state, subject, &uid).await?,
+        "canconfigure":!uid.is_empty() && records::permits(user,"record:update") && records::visible(state, subject, &uid).await?}),
     )
 }

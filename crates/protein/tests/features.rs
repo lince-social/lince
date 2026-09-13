@@ -546,6 +546,15 @@ async fn threads_include_resolves_sender_name_from_the_actor() {
     .unwrap();
 
     let subject = make(&e, "abstract-idea", RecordKind::Plain, 0.0).await;
+    let read = store::auth::ensure_permission(&e.store.pool, "record", "read")
+        .await
+        .unwrap();
+    store::auth::grant(&e.store.pool, role_id, read)
+        .await
+        .unwrap();
+    store::visibility::grant(&e.store.pool, "actor", Some(&user_id), &subject)
+        .await
+        .unwrap();
     let thread = e
         .act(
             Action::CreateThread {
@@ -606,10 +615,22 @@ async fn visibility_gate_is_the_one_read_boundary() {
     make(&e, "private.diary", RecordKind::Plain, -1.0).await;
     let neighbor = make(&e, "neighbor", RecordKind::Person, 0.0).await;
     let unknown = make(&e, "unknown", RecordKind::Person, 0.0).await;
+    let role = store::auth::ensure_role(&e.store.pool, "neighbor")
+        .await
+        .unwrap();
+    let read = store::auth::ensure_permission(&e.store.pool, "record", "read")
+        .await
+        .unwrap();
+    store::auth::grant(&e.store.pool, role, read).await.unwrap();
+    for person in [&neighbor, &unknown] {
+        store::auth::set_user_role(&e.store.pool, person, role)
+            .await
+            .unwrap();
+    }
 
     e.act(
         Action::GrantVisibility {
-            subject_kind: "person".into(),
+            subject_kind: "actor".into(),
             subject: Some(neighbor.clone()),
             target: public_need.clone(),
         },
@@ -819,7 +840,28 @@ async fn auth_source_is_gated_by_read_permission_for_a_remote_subject() {
     let visible = protein::execute_for(&e.store, &p, Some(&reader.to_string()))
         .await
         .unwrap();
-    assert!(!visible.is_empty(), "role:read grants the whole listing");
+    assert!(!visible.is_empty());
+    assert!(visible.iter().all(|row| row["kind"] == "role"));
+    assert!(
+        visible
+            .iter()
+            .all(|row| row["permissions"] == serde_json::json!([]))
+    );
+
+    store::auth::revoke(&e.store.pool, reader_role, perm_id)
+        .await
+        .unwrap();
+    let permission = store::auth::ensure_permission(&e.store.pool, "permission", "read")
+        .await
+        .unwrap();
+    store::auth::grant(&e.store.pool, reader_role, permission)
+        .await
+        .unwrap();
+    let catalog = protein::execute_for(&e.store, &p, Some(&reader.to_string()))
+        .await
+        .unwrap();
+    assert_eq!(catalog.len(), 1);
+    assert_eq!(catalog[0]["kind"], "permission_catalog");
 
     let local = protein::execute_for(&e.store, &p, None).await.unwrap();
     assert!(

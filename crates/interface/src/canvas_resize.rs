@@ -52,6 +52,7 @@ impl Edges {
 pub(crate) struct Resize {
     pub edges: Edges,
     pub zoom: f64,
+    pub scale: f64,
     pub start: Vec2,
     pub original: CanvasItem,
     pub minimum: Vec2,
@@ -76,6 +77,8 @@ impl Resize {
             + (item.size - self.original.size).as_dvec2()
                 * bevy::math::DVec2::new(f64::from(self.edges.x), f64::from(self.edges.y))
                 * 0.5;
+        item.position =
+            self.original.position + (item.position - self.original.position) * self.scale;
         Some(item)
     }
 
@@ -84,12 +87,14 @@ impl Resize {
             || !self.start.is_finite()
             || !self.zoom.is_finite()
             || self.zoom <= 0.0
+            || !self.scale.is_finite()
+            || self.scale <= 0.0
             || !self.original.position.is_finite()
             || !self.original.size.is_finite()
         {
             return None;
         }
-        let delta = (point - self.start).as_dvec2() / self.zoom;
+        let delta = (point - self.start).as_dvec2() / (self.zoom * self.scale);
         let original = self.original.size.as_dvec2();
         let mut size = original;
         let mut center = self.original.position;
@@ -98,7 +103,7 @@ impl Resize {
                 let minimum = f64::from(self.minimum[axis]).clamp(48.0, 100_000.0);
                 size[axis] =
                     (original[axis] + delta[axis] * f64::from(edge)).clamp(minimum, 100_000.0);
-                center[axis] += (size[axis] - original[axis]) * f64::from(edge) * 0.5;
+                center[axis] += (size[axis] - original[axis]) * f64::from(edge) * 0.5 * self.scale;
             }
         }
         (center.is_finite() && size.is_finite()).then_some(CanvasItem {
@@ -163,6 +168,7 @@ pub(crate) mod tests {
                 let resize = Resize {
                     edges,
                     zoom,
+                    scale: 1.0,
                     start: Vec2::ZERO,
                     original: CanvasItem {
                         position: bevy::math::DVec2::splat(1e12),
@@ -216,6 +222,7 @@ pub(crate) mod tests {
                     let resize = Resize {
                         edges: Edges { x, y },
                         zoom,
+                        scale: 1.0,
                         start: Vec2::ZERO,
                         original,
                         minimum: Vec2::splat(48.0),
@@ -253,6 +260,7 @@ pub(crate) mod tests {
         let resize = Resize {
             edges: Edges { x: -1, y: -1 },
             zoom: 1.0,
+            scale: 1.0,
             start: Vec2::ZERO,
             original: CanvasItem {
                 position: DVec2::ZERO,
@@ -279,9 +287,38 @@ pub(crate) mod tests {
     }
 
     crate::laboratory_cases! {
+        resizing_scaled_sands_keeps_the_visible_opposite_edge_fixed,
         regular_areas_keep_proportions_and_opposite_edges_at_every_zoom,
         resize_hotspots_show_the_matching_cursor_on_every_side_and_corner,
         every_edge_and_corner_keeps_the_opposite_side_fixed_at_each_zoom,
         resize_limits_do_not_flip_or_lose_pointer_alignment,
+    }
+
+    #[cfg_attr(test, test)]
+    fn resizing_scaled_sands_keeps_the_visible_opposite_edge_fixed() {
+        for scale in [0.1, 0.5, 2.0, 20.0] {
+            let resize = Resize {
+                edges: Edges { x: 1, y: -1 },
+                zoom: 1.5,
+                scale,
+                start: Vec2::ZERO,
+                original: CanvasItem {
+                    position: DVec2::new(40.0, 20.0),
+                    size: Vec2::splat(200.0),
+                },
+                minimum: Vec2::splat(48.0),
+            };
+            let next = resize.apply(Vec2::new(30.0, -30.0)).unwrap();
+            for (axis, edge) in [1.0, -1.0].into_iter().enumerate() {
+                let original_edge = resize.original.position[axis]
+                    - f64::from(resize.original.size[axis]) * scale * edge * 0.5;
+                let next_edge =
+                    next.position[axis] - f64::from(next.size[axis]) * scale * edge * 0.5;
+                assert!((next_edge - original_edge).abs() < 0.001);
+                let visible_growth =
+                    f64::from(next.size[axis] - resize.original.size[axis]) * scale * resize.zoom;
+                assert!((visible_growth - 30.0).abs() < 0.001);
+            }
+        }
     }
 }

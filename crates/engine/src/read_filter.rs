@@ -93,6 +93,16 @@ impl Engine {
                 ..
             } => vec![conversation, thread],
             Action::SetQuantity { target, .. }
+            | Action::AddQuantity { target, .. }
+            | Action::Activate { target }
+            | Action::Deactivate { target }
+            | Action::CaptureEntry { target, .. }
+            | Action::SetSlug { target, .. }
+            | Action::SetUnit { target, .. }
+            | Action::SetExtension { target, .. }
+            | Action::SetPlace { target, .. }
+            | Action::GrantVisibility { target, .. }
+            | Action::CreateThread { target, .. }
             | Action::PreviewAreaTransition { target, .. }
             | Action::SetQuantityExact { target, .. }
             | Action::EditRecordText { target, .. }
@@ -106,6 +116,20 @@ impl Engine {
             | Action::MoveRecordTo { record: target, .. }
             | Action::CancelRecordMove { record: target } => vec![target],
             Action::ApplyAreaTransition { preview, .. } => vec![&preview.target],
+            Action::TransitionRecord { subject, .. }
+            | Action::SetIdentity { subject, .. }
+            | Action::RetractRecord { subject, .. } => vec![subject],
+            Action::AssertRecord {
+                subject, object, ..
+            } => {
+                let mut targets = vec![subject];
+                targets.extend(object.iter());
+                targets
+            }
+            Action::RefineAssertion {
+                subject, object, ..
+            } => vec![subject, object],
+            Action::SetAssertionOrder { ordered, .. } => ordered.iter().collect(),
             _ => Vec::new(),
         };
         let mut out = Vec::new();
@@ -113,6 +137,25 @@ impl Engine {
             if let Ok(uid) = self.resolve(name).await {
                 out.push(uid);
             }
+        }
+        match action {
+            Action::RetractAssertion { assertion } => {
+                if let Some(assertion) = store::assertions::get(&self.store.pool, assertion).await?
+                {
+                    out.push(assertion.subject_uid);
+                }
+            }
+            Action::ReviseEntry { entry, .. } | Action::VoidEntry { entry, .. } => {
+                if let Some(entry) = store::entries::get(&self.store.pool, entry).await? {
+                    out.push(entry.record_uid);
+                }
+            }
+            Action::ClassifyFact { fact, .. } => {
+                if let Some(fact) = store::facts::get(&self.store.pool, fact).await? {
+                    out.push(fact.record_uid);
+                }
+            }
+            _ => {}
         }
         Ok(out)
     }
@@ -128,12 +171,9 @@ impl Engine {
         let Some(actor) = actor else {
             return Ok(());
         };
-        let Some(readable) = self.readable_by(actor).await? else {
-            return Ok(());
-        };
         for target in targets {
-            if !readable.contains(target) {
-                return Err(EngineError::Consequence(format!(
+            if !self.may_read_record(Some(actor), target).await? {
+                return Err(EngineError::Forbidden(format!(
                     "{target} is outside what this login may see, so it may not be changed either"
                 )));
             }

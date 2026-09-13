@@ -26,17 +26,13 @@ struct Field {
 
 pub(crate) fn render(world: &mut World, root: Entity, panel: Entity, entity: Entity) {
     let area = world.get::<InfluenceArea>(entity).unwrap().clone();
-    label(world, panel, "Record changes at the boundary", 20.0);
-    label(
-        world,
-        panel,
-        "Changes apply to matching Records when their Sands cross the outline, with or without physics. Copies of one Record count together. Editing or switching workspaces disarms the Area.",
-        14.0,
-    );
+    let heading = label(world, panel, "Record changes", 18.0);
+    world.entity_mut(heading).insert(crate::icons::Tooltip("Changes apply to matching Records when their Sands cross the local outline, with or without physics. Copies of one Record count together. Editing or switching workspaces disarms the Area.".into()));
     let status = label(world, panel, "Disarmed", 14.0);
-    world
-        .entity_mut(status)
-        .insert(area_mutation::StatusLabel(entity));
+    world.entity_mut(status).insert((
+        area_mutation::StatusLabel(entity),
+        crate::icons::Tooltip::default(),
+    ));
     for (enter, changes, title) in [
         (true, &area.changes.enter, "On entry"),
         (false, &area.changes.leave, "On exit"),
@@ -45,17 +41,17 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity, entity: Ent
         for (property, title, value) in [
             (
                 Property::Quantity,
-                "Set quantity (blank keeps it)",
+                "Quantity",
                 changes.quantity.clone().unwrap_or_default(),
             ),
             (
                 Property::Assert,
-                "Add Assertions (names separated by commas)",
+                "Add Assertions",
                 changes.assert.join(", "),
             ),
             (
                 Property::Retract,
-                "Remove Assertions (names separated by commas)",
+                "Remove Assertions",
                 changes.retract.join(", "),
             ),
         ] {
@@ -72,6 +68,11 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity, entity: Ent
                 ))
                 .id();
             world.entity_mut(input).insert((
+                crate::icons::Tooltip(match property {
+                    Property::Quantity => "Set quantity on this crossing. Blank keeps the current value.",
+                    Property::Assert => "Add Assertion names separated by commas. Remove them on the opposite crossing for a temporary Assertion.",
+                    Property::Retract => "Remove Assertion names separated by commas. Add them on the opposite crossing to restore them.",
+                }.into()),
                 EditableText {
                     allow_newlines: false,
                     visible_lines: Some(1.0),
@@ -90,6 +91,7 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity, entity: Ent
                 .unwrap()
                 .set_label(title);
             let status = label(world, panel, "", 12.0);
+            world.entity_mut(status).insert(crate::icons::Tooltip("Not saved. Use a decimal quantity and up to 16 Assertion names. Do not add and remove the same name on one crossing.".into()));
             world.entity_mut(input).insert(Field {
                 root,
                 area: entity,
@@ -101,16 +103,11 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity, entity: Ent
             });
         }
     }
-    label(
-        world,
-        panel,
-        "For a temporary Assertion, add it on entry and remove it on exit. Reverse those choices to remove it while inside. Quantities are set to the values you choose; blank makes no change.",
-        14.0,
-    );
+    let controls = crate::area_panel::row(world, panel);
     control(
         world,
         root,
-        panel,
+        controls,
         EditAction::Area(crate::area_panel::AreaAction::PreviewChanges),
         "Preview Record changes",
     );
@@ -126,26 +123,20 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity, entity: Ent
                 14.0,
             );
         }
-        label(
-            world,
-            panel,
-            "Arming grants these changes for future crossings in this workspace, for up to 128 requests. Existing Records are not changed now. Disarm stays available beside Edit mode.",
-            14.0,
-        );
         if !area_mutation::armed(world, entity) {
             control(
                 world,
                 root,
-                panel,
+                controls,
                 EditAction::Area(crate::area_panel::AreaAction::ArmChanges),
-                "Grant these changes and arm Area",
+                "Grant the previewed Record changes for future crossings in this workspace, up to 128 requests. Existing Records are not changed now. Disarm stays available beside Edit mode.",
             );
         }
     }
     control(
         world,
         root,
-        panel,
+        controls,
         EditAction::Area(crate::area_panel::AreaAction::DisarmChanges),
         "Disarm Record changes",
     );
@@ -154,16 +145,16 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity, entity: Ent
 fn describe(changes: &RecordChanges) -> String {
     let mut parts = Vec::new();
     if let Some(quantity) = &changes.quantity {
-        parts.push(format!("set quantity to {quantity}"));
+        parts.push(format!("Quantity: {quantity}"));
     }
     if !changes.assert.is_empty() {
-        parts.push(format!("add {}", changes.assert.join(", ")));
+        parts.push(format!("+ {}", changes.assert.join(", ")));
     }
     if !changes.retract.is_empty() {
-        parts.push(format!("remove {}", changes.retract.join(", ")));
+        parts.push(format!("− {}", changes.retract.join(", ")));
     }
     if parts.is_empty() {
-        "keep properties unchanged".into()
+        "—".into()
     } else {
         parts.join("; ")
     }
@@ -222,7 +213,7 @@ pub(crate) fn autosave(world: &mut World) {
         world.get_mut::<Field>(entity).unwrap().observed = value;
         world.get_mut::<Field>(entity).unwrap().valid = valid;
         if let Some(mut text) = world.get_mut::<Text>(status) {
-            text.0 = if valid { "" } else { "Not saved. Use a decimal quantity and up to 16 Assertion names. Do not add and remove the same name in one crossing." }.into();
+            text.0 = if valid { "" } else { "Invalid value" }.into();
         }
     }
 }

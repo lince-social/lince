@@ -181,6 +181,12 @@ impl Engine {
         session: &mut ActionIntentSession,
         intent: SignedActionIntent,
     ) -> Result<VerifiedActionIntent, EngineError> {
+        if session.used_message_ids.len() >= 10_000 {
+            return Err(EngineError::Conflict {
+                code: "action_intent_session_exhausted",
+                message: "Reconnect before sending more actions".into(),
+            });
+        }
         validate_identifier("session id", &intent.session_id)?;
         validate_identifier("message id", &intent.message_id)?;
         if intent.action_base64.is_empty() || intent.action_base64.len() > MAX_ACTION_BASE64_BYTES {
@@ -253,21 +259,29 @@ impl Engine {
         let action: Action = serde_json::from_slice(&action_bytes)
             .map_err(|error| invalid_intent(&format!("Action payload is invalid: {error}")))?;
 
-        let stored = store::action_intents::insert_pending(
-            &self.store.pool,
-            store::action_intents::NewSignedActionIntent {
-                session_id: &intent.session_id,
-                session_challenge: &intent.session_challenge,
-                sequence: intent.sequence,
-                message_id: &intent.message_id,
-                actor_person_uid: &session.person_uid,
-                key_id: &bound_key_id,
-                action_base64: &intent.action_base64,
-                signature: &intent.signature,
-            },
-            Utc::now(),
-        )
-        .await?;
+        let intent_uid = if matches!(
+            &action,
+            Action::CreateUser { .. } | Action::UpdateUser { .. }
+        ) {
+            nucleus::new_uid("sai")
+        } else {
+            store::action_intents::insert_pending(
+                &self.store.pool,
+                store::action_intents::NewSignedActionIntent {
+                    session_id: &intent.session_id,
+                    session_challenge: &intent.session_challenge,
+                    sequence: intent.sequence,
+                    message_id: &intent.message_id,
+                    actor_person_uid: &session.person_uid,
+                    key_id: &bound_key_id,
+                    action_base64: &intent.action_base64,
+                    signature: &intent.signature,
+                },
+                Utc::now(),
+            )
+            .await?
+            .uid
+        };
 
         session.used_message_ids.insert(intent.message_id.clone());
         session.next_sequence =
@@ -279,7 +293,7 @@ impl Engine {
                     message: "signed Action intent session sequence is exhausted".into(),
                 })?;
         Ok(VerifiedActionIntent {
-            intent_uid: stored.uid,
+            intent_uid,
             message_id: intent.message_id,
             action,
             person_uid: session.person_uid.clone(),
@@ -296,6 +310,33 @@ impl Engine {
         &self,
         verified: VerifiedActionIntent,
     ) -> Result<ActionOutcome, EngineError> {
+        self.access_scope(true, self.act_verified_inner(verified))
+            .await
+    }
+
+    async fn act_verified_inner(
+        &self,
+        verified: VerifiedActionIntent,
+    ) -> Result<ActionOutcome, EngineError> {
+        if let Err(error) = self
+            .authorize_action(&verified.action, Some(&verified.person_uid))
+            .await
+        {
+            if !matches!(
+                &verified.action,
+                Action::CreateUser { .. } | Action::UpdateUser { .. }
+            ) {
+                let _ = store::action_intents::mark_failed(
+                    &self.store.pool,
+                    &verified.intent_uid,
+                    error.code(),
+                    &error.to_string(),
+                    Utc::now(),
+                )
+                .await;
+            }
+            return Err(error);
+        }
         let now = Utc::now();
         let VerifiedActionIntent {
             intent_uid,
@@ -309,6 +350,13 @@ impl Engine {
             action_base64,
             signature,
         } = verified;
+        if matches!(
+            &action,
+            Action::CreateUser { .. } | Action::UpdateUser { .. }
+        ) {
+            drop(action_base64);
+            return self.act_at(action, Some(person_uid), now).await;
+        }
         if let Some(outcome) = self
             .queue_remote_transfer_action(
                 &action,

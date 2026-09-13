@@ -262,6 +262,31 @@ impl Engine {
         batch: &OpBatch,
         replica_root: Option<&str>,
     ) -> Result<usize, EngineError> {
+        use nucleus::sync::{Activity, Direction, Instance, Outcome, Summary, Update};
+        self.sync_service
+            .run(
+                &self.store,
+                Activity {
+                    instance: Instance::peer(&batch.from_organ, replica_root),
+                    direction: Direction::Incoming,
+                    update: Update::Incremental,
+                },
+                self.import_ops_inner(batch, replica_root),
+                |(count, subjects)| {
+                    let mut summary = Summary::new(Outcome::Applied, *count);
+                    summary.subjects = subjects.clone();
+                    summary
+                },
+            )
+            .await
+            .map(|(count, _)| count)
+    }
+
+    async fn import_ops_inner(
+        &self,
+        batch: &OpBatch,
+        replica_root: Option<&str>,
+    ) -> Result<(usize, Vec<String>), EngineError> {
         let mut accept: Option<Vec<String>> = None;
         if let Some(contact) = store::organs::contact(&self.store.pool, &batch.from_organ).await? {
             if contact.trust == "blocked" {
@@ -540,6 +565,7 @@ impl Engine {
         }
         touched.sort();
         touched.dedup();
+        let subjects = touched.iter().take(32).cloned().collect();
         for record_uid in touched {
             if store::records::get(pool, &record_uid).await?.is_some() {
                 let _ = self
@@ -561,7 +587,7 @@ impl Engine {
                     .await;
             }
         }
-        Ok(applied)
+        Ok((applied, subjects))
     }
 
     async fn import_fact_op(&self, op: &WireOp, from_organ: &str) -> Result<bool, EngineError> {
@@ -833,7 +859,44 @@ impl Engine {
                     from_organ: from_organ.clone(),
                     ops: self.hydrate_ops(slice).await?,
                 };
-                match send(contact.clone(), root, batch).await {
+                use nucleus::sync::{Activity, Direction, Instance, Outcome, Summary, Update};
+                let activity = Activity {
+                    instance: Instance::peer(&contact_uid, root.as_deref()),
+                    direction: Direction::Outgoing,
+                    update: Update::Incremental,
+                };
+                let count = batch.ops.len();
+                let subjects = batch.ops.iter().map(|op| op.uid.clone()).take(32).collect();
+                let delivered = self
+                    .sync_service
+                    .run(
+                        &self.store,
+                        activity,
+                        async {
+                            Ok::<_, std::convert::Infallible>(
+                                send(contact.clone(), root, batch).await,
+                            )
+                        },
+                        |delivery| {
+                            let (outcome, message) = match delivery {
+                                Delivery::Sent => (Outcome::Delivered, None),
+                                Delivery::Mailed => (
+                                    Outcome::Pending,
+                                    Some("Waiting in the mailbox for the destination".into()),
+                                ),
+                                Delivery::Failed(reason) => (Outcome::Failed, Some(reason.clone())),
+                            };
+                            Summary {
+                                outcome,
+                                count: count as u64,
+                                subjects,
+                                message,
+                            }
+                        },
+                    )
+                    .await
+                    .unwrap();
+                match delivered {
                     Delivery::Sent => {}
                     Delivery::Mailed => {
                         if outcome == Delivery::Sent {

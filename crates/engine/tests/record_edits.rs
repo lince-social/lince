@@ -8,7 +8,7 @@ async fn engine() -> Engine {
 }
 
 async fn plain(e: &Engine, slug: &str) -> String {
-    store::records::create(
+    let uid = store::records::create(
         &e.store.pool,
         NewRecord {
             slug: Some(slug),
@@ -20,7 +20,11 @@ async fn plain(e: &Engine, slug: &str) -> String {
     )
     .await
     .expect("record")
-    .uid
+    .uid;
+    store::visibility::grant(&e.store.pool, "public", None, &uid)
+        .await
+        .unwrap();
+    uid
 }
 
 #[tokio::test]
@@ -552,14 +556,14 @@ async fn delegated_message_authorship_requires_the_agents_operator() {
         &e,
         "Operator",
         "message-operator",
-        &["record:create", "record:update"],
+        &["record:read", "record:create", "record:update"],
     )
     .await;
     let other = user_with(
         &e,
         "Other",
         "other-operator",
-        &["record:create", "record:update"],
+        &["record:read", "record:create", "record:update"],
     )
     .await;
     let agent = e
@@ -677,6 +681,9 @@ async fn message_drafts_are_private_restart_safe_and_consumed_only_after_send() 
         .await
         .unwrap()
         .uid;
+        store::visibility::grant(&e.store.pool, "actor", Some(&operator), &conversation)
+            .await
+            .unwrap();
         let thread = e
             .act(
                 Action::CreateThread {
@@ -1179,7 +1186,7 @@ async fn user_with(e: &Engine, name: &str, username: &str, perms: &[&str]) -> St
             .await
             .unwrap();
     }
-    store::auth::create_person_login(
+    let uid = store::auth::create_person_login(
         &e.store.pool,
         name,
         username,
@@ -1187,7 +1194,11 @@ async fn user_with(e: &Engine, name: &str, username: &str, perms: &[&str]) -> St
         role_id,
     )
     .await
-    .unwrap()
+    .unwrap();
+    store::visibility::grant(&e.store.pool, "actor", Some(&uid), &uid)
+        .await
+        .unwrap();
+    uid
 }
 
 #[tokio::test]
@@ -1222,10 +1233,16 @@ async fn delete_own_permission_allows_only_the_creator() {
         &e,
         "Owner",
         "owner",
-        &["record:delete_own", "record:update"],
+        &["record:read", "record:delete_own", "record:update"],
     )
     .await;
-    let stranger = user_with(&e, "Stranger", "stranger", &["record:delete_own"]).await;
+    let stranger = user_with(
+        &e,
+        "Stranger",
+        "stranger",
+        &["record:read", "record:delete_own"],
+    )
+    .await;
 
     let mine = plain(&e, "mine").await;
     e.act(
@@ -1268,8 +1285,8 @@ async fn delete_own_permission_allows_only_the_creator() {
 #[tokio::test]
 async fn delete_permission_allows_deleting_any_record() {
     let e = engine().await;
-    let owner = user_with(&e, "Owner", "owner2", &["record:update"]).await;
-    let admin = user_with(&e, "Admin", "admin2", &["record:delete"]).await;
+    let owner = user_with(&e, "Owner", "owner2", &["record:read", "record:update"]).await;
+    let admin = user_with(&e, "Admin", "admin2", &["record:read", "record:delete"]).await;
 
     let theirs = plain(&e, "theirs").await;
     e.act(

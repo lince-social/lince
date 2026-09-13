@@ -129,9 +129,9 @@ impl Action for PlacementAction {
         if world.get::<crate::area::InfluenceArea>(entity).is_some() {
             return;
         }
-        let Some(item) = world.get::<CanvasItem>(entity).copied() else {
+        if world.get::<CanvasItem>(entity).is_none() {
             return;
-        };
+        }
         let Some(view) = world.get::<CanvasView>(parent).copied() else {
             return;
         };
@@ -149,31 +149,37 @@ impl Action for PlacementAction {
             return;
         }
         if matches!(self, Self::Pin) {
-            let Some(viewport) = world
-                .get::<ComputedUiRenderTargetInfo>(parent)
-                .map(|target| target.logical_size())
+            let Some(viewport) = crate::inspection::bounds(world, parent).map(|rect| rect.size())
             else {
                 return;
             };
             if !viewport.is_finite() || viewport.min_element() <= 0.0 {
                 return;
             }
-            if let Some(pin) = world.get::<Pinned>(entity).copied() {
-                let position = view.center
-                    + (DVec2::from_array(pin.anchor) - DVec2::splat(0.5)) * viewport.as_dvec2()
-                        / view.zoom;
-                world.get_mut::<CanvasItem>(entity).unwrap().position = position;
-                world.entity_mut(entity).remove::<Pinned>();
-                world.entity_mut(entity).remove::<GlobalZIndex>();
-            } else {
-                let anchor = DVec2::splat(0.5)
-                    + (item.position - view.center) * view.zoom / viewport.as_dvec2();
-                let pin = Pinned {
-                    anchor: anchor.to_array(),
-                    scale: view.zoom,
-                };
-                if pin.valid() {
-                    world.entity_mut(entity).insert((pin, GlobalZIndex(1)));
+            let members = crate::canvas_selection::companions(world, parent, entity);
+            let unpin = members
+                .iter()
+                .all(|member| world.get::<Pinned>(*member).is_some());
+            for member in members {
+                if unpin {
+                    let pin = world.get::<Pinned>(member).unwrap();
+                    let position = view.center
+                        + (DVec2::from_array(pin.anchor) - DVec2::splat(0.5)) * viewport.as_dvec2()
+                            / view.zoom;
+                    world.get_mut::<CanvasItem>(member).unwrap().position = position;
+                    world.entity_mut(member).remove::<Pinned>();
+                    world.entity_mut(member).remove::<GlobalZIndex>();
+                } else if world.get::<Pinned>(member).is_none() {
+                    let item = world.get::<CanvasItem>(member).unwrap();
+                    let anchor = DVec2::splat(0.5)
+                        + (item.position - view.center) * view.zoom / viewport.as_dvec2();
+                    let pin = Pinned {
+                        anchor: anchor.to_array(),
+                        scale: view.zoom,
+                    };
+                    if pin.valid() {
+                        world.entity_mut(member).insert((pin, GlobalZIndex(1)));
+                    }
                 }
             }
             return;
@@ -282,7 +288,13 @@ fn menu(world: &mut World) {
     });
     let target = target.or_else(|| retained_menu_target(world));
     let target = target.filter(|(root, entity)| active(world, *root, *entity));
-    let pinned = target.is_some_and(|(_, entity)| world.get::<Pinned>(entity).is_some());
+    let pinned = target.is_some_and(|(root, entity)| {
+        let members = crate::canvas_selection::companions(world, root, entity);
+        !members.is_empty()
+            && members
+                .iter()
+                .all(|member| world.get::<Pinned>(*member).is_some())
+    });
     let grouping = target.map_or((false, false), |(root, target)| {
         crate::canvas_selection::options(world, root, target)
     });

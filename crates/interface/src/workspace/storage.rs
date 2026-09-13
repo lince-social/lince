@@ -276,6 +276,7 @@ pub(crate) mod tests {
         workspaces[0].name = name.into();
         Document {
             areas: Vec::new(),
+            proteins: Vec::new(),
             theme: Default::default(),
             active: 1,
             workspaces,

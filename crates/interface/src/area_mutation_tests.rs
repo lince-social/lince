@@ -38,7 +38,7 @@ async fn fixture() -> (App, Arc<engine::Engine>, Entity, Entity, Entity, String)
         information: None,
     };
     let mut app = App::new();
-        crate::laboratory::isolate(app.world_mut());
+    crate::laboratory::isolate(app.world_mut());
     app.add_plugins((
         MinimalPlugins,
         crate::cell_bridge::CellBridgePlugin,
@@ -128,6 +128,60 @@ async fn quantity(engine: &engine::Engine, uid: &str) -> String {
         .as_str()
         .unwrap()
         .into()
+}
+
+#[cfg_attr(test, tokio::test)]
+async fn new_areas_and_force_configuration_cannot_change_records() {
+    let (mut app, engine, root, area, sand, uid) = fixture().await;
+    let configured = app.world().get::<InfluenceArea>(area).unwrap().clone();
+    *app.world_mut().get_mut::<InfluenceArea>(area).unwrap() =
+        InfluenceArea::new(AreaShape::Square, DVec2::ZERO, DVec2::splat(100.0));
+    for configured_force in [false, true] {
+        if configured_force {
+            let mut current = app.world_mut().get_mut::<InfluenceArea>(area).unwrap();
+            current.strength = 400.0;
+            current.rules = configured.rules.clone();
+        }
+        preview(app.world_mut(), root, area);
+        arm(app.world_mut(), root, area);
+        assert!(!previewed(app.world(), area));
+        assert!(!armed(app.world(), area));
+        for x in [0.0, 100.0, 0.0, 100.0] {
+            move_to(&mut app, sand, x);
+            pump(&mut app).await;
+            assert_eq!(quantity(&engine, &uid).await, "0");
+            assert!(app.world().resource::<Mutations>().pending.is_empty());
+        }
+    }
+}
+
+#[cfg_attr(test, tokio::test)]
+async fn movement_reach_does_not_expand_record_change_boundaries() {
+    for mode in [
+        crate::area::ReachMode::Limited,
+        crate::area::ReachMode::Unlimited,
+    ] {
+        let (mut app, engine, root, area, sand, uid) = fixture().await;
+        {
+            let mut area = app.world_mut().get_mut::<InfluenceArea>(area).unwrap();
+            area.reach.mode = mode;
+            area.reach.radius = 500.0;
+            area.strength = 100.0;
+            area.target = crate::area::AttractionTarget::Point([400.0, 0.0]);
+        }
+        enable(&mut app, root, area);
+        for x in [400.0, 200.0, 75.0] {
+            move_to(&mut app, sand, x);
+            pump(&mut app).await;
+            assert_eq!(quantity(&engine, &uid).await, "0");
+        }
+        move_to(&mut app, sand, 0.0);
+        pump(&mut app).await;
+        assert_eq!(quantity(&engine, &uid).await, "-3");
+        move_to(&mut app, sand, 75.0);
+        pump(&mut app).await;
+        assert_eq!(quantity(&engine, &uid).await, "1");
+    }
 }
 
 #[cfg_attr(test, tokio::test)]
@@ -294,11 +348,119 @@ async fn entering_a_conflicting_area_later_keeps_the_first_change() {
     assert_eq!(quantity(&engine, &uid).await, "-3");
 }
 
-    crate::laboratory_cases! {
-        async entry_and_exit_change_real_records_and_property_changes_do_not_fake_an_exit,
-        async copies_count_together_and_exit_waits_until_the_last_copy_leaves,
-        async overlap_conflicts_disarm_without_writing_and_equal_changes_coalesce,
-        async edits_switches_and_disarming_cancel_unsubmitted_changes,
-        async newly_arriving_records_and_pinned_sands_do_not_trigger_changes,
-        async entering_a_conflicting_area_later_keeps_the_first_change,
+crate::laboratory_cases! {
+    async immunity_suppresses_record_transitions_and_cancels_pending_previews,
+    async protein_filters_control_crossings_and_exit_restores_after_the_record_stops_matching,
+    async movement_reach_does_not_expand_record_change_boundaries,
+    async new_areas_and_force_configuration_cannot_change_records,
+    async entry_and_exit_change_real_records_and_property_changes_do_not_fake_an_exit,
+    async copies_count_together_and_exit_waits_until_the_last_copy_leaves,
+    async overlap_conflicts_disarm_without_writing_and_equal_changes_coalesce,
+    async edits_switches_and_disarming_cancel_unsubmitted_changes,
+    async newly_arriving_records_and_pinned_sands_do_not_trigger_changes,
+    async entering_a_conflicting_area_later_keeps_the_first_change,
+}
+
+#[cfg_attr(test, tokio::test)]
+async fn protein_filters_control_crossings_and_exit_restores_after_the_record_stops_matching() {
+    use crate::protein_area::{Config, ProteinAreaPlugin, filter::Matches};
+    let (mut app, engine, root, area, sand, uid) = fixture().await;
+    app.add_plugins(ProteinAreaPlugin);
+    let mut config = Config {
+        enabled: true,
+        bindings: vec![],
+        ..default()
+    };
+    config.draft.query["where"] = serde_json::json!([{"all":[{"uid_eq":uid},{"quantity_eq":"0"}]}]);
+    {
+        let mut current = app.world_mut().get_mut::<InfluenceArea>(area).unwrap();
+        current.rules.clear();
+        current.filter = Some(config);
     }
+    for _ in 0..200 {
+        app.update();
+        if app
+            .world()
+            .get::<Matches>(area)
+            .is_some_and(|m| m.uids.contains(&uid))
+        {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+    }
+    assert!(
+        app.world()
+            .get::<Matches>(area)
+            .unwrap()
+            .uids
+            .contains(&uid)
+    );
+    enable(&mut app, root, area);
+    move_to(&mut app, sand, 0.0);
+    pump(&mut app).await;
+    assert_eq!(quantity(&engine, &uid).await, "-3");
+    for _ in 0..200 {
+        app.update();
+        if app
+            .world()
+            .get::<Matches>(area)
+            .is_some_and(|m| m.uids.is_empty())
+        {
+            break;
+        }
+        tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+    }
+    assert!(armed(app.world(), area));
+    assert!(app.world().get::<Matches>(area).unwrap().uids.is_empty());
+    move_to(&mut app, sand, 100.0);
+    pump(&mut app).await;
+    assert_eq!(quantity(&engine, &uid).await, "1");
+    app.world_mut()
+        .get_mut::<InfluenceArea>(area)
+        .unwrap()
+        .filter
+        .as_mut()
+        .unwrap()
+        .enabled = false;
+    app.update();
+    assert!(!armed(app.world(), area));
+    move_to(&mut app, sand, 0.0);
+    pump(&mut app).await;
+    assert_eq!(quantity(&engine, &uid).await, "1");
+}
+
+#[cfg_attr(test, tokio::test)]
+async fn immunity_suppresses_record_transitions_and_cancels_pending_previews() {
+    let (mut app, engine, root, area, sand, uid) = fixture().await;
+    let mut shield = InfluenceArea::new(AreaShape::Square, DVec2::ZERO, DVec2::splat(300.0));
+    shield.immunity = crate::area_effects::Immunity::All;
+    let shield = crate::area::spawn_area(app.world_mut(), root, 1, shield).unwrap();
+    enable(&mut app, root, area);
+    move_to(&mut app, sand, 0.0);
+    pump(&mut app).await;
+    assert_eq!(quantity(&engine, &uid).await, "0");
+    move_to(&mut app, sand, 100.0);
+    pump(&mut app).await;
+    assert_eq!(quantity(&engine, &uid).await, "0");
+    app.world_mut()
+        .get_mut::<InfluenceArea>(shield)
+        .unwrap()
+        .immunity = crate::area_effects::Immunity::None;
+    move_to(&mut app, sand, 0.0);
+    app.update();
+    assert!(!app.world().resource::<Mutations>().pending.is_empty());
+    app.world_mut()
+        .get_mut::<InfluenceArea>(shield)
+        .unwrap()
+        .immunity = crate::area_effects::Immunity::All;
+    pump(&mut app).await;
+    assert_eq!(quantity(&engine, &uid).await, "0");
+    assert!(!armed(app.world(), area));
+    app.world_mut().despawn(shield);
+    move_to(&mut app, sand, 100.0);
+    app.update();
+    enable(&mut app, root, area);
+    move_to(&mut app, sand, 0.0);
+    pump(&mut app).await;
+    assert_eq!(quantity(&engine, &uid).await, "-3");
+}

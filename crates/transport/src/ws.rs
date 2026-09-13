@@ -10,8 +10,6 @@ use crate::protocol::{ClientMessage, ServerMessage};
 use crate::session::Session;
 use crate::terminal::{TerminalHost, pty_size};
 
-const EPHEMERAL_TICK: std::time::Duration = std::time::Duration::from_secs(3);
-
 pub async fn serve(
     engine: Arc<Engine>,
     hub: Arc<LaneHub>,
@@ -21,6 +19,17 @@ pub async fn serve(
 ) {
     let (mut sink, mut stream) = socket.split();
     let (out_tx, mut out_rx) = mpsc::channel::<ServerMessage>(256);
+    let queued = out_tx.downgrade();
+    let queue_connection = connection_id.clone();
+    let _sync_queue = engine
+        .sync_service
+        .observe_queue(move || nucleus::sync::Queue {
+            instance: nucleus::sync::Instance::interface(&queue_connection, "websocket"),
+            incoming: 0,
+            outgoing: queued.upgrade().map_or(0, |sender| {
+                (sender.max_capacity() - sender.capacity()) as u64
+            }),
+        });
     let (terminal_done_tx, mut terminal_done_rx) = mpsc::channel::<String>(32);
 
     let writer = tokio::spawn(async move {
@@ -53,9 +62,7 @@ pub async fn serve(
         }
     }
     let mut terminals = TerminalHost::new();
-    let mut bus = engine.subscribe();
-    let mut ephemeral = tokio::time::interval(EPHEMERAL_TICK);
-    ephemeral.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+    let mut sync_events = crate::SyncEvents::new(&engine);
 
     loop {
         tokio::select! {
@@ -128,16 +135,10 @@ pub async fn serve(
                     }
                 }
             }
-            fact = bus.recv() => {
-                let Ok(fact) = fact else { continue };
+            event = sync_events.next(session.has_ephemeral_subscriptions()) => {
+                let Some(event) = event else { break };
                 if !session.subject_may_act().await { break; }
-                for update in session.on_fact(&fact).await {
-                    if out_tx.send(update).await.is_err() { break; }
-                }
-            }
-            _ = ephemeral.tick(), if session.has_ephemeral_subscriptions() => {
-                if !session.subject_may_act().await { break; }
-                for update in session.tick_ephemeral().await {
+                for update in session.on_sync_event(event).await {
                     if out_tx.send(update).await.is_err() { break; }
                 }
             }

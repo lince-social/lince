@@ -180,11 +180,18 @@ impl crate::Engine {
         let Some(subject) = subject else {
             return Ok(true);
         };
-        Ok(
-            store::visibility::visible_targets(&self.store.pool, subject)
-                .await?
-                .contains(record_uid),
-        )
+        let query = protein::Protein {
+            source: protein::Source::Record,
+            filter: vec![protein::Predicate::UidEq(record_uid.into())],
+            fields: Some(vec!["uid".into()]),
+            include: Default::default(),
+            aggregate: None,
+            order: vec![],
+            limit: Some(1),
+        };
+        Ok(!protein::execute_for(&self.store, &query, Some(subject))
+            .await?
+            .is_empty())
     }
 
     pub async fn doc_text(&self, uid: &str) -> Result<(String, String), EngineError> {
@@ -220,6 +227,39 @@ impl crate::Engine {
         uid: &str,
         update_b64: &str,
     ) -> Result<(), EngineError> {
+        self.apply_client_crdt_update_as(uid, update_b64, None)
+            .await
+    }
+
+    pub async fn apply_client_crdt_update_as(
+        &self,
+        uid: &str,
+        update_b64: &str,
+        actor: Option<&str>,
+    ) -> Result<(), EngineError> {
+        self.access_scope(
+            true,
+            self.apply_client_crdt_update_inner(uid, update_b64, actor),
+        )
+        .await
+    }
+
+    async fn apply_client_crdt_update_inner(
+        &self,
+        uid: &str,
+        update_b64: &str,
+        actor: Option<&str>,
+    ) -> Result<(), EngineError> {
+        self.authorize_action(
+            &crate::actions::Action::EditRecordText {
+                target: uid.into(),
+                head: None,
+                body: None,
+            },
+            actor,
+        )
+        .await?;
+        self.reject_direct_transfer_record_mutation(uid).await?;
         let _op = self.import_lock.lock().await;
         let update = B64
             .decode(update_b64)
@@ -274,7 +314,7 @@ impl crate::Engine {
                     record_uid: uid.to_string(),
                     delta: nucleus::fact::zero_delta(),
                     at: None,
-                    actor_uid: None,
+                    actor_uid: actor.map(str::to_string),
                     cause: nucleus::fact::Cause {
                         kind: nucleus::fact::CauseKind::Sync,
                         uid: local.map(|organ| organ.uid),

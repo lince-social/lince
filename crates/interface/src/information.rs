@@ -1,4 +1,5 @@
 use bevy::{a11y::AccessibilityNode, prelude::*};
+pub(crate) mod sync;
 use cell::information::{
     Availability, Information, InformationChannel, UpdateCommand, UpdatePhase,
 };
@@ -79,7 +80,8 @@ pub struct InformationPlugin;
 
 impl Plugin for InformationPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<InformationState>()
+        app.add_plugins(sync::SyncPlugin)
+            .init_resource::<InformationState>()
             .add_systems(Startup, connect)
             .add_systems(Update, (receive, notice, render).chain())
             .add_systems(
@@ -229,6 +231,7 @@ pub(crate) fn panel(world: &mut World, root: Entity, parent: Entity) {
             ..default()
         },
     ));
+    sync::panel(world, root, parent);
 }
 
 pub(crate) fn open_button(world: &mut World, parent: Entity, target: Entity) {

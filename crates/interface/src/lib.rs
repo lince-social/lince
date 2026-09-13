@@ -19,6 +19,9 @@ pub mod icons;
 pub mod castle;
 
 #[cfg(feature = "native-runtime")]
+pub mod color_picker;
+
+#[cfg(feature = "native-runtime")]
 pub mod canvas;
 
 #[cfg(feature = "native-runtime")]
@@ -56,6 +59,9 @@ pub mod workspace_config;
 
 #[cfg(feature = "native-runtime")]
 pub mod physics;
+
+#[cfg(feature = "native-runtime")]
+pub mod area_effects;
 
 #[cfg(feature = "native-runtime")]
 pub mod sand_store;
@@ -106,6 +112,11 @@ pub mod cell_bridge;
 pub mod record_view;
 
 #[cfg(feature = "native-runtime")]
+pub mod protein_area;
+#[cfg(feature = "native-runtime")]
+pub mod protein_castle;
+
+#[cfg(feature = "native-runtime")]
 pub mod instance;
 
 #[cfg(feature = "native-runtime")]
@@ -134,6 +145,9 @@ pub mod area_panel;
 
 #[cfg(feature = "native-runtime")]
 mod area_input;
+
+#[cfg(feature = "native-runtime")]
+mod area_target;
 
 #[cfg(feature = "native-runtime")]
 mod area_drawing;

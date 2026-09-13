@@ -14,6 +14,7 @@ pub struct Session {
     engine: Arc<Engine>,
     hub: Arc<LaneHub>,
     subject: Option<String>,
+    login: Option<engine::login::LoginSession>,
     connection_id: String,
     subscriptions: HashMap<String, Protein>,
     last_ephemeral: HashMap<String, Vec<serde_json::Value>>,
@@ -22,6 +23,7 @@ pub struct Session {
     action_intent: Option<ActionIntentSession>,
     action_intent_initialization_error: Option<(String, Option<String>)>,
     action_intent_initialized: bool,
+    local_sync: bool,
 }
 
 impl Session {
@@ -35,6 +37,7 @@ impl Session {
             engine,
             hub,
             subject,
+            login: None,
             connection_id: connection_id.into(),
             subscriptions: HashMap::new(),
             last_ephemeral: HashMap::new(),
@@ -43,7 +46,29 @@ impl Session {
             action_intent: None,
             action_intent_initialization_error: None,
             action_intent_initialized: false,
+            local_sync: false,
         }
+    }
+
+    pub fn local(engine: Arc<Engine>, hub: Arc<LaneHub>, connection_id: impl Into<String>) -> Self {
+        let mut session = Self::new(engine, hub, connection_id, None);
+        session.local_sync = true;
+        session
+    }
+
+    pub fn authenticated(
+        engine: Arc<Engine>,
+        hub: Arc<LaneHub>,
+        connection_id: impl Into<String>,
+        login: engine::login::LoginSession,
+    ) -> Self {
+        let mut session = Self::new(engine, hub, connection_id, Some(login.person_uid().into()));
+        session.login = Some(login);
+        session
+    }
+
+    pub fn connection_id(&self) -> &str {
+        &self.connection_id
     }
 
     pub fn joined_rooms(&self) -> &[String] {
@@ -51,12 +76,15 @@ impl Session {
     }
 
     pub async fn subject_may_act(&self) -> bool {
+        if let Some(login) = &self.login {
+            return login.require(&self.engine).await.is_ok();
+        }
         let Some(subject) = self.subject.as_deref() else {
             return true;
         };
         store::people::is_active(&self.engine.store.pool, subject)
             .await
-            .unwrap_or(true)
+            .unwrap_or(false)
     }
 
     pub async fn initialize_action_intent(&mut self) -> ServerMessage {
@@ -100,7 +128,66 @@ impl Session {
     }
 
     pub async fn handle(&mut self, msg: ClientMessage) -> Vec<ServerMessage> {
+        if !self.subject_may_act().await {
+            return vec![session_expired()];
+        }
+        if let Some(login) = &self.login {
+            login.touch();
+        }
+        let engine = self.engine.clone();
+        let login = self.login.clone();
+        let write = matches!(
+            msg,
+            ClientMessage::Act { .. }
+                | ClientMessage::SignedAct { .. }
+                | ClientMessage::CollabUpdate { .. }
+                | ClientMessage::SessionAuthenticate { .. }
+        );
+        let work = Box::pin(self.handle_inner(msg));
+        let operation = async { Ok(work.await) };
+        let result = if let Some(login) = login {
+            login.run(&engine, write, operation).await
+        } else {
+            engine.access_scope(write, operation).await
+        };
+        result.unwrap_or_else(|_| vec![session_expired()])
+    }
+
+    async fn handle_inner(&mut self, msg: ClientMessage) -> Vec<ServerMessage> {
         match msg {
+            ClientMessage::SyncInspect { id, before } => self.sync_status(id, before).await,
+            ClientMessage::SyncHistoryPolicy { id, retention } => {
+                if !self.local_sync {
+                    return vec![sync_denied(id)];
+                }
+                match store::sync_activity::set_retention(
+                    &self.engine.store.pool,
+                    retention,
+                    sync_now(),
+                )
+                .await
+                {
+                    Ok(()) => self.sync_status(id, None).await,
+                    Err(error) => vec![ServerMessage::Error {
+                        id,
+                        message: error.to_string(),
+                        code: Some("sync_history_policy".into()),
+                    }],
+                }
+            }
+            ClientMessage::SyncForgetHistory { id } => {
+                if !self.local_sync {
+                    return vec![sync_denied(id)];
+                }
+                match store::sync_activity::clear(&self.engine.store.pool).await {
+                    Ok(()) => self.sync_status(id, None).await,
+                    Err(error) => vec![ServerMessage::Error {
+                        id,
+                        message: error.to_string(),
+                        code: Some("sync_history_clear".into()),
+                    }],
+                }
+            }
             ClientMessage::Subscribe { id, protein } => self.subscribe(id, protein).await,
             ClientMessage::SubscribeSaved { id, name } => self.subscribe_saved(id, name).await,
             ClientMessage::Unsubscribe { id } => {
@@ -164,6 +251,14 @@ impl Session {
                 ]
             }
             ClientMessage::LaneJoin { room } => {
+                if room.len() > 512
+                    || (self.joined_rooms.len() >= 64 && !self.joined_rooms.contains(&room))
+                {
+                    return vec![session_denied("stream limit")];
+                }
+                if !self.may_use_lane().await {
+                    return vec![session_denied("view:stream")];
+                }
                 if !self.joined_rooms.contains(&room) {
                     self.joined_rooms.push(room);
                 }
@@ -179,18 +274,28 @@ impl Session {
                 payload,
                 organ,
             } => {
+                if !self.may_use_lane().await {
+                    return vec![session_denied("view:stream")];
+                }
                 if self.joined_rooms.contains(&room) {
                     self.hub.send(LaneEvent {
                         room,
                         from: self.connection_id.clone(),
                         payload,
                         from_subject: self.subject.clone(),
-                        organ,
+                        organ: self
+                            .login
+                            .as_ref()
+                            .map(|login| login.organ_uid().to_string())
+                            .or(organ.filter(|_| self.subject.is_none())),
                     });
                 }
                 vec![]
             }
             ClientMessage::CollabJoin { id, record_uid } => {
+                if self.collab_records.len() >= 64 && !self.collab_records.contains(&record_uid) {
+                    return vec![session_denied("document limit")];
+                }
                 if !self
                     .engine
                     .may_read_record(self.subject.as_deref(), &record_uid)
@@ -231,6 +336,14 @@ impl Session {
                 record_uid,
                 update_base64,
             } => {
+                if self
+                    .engine
+                    .require_permission(self.subject.as_deref(), "record:update")
+                    .await
+                    .is_err()
+                {
+                    return vec![session_denied("record:update")];
+                }
                 if !self
                     .engine
                     .may_read_record(self.subject.as_deref(), &record_uid)
@@ -245,7 +358,11 @@ impl Session {
                 }
                 match self
                     .engine
-                    .apply_client_crdt_update(&record_uid, &update_base64)
+                    .apply_client_crdt_update_as(
+                        &record_uid,
+                        &update_base64,
+                        self.subject.as_deref(),
+                    )
                     .await
                 {
                     Ok(()) => vec![ServerMessage::CollabAck {
@@ -278,6 +395,68 @@ impl Session {
         }
     }
 
+    async fn sync_status(&self, id: String, before: Option<i64>) -> Vec<ServerMessage> {
+        if !self.local_sync {
+            return vec![sync_denied(id)];
+        }
+        match self.engine.sync_overview(before).await {
+            Ok(overview) => vec![ServerMessage::SyncStatus { id, overview }],
+            Err(error) => vec![action_error(id, error)],
+        }
+    }
+
+    pub async fn on_sync_event(&mut self, event: crate::SyncEvent) -> Vec<ServerMessage> {
+        if !self.subject_may_act().await {
+            return vec![session_expired()];
+        }
+        let engine = self.engine.clone();
+        let login = self.login.clone();
+        let operation = async { Ok(self.sync_event_inner(event).await) };
+        let result = if let Some(login) = login {
+            login.run(&engine, false, operation).await
+        } else {
+            engine.access_scope(false, operation).await
+        };
+        result.unwrap_or_else(|_| vec![session_expired()])
+    }
+
+    async fn sync_event_inner(&mut self, event: crate::SyncEvent) -> Vec<ServerMessage> {
+        match event {
+            crate::SyncEvent::Fact(fact) => self.on_fact(&fact).await,
+            crate::SyncEvent::Refresh => self.refresh().await,
+            crate::SyncEvent::Ephemeral => self.tick_ephemeral().await,
+        }
+    }
+
+    async fn execute_sync(
+        &self,
+        id: &str,
+        protein: &Protein,
+    ) -> Result<Vec<serde_json::Value>, protein::ProteinError> {
+        use nucleus::sync::{Activity, Direction, Instance, Outcome, Summary, Update};
+        self.engine
+            .sync_service
+            .run(
+                &self.engine.store,
+                Activity {
+                    instance: Instance::interface(&self.connection_id, id),
+                    direction: Direction::Outgoing,
+                    update: Update::Full,
+                },
+                self.execute(protein),
+                |rows| {
+                    let mut summary = Summary::new(Outcome::Refreshed, rows.len());
+                    summary.subjects = rows
+                        .iter()
+                        .filter_map(|row| row["uid"].as_str().map(str::to_owned))
+                        .take(32)
+                        .collect();
+                    summary
+                },
+            )
+            .await
+    }
+
     async fn execute(
         &self,
         protein: &Protein,
@@ -297,7 +476,12 @@ impl Session {
     }
 
     async fn subscribe(&mut self, id: String, protein: Protein) -> Vec<ServerMessage> {
-        match self.execute(&protein).await {
+        if id.len() > 512
+            || (self.subscriptions.len() >= 64 && !self.subscriptions.contains_key(&id))
+        {
+            return vec![session_denied("subscription limit")];
+        }
+        match self.execute_sync(&id, &protein).await {
             Ok(rows) => {
                 if protein::is_ephemeral(&protein) {
                     self.last_ephemeral.insert(id.clone(), rows.clone());
@@ -320,30 +504,43 @@ impl Session {
     }
 
     pub async fn refresh(&mut self) -> Vec<ServerMessage> {
+        if !self.subject_may_act().await {
+            return vec![session_expired()];
+        }
         let mut out = Vec::new();
         for (id, protein) in self.subscriptions.clone() {
             out.extend(self.subscribe(id, protein).await);
         }
-        for record_uid in &self.collab_records {
+        for record_uid in self.collab_records.clone() {
             if self
                 .engine
-                .may_read_record(self.subject.as_deref(), record_uid)
+                .may_read_record(self.subject.as_deref(), &record_uid)
                 .await
                 .unwrap_or(false)
             {
-                match self.engine.collab_snapshot(record_uid).await {
+                match self.engine.collab_snapshot(&record_uid).await {
                     Ok(snapshot_base64) => out.push(ServerMessage::CollabChange {
                         record_uid: record_uid.clone(),
                         snapshot_base64,
                     }),
                     Err(error) => out.push(action_error(record_uid.clone(), error)),
                 }
+            } else {
+                self.collab_records.remove(&record_uid);
+                out.push(ServerMessage::Error {
+                    id: record_uid,
+                    message: "Record access was removed".into(),
+                    code: Some("collab_not_visible".into()),
+                });
             }
         }
         out
     }
 
     pub async fn tick_ephemeral(&mut self) -> Vec<ServerMessage> {
+        if !self.subject_may_act().await {
+            return vec![session_expired()];
+        }
         let mut out = Vec::new();
         let ephemeral: Vec<(String, Protein)> = self
             .subscriptions
@@ -488,8 +685,17 @@ impl Session {
     }
 
     pub async fn on_fact(&self, fact: &Fact) -> Vec<ServerMessage> {
+        if !self.subject_may_act().await {
+            return vec![session_expired()];
+        }
         let mut out = Vec::new();
-        if self.collab_records.contains(&fact.record_uid) {
+        if self.collab_records.contains(&fact.record_uid)
+            && self
+                .engine
+                .may_read_record(self.subject.as_deref(), &fact.record_uid)
+                .await
+                .unwrap_or(false)
+        {
             if let Ok(snapshot_base64) = self.engine.collab_snapshot(&fact.record_uid).await {
                 out.push(ServerMessage::CollabChange {
                     record_uid: fact.record_uid.clone(),
@@ -501,7 +707,7 @@ impl Session {
             if !protein::affects(protein, fact) {
                 continue;
             }
-            match self.execute(protein).await {
+            match self.execute_sync(id, protein).await {
                 Ok(rows) => out.push(ServerMessage::Update {
                     id: id.clone(),
                     rows,
@@ -515,10 +721,50 @@ impl Session {
         }
         out
     }
+
+    pub async fn may_use_lane(&self) -> bool {
+        self.subject_may_act().await
+            && self
+                .engine
+                .require_permission(self.subject.as_deref(), "view:stream")
+                .await
+                .is_ok()
+    }
+}
+
+fn session_expired() -> ServerMessage {
+    ServerMessage::Error {
+        id: "-".into(),
+        message: "Please log in again".into(),
+        code: Some("session_expired".into()),
+    }
+}
+
+fn session_denied(permission: &str) -> ServerMessage {
+    ServerMessage::Error {
+        id: "-".into(),
+        message: format!("Missing {permission} permission"),
+        code: Some("forbidden".into()),
+    }
 }
 
 fn engine_error(error: &EngineError) -> (String, Option<String>) {
     (error.to_string(), error.code().map(str::to_string))
+}
+
+fn sync_denied(id: String) -> ServerMessage {
+    ServerMessage::Error {
+        id,
+        message: "Sync administration is available in the local interface".into(),
+        code: Some("sync_local_only".into()),
+    }
+}
+
+fn sync_now() -> i64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs() as i64
 }
 
 fn action_error(id: String, error: EngineError) -> ServerMessage {

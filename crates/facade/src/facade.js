@@ -191,11 +191,11 @@ function renderUsers(users, roles, permissions) {
     const section = element('details', null, 'user'); section.append(element('summary', `${user.name || user.username} · ${user.username} · ${user.role}`));
     if (root.canuserupdate) {
       const form = element('form'); field(form,t("Username"),'username',user.username).required = true; field(form,t("Name"),'name',user.name); field(form,t("New password (blank keeps current)"),'password','','password');
-      form.append(element('button',t("Save user"))); form.onsubmit = event => { event.preventDefault(); work(async () => { await request('/users',{uid:user.uid,...Object.fromEntries(new FormData(form))}); form.reset(); refresh(); }); }; section.append(form);
+      form.append(element('button',t("Save user"))); form.onsubmit = event => { event.preventDefault(); work(async () => { await act({action:'update-user',user:user.uid,...Object.fromEntries(new FormData(form))}); form.reset(); refresh(); }); }; section.append(form);
 
     }
     if (root.canassign) { const form = element('form'); const select = roleSelect(form,user.role); form.append(element('button',t("Assign role"))); form.onsubmit = event => { event.preventDefault(); work(async () => { await act({action:'assign-role',user:user.uid,role:select.value}); refresh(); }); }; section.append(form); }
-    if (root.canuserdelete) button(section,t("Delete login"),() => { if (confirm(t('Delete the login for {name}? Their authored content will be kept.', {name:user.username}))) work(async () => { await request('/users',{uid:user.uid,delete:true}); refresh(); }); });
+    if (root.canuserdelete) button(section,t("Delete login"),() => { if (confirm(t('Delete the login for {name}? Their authored content will be kept.', {name:user.username}))) work(async () => { await act({action:'delete-user',user:user.uid}); refresh(); }); });
     host.append(section);
   }
   if (root.canrolecreate) {

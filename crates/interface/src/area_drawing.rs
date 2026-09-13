@@ -1,5 +1,5 @@
 use crate::{
-    area::{AreaForces, InfluenceArea, ShapeKind},
+    area::{AreaForces, InfluenceArea, ReachMode, ReachShape, ShapeKind},
     area_panel::AreaEditor,
     canvas::{CanvasItem, CanvasView},
     edit_mode::EditMode,
@@ -9,6 +9,7 @@ use bevy::{math::DVec2, prelude::*};
 #[derive(Clone, PartialEq)]
 enum Mark {
     Line(Vec2, Vec2, bool),
+    Reach(Vec2, Vec2),
     Force(Vec2, Vec2),
     Label(Vec2, String),
 }
@@ -18,6 +19,18 @@ struct Drawing {
     layer: Entity,
     marks: Vec<Mark>,
     entities: Vec<Entity>,
+}
+
+#[derive(Component)]
+struct ReachDrawing {
+    shape: crate::area::AreaShape,
+    area_center: [f64; 2],
+    area_size: [f64; 2],
+    reach: crate::area::Reach,
+    center: DVec2,
+    zoom: f64,
+    size: Vec2,
+    marks: Vec<Mark>,
 }
 
 pub struct AreaDrawingPlugin;
@@ -113,6 +126,126 @@ fn outline(marks: &mut Vec<Mark>, view: &CanvasView, size: Vec2, points: &[DVec2
     }
 }
 
+fn contour(
+    marks: &mut Vec<Mark>,
+    area: &InfluenceArea,
+    view: &CanvasView,
+    size: Vec2,
+    bounds: Rect,
+    depth: u8,
+) {
+    let sample = |point: Vec2| {
+        let world = (point - size * 0.5).as_dvec2() / view.zoom + view.center;
+        (area.signed_distance(world) - area.reach.radius) * view.zoom
+    };
+    let middle = bounds.center();
+    if sample(middle).abs() > f64::from(bounds.half_size().length()) {
+        return;
+    }
+    if bounds.size().max_element() > 3.0 && depth < 14 {
+        for corner in [
+            bounds.min,
+            Vec2::new(bounds.max.x, bounds.min.y),
+            bounds.max,
+            Vec2::new(bounds.min.x, bounds.max.y),
+        ] {
+            contour(
+                marks,
+                area,
+                view,
+                size,
+                Rect::from_corners(corner, middle),
+                depth + 1,
+            );
+        }
+        return;
+    }
+    let corners = [
+        bounds.min,
+        Vec2::new(bounds.max.x, bounds.min.y),
+        bounds.max,
+        Vec2::new(bounds.min.x, bounds.max.y),
+        bounds.min,
+    ];
+    let mut crossings = Vec::with_capacity(4);
+    for edge in corners.windows(2) {
+        let a = sample(edge[0]);
+        let b = sample(edge[1]);
+        if (a <= 0.0) != (b <= 0.0) {
+            crossings.push(edge[0].lerp(edge[1], (a / (a - b)) as f32));
+        }
+    }
+    for pair in crossings.chunks_exact(2) {
+        marks.push(Mark::Reach(pair[0], pair[1]));
+    }
+}
+
+fn reach(
+    world: &mut World,
+    root: Entity,
+    area: &InfluenceArea,
+    view: &CanvasView,
+    size: Vec2,
+) -> Vec<Mark> {
+    if let Some(cache) = world.get::<ReachDrawing>(root)
+        && cache.shape == area.shape
+        && cache.area_center == area.center
+        && cache.area_size == area.size
+        && cache.reach == area.reach
+        && cache.center == view.center
+        && cache.zoom == view.zoom
+        && cache.size == size
+    {
+        return cache.marks.clone();
+    }
+    let mut marks = Vec::new();
+    if area.reach.mode == ReachMode::Unlimited {
+        marks.push(Mark::Label(
+            Vec2::new(12.0, size.y - 28.0),
+            "Reach · Unlimited".into(),
+        ));
+    } else if area.reach.shape == ReachShape::Square {
+        let half = area.size[0].max(area.size[1]) * 0.5 + area.reach.radius;
+        let center = DVec2::from_array(area.center);
+        let points = [
+            DVec2::new(-half, -half),
+            DVec2::new(half, -half),
+            DVec2::new(half, half),
+            DVec2::new(-half, half),
+            DVec2::new(-half, -half),
+        ];
+        for pair in points.windows(2) {
+            if let Some((a, b)) = clip(
+                screen(view, size, center + pair[0]),
+                screen(view, size, center + pair[1]),
+                size,
+            ) {
+                marks.push(Mark::Reach(a, b));
+            }
+        }
+    } else if area.reach.radius > 0.0 {
+        contour(
+            &mut marks,
+            area,
+            view,
+            size,
+            Rect::from_corners(Vec2::ZERO, size),
+            0,
+        );
+    }
+    world.entity_mut(root).insert(ReachDrawing {
+        shape: area.shape.clone(),
+        area_center: area.center,
+        area_size: area.size,
+        reach: area.reach,
+        center: view.center,
+        zoom: view.zoom,
+        size,
+        marks: marks.clone(),
+    });
+    marks
+}
+
 fn draw(world: &mut World) {
     if !world.resource::<Redraw>().0 {
         return;
@@ -147,7 +280,11 @@ fn draw(world: &mut World) {
                 .map(|(entity, area)| (entity, area.clone()))
                 .collect();
             areas.sort_by(|a, b| a.1.id.cmp(&b.1.id));
+            let mut reach_marks = Vec::new();
             for (entity, area) in areas {
+                if selected == Some(entity) {
+                    reach_marks = reach(world, root, &area, &view, size);
+                }
                 let points = area.outline();
                 outline(&mut marks, &view, size, &points, selected == Some(entity));
                 let position = screen(
@@ -158,7 +295,25 @@ fn draw(world: &mut World) {
                 if Rect::from_corners(Vec2::ZERO, size).contains(position) {
                     marks.push(Mark::Label(
                         position,
-                        format!("{} · {:?}", area.name, area.direction),
+                        format!(
+                            "{} · {}",
+                            area.name,
+                            if area.sorting.is_some() {
+                                "Sorting"
+                            } else if area.immunity != crate::area_effects::Immunity::None {
+                                "Immunity"
+                            } else if area.scale != 1.0 {
+                                "Size"
+                            } else if area.strength == 0.0
+                                || (area.rules.is_empty() && area.filter.is_none())
+                            {
+                                "No force"
+                            } else if area.direction == crate::area::Direction::Attract {
+                                "Attract"
+                            } else {
+                                "Repel"
+                            }
+                        ),
                     ));
                 }
             }
@@ -203,6 +358,7 @@ fn draw(world: &mut World) {
                     }
                 }
             }
+            marks.extend(reach_marks);
         }
         if world
             .get::<Drawing>(root)
@@ -251,8 +407,8 @@ fn draw(world: &mut World) {
                     || matches!(
                         (previous, mark),
                         (
-                            Mark::Line(..) | Mark::Force(..),
-                            Mark::Line(..) | Mark::Force(..)
+                            Mark::Line(..) | Mark::Reach(..) | Mark::Force(..),
+                            Mark::Line(..) | Mark::Reach(..) | Mark::Force(..)
                         )
                     )
             });
@@ -273,7 +429,7 @@ fn draw(world: &mut World) {
             }
 
             match mark {
-                Mark::Line(a, b, _) | Mark::Force(a, b) => {
+                Mark::Line(a, b, _) | Mark::Reach(a, b) | Mark::Force(a, b) => {
                     let delta = *b - *a;
                     let center = (*a + *b) * 0.5;
                     let width = if matches!(mark, Mark::Line(_, _, true) | Mark::Force(..)) {
@@ -352,6 +508,48 @@ pub(crate) mod tests {
     use crate::actions::Action;
 
     #[cfg_attr(test, test)]
+    fn reach_contours_follow_the_expanded_shape_and_reuse_unchanged_geometry() {
+        let mut world = World::new();
+        let root = world.spawn_empty().id();
+        let mut area = InfluenceArea::new(
+            crate::area::AreaShape::Circle,
+            DVec2::ZERO,
+            DVec2::splat(200.0),
+        );
+        area.reach.radius = 50.0;
+        let view = CanvasView::default();
+        let size = Vec2::splat(600.0);
+        let marks = reach(&mut world, root, &area, &view, size);
+        assert!(!marks.is_empty());
+        for mark in &marks {
+            let Mark::Reach(a, b) = mark else {
+                panic!("Expected a reach boundary")
+            };
+            for point in [a, b] {
+                assert!(((point.as_dvec2() - size.as_dvec2() * 0.5).length() - 150.0).abs() < 0.1);
+            }
+        }
+        world.clear_trackers();
+        assert!(reach(&mut world, root, &area, &view, size) == marks);
+        area.target = crate::area::AttractionTarget::Point([200.0, 300.0]);
+        area.depth = 42.0;
+        assert!(reach(&mut world, root, &area, &view, size) == marks);
+        assert!(
+            !world
+                .entity(root)
+                .get_ref::<ReachDrawing>()
+                .unwrap()
+                .is_changed()
+        );
+        area.reach.mode = ReachMode::Unlimited;
+        let unlimited = reach(&mut world, root, &area, &view, size);
+        assert!(matches!(unlimited.as_slice(), [Mark::Label(_, _)]));
+        area.reach.mode = ReachMode::Limited;
+        area.reach.shape = ReachShape::Square;
+        assert_eq!(reach(&mut world, root, &area, &view, size).len(), 4);
+    }
+
+    #[cfg_attr(test, test)]
     fn camera_motion_retains_lines_and_shape_changes_do_not_leave_text_on_them() {
         let mut app = App::new();
         crate::laboratory::isolate(app.world_mut());
@@ -386,6 +584,23 @@ pub(crate) mod tests {
             app.update();
             assert_eq!(app.world().get::<Drawing>(root).unwrap().entities, original);
         }
+        app.world_mut().entity_mut(root).insert(AreaEditor {
+            selected: Some(area),
+            ..default()
+        });
+        app.world_mut()
+            .get_mut::<InfluenceArea>(area)
+            .unwrap()
+            .reach
+            .radius = 80.0;
+        for _ in 0..12 {
+            app.world_mut().get_mut::<CanvasView>(root).unwrap().center += DVec2::splat(0.25);
+            app.update();
+            assert_eq!(
+                &app.world().get::<Drawing>(root).unwrap().entities[..5],
+                original.as_slice()
+            );
+        }
         app.world_mut()
             .get_mut::<InfluenceArea>(area)
             .unwrap()
@@ -402,6 +617,7 @@ pub(crate) mod tests {
     }
 
     crate::laboratory_cases! {
+        reach_contours_follow_the_expanded_shape_and_reuse_unchanged_geometry,
         camera_motion_retains_lines_and_shape_changes_do_not_leave_text_on_them,
     }
 }

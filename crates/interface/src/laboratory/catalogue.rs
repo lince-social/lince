@@ -2,8 +2,11 @@ pub fn catalogue() -> Vec<super::Case> {
     let mut cases = Vec::new();
     crate::actions::tests::laboratory_cases(&mut cases);
     crate::area::tests::laboratory_cases(&mut cases);
+    crate::area_effects::tests::laboratory_cases(&mut cases);
+    crate::area_effects::ui::laboratory_cases(&mut cases);
     crate::area_drawing::tests::laboratory_cases(&mut cases);
     crate::area_input::tests::laboratory_cases(&mut cases);
+    crate::area_target::tests::laboratory_cases(&mut cases);
     crate::area_mutation_panel::tests::laboratory_cases(&mut cases);
     crate::area_mutation::tests::laboratory_cases(&mut cases);
     crate::area_panel::tests::laboratory_cases(&mut cases);
@@ -15,6 +18,7 @@ pub fn catalogue() -> Vec<super::Case> {
     crate::canvas_resize::tests::laboratory_cases(&mut cases);
     crate::canvas_selection::tests::laboratory_cases(&mut cases);
     crate::castle::tests::laboratory_cases(&mut cases);
+    crate::color_picker::tests::laboratory_cases(&mut cases);
     crate::cell_bridge::tests::laboratory_cases(&mut cases);
     crate::credits::tests::laboratory_cases(&mut cases);
     crate::customization::tests::laboratory_cases(&mut cases);
@@ -22,11 +26,14 @@ pub fn catalogue() -> Vec<super::Case> {
     crate::effect::tests::laboratory_cases(&mut cases);
     crate::icons::tests::laboratory_cases(&mut cases);
     crate::information::tests::laboratory_cases(&mut cases);
+    crate::information::sync::tests::laboratory_cases(&mut cases);
     crate::inspection::tests::laboratory_cases(&mut cases);
     crate::instance::tests::laboratory_cases(&mut cases);
     crate::notifications::tests::laboratory_cases(&mut cases);
     crate::physics::tests::laboratory_cases(&mut cases);
     crate::record_view::tests::laboratory_cases(&mut cases);
+    crate::protein_castle::tests::laboratory_cases(&mut cases);
+    crate::protein_area::tests::laboratory_cases(&mut cases);
     crate::sand::tests::laboratory_cases(&mut cases);
     crate::sand_placement::tests::laboratory_cases(&mut cases);
     crate::slider::tests::laboratory_cases(&mut cases);

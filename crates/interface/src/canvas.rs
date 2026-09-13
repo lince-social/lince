@@ -100,11 +100,21 @@ fn project_canvas(
         &mut UiTransform,
         Option<&crate::workspace::WorkspaceMember>,
         Option<&crate::sand_placement::Pinned>,
+        Option<&crate::area_effects::AreaScale>,
     )>,
     parents: Query<&ChildOf>,
     mut focus: ResMut<InputFocus>,
 ) {
-    for (entity, parent, item, mut node, mut transform, member, pinned) in &mut items {
+    for (entity, parent, item, mut node, mut transform, member, pinned, scale) in &mut items {
+        let scale = if pinned.is_some() {
+            1.0
+        } else {
+            scale.map_or(1.0, |s| s.0)
+        };
+        let displayed = CanvasItem {
+            size: item.size * scale,
+            ..*item
+        };
         let view = views.get(parent.parent()).ok();
         let position = view.and_then(|(view, target, spaces)| {
             if spaces.is_some_and(|spaces| {
@@ -114,7 +124,7 @@ fn project_canvas(
             }
             pinned
                 .map_or(*view, |pin| pin.view(item, target.logical_size()))
-                .screen_position(item, target.logical_size())
+                .screen_position(&displayed, target.logical_size())
         });
         let display = if position.is_some() {
             Display::Flex
@@ -128,7 +138,7 @@ fn project_canvas(
             if node.overflow != Overflow::clip() {
                 node.overflow = Overflow::clip();
             }
-            let zoom = pinned.map_or(view.unwrap().0.zoom, |pin| pin.scale) as f32;
+            let zoom = pinned.map_or(view.unwrap().0.zoom, |pin| pin.scale) as f32 * scale;
             let position = position + item.size * ((zoom - 1.0) * 0.5);
             if transform.scale != Vec2::splat(zoom) {
                 transform.scale = Vec2::splat(zoom);
@@ -465,6 +475,7 @@ pub(crate) mod tests {
     }
 
     crate::laboratory_cases! {
+        area_scale_changes_projection_and_restores_the_original_layout,
         pinned_sands_do_not_change_layout_when_camera_moves_or_zooms,
         zoom_scales_contents_and_culling_without_changing_world_coordinates,
         zoom_keeps_distant_fractional_positions_and_rejects_invalid_values,
@@ -474,5 +485,34 @@ pub(crate) mod tests {
         distant_positions_keep_local_precision_in_every_direction,
         resize_and_camera_movement_preserve_item_coordinates,
         offscreen_and_invalid_items_never_reach_layout,
+    }
+
+    #[cfg_attr(test, test)]
+    fn area_scale_changes_projection_and_restores_the_original_layout() {
+        let (mut app, _, view, item) = fixture();
+        app.world_mut().get_mut::<CanvasView>(view).unwrap().zoom = 1.5;
+        app.world_mut()
+            .entity_mut(item)
+            .insert(crate::area_effects::AreaScale(2.0));
+        app.update();
+        assert_eq!(
+            app.world().get::<UiTransform>(item).unwrap().scale,
+            Vec2::splat(3.0)
+        );
+        assert_eq!(app.world().get::<Node>(item).unwrap().width, px(100.0));
+        assert_eq!(app.world().get::<Node>(item).unwrap().left, px(350.0));
+        app.world_mut()
+            .entity_mut(item)
+            .remove::<crate::area_effects::AreaScale>();
+        app.update();
+        assert_eq!(
+            app.world().get::<UiTransform>(item).unwrap().scale,
+            Vec2::splat(1.5)
+        );
+        assert_eq!(
+            app.world().get::<CanvasItem>(item).unwrap().size,
+            Vec2::splat(100.0)
+        );
+        assert_eq!(app.world().get::<Node>(item).unwrap().left, px(350.0));
     }
 }

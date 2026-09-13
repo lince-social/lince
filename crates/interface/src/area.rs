@@ -1,8 +1,4 @@
-use crate::{
-    canvas::CanvasItem,
-    sand_placement::Pinned,
-    workspace::{WorkspaceMember, Workspaces},
-};
+use crate::{canvas::CanvasItem, workspace::WorkspaceMember};
 use bevy::{math::DVec2, prelude::*};
 use serde::{Deserialize, Serialize};
 
@@ -38,6 +34,34 @@ impl AreaShape {
 pub enum Direction {
     Attract,
     Repel,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ReachMode {
+    #[default]
+    Limited,
+    Unlimited,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ReachShape {
+    Square,
+    #[default]
+    FollowShape,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct Reach {
+    pub mode: ReachMode,
+    pub shape: ReachShape,
+    pub radius: f64,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub enum AttractionTarget {
+    #[default]
+    Center,
+    Point([f64; 2]),
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -117,13 +141,25 @@ pub struct InfluenceArea {
     pub name: String,
     pub center: [f64; 2],
     pub size: [f64; 2],
+    pub depth: f64,
+    pub target: AttractionTarget,
     pub shape: AreaShape,
     pub direction: Direction,
     pub strength: f64,
+    #[serde(default)]
+    pub reach: Reach,
     pub rules: Vec<PropertyRule>,
     pub match_all: bool,
     #[serde(default)]
     pub changes: crate::area_mutation::AreaChanges,
+    #[serde(default)]
+    pub protein: Option<crate::protein_area::Config>,
+    #[serde(default)]
+    pub filter: Option<crate::protein_area::Config>,
+    pub sorting: Option<crate::area_effects::Sorting>,
+    pub immunity: crate::area_effects::Immunity,
+    pub scale: f32,
+    pub force_mode: crate::area_effects::ForceMode,
 }
 
 impl InfluenceArea {
@@ -135,12 +171,21 @@ impl InfluenceArea {
             name: "Area of influence".into(),
             center: center.to_array(),
             size: size.to_array(),
+            depth: size.min_element(),
+            target: AttractionTarget::Center,
             shape,
             direction: Direction::Attract,
-            strength: 100.0,
+            strength: 0.0,
+            reach: Reach::default(),
             rules: Vec::new(),
             match_all: true,
             changes: Default::default(),
+            protein: None,
+            filter: None,
+            sorting: None,
+            immunity: Default::default(),
+            scale: 1.0,
+            force_mode: Default::default(),
         }
     }
 
@@ -154,10 +199,34 @@ impl InfluenceArea {
             && size.is_finite()
             && size.min_element() >= 1.0
             && size.max_element() <= 100_000.0
+            && self.depth.is_finite()
+            && (1.0..=100_000.0).contains(&self.depth)
+            && match self.target {
+                AttractionTarget::Center => true,
+                AttractionTarget::Point(offset) => {
+                    DVec2::from_array(offset).is_finite()
+                        && (DVec2::from_array(self.center) + DVec2::from_array(offset)).is_finite()
+                }
+            }
             && (0.0..=1_000_000.0).contains(&self.strength)
+            && self.reach.radius.is_finite()
+            && (0.0..=100_000.0).contains(&self.reach.radius)
             && self.rules.len() <= MAX_RULES
             && self.rules.iter().all(PropertyRule::validate)
             && self.changes.validate()
+            && self.scale.is_finite()
+            && (0.05..=20.0).contains(&self.scale)
+            && self.sorting.as_ref().is_none_or(|sort| {
+                sort.strength.is_finite() && (0.0..=1_000_000.0).contains(&sort.strength)
+            })
+            && self
+                .protein
+                .as_ref()
+                .is_none_or(crate::protein_area::Config::valid)
+            && self
+                .filter
+                .as_ref()
+                .is_none_or(crate::protein_area::Config::valid)
             && match &self.shape {
                 AreaShape::Square | AreaShape::Circle => self.size[0] == self.size[1],
                 AreaShape::Polygon(points) => valid_polygon(points),
@@ -177,10 +246,14 @@ impl InfluenceArea {
     }
 
     pub fn force(&self, point: DVec2, record: &RecordProperties) -> DVec2 {
-        if !self.contains(point) || !self.matches(record) {
+        self.force_for_match(point, self.matches(record))
+    }
+
+    pub(crate) fn force_for_match(&self, point: DVec2, matches: bool) -> DVec2 {
+        if self.strength == 0.0 || !self.reaches(point) || !matches {
             return DVec2::ZERO;
         }
-        let delta = DVec2::from_array(self.center) - point;
+        let delta = self.target_position() - point;
         let direction = delta.try_normalize().unwrap_or(DVec2::ZERO);
         direction
             * self.strength
@@ -189,6 +262,87 @@ impl InfluenceArea {
             } else {
                 -1.0
             }
+    }
+
+    pub fn target_position(&self) -> DVec2 {
+        let center = DVec2::from_array(self.center);
+        if let AttractionTarget::Point(offset) = self.target {
+            return center + DVec2::from_array(offset);
+        }
+        if self.contains(center) {
+            return center;
+        }
+        let AreaShape::Polygon(points) = &self.shape else {
+            return center;
+        };
+        let size = DVec2::from_array(self.size);
+        let mut levels: Vec<_> = points.iter().map(|p| p[1]).collect();
+        levels.sort_by(f64::total_cmp);
+        levels.dedup();
+        let mut best = None;
+        for y in std::iter::once(0.0).chain(levels.windows(2).map(|p| (p[0] + p[1]) * 0.5)) {
+            let mut crossings: Vec<_> = points
+                .windows(2)
+                .filter_map(|edge| {
+                    let [a, b] = [edge[0], edge[1]];
+                    ((a[1] > y) != (b[1] > y))
+                        .then(|| a[0] + (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]))
+                })
+                .collect();
+            crossings.sort_by(f64::total_cmp);
+            for pair in crossings.chunks_exact(2) {
+                let offset = DVec2::new((pair[0] + pair[1]) * 0.5, y) * size;
+                if best.is_none_or(|old: DVec2| offset.length_squared() < old.length_squared()) {
+                    best = Some(offset);
+                }
+            }
+        }
+        center + best.unwrap_or(DVec2::ZERO)
+    }
+
+    pub fn reaches(&self, point: DVec2) -> bool {
+        if !point.is_finite() {
+            return false;
+        }
+        if self.reach.mode == ReachMode::Unlimited {
+            return true;
+        }
+        let local = point - DVec2::from_array(self.center);
+        let size = DVec2::from_array(self.size);
+        if self.reach.shape == ReachShape::Square {
+            return local.abs().max_element() <= size.max_element() * 0.5 + self.reach.radius;
+        }
+        self.signed_distance(point) <= self.reach.radius
+    }
+
+    pub(crate) fn signed_distance(&self, point: DVec2) -> f64 {
+        let local = point - DVec2::from_array(self.center);
+        let size = DVec2::from_array(self.size);
+        match &self.shape {
+            AreaShape::Square => {
+                let delta = local.abs() - size * 0.5;
+                delta.max(DVec2::ZERO).length() + delta.max_element().min(0.0)
+            }
+            AreaShape::Circle => local.length() - size.x * 0.5,
+            AreaShape::Polygon(points) => {
+                let distance = points
+                    .windows(2)
+                    .map(|edge| {
+                        let start = DVec2::from_array(edge[0]) * size;
+                        let end = DVec2::from_array(edge[1]) * size;
+                        let delta = end - start;
+                        let along =
+                            ((local - start).dot(delta) / delta.length_squared()).clamp(0.0, 1.0);
+                        local.distance(start + delta * along)
+                    })
+                    .fold(f64::INFINITY, f64::min);
+                if self.contains(point) {
+                    -distance
+                } else {
+                    distance
+                }
+            }
+        }
     }
 
     pub fn matches(&self, record: &RecordProperties) -> bool {
@@ -366,6 +520,7 @@ impl Plugin for AreasPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
             crate::area_input::AreaInputPlugin,
+            crate::area_target::AreaTargetPlugin,
             crate::area_drawing::AreaDrawingPlugin,
             crate::area_mutation::AreaMutationPlugin,
         ))
@@ -400,103 +555,51 @@ fn sync_geometry(mut areas: Query<(&InfluenceArea, &mut CanvasItem)>) {
     }
 }
 
-fn forces(
-    areas: Query<(
-        Entity,
-        Ref<InfluenceArea>,
-        Ref<ChildOf>,
-        Ref<WorkspaceMember>,
-    )>,
-    records: Query<(
-        Entity,
-        Ref<CanvasItem>,
-        Ref<RecordProperties>,
-        Ref<ChildOf>,
-        Ref<WorkspaceMember>,
-        Option<Ref<Pinned>>,
-    )>,
-    roots: Query<Ref<Workspaces>>,
-    previous: Query<(Entity, &AreaForces)>,
-    mut removed_areas: RemovedComponents<InfluenceArea>,
-    mut removed_records: RemovedComponents<RecordProperties>,
-    mut removed_pins: RemovedComponents<Pinned>,
-    mut removed_items: RemovedComponents<CanvasItem>,
-    mut removed_members: RemovedComponents<WorkspaceMember>,
-    mut commands: Commands,
-) {
-    let removed = removed_areas.read().count()
-        + removed_records.read().count()
-        + removed_pins.read().count()
-        + removed_items.read().count()
-        + removed_members.read().count();
-    if removed == 0
-        && !areas.iter().any(|(_, area, parent, member)| {
-            area.is_changed() || parent.is_changed() || member.is_changed()
-        })
-        && !records
-            .iter()
-            .any(|(_, item, record, parent, member, pin)| {
-                item.is_changed()
-                    || record.is_changed()
-                    || parent.is_changed()
-                    || member.is_changed()
-                    || pin.is_some_and(|pin| pin.is_changed())
-            })
-        && !roots.iter().any(|root| root.is_changed())
-    {
-        return;
-    }
-    let mut valid: Vec<_> = areas
-        .iter()
-        .filter(|(_, area, _, _)| area.validate())
-        .collect();
-    valid.sort_by(|a, b| a.1.id.cmp(&b.1.id).then(a.0.cmp(&b.0)));
-    for (entity, item, record, parent, member, pin) in &records {
-        let mut next = AreaForces::default();
-        if pin.is_none()
-            && roots
-                .get(parent.parent())
-                .is_ok_and(|spaces| spaces.active == member.0)
-        {
-            for (source, area, area_parent, area_member) in &valid {
-                if area_parent.parent() != parent.parent() || area_member.0 != member.0 {
-                    continue;
-                }
-                let force = area.force(item.position, &record);
-                if force != DVec2::ZERO && force.is_finite() {
-                    next.0.push(AreaForce {
-                        area: *source,
-                        force,
-                    });
-                }
-            }
-        }
-        if previous
-            .get(entity)
-            .is_ok_and(|(_, previous)| *previous == next)
-        {
-            continue;
-        }
-        commands.entity(entity).insert(next);
-    }
-    for (entity, _) in &previous {
-        if !records.contains(entity) {
-            commands.entity(entity).remove::<AreaForces>();
-        }
-    }
+pub(crate) fn forces(world: &mut World) {
+    crate::area_effects::update(world);
 }
 
 pub(crate) mod tests {
     use super::*;
+    use crate::{sand_placement::Pinned, workspace::Workspaces};
     use serde_json::json;
 
     fn area() -> InfluenceArea {
         let mut area = InfluenceArea::new(AreaShape::Circle, DVec2::ZERO, DVec2::splat(200.0));
+        area.strength = 100.0;
         area.rules = vec![PropertyRule {
             property: Property::Quantity,
             value: "-3".into(),
         }];
         area
+    }
+
+    #[cfg_attr(test, test)]
+    fn new_shapes_have_no_force_or_record_changes_until_configured() {
+        for shape in [
+            AreaShape::Square,
+            AreaShape::Circle,
+            AreaShape::Polygon(vec![[-0.5, -0.5], [0.5, -0.5], [0.0, 0.5], [-0.5, -0.5]]),
+        ] {
+            let mut area = InfluenceArea::new(shape, DVec2::ZERO, DVec2::splat(200.0));
+            assert!(area.validate());
+            assert_eq!(area.strength, 0.0);
+            assert!(area.rules.is_empty());
+            assert_eq!(area.changes, Default::default());
+            let record = RecordProperties(json!({"quantity": -3}));
+            let point = DVec2::new(10.0, 0.0);
+            assert_eq!(area.force(point, &record), DVec2::ZERO);
+            area.rules.push(PropertyRule {
+                property: Property::Quantity,
+                value: "-3".into(),
+            });
+            assert_eq!(area.force(point, &record), DVec2::ZERO);
+            area.strength = 100.0;
+            assert!(area.force(point, &record).x < 0.0);
+            let restored: InfluenceArea =
+                serde_json::from_value(serde_json::to_value(&area).unwrap()).unwrap();
+            assert_eq!(restored, area);
+        }
     }
 
     #[cfg_attr(test, test)]
@@ -596,6 +699,158 @@ pub(crate) mod tests {
     }
 
     #[cfg_attr(test, test)]
+    fn reach_expands_the_perimeter_without_changing_local_membership() {
+        let mut area = area();
+        let record = RecordProperties(json!({"quantity": -3}));
+        let outside = DVec2::new(125.0, 0.0);
+        assert!(!area.reaches(outside));
+        area.reach.radius = 25.0;
+        assert!(area.reaches(outside));
+        assert!(!area.contains(outside));
+        assert_eq!(area.force(outside, &record), DVec2::new(-100.0, 0.0));
+        assert!(!area.reaches(DVec2::new(125.001, 0.0)));
+        assert!(!area.reaches(DVec2::splat(100.0)));
+        area.reach.shape = ReachShape::Square;
+        assert!(area.reaches(DVec2::splat(125.0)));
+        assert!(!area.contains(DVec2::splat(125.0)));
+        area.reach.shape = ReachShape::FollowShape;
+        area.shape = AreaShape::Square;
+        assert!(area.reaches(DVec2::new(115.0, 120.0)));
+        assert!(!area.reaches(DVec2::new(115.001, 120.0)));
+        area.reach.mode = ReachMode::Unlimited;
+        assert!(area.reaches(DVec2::new(1e8, -1e8)));
+        assert!(!area.reaches(DVec2::NAN));
+        assert_eq!(
+            area.force(outside, &RecordProperties(json!({"quantity": -2}))),
+            DVec2::ZERO
+        );
+        let restored: InfluenceArea =
+            serde_json::from_value(serde_json::to_value(&area).unwrap()).unwrap();
+        assert_eq!(restored, area);
+        area.reach.mode = ReachMode::Limited;
+        assert_eq!(area.reach.radius, 25.0);
+        for invalid in [-1.0, f64::NAN, f64::INFINITY, 100_001.0] {
+            area.reach.radius = invalid;
+            assert!(!area.validate());
+        }
+    }
+
+    #[cfg_attr(test, test)]
+    fn follow_shape_preserves_concavities_and_radius_when_moved_or_resized() {
+        let mut area = InfluenceArea::drawn(&[
+            DVec2::new(0.0, 0.0),
+            DVec2::new(200.0, 0.0),
+            DVec2::new(200.0, 40.0),
+            DVec2::new(40.0, 40.0),
+            DVec2::new(40.0, 100.0),
+            DVec2::new(0.0, 100.0),
+        ])
+        .unwrap();
+        area.reach.radius = 10.0;
+        assert!(area.reaches(DVec2::new(120.0, 50.0)));
+        assert!(!area.reaches(DVec2::new(120.0, 50.01)));
+        assert!(!area.reaches(DVec2::new(80.0, 80.0)));
+        let offset = DVec2::new(1e9, -1e9);
+        area.center = (DVec2::from_array(area.center) + offset).to_array();
+        assert!(area.reaches(offset + DVec2::new(120.0, 50.0)));
+        assert!(!area.reaches(offset + DVec2::new(80.0, 80.0)));
+        area.reach.shape = ReachShape::Square;
+        assert!(area.reaches(offset + DVec2::new(210.0, 160.0)));
+        assert!(!area.reaches(offset + DVec2::new(210.01, 160.0)));
+        area.size = [400.0, 200.0];
+        assert_eq!(area.reach.radius, 10.0);
+        assert!(area.reaches(DVec2::from_array(area.center) + DVec2::splat(210.0)));
+    }
+
+    #[cfg_attr(test, test)]
+    fn unlimited_reach_updates_offscreen_sands_and_keeps_workspace_and_pin_limits() {
+        let mut app = App::new();
+        crate::laboratory::isolate(app.world_mut());
+        app.add_systems(Update, forces);
+        let root = app.world_mut().spawn(Workspaces::default()).id();
+        let other = app.world_mut().spawn(Workspaces::default()).id();
+        let source = spawn_area(app.world_mut(), root, 1, area()).unwrap();
+        let mut sands = Vec::new();
+        for (parent, workspace) in [(root, 1), (root, 2), (other, 1), (root, 1)] {
+            sands.push(
+                app.world_mut()
+                    .spawn((
+                        CanvasItem {
+                            position: DVec2::new(20_000.0, 0.0),
+                            size: Vec2::splat(20.0),
+                        },
+                        RecordProperties(json!({"quantity": -3})),
+                        ChildOf(parent),
+                        WorkspaceMember(workspace),
+                    ))
+                    .id(),
+            );
+        }
+        app.world_mut().entity_mut(sands[3]).insert(Pinned {
+            anchor: [0.5; 2],
+            scale: 1.0,
+        });
+        app.update();
+        assert!(
+            sands
+                .iter()
+                .all(|sand| app.world().get::<AreaForces>(*sand).unwrap().0.is_empty())
+        );
+        app.world_mut()
+            .get_mut::<InfluenceArea>(source)
+            .unwrap()
+            .reach
+            .mode = ReachMode::Unlimited;
+        app.update();
+        assert_eq!(
+            app.world().get::<AreaForces>(sands[0]).unwrap().total(),
+            DVec2::new(-100.0, 0.0)
+        );
+        assert!(
+            sands[1..].iter().all(|sand| app
+                .world()
+                .get::<AreaForces>(*sand)
+                .unwrap()
+                .0
+                .is_empty())
+        );
+        app.update();
+        assert!(
+            !app.world()
+                .entity(sands[0])
+                .get_ref::<AreaForces>()
+                .unwrap()
+                .is_changed()
+        );
+        app.world_mut()
+            .get_mut::<InfluenceArea>(source)
+            .unwrap()
+            .reach
+            .mode = ReachMode::Limited;
+        app.update();
+        assert!(
+            app.world()
+                .get::<AreaForces>(sands[0])
+                .unwrap()
+                .0
+                .is_empty()
+        );
+        app.world_mut()
+            .get_mut::<InfluenceArea>(source)
+            .unwrap()
+            .reach
+            .radius = 20_000.0;
+        app.update();
+        assert!(
+            !app.world()
+                .get::<AreaForces>(sands[0])
+                .unwrap()
+                .0
+                .is_empty()
+        );
+    }
+
+    #[cfg_attr(test, test)]
     fn contributions_sum_without_motion_and_clear_on_data_pin_workspace_or_area_changes() {
         let mut app = App::new();
         crate::laboratory::isolate(app.world_mut());
@@ -685,9 +940,68 @@ pub(crate) mod tests {
     }
 
     crate::laboratory_cases! {
+        targets_stay_separate_from_boundaries_and_depth_survives_shape_edits,
+        reach_expands_the_perimeter_without_changing_local_membership,
+        follow_shape_preserves_concavities_and_radius_when_moved_or_resized,
+        unlimited_reach_updates_offscreen_sands_and_keeps_workspace_and_pin_limits,
+        new_shapes_have_no_force_or_record_changes_until_configured,
         perimeters_reject_open_crossed_repeated_flat_and_oversized_shapes,
         concave_outline_matches_its_interior_including_edges_at_large_coordinates,
         properties_and_direction_produce_finite_constant_forces_only_inside,
         contributions_sum_without_motion_and_clear_on_data_pin_workspace_or_area_changes,
+    }
+
+    #[cfg_attr(test, test)]
+    fn targets_stay_separate_from_boundaries_and_depth_survives_shape_edits() {
+        let mut area = InfluenceArea::drawn(&[
+            DVec2::new(0.0, 0.0),
+            DVec2::new(200.0, 0.0),
+            DVec2::new(200.0, 40.0),
+            DVec2::new(40.0, 40.0),
+            DVec2::new(40.0, 100.0),
+            DVec2::new(0.0, 100.0),
+        ])
+        .unwrap();
+        assert_eq!(area.depth, 100.0);
+        assert!(!area.contains(DVec2::from_array(area.center)));
+        assert!(area.contains(area.target_position()));
+        let boundary = area.outline();
+        area.target = AttractionTarget::Point([400.0, 0.0]);
+        area.strength = 10.0;
+        let point = DVec2::new(20.0, 20.0);
+        assert!(!area.reaches(area.target_position()));
+        assert_eq!(area.outline(), boundary);
+        assert!(
+            area.force_for_match(point, true)
+                .dot(area.target_position() - point)
+                > 0.0
+        );
+        area.direction = Direction::Repel;
+        assert!(
+            area.force_for_match(point, true)
+                .dot(area.target_position() - point)
+                < 0.0
+        );
+        assert_eq!(
+            area.force_for_match(DVec2::new(80.0, 80.0), true),
+            DVec2::ZERO
+        );
+        let before = area.target_position();
+        area.center[0] += 25.0;
+        assert_eq!(area.target_position(), before + DVec2::new(25.0, 0.0));
+        area.size = [400.0, 200.0];
+        assert_eq!(area.depth, 100.0);
+        assert_eq!(area.target_position(), before + DVec2::new(25.0, 0.0));
+        area.target = AttractionTarget::Center;
+        assert!(area.contains(area.target_position()));
+        for depth in [0.0, -1.0, f64::NAN, f64::INFINITY, 100001.0] {
+            area.depth = depth;
+            assert!(!area.validate());
+        }
+        area.depth = 42.0;
+        for offset in [[f64::NAN, 0.0], [0.0, f64::INFINITY]] {
+            area.target = AttractionTarget::Point(offset);
+            assert!(!area.validate());
+        }
     }
 }

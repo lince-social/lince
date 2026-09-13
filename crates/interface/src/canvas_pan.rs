@@ -68,6 +68,7 @@ fn pan(
         &mut CanvasItem,
         Option<&mut crate::sand_placement::Pinned>,
         Option<&mut crate::area::InfluenceArea>,
+        Option<&crate::area_effects::AreaScale>,
     )>,
     modes: Query<&crate::edit_mode::EditMode>,
     parents: Query<&ChildOf>,
@@ -130,9 +131,14 @@ fn pan(
                         {
                             let resize = if moving && button == PointerButton::Primary {
                                 sand.and_then(|entity| {
-                                    let (item, pin, _) = items.get(entity).ok()?;
+                                    let (item, pin, _, scale) = items.get(entity).ok()?;
+                                    let scale = if pin.is_some() {
+                                        1.0
+                                    } else {
+                                        scale.map_or(1.0, |s| f64::from(s.0))
+                                    };
                                     let effective = CanvasView {
-                                        zoom: pin.map_or(view.zoom, |pin| pin.scale),
+                                        zoom: pin.map_or(view.zoom, |pin| pin.scale) * scale,
                                         ..*view
                                     };
                                     let edges = edges_at(
@@ -161,7 +167,8 @@ fn pan(
                                     Some(Resize {
                                         edges,
                                         start: event.location.position,
-                                        zoom: effective.zoom,
+                                        zoom: effective.zoom / scale,
+                                        scale,
                                         original: *item,
                                         minimum,
                                     })
@@ -220,15 +227,20 @@ fn pan(
                         gesture.0 = None;
                         continue;
                     }
-                    let Ok((mut item, mut pin, area)) = items.get_mut(entity) else {
+                    let Ok((mut item, mut pin, area, scale)) = items.get_mut(entity) else {
                         gesture.0 = None;
                         continue;
                     };
                     let zoom = pin.as_ref().map_or(view.zoom, |pin| pin.scale);
+                    let scale = if pin.is_some() {
+                        1.0
+                    } else {
+                        scale.map_or(1.0, |s| f64::from(s.0))
+                    };
                     let before = *item;
                     let original = item.position;
                     if let Some(resize) = &active.resize {
-                        if resize.zoom != zoom {
+                        if resize.zoom != zoom || resize.scale != scale {
                             gesture.0 = None;
                             continue;
                         }
@@ -321,10 +333,15 @@ fn pan(
                 if let Ok(view) = views.get(entity) {
                     if modes.get(entity).is_ok_and(|mode| mode.enabled)
                         && let Some(sand) = sand
-                        && let Ok((item, pin, _)) = items.get(sand)
+                        && let Ok((item, pin, _, scale)) = items.get(sand)
                     {
+                        let scale = if pin.is_some() {
+                            1.0
+                        } else {
+                            scale.map_or(1.0, |s| f64::from(s.0))
+                        };
                         let effective = CanvasView {
-                            zoom: pin.map_or(view.zoom, |pin| pin.scale),
+                            zoom: pin.map_or(view.zoom, |pin| pin.scale) * scale,
                             ..*view
                         };
                         next_cursor =

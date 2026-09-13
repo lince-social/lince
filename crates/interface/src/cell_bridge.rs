@@ -45,6 +45,7 @@ pub struct CellBridge {
     task: JoinHandle<()>,
     closed: Arc<AtomicBool>,
     reported_closed: bool,
+    _sync_queue: engine::sync_service::QueueRegistration,
 }
 
 struct ConnectionEnded {
@@ -68,9 +69,23 @@ impl Drop for CellBridge {
 pub fn connect(runtime: cell::CellRuntime, wake: WakeSignal) -> CellBridge {
     let (outgoing, mut requests) = mpsc::channel::<ClientMessage>(64);
     let (responses, incoming) = mpsc::channel(64);
-    let mut facts = runtime.engine.subscribe();
-    let mut query_changes = runtime.engine.watch_query_changes();
     let mut session = runtime.local_session();
+    let queue_connection = session.connection_id().to_owned();
+    let queued_requests = outgoing.downgrade();
+    let queued_responses = responses.downgrade();
+    let sync_queue = runtime
+        .engine
+        .sync_service
+        .observe_queue(move || nucleus::sync::Queue {
+            instance: nucleus::sync::Instance::interface(&queue_connection, "channel"),
+            incoming: queued_requests.upgrade().map_or(0, |sender| {
+                (sender.max_capacity() - sender.capacity()) as u64
+            }),
+            outgoing: queued_responses.upgrade().map_or(0, |sender| {
+                (sender.max_capacity() - sender.capacity()) as u64
+            }),
+        });
+    let mut sync_events = cell::SyncEvents::new(&runtime.engine);
     let closed = Arc::new(AtomicBool::new(false));
     let ended = ConnectionEnded {
         closed: closed.clone(),
@@ -80,8 +95,6 @@ pub fn connect(runtime: cell::CellRuntime, wake: WakeSignal) -> CellBridge {
         let _ended = ended;
         let mut lanes = HashMap::<String, tokio::task::AbortHandle>::new();
         let mut lane_tasks = tokio::task::JoinSet::new();
-        let mut ephemeral = tokio::time::interval(std::time::Duration::from_secs(3));
-        ephemeral.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
         loop {
             let messages = tokio::select! {
                 request = requests.recv() => {
@@ -119,20 +132,9 @@ pub fn connect(runtime: cell::CellRuntime, wake: WakeSignal) -> CellBridge {
                     }
                     session.handle(request).await
                 }
-                fact = facts.recv() => match fact {
-                    Ok(fact) => session.on_fact(&fact).await,
-                    Err(broadcast::error::RecvError::Lagged(_)) => {
-                        facts = facts.resubscribe();
-                        session.refresh().await
-                    }
-                    Err(broadcast::error::RecvError::Closed) => break,
-                },
-                _ = ephemeral.tick(), if session.has_ephemeral_subscriptions() => {
-                    session.tick_ephemeral().await
-                },
-                changed = query_changes.changed() => {
-                    if changed.is_err() { break; }
-                    session.refresh().await
+                event = sync_events.next(session.has_ephemeral_subscriptions()) => {
+                    let Some(event) = event else { break };
+                    session.on_sync_event(event).await
                 },
                 finished = lane_tasks.join_next(), if !lane_tasks.is_empty() => {
                     lanes.retain(|_, task| !task.is_finished());
@@ -155,6 +157,7 @@ pub fn connect(runtime: cell::CellRuntime, wake: WakeSignal) -> CellBridge {
         task,
         closed,
         reported_closed: false,
+        _sync_queue: sync_queue,
     }
 }
 

@@ -6,6 +6,17 @@ use serde_json::Value;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ClientMessage {
+    SyncInspect {
+        id: String,
+        before: Option<i64>,
+    },
+    SyncHistoryPolicy {
+        id: String,
+        retention: nucleus::sync::Retention,
+    },
+    SyncForgetHistory {
+        id: String,
+    },
     Subscribe {
         id: String,
         protein: Protein,
@@ -96,6 +107,10 @@ pub enum ClientMessage {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ServerMessage {
+    SyncStatus {
+        id: String,
+        overview: nucleus::sync::Overview,
+    },
     SessionChallenge {
         session_id: String,
         challenge: String,

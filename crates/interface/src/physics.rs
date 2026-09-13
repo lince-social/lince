@@ -60,8 +60,6 @@ impl CollisionHooks for WorkspaceContacts<'_, '_> {
 struct Simulation {
     accumulated: Duration,
     active: bool,
-    areas: Vec<(Entity, Entity, u64, InfluenceArea)>,
-    valid_areas: Vec<usize>,
     origins: HashMap<(Entity, u64), DVec2>,
     timer: Option<MotionTimer>,
 }
@@ -189,7 +187,13 @@ fn synchronize(world: &mut World) -> bool {
                     .is_some_and(|spaces| spaces.active == member.0)
                 && crate::workspace_config::enabled(world, parent.parent(), member.0)
         })
-        .map(|(entity, item, parent, member, _)| (entity, *item, parent.parent(), member.0))
+        .map(|(entity, item, parent, member, _)| {
+            let mut item = *item;
+            item.size *= world
+                .get::<crate::area_effects::AreaScale>(entity)
+                .map_or(1.0, |scale| scale.0);
+            (entity, item, parent.parent(), member.0)
+        })
         .collect();
     let dragged: HashSet<_> = crate::canvas_pan::dragged(world)
         .and_then(|entity| {
@@ -259,13 +263,16 @@ fn synchronize(world: &mut World) -> bool {
             }
             if moved || changed_held {
                 world
+                    .resource_mut::<crate::area_effects::Influences>()
+                    .forget(sand);
+                world
                     .entity_mut(entity)
                     .insert((Position(position.extend(0.0)), LinearVelocity::ZERO));
                 world.entity_mut(entity).remove::<Sleeping>();
             }
             if changed_held {
                 world.entity_mut(entity).insert(if held {
-                    RigidBody::Static
+                    RigidBody::Kinematic
                 } else {
                     RigidBody::Dynamic
                 });
@@ -300,7 +307,7 @@ fn synchronize(world: &mut World) -> bool {
                     Rotation::default(),
                     Transform::default(),
                     if held {
-                        RigidBody::Static
+                        RigidBody::Kinematic
                     } else {
                         RigidBody::Dynamic
                     },
@@ -329,24 +336,9 @@ fn synchronize(world: &mut World) -> bool {
         }
     }
     changed |= synchronize_groups(world, &edited);
-    let mut areas: Vec<_> = world
-        .query::<(Entity, &InfluenceArea, &ChildOf, &WorkspaceMember)>()
-        .iter(world)
-        .map(|(entity, area, parent, member)| (entity, parent.parent(), member.0, area.clone()))
-        .collect();
-    areas.sort_by(|a, b| a.3.id.cmp(&b.3.id).then(a.0.cmp(&b.0)));
     let mut simulation = world.resource_mut::<Simulation>();
     origins.retain(|key, _| active_workspaces.contains(key));
     simulation.origins = origins;
-    if simulation.areas != areas {
-        simulation.valid_areas = areas
-            .iter()
-            .enumerate()
-            .filter(|(_, (_, _, _, area))| area.validate())
-            .map(|(index, _)| index)
-            .collect();
-        simulation.areas = areas;
-    }
     changed
 }
 
@@ -394,28 +386,33 @@ fn synchronize_groups(world: &mut World, edited: &HashSet<Entity>) -> bool {
 }
 
 fn apply_forces(
-    simulation: Res<Simulation>,
-    records: Query<&RecordProperties>,
+    mut influences: ResMut<crate::area_effects::Influences>,
+    records: Query<
+        (
+            Option<&RecordProperties>,
+            Option<&crate::protein_area::RecordBinding>,
+        ),
+        With<CanvasItem>,
+    >,
     mut bodies: Query<(Entity, &BodyLink, &Position, &mut ConstantForce)>,
     mut commands: Commands,
 ) {
     for (entity, link, position, mut force) in &mut bodies {
-        let mut total = DVec2::ZERO;
-        if !link.held
-            && let Ok(record) = records.get(link.sand)
+        let total = if !link.held
+            && let Ok((record, binding)) = records.get(link.sand)
         {
-            for index in &simulation.valid_areas {
-                let (_, root, workspace, area) = &simulation.areas[*index];
-                if *root == link.root && *workspace == link.workspace {
-                    total += area.force(position.0.truncate() + link.origin, record);
-                }
-            }
-        }
-        let next = if total.is_finite() {
-            total.clamp_length_max(1_000_000.0).extend(0.0)
+            influences.total(
+                link.sand,
+                link.root,
+                link.workspace,
+                position.0.truncate() + link.origin,
+                record,
+                binding,
+            )
         } else {
-            DVec3::ZERO
+            DVec2::ZERO
         };
+        let next = total.extend(0.0);
         if force.0 != next {
             force.0 = next;
             commands.entity(entity).remove::<Sleeping>();
@@ -424,6 +421,7 @@ fn apply_forces(
 }
 
 fn simulate(world: &mut World) {
+    crate::area_effects::update(world);
     let changed = synchronize(world);
     world
         .run_system_cached(apply_forces)
@@ -547,6 +545,37 @@ pub(crate) mod tests {
         for _ in 0..ticks {
             app.update();
         }
+    }
+
+    #[cfg_attr(test, test)]
+    fn area_reach_changes_wake_offscreen_bodies_and_apply_real_motion() {
+        let (mut app, root, area, sand) = fixture(DVec2::ZERO);
+        let start = DVec2::new(20_000.0, 0.0);
+        app.world_mut()
+            .get_mut::<CanvasItem>(sand)
+            .unwrap()
+            .position = start;
+        crate::workspace_config::set_physics(app.world_mut(), root, 1, true);
+        advance(&mut app, 120);
+        assert_eq!(app.world().get::<CanvasItem>(sand).unwrap().position, start);
+        app.world_mut()
+            .get_mut::<InfluenceArea>(area)
+            .unwrap()
+            .reach
+            .mode = crate::area::ReachMode::Unlimited;
+        advance(&mut app, 120);
+        let moved = app.world().get::<CanvasItem>(sand).unwrap().position;
+        assert!(moved.x < start.x - 50.0);
+        crate::workspace_config::set_physics(app.world_mut(), root, 1, false);
+        advance(&mut app, 2);
+        {
+            let mut area = app.world_mut().get_mut::<InfluenceArea>(area).unwrap();
+            area.reach.mode = crate::area::ReachMode::Limited;
+            area.reach.radius = 20_000.0;
+        }
+        crate::workspace_config::set_physics(app.world_mut(), root, 1, true);
+        advance(&mut app, 120);
+        assert!(app.world().get::<CanvasItem>(sand).unwrap().position.x < moved.x - 50.0);
     }
 
     #[cfg_attr(test, test)]
@@ -721,6 +750,49 @@ pub(crate) mod tests {
     }
 
     #[cfg_attr(test, test)]
+    fn moving_a_held_sand_keeps_pushing_after_other_sands_sleep() {
+        let (mut app, root, area, sand) = fixture(DVec2::ZERO);
+        app.world_mut().despawn(area);
+        app.world_mut()
+            .get_mut::<CanvasItem>(sand)
+            .unwrap()
+            .position = DVec2::ZERO;
+        let other = app
+            .world_mut()
+            .spawn((
+                CanvasItem {
+                    position: DVec2::new(-80.0, 0.0),
+                    size: Vec2::splat(40.0),
+                },
+                WorkspaceMember(1),
+                ChildOf(root),
+            ))
+            .id();
+        let mut focus = InputFocus::default();
+        focus.set(other, bevy::input_focus::FocusCause::Pressed);
+        app.insert_resource(focus);
+        crate::workspace_config::set_physics(app.world_mut(), root, 1, true);
+        advance(&mut app, 360);
+        assert!(!app.world().resource::<Simulation>().active);
+        for x in -79..80 {
+            app.world_mut()
+                .get_mut::<CanvasItem>(other)
+                .unwrap()
+                .position
+                .x = f64::from(x);
+            advance(&mut app, 2);
+            let pushed = app.world().get::<CanvasItem>(sand).unwrap().position;
+            assert!(
+                pushed.x - f64::from(x) >= 38.0,
+                "held {x}, pushed {pushed:?}"
+            );
+        }
+        advance(&mut app, 360);
+        let pushed = app.world().get::<CanvasItem>(sand).unwrap().position;
+        assert!(pushed.x >= 117.0, "{pushed:?}");
+    }
+
+    #[cfg_attr(test, test)]
     fn repeated_fixed_steps_agree_within_one_millionth_of_a_canvas_unit() {
         let run = || {
             let (mut app, root, _, sand) = fixture(DVec2::new(1e9, -1e9));
@@ -768,14 +840,109 @@ pub(crate) mod tests {
         assert!(receiver.recv_timeout(Duration::from_millis(40)).is_err());
     }
 
+    #[cfg_attr(test, test)]
+    fn protein_membership_wakes_only_matching_source_bodies_and_stops_force_on_disconnect() {
+        use crate::protein_area::{Config, RecordBinding, Source, filter::Matches};
+        let (mut app, root, area, sand) = fixture(DVec2::ZERO);
+        {
+            let mut influence = app.world_mut().get_mut::<InfluenceArea>(area).unwrap();
+            influence.filter = Some(Config::default());
+            influence.rules.clear();
+        }
+        app.world_mut().entity_mut(sand).insert((
+            RecordProperties(serde_json::json!({"uid":"task"})),
+            RecordBinding {
+                area,
+                uid: "task".into(),
+                source: Source::Organ("remote".into()),
+            },
+        ));
+        app.world_mut().entity_mut(area).insert(Matches {
+            source: Source::Local,
+            uids: HashSet::from(["task".into()]),
+            current: true,
+        });
+        crate::workspace_config::set_physics(app.world_mut(), root, 1, true);
+        advance(&mut app, 120);
+        assert_eq!(
+            app.world().get::<CanvasItem>(sand).unwrap().position,
+            DVec2::new(200.0, 0.0)
+        );
+        app.world_mut().get_mut::<Matches>(area).unwrap().source = Source::Organ("remote".into());
+        advance(&mut app, 120);
+        assert!(app.world().get::<CanvasItem>(sand).unwrap().position.x < 150.0);
+        app.world_mut().get_mut::<Matches>(area).unwrap().current = false;
+        advance(&mut app, 1);
+        assert!(
+            app.world_mut()
+                .query::<&ConstantForce>()
+                .iter(app.world())
+                .all(|force| force.0 == DVec3::ZERO)
+        );
+    }
+
     crate::laboratory_cases! {
+        size_and_immunity_update_colliders_and_saved_force_without_resizing_the_sand,
+        protein_membership_wakes_only_matching_source_bodies_and_stops_force_on_disconnect,
+        area_reach_changes_wake_offscreen_bodies_and_apply_real_motion,
         grouped_sands_keep_their_spacing_under_forces_and_release_joints_when_ungrouped,
         toggles_start_real_motion_and_stop_at_current_positions_without_stale_velocity,
         repulsion_moves_outwards_and_pins_and_other_workspaces_are_unchanged,
         collisions_separate_sands_and_settle_without_crossing_box_boundaries,
+        moving_a_held_sand_keeps_pushing_after_other_sands_sleep,
         repeated_fixed_steps_agree_within_one_millionth_of_a_canvas_unit,
         editing_a_sand_holds_it_and_releasing_focus_resumes_the_force,
         motion_timer_sleeps_until_started_and_releases_its_thread_on_drop,
+    }
+
+    #[cfg_attr(test, test)]
+    fn size_and_immunity_update_colliders_and_saved_force_without_resizing_the_sand() {
+        let (mut app, root, area, sand) = fixture(DVec2::ZERO);
+        app.world_mut()
+            .get_mut::<InfluenceArea>(area)
+            .unwrap()
+            .scale = 2.0;
+        crate::workspace_config::set_physics(app.world_mut(), root, 1, true);
+        advance(&mut app, 2);
+        let body = app
+            .world_mut()
+            .query::<(Entity, &BodyLink)>()
+            .iter(app.world())
+            .find(|(_, link)| link.sand == sand)
+            .unwrap()
+            .0;
+        assert_eq!(
+            app.world().get::<BodyLink>(body).unwrap().size,
+            Vec2::splat(80.0)
+        );
+        assert_eq!(
+            app.world().get::<CanvasItem>(sand).unwrap().size,
+            Vec2::splat(40.0)
+        );
+        assert!(app.world().get::<ConstantForce>(body).unwrap().0.x < 0.0);
+        let mut shield = InfluenceArea::new(
+            AreaShape::Square,
+            DVec2::new(200.0, 0.0),
+            DVec2::splat(200.0),
+        );
+        shield.immunity = crate::area_effects::Immunity::All;
+        let shield = crate::area::spawn_area(app.world_mut(), root, 1, shield).unwrap();
+        advance(&mut app, 2);
+        assert_eq!(
+            app.world().get::<ConstantForce>(body).unwrap().0,
+            DVec3::ZERO
+        );
+        assert_eq!(
+            app.world().get::<BodyLink>(body).unwrap().size,
+            Vec2::splat(40.0)
+        );
+        app.world_mut().despawn(shield);
+        advance(&mut app, 2);
+        assert!(app.world().get::<ConstantForce>(body).unwrap().0.x < 0.0);
+        assert_eq!(
+            app.world().get::<BodyLink>(body).unwrap().size,
+            Vec2::splat(80.0)
+        );
     }
 }
 

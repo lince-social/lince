@@ -167,7 +167,18 @@ pub(crate) fn screen_bounds(world: &World, root: Entity, entity: Entity) -> Opti
     let view = *world.get::<CanvasView>(root)?;
     let pin = world.get::<Pinned>(entity);
     let view = pin.map_or(view, |pin| pin.view(item, viewport.size()));
-    let top = view.screen_position(item, viewport.size())? + viewport.min;
+    let scale = if pin.is_some() {
+        1.0
+    } else {
+        world
+            .get::<crate::area_effects::AreaScale>(entity)
+            .map_or(1.0, |s| s.0)
+    };
+    let item = CanvasItem {
+        size: item.size * scale,
+        ..*item
+    };
+    let top = view.screen_position(&item, viewport.size())? + viewport.min;
     Some(Rect::from_corners(top, top + item.size * view.zoom as f32))
 }
 
@@ -220,21 +231,21 @@ fn input(
     mut cursor: Local<MessageCursor<PointerInput>>,
     mut windows: Local<MessageCursor<WindowEvent>>,
 ) {
+    let escape = world
+        .resource::<ButtonInput<KeyCode>>()
+        .just_pressed(KeyCode::Escape);
     let interrupted = windows
         .read(world.resource::<Messages<WindowEvent>>())
         .any(|event| {
             matches!(event, WindowEvent::WindowFocused(event) if !event.focused)
                 || matches!(event, WindowEvent::CursorLeft(_))
-        })
-        || world
-            .resource::<ButtonInput<KeyCode>>()
-            .just_pressed(KeyCode::Escape);
+        });
     let roots: Vec<_> = world
         .query_filtered::<Entity, With<SandSelection>>()
         .iter(world)
         .collect();
     for root in roots {
-        if !world.get::<EditMode>(root).is_some_and(|mode| mode.enabled) {
+        if escape || !world.get::<EditMode>(root).is_some_and(|mode| mode.enabled) {
             clear(world, root);
         } else {
             let selection = selected(world, root);
@@ -270,6 +281,11 @@ fn input(
     let mut consumed = false;
     for event in cursor.read_mut(&mut events) {
         if event.pointer_id != PointerId::Mouse {
+            continue;
+        }
+        if escape {
+            event.action = PointerAction::Cancel;
+            consumed = true;
             continue;
         }
         if let Some(mut gesture) = world.resource_mut::<SelectionGesture>().0.take() {
@@ -720,8 +736,8 @@ pub(crate) mod tests {
     }
 
     #[cfg_attr(test, test)]
-    fn right_drag_selects_live_closes_on_release_and_escape_restores_the_previous_selection() {
-        let (mut app, root, first, second) = fixture();
+    fn right_drag_selects_live_closes_on_release_and_escape_clears_the_selection() {
+        let (mut app, root, _, _) = fixture();
         app.world_mut()
             .resource_mut::<ButtonInput<KeyCode>>()
             .press(KeyCode::ControlLeft);
@@ -753,13 +769,121 @@ pub(crate) mod tests {
             .resource_mut::<ButtonInput<KeyCode>>()
             .press(KeyCode::Escape);
         app.update();
-        let restored = selected(app.world(), root);
-        assert!(restored.contains(&first) && restored.contains(&second));
+        assert!(selected(app.world(), root).is_empty());
         assert!(app.world().resource::<SelectionGesture>().0.is_none());
+        assert!(app.world().resource::<Drawing>().0.is_empty());
         assert_eq!(
             app.world().get::<CanvasView>(root).unwrap().center,
             DVec2::ZERO
         );
+    }
+
+    #[cfg_attr(test, test)]
+    fn escape_clears_finished_selection_without_ungrouping_or_restarting_a_drag() {
+        let (mut app, root, first, second) = fixture();
+        set_selection(app.world_mut(), root, vec![first, second]);
+        GroupAction::Group.apply(app.world_mut(), first);
+        let group = *app.world().get::<SandGroup>(first).unwrap();
+        app.update();
+        assert_eq!(app.world().resource::<Drawing>().0.len(), 2);
+        {
+            let mut keys = app.world_mut().resource_mut::<ButtonInput<KeyCode>>();
+            keys.press(KeyCode::ControlLeft);
+            keys.press(KeyCode::Escape);
+        }
+        send(
+            &mut app,
+            PointerAction::Press(PointerButton::Secondary),
+            Vec2::new(-110.0, -30.0),
+        );
+        assert!(selected(app.world(), root).is_empty());
+        assert!(app.world().resource::<SelectionGesture>().0.is_none());
+        assert!(app.world().resource::<Drawing>().0.is_empty());
+        for sand in [first, second] {
+            assert_eq!(app.world().get::<SandGroup>(sand), Some(&group));
+        }
+        assert!(app.world().get::<EditMode>(root).unwrap().enabled);
+    }
+
+    #[cfg_attr(test, test)]
+    fn pinning_selection_and_groups_preserves_positions_and_ignores_other_workspaces() {
+        use crate::sand_placement::{Placement, PlacementAction};
+
+        let (mut app, root, first, second) = fixture();
+        app.add_plugins(crate::sand_placement::PlacementPlugin);
+        let other = app
+            .world_mut()
+            .spawn((
+                CanvasItem {
+                    position: DVec2::ZERO,
+                    size: Vec2::splat(40.0),
+                },
+                WorkspaceMember(2),
+                ChildOf(root),
+            ))
+            .id();
+        let bounds: Vec<_> = [first, second]
+            .map(|sand| screen_bounds(app.world(), root, sand).unwrap())
+            .into();
+        set_selection(app.world_mut(), root, vec![first, second]);
+        app.world_mut()
+            .entity_mut(root)
+            .insert(SandSelection(vec![first, second, other]));
+        PlacementAction::Pin.apply(app.world_mut(), first);
+        app.update();
+        assert!(
+            app.world_mut()
+                .query::<&crate::icons::IconButton>()
+                .iter(app.world())
+                .any(|button| button.label == "Unpin from screen")
+        );
+        for (sand, bounds) in [first, second].into_iter().zip(&bounds) {
+            assert!(app.world().get::<Pinned>(sand).is_some());
+            assert_eq!(
+                screen_bounds(app.world(), root, sand).as_ref(),
+                Some(bounds)
+            );
+            let saved = Placement::capture(app.world(), sand);
+            let saved: Placement =
+                serde_json::from_slice(&serde_json::to_vec(&saved).unwrap()).unwrap();
+            assert!(saved.pinned.is_some());
+        }
+        assert!(app.world().get::<Pinned>(other).is_none());
+        let pin = *app.world().get::<Pinned>(first).unwrap();
+        app.world_mut().entity_mut(second).remove::<Pinned>();
+        app.update();
+        assert!(
+            app.world_mut()
+                .query::<&crate::icons::IconButton>()
+                .iter(app.world())
+                .any(|button| button.label == "Pin to screen")
+        );
+        app.world_mut().get_mut::<CanvasView>(root).unwrap().center = DVec2::splat(20.0);
+        PlacementAction::Pin.apply(app.world_mut(), first);
+        assert_eq!(app.world().get::<Pinned>(first).unwrap().anchor, pin.anchor);
+        assert!(app.world().get::<Pinned>(second).is_some());
+        let pinned_bounds =
+            [first, second].map(|sand| screen_bounds(app.world(), root, sand).unwrap());
+        PlacementAction::Pin.apply(app.world_mut(), second);
+        for (sand, bounds) in [first, second].into_iter().zip(pinned_bounds) {
+            assert!(app.world().get::<Pinned>(sand).is_none());
+            assert!(app.world().get::<GlobalZIndex>(sand).is_none());
+            assert_eq!(screen_bounds(app.world(), root, sand), Some(bounds));
+        }
+        GroupAction::Group.apply(app.world_mut(), first);
+        let group = *app.world().get::<SandGroup>(first).unwrap();
+        app.world_mut().entity_mut(other).insert(group);
+        clear(app.world_mut(), root);
+        PlacementAction::Pin.apply(app.world_mut(), first);
+        assert!(app.world().get::<Pinned>(first).is_some());
+        assert!(app.world().get::<Pinned>(second).is_some());
+        assert!(app.world().get::<Pinned>(other).is_none());
+        PlacementAction::Pin.apply(app.world_mut(), other);
+        assert!(app.world().get::<Pinned>(other).is_none());
+        crate::edit_mode::EditAction::Close.apply(app.world_mut(), root);
+        PlacementAction::Pin.apply(app.world_mut(), first);
+        assert!(app.world().get::<Pinned>(first).is_some());
+        assert!(app.world().get::<Pinned>(second).is_some());
     }
 
     #[cfg_attr(test, test)]
@@ -819,7 +943,9 @@ pub(crate) mod tests {
     crate::laboratory_cases! {
         selection_uses_zoomed_bounds_and_screen_pins_and_retains_overlay_entities,
         rectangle_requires_full_containment_and_ignores_other_workspaces_hidden_sands_and_areas,
-        right_drag_selects_live_closes_on_release_and_escape_restores_the_previous_selection,
+        right_drag_selects_live_closes_on_release_and_escape_clears_the_selection,
+        escape_clears_finished_selection_without_ungrouping_or_restarting_a_drag,
+        pinning_selection_and_groups_preserves_positions_and_ignores_other_workspaces,
         groups_keep_entities_and_contents_and_cannot_change_another_workspace,
         group_movement_and_resize_preserve_offsets_at_distant_coordinates,
     }

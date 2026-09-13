@@ -530,13 +530,8 @@ This pc workflow:
 
 # Tasks of Part A:
 
-Basic Sands: Building blocks
-- [/] Editable Text or Plaintext Text: needs configuration to do an invisible box of the text area, so when users write we know if we scroll down, up, or grow the textarea vertically down.
-	- [/] How did the static/editable text sand and the general configuration turn out in regards of being able to control how one sand grows based on the content of another sand that is inside it? Like line above (dont code, read). If i have text in a square, thinking like an excel cell, do we have controls to say, this text sand starts with this size, when characters inside fill it, it will grow itself and the sand to keep getting wider, or say them both will not grow wider, but down, or say it will not grow but have vertical or horizontal scroll. I'd want to know how it was planned, if this would work only for text/square interaction, or if in the future i could make an area of influence with sands that represent records inside with scroll (ordering area for organization too).
-- [ ] Add sand for start/pause on the time tracking spent on that sand of work log metadata property. Maybe it can be always showing total time when paused and time of current play when play (common behavior).
-
 Areas of Influence:
-- [/] Tab in edit panel to add many types of areas, i can add a specific shape or draw it on canvas, must be one complete perimeter, cant be an open line, must be closed.
+- [x] Tab in edit panel to add many types of areas, i can add a specific shape or draw it on canvas, must be one complete perimeter, cant be an open line, must be closed.
 	- [x] Simplify panel without phrases, adding buttons and sliders with icons replacing text with tooltip as much as possible.
 	- [x] Set attraction/repulsion force.
 	- [x] Reach of being affected by movement influence should be limited, with a radius (square or follows the shape) or unlimited, affecting all sands.
@@ -562,10 +557,12 @@ Areas of Influence:
 	- [x] Area of Influence of Immunity, that cancels all external and/or internal Area of Influences on the sands inside.
 	- [x] Area of Influence to shrink/expand Sands that enter/leave it.
 	- [x] After many areas of influence, a workspace might do a lot of computations per second when user is not interacting, and many when things change. We should have in our physics some inertia. So that when a sand changes, gaining/losing properties, or when areas of influence change/added/removed we calculate what is the resulting force applied to each sand and save that, as a vector in a direction and intensity. So we dont have to constantly calculate what is pulling a sand where, we know it. its one direction with one intensity. That should be a Simple Physics Influence, that no matter the distance to a sand, that area of influence that affect's its position will affect it the same. If in a workspace we have only Simple Physics Influences, whenever we crud the areas of influence related to movemement of sands we calculated the current direction+intensity of pull for the affected ones. In Newtonian Physics Influence the distance matters when an Area of Influence is affecting a sand, so we add more computation to calculate in real time whenever a sand is moving what are the forces of it and move it in next physics beat or something. To cancel this, we must be able to include an area of influence of Immunity, that cancels all external and/or internal area of influences.
+	- [ ] Area to assign people, unassign, add/subtract/divide/multiple quantity of records that pass through it.
+	- [ ] This is similar to karma, when something happens, do x thing, when something passes through, x happens.
 
 Castles - Pre-packaged groups of Sands for specific workflows:
-- [ ] Castles should be separated from sand in the picker. Basic blocks and packaged workflows.
-- [ ] Save a group as a reusable Castle so user can compose sands/castles and save them as custom sands. differ from normal sand/castles in sand store to show them that the file in disk that represents that sand should be saved if they want to maintain them would they switch pc or wipe it, put that in info tooltip next to 'Custom'.
+- [x] Castles should be separated from sand in the picker. Basic blocks and packaged workflows.
+- [x] Save a group as a reusable Castle so user can compose sands/castles and save them as custom sands. differ from normal sand/castles in sand store to show them that the file in disk that represents that sand should be saved if they want to maintain them would they switch pc or wipe it, put that in info tooltip next to 'Custom'.
 
 - [ ] Instinct, grabs the #instinct records when building to embed in the Instinct sand, that is in seed of first workspace. It should include content to explain what Lince is in a high level (humans' job). We can have text to explain and tutorials to teach. Take inspiration from games, tutorials are already things developed over and over again:
 	- [ ] See if there isnt some ready made thing in bevy to help. When building new features, we might need to add to AGENTS.md that the respective tutorial step of the idea needs to be refactored/built, maybe we can make use of the Laboratory primitives for this, so that simulating movements and interactions for laboratory and enacting/expecting/blocking-other-things in steps of Instinct Tutorial should use it aswell, not reimplementing this control of Interface.
@@ -578,43 +575,46 @@ Castles - Pre-packaged groups of Sands for specific workflows:
 		- [ ] Areas of Influence (no protein yet).
 		- [ ] Protein as an idea, interactable by Areas of Influence of Protein Spawn: it teaches people what Protein is in human language from the Record of Lince.lingua, then it teaches them to make an Area of Influence of Protein Spawn. To select the filters and see what data would spawn from it. Then it teaches how to add a sand/make-a-castle that will pick certain properties coming from the Protein to show.
 
-- [ ] Calendar Castle:
-	- [ ] Days of month.
-	- [ ] Buttons to pass through the months/years quickly, like < year > | < month> . On top of the days of the month, clicking the arrows moves one, clicking the year/month opens a selector with years/months.
-	- [ ] Clicking a day Events yyyy-mm-dd selected, make it so the calendar castle fires that event and the date related property that opened it is in a group with it, and the event is listened only inside that group (this enclosuring of events by group i want to be a feature, if not already, and i want to be configurable, by default putting things in groups doesnt do it, but we can make it a group that blocks certain events from leaving).
-	- [ ] When selecting a start-end period i will have two fields, one should be able to click one and select a date for start, then select the other and select a date to end.
-	- [ ] This should be built to be used by date related properties, and also to be put in the canvas as a big calendar that can be resized (like normal sands/castles) to occupy most of the screen and have records inside, shown in one day, or in a range of days. I can change the month/year in the buttons, or scroll down/up. What gives me data to be able to put those records according to their dates is a protein spawning area that
+- [x] Calendar Castle:
+	- [x] Days of month.
+	- [x] Buttons to pass through the months/years quickly, like < year > | < month> . On top of the days of the month, clicking the arrows moves one, clicking the year/month opens a selector with years/months.
+	- [x] Clicking a day Events yyyy-mm-dd selected, make it so the calendar castle fires that event and the date related property that opened it is in a group with it, and the event is listened only inside that group (this enclosuring of events by group i want to be a feature, if not already, and i want to be configurable, by default putting things in groups doesnt do it, but we can make it a group that blocks certain events from leaving).
+	- [x] When selecting a start-end period i will have two fields, one should be able to click one and select a date for start, then select the other and select a date to end.
+	- [x] This should be built to be used by date related properties, and also to be put in the canvas as a big calendar that can be resized (like normal sands/castles) to occupy most of the screen and have records inside, shown in one day, or in a range of days. I can change the month/year in the buttons, or scroll down/up. What gives me data to be able to put those records according to their dates is a protein spawning area that
 
-- [ ] Kanban Castle
-	- [ ] Spawn Areas of Influence specific for a Kanban (#concept: quantity): #Backlog: 0, #Todo: -1, #Next: -2, #WIP: -3, #Review: -4, #Done: 1, #Documented: 2.
-		- [ ] We can hardcode the spawning of those areas of influence, that can pull many possible properties, for each lets do the assertion and the quantity associated. After putting those areas that attract those records and change records.
-- [ ] Access Control Castle:
+- [/] Kanban Castle: Spawn Areas of Influence specific for a Kanban (#concept: quantity): #Backlog: 0, #Todo: -1, #Next: -2, #WIP: -3, #Review: -4, #Done: 1, #Documented: 2. Each kanban column is 4 areas of influence stacked (or one with 4 behaviors if that is the current way): 1. Pull by one/some properties (filter). 2. Add the properties that cards are pulled by when they enter there. 3. Remove the properties pulled by when leaving. 4. Sort by end date (clostest to now is first/more-on-top).
+- [/] Task Castle: pre-made group of sands for a classic card inside a kanban system: Record title, assignees (if any, else empty assignee icon), dates (start-end) and assertions, these properties shown are editable if clicked.
+
+- [ ] Access Control Castle: This should be a way for us to configure the Actors of our system, their Roles (i'd like to be multiple, the things they are allowed to do should be added, so if Role A can do A and C, and not B, and Role B can do B only, someone with Roles A and B can do A, B, C). The old web version had some sand of Access control, it was implemented poorly and ugly, we can understand it and do it better, with more capabilities):
 	- [ ] Actors
 	- [ ] Permissions
 	- [ ] Role
+	- [ ] It was an early idea of mine to be able to limit who can read/write what Records based on #assertion, and for there to be seeded one role that can control what is read/written based on that, if that is a permission, it will probably be for people that are admins (abstraction, admins are not hardcoded things, they can have such name in seeded role/permission/user, but that's it). So we can use Protein for limiting that, with complex filters of editing per role, not limited only to #assertion. Maintaining the fact of "if Role A can do A and C, and not B, and Role B can do B only, someone with Roles A and B can do A, B, C" to Record read/write capabilities.
 -
-- [ ] Full Record Castle (inspired by web's Record sand, to be able to edit all of a record, it's title/desc/qty/slug/assertions/threads-messages...):
-	- [ ] Collaboration: Use one editor wherever a Record's information appears so when changes are made by another person to a common data between both of you it is felt instantly: in the Record Sand, a card, a table cell or a conversation. Writing in one place should be visible in the others and to people who share that Record.
-	- [ ] Be able to edit a Record with Loro, CRDT, so someone that is syncing with the Lince owner of the Record I am editing can see my edits. Includes Record title, description and other properties like quantity, assertions, slug, work metadata...
-	- [ ] Cursor position so the edits dont look like a ghost.
-	- [ ] Edit titles, descriptions and other supported properties collaboratively, with visible cursors. Use the same field binding everywhere while preserving each property's rules for quantities, unique slugs and permissions.
+- [/] Full Record Castle (inspired by web's Record sand, to be able to edit all of a record, it's title/desc/qty/slug/assertions/threads-messages...):
+	- [/] Collaboration: Use one editor wherever a Record's information appears so when changes are made by another person to a common data between both of you it is felt instantly: in the Record Sand, a card, a table cell or a conversation. Writing in one place should be visible in the others and to people who share that Record. This can mean the text sand when hosting a Record property it has attatched to it some capabilities to deal with the possible Collaboration feature that has many people possibly changing such record.
+	- [/] Be able to edit a Record with Loro, CRDT, so someone that is syncing with the Lince owner of the Record I am editing can see my edits. Includes Record title, description and other properties like quantity, assertions, slug, work metadata...
+	- [/] Cursor position so the edits dont look like a ghost.
+	- [/] Edit titles, descriptions and other supported properties collaboratively, with visible cursors. Use the same field binding everywhere while preserving each property's rules for quantities, unique slugs and permissions.
+	- [/] Show who wrote each message in threads.
+	- [ ] Add sand for start/pause on the time tracking spent on that sand of work log metadata property. Maybe it can be always showing total time when paused and time of current play when play (common behavior).
+
 	- [ ] Show recent changes that displaced a local edit, including the previous value so the person can recover it. Explain when this short-lived record of changes expires.
-	- [ ] Add Text Sand that starts as a local draft and creates a Record when interaction X happens: dunno.
 		- [ ] One can take an existing text sand and connect a protein property to it, overwriting what was there with the incoming data.
-	- [ ] Show who wrote each message in threads.
 	- [ ] In threads, keep private drafts and reusable replies together, and say what sending will do.
+	- [ ] Add Text Sand that starts as a local draft and creates a Record when interaction X happens: dunno.
 
 Camera:
-- [ ] Cant we make 2d mode a fake 2? make it actually 3d but locked into looking only down (not up)? Is it too bad? Needs critiques. Then we'd alternate between 2d and 3d just with camera, no need to deal with the dimension changes.
-	- [ ] WHen creating things, depth follows smallest side, when resizing it continues to follow it until depth is manually set.
+- [x] WHen creating things, depth follows smallest side, when resizing it continues to follow it until depth is manually set.
 
-- [ ] Advanced Topology: 
-	- [/] Have .gltf assets as a normal sand inside the canvas. This is an open and common file format, the "jpeg of 3d". And also support .glb.
-		- [/] The placement of these Assets, into a workspace can be World Pinned (make it general to any sand), to be put in a specific part of the 2d/3d canvas and stay there, not movable by areas of influence or other sands bumping into it until unpinned (can be manually adjusted). Make the assets world pinned by default.
-	- [/] Be able to have many assets in one workspace, so i can put in one workspace at some point, and another in another point of my workspace. They are pluggable in a Lince workspace to be used and navigated through (in edit mode i can noclip into walls by default, in normal mode i cannot). It can be a character model or a building with detailed rooms.
-	- [/] Being able to select an area in 2d/3d space and group sands, gltf imported assets and areas to make a group and move as one. Currently only sands can be grouped to be moved together, this would add areas and the gltf assets too. So I can have some asset like a house, and in a table inside it I make a Area of influence of Protein Spawn or Attraction by Property and lock them there in relation to the house as a group/castle, so when i move the house it stays exactly on top of the table where it was where i locked it.
 
-	Future:
+- [x] Advanced Topology: 
+	- [x] Have .gltf assets as a normal sand inside the canvas. This is an open and common file format, the "jpeg of 3d". And also support .glb.
+		- [x] The placement of these Assets, into a workspace can be World Pinned (make it general to any sand), to be put in a specific part of the 2d/3d canvas and stay there, not movable by areas of influence or other sands bumping into it until unpinned (can be manually adjusted). Make the assets world pinned by default.
+	- [x] Be able to have many assets in one workspace, so i can put in one workspace at some point, and another in another point of my workspace. They are pluggable in a Lince workspace to be used and navigated through (in edit mode i can noclip into walls by default, in normal mode i cannot). It can be a character model or a building with detailed rooms.
+	- [x] Being able to select an area in 2d/3d space and group sands, gltf imported assets and areas to make a group and move as one. Currently only sands can be grouped to be moved together, this would add areas and the gltf assets too. So I can have some asset like a house, and in a table inside it I make a Area of influence of Protein Spawn or Attraction by Property and lock them there in relation to the house as a group/castle, so when i move the house it stays exactly on top of the table where it was where i locked it.
+
+	Future Topology Work:
 	- [ ] Convert .blend into .gltf as a lince util, without needing blender installed. So i can import a .blend from the internet or use Blender locally to build something and import in the canvas.
 	- [ ] Would be cool to have a path seeking system in the Area of Influence of attraction, that can make sands attracted to it no-clip others or give them a route to follow, so if i put my area of influence inside a house that has windows closed but open door the sands can be told to turn around and go through the door, not going straight in the direction of the area of influence.
  	- [ ] Workspace collaboration: one can share a workspace, in Workspace Sync so many people can live/replica sync and work under a shared topology. Practically, this can be a workspace existing under a Lince Organ that is running --server, that machine doesnt open an interface, but we can still crud it's workspaces so we in our personal computer can use it as a shared point for collaboration on a joint and exact same workspace with our sync features.
@@ -626,6 +626,11 @@ Camera:
 	- [ ] Not needed for now, but just answer, how could we edit this asset we have imported into Lince in real time? Is it just like asking Lince to edit a blender asset that exists in a location? And having it in some place the main server Organ and sync aswell makes us able to replica/live edit that asset to change the server's so everybody sees in real time it changing?
 		- [ ]Thing to think about "Replacement: stable anchors need a repair workflow when an attachment point disappears, preserving the attached work".
 	- [ ] After Fiote is done, have it access the space and recognize what exists there, and with certain lenses we give it, be able to recognize possible Needs and Contributions and add to the Workspace a edit proposal that plugs into common Sync feature of accepting or not. So i can see one or many possible diffs to solve a problem and a record, describing, like i gaussian splat my room and say, add more plants, and it can make several copies of my room in this space and each has a different scenario with different plants, and in each plant i can hit next to show a different plant to put somewhere and move that diff around before accepting it and making it a 'native' part of the scene, not just a Workspace Sync diff in a merge proposal by Fiote.
+
+- [ ] Add tab in edit mode that is the Lince cheat-sheet, with all the keyboard and mouse commands, with specific ones for specific modes (without repeating, like click-drag on bg in normal or edit mode moves camera so no need to include twice).
+- [ ] Bring back Operation sand (we had it in web) i want to use it to do many things, put autocomplete so when writing a slug we narrow down as we write. Slash commands narrow down too. Operation can be opened with ctrl+k.
+	- [ ] Writing a @slug zeroes it's quantity.
+	- [ ] /create or /c opens a Create Record castle (the Full Record castle in create mode).
 
 ------------------------ End of Part A's 100% certain features. Ideas below. -----------------------------------------
 
@@ -720,9 +725,6 @@ The remaining workflows reuse the same controls, editor, Protein and Actions. Ea
 - [ ] Let the AI composition surface show a proposal for review and apply it through ordinary authorized operations. Explain unavailable providers and unapplied changes.
 
 ## Sharing a workspace
-
-Sharing Records and sharing a Box layout are different choices. Protein's Synchronization area should make both understandable alongside File Sync.
-
 - [ ] Invite viewers and editors into a live workspace, with one hosting Cell saving the agreed changes. Give each person their own camera and selection, with optional shared presence.
 - [ ] Show pending changes, refusals, reconnect progress and access loss. If the host is unavailable, explain what the saved read-only view contains. Offline editing and replacing the host need a separate design.
 - [ ] Keep workspace editing permission separate from permission to read or change the Records shown inside it.
@@ -753,6 +755,12 @@ Some old Sands relied on a browser inside Lince. Each needs a suitable native im
 - [ ] Add native document reading, terminal, video, game and animation support as needed. Keep the surrounding controls in Bevy and include each embedded dependency's notices.
 - [ ] Bind a terminal to a task Record, open it from that Record and change the binding without killing the shell. Keep the person's interactive shell separate from an agent's read-only command output.
 - [ ] Explore the website wish in Lince.lingua without assuming CEF. Any proposed embedded view must explain how it isolates storage and permissions from Box; the current no-browser direction and this wish still need a workable answer.
+
+
+
+- [ ] Lingua having for loops and ifs to be able to do stuff like: if Role A can do A and C, and not B, and Role B can do B only, someone with Roles A and B can do A, B, C
+- [ ] Punching a hole between two workspaces, to use stuff from one, affecting the one above, or just seeing the data, like a transparent floor.
+- [ ] Mathematical formulas for editing topology of floor, pining a point to a sand, so when we move the sand we move the slopes and valleys the formula creates.
 
 ## Checking the result
 

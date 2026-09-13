@@ -101,11 +101,38 @@ fn project_canvas(
         Option<&crate::workspace::WorkspaceMember>,
         Option<&crate::sand_placement::Pinned>,
         Option<&crate::area_effects::AreaScale>,
+        Option<&crate::topology::presentation::Surface>,
+        Option<&crate::topology::assets::ImportedAsset>,
     )>,
     parents: Query<&ChildOf>,
+    layouts: Query<&crate::layout::LayoutRuntime>,
     mut focus: ResMut<InputFocus>,
 ) {
-    for (entity, parent, item, mut node, mut transform, member, pinned, scale) in &mut items {
+    for (entity, parent, item, mut node, mut transform, member, pinned, scale, surface, imported) in
+        &mut items
+    {
+        if imported.is_some() {
+            if node.display != Display::None {
+                node.display = Display::None;
+            }
+            continue;
+        }
+        if surface.is_some() {
+            if node.display != Display::Flex
+                || node.position_type != PositionType::Absolute
+                || node.left != px(0) || node.top != px(0)
+                || node.width != px(item.size.x) || node.height != px(item.size.y)
+            {
+                node.display = Display::Flex;
+                node.position_type = PositionType::Absolute;
+                node.left = px(0);
+                node.top = px(0);
+                node.width = px(item.size.x);
+                node.height = px(item.size.y);
+            }
+            transform.set_if_neq(UiTransform::default());
+            continue;
+        }
         let scale = if pinned.is_some() {
             1.0
         } else {
@@ -113,7 +140,11 @@ fn project_canvas(
         };
         let displayed = CanvasItem {
             size: item.size * scale,
-            ..*item
+            position: item.position
+                - layouts
+                    .get(entity)
+                    .map_or(Vec2::ZERO, |layout| layout.visual_offset)
+                    .as_dvec2(),
         };
         let view = views.get(parent.parent()).ok();
         let position = view.and_then(|(view, target, spaces)| {
@@ -265,6 +296,26 @@ pub(crate) mod tests {
             app.world().get::<Node>(item).unwrap().display,
             Display::Flex
         );
+    }
+
+    #[cfg(test)]
+    #[test]
+    fn spatial_sand_layout_stays_clean_until_resized() {
+        let (mut app, camera, _, item) = fixture();
+        app.world_mut().entity_mut(item).insert(crate::topology::presentation::Surface {
+            camera, image: Handle::default(), visual: item, body: item, face: item,
+            size: Vec2::splat(100.0), pixels: UVec2::splat(100), density: 1.0,
+            material: Handle::default(), uv: Rect::from_corners(Vec2::ZERO, Vec2::ONE),
+        });
+        app.update();
+        let before = app.world().entity(item).get_ref::<Node>().unwrap().last_changed();
+        app.update();
+        assert_eq!(app.world().entity(item).get_ref::<Node>().unwrap().last_changed(), before);
+        app.world_mut().get_mut::<CanvasItem>(item).unwrap().size = Vec2::new(200.0, 80.0);
+        app.update();
+        let node = app.world().get::<Node>(item).unwrap();
+        assert_eq!(node.width, px(200.0));
+        assert_eq!(node.height, px(80.0));
     }
 
     #[cfg_attr(test, test)]

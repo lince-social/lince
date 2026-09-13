@@ -69,6 +69,10 @@ impl Binding {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Config {
+    pub task_cards: bool,
+    pub closest_end_date: bool,
+    #[serde(default)]
+    pub calendar_dates: bool,
     pub enabled: bool,
     pub source: Source,
     pub draft: ProteinDraft,
@@ -83,6 +87,9 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            task_cards: false,
+            closest_end_date: false,
+            calendar_dates: false,
             enabled: false,
             source: Source::Local,
             draft: ProteinDraft::default(),
@@ -97,6 +104,28 @@ impl Default for Config {
 }
 
 impl Config {
+    pub fn tasks() -> Self {
+        Self {
+            task_cards: true,
+            bindings: [
+                "head",
+                "assignees",
+                "start_date",
+                "due_date",
+                "assertions",
+                "quantity_exact",
+            ]
+            .into_iter()
+            .map(|property| Binding {
+                editable: true,
+                overflow: OverflowMode::GrowDown,
+                ..Binding::new(property)
+            })
+            .collect(),
+            ..Default::default()
+        }
+    }
+
     pub fn valid(&self) -> bool {
         self.draft.valid_storage()
             && self.grouping.valid()
@@ -126,6 +155,12 @@ impl Config {
             .map(|binding| binding.property.clone())
             .collect();
         fields.extend(["uid", "kind", "organ"].map(str::to_string));
+        if self.calendar_dates {
+            fields.extend(["head", "start_date", "due_date"].map(str::to_string));
+        }
+        if self.closest_end_date {
+            fields.push("due_date".into());
+        }
         fields.extend(self.grouping.fields().map(str::to_string));
         if self.bindings.iter().any(|b| {
             b.editable

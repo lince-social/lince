@@ -39,6 +39,8 @@ fn main() {
         "stop",
         "previous",
         "next",
+        "person",
+        "credits",
     ];
     let height = names.len().div_ceil(5) as u32 * 128;
     let mut sources = Vec::new();

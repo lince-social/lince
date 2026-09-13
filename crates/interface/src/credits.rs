@@ -2,6 +2,7 @@ pub const BEVY_LICENSE: &str = include_str!("../licenses/bevy-MIT.txt");
 pub const LATO_LICENSE: &str = include_str!("../../../assets/fonts/Lato/OFL.txt");
 pub const LUCIDE_LICENSE: &str = include_str!("../../../assets/icons/lucide/LICENSE");
 pub const AVIAN_LICENSE: &str = include_str!("../licenses/avian-MIT.txt");
+pub const CHRONO_LICENSE: &str = include_str!("../licenses/chrono.txt");
 
 pub struct Attribution {
     pub name: &'static str,
@@ -10,6 +11,11 @@ pub struct Attribution {
 }
 
 pub const ATTRIBUTIONS: &[Attribution] = &[
+    Attribution {
+        name: "Chrono",
+        author: "Kang Seonghoon and Chrono contributors",
+        license: CHRONO_LICENSE,
+    },
     Attribution {
         name: "Avian physics",
         author: "Jondolf and Avian contributors",

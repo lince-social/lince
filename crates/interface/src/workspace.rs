@@ -17,6 +17,8 @@ pub(crate) mod storage;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Workspace {
+    #[serde(default)]
+    pub topology: crate::topology::view::View,
     pub id: u64,
     pub name: String,
     pub center: [f64; 2],
@@ -40,6 +42,7 @@ impl Default for Workspaces {
         Self {
             active: 1,
             entries: vec![Workspace {
+                topology: Default::default(),
                 id: 1,
                 name: "Home".into(),
                 center: [0.0; 2],
@@ -87,6 +90,10 @@ struct SavedSand {
 #[derive(Serialize, Deserialize)]
 struct Document {
     #[serde(default)]
+    layouts: Vec<crate::layout::records::Saved>,
+    #[serde(default)]
+    imports: Vec<crate::topology::assets::SavedAsset>,
+    #[serde(default)]
     theme: crate::tokens::ThemeSettings,
     active: u64,
     workspaces: Vec<Workspace>,
@@ -96,6 +103,10 @@ struct Document {
     areas: Vec<crate::area::SavedArea>,
     #[serde(default)]
     proteins: Vec<crate::protein_castle::SavedProteinCastle>,
+    #[serde(default)]
+    calendars: Vec<crate::calendar::SavedCalendar>,
+    #[serde(default)]
+    kanbans: Vec<crate::kanban::SavedKanban>,
 }
 
 impl Document {
@@ -103,21 +114,36 @@ impl Document {
         let ids: HashSet<_> = self.workspaces.iter().map(|space| space.id).collect();
         let area_ids: HashSet<_> = self.areas.iter().map(|saved| &saved.area.id).collect();
         self.theme.validate()
+            && self.kanbans.iter().all(|saved| ids.contains(&saved.workspace) && saved.valid())
+            && self
+                .layouts
+                .iter()
+                .all(|saved| saved.valid() && ids.contains(&saved.workspace))
+            && self
+                .calendars
+                .iter()
+                .all(|saved| ids.contains(&saved.workspace) && saved.valid())
+            && self.imports.iter().all(|saved| {
+                saved.asset.valid()
+                    && saved.placement.valid()
+                    && ids.contains(&saved.workspace)
+                    && valid_geometry(saved.position, saved.size)
+            })
             && self
                 .proteins
                 .iter()
                 .all(|saved| ids.contains(&saved.workspace) && saved.valid())
             && self.areas.len() <= crate::area::MAX_AREAS
             && area_ids.len() == self.areas.len()
-            && self
-                .areas
-                .iter()
-                .all(|saved| ids.contains(&saved.workspace) && saved.area.validate())
+            && self.areas.iter().all(|saved| {
+                ids.contains(&saved.workspace) && saved.area.validate() && saved.placement.valid()
+            })
             && !ids.is_empty()
             && ids.len() == self.workspaces.len()
             && ids.contains(&self.active)
             && self.workspaces.iter().all(|space| {
-                !space.name.trim().is_empty()
+                space.topology.valid()
+                    && !space.name.trim().is_empty()
                     && space.name.chars().count() <= 80
                     && DVec2::from_array(space.center).is_finite()
                     && (CanvasView::MIN_ZOOM..=CanvasView::MAX_ZOOM).contains(&space.zoom)
@@ -218,6 +244,9 @@ fn initialize(world: &mut World) {
                         Some(serde_json::to_vec_pretty(&document).unwrap());
                 }
                 restored = true;
+                world
+                    .entity_mut(root)
+                    .insert(crate::layout::records::SavedLayouts(document.layouts));
                 world.insert_resource(document.theme);
                 spaces.active = document.active;
                 spaces.entries = document.workspaces;
@@ -227,10 +256,32 @@ fn initialize(world: &mut World) {
                     .map(|record| (record.uid.clone(), record))
                     .collect();
                 for saved in document.areas {
-                    crate::area::spawn_area(world, root, saved.workspace, saved.area);
+                    if let Some(entity) =
+                        crate::area::spawn_area(world, root, saved.workspace, saved.area)
+                    {
+                        saved.placement.restore(world, entity);
+                    }
                 }
                 for saved in document.proteins {
                     saved.restore(world, root);
+                }
+                for saved in document.calendars {
+                    saved.restore(world, root);
+                }
+                for saved in document.kanbans {
+                    saved.restore(world, root);
+                }
+                for saved in document.imports {
+                    let entity = crate::topology::assets::spawn(
+                        world,
+                        root,
+                        saved.workspace,
+                        DVec2::from_array(saved.position),
+                        saved.asset,
+                    );
+                    world.get_mut::<CanvasItem>(entity).unwrap().size =
+                        Vec2::from_array(saved.size);
+                    saved.placement.restore(world, entity);
                 }
                 for sand in document.sands {
                     let entity = crate::sand_store::spawn_sand(
@@ -281,7 +332,8 @@ fn initialize(world: &mut World) {
                 zoom: active.zoom,
             };
         }
-        world.entity_mut(root).insert(spaces);
+        let topology = active.topology;
+        world.entity_mut(root).insert((spaces, topology));
         crate::workspace_config::initialize(world, root);
     }
 }
@@ -336,6 +388,10 @@ pub fn switch(world: &mut World, root: Entity, target: u64) -> bool {
     }
     crate::canvas_selection::clear(world, root);
     let camera = *world.get::<CanvasView>(root).unwrap();
+    let topology = world
+        .get::<crate::topology::view::View>(root)
+        .copied()
+        .unwrap_or_default();
     let mut spaces = world.get_mut::<Workspaces>(root).unwrap();
     let active = spaces.active;
     let previous = spaces
@@ -345,6 +401,7 @@ pub fn switch(world: &mut World, root: Entity, target: u64) -> bool {
         .unwrap();
     previous.center = camera.center.to_array();
     previous.zoom = camera.zoom;
+    previous.topology = topology;
     let next = spaces
         .entries
         .iter()
@@ -354,7 +411,9 @@ pub fn switch(world: &mut World, root: Entity, target: u64) -> bool {
         center: DVec2::from_array(next.center),
         zoom: next.zoom,
     };
+    let topology = next.topology;
     spaces.active = target;
+    world.entity_mut(root).insert(topology);
     *world.get_mut::<CanvasView>(root).unwrap() = camera;
     world.resource_mut::<InputFocus>().clear();
     crate::workspace_config::reload(world, root, target);
@@ -378,6 +437,7 @@ pub fn create(world: &mut World, root: Entity) {
     };
     let mut spaces = world.get_mut::<Workspaces>(root).unwrap();
     spaces.entries.push(Workspace {
+        topology: Default::default(),
         id,
         name: format!("Workspace {id}"),
         center: [0.0; 2],
@@ -477,6 +537,10 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
         .unwrap();
     current.center = camera.center.to_array();
     current.zoom = camera.zoom;
+    current.topology = world
+        .get::<crate::topology::view::View>(root)
+        .copied()
+        .unwrap_or_default();
     let mut records = spaces.saved_records.clone();
     let mut sands = Vec::new();
     let mut items = world.query::<(
@@ -519,16 +583,24 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
     let mut records: Vec<_> = records.into_values().collect();
     records.sort_by(|a, b| a.uid.cmp(&b.uid));
     let mut areas: Vec<_> = world
-        .query_filtered::<(&crate::area::InfluenceArea, &WorkspaceMember, &ChildOf), Without<crate::protein_area::grouping::GeneratedGroup>>()
+        .query_filtered::<(
+            Entity,
+            &crate::area::InfluenceArea,
+            &WorkspaceMember,
+            &ChildOf,
+        ), Without<crate::protein_area::grouping::GeneratedGroup>>()
         .iter(world)
-        .filter(|(_, _, parent)| parent.parent() == root)
-        .map(|(area, member, _)| crate::area::SavedArea {
+        .filter(|(_, _, _, parent)| parent.parent() == root)
+        .map(|(entity, area, member, _)| crate::area::SavedArea {
+            placement: crate::sand_placement::Placement::capture(world, entity),
             workspace: member.0,
             area: area.clone(),
         })
         .collect();
     areas.sort_by(|a, b| a.area.id.cmp(&b.area.id));
     Document {
+        layouts: crate::layout::records::snapshot(world, root),
+        imports: crate::topology::assets::snapshot(world, root),
         theme: world.resource::<crate::tokens::ThemeSettings>().clone(),
         active,
         workspaces,
@@ -536,6 +608,8 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
         records,
         areas,
         proteins: crate::protein_castle::snapshot(world, root),
+        calendars: crate::calendar::snapshot(world, root),
+        kanbans: crate::kanban::snapshot(world, root),
     }
 }
 
@@ -679,6 +753,39 @@ pub(crate) mod tests {
         app.world_mut().write_message(AppExit::Success);
         app.update();
         app.world_mut().resource_mut::<Messages<AppExit>>().clear();
+    }
+
+    #[test]
+    fn topology_restart_preserves_imports_depth_and_mixed_group_transforms() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("interface.json");
+        let (mut app, root) = fixture(Some(path.clone()));
+        let sand = crate::sand_store::spawn_sand(app.world_mut(), root, 1, SandKind::Square, "", DVec2::new(30.0, 40.0));
+        app.world_mut().entity_mut(sand).insert(crate::topology::Spatial { depth: Some(27.0), ..default() });
+        let asset = crate::topology::assets::ImportedAsset { id: "a".repeat(32), file: "source.glb".into(), name: "Model".into(), scale: 100.0 };
+        let imported = crate::topology::assets::spawn(app.world_mut(), root, 1, DVec2::new(200.0, 300.0), asset.clone());
+        crate::topology::assets::spawn(app.world_mut(), root, 1, DVec2::new(-200.0, -300.0), asset);
+        let mut influence = crate::area::InfluenceArea::new(crate::area::AreaShape::Square, DVec2::new(80.0, 90.0), DVec2::splat(50.0));
+        influence.depth = 19.0;
+        let area = crate::area::spawn_area(app.world_mut(), root, 1, influence).unwrap();
+        for entity in [sand, imported, area] { app.world_mut().entity_mut(entity).insert(crate::canvas_selection::SandGroup([3; 16])); }
+        crate::topology::groups::attach(app.world_mut(), &[sand, imported, area]);
+        crate::topology::groups::transform(app.world_mut(), imported, bevy::math::DVec3::new(500.0, 70.0, -300.0), bevy::math::DQuat::from_rotation_y(0.7));
+        let before = snapshot(app.world_mut(), root);
+        flush(&mut app);
+        let (mut restored, root) = fixture(Some(path));
+        let after = snapshot(restored.world_mut(), root);
+        assert_eq!(after.imports.len(), 2);
+        assert_eq!(after.areas[0].area.depth, 19.0);
+        assert_eq!(after.sands[0].placement.spatial.depth, Some(27.0));
+        let placements = |document: &Document| {
+            let mut placements: Vec<_> = document.imports.iter().map(|asset| serde_json::to_string(&asset.placement).unwrap()).collect();
+            placements.sort();
+            placements
+        };
+        assert_eq!(placements(&before), placements(&after));
+        assert_eq!(serde_json::to_value(&before.areas[0].placement).unwrap(), serde_json::to_value(&after.areas[0].placement).unwrap());
+        assert_eq!(serde_json::to_value(&before.sands[0].placement).unwrap(), serde_json::to_value(&after.sands[0].placement).unwrap());
     }
 
     #[cfg_attr(test, test)]

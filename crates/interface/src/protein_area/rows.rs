@@ -18,7 +18,55 @@ struct Row {
 }
 
 #[derive(Component)]
-struct LastLayout(DVec2);
+struct LastLayout(bevy::math::DVec3);
+
+#[derive(Component)]
+struct Summary {
+    property: String,
+}
+
+#[derive(Clone)]
+struct ToggleProperty(Entity);
+
+impl Action for ToggleProperty {
+    fn apply(&self, world: &mut World, _: Entity) {
+        let Some(mut node) = world.get_mut::<Node>(self.0) else {
+            return;
+        };
+        let opened = node.display == Display::None;
+        node.display = if opened { Display::Flex } else { Display::None };
+        let focus = opened
+            .then(|| {
+                descendants(world, self.0)
+                    .into_iter()
+                    .find(|e| world.get::<EditableText>(*e).is_some())
+            })
+            .flatten();
+        if let Some(mut current) = world.get_resource_mut::<bevy::input_focus::InputFocus>() {
+            if let Some(focus) = focus {
+                current.set(focus, bevy::input_focus::FocusCause::Pressed);
+            } else {
+                current.clear();
+            }
+        }
+    }
+}
+
+fn summary(property: &str, data: &Value) -> String {
+    let value = display(&data[property]);
+    if value.is_empty() {
+        match property {
+            "head" => "Untitled".into(),
+            "start_date" => "Start date".into(),
+            "due_date" => "End date".into(),
+            "assertions" => "Assertions".into(),
+            "assignees" => String::new(),
+            _ => property.into(),
+        }
+    } else {
+        value
+    }
+}
 
 #[derive(Component)]
 struct EditorSize {
@@ -103,24 +151,6 @@ fn click(
     event.propagate(false);
 }
 
-fn scroll(
-    mut event: On<Pointer<bevy::picking::events::Scroll>>,
-    mut scrolls: Query<&mut ScrollPosition>,
-) {
-    if let Ok(mut position) = scrolls.get_mut(event.entity) {
-        let multiplier = if event.unit == bevy::input::mouse::MouseScrollUnit::Line {
-            24.0
-        } else {
-            1.0
-        };
-        position.0.x = (position.0.x
-            - (event.x + if event.x == 0.0 { event.y } else { 0.0 }) * multiplier)
-            .max(0.0);
-        position.0.y = (position.0.y - event.y * multiplier).max(0.0);
-        event.propagate(false);
-    }
-}
-
 pub(super) fn content(
     world: &mut World,
     row: Entity,
@@ -128,7 +158,70 @@ pub(super) fn content(
     data: &Value,
     binding: Option<RecordBinding>,
 ) {
+    if config.task_cards {
+        crate::kanban::card_controls(world, row);
+    }
     for property in &config.bindings {
+        let summary_button = config.task_cards.then(|| {
+            let entity = world
+                .spawn((
+                    Square,
+                    crate::sand::button(0),
+                    Node {
+                        width: percent(100),
+                        min_height: px(28),
+                        max_height: if property.property == "head" {
+                            Val::Auto
+                        } else {
+                            px(72)
+                        },
+                        overflow: Overflow::clip(),
+                        flex_shrink: 0.0,
+                        ..default()
+                    },
+                    ChildOf(row),
+                    Tooltip(format!("Edit {}", property.property)),
+                ))
+                .id();
+            if property.property == "assignees"
+                && let Some(image) = crate::icons::image(world, Icon::Person)
+            {
+                world.spawn((
+                    image,
+                    Node {
+                        width: px(24),
+                        height: px(24),
+                        flex_shrink: 0.0,
+                        ..default()
+                    },
+                    Pickable::IGNORE,
+                    ChildOf(entity),
+                ));
+            }
+            let text = crate::edit_mode::label(
+                world,
+                entity,
+                &summary(&property.property, data),
+                if property.property == "head" {
+                    18.0
+                } else {
+                    14.0
+                },
+            );
+            world.entity_mut(text).insert((
+                Summary {
+                    property: property.property.clone(),
+                },
+                TextLayout::linebreak(bevy::text::LineBreak::WordBoundary),
+                Node {
+                    width: px(0),
+                    min_width: px(0),
+                    flex_grow: 1.0,
+                    ..default()
+                },
+            ));
+            entity
+        });
         let horizontal = matches!(
             property.overflow,
             OverflowMode::ScrollRight | OverflowMode::GrowRight
@@ -142,9 +235,19 @@ pub(super) fn content(
                     align_self: AlignSelf::FlexStart,
                     align_items: AlignItems::FlexStart,
                     flex_direction: FlexDirection::Column,
-                    width: if grow_x { Val::Auto } else { px(width) },
+                    width: if config.task_cards {
+                        percent(100)
+                    } else if grow_x {
+                        Val::Auto
+                    } else {
+                        px(width)
+                    },
                     min_width: if grow_x { px(width) } else { px(0) },
-                    max_width: px((config.width - 24.0).max(24.0)),
+                    max_width: if config.task_cards {
+                        percent(100)
+                    } else {
+                        px((config.width - 24.0).max(24.0))
+                    },
                     height: if grow_y || grow_x {
                         Val::Auto
                     } else {
@@ -169,8 +272,14 @@ pub(super) fn content(
                         .map_or(property.property.clone(), |f| f.title.into()),
                 ),
             ))
-            .observe(scroll)
             .id();
+        if let Some(button) = summary_button {
+            world.get_mut::<Node>(container).unwrap().display = Display::None;
+            world.entity_mut(button).insert(ActionButton::new(
+                row,
+                crate::actions![ToggleProperty(container)],
+            ));
+        }
         if property.square {
             world
                 .entity_mut(container)
@@ -253,6 +362,13 @@ pub(super) fn content(
             });
         }
         if editable {
+            if matches!(property.property.as_str(), "start_date" | "due_date") {
+                let button =
+                    crate::calendar::date_button(world, row, text_entity, &property.property);
+                if config.task_cards {
+                    world.entity_mut(button).insert(ChildOf(container));
+                }
+            }
             let save = world
                 .spawn((
                     Square,
@@ -262,6 +378,9 @@ pub(super) fn content(
                 ))
                 .id();
             let _ = save;
+            if config.task_cards {
+                world.entity_mut(save).insert(ChildOf(container));
+            }
         }
     }
     if config.delete_button {
@@ -454,6 +573,14 @@ fn descendants(world: &World, entity: Entity) -> Vec<Entity> {
 }
 
 fn refresh(world: &mut World, row: Entity, data: &Value) {
+    for entity in descendants(world, row) {
+        if let Some(summary_field) = world.get::<Summary>(entity) {
+            let value = summary(&summary_field.property, data);
+            if let Some(mut text) = world.get_mut::<Text>(entity) {
+                text.0 = value;
+            }
+        }
+    }
     let config = world.get::<Row>(row).unwrap().config.clone();
     let children: Vec<_> = world
         .get::<Children>(row)
@@ -508,6 +635,58 @@ pub(super) fn action_finished(world: &mut World, entity: Entity, error: Option<S
         editor.observed = value.clone();
         editor.baseline[&property] = Value::String(value);
         editor.conflict = false;
+    }
+}
+
+pub(super) fn pick_date(world: &mut World, entity: Entity, date: &str) -> Result<(), String> {
+    let property = world
+        .get::<PropertyEditor>(entity)
+        .ok_or("Date field is closed")?;
+    if !matches!(property.property.as_str(), "start_date" | "due_date") {
+        return Err("Choose a date field".into());
+    }
+    if property.pending.is_some() {
+        return Err("Wait for the date to finish saving".into());
+    }
+    if property.conflict {
+        return Err("Date changed elsewhere. Reload the field first.".into());
+    }
+    let text = world
+        .get::<EditableText>(entity)
+        .ok_or("Date field is closed")?;
+    if text.is_composing() || text.pending_paste.is_some() {
+        return Err("Finish editing the date first".into());
+    }
+    let binding = world
+        .get::<RecordBinding>(entity)
+        .ok_or("Record is unavailable")?
+        .clone();
+    if world
+        .query::<(&PropertyEditor, &RecordBinding)>()
+        .iter(world)
+        .any(|(editor, other)| {
+            other.area == binding.area
+                && other.uid == binding.uid
+                && editor.pending.is_some()
+                && matches!(
+                    editor.property.as_str(),
+                    "start_date" | "due_date" | "estimate_min"
+                )
+        })
+    {
+        return Err("Wait for this Record's dates to finish saving".into());
+    }
+    world
+        .get_mut::<EditableText>(entity)
+        .unwrap()
+        .editor
+        .set_text(date);
+    save_field(world, entity);
+    let property = world.get::<PropertyEditor>(entity).unwrap();
+    if property.pending.is_some() || property.observed == date {
+        Ok(())
+    } else {
+        Err(calendar_status(world, binding.area).into())
     }
 }
 
@@ -726,14 +905,20 @@ pub(super) fn layout(world: &mut World) {
     let mut heights = HashMap::<(Entity, usize), f32>::new();
     let mut grouped = HashMap::<Entity, Vec<(Entity, grouping::Cell, f32)>>::new();
     for (entity, area, index, config) in &rows {
-        let count = world
-            .get::<Children>(*entity)
-            .map_or(0, |children| children.len());
-        let height = world
+        let visible: Vec<_> = world
             .get::<Children>(*entity)
             .into_iter()
             .flatten()
+            .filter(|child| {
+                world
+                    .get::<Node>(**child)
+                    .is_some_and(|node| node.display != Display::None)
+            })
             .filter_map(|child| world.get::<ComputedNode>(*child))
+            .collect();
+        let count = visible.len();
+        let height = visible
+            .into_iter()
             .map(|node| node.size().y * node.inverse_scale_factor())
             .sum::<f32>()
             + 24.0
@@ -780,17 +965,44 @@ pub(super) fn layout(world: &mut World) {
 }
 
 pub(super) fn place(world: &mut World, entity: Entity, position: DVec2, size: Vec2) {
+    if let Some(mut layout) = world.get_mut::<crate::layout::LayoutBox>(entity) {
+        if layout.rules.axes[1].sizing == crate::layout::Sizing::Fit {
+            let axis = &mut layout.rules.axes[1];
+            axis.min = size.y.max(1.0).min(axis.max);
+            axis.size = axis.size.clamp(axis.min, axis.max);
+        }
+        return;
+    }
     let pinned = world.get::<crate::sand_placement::Pinned>(entity).is_some();
+    let owner = world.get::<Row>(entity).map(|row| row.area);
+    let owner_placement = owner
+        .map(|owner| crate::topology::spatial(world, owner))
+        .unwrap_or_default();
+    let center = owner
+        .and_then(|owner| world.get::<InfluenceArea>(owner))
+        .map_or(DVec2::ZERO, |area| DVec2::from_array(area.center));
+    let offset = position - center;
+    let position = owner_placement.position(center)
+        + owner_placement.rotation() * bevy::math::DVec3::new(offset.x, 0.0, offset.y);
     let previous = world.get::<LastLayout>(entity).map(|last| last.0);
+    let current = crate::topology::position(world, entity).unwrap_or_default();
+    let grouped = world
+        .get::<crate::canvas_selection::SandGroup>(entity)
+        .is_some();
     let Some(mut item) = world.get_mut::<CanvasItem>(entity) else {
         return;
     };
     if item.size != size {
         item.size = size;
     }
-    let next = previous.map_or(position, |previous| item.position + position - previous);
-    if !pinned && item.position != next {
-        item.position = next;
+    let next = previous.map_or(position, |previous| current + position - previous);
+    if !pinned && !grouped && current != next {
+        crate::topology::set_position(world, entity, next);
+    }
+    if previous.is_none() && !grouped {
+        let mut placement = crate::topology::spatial(world, entity);
+        placement.rotation = owner_placement.rotation;
+        world.entity_mut(entity).insert(placement);
     }
     if previous != Some(position) {
         world.entity_mut(entity).insert(LastLayout(position));

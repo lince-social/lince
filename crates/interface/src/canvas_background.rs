@@ -214,27 +214,49 @@ fn draw(world: &mut World) {
             let handle = world
                 .resource_mut::<Assets<PatternMaterial>>()
                 .add(material);
-            world.spawn((
-                Node {
-                    position_type: PositionType::Absolute,
-                    width: percent(100),
-                    height: percent(100),
-                    overflow: Overflow::clip(),
-                    ..default()
-                },
-                ZIndex(-1),
-                MaterialNode(handle.clone()),
-                Pickable::IGNORE,
-                ChildOf(root),
-            ));
+            let grid_entity = world
+                .spawn((
+                    Node {
+                        position_type: PositionType::Absolute,
+                        width: percent(100),
+                        height: percent(100),
+                        overflow: Overflow::clip(),
+                        ..default()
+                    },
+                    ZIndex(-1),
+                    MaterialNode(handle.clone()),
+                    Pickable::IGNORE,
+                    ChildOf(root),
+                ))
+                .id();
+            if let Some(camera) = world
+                .get_resource::<crate::topology::presentation::BackgroundCamera>()
+                .map(|c| c.0)
+            {
+                world.entity_mut(grid_entity).insert(UiTargetCamera(camera));
+            }
             world.entity_mut(root).insert(Grid {
                 material: handle,
                 drawing: None,
             });
         }
-        world
-            .entity_mut(root)
-            .insert(BackgroundColor(color(drawing.colors.background)));
+        if let Some(camera) = world
+            .get_resource::<crate::topology::presentation::BackgroundCamera>()
+            .map(|c| c.0)
+        {
+            world.get_mut::<Camera>(camera).unwrap().clear_color =
+                ClearColorConfig::Custom(color(drawing.colors.background));
+        }
+        if world
+            .get::<crate::topology::presentation::SpatialRoot>(root)
+            .is_some()
+        {
+            world.entity_mut(root).remove::<BackgroundColor>();
+        } else {
+            world
+                .entity_mut(root)
+                .insert(BackgroundColor(color(drawing.colors.background)));
+        }
         world.get_mut::<Grid>(root).unwrap().drawing = Some(drawing);
         if let Some(wake) = world.get_resource::<crate::wake::WakeSignal>() {
             wake.ring();

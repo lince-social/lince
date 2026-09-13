@@ -481,6 +481,8 @@ impl AreaForces {
 
 #[derive(Clone, Serialize, Deserialize)]
 pub(crate) struct SavedArea {
+    #[serde(default)]
+    pub placement: crate::sand_placement::Placement,
     pub workspace: u64,
     pub area: InfluenceArea,
 }
@@ -494,6 +496,10 @@ pub fn spawn_area(
     if !area.validate() {
         return None;
     }
+    let elevation = world
+        .get::<crate::topology::view::View>(root)
+        .map_or(0.0, |view| view.plane);
+    let depth = (area.depth != area.size[0].min(area.size[1])).then_some(area.depth);
     Some(
         world
             .spawn((
@@ -502,6 +508,11 @@ pub fn spawn_area(
                     size: DVec2::from_array(area.size).as_vec2(),
                 },
                 area,
+                crate::topology::Spatial {
+                    elevation,
+                    depth,
+                    ..default()
+                },
                 Pickable::IGNORE,
                 ZIndex(-2),
                 WorkspaceMember(workspace),
@@ -544,10 +555,22 @@ impl Plugin for AreasPlugin {
     }
 }
 
-fn sync_geometry(mut areas: Query<(&InfluenceArea, &mut CanvasItem)>) {
-    for (area, mut item) in &mut areas {
+fn sync_geometry(
+    mut areas: Query<(
+        &mut InfluenceArea,
+        &mut CanvasItem,
+        Option<&crate::topology::Spatial>,
+    )>,
+) {
+    for (mut area, mut item, placement) in &mut areas {
         let position = DVec2::from_array(area.center);
         let size = DVec2::from_array(area.size).as_vec2();
+        let depth = placement
+            .and_then(|placement| placement.depth)
+            .unwrap_or_else(|| area.size[0].min(area.size[1]));
+        if area.depth != depth {
+            area.depth = depth;
+        }
         if item.position != position || item.size != size {
             item.position = position;
             item.size = size;
@@ -564,6 +587,44 @@ pub(crate) mod tests {
     use crate::{sand_placement::Pinned, workspace::Workspaces};
     use serde_json::json;
 
+    #[cfg_attr(test, test)]
+    fn area_depth_tracks_resizing_until_manually_fixed_and_can_return_to_automatic() {
+        let mut world = World::new();
+        let root = world.spawn(crate::workspace::Workspaces::default()).id();
+        let owner = spawn_area(
+            &mut world,
+            root,
+            1,
+            InfluenceArea::new(AreaShape::Square, DVec2::ZERO, DVec2::splat(100.0)),
+        )
+        .unwrap();
+        world.get_mut::<InfluenceArea>(owner).unwrap().size = [200.0; 2];
+        world.run_system_cached(sync_geometry).unwrap();
+        assert_eq!(world.get::<InfluenceArea>(owner).unwrap().depth, 200.0);
+        world
+            .get_mut::<crate::topology::Spatial>(owner)
+            .unwrap()
+            .depth = Some(35.0);
+        world.get_mut::<InfluenceArea>(owner).unwrap().size = [300.0; 2];
+        world.get_mut::<CanvasItem>(owner).unwrap().size = Vec2::splat(300.0);
+        world.run_system_cached(sync_geometry).unwrap();
+        assert_eq!(world.get::<InfluenceArea>(owner).unwrap().depth, 35.0);
+        world
+            .get_mut::<crate::topology::Spatial>(owner)
+            .unwrap()
+            .depth = None;
+        world.run_system_cached(sync_geometry).unwrap();
+        assert_eq!(world.get::<InfluenceArea>(owner).unwrap().depth, 300.0);
+        let snapshot = SavedArea {
+            placement: crate::sand_placement::Placement::capture(&world, owner),
+            workspace: 1,
+            area: world.get::<InfluenceArea>(owner).unwrap().clone(),
+        };
+        let snapshot: SavedArea =
+            serde_json::from_value(serde_json::to_value(snapshot).unwrap()).unwrap();
+        assert_eq!(snapshot.area.depth, 300.0);
+        assert_eq!(snapshot.placement.spatial.depth, None);
+    }
     fn area() -> InfluenceArea {
         let mut area = InfluenceArea::new(AreaShape::Circle, DVec2::ZERO, DVec2::splat(200.0));
         area.strength = 100.0;
@@ -940,6 +1001,7 @@ pub(crate) mod tests {
     }
 
     crate::laboratory_cases! {
+        area_depth_tracks_resizing_until_manually_fixed_and_can_return_to_automatic,
         targets_stay_separate_from_boundaries_and_depth_survives_shape_edits,
         reach_expands_the_perimeter_without_changing_local_membership,
         follow_shape_preserves_concavities_and_radius_when_moved_or_resized,

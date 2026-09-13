@@ -17,6 +17,10 @@ pub enum TextOverflow {
 #[derive(Component, Clone, Debug, Serialize, Deserialize)]
 pub struct SandText {
     #[serde(default)]
+    pub layout: Option<crate::layout::Rules>,
+    #[serde(default)]
+    pub order: i32,
+    #[serde(default)]
     pub tokens: crate::tokens::TokenOverrides,
     pub editable: bool,
     pub offset: [f32; 2],
@@ -27,6 +31,8 @@ pub struct SandText {
 impl SandText {
     pub fn new(editable: bool) -> Self {
         Self {
+            layout: None,
+            order: 0,
             tokens: Default::default(),
             editable,
             offset: [16.0, 16.0],
@@ -37,6 +43,7 @@ impl SandText {
 
     pub fn validate(&self) -> bool {
         self.tokens.validate()
+            && self.layout.is_none_or(|layout| layout.valid())
             && self
                 .offset
                 .iter()
@@ -44,7 +51,7 @@ impl SandText {
             && self
                 .size
                 .iter()
-                .all(|v| v.is_finite() && (24.0..=100_000.0).contains(v))
+                .all(|v| v.is_finite() && (1.0..=100_000.0).contains(v))
     }
 }
 
@@ -124,6 +131,9 @@ pub fn spawn(world: &mut World, sand: Entity, saved: SavedText) -> Entity {
             },
         ))
         .observe(scroll);
+    if world.get::<TextScroll>(entity).is_none() {
+        world.entity_mut(entity).insert(TextScroll::default());
+    }
     if let Some(mut node) = world.get_mut::<bevy::a11y::AccessibilityNode>(entity) {
         node.set_label("Editable text in Sand");
     }
@@ -132,6 +142,9 @@ pub fn spawn(world: &mut World, sand: Entity, saved: SavedText) -> Entity {
 }
 
 pub fn fit_sand(world: &mut World, sand: Entity) {
+    if world.get::<crate::layout::LayoutBox>(sand).is_some() {
+        return;
+    }
     let required = snapshot(world, sand).iter().fold(Vec2::ZERO, |size, text| {
         size.max(
             Vec2::from_array(text.area.offset)
@@ -151,7 +164,10 @@ pub fn fit_sand(world: &mut World, sand: Entity) {
 
 fn scroll(
     mut event: On<Pointer<Scroll>>,
-    mut texts: Query<(&SandText, &ComputedNode, &TextLayoutInfo, &mut TextScroll)>,
+    mut texts: Query<
+        (&SandText, &ComputedNode, &TextLayoutInfo, &mut TextScroll),
+        Without<crate::layout::LayoutRuntime>,
+    >,
 ) {
     let Ok((area, node, layout, mut scroll)) = texts.get_mut(event.entity) else {
         return;
@@ -174,6 +190,9 @@ pub struct SandTextPlugin;
 
 impl Plugin for SandTextPlugin {
     fn build(&self, app: &mut App) {
+        if !app.is_plugin_added::<crate::layout::LayoutPlugin>() {
+            app.add_plugins(crate::layout::LayoutPlugin);
+        }
         app.add_systems(
             PostUpdate,
             (grow, boundaries).after(bevy::ui::UiSystems::PostLayout),
@@ -208,12 +227,16 @@ fn grow(
         &mut Node,
         Option<&mut TextScroll>,
     )>,
-    mut sands: Query<&mut CanvasItem>,
+    mut sands: Query<&mut CanvasItem, Without<crate::layout::LayoutBox>>,
     wake: Option<Res<crate::wake::WakeSignal>>,
 ) {
     let mut changed = false;
     for (area, parent, layout, computed, mut node, scroll) in &mut texts {
-        if area.overflow != TextOverflow::Grow || !area.editable {
+        if area.layout.is_some()
+            || area.overflow != TextOverflow::Grow
+            || !area.editable
+            || !sands.contains(parent.parent())
+        {
             continue;
         }
         let height = (layout.size.y * computed.inverse_scale_factor())

@@ -279,7 +279,7 @@ pub(crate) fn controls(world: &mut World, _root: Entity, panel: Entity, owner: E
         owner,
         Change::Mode(ForceMode::Simple),
         Icon::Forward,
-        "Simple: save the direction and strength until Areas or Record properties change. Does not keep steering or stop at the target, and can pass it. Distance does not weaken force. Limited reach and immunity still apply. Sorting steers toward its slots.",
+        "Simple: keep the destination and strength, steering toward that point as the Sand moves, or away when repelling. Distance does not weaken force. Force is zero at the destination; momentum can carry the Sand past it. Limited reach and immunity still apply.",
         area.force_mode == ForceMode::Simple,
     );
     button(

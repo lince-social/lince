@@ -46,6 +46,7 @@ fn canvas_clips(
     roots: Query<Entity, With<CanvasView>>,
     nodes: Query<(&Node, &ComputedNode, &UiGlobalTransform, Has<OverrideClip>)>,
     children: Query<&Children>,
+    layouts: Query<&crate::layout::LayoutRuntime>,
     mut clips: Query<&mut CalculatedClip>,
     mut commands: Commands,
 ) {
@@ -61,6 +62,19 @@ fn canvas_clips(
             }
             if node.display == Display::None {
                 clip = Some(Rect::default());
+            }
+            let mut container = layouts.get(entity).ok().and_then(|layout| layout.parent);
+            for _ in 0..crate::layout::MAX_DEPTH {
+                let Some(parent) = container else { break };
+                if let Ok((parent_node, parent_computed, parent_transform, _)) = nodes.get(parent) {
+                    let own = if parent_node.display == Display::None {
+                        Rect::default()
+                    } else {
+                        bounds(parent_computed.content_box(), &parent_transform.affine())
+                    };
+                    clip = Some(clip.map_or(own, |inherited| inherited.intersect(own)));
+                }
+                container = layouts.get(parent).ok().and_then(|layout| layout.parent);
             }
             match (clips.get_mut(entity), clip) {
                 (Ok(mut current), Some(clip)) => {

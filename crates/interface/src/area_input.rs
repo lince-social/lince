@@ -37,6 +37,10 @@ impl Plugin for AreaInputPlugin {
 }
 
 pub(crate) fn canvas_point(world: &World, root: Entity, screen: Vec2) -> Option<DVec2> {
+    if world.get::<crate::topology::presentation::SpatialRoot>(root).is_some() {
+        let plane = world.get::<crate::topology::view::View>(root).map_or(0.0, |v| v.plane);
+        return crate::topology::input::plane_point(world, root, screen, plane).map(|p| DVec2::new(p.x, p.z));
+    }
     let view = world.get::<CanvasView>(root)?;
     let node = world.get::<ComputedNode>(root)?;
     let transform = world.get::<UiGlobalTransform>(root)?;
@@ -82,6 +86,7 @@ fn hit_areas(world: &mut World) {
                 .map(|(entity, hit)| (*entity, hit.clone()))
         });
     let Some((root, hit)) = hit else { return };
+    if world.get::<crate::topology::presentation::SpatialRoot>(root).is_some() { return; }
     if !world.get::<EditMode>(root).is_some_and(|mode| mode.enabled)
         || world
             .get::<AreaEditor>(root)

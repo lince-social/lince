@@ -81,7 +81,11 @@ fn button_borders(
             Option<&BorderColor>,
             Option<&mut Outline>,
         ),
-        Or<(With<WidgetButton>, With<crate::actions::ActionButton>)>,
+        Or<(
+            With<WidgetButton>,
+            With<crate::actions::ActionButton>,
+            With<EditableText>,
+        )>,
     >,
     mut commands: Commands,
 ) {
@@ -103,7 +107,7 @@ fn button_borders(
         if node.border != border {
             node.border = border;
         }
-        if color.is_none() {
+        if color.is_none_or(|color| color.top.is_fully_transparent()) {
             commands
                 .entity(entity)
                 .insert(crate::token_style::border(crate::tokens::Token::Accent));
@@ -126,8 +130,11 @@ pub fn text_editor(value: &str, typography: &Typography, tab_index: i32) -> impl
         editable(value),
         Node {
             width: percent(100),
+            border: UiRect::all(px(BUTTON_BORDER_WIDTH)),
+            padding: UiRect::all(px(6)),
             ..default()
         },
+        crate::token_style::border(crate::tokens::Token::Accent),
         typography.text(22.0),
         crate::token_style::text(crate::tokens::Token::Ink),
         crate::token_style::CursorToken(crate::tokens::Token::Accent),
@@ -171,13 +178,18 @@ pub(crate) mod tests {
                 crate::actions::ActionButton::new(button, crate::actions![]),
             ))
             .id();
+        let editor = app.world_mut().spawn((editable(""), Node::default())).id();
         app.update();
-        for entity in [button, action] {
+        for entity in [button, action, editor] {
             assert_eq!(
                 app.world().get::<Node>(entity).unwrap().border,
                 UiRect::all(px(BUTTON_BORDER_WIDTH))
             );
         }
+        assert_ne!(
+            app.world().get::<BorderColor>(editor).unwrap().top,
+            Color::NONE
+        );
         assert_eq!(app.world().get::<Outline>(button).unwrap().width, px(0));
         app.world_mut().get_mut::<Outline>(button).unwrap().width = px(2);
         app.update();

@@ -360,6 +360,10 @@ fn preview(world: &World, entity: Entity) -> String {
 }
 
 pub(crate) fn bounds(world: &World, entity: Entity) -> Option<Rect> {
+    if world.get::<crate::topology::presentation::SpatialRoot>(entity).is_some() {
+        return world.get::<Camera>(world.get_resource::<crate::topology::presentation::SceneCamera>()?.0)?.logical_viewport_rect();
+    }
+    if let Some(bounds) = crate::topology::presentation::bounds(world, entity) { return Some(bounds); }
     let computed = world.get::<ComputedNode>(entity)?;
     let transform = world.get::<UiGlobalTransform>(entity)?;
     let scale = computed.inverse_scale_factor();

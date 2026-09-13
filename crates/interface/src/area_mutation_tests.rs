@@ -130,6 +130,97 @@ async fn quantity(engine: &engine::Engine, uid: &str) -> String {
         .into()
 }
 
+#[cfg(test)]
+#[tokio::test]
+async fn grant_survives_more_than_128_successful_crossings() {
+    let (mut app, engine, root, area, sand, uid) = fixture().await;
+    enable(&mut app, root, area);
+    for _ in 0..70 {
+        move_to(&mut app, sand, 0.0);
+        pump(&mut app).await;
+        assert_eq!(quantity(&engine, &uid).await, "-3");
+        move_to(&mut app, sand, 100.0);
+        pump(&mut app).await;
+        assert_eq!(quantity(&engine, &uid).await, "1");
+        assert!(armed(app.world(), area));
+    }
+}
+
+#[cfg(test)]
+#[tokio::test]
+async fn bulk_crossings_wait_for_capacity_without_losing_changes_or_disarming() {
+    let (mut app, engine, root, area, sand, uid) = fixture().await;
+    let mut records = vec![(sand, uid)];
+    for _ in 0..69 {
+        let uid = engine
+            .act(
+                Action::CreateRecord {
+                    slug: None,
+                    kind: nucleus::RecordKind::Plain,
+                    head: "Bulk task".into(),
+                    body: String::new(),
+                    quantity: 0.0,
+                },
+                None,
+            )
+            .await
+            .unwrap()
+            .created
+            .unwrap();
+        let sand = app
+            .world_mut()
+            .spawn((
+                CanvasItem {
+                    position: DVec2::new(100.0, 0.0),
+                    size: Vec2::splat(20.0),
+                },
+                RecordProperties(serde_json::json!({"uid":uid,"quantity":0})),
+                ChildOf(root),
+                WorkspaceMember(1),
+            ))
+            .id();
+        records.push((sand, uid));
+    }
+    enable(&mut app, root, area);
+    let sender = app
+        .world()
+        .get_non_send::<CellBridge>()
+        .unwrap()
+        .outgoing
+        .clone();
+    let mut reserved = Vec::new();
+    while let Ok(permit) = sender.clone().try_reserve_owned() {
+        reserved.push(permit);
+    }
+    for (sand, _) in &records {
+        move_to(&mut app, *sand, 0.0);
+    }
+    app.update();
+    assert!(armed(app.world(), area));
+    drop(reserved);
+    tokio::time::timeout(std::time::Duration::from_secs(20), async {
+        loop {
+            app.update();
+            assert!(armed(app.world(), area));
+            let state = app.world().resource::<Mutations>();
+            if state.pending.is_empty()
+                && state.grants[&area]
+                    .visits
+                    .values()
+                    .all(|visit| visit.inside)
+            {
+                break;
+            }
+            tokio::time::sleep(std::time::Duration::from_millis(2)).await;
+        }
+    })
+    .await
+    .unwrap();
+    for (_, uid) in records {
+        assert_eq!(quantity(&engine, &uid).await, "-3");
+    }
+}
+
 #[cfg_attr(test, tokio::test)]
 async fn new_areas_and_force_configuration_cannot_change_records() {
     let (mut app, engine, root, area, sand, uid) = fixture().await;
@@ -262,14 +353,8 @@ async fn overlap_conflicts_disarm_without_writing_and_equal_changes_coalesce() {
     move_to(&mut app, sand, 0.0);
     pump(&mut app).await;
     assert_eq!(quantity(&engine, &uid).await, "-3");
-    assert_eq!(
-        app.world().resource::<Mutations>().grants[&area].remaining,
-        127
-    );
-    assert_eq!(
-        app.world().resource::<Mutations>().grants[&other].remaining,
-        127
-    );
+    assert!(armed(app.world(), area));
+    assert!(armed(app.world(), other));
     move_to(&mut app, sand, 200.0);
     app.update();
     disarm(app.world_mut(), area, "Disarmed shared request");
@@ -349,6 +434,7 @@ async fn entering_a_conflicting_area_later_keeps_the_first_change() {
 }
 
 crate::laboratory_cases! {
+    async depth_only_crossings_change_records_in_a_rotated_area,
     async immunity_suppresses_record_transitions_and_cancels_pending_previews,
     async protein_filters_control_crossings_and_exit_restores_after_the_record_stops_matching,
     async movement_reach_does_not_expand_record_change_boundaries,
@@ -359,6 +445,34 @@ crate::laboratory_cases! {
     async edits_switches_and_disarming_cancel_unsubmitted_changes,
     async newly_arriving_records_and_pinned_sands_do_not_trigger_changes,
     async entering_a_conflicting_area_later_keeps_the_first_change,
+}
+
+#[cfg_attr(test, tokio::test)]
+async fn depth_only_crossings_change_records_in_a_rotated_area() {
+    let (mut app, engine, root, area, sand, uid) = fixture().await;
+    app.world_mut()
+        .get_mut::<InfluenceArea>(area)
+        .unwrap()
+        .depth = 20.0;
+    let placement = crate::topology::Spatial {
+        elevation: 50.0,
+        depth: Some(20.0),
+        rotation: bevy::math::DQuat::from_rotation_z(0.7).to_array(),
+        ..default()
+    };
+    app.world_mut().entity_mut(area).insert(placement);
+    let point =
+        |y| placement.position(DVec2::ZERO) + placement.rotation() * DVec3::new(0.0, y, 0.0);
+    crate::topology::set_position(app.world_mut(), sand, point(-21.0));
+    enable(&mut app, root, area);
+    pump(&mut app).await;
+    assert_eq!(quantity(&engine, &uid).await, "0");
+    crate::topology::set_position(app.world_mut(), sand, point(-10.0));
+    pump(&mut app).await;
+    assert_eq!(quantity(&engine, &uid).await, "-3");
+    crate::topology::set_position(app.world_mut(), sand, point(1.0));
+    pump(&mut app).await;
+    assert_eq!(quantity(&engine, &uid).await, "1");
 }
 
 #[cfg_attr(test, tokio::test)]

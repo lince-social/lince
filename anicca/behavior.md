@@ -1,5 +1,3 @@
-# What an Effect does
-
 A Sand can emit an event, such as a button being pressed or a Record being selected. A connection decides what happens next: open another Sand, change local presentation, invoke a registered Effect or request an Action.
 
 For example, a button can receive a Record reference. One connection opens that Record; another button requests its deletion. The deletion still goes through the backend's permissions. Receiving data or an event does not grant permission to write.

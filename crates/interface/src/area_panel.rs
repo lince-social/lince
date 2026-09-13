@@ -389,7 +389,7 @@ fn field(
             Field::Center(_) => "Position of the local Area boundary in workspace coordinates.",
             Field::Size(_) => "Local boundary size, from 1 to 100000 workspace units. Reach is measured outward from it.",
             Field::Radius => "Extra distance beyond the local boundary, from 0 to 100000 workspace units. Square encloses the Area; Follow shape expands its perimeter.",
-            Field::Depth => "Thickness centered on the drawing plane, from 1 to 100000 units. Starts at the smaller drawn dimension and stays unchanged when resized. Saved for spatial placement; the current canvas applies effects in two dimensions.",
+            Field::Depth => "Thickness behind the Area's local plane, from 1 to 100000 units. Follows the smaller side until set manually. Controls the influence volume. Reset with Automatic depth in the spatial controls.",
             Field::Target(_) => "Target offset from the Area center in workspace units. Moving the Area carries it; resizing preserves this offset. The target does not extend reach.",
             Field::Rule(_) => "Exact property value. All or Any determines how filters combine.",
         }.into()),
@@ -505,6 +505,11 @@ pub(crate) fn autosave(world: &mut World) {
         };
         let valid = parsed && next.validate();
         if valid {
+            if matches!(field, Field::Depth) {
+                let mut placement = crate::topology::spatial(world, target);
+                placement.depth = Some(next.depth);
+                world.entity_mut(target).insert(placement);
+            }
             *world.get_mut::<InfluenceArea>(target).unwrap() = next;
         }
         world.get_mut::<AreaField>(entity).unwrap().observed = value;
@@ -1329,6 +1334,10 @@ pub(crate) mod tests {
                 );
             }
         }
+        assert_eq!(
+            crate::topology::spatial(app.world(), area).depth,
+            Some(12.0)
+        );
         EditAction::Area(AreaAction::Redraw).apply(app.world_mut(), root);
         insert(
             app.world_mut(),

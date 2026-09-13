@@ -5,6 +5,83 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use store::sqlx::{Sqlite, Transaction};
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum QuantityOperation {
+    Set,
+    Add,
+    Subtract,
+    Multiply,
+    Divide,
+}
+
+impl QuantityOperation {
+    pub const ALL: [Self; 5] = [
+        Self::Set,
+        Self::Add,
+        Self::Subtract,
+        Self::Multiply,
+        Self::Divide,
+    ];
+
+    pub fn symbol(self) -> &'static str {
+        match self {
+            Self::Set => "=",
+            Self::Add => "+",
+            Self::Subtract => "−",
+            Self::Multiply => "×",
+            Self::Divide => "÷",
+        }
+    }
+
+    pub fn prefix(self) -> &'static str {
+        match self {
+            Self::Set => "",
+            Self::Add => "+=",
+            Self::Subtract => "-=",
+            Self::Multiply => "*=",
+            Self::Divide => "/=",
+        }
+    }
+
+    pub fn parse(value: &str) -> Option<(Self, DecimalValue)> {
+        if value.len() > 128 {
+            return None;
+        }
+        let (operation, operand) = Self::ALL
+            .into_iter()
+            .skip(1)
+            .find_map(|operation| {
+                value
+                    .strip_prefix(operation.prefix())
+                    .map(|operand| (operation, operand))
+            })
+            .unwrap_or((Self::Set, value.strip_prefix('=').unwrap_or(value)));
+        let operand = DecimalValue::parse_inferred(operand.trim()).ok()?;
+        (operation != Self::Divide || !operand.is_zero()).then_some((operation, operand))
+    }
+
+    pub fn evaluate(self, current: DecimalValue, operand: DecimalValue) -> Option<DecimalValue> {
+        match self {
+            Self::Set => Some(operand),
+            Self::Add => current.aligned_add(operand),
+            Self::Subtract => current.aligned_sub(operand),
+            Self::Multiply | Self::Divide => {
+                for scale in 0..=nucleus::karma::MAX_DECIMAL_SCALE {
+                    let result = if self == Self::Multiply {
+                        current.mul_exact(operand, scale, nucleus::karma::Rounding::HalfEven)
+                    } else {
+                        current.div_exact(operand, scale, nucleus::karma::Rounding::HalfEven)
+                    };
+                    if let Some(result) = result.filter(|r| r.exact) {
+                        return Some(result.value);
+                    }
+                }
+                None
+            }
+        }
+    }
+}
+
 #[derive(Clone, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct RecordChanges {
@@ -25,9 +102,10 @@ impl RecordChanges {
                 .iter()
                 .chain(&self.retract)
                 .all(|name| !name.trim().is_empty() && name.len() <= 128 && !name.contains(','))
-            && self.quantity.as_ref().is_none_or(|value| {
-                value.len() <= 128 && DecimalValue::parse_inferred(value).is_ok()
-            })
+            && self
+                .quantity
+                .as_ref()
+                .is_none_or(|value| QuantityOperation::parse(value).is_some())
             && !self.assert.iter().any(|name| self.retract.contains(name))
     }
 
@@ -129,9 +207,9 @@ impl Engine {
             return Err(invalid("Choose a valid quantity or Assertion change"));
         }
         if let Some(value) = &mut changes.quantity {
-            *value = DecimalValue::parse_inferred(value)
-                .map_err(|_| invalid("Invalid quantity"))?
-                .to_string();
+            let (operation, operand) = QuantityOperation::parse(value)
+                .ok_or_else(|| invalid("Invalid quantity operation"))?;
+            *value = format!("{}{operand}", operation.prefix());
         }
         for name in changes.assert.iter_mut().chain(&mut changes.retract) {
             *name = store::concepts::resolve(&self.store.pool, name.trim())
@@ -167,6 +245,15 @@ impl Engine {
         }
         let mut tx = self.store.pool.begin().await?;
         let expected = state(&mut tx, &target, &changes).await?;
+        if let Some(value) = &changes.quantity {
+            let (operation, operand) = QuantityOperation::parse(value)
+                .ok_or_else(|| invalid("Invalid quantity operation"))?;
+            let current = DecimalValue::parse_inferred(&expected.quantity)
+                .map_err(|_| invalid("Invalid saved quantity"))?;
+            operation.evaluate(current, operand).ok_or_else(|| {
+                invalid("Quantity result is too large or cannot be represented exactly")
+            })?;
+        }
         tx.commit().await?;
         Ok(TransitionPreview {
             target,
@@ -241,10 +328,13 @@ impl Engine {
         .await?;
         let mut fact = None;
         if let Some(quantity) = &changes.quantity {
-            let target =
-                DecimalValue::parse_inferred(quantity).map_err(|_| invalid("Invalid quantity"))?;
             let before = DecimalValue::parse_inferred(&current.quantity)
                 .map_err(|_| invalid("Invalid saved quantity"))?;
+            let (operation, operand) = QuantityOperation::parse(quantity)
+                .ok_or_else(|| invalid("Invalid quantity operation"))?;
+            let target = operation.evaluate(before, operand).ok_or_else(|| {
+                invalid("Quantity result is too large or cannot be represented exactly")
+            })?;
             if target != before {
                 fact = crate::append::append_one_in_transaction(
                     &mut tx,

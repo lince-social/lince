@@ -46,6 +46,7 @@ enum Content {
         texts: Vec<SavedText>,
     },
     Calendar(Calendar),
+    Instinct(crate::instinct::Instinct),
     Kanban(crate::kanban::Kanban),
     Protein(ProteinDraft),
     Area(InfluenceArea),
@@ -95,6 +96,7 @@ impl CustomCastle {
                     texts.len() <= 256 && texts.iter().all(SavedText::validate)
                 }
                 Content::Calendar(calendar) => calendar.valid(),
+                Content::Instinct(instinct) => instinct.valid(),
                 Content::Kanban(board) => board.valid(),
                 Content::Protein(draft) => draft.valid_storage(),
                 Content::Area(area) => area.validate() && areas.insert(area.id.clone()),
@@ -237,6 +239,8 @@ impl CustomCastle {
                 }
             } else if let Some(calendar) = world.get::<CalendarSand>(entity) {
                 Content::Calendar(calendar.0.clone())
+            } else if let Some(instinct) = world.get::<crate::instinct::Instinct>(entity) {
+                Content::Instinct(instinct.clone())
             } else if let Some(board) = world.get::<crate::kanban::Kanban>(entity) {
                 Content::Kanban(board.clone())
             } else if let Some(protein) = world.get::<ProteinCastle>(entity) {
@@ -342,6 +346,12 @@ impl CustomCastle {
                         position,
                     );
                     let mut content = None;
+                    if *kind == SandKind::Operation {
+                        content = Some(crate::operation::populate(world, root, entity));
+                    }
+                    if *kind == SandKind::AccessControl {
+                        content = Some(crate::access_control::populate(world, root, entity));
+                    }
                     for text in texts {
                         let child = crate::sand_text::spawn(world, entity, text.clone());
                         content.get_or_insert(child);
@@ -350,7 +360,10 @@ impl CustomCastle {
                         kind: *kind,
                         content,
                     });
-                    if *kind != SandKind::Square {
+                    if !matches!(
+                        kind,
+                        SandKind::Square | SandKind::Operation | SandKind::WorkTimer | SandKind::AccessControl
+                    ) {
                         world
                             .entity_mut(entity)
                             .remove::<(crate::sand::Square, Outline)>();
@@ -365,6 +378,9 @@ impl CustomCastle {
                     calendar.area = calendar.area.as_ref().map(|id| areas[id].clone());
                     crate::calendar::spawn(world, root, workspace, position, calendar)
                 }
+                Content::Instinct(instinct) => {
+                    crate::instinct::spawn(world, root, workspace, position, instinct.clone())
+                }
                 Content::Kanban(board) => {
                     let mut board = board.clone();
                     board.remap(&areas);
@@ -376,6 +392,13 @@ impl CustomCastle {
                 Content::Area(area) => {
                     let mut area = area.clone();
                     area.id = areas[&area.id].clone();
+                    if let Some(config) = &mut area.protein {
+                        config.spawn_targets = config
+                            .spawn_targets
+                            .iter()
+                            .filter_map(|id| areas.get(id).cloned())
+                            .collect();
+                    }
                     area.center = position.to_array();
                     crate::area::spawn_area(world, root, workspace, area).unwrap()
                 }

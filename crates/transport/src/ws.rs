@@ -62,7 +62,7 @@ pub async fn serve(
         }
     }
     let mut terminals = TerminalHost::new();
-    let mut sync_events = crate::SyncEvents::new(&engine);
+    let mut sync_events = crate::SyncEvents::new(&engine).with_presence(session.presence_changes());
 
     loop {
         tokio::select! {

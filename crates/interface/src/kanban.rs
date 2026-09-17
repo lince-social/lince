@@ -5,7 +5,7 @@ mod tests;
 use crate::{
     actions::{Action, ActionButton},
     area::{AreaShape, InfluenceArea, RecordProperties},
-    area_mutation::HeldPoint as HeldMembership,
+    area_mutation::{HeldPoint as HeldMembership, Preparing},
     canvas::CanvasItem,
     cell_bridge::{CellBridge, CellMessage},
     icons::{Icon, IconButton, Tooltip},
@@ -38,13 +38,11 @@ const COLUMNS: [(&str, &str, i32); 7] = [
 pub struct Kanban {
     pub source: String,
     pub columns: Vec<Column>,
-    pub stationary: bool,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Column {
     pub area: String,
-    pub attraction: String,
 }
 
 impl Kanban {
@@ -57,15 +55,13 @@ impl Kanban {
     }
 
     pub(crate) fn ids(&self) -> impl Iterator<Item = &String> {
-        std::iter::once(&self.source)
-            .chain(self.columns.iter().flat_map(|c| [&c.area, &c.attraction]))
+        std::iter::once(&self.source).chain(self.columns.iter().map(|c| &c.area))
     }
 
     pub(crate) fn remap(&mut self, ids: &HashMap<String, String>) {
         self.source = ids[&self.source].clone();
         for column in &mut self.columns {
             column.area = ids[&column.area].clone();
-            column.attraction = ids[&column.attraction].clone();
         }
     }
 }
@@ -74,7 +70,6 @@ impl Kanban {
 struct Part {
     owner: Entity,
     column: usize,
-    count: bool,
 }
 
 pub(crate) fn part_owner(world: &World, entity: Entity) -> Option<Entity> {
@@ -85,6 +80,7 @@ pub(crate) fn part_owner(world: &World, entity: Entity) -> Option<Entity> {
 struct View {
     status: String,
     setup: bool,
+    initialized: bool,
 }
 
 #[derive(Component)]
@@ -95,6 +91,9 @@ struct Card {
     column: Option<Entity>,
     quantity: String,
 }
+
+#[derive(Component)]
+pub(crate) struct TaskCard;
 
 #[derive(Resource, Default)]
 struct Requests {
@@ -152,44 +151,42 @@ pub fn spawn(world: &mut World, root: Entity, workspace: u64, position: DVec2) -
         .flatten()
         .filter(|e| world.get::<InfluenceArea>(**e).is_some())
         .count();
-    if count + 15 > crate::area::MAX_AREAS {
+    if count + 8 > crate::area::MAX_AREAS {
         return None;
     }
-    let mut source = rectangle(position - DVec2::new(0.0, 420.0), DVec2::new(320.0, 80.0));
+    let mut source = rectangle(position + DVec2::new(0.0, 400.0), DVec2::new(320.0, 80.0));
     source.name = "Kanban · Task spawning".into();
-    source.protein = Some(config());
+    let mut spawning = config();
+    spawning.placement = crate::protein_area::SpawnPlacement::MatchingAreas;
+    source.protein = Some(spawning);
     let mut board = Kanban {
         source: source.id.clone(),
         columns: Vec::new(),
-        stationary: true,
     };
     crate::area::spawn_area(world, root, workspace, source)?;
     for (index, (title, slug, quantity)) in COLUMNS.iter().enumerate() {
-        let center = position + DVec2::new((index as f64 - 3.0) * 360.0, 0.0);
+        let center = position + DVec2::new((index as f64 - 3.0) * 340.0, 0.0);
         let mut area = rectangle(center, DVec2::new(340.0, 640.0));
-        area.name = format!("{title} · Entry and exit");
+        area.name = (*title).into();
+        area.include_right_edge = index == COLUMNS.len() - 1;
+        area.change_filter = Some(config());
         area.filter = Some(config());
         area.changes.enter.quantity = Some(quantity.to_string());
         area.changes.enter.assert = vec![(*slug).into()];
         area.changes.leave.quantity = Some("0".into());
         area.changes.leave.retract = vec![(*slug).into()];
-        let mut pull = area.clone();
-        pull.id = rectangle(center, DVec2::ONE).id;
-        pull.name = format!("{title} · Attraction and sorting");
-        pull.changes = Default::default();
-        pull.filter.as_mut().unwrap().draft.query["where"][0]["all"]
+        area.filter.as_mut().unwrap().draft.query["where"][0]["all"]
             .as_array_mut()
             .unwrap()
             .extend([
                 json!({"quantity_eq":quantity.to_string()}),
                 json!({"concept_in":slug}),
             ]);
-        pull.strength = 100.0;
-        pull.reach.mode = crate::area::ReachMode::Unlimited;
-        pull.sorting = Some(Default::default());
+        area.strength = 100.0;
+        area.reach.mode = crate::area::ReachMode::Unlimited;
+        area.sorting = Some(Default::default());
         board.columns.push(Column {
             area: area.id.clone(),
-            attraction: pull.id.clone(),
         });
         let area = crate::area::spawn_area(world, root, workspace, area)?;
         let mut rules = Rules::fixed(Vec2::new(340.0, 640.0));
@@ -198,15 +195,35 @@ pub fn spawn(world: &mut World, root: Entity, workspace: u64, position: DVec2) -
         rules.gap = 12.0;
         rules.axes[1].overflow = crate::layout::Overflow::Scroll;
         let _ = crate::layout::configure(world, area, rules);
-        crate::area::spawn_area(world, root, workspace, pull)?;
     }
-    Some(restore(
+    let targets: Vec<_> = board.columns.iter().map(|c| c.area.clone()).collect();
+    if let Some(source) = world
+        .query::<&mut InfluenceArea>()
+        .iter_mut(world)
+        .find(|a| a.id == board.source)
+    {
+        source.into_inner().protein.as_mut().unwrap().spawn_targets = targets;
+    }
+    let owner = restore(
         world,
         root,
         workspace,
         position - DVec2::new(0.0, 510.0),
         board,
-    ))
+    );
+    let mut id = [0; 16];
+    getrandom::fill(&mut id).expect("Kanban group identity");
+    let board = world.get::<Kanban>(owner).unwrap().clone();
+    let members: Vec<_> = std::iter::once(owner)
+        .chain(board.ids().filter_map(|id| area(world, owner, id)))
+        .collect();
+    for member in &members {
+        world
+            .entity_mut(*member)
+            .insert(crate::canvas_selection::SandGroup(id));
+    }
+    crate::topology::groups::attach(world, &members);
+    Some(owner)
 }
 
 fn sand(world: &mut World, root: Entity, workspace: u64, position: DVec2, size: Vec2) -> Entity {
@@ -243,44 +260,15 @@ pub(crate) fn restore(
     position: DVec2,
     board: Kanban,
 ) -> Entity {
-    let owner = sand(world, root, workspace, position, Vec2::new(420.0, 100.0));
-    world.entity_mut(owner).insert((board, View::default()));
-    let row = ui_row(world, owner);
-    crate::edit_mode::label(world, row, "Kanban", 20.0);
-    button(
-        world,
-        row,
-        owner,
-        Icon::Play,
-        "Set up task statuses and arm column changes",
-        Command::Start,
-    );
-    button(
-        world,
-        row,
-        owner,
-        Icon::Stop,
-        "Disarm column changes",
-        Command::Stop,
-    );
-    button(
-        world,
-        row,
-        owner,
-        Icon::Square,
-        "Toggle stationary columns and attraction",
-        Command::Stationary,
-    );
-    button(
-        world,
-        row,
-        owner,
-        Icon::Pencil,
-        "Edit the shared Task query and template",
-        Command::Query,
-    );
-    let label = crate::edit_mode::label(world, owner, "Stopped", 13.0);
-    world.entity_mut(label).insert(Status);
+    let owner = sand(world, root, workspace, position, Vec2::new(340.0, 128.0));
+    world
+        .entity_mut(owner)
+        .insert((board.clone(), View::default()));
+    for column in &board.columns {
+        if let Some(column) = area(world, owner, &column.area) {
+            world.entity_mut(column).insert(Preparing);
+        }
+    }
     owner
 }
 
@@ -349,89 +337,77 @@ pub(crate) fn store_entry(world: &mut World, root: Entity, parent: Entity) {
     );
 }
 
-fn header(world: &mut World, owner: Entity, column: usize, count: bool, position: DVec2) -> Entity {
+fn header(world: &mut World, owner: Entity, column: usize, position: DVec2) -> Entity {
     let root = world.get::<ChildOf>(owner).unwrap().parent();
     let workspace = world.get::<WorkspaceMember>(owner).unwrap().0;
-    let size = if count {
-        Vec2::new(76.0, 104.0)
+    let entity = if column == 0 {
+        owner
     } else {
-        Vec2::new(256.0, 104.0)
+        sand(world, root, workspace, position, Vec2::new(340.0, 128.0))
     };
-    let entity = sand(world, root, workspace, position, size);
-    world.entity_mut(entity).insert(Part {
+    world.entity_mut(entity).insert(Part { owner, column });
+    let row = ui_row(world, entity);
+    world.get_mut::<Node>(row).unwrap().min_height = px(40);
+    let title = crate::edit_mode::label(world, row, "", 18.0);
+    world.entity_mut(title).insert((
+        ColumnTitle,
+        TextLayout::no_wrap(),
+        bevy::text::LineHeight::RelativeToFont(1.4),
+    ));
+    world.get_mut::<Node>(title).unwrap().flex_grow = 1.0;
+    button(
+        world,
+        row,
         owner,
-        column,
-        count,
-    });
-    if count {
-        crate::edit_mode::label(world, entity, "Records", 13.0);
-        let text = crate::edit_mode::label(world, entity, "…", 24.0);
-        world.entity_mut(text).insert(Status);
-    } else {
-        let row = ui_row(world, entity);
-        crate::edit_mode::label(world, row, COLUMNS[column].0, 18.0);
-        button(
-            world,
-            row,
-            owner,
-            Icon::Info,
-            "Configure this column Area",
-            Command::Column(column),
-        );
-        button(
-            world,
-            row,
-            owner,
-            Icon::Attract,
-            "Configure attraction, matching, and sorting",
-            Command::Attraction(column),
-        );
-        let row = ui_row(world, entity);
-        let editor = world
-            .spawn(crate::sand::text_editor(
-                "",
-                world.resource::<crate::theme::Typography>(),
-                0,
-            ))
-            .id();
-        world.entity_mut(editor).insert((
-            ChildOf(row),
-            Tooltip("New Task title".into()),
-            Node {
-                width: px(0),
-                flex_grow: 1.0,
-                min_width: px(0),
-                min_height: px(28),
-                ..default()
-            },
-        ));
-        world
-            .get_mut::<EditableText>(editor)
-            .unwrap()
-            .max_characters = Some(500);
-        button(
-            world,
-            row,
-            owner,
-            Icon::Plus,
-            "Create a Task in this column",
-            Command::Add(column, editor),
-        );
-    }
+        Icon::General,
+        "Configure this column and all its behaviors",
+        Command::Column(column),
+    );
+    let count = crate::edit_mode::label(world, entity, "… tasks", 13.0);
+    world.entity_mut(count).insert(Status);
+    let row = ui_row(world, entity);
+    let editor = world
+        .spawn(crate::sand::text_editor(
+            "",
+            world.resource::<crate::theme::Typography>(),
+            0,
+        ))
+        .id();
+    world.entity_mut(editor).insert((
+        ChildOf(row),
+        Tooltip("New Task title".into()),
+        Node {
+            width: px(0),
+            flex_grow: 1.0,
+            min_width: px(0),
+            min_height: px(28),
+            ..default()
+        },
+    ));
+    world
+        .get_mut::<EditableText>(editor)
+        .unwrap()
+        .max_characters = Some(500);
+    button(
+        world,
+        row,
+        owner,
+        Icon::Plus,
+        "Create a Task in this column",
+        Command::Add(column, editor),
+    );
     entity
 }
+
+#[derive(Component)]
+struct ColumnTitle;
 
 #[derive(Clone)]
 enum Command {
     Create,
-    Start,
-    Stop,
-    Stationary,
-    Query,
+    Initialize,
     Column(usize),
-    Attraction(usize),
     Add(usize, Entity),
-    Move(i32),
 }
 
 impl Action for Command {
@@ -451,21 +427,17 @@ impl Action for Command {
             }
             return;
         }
-        if let Self::Move(delta) = self {
-            move_card(world, owner, *delta);
-            return;
-        }
         let Some(board) = world.get::<Kanban>(owner).cloned() else {
             return;
         };
         let root = world.get::<ChildOf>(owner).unwrap().parent();
         match self {
-            Self::Start => {
+            Self::Initialize => {
                 if world
                     .resource::<Requests>()
                     .pending
                     .values()
-                    .any(|(e, _)| *e == owner)
+                    .any(|(_, request)| matches!(request, Request::Concepts | Request::Concept))
                 {
                     return;
                 }
@@ -478,35 +450,8 @@ impl Action for Command {
                         .unwrap(),
                     }
                 });
+                world.get_mut::<View>(owner).unwrap().initialized = true;
                 world.get_mut::<View>(owner).unwrap().status = "Setting up statuses…".into();
-            }
-            Self::Stop => {
-                world.get_mut::<View>(owner).unwrap().setup = false;
-                for column in &board.columns {
-                    if let Some(area) = area(world, owner, &column.area) {
-                        crate::area_mutation::disarm(world, area, "Stopped from Kanban controls");
-                    }
-                }
-            }
-            Self::Stationary => {
-                world.get_mut::<Kanban>(owner).unwrap().stationary = !board.stationary;
-                let cards: Vec<_> = world
-                    .query::<(Entity, &RecordBinding)>()
-                    .iter(world)
-                    .filter(|(_, binding)| Some(binding.area) == area(world, owner, &board.source))
-                    .map(|(e, _)| e)
-                    .collect();
-                for card in cards {
-                    if board.stationary {
-                        let _ = crate::layout::detach(world, card);
-                    }
-                    world.entity_mut(card).remove::<Card>();
-                }
-            }
-            Self::Query => {
-                if let Some(source) = area(world, owner, &board.source) {
-                    crate::protein_area::open_query(world, source);
-                }
             }
             Self::Column(index) => {
                 if let Some(area) = board
@@ -519,18 +464,17 @@ impl Action for Command {
                         .apply(world, root);
                 }
             }
-            Self::Attraction(index) => {
-                if let Some(area) = board
-                    .columns
-                    .get(*index)
-                    .and_then(|c| area(world, owner, &c.attraction))
-                {
-                    crate::edit_mode::EditAction::Open.apply(world, root);
-                    crate::edit_mode::EditAction::Area(crate::area_panel::AreaAction::Select(area))
-                        .apply(world, root);
-                }
-            }
             Self::Add(index, editor) => {
+                if board
+                    .columns
+                    .iter()
+                    .filter_map(|c| area(world, owner, &c.area))
+                    .any(|e| world.get::<Preparing>(e).is_some())
+                {
+                    world.get_mut::<View>(owner).unwrap().status =
+                        "Preparing task statuses…".into();
+                    return;
+                }
                 if world
                     .resource::<Requests>()
                     .pending
@@ -727,7 +671,24 @@ fn update(world: &mut World) {
         .map(|(e, k)| (e, k.clone()))
         .collect();
     for (owner, board) in owners {
+        if !world.get::<View>(owner).unwrap().initialized
+            && world.get_non_send::<CellBridge>().is_some()
+        {
+            Command::Initialize.apply(world, owner);
+        }
         maintain(world, owner, &board);
+    }
+    let released: Vec<_> = world
+        .query_filtered::<Entity, (With<TaskCard>, With<HeldMembership>, Without<Card>)>()
+        .iter(world)
+        .filter(|entity| {
+            world
+                .get_resource::<crate::topology::input::PointerState>()
+                .is_none_or(|state| state.drag.is_none_or(|(held, _)| held != *entity))
+        })
+        .collect();
+    for entity in released {
+        world.entity_mut(entity).remove::<HeldMembership>();
     }
 }
 
@@ -736,6 +697,7 @@ fn maintain(world: &mut World, owner: Entity, board: &Kanban) {
         world.get_mut::<View>(owner).unwrap().status = "Task source Area removed".into();
         return;
     };
+    arrange(world, owner, board, source);
     let root = world.get::<ChildOf>(owner).unwrap().parent();
     let columns: Vec<_> = board
         .columns
@@ -749,7 +711,7 @@ fn maintain(world: &mut World, owner: Entity, board: &Kanban) {
         .columns
         .iter()
         .map(|column| {
-            area(world, owner, &column.attraction)
+            area(world, owner, &column.area)
                 .and_then(|area| crate::protein_area::ordered_records(world, area))
                 .map(|(_, ids)| ids)
         })
@@ -759,73 +721,74 @@ fn maintain(world: &mut World, owner: Entity, board: &Kanban) {
             continue;
         };
         let item = *world.get::<CanvasItem>(column).unwrap();
-        if let Some(pull) = area(world, owner, &board.columns[index].attraction) {
-            let placement = crate::topology::spatial(world, column);
-            world.entity_mut(pull).insert(placement);
-            let mut pull_item = world.get_mut::<CanvasItem>(pull).unwrap();
-            pull_item.position = item.position;
-            pull_item.size = item.size;
+        let part = world
+            .query::<(Entity, &Part)>()
+            .iter(world)
+            .find(|(_, p)| p.owner == owner && p.column == index)
+            .map(|(e, _)| e);
+        let position = item.position + DVec2::new(0.0, -f64::from(item.size.y) * 0.5 - 64.0);
+        let part = part.unwrap_or_else(|| header(world, owner, index, position));
+        if world.get::<CanvasItem>(part).unwrap().size.x != item.size.x {
+            world.get_mut::<CanvasItem>(part).unwrap().size.x = item.size.x;
         }
-        for count in [false, true] {
-            let part = world
-                .query::<(Entity, &Part)>()
-                .iter(world)
-                .find(|(_, p)| p.owner == owner && p.column == index && p.count == count)
-                .map(|(e, _)| e);
-            let count_width = 76.0_f32.min(item.size.x * 0.3);
-            let part_width = if count {
-                count_width
-            } else {
-                (item.size.x - count_width - 8.0).max(1.0)
-            };
-            let position = item.position
-                + DVec2::new(
-                    if count {
-                        f64::from(item.size.x - count_width) * 0.5
-                    } else {
-                        -f64::from(count_width + 8.0) * 0.5
-                    },
-                    -f64::from(item.size.y) * 0.5 - 64.0,
-                );
-            let part = part.unwrap_or_else(|| header(world, owner, index, count, position));
-            if world.get::<CanvasItem>(part).unwrap().size.x != part_width {
-                world.get_mut::<CanvasItem>(part).unwrap().size.x = part_width;
-            }
-            let placement = crate::topology::spatial(world, column);
-            let offset = position - item.position;
-            let position = placement.position(item.position)
-                + placement.rotation() * DVec3::new(offset.x, 0.0, offset.y);
-            if crate::topology::position(world, part) != Some(position) {
-                crate::topology::set_position(world, part, position);
-            }
-            if crate::topology::spatial(world, part).rotation != placement.rotation {
-                world
-                    .get_mut::<crate::topology::Spatial>(part)
-                    .unwrap()
-                    .rotation = placement.rotation;
-            }
-            if count {
-                let count = data
-                    .iter()
-                    .filter(|data| {
-                        data["uid"].as_str().is_some_and(|uid| {
-                            orders[index]
-                                .as_ref()
-                                .is_some_and(|ids| ids.iter().any(|id| id == uid))
-                        })
-                    })
-                    .count();
-                let labels: Vec<_> = world
-                    .get::<Children>(part)
-                    .into_iter()
-                    .flatten()
-                    .filter(|e| world.get::<Status>(**e).is_some())
-                    .copied()
-                    .collect();
-                for label in labels {
-                    set_label(world, label, count.to_string());
-                }
-            }
+        let placement = crate::topology::spatial(world, column);
+        let offset = position - item.position;
+        place(
+            world,
+            part,
+            placement.position(item.position)
+                + placement.rotation() * DVec3::new(offset.x, 0.0, offset.y),
+        );
+        rotate(world, part, placement.rotation);
+        if let Some(group) = world
+            .get::<crate::canvas_selection::SandGroup>(column)
+            .copied()
+        {
+            world.entity_mut(part).insert(group);
+        } else {
+            world
+                .entity_mut(part)
+                .remove::<crate::canvas_selection::SandGroup>();
+        }
+        refresh_attachment(world, part, column);
+        let count = data
+            .iter()
+            .filter(|data| {
+                data["uid"].as_str().is_some_and(|uid| {
+                    orders[index]
+                        .as_ref()
+                        .is_some_and(|ids| ids.iter().any(|id| id == uid))
+                })
+            })
+            .count();
+        let area = world.get::<InfluenceArea>(column).unwrap();
+        let title = format!(
+            "{}: {}",
+            area.name,
+            area.changes.enter.quantity.as_deref().unwrap_or("—")
+        );
+        let labels: Vec<_> = world
+            .query::<(Entity, &ChildOf, Has<Status>, Has<ColumnTitle>)>()
+            .iter(world)
+            .filter(|(_, parent, status, title)| {
+                (*status || *title)
+                    && (parent.parent() == part
+                        || world
+                            .get::<ChildOf>(parent.parent())
+                            .is_some_and(|p| p.parent() == part))
+            })
+            .map(|(e, _, status, _)| (e, status))
+            .collect();
+        for (label, status) in labels {
+            set_label(
+                world,
+                label,
+                if status {
+                    format!("{count} tasks")
+                } else {
+                    title.clone()
+                },
+            );
         }
     }
     let setup = world.get::<View>(owner).unwrap().setup;
@@ -845,16 +808,23 @@ fn maintain(world: &mut World, owner: Entity, board: &Kanban) {
         });
         if ready {
             for column in columns.iter().flatten() {
+                world.entity_mut(*column).remove::<Preparing>();
                 crate::area_mutation::preview(world, root, *column);
                 crate::area_mutation::arm(world, root, *column);
             }
             world.get_mut::<View>(owner).unwrap().setup = false;
+            world.get_mut::<View>(owner).unwrap().status = "Ready".into();
         }
     }
     let cards: Vec<_> = world
         .query::<(Entity, &RecordBinding, &RecordProperties)>()
         .iter(world)
-        .filter(|(_, b, _)| b.area == source)
+        .filter(|(e, b, _)| {
+            b.area == source
+                && world
+                    .get::<crate::protein_area::placement::Pending>(*e)
+                    .is_none()
+        })
         .map(|(e, _, r)| (e, r.0.clone()))
         .collect();
     for (entity, properties) in cards {
@@ -896,7 +866,7 @@ fn maintain(world: &mut World, owner: Entity, board: &Kanban) {
                 })
             });
         let changed = returned || old.is_none_or(|c| c.quantity != quantity || c.column != column);
-        if changed && board.stationary {
+        if changed {
             if let Some(column) = column {
                 let _ = crate::layout::attach(world, entity, column);
                 let mut rules = Rules::fixed(world.get::<CanvasItem>(entity).unwrap().size);
@@ -920,31 +890,6 @@ fn maintain(world: &mut World, owner: Entity, board: &Kanban) {
         {
             world.get_mut::<LayoutBox>(entity).unwrap().order = order;
         }
-    }
-    let armed = columns
-        .iter()
-        .flatten()
-        .filter(|column| crate::area_mutation::armed(world, **column))
-        .count();
-    let status = format!(
-        "{} · {} · {armed}/7 armed · {}",
-        world.get::<View>(owner).unwrap().status,
-        crate::protein_area::calendar_status(world, source),
-        if board.stationary {
-            "Stationary"
-        } else {
-            "Attraction"
-        }
-    );
-    let labels: Vec<_> = world
-        .get::<Children>(owner)
-        .into_iter()
-        .flatten()
-        .filter(|e| world.get::<Status>(**e).is_some())
-        .copied()
-        .collect();
-    for label in labels {
-        set_label(world, label, status.clone());
     }
 }
 
@@ -1001,119 +946,128 @@ fn column_index(data: &serde_json::Value) -> Option<usize> {
     })
 }
 
-pub(crate) fn card_controls(world: &mut World, card: Entity) {
-    let row = ui_row(world, card);
-    let handle = world
-        .spawn((
-            crate::sand::Square,
-            IconButton::new(Icon::Group, "Drag Task to another column"),
-            ChildOf(row),
-        ))
-        .observe(drag_card)
-        .id();
-    let _ = handle;
-    button(
-        world,
-        row,
-        card,
-        Icon::Previous,
-        "Move Task to the previous column",
-        Command::Move(-1),
-    );
-    button(
-        world,
-        row,
-        card,
-        Icon::Next,
-        "Move Task to the next column",
-        Command::Move(1),
-    );
-}
-
-fn drag_card(
-    mut event: On<Pointer<Press>>,
-    parents: Query<&ChildOf>,
-    cards: Query<(), With<RecordBinding>>,
-    mut commands: Commands,
-) {
-    if event.button != PointerButton::Primary {
-        return;
-    }
-    let mut card = event.entity;
-    while !cards.contains(card) {
-        let Ok(parent) = parents.get(card) else {
-            return;
-        };
-        card = parent.parent();
-    }
-    commands.queue(move |world: &mut World| {
-        let Some(root) = world.get::<ChildOf>(card).map(ChildOf::parent) else {
-            return;
-        };
-        let Some(position) = crate::topology::position(world, card) else {
-            return;
-        };
-        let cursor = world
-            .query::<&Window>()
-            .iter(world)
-            .find_map(Window::cursor_position);
-        let Some(point) = cursor.and_then(|cursor| {
-            crate::topology::input::plane_point(world, root, cursor, position.y)
-        }) else {
-            return;
-        };
-        let membership = crate::layout::membership(world, card).unwrap_or(position);
-        let offset = world
-            .get::<LayoutRuntime>(card)
-            .map_or(Vec2::ZERO, |r| r.visual_offset);
-        let _ = crate::layout::detach(world, card);
-        let rotation = crate::topology::spatial(world, card).rotation();
-        crate::topology::set_position(
-            world,
-            card,
-            position - rotation * DVec3::new(f64::from(offset.x), 0.0, f64::from(offset.y)),
-        );
-        world.entity_mut(card).insert(HeldMembership(membership));
-        if let Some(mut state) = world.get_resource_mut::<crate::topology::input::PointerState>() {
-            state.drag = Some((card, point));
-        }
-    });
-    event.propagate(false);
-}
-
-fn move_card(world: &mut World, card: Entity, delta: i32) {
-    let Some(binding) = world.get::<RecordBinding>(card) else {
+pub(crate) fn begin_drag(world: &mut World, card: Entity, point: DVec3) {
+    let Some(position) = crate::topology::position(world, card) else {
         return;
     };
-    let source = binding.area;
-    let board = world
-        .query::<(Entity, &Kanban)>()
-        .iter(world)
-        .find(|(e, b)| area(world, *e, &b.source) == Some(source))
-        .map(|(e, b)| (e, b.clone()));
-    let Some((owner, board)) = board else {
-        return;
-    };
-    let current = world.get::<Card>(card).and_then(|c| c.column);
-    let index = board
+    let membership = crate::layout::membership(world, card).unwrap_or(position);
+    let offset = world
+        .get::<LayoutRuntime>(card)
+        .map_or(Vec2::ZERO, |r| r.visual_offset);
+    crate::layout::detach(world, card);
+    let rotation = crate::topology::spatial(world, card).rotation();
+    crate::topology::set_position(
+        world,
+        card,
+        position - rotation * DVec3::new(f64::from(offset.x), 0.0, f64::from(offset.y)),
+    );
+    world.entity_mut(card).insert(HeldMembership(membership));
+    world
+        .resource_mut::<crate::topology::input::PointerState>()
+        .drag = Some((card, point));
+}
+
+fn arrange(world: &mut World, owner: Entity, board: &Kanban, source: Entity) {
+    let columns: Vec<_> = board
         .columns
         .iter()
-        .position(|c| area(world, owner, &c.area) == current)
-        .unwrap_or(0);
-    let next = (index as i32 + delta).clamp(0, 6) as usize;
-    if next == index {
-        return;
-    }
-    let Some(target) = area(world, owner, &board.columns[next].area) else {
+        .filter_map(|c| area(world, owner, &c.area))
+        .collect();
+    let Some(first) = columns.first().copied() else {
         return;
     };
-    if !crate::area_mutation::armed(world, target) {
-        world.get_mut::<View>(owner).unwrap().status = "Arm columns before moving Tasks".into();
-        return;
+    for column in &columns {
+        if let Some(layout) = world.get::<LayoutBox>(*column) {
+            let mut size = world.get::<CanvasItem>(*column).unwrap().size;
+            for axis in 0..2 {
+                let rule = layout.rules.axes[axis];
+                if rule.sizing == Sizing::Fixed {
+                    size[axis] = rule.size.clamp(rule.min, rule.max);
+                }
+            }
+            if world.get::<CanvasItem>(*column).unwrap().size != size {
+                world.get_mut::<CanvasItem>(*column).unwrap().size = size;
+            }
+            if world.get::<InfluenceArea>(*column).unwrap().size != size.as_dvec2().to_array() {
+                world.get_mut::<InfluenceArea>(*column).unwrap().size = size.as_dvec2().to_array();
+            }
+        }
     }
-    let Some(position) = crate::topology::position(world, target) else {
+    let placement = crate::topology::spatial(world, first);
+    let first_position = crate::topology::position(world, first).unwrap_or_default();
+    let first_size = world.get::<CanvasItem>(first).unwrap().size;
+    let mut left = -f64::from(first_size.x) * 0.5;
+    let mut bottom = 0.0_f64;
+    for column in columns {
+        let size = world.get::<CanvasItem>(column).unwrap().size;
+        let offset = DVec3::new(left + f64::from(size.x) * 0.5, 0.0, 0.0);
+        place(
+            world,
+            column,
+            first_position + placement.rotation() * offset,
+        );
+        rotate(world, column, placement.rotation);
+        refresh_attachment(world, column, first);
+        left += f64::from(size.x);
+        bottom = bottom.max(f64::from(size.y) * 0.5);
+    }
+    if world
+        .get::<crate::canvas_selection::SandGroup>(first)
+        .is_some()
+        && world.get::<crate::canvas_selection::SandGroup>(source)
+            == world.get::<crate::canvas_selection::SandGroup>(first)
+    {
+        let width = left + f64::from(first_size.x) * 0.5;
+        let center = (width - f64::from(first_size.x)) * 0.5;
+        let size = world.get::<CanvasItem>(source).unwrap().size;
+        place(
+            world,
+            source,
+            first_position
+                + placement.rotation()
+                    * DVec3::new(center, 0.0, bottom + 40.0 + f64::from(size.y) * 0.5),
+        );
+        rotate(world, source, placement.rotation);
+        refresh_attachment(world, source, first);
+    }
+}
+
+fn place(world: &mut World, entity: Entity, point: DVec3) {
+    if crate::topology::position(world, entity) != Some(point) {
+        crate::topology::set_position(world, entity, point);
+    }
+}
+
+fn rotate(world: &mut World, entity: Entity, rotation: [f64; 4]) {
+    if crate::topology::spatial(world, entity).rotation != rotation {
+        world
+            .get_mut::<crate::topology::Spatial>(entity)
+            .unwrap()
+            .rotation = rotation;
+    }
+}
+
+fn refresh_attachment(world: &mut World, entity: Entity, anchor: Entity) {
+    let Some(pose) = world
+        .get::<crate::topology::groups::GroupPose>(anchor)
+        .copied()
+    else {
         return;
     };
-    let _ = crate::layout::detach(world, card);
-    crate::topology::set_position(world, card, position);
+    if world
+        .get::<crate::canvas_selection::SandGroup>(entity)
+        .is_none()
+    {
+        return;
+    }
+    let inverse = bevy::math::DQuat::from_array(pose.rotation).inverse();
+    let position = crate::topology::position(world, entity).unwrap_or_default();
+    let rotation = crate::topology::spatial(world, entity).rotation();
+    world.entity_mut(entity).insert((
+        pose,
+        crate::topology::Attachment {
+            position: (inverse * (position - DVec3::from_array(pose.position))).to_array(),
+            rotation: (inverse * rotation).to_array(),
+        },
+    ));
 }

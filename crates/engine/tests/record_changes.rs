@@ -1,178 +1,704 @@
-use engine::Engine;
-use engine::sync::Delivery;
-use engine::trust::Signer;
+use engine::{
+    Engine,
+    actions::Action,
+    record_change::{Mutation, Request, WorkField},
+    sync::{Delivery, OpBatch},
+    trust::Signer,
+};
 use nucleus::RecordKind;
-use store::record_changes::{self, Cause};
-use store::records::NewRecord;
+use serde_json::json;
 
-async fn cell() -> (Engine, String) {
-    let e = Engine::open_memory().await.expect("engine opens");
-    let organ = store::organs::ensure_local(&e.store.pool, "http://cell.test")
+#[tokio::test]
+async fn concurrent_assertion_additions_converge_and_observed_removals_do_not_return() {
+    let (a, ao) = cell().await;
+    let (b, bo) = cell().await;
+    pair(&a, &ao, &b, &bo).await;
+    let uid = record(&a, "membership").await;
+    let predicate = store::concepts::ensure(&a.store.pool, "selected")
         .await
-        .expect("local organ")
-        .uid;
-    e.set_signer(Signer::generate(&organ, "k1"))
+        .unwrap();
+    sync(&a, &b, &bo).await;
+    for engine in [&a, &b] {
+        engine
+            .change_record(
+                request(
+                    &uid,
+                    Mutation::Assertion {
+                        predicate: predicate.clone(),
+                        object: None,
+                        quantity: None,
+                        unit: None,
+                    },
+                ),
+                None,
+            )
+            .await
+            .unwrap();
+    }
+    sync(&a, &b, &bo).await;
+    sync(&b, &a, &ao).await;
+    let first = store::assertions::for_subjects(&a.store.pool, &[uid.clone()])
         .await
-        .expect("signer");
-    (e, organ)
-}
-
-async fn plain(e: &Engine, slug: &str) -> String {
-    store::records::create(
-        &e.store.pool,
-        NewRecord {
-            slug: Some(slug),
-            kind: RecordKind::Plain,
-            head: slug,
-            body: "",
-            quantity: store::exact::zero(),
-        },
+        .unwrap();
+    let second = store::assertions::for_subjects(&b.store.pool, &[uid.clone()])
+        .await
+        .unwrap();
+    assert_eq!(first.len(), 1);
+    assert_eq!(second.len(), 1);
+    assert_eq!(first[0].uid, second[0].uid);
+    a.change_record(
+        request(
+            &uid,
+            Mutation::RetractAssertion {
+                assertion: first[0].uid.clone(),
+            },
+        ),
+        None,
     )
     .await
-    .map(|r| r.uid)
-    .expect("record")
+    .unwrap();
+    sync(&a, &b, &bo).await;
+    sync(&b, &a, &ao).await;
+    for engine in [&a, &b] {
+        assert!(
+            store::assertions::for_subjects(&engine.store.pool, &[uid.clone()])
+                .await
+                .unwrap()
+                .is_empty()
+        );
+    }
+    b.change_record(
+        request(
+            &uid,
+            Mutation::Assertion {
+                predicate,
+                object: None,
+                quantity: None,
+                unit: None,
+            },
+        ),
+        None,
+    )
+    .await
+    .unwrap();
+    sync(&b, &a, &ao).await;
+    assert_eq!(
+        store::assertions::for_subjects(&a.store.pool, &[uid])
+            .await
+            .unwrap()
+            .len(),
+        1
+    );
 }
 
-async fn paired() -> (Engine, String, Engine, String) {
-    let (a, a_organ) = cell().await;
-    let (b, b_organ) = cell().await;
-    let a_intro = a.introduction().await.unwrap();
-    let b_intro = b.introduction().await.unwrap();
-    b.adopt_introduction(&a_intro, 1).await.unwrap();
-    a.adopt_introduction(&b_intro, 1).await.unwrap();
-    store::organs::set_sync_policy(&a.store.pool, &b_organ, true, false)
+#[tokio::test]
+async fn assigned_levels_survive_checkpoints_and_later_additions() {
+    let (engine, _) = cell().await;
+    let uid = record(&engine, "levels").await;
+    let from = chrono::Utc::now() - chrono::Duration::seconds(1);
+    engine
+        .change_record(
+            request(
+                &uid,
+                Mutation::Quantity {
+                    value: "12.50".into(),
+                },
+            ),
+            None,
+        )
         .await
         .unwrap();
-    store::organs::set_sync_policy(&b.store.pool, &a_organ, true, false)
+    engine.checkpoint_all(chrono::Utc::now()).await.unwrap();
+    engine.append_user(&uid, 2.0).await.unwrap();
+    engine
+        .change_record(
+            request(
+                &uid,
+                Mutation::Quantity {
+                    value: "9.75".into(),
+                },
+            ),
+            None,
+        )
         .await
         .unwrap();
-    (a, a_organ, b, b_organ)
+    let to = chrono::Utc::now() + chrono::Duration::seconds(1);
+    assert_eq!(
+        store::facts::level(&engine.store.pool, &uid)
+            .await
+            .unwrap()
+            .to_string(),
+        "9.75"
+    );
+    assert_eq!(
+        store::ledger::level_at(&engine.store.pool, &uid, to)
+            .await
+            .unwrap()
+            .to_string(),
+        "9.75"
+    );
+    let series = store::ledger::level_series(&engine.store.pool, &uid, from, to)
+        .await
+        .unwrap();
+    assert_eq!(series.last().unwrap().1.to_string(), "9.75");
+    engine.rebuild_read_model().await.unwrap();
+    assert_eq!(quantity(&engine, &uid).await, "9.75");
 }
 
-async fn sync(from: &Engine, to: &Engine) {
-    from.drain_outbox(|_contact, root, batch| async move {
-        match root {
-            Some(root) => to.import_grant_batch(&root, &batch).await,
-            None => to.import_op_batch(&batch).await,
-        }
-        .map_or_else(|e| Delivery::Failed(e.to_string()), |_| Delivery::Sent)
+#[tokio::test]
+async fn assertion_requests_are_saved_once_and_retractions_stay_on_their_record() {
+    let (engine, _) = cell().await;
+    let uid = record(&engine, "assertion-request").await;
+    let other = record(&engine, "other-assertion-request").await;
+    store::concepts::ensure(&engine.store.pool, "selected")
+        .await
+        .unwrap();
+    let add = request(
+        &uid,
+        Mutation::Assertion {
+            predicate: "selected".into(),
+            object: None,
+            quantity: None,
+            unit: None,
+        },
+    );
+    let first = engine.change_record(add.clone(), None).await.unwrap();
+    let again = engine.change_record(add, None).await.unwrap();
+    assert_eq!(first.created, again.created);
+    assert!(again.facts.is_empty());
+    let assertion = first.created.unwrap();
+    assert!(
+        engine
+            .change_record(
+                request(
+                    &other,
+                    Mutation::RetractAssertion {
+                        assertion: assertion.clone()
+                    }
+                ),
+                None
+            )
+            .await
+            .is_err()
+    );
+    let remove = request(
+        &uid,
+        Mutation::RetractAssertion {
+            assertion: assertion.clone(),
+        },
+    );
+    engine.change_record(remove.clone(), None).await.unwrap();
+    let newer = engine
+        .change_record(
+            request(
+                &uid,
+                Mutation::Assertion {
+                    predicate: "selected".into(),
+                    object: None,
+                    quantity: None,
+                    unit: None,
+                },
+            ),
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    engine.change_record(remove, None).await.unwrap();
+    assert!(
+        store::assertions::get(&engine.store.pool, &newer)
+            .await
+            .unwrap()
+            .unwrap()
+            .retracted_at
+            .is_none()
+    );
+    assert!(
+        store::assertions::get(&engine.store.pool, &assertion)
+            .await
+            .unwrap()
+            .unwrap()
+            .retracted_at
+            .is_some()
+    );
+}
+
+#[tokio::test]
+async fn rebuilding_preserves_register_values_and_work_log_identity() {
+    let (engine, _) = cell().await;
+    let uid = record(&engine, "rebuild").await;
+    engine
+        .change_record(
+            request(
+                &uid,
+                Mutation::Quantity {
+                    value: "7.25".into(),
+                },
+            ),
+            None,
+        )
+        .await
+        .unwrap();
+    engine
+        .change_record(
+            request(
+                &uid,
+                Mutation::Slug {
+                    value: Some("rebuilt".into()),
+                },
+            ),
+            None,
+        )
+        .await
+        .unwrap();
+    engine
+        .change_record(
+            request(
+                &uid,
+                Mutation::Work {
+                    field: WorkField::Due,
+                    value: json!("2026-09-17"),
+                },
+            ),
+            None,
+        )
+        .await
+        .unwrap();
+    engine
+        .change_record(request(&uid, Mutation::Timer { running: true }), None)
+        .await
+        .unwrap();
+    engine
+        .change_record(request(&uid, Mutation::Timer { running: false }), None)
+        .await
+        .unwrap();
+    let before = store::records::get_extension(&engine.store.pool, &uid, "work")
+        .await
+        .unwrap();
+    engine.rebuild_read_model().await.unwrap();
+    assert_eq!(quantity(&engine, &uid).await, "7.25");
+    assert_eq!(
+        store::records::get(&engine.store.pool, &uid)
+            .await
+            .unwrap()
+            .unwrap()
+            .slug
+            .as_deref(),
+        Some("rebuilt")
+    );
+    assert_eq!(
+        store::records::get_extension(&engine.store.pool, &uid, "work")
+            .await
+            .unwrap(),
+        before
+    );
+    assert!(engine.audit_read_model().await.unwrap().is_clean());
+}
+
+#[tokio::test]
+async fn offline_text_crosses_multiple_checkpoints_and_a_lost_ack() {
+    let (a, ao) = cell().await;
+    let (b, bo) = cell().await;
+    pair(&a, &ao, &b, &bo).await;
+    let uid = record(&a, "checkpoint").await;
+    sync(&a, &b, &bo).await;
+    for index in 0..300 {
+        a.write_record_text(&uid, None, Some(&format!("Olá 👩‍💻 {index}")))
+            .await
+            .unwrap();
+    }
+    a.close_record_doc(&uid);
+    sync(&a, &b, &bo).await;
+    assert_eq!(b.doc_text(&uid).await.unwrap().1, "Olá 👩‍💻 299");
+    a.write_record_text(&uid, None, Some("After reconnect"))
+        .await
+        .unwrap();
+    let peer = &b;
+    a.drain_outbox(|_, _, batch| async move {
+        peer.import_op_batch(&batch).await.unwrap();
+        Delivery::Failed("acknowledgement lost".into())
     })
     .await
-    .expect("drain");
-}
-
-async fn remote_entry(e: &Engine, uid: &str, field: &str) -> record_changes::Change {
-    record_changes::recent(&e.store.pool, uid, 50)
+    .unwrap();
+    store::sqlx::query("UPDATE sync_outbox SET attempts = 0")
+        .execute(&a.store.pool)
         .await
-        .expect("changes")
-        .into_iter()
-        .find(|c| c.cause == Cause::Remote && c.field == field)
-        .expect("an overwrite by a remote op left an entry")
+        .unwrap();
+    sync(&a, &b, &bo).await;
+    assert_eq!(b.doc_text(&uid).await.unwrap().1, "After reconnect");
 }
 
 #[tokio::test]
-async fn a_losing_local_edit_leaves_an_entry_naming_the_winning_organ() {
-    let (a, a_organ, b, _b_organ) = paired().await;
-
-    let uid = plain(&a, "apples").await;
-    sync(&a, &b).await;
-
-    store::records::set_slug(&b.store.pool, &uid, Some("what-b-typed"))
+async fn pause_closes_concurrent_observed_work_sessions() {
+    let (a, ao) = cell().await;
+    let (b, bo) = cell().await;
+    pair(&a, &ao, &b, &bo).await;
+    let uid = record(&a, "concurrent timers").await;
+    sync(&a, &b, &bo).await;
+    a.change_record(request(&uid, Mutation::Timer { running: true }), None)
         .await
-        .expect("B edits");
-
-    store::records::set_slug(&a.store.pool, &uid, Some("what-a-typed"))
+        .unwrap();
+    b.change_record(request(&uid, Mutation::Timer { running: true }), None)
         .await
-        .expect("A edits");
-    sync(&a, &b).await;
-
-    assert_eq!(
-        store::records::get(&b.store.pool, &uid)
+        .unwrap();
+    sync(&b, &a, &ao).await;
+    a.change_record(request(&uid, Mutation::Timer { running: false }), None)
+        .await
+        .unwrap();
+    sync(&a, &b, &bo).await;
+    for engine in [&a, &b] {
+        let work = store::records::get_extension(&engine.store.pool, &uid, "work")
             .await
-            .expect("get")
-            .expect("record")
-            .slug
-            .as_deref(),
-        Some("what-a-typed"),
-        "A's later HLC won, which is the merge behaving correctly"
-    );
+            .unwrap()
+            .unwrap();
+        assert_eq!(work["logs"].as_array().unwrap().len(), 2);
+        assert!(
+            work["logs"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .all(|log| log["end"].is_string())
+        );
+    }
+}
 
-    let lost = remote_entry(&b, &uid, "slug").await;
-    assert_eq!(
-        lost.winner_organ.as_deref(),
-        Some(a_organ.as_str()),
-        "the entry names the Organ whose op won"
-    );
-    assert_eq!(
-        lost.displaced.as_deref(),
-        Some("what-b-typed"),
-        "and says what was displaced, or it cannot be recovered by hand"
-    );
-    assert!(
-        lost.displaced_local,
-        "what was overwritten was authored HERE, which is what makes it worth \
-         telling this person about"
-    );
+async fn cell() -> (Engine, String) {
+    let engine = Engine::open_memory().await.unwrap();
+    let organ = store::organs::ensure_local(&engine.store.pool, "http://cell")
+        .await
+        .unwrap()
+        .uid;
+    engine
+        .set_signer(Signer::generate(&organ, "key"))
+        .await
+        .unwrap();
+    (engine, organ)
+}
+
+async fn record(engine: &Engine, head: &str) -> String {
+    engine
+        .act(
+            Action::CreateRecord {
+                slug: None,
+                kind: RecordKind::Plain,
+                head: head.into(),
+                body: "original".into(),
+                quantity: 5.0,
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap()
+}
+
+async fn pair(a: &Engine, ao: &str, b: &Engine, bo: &str) {
+    b.adopt_introduction(&a.introduction().await.unwrap(), 1)
+        .await
+        .unwrap();
+    a.adopt_introduction(&b.introduction().await.unwrap(), 1)
+        .await
+        .unwrap();
+    store::organs::set_sync_policy(&a.store.pool, bo, true, false)
+        .await
+        .unwrap();
+    store::organs::set_sync_policy(&b.store.pool, ao, true, false)
+        .await
+        .unwrap();
+}
+
+async fn sync(a: &Engine, b: &Engine, bo: &str) {
+    a.drain_outbox(|contact, root, batch| async move {
+        if contact.record_uid != bo {
+            return Delivery::Failed("other contact".into());
+        }
+        let result = match root {
+            Some(root) => b.import_grant_batch(&root, &batch).await,
+            None => b.import_op_batch(&batch).await,
+        };
+        match result {
+            Ok(_) if b.batch_is_saved(&batch).await.unwrap() => Delivery::Sent,
+            Ok(_) => Delivery::Failed("change was not accepted".into()),
+            Err(error) => Delivery::Failed(error.to_string()),
+        }
+    })
+    .await
+    .unwrap();
+}
+
+fn request(uid: &str, mutation: Mutation) -> Request {
+    Request {
+        id: nucleus::new_uid("op"),
+        record_uid: uid.into(),
+        mutation,
+    }
+}
+
+async fn quantity(engine: &Engine, uid: &str) -> String {
+    store::records::quantity(&engine.store.pool, uid)
+        .await
+        .unwrap()
+        .unwrap()
+        .to_string()
 }
 
 #[tokio::test]
-async fn an_overwrite_of_a_value_we_never_authored_is_not_marked_local() {
-    let (a, _a_organ, b, _b_organ) = paired().await;
-
-    let uid = plain(&a, "pears").await;
-    sync(&a, &b).await;
-
-    store::records::set_slug(&a.store.pool, &uid, Some("a-again"))
-        .await
-        .expect("A edits");
-    sync(&a, &b).await;
-
-    let entry = remote_entry(&b, &uid, "slug").await;
-    assert!(
-        !entry.displaced_local,
-        "B never typed into this field, so nothing of B's was lost"
-    );
+async fn simultaneous_assignments_merge_as_one_register_and_preserve_additions() {
+    let (a, ao) = cell().await;
+    let (b, bo) = cell().await;
+    pair(&a, &ao, &b, &bo).await;
+    let uid = record(&a, "quantity").await;
+    sync(&a, &b, &bo).await;
+    for engine in [&a, &b] {
+        engine
+            .change_record(
+                request(
+                    &uid,
+                    Mutation::Quantity {
+                        value: "7.125".into(),
+                    },
+                ),
+                None,
+            )
+            .await
+            .unwrap();
+    }
+    sync(&a, &b, &bo).await;
+    sync(&b, &a, &ao).await;
+    assert_eq!(quantity(&a, &uid).await, "7.125");
+    assert_eq!(quantity(&b, &uid).await, "7.125");
+    a.append_user(&uid, 2.0).await.unwrap();
+    b.change_record(
+        request(
+            &uid,
+            Mutation::Quantity {
+                value: "9.125".into(),
+            },
+        ),
+        None,
+    )
+    .await
+    .unwrap();
+    sync(&a, &b, &bo).await;
+    sync(&b, &a, &ao).await;
+    assert_eq!(quantity(&a, &uid).await, "11.125");
+    assert_eq!(quantity(&b, &uid).await, "11.125");
 }
 
 #[tokio::test]
-async fn an_arriving_op_that_loses_leaves_no_entry() {
-    let (a, _a_organ, b, _b_organ) = paired().await;
-
-    let uid = plain(&a, "plums").await;
-    sync(&a, &b).await;
-
-    store::records::set_slug(&a.store.pool, &uid, Some("a-first"))
-        .await
-        .expect("A edits");
-    sync(&a, &b).await;
-
-    store::records::set_slug(&b.store.pool, &uid, Some("b-later"))
-        .await
-        .expect("B edits later");
-
-    let before = record_changes::recent(&b.store.pool, &uid, 50)
-        .await
-        .expect("changes")
-        .len();
-
-    sync(&a, &b).await;
-
-    assert_eq!(
-        store::records::get(&b.store.pool, &uid)
-            .await
-            .expect("get")
-            .expect("record")
-            .slug
-            .as_deref(),
-        Some("b-later"),
-        "B's edit was later and stands"
+async fn durable_change_identity_does_not_repeat_after_later_changes() {
+    let (engine, _) = cell().await;
+    let uid = record(&engine, "retries").await;
+    let first = request(
+        &uid,
+        Mutation::Quantity {
+            value: "9007199254740993.123456".into(),
+        },
     );
-    assert_eq!(
-        record_changes::recent(&b.store.pool, &uid, 50)
+    engine.change_record(first.clone(), None).await.unwrap();
+    assert_eq!(quantity(&engine, &uid).await, "9007199254740993.123456");
+    engine
+        .change_record(
+            request(&uid, Mutation::Quantity { value: "4".into() }),
+            None,
+        )
+        .await
+        .unwrap();
+    engine.change_record(first.clone(), None).await.unwrap();
+    assert_eq!(quantity(&engine, &uid).await, "4.000000");
+    let mut changed = first;
+    changed.mutation = Mutation::Quantity { value: "12".into() };
+    assert!(engine.change_record(changed, None).await.is_err());
+}
+
+#[tokio::test]
+async fn independent_work_fields_survive_exchange_in_both_directions() {
+    let (a, ao) = cell().await;
+    let (b, bo) = cell().await;
+    pair(&a, &ao, &b, &bo).await;
+    let uid = record(&a, "dates").await;
+    sync(&a, &b, &bo).await;
+    a.change_record(
+        request(
+            &uid,
+            Mutation::Work {
+                field: WorkField::Start,
+                value: json!("2026-09-13"),
+            },
+        ),
+        None,
+    )
+    .await
+    .unwrap();
+    b.change_record(
+        request(
+            &uid,
+            Mutation::Work {
+                field: WorkField::Due,
+                value: json!("2026-09-17"),
+            },
+        ),
+        None,
+    )
+    .await
+    .unwrap();
+    sync(&a, &b, &bo).await;
+    sync(&b, &a, &ao).await;
+    for engine in [&a, &b] {
+        let work = store::records::get_extension(&engine.store.pool, &uid, "work")
             .await
-            .expect("changes")
-            .len(),
-        before,
-        "a stale arriving op changed nothing, so it reported nothing"
-    );
+            .unwrap()
+            .unwrap();
+        assert_eq!(work["start"], "2026-09-13");
+        assert_eq!(work["due"], "2026-09-17");
+    }
+}
+
+#[tokio::test]
+async fn timer_retries_do_not_reopen_a_paused_session() {
+    let (engine, _) = cell().await;
+    let uid = record(&engine, "timer").await;
+    let pause_empty = request(&uid, Mutation::Timer { running: false });
+    engine
+        .change_record(pause_empty.clone(), None)
+        .await
+        .unwrap();
+    let start = request(&uid, Mutation::Timer { running: true });
+    engine.change_record(start.clone(), None).await.unwrap();
+    engine.change_record(pause_empty, None).await.unwrap();
+    let work = store::records::get_extension(&engine.store.pool, &uid, "work")
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(work["logs"].as_array().unwrap().len(), 1);
+    assert!(work["logs"][0]["end"].is_null());
+    engine
+        .change_record(request(&uid, Mutation::Timer { running: false }), None)
+        .await
+        .unwrap();
+    engine.change_record(start, None).await.unwrap();
+    let work = store::records::get_extension(&engine.store.pool, &uid, "work")
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(work["logs"][0]["end"].is_string());
+}
+
+#[tokio::test]
+async fn owner_relays_an_accepted_property_change_to_another_participant() {
+    let (a, ao) = cell().await;
+    let (b, bo) = cell().await;
+    let (c, co) = cell().await;
+    pair(&a, &ao, &b, &bo).await;
+    pair(&a, &ao, &c, &co).await;
+    let uid = record(&a, "relay").await;
+    sync(&a, &b, &bo).await;
+    sync(&a, &c, &co).await;
+    b.change_record(
+        request(&uid, Mutation::Quantity { value: "8".into() }),
+        None,
+    )
+    .await
+    .unwrap();
+    sync(&b, &a, &ao).await;
+    sync(&a, &c, &co).await;
+    assert_eq!(quantity(&a, &uid).await, "8");
+    assert_eq!(quantity(&c, &uid).await, "8");
+}
+
+#[tokio::test]
+async fn a_rejected_operation_cannot_be_acknowledged_as_saved() {
+    let (a, ao) = cell().await;
+    let (b, bo) = cell().await;
+    pair(&a, &ao, &b, &bo).await;
+    let uid = record(&a, "admission").await;
+    sync(&a, &b, &bo).await;
+    a.change_record(
+        request(&uid, Mutation::Quantity { value: "8".into() }),
+        None,
+    )
+    .await
+    .unwrap();
+    let rows = store::sync_ops::for_field(&a.store.pool, "record", &uid, "property:quantity")
+        .await
+        .unwrap();
+    let mut ops = a.hydrate_ops(rows).await.unwrap();
+    ops[0].value = Some("not a register".into());
+    let batch = OpBatch {
+        from_organ: ao,
+        ops,
+    };
+    b.import_op_batch(&batch).await.unwrap();
+    assert!(!b.batch_is_saved(&batch).await.unwrap());
+    assert_eq!(quantity(&b, &uid).await, "5");
+}
+
+#[tokio::test]
+async fn slug_claims_converge_and_release_the_next_claimant() {
+    let (a, ao) = cell().await;
+    let (b, bo) = cell().await;
+    pair(&a, &ao, &b, &bo).await;
+    let first = record(&a, "first").await;
+    let second = record(&a, "second").await;
+    sync(&a, &b, &bo).await;
+    a.change_record(
+        request(
+            &first,
+            Mutation::Slug {
+                value: Some("same-slug".into()),
+            },
+        ),
+        None,
+    )
+    .await
+    .unwrap();
+    b.change_record(
+        request(
+            &second,
+            Mutation::Slug {
+                value: Some("same-slug".into()),
+            },
+        ),
+        None,
+    )
+    .await
+    .unwrap();
+    sync(&a, &b, &bo).await;
+    sync(&b, &a, &ao).await;
+    for engine in [&a, &b] {
+        assert_eq!(
+            store::records::get(&engine.store.pool, &second)
+                .await
+                .unwrap()
+                .unwrap()
+                .slug
+                .as_deref(),
+            Some("same-slug")
+        );
+        assert!(
+            store::records::get(&engine.store.pool, &first)
+                .await
+                .unwrap()
+                .unwrap()
+                .slug
+                .is_none()
+        );
+    }
+    b.change_record(request(&second, Mutation::Slug { value: None }), None)
+        .await
+        .unwrap();
+    sync(&b, &a, &ao).await;
+    for engine in [&a, &b] {
+        assert_eq!(
+            store::records::get(&engine.store.pool, &first)
+                .await
+                .unwrap()
+                .unwrap()
+                .slug
+                .as_deref(),
+            Some("same-slug")
+        );
+    }
 }

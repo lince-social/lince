@@ -420,7 +420,7 @@ async fn threads_include_keeps_an_empty_thread_without_a_message_predicate() {
         filter: vec![Predicate::UidEq(subject)],
         fields: None,
         include: Include {
-            threads: Some(ThreadsInclude { messages_limit: 20 }),
+            threads: Some(ThreadsInclude { messages_limit: 20, ..Default::default() }),
             ..Default::default()
         },
         aggregate: None,
@@ -489,7 +489,7 @@ async fn threads_include_returns_nested_record_messages() {
         filter: vec![Predicate::UidEq(subject)],
         fields: None,
         include: Include {
-            threads: Some(ThreadsInclude { messages_limit: 20 }),
+            threads: Some(ThreadsInclude { messages_limit: 20, ..Default::default() }),
             ..Default::default()
         },
         aggregate: None,
@@ -586,7 +586,7 @@ async fn threads_include_resolves_sender_name_from_the_actor() {
         filter: vec![Predicate::UidEq(subject)],
         fields: None,
         include: Include {
-            threads: Some(ThreadsInclude { messages_limit: 20 }),
+            threads: Some(ThreadsInclude { messages_limit: 20, ..Default::default() }),
             ..Default::default()
         },
         aggregate: None,
@@ -1077,4 +1077,43 @@ async fn no_selector_returns_the_whole_row() {
     for column in ["uid", "head", "body", "quantity", "organ", "created_at"] {
         assert!(row.get(column).is_some(), "{column} must still be there");
     }
+}
+
+#[tokio::test]
+async fn thread_history_loads_newest_then_older_and_excludes_deleted_messages() {
+    let e = engine().await;
+    let record = make(&e, "thread-history", RecordKind::Plain, 1.0).await;
+    let mut threads = Vec::new();
+    let mut messages = Vec::new();
+    for title in ["A", "B"] {
+        let thread = e.act(Action::CreateThread { target: record.clone(), head: title.into() }, None).await.unwrap().created.unwrap();
+        let mut ids = Vec::new();
+        for index in 0..5 {
+            let uid = e.act(Action::CreateMessage { thread: thread.clone(), body: format!("{title}-{index}"), author: None, state: nucleus::MessageState::Finished, parent: None, references: Vec::new() }, None).await.unwrap().created.unwrap();
+            store::sqlx::query("UPDATE record SET created_at = ? WHERE uid = ?").bind(format!("2026-01-01T00:00:0{index}Z")).bind(&uid).execute(&e.store.pool).await.unwrap();
+            ids.push(uid);
+        }
+        threads.push(thread);
+        messages.push(ids);
+    }
+    let mut query = base(Source::Record, vec![Predicate::UidEq(record)]);
+    query.include.threads = Some(ThreadsInclude { messages_limit: 2, ..Default::default() });
+    let rows = protein::execute(&e.store, &query).await.unwrap();
+    let first = rows[0]["threads"].as_array().unwrap().iter().find(|thread| thread["uid"] == threads[0]).unwrap();
+    assert_eq!(first["messages_has_more"], true);
+    assert_eq!(first["messages"][0]["body"], "A-3");
+    assert_eq!(first["messages"][1]["body"], "A-4");
+    query.include.threads.as_mut().unwrap().message_limits.insert(threads[0].clone(), 10);
+    let rows = protein::execute(&e.store, &query).await.unwrap();
+    let thread_rows = rows[0]["threads"].as_array().unwrap();
+    let first = thread_rows.iter().find(|thread| thread["uid"] == threads[0]).unwrap();
+    let second = thread_rows.iter().find(|thread| thread["uid"] == threads[1]).unwrap();
+    assert_eq!(first["messages"].as_array().unwrap().len(), 5);
+    assert_eq!(first["messages_has_more"], false);
+    assert_eq!(second["messages"].as_array().unwrap().len(), 2);
+    e.act(Action::DeleteRecord { target: messages[0][3].clone() }, None).await.unwrap();
+    let rows = protein::execute(&e.store, &query).await.unwrap();
+    let first = rows[0]["threads"].as_array().unwrap().iter().find(|thread| thread["uid"] == threads[0]).unwrap();
+    assert_eq!(first["messages"].as_array().unwrap().len(), 4);
+    assert!(!first["messages"].as_array().unwrap().iter().any(|message| message["uid"] == messages[0][3]));
 }

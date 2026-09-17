@@ -213,7 +213,7 @@ async fn drive(
     let challenge = session.initialize_action_intent().await;
     write_frame(&mut send, &challenge).await?;
 
-    let mut sync_events = crate::SyncEvents::new(&engine);
+    let mut sync_events = crate::SyncEvents::new(&engine).with_presence(session.presence_changes());
     let mut next_frame = Box::pin(read_frame(&mut recv));
     let mut rate_window = std::time::Instant::now();
     let mut message_count = 0;

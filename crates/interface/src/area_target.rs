@@ -317,7 +317,7 @@ fn input(
             crate::area_mutation::disarm(
                 world,
                 handle.area,
-                "Disarmed after a target edit. Preview again to arm.",
+                "Property changes inactive after a target edit. Configured changes resume automatically.",
             );
             world.get_mut::<InfluenceArea>(handle.area).unwrap().target = last;
             let changed_mode = original.target == AttractionTarget::Center;

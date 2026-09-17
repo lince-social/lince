@@ -43,15 +43,22 @@ pub fn update(world: &mut World) {
         )>()
         .iter(world)
         .filter(|(e, a, _, _)| {
-            a.validate()
-                || world
-                    .get::<crate::protein_area::grouping::GeneratedGroup>(*e)
-                    .is_some()
+            a.enabled
+                && (a.validate()
+                    || world
+                        .get::<crate::protein_area::grouping::GeneratedGroup>(*e)
+                        .is_some())
         })
         .map(|(e, a, p, m)| {
             (
                 e,
-                a.clone(),
+                {
+                    let mut area = a.clone();
+                    if !area.attraction_enabled {
+                        area.strength = 0.0;
+                    }
+                    area
+                },
                 p.parent(),
                 m.0,
                 spatial(world, e),
@@ -214,12 +221,7 @@ pub fn update(world: &mut World) {
                 }
                 (cached.point - point).normalize_or_zero() * cached.strength
             } else {
-                let delta = destination() - point;
-                let radius = area.size[0].min(area.size[1]) * 0.5;
-                delta.normalize_or_zero()
-                    * area.strength
-                    * sign
-                    * (radius / delta.length().max(radius)).powi(2)
+                attraction_force(area, *placement, point)
             };
             total += force;
             display_force(&mut displayed, *id, total - before);
@@ -290,6 +292,44 @@ mod tests {
             ))
             .id();
         (world, root, owner, sand)
+    }
+
+    #[test]
+    fn disabled_area_and_attraction_toggle_remove_cached_forces() {
+        let (mut world, _, owner, sand) = fixture();
+        update(&mut world);
+        assert!(world.resource::<Forces>().totals[&sand].length() > 0.0);
+        world
+            .get_mut::<InfluenceArea>(owner)
+            .unwrap()
+            .attraction_enabled = false;
+        update(&mut world);
+        assert_eq!(
+            world
+                .resource::<Forces>()
+                .totals
+                .get(&sand)
+                .copied()
+                .unwrap_or_default(),
+            DVec3::ZERO
+        );
+        world
+            .get_mut::<InfluenceArea>(owner)
+            .unwrap()
+            .attraction_enabled = true;
+        update(&mut world);
+        assert!(world.resource::<Forces>().totals[&sand].length() > 0.0);
+        world.get_mut::<InfluenceArea>(owner).unwrap().enabled = false;
+        update(&mut world);
+        assert_eq!(
+            world
+                .resource::<Forces>()
+                .totals
+                .get(&sand)
+                .copied()
+                .unwrap_or_default(),
+            DVec3::ZERO
+        );
     }
 
     #[test]
@@ -513,7 +553,8 @@ pub(crate) fn blocked(
         )>()
         .iter(world)
         .any(|(entity, shield, parent, member, filter)| {
-            if entity == source
+            if !shield.enabled
+                || entity == source
                 || parent.parent() != root
                 || member.0 != workspace
                 || !contains(shield, spatial(world, entity), point)
@@ -534,4 +575,35 @@ pub(crate) fn blocked(
                     shield.rules.is_empty() || record.is_some_and(|r| shield.matches(r))
                 }
         })
+}
+
+pub(crate) fn attraction_force(area: &InfluenceArea, placement: Spatial, point: DVec3) -> DVec3 {
+    if !area.enabled || !area.attraction_enabled || area.strength == 0.0 {
+        return DVec3::ZERO;
+    }
+    let relative = local(area, placement, point);
+    let center = DVec2::from_array(area.center);
+    if area.reach.mode == ReachMode::Limited
+        && (relative.y < -area.depth - 1e-7
+            || relative.y > 1e-7
+            || !area.reaches(center + DVec2::new(relative.x, relative.z)))
+    {
+        return DVec3::ZERO;
+    }
+    let offset = area.target_position() - center;
+    let target =
+        placement.position(center) + placement.rotation() * DVec3::new(offset.x, 0.0, offset.y);
+    let delta = target - point;
+    let sign = if area.direction == crate::area::Direction::Attract {
+        1.0
+    } else {
+        -1.0
+    };
+    let falloff = if area.force_mode == crate::area_effects::ForceMode::Newtonian {
+        let radius = area.size[0].min(area.size[1]) * 0.5;
+        (radius / delta.length().max(radius)).powi(2)
+    } else {
+        1.0
+    };
+    delta.normalize_or_zero() * area.strength * sign * falloff
 }

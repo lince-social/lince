@@ -472,7 +472,7 @@ fn balance_is_advisory_and_conversation_uses_generic_threads() {
                 filter: vec![Predicate::UidEq(fixture.transfer)],
                 fields: None,
                 include: Include {
-                    threads: Some(protein::ThreadsInclude { messages_limit: 10 }),
+                    threads: Some(protein::ThreadsInclude { messages_limit: 10, ..Default::default() }),
                     ..Default::default()
                 },
                 aggregate: None,

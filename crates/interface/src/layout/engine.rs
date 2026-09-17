@@ -184,7 +184,18 @@ pub fn attach(world: &mut World, child: Entity, parent: Entity) -> Result<(), &'
 }
 
 pub fn detach(world: &mut World, entity: Entity) {
+    let size = world.get::<CanvasItem>(entity).map(|item| item.size);
     if let Some(mut layout) = world.get_mut::<LayoutBox>(entity) {
+        if layout.parent.is_some()
+            && let Some(size) = size
+        {
+            for (index, axis) in layout.rules.axes.iter_mut().enumerate() {
+                if axis.sizing == Sizing::Fill {
+                    axis.sizing = Sizing::Fixed;
+                    axis.size = size[index].clamp(axis.min, axis.max);
+                }
+            }
+        }
         layout.parent = None;
     }
     super::records::remember(world, entity);
@@ -456,7 +467,7 @@ pub(super) fn resolve(world: &mut World) {
                     crate::area_mutation::disarm(
                         world,
                         entity,
-                        "Disarmed after a layout change. Preview again to arm.",
+                        "Property changes will resume with the updated layout.",
                     );
                 }
             }

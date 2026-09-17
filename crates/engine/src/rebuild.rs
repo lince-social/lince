@@ -60,6 +60,8 @@ fn as_wire(row: OpRow) -> WireOp {
 
 impl Engine {
     pub async fn rebuild_read_model(&self) -> Result<RebuildReport, EngineError> {
+        let _serial = self.import_lock.lock().await;
+        self.prepare_property_rebuild().await?;
         let mut report = RebuildReport::default();
         let mut docs: Vec<String> = Vec::new();
         for row in sync_ops::all_by_hlc(&self.store.pool).await? {
@@ -111,6 +113,12 @@ impl Engine {
     pub async fn audit_read_model(&self) -> Result<AuditReport, EngineError> {
         let mut report = AuditReport::default();
         for tip in sync_ops::record_field_tips(&self.store.pool).await? {
+            if tip.field == "slug" {
+                let registered: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM record_property WHERE record_uid = ? AND property = 'slug')").bind(&tip.uid).fetch_one(&self.store.pool).await?;
+                if registered {
+                    continue;
+                }
+            }
             if (tip.field == "head" || tip.field == "body")
                 && store::record_docs::has_crdt_history(&self.store.pool, &tip.uid).await?
             {

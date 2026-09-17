@@ -161,7 +161,9 @@ pub(crate) fn clear(world: &mut World, root: Entity) {
 }
 
 pub(crate) fn screen_bounds(world: &World, root: Entity, entity: Entity) -> Option<Rect> {
-    if let Some(bounds) = crate::topology::presentation::bounds(world, entity) { return Some(bounds); }
+    if let Some(bounds) = crate::topology::presentation::bounds(world, entity) {
+        return Some(bounds);
+    }
     let viewport = crate::inspection::bounds(world, root)?;
     let item = world.get::<CanvasItem>(entity)?;
     let view = *world.get::<CanvasView>(root)?;
@@ -182,11 +184,23 @@ pub(crate) fn screen_bounds(world: &World, root: Entity, entity: Entity) -> Opti
     Some(Rect::from_corners(top, top + item.size * view.zoom as f32))
 }
 
-pub(crate) fn selection_volume(world: &World, root: Entity, rect: Rect) -> Option<(bevy::math::DVec3, bevy::math::DVec3)> {
-    let view = world.get::<crate::topology::view::View>(root).copied().unwrap_or_default();
+pub(crate) fn selection_volume(
+    world: &World,
+    root: Entity,
+    rect: Rect,
+) -> Option<(bevy::math::DVec3, bevy::math::DVec3)> {
+    let view = world
+        .get::<crate::topology::view::View>(root)
+        .copied()
+        .unwrap_or_default();
     let mut min = bevy::math::DVec3::splat(f64::INFINITY);
     let mut max = bevy::math::DVec3::splat(f64::NEG_INFINITY);
-    for point in [rect.min, rect.max, Vec2::new(rect.min.x, rect.max.y), Vec2::new(rect.max.x, rect.min.y)] {
+    for point in [
+        rect.min,
+        rect.max,
+        Vec2::new(rect.min.x, rect.max.y),
+        Vec2::new(rect.max.x, rect.min.y),
+    ] {
         let point = crate::topology::input::plane_point(world, root, point, view.plane)?;
         min = min.min(point);
         max = max.max(point);
@@ -196,20 +210,36 @@ pub(crate) fn selection_volume(world: &World, root: Entity, rect: Rect) -> Optio
     Some((min, max))
 }
 
-pub(crate) fn active_volume(world: &World) -> Option<(Entity, bevy::math::DVec3, bevy::math::DVec3)> {
+pub(crate) fn active_volume(
+    world: &World,
+) -> Option<(Entity, bevy::math::DVec3, bevy::math::DVec3)> {
     let gesture = world.get_resource::<SelectionGesture>()?.0.as_ref()?;
-    let (min, max) = selection_volume(world, gesture.root, Rect::from_corners(gesture.start.position, gesture.end))?;
+    let (min, max) = selection_volume(
+        world,
+        gesture.root,
+        Rect::from_corners(gesture.start.position, gesture.end),
+    )?;
     Some((gesture.root, min, max))
 }
 
 fn inside(world: &World, root: Entity, rect: Rect) -> Vec<Entity> {
-    if world.get::<crate::topology::presentation::SpatialRoot>(root).is_some() {
+    if world
+        .get::<crate::topology::presentation::SpatialRoot>(root)
+        .is_some()
+    {
         if let Some((min, max)) = selection_volume(world, root, rect) {
-            let selection = world.get::<Children>(root).map_or_else(Vec::new, |children| children.iter().filter(|e| {
-                eligible(world, root, *e) && crate::topology::position(world, *e).is_some_and(|p| {
-                    p.cmpge(min).all() && p.cmple(max).all()
-                })
-            }).collect());
+            let selection = world
+                .get::<Children>(root)
+                .map_or_else(Vec::new, |children| {
+                    children
+                        .iter()
+                        .filter(|e| {
+                            eligible(world, root, *e)
+                                && crate::topology::position(world, *e)
+                                    .is_some_and(|p| p.cmpge(min).all() && p.cmple(max).all())
+                        })
+                        .collect()
+                });
             return expand_groups(world, root, selection);
         }
         return Vec::new();
@@ -409,6 +439,7 @@ fn input(
 pub enum GroupAction {
     Group,
     Ungroup,
+    Detach,
 }
 
 pub(crate) fn options(world: &World, root: Entity, target: Entity) -> (bool, bool) {
@@ -441,6 +472,7 @@ impl Action for GroupAction {
             name: match self {
                 Self::Group => "Group selected Sands",
                 Self::Ungroup => "Ungroup Sands",
+                Self::Detach => "Ungroup this component",
             }
             .into(),
         }]
@@ -455,6 +487,11 @@ impl Action for GroupAction {
         {
             return;
         }
+        if matches!(self, Self::Detach) {
+            detach(world, target);
+            set_selection(world, root, vec![target]);
+            return;
+        }
         let mut selection = selected(world, root);
         if !selection.contains(&target) {
             selection = group_members(world, root, target);
@@ -465,8 +502,15 @@ impl Action for GroupAction {
                 if expanded.len() < 2 {
                     return;
                 }
-                if expanded.iter().any(|entity| world.get::<Pinned>(*entity).is_some()) {
-                    crate::notifications::report(world, "Topology", "Unpin Sands from the screen before grouping them in space.");
+                if expanded
+                    .iter()
+                    .any(|entity| world.get::<Pinned>(*entity).is_some())
+                {
+                    crate::notifications::report(
+                        world,
+                        "Topology",
+                        "Unpin Sands from the screen before grouping them in space.",
+                    );
                     return;
                 }
                 let mut id = [0; 16];
@@ -483,6 +527,7 @@ impl Action for GroupAction {
                 }
                 crate::topology::groups::attach(world, &expanded);
             }
+            Self::Detach => unreachable!(),
             Self::Ungroup => {
                 let groups: Vec<_> = expanded
                     .iter()
@@ -490,12 +535,24 @@ impl Action for GroupAction {
                     .collect();
                 crate::workspace::regroup_saved(world, root, &groups, None);
                 for entity in &expanded {
-                    world.entity_mut(*entity).remove::<(SandGroup, crate::topology::Attachment, crate::topology::groups::GroupPose)>();
+                    world.entity_mut(*entity).remove::<(
+                        SandGroup,
+                        crate::topology::Attachment,
+                        crate::topology::groups::GroupPose,
+                    )>();
                 }
             }
         }
         set_selection(world, root, expanded);
     }
+}
+
+pub(crate) fn detach(world: &mut World, target: Entity) {
+    world.entity_mut(target).remove::<(
+        SandGroup,
+        crate::topology::Attachment,
+        crate::topology::groups::GroupPose,
+    )>();
 }
 
 fn draw(world: &mut World) {
@@ -591,11 +648,23 @@ pub(crate) fn transform_members(
     if !eligible(world, root, entity) {
         return;
     }
-    if world.get::<crate::topology::presentation::SpatialRoot>(root).is_some()
-        && world.get::<crate::topology::groups::GroupPose>(entity).is_some() {
-        if let Some(mut item) = world.get_mut::<CanvasItem>(entity) { item.position = before.position; }
+    if world
+        .get::<crate::topology::presentation::SpatialRoot>(root)
+        .is_some()
+        && world
+            .get::<crate::topology::groups::GroupPose>(entity)
+            .is_some()
+    {
+        if let Some(mut item) = world.get_mut::<CanvasItem>(entity) {
+            item.position = before.position;
+        }
         let delta = after.position - before.position;
-        crate::topology::groups::transform(world, entity, bevy::math::DVec3::new(delta.x, 0.0, delta.y), bevy::math::DQuat::IDENTITY);
+        crate::topology::groups::transform(
+            world,
+            entity,
+            bevy::math::DVec3::new(delta.x, 0.0, delta.y),
+            bevy::math::DQuat::IDENTITY,
+        );
         return;
     }
     let Some(view) = world.get::<CanvasView>(root).copied() else {
@@ -955,6 +1024,25 @@ pub(crate) mod tests {
         assert_eq!(app.world().get::<SandGroup>(second), Some(&group));
         assert_eq!(app.world().get::<Text>(text).unwrap().0, "Keep this");
         assert_eq!(app.world().get::<ChildOf>(text).unwrap().parent(), first);
+    }
+
+    #[test]
+    fn detaching_one_component_preserves_the_other_members() {
+        let (mut app, root, first, second) = fixture();
+        set_selection(app.world_mut(), root, vec![first, second]);
+        GroupAction::Group.apply(app.world_mut(), first);
+        let group = *app.world().get::<SandGroup>(second).unwrap();
+        let position = crate::topology::position(app.world(), first);
+        GroupAction::Detach.apply(app.world_mut(), first);
+        assert!(app.world().get::<SandGroup>(first).is_none());
+        assert!(
+            app.world()
+                .get::<crate::topology::Attachment>(first)
+                .is_none()
+        );
+        assert_eq!(app.world().get::<SandGroup>(second), Some(&group));
+        assert_eq!(crate::topology::position(app.world(), first), position);
+        assert_eq!(selected(app.world(), root), vec![first]);
     }
 
     #[cfg_attr(test, test)]

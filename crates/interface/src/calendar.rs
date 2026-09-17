@@ -225,7 +225,11 @@ impl Action for Command {
             return;
         }
         if matches!(self, Self::Close) {
-            world.despawn(owner);
+            if world.get::<Picker>(owner).is_some() {
+                world.despawn(owner);
+            } else if let Some(root) = world.get::<ChildOf>(owner).map(ChildOf::parent) {
+                crate::deletion::request(world, root, vec![owner]);
+            }
             return;
         }
         let Some(mut model) = world.get::<CalendarSand>(owner).map(|s| s.0.clone()) else {

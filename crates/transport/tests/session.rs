@@ -5,6 +5,103 @@ use engine::actions::Action;
 use nucleus::RecordKind;
 use transport::{ClientMessage, LaneHub, ServerMessage, Session};
 
+#[tokio::test]
+async fn record_cursors_are_ephemeral_identified_and_removed_on_departure() {
+    let (engine, hub) = setup().await;
+    let uid = engine
+        .act(
+            Action::CreateRecord {
+                slug: None,
+                kind: RecordKind::Plain,
+                head: "Cursors".into(),
+                body: "text".into(),
+                quantity: 0.0,
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    let mut writer = Session::new(engine.clone(), hub.clone(), "writer-session", None);
+    let mut reader = Session::new(engine.clone(), hub.clone(), "reader-session", None);
+    for session in [&mut writer, &mut reader] {
+        session
+            .handle(ClientMessage::CollabJoin {
+                id: "join".into(),
+                record_uid: uid.clone(),
+            })
+            .await;
+    }
+    let before = store::sync_ops::max_seq(&engine.store.pool).await.unwrap();
+    writer
+        .handle(ClientMessage::CollabPresence {
+            record_uid: uid.clone(),
+            property: "body".into(),
+            anchor: "anchor".into(),
+            focus: "focus".into(),
+        })
+        .await;
+    let messages = reader.tick_ephemeral().await;
+    assert!(
+        matches!(messages.as_slice(), [ServerMessage::CollabCursors { record_uid, cursors }] if record_uid == &uid && cursors.len() == 1 && cursors[0].session == "writer-session")
+    );
+    assert_eq!(
+        store::sync_ops::max_seq(&engine.store.pool).await.unwrap(),
+        before
+    );
+    assert!(reader.tick_ephemeral().await.is_empty());
+    drop(writer);
+    assert!(
+        matches!(reader.tick_ephemeral().await.as_slice(), [ServerMessage::CollabCursors { cursors, .. }] if cursors.is_empty())
+    );
+}
+
+#[tokio::test]
+async fn cursor_updates_need_a_join_and_have_payload_limits() {
+    let (engine, hub) = setup().await;
+    let uid = engine
+        .act(
+            Action::CreateRecord {
+                slug: None,
+                kind: RecordKind::Plain,
+                head: "Cursors".into(),
+                body: "text".into(),
+                quantity: 0.0,
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    let mut session = Session::new(engine, hub.clone(), "session", None);
+    session
+        .handle(ClientMessage::CollabPresence {
+            record_uid: uid.clone(),
+            property: "body".into(),
+            anchor: "a".into(),
+            focus: "b".into(),
+        })
+        .await;
+    assert!(hub.cursors(&uid).is_empty());
+    session
+        .handle(ClientMessage::CollabJoin {
+            id: "join".into(),
+            record_uid: uid.clone(),
+        })
+        .await;
+    session
+        .handle(ClientMessage::CollabPresence {
+            record_uid: uid.clone(),
+            property: "body".into(),
+            anchor: "x".repeat(2049),
+            focus: "b".into(),
+        })
+        .await;
+    assert!(hub.cursors(&uid).is_empty());
+}
+
 async fn setup() -> (Arc<Engine>, Arc<LaneHub>) {
     let engine = Arc::new(Engine::open_memory().await.unwrap());
     (engine, Arc::new(LaneHub::new()))
@@ -499,9 +596,10 @@ async fn refresh_restores_joined_documents_after_missed_facts() {
         .unwrap();
     let refreshed = session.refresh().await;
     assert!(
-        matches!(refreshed.as_slice(), [ServerMessage::CollabChange { record_uid, snapshot_base64 }]
-        if record_uid == &uid && snapshot_base64 != before)
+        matches!(refreshed.as_slice(), [ServerMessage::CollabChange { record_uid, update_base64, .. }]
+        if record_uid == &uid && update_base64 != before)
     );
+    assert!(session.refresh().await.is_empty());
     session
         .handle(ClientMessage::CollabLeave { record_uid: uid })
         .await;

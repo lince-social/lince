@@ -223,6 +223,9 @@ async fn castle_filters_sorts_saves_loads_and_tracks_backend_changes() {
     assert_eq!(result.rows[0]["value"], "8");
     assert_eq!(result.rows[0]["count"], 2);
     ui::Command::Delete.apply(app.world_mut(), castle);
+    assert!(app.world().get_entity(castle).is_ok());
+    let root = app.world().get::<ChildOf>(castle).unwrap().parent();
+    crate::deletion::Decision(true).apply(app.world_mut(), root);
     app.update();
     assert!(app.world().resource::<Requests>().owners.is_empty());
 }

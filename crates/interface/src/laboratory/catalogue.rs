@@ -1,5 +1,9 @@
 pub fn catalogue() -> Vec<super::Case> {
     let mut cases = Vec::new();
+    crate::instinct::tests::laboratory_cases(&mut cases);
+    crate::description::tests::laboratory_cases(&mut cases);
+    crate::thread_castle::tests::laboratory_cases(&mut cases);
+    crate::tutorial::tests::laboratory_cases(&mut cases);
     crate::actions::tests::laboratory_cases(&mut cases);
     crate::area::tests::laboratory_cases(&mut cases);
     crate::area_effects::tests::laboratory_cases(&mut cases);
@@ -39,6 +43,7 @@ pub fn catalogue() -> Vec<super::Case> {
     crate::sand_placement::tests::laboratory_cases(&mut cases);
     crate::slider::tests::laboratory_cases(&mut cases);
     crate::time_limit::tests::laboratory_cases(&mut cases);
+    crate::topology::input::tests::laboratory_cases(&mut cases);
     crate::token_metrics::tests::laboratory_cases(&mut cases);
     crate::token_style::tests::laboratory_cases(&mut cases);
     crate::tokens::tests::laboratory_cases(&mut cases);

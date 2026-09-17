@@ -254,8 +254,11 @@ async fn a_granted_conversation_syncs_to_its_contact() {
         .await
         .expect("push");
     match applied {
-        WireResponse::Applied { applied } => assert!(applied > 0, "nothing applied"),
-        other => panic!("expected Applied, got {other:?}"),
+        WireResponse::BatchSaved {
+            applied,
+            complete: true,
+        } => assert!(applied > 0, "nothing applied"),
+        other => panic!("expected a saved batch, got {other:?}"),
     }
 
     let messages: Vec<String> = store::replica::records_in_root(&b.store.pool, &conversation)
@@ -537,7 +540,9 @@ async fn a_conversation_orders_by_hlc_not_by_a_machines_clock() {
         )
         .await
         .expect("initialize the accepted root");
-    assert!(matches!(initialized, WireResponse::Applied { applied } if applied > 0));
+    assert!(
+        matches!(initialized, WireResponse::BatchSaved { applied, complete: true } if applied > 0)
+    );
     for uid in [&conversation, &thread] {
         let copied = store::records::get(&b.store.pool, uid)
             .await

@@ -20,6 +20,7 @@ pub struct PointerState {
     pub hit: Option<(Entity, Vec3)>,
     cursor: Option<Location>,
     pub drag: Option<(Entity, DVec3)>,
+    pending_drag: Option<(Entity, Vec2, DVec3)>,
     last: Vec2,
     pan: Option<Vec2>,
 }
@@ -102,6 +103,7 @@ pub fn pointer(
     let Some(position) = window.cursor_position() else {
         state.hit = None;
         state.drag = None;
+        state.pending_drag = None;
         state.pan = None;
         if let Some(location) = state.cursor.take() {
             inputs.write(PointerInput::new(
@@ -155,7 +157,11 @@ pub fn pointer(
                 hit_owner = Some((entity, ray.get_point(distance as f32)));
             }
         }
-        let filter = |entity| owners.contains(entity);
+        let filter = |entity| {
+            owners
+                .get(entity)
+                .is_ok_and(|(owner, _)| !areas.contains(owner.0))
+        };
         if let Some((mesh, hit)) = raycast
             .cast_ray(ray, &MeshRayCastSettings::default().with_filter(&filter))
             .first()
@@ -265,7 +271,8 @@ pub fn pointer(
                 },
             ));
         }
-        if let WindowEvent::MouseButtonInput(input) = event
+        if state.drag.is_none()
+            && let WindowEvent::MouseButtonInput(input) = event
             && let Some(location) = &state.cursor
         {
             let button = match input.button {
@@ -283,6 +290,12 @@ pub fn pointer(
 }
 
 pub fn gestures(world: &mut World, mut cursor: Local<MessageCursor<PointerInput>>) {
+    if world
+        .resource::<ButtonInput<KeyCode>>()
+        .just_pressed(KeyCode::Escape)
+    {
+        world.resource_mut::<PointerState>().pending_drag = None;
+    }
     if world
         .resource::<ButtonInput<KeyCode>>()
         .just_pressed(KeyCode::Escape)
@@ -330,9 +343,14 @@ pub fn gestures(world: &mut World, mut cursor: Local<MessageCursor<PointerInput>
                 let Some(root) = world.get::<ChildOf>(entity).map(ChildOf::parent) else {
                     continue;
                 };
-                if !world
-                    .get::<crate::edit_mode::EditMode>(root)
-                    .is_some_and(|m| m.enabled)
+                let task = world.get::<crate::kanban::TaskCard>(entity).is_some();
+                if task && editing_text(world) {
+                    continue;
+                }
+                if !task
+                    && !world
+                        .get::<crate::edit_mode::EditMode>(root)
+                        .is_some_and(|m| m.enabled)
                 {
                     continue;
                 }
@@ -340,13 +358,31 @@ pub fn gestures(world: &mut World, mut cursor: Local<MessageCursor<PointerInput>
                     continue;
                 };
                 if let Some(point) = plane_point(world, root, event.location.position, position.y) {
-                    world.resource_mut::<PointerState>().drag = Some((entity, point));
+                    if task {
+                        world.resource_mut::<PointerState>().pending_drag =
+                            Some((entity, event.location.position, point));
+                    } else {
+                        world.resource_mut::<PointerState>().drag = Some((entity, point));
+                    }
                 }
             }
             PointerAction::Press(PointerButton::Secondary) => {
                 world.resource_mut::<PointerState>().pan = Some(event.location.position);
             }
             PointerAction::Move { .. } => {
+                if let Some((entity, start, point)) = world.resource::<PointerState>().pending_drag
+                    && event.location.position.distance(start) >= 5.0
+                {
+                    world.resource_mut::<PointerState>().pending_drag = None;
+                    crate::kanban::begin_drag(world, entity, point);
+                    if let Some(location) = world.resource::<PointerState>().cursor.clone() {
+                        world.write_message(PointerInput::new(
+                            CONTENT_POINTER,
+                            location,
+                            PointerAction::Cancel,
+                        ));
+                    }
+                }
                 if let Some(last) = world.resource::<PointerState>().pan {
                     let root = world
                         .query_filtered::<Entity, With<SpatialRoot>>()
@@ -390,6 +426,7 @@ pub fn gestures(world: &mut World, mut cursor: Local<MessageCursor<PointerInput>
             PointerAction::Release(_) | PointerAction::Cancel => {
                 let mut state = world.resource_mut::<PointerState>();
                 state.drag = None;
+                state.pending_drag = None;
                 state.pan = None;
             }
             PointerAction::Scroll { y, .. } => {
@@ -398,13 +435,11 @@ pub fn gestures(world: &mut World, mut cursor: Local<MessageCursor<PointerInput>
                     .iter(world)
                     .next();
                 if let Some(root) = root
+                    && top == Some(root)
+                    && hit.is_none()
                     && !world
                         .get::<super::view::View>(root)
                         .is_some_and(|view| view.spatial)
-                    && (hit.is_none()
-                        || world
-                            .get::<crate::edit_mode::EditMode>(root)
-                            .is_some_and(|mode| mode.enabled))
                 {
                     let mut view = world.get_mut::<crate::canvas::CanvasView>(root).unwrap();
                     let zoom = view.zoom * (f64::from(y).clamp(-10.0, 10.0) * 0.1).exp();
@@ -413,5 +448,220 @@ pub fn gestures(world: &mut World, mut cursor: Local<MessageCursor<PointerInput>
             }
             _ => {}
         }
+    }
+}
+
+fn editing_text(world: &World) -> bool {
+    world
+        .resource::<bevy::picking::hover::HoverMap>()
+        .get(&CONTENT_POINTER)
+        .is_some_and(|hits| {
+            hits.keys().any(|entity| {
+                let mut cursor = Some(*entity);
+                while let Some(entity) = cursor {
+                    if world.get::<bevy::text::EditableText>(entity).is_some() {
+                        return true;
+                    }
+                    cursor = world.get::<ChildOf>(entity).map(ChildOf::parent);
+                }
+                false
+            })
+        })
+}
+
+pub(crate) mod tests {
+    use super::*;
+    use crate::canvas::CanvasView;
+
+    #[test]
+    fn task_body_drag_waits_for_movement_and_cancels_the_content_click() {
+        use bevy::camera::CameraProjection;
+        let mut app = App::new();
+        app.init_resource::<PointerState>()
+            .init_resource::<ButtonInput<KeyCode>>()
+            .init_resource::<bevy::picking::hover::HoverMap>()
+            .add_message::<PointerInput>()
+            .add_systems(Update, gestures);
+        let root = app
+            .world_mut()
+            .spawn((SpatialRoot, CanvasView::default()))
+            .id();
+        let mut projection = OrthographicProjection::default_3d();
+        projection.update(800.0, 600.0);
+        let mut camera = Camera::default();
+        camera.computed.target_info = Some(bevy::camera::RenderTargetInfo {
+            physical_size: UVec2::new(800, 600),
+            scale_factor: 1.0,
+        });
+        camera.computed.clip_from_view = projection.get_clip_from_view();
+        let camera = app
+            .world_mut()
+            .spawn((
+                camera,
+                GlobalTransform::from(
+                    Transform::from_xyz(0.0, 1000.0, 0.0).looking_at(Vec3::ZERO, Vec3::NEG_Z),
+                ),
+            ))
+            .id();
+        app.insert_resource(SceneCamera(camera));
+        let card = app
+            .world_mut()
+            .spawn((
+                crate::kanban::TaskCard,
+                crate::canvas::CanvasItem {
+                    position: bevy::math::DVec2::ZERO,
+                    size: Vec2::new(316.0, 80.0),
+                },
+                ChildOf(root),
+            ))
+            .id();
+        app.world_mut().resource_mut::<PointerState>().hit = Some((card, Vec3::ZERO));
+        app.world_mut()
+            .resource_mut::<bevy::picking::hover::HoverMap>()
+            .entry(PointerId::Mouse)
+            .or_default()
+            .insert(root, HitData::new(camera, 0.0, None, None));
+        let mut location = Location {
+            target: bevy::camera::NormalizedRenderTarget::Image(Handle::<Image>::default().into()),
+            position: Vec2::new(400.0, 300.0),
+        };
+        app.world_mut().resource_mut::<PointerState>().cursor = Some(location.clone());
+        app.world_mut().write_message(PointerInput::new(
+            PointerId::Mouse,
+            location.clone(),
+            PointerAction::Press(PointerButton::Primary),
+        ));
+        app.update();
+        assert!(
+            app.world()
+                .resource::<PointerState>()
+                .pending_drag
+                .is_some()
+        );
+        assert!(app.world().resource::<PointerState>().drag.is_none());
+        location.position.x += 3.0;
+        app.world_mut().write_message(PointerInput::new(
+            PointerId::Mouse,
+            location.clone(),
+            PointerAction::Move {
+                delta: Vec2::new(3.0, 0.0),
+            },
+        ));
+        app.update();
+        assert!(app.world().resource::<PointerState>().drag.is_none());
+        location.position.x += 10.0;
+        app.world_mut().write_message(PointerInput::new(
+            PointerId::Mouse,
+            location.clone(),
+            PointerAction::Move {
+                delta: Vec2::new(10.0, 0.0),
+            },
+        ));
+        app.update();
+        assert_eq!(
+            app.world()
+                .resource::<PointerState>()
+                .drag
+                .map(|(entity, _)| entity),
+            Some(card)
+        );
+        assert!(
+            app.world()
+                .get::<crate::canvas::CanvasItem>(card)
+                .unwrap()
+                .position
+                .x
+                > 0.0
+        );
+        assert!(
+            app.world()
+                .get::<crate::area_mutation::HeldPoint>(card)
+                .is_some()
+        );
+        let mut messages = MessageCursor::<PointerInput>::default();
+        assert!(
+            messages
+                .read(app.world().resource::<Messages<PointerInput>>())
+                .any(|event| event.pointer_id == CONTENT_POINTER
+                    && matches!(event.action, PointerAction::Cancel))
+        );
+        app.world_mut().write_message(PointerInput::new(
+            PointerId::Mouse,
+            location,
+            PointerAction::Release(PointerButton::Primary),
+        ));
+        app.update();
+        assert!(app.world().resource::<PointerState>().drag.is_none());
+        assert!(
+            app.world()
+                .resource::<PointerState>()
+                .pending_drag
+                .is_none()
+        );
+    }
+
+    #[cfg_attr(test, test)]
+    fn wheel_zoom_only_accepts_uncovered_canvas_background() {
+        let mut app = App::new();
+        app.init_resource::<PointerState>()
+            .init_resource::<ButtonInput<KeyCode>>()
+            .init_resource::<bevy::picking::hover::HoverMap>()
+            .add_message::<PointerInput>()
+            .add_systems(Update, gestures);
+        let root = app
+            .world_mut()
+            .spawn((SpatialRoot, CanvasView::default()))
+            .id();
+        let panel = app.world_mut().spawn_empty().id();
+        let sand = app.world_mut().spawn_empty().id();
+        for (target, hit, zooms) in [
+            (Some(root), None, true),
+            (Some(panel), None, false),
+            (Some(panel), Some(sand), false),
+            (Some(root), Some(sand), false),
+            (Some(sand), Some(sand), false),
+            (None, None, false),
+        ] {
+            app.world_mut().get_mut::<CanvasView>(root).unwrap().zoom = 1.0;
+            app.world_mut().resource_mut::<PointerState>().hit =
+                hit.map(|entity| (entity, Vec3::ZERO));
+            let mut hover = app
+                .world_mut()
+                .resource_mut::<bevy::picking::hover::HoverMap>();
+            hover.clear();
+            if let Some(target) = target {
+                hover
+                    .entry(PointerId::Mouse)
+                    .or_default()
+                    .insert(target, HitData::new(root, 0.0, None, None));
+            }
+            app.world_mut().write_message(PointerInput::new(
+                PointerId::Mouse,
+                Location {
+                    target: bevy::camera::NormalizedRenderTarget::Image(
+                        bevy::camera::ImageRenderTarget {
+                            handle: Handle::default(),
+                            scale_factor: 1.0,
+                        },
+                    ),
+                    position: Vec2::ZERO,
+                },
+                PointerAction::Scroll {
+                    unit: bevy::input::mouse::MouseScrollUnit::Line,
+                    x: 0.0,
+                    y: 1.0,
+                    phase: bevy::input::touch::TouchPhase::Moved,
+                },
+            ));
+            app.update();
+            assert_eq!(
+                app.world().get::<CanvasView>(root).unwrap().zoom > 1.0,
+                zooms
+            );
+        }
+    }
+
+    crate::laboratory_cases! {
+        wheel_zoom_only_accepts_uncovered_canvas_background,
     }
 }

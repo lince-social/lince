@@ -77,6 +77,9 @@ struct EditorSize {
     measuring: bool,
 }
 
+#[derive(Component)]
+struct PropertyContainer(String);
+
 fn baseline(data: &Value, property: &str) -> Value {
     let mut value = serde_json::json!({property: data[property]});
     if matches!(property, "start_date" | "due_date" | "estimate_min") {
@@ -92,7 +95,6 @@ pub(super) struct PropertyEditor {
     baseline: Value,
     pending: Option<String>,
     focused: bool,
-    conflict: bool,
 }
 
 pub(super) fn display(value: &Value) -> String {
@@ -159,7 +161,7 @@ pub(super) fn content(
     binding: Option<RecordBinding>,
 ) {
     if config.task_cards {
-        crate::kanban::card_controls(world, row);
+        world.entity_mut(row).insert(crate::kanban::TaskCard);
     }
     for property in &config.bindings {
         let summary_button = config.task_cards.then(|| {
@@ -264,6 +266,7 @@ pub(super) fn content(
                     ..default()
                 },
                 ScrollPosition::default(),
+                PropertyContainer(property.property.clone()),
                 ChildOf(row),
                 Tooltip(
                     protein::record_schema::fields()
@@ -290,6 +293,31 @@ pub(super) fn content(
         }
         let text = display(&data[&property.property]);
         let editable = property.editable && binding.is_some();
+        if config.show_labels
+            && !matches!(
+                property.property.as_str(),
+                "threads" | "assertions" | "assignees" | "work_logs"
+            )
+        {
+            let label = protein::record_schema::fields()
+                .into_iter()
+                .find(|field| field.key == property.property)
+                .map_or(property.property.clone(), |field| field.title.into());
+            let label = crate::edit_mode::label(world, container, &label, 13.0);
+            world
+                .entity_mut(label)
+                .insert(crate::record_binding::BindingStatus);
+        }
+        if let Some(binding) = binding.clone() {
+            if property.property == "work_timer" {
+                crate::work_timer::populate(world, container, Some(binding), data, None);
+                continue;
+            }
+            if property.property == "threads" {
+                crate::thread_castle::populate(world, container, binding, data);
+                continue;
+            }
+        }
         if editable
             && matches!(
                 property.property.as_str(),
@@ -306,6 +334,20 @@ pub(super) fn content(
             );
             continue;
         }
+        if property.property == "body" && !editable {
+            crate::description::spawn(
+                world,
+                container,
+                &text,
+                crate::description::Context {
+                    owner: row,
+                    source: binding
+                        .as_ref()
+                        .map_or(Source::Local, |binding| binding.source.clone()),
+                },
+            );
+            continue;
+        }
         let text_entity = if editable {
             let bundle =
                 crate::sand::text_editor(&text, world.resource::<crate::theme::Typography>(), 0);
@@ -314,9 +356,21 @@ pub(super) fn content(
             editor.max_characters = Some(65_536);
             editor.visible_lines = None;
             world.entity_mut(entity).insert((
-                PropertyEditor { property: property.property.clone(), observed: text, baseline: baseline(data, &property.property), pending: None, focused: false, conflict: false },
+                PropertyEditor { property: property.property.clone(), observed: text, baseline: baseline(data, &property.property), pending: None, focused: false },
                 binding.clone().unwrap(), Tooltip("Edit this Record property. Leaving the field saves it through its Organ; Escape restores the current value.".into()),
             ));
+            if matches!(property.property.as_str(), "head" | "body")
+                && crate::record_binding::enabled(world)
+            {
+                let status = crate::edit_mode::label(world, container, "Opening Record…", 12.0);
+                crate::record_binding::attach(
+                    world,
+                    entity,
+                    binding.clone().unwrap(),
+                    &property.property,
+                    Some(status),
+                );
+            }
             entity
         } else {
             let font = world.resource::<crate::theme::Typography>().text(18.0);
@@ -361,7 +415,18 @@ pub(super) fn content(
                 measuring: false,
             });
         }
-        if editable {
+        if property.property == "body" && editable {
+            crate::description::attach_editor(
+                world,
+                container,
+                text_entity,
+                crate::description::Context {
+                    owner: row,
+                    source: binding.as_ref().unwrap().source.clone(),
+                },
+            );
+        }
+        if editable && !matches!(property.property.as_str(), "head" | "body") {
             if matches!(property.property.as_str(), "start_date" | "due_date") {
                 let button =
                     crate::calendar::date_button(world, row, text_entity, &property.property);
@@ -382,6 +447,16 @@ pub(super) fn content(
                 world.entity_mut(save).insert(ChildOf(container));
             }
         }
+    }
+    if let Some(binding) = binding.clone() {
+        let button = world
+            .spawn((
+                Square,
+                ActionButton::new(row, crate::actions![crate::full_record::Open(binding)]),
+                ChildOf(row),
+            ))
+            .id();
+        crate::edit_mode::label(world, button, "Open Record", 14.0);
     }
     if config.delete_button {
         if let Some(binding) = binding {
@@ -501,6 +576,8 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
                         },
                         crate::token_style::background(Token::Surface),
                         binding.clone(),
+                        super::placement::Pending,
+                        Visibility::Hidden,
                     ))
                     .observe(click)
                     .id();
@@ -581,30 +658,48 @@ fn refresh(world: &mut World, row: Entity, data: &Value) {
             }
         }
     }
-    let config = world.get::<Row>(row).unwrap().config.clone();
     let children: Vec<_> = world
         .get::<Children>(row)
         .into_iter()
         .flatten()
         .copied()
-        .filter(|child| world.get::<ScrollPosition>(*child).is_some())
+        .filter_map(|child| {
+            world
+                .get::<PropertyContainer>(child)
+                .map(|property| (child, property.0.clone()))
+        })
         .collect();
-    for (container, property) in children.into_iter().zip(&config.bindings) {
+    for (container, property) in children {
+        if crate::work_timer::refresh(world, container, data)
+            || crate::thread_castle::refresh(world, container, data)
+        {
+            continue;
+        }
         if property_actions::refresh(world, container, data) {
             continue;
         }
-        let text = display(&data[&property.property]);
+        let text = display(&data[&property]);
+        if property == "body" {
+            crate::description::refresh_readonly(world, container, &text);
+        }
         for entity in descendants(world, container) {
+            if crate::description::protects(world, entity) {
+                continue;
+            }
+            if world
+                .get::<crate::record_binding::BindingStatus>(entity)
+                .is_some()
+            {
+                continue;
+            }
+            if crate::record_binding::active(world, entity) {
+                continue;
+            }
             if let Some(editor) = world.get::<PropertyEditor>(entity) {
                 let dirty = world
                     .get::<EditableText>(entity)
                     .is_some_and(|value| value.value().to_string() != editor.observed);
                 if editor.pending.is_some() || dirty {
-                    if editor.pending.is_none()
-                        && data[&property.property] != editor.baseline[&property.property]
-                    {
-                        world.get_mut::<PropertyEditor>(entity).unwrap().conflict = true;
-                    }
                     continue;
                 }
                 world
@@ -614,7 +709,7 @@ fn refresh(world: &mut World, row: Entity, data: &Value) {
                     .set_text(&text);
                 let mut editor = world.get_mut::<PropertyEditor>(entity).unwrap();
                 editor.observed = text.clone();
-                editor.baseline = baseline(data, &property.property);
+                editor.baseline = baseline(data, &property);
             } else if let Some(mut value) = world.get_mut::<Text>(entity) {
                 value.0 = text.clone();
             }
@@ -623,6 +718,9 @@ fn refresh(world: &mut World, row: Entity, data: &Value) {
 }
 
 pub(super) fn action_finished(world: &mut World, entity: Entity, error: Option<String>) {
+    if crate::thread_castle::finished(world, entity, error.clone()) {
+        return;
+    }
     let Some(mut editor) = world.get_mut::<PropertyEditor>(entity) else {
         property_actions::finished(world, entity, error);
         return;
@@ -634,7 +732,6 @@ pub(super) fn action_finished(world: &mut World, entity: Entity, error: Option<S
         let mut editor = world.get_mut::<PropertyEditor>(entity).unwrap();
         editor.observed = value.clone();
         editor.baseline[&property] = Value::String(value);
-        editor.conflict = false;
     }
 }
 
@@ -647,9 +744,6 @@ pub(super) fn pick_date(world: &mut World, entity: Entity, date: &str) -> Result
     }
     if property.pending.is_some() {
         return Err("Wait for the date to finish saving".into());
-    }
-    if property.conflict {
-        return Err("Date changed elsewhere. Reload the field first.".into());
     }
     let text = world
         .get::<EditableText>(entity)
@@ -691,6 +785,12 @@ pub(super) fn pick_date(world: &mut World, entity: Entity, date: &str) -> Result
 }
 
 pub(super) fn save_field(world: &mut World, entity: Entity) {
+    if world
+        .get::<crate::record_binding::TextBinding>(entity)
+        .is_some()
+    {
+        return;
+    }
     let Some(binding) = world.get::<RecordBinding>(entity).cloned() else {
         return;
     };
@@ -708,61 +808,21 @@ pub(super) fn save_field(world: &mut World, entity: Entity) {
     if value == editor.observed {
         return;
     }
-    if editor.conflict {
-        status(
-            world,
-            binding.area,
-            "This property changed elsewhere. Escape reloads its current value.",
-        );
-        return;
-    }
-    let target = binding.uid.clone();
-    let action = match editor.property.as_str() {
-        "head" => engine::actions::Action::EditRecordText {
-            target,
-            head: Some(value),
-            body: None,
+    let mutation = match editor.property.as_str() {
+        "slug" => engine::record_change::Mutation::Slug {
+            value: (!value.trim().is_empty()).then(|| value.trim().to_owned()),
         },
-        "body" => engine::actions::Action::EditRecordText {
-            target,
-            head: None,
-            body: Some(value),
-        },
-        "slug" => engine::actions::Action::SetSlug {
-            target,
-            slug: (!value.trim().is_empty()).then_some(value),
-        },
-        "quantity_exact" => engine::actions::Action::SetQuantityExact {
-            target,
-            amount: value,
-        },
+        "quantity_exact" => engine::record_change::Mutation::Quantity { value },
         "start_date" | "due_date" | "estimate_min" => {
-            let latest = world
-                .resource::<Runtime>()
-                .areas
-                .get(&binding.area)
-                .and_then(|state| {
-                    state
-                        .data
-                        .iter()
-                        .find(|row| row["uid"].as_str() == Some(&binding.uid))
-                });
-            let mut fds = latest.map_or_else(
-                || editor.baseline["extension"].clone(),
-                |row| row["extension"].clone(),
-            );
-            if !fds.is_object() {
-                fds = serde_json::json!({});
-            }
-            let key = match editor.property.as_str() {
-                "start_date" => "start",
-                "due_date" => "due",
-                _ => "estimate_min",
+            let field = match editor.property.as_str() {
+                "start_date" => engine::record_change::WorkField::Start,
+                "due_date" => engine::record_change::WorkField::Due,
+                _ => engine::record_change::WorkField::Estimate,
             };
-            fds[key] = if value.trim().is_empty() {
+            let value = if value.trim().is_empty() {
                 Value::Null
-            } else if key == "estimate_min" {
-                let Ok(number) = value.parse::<f64>() else {
+            } else if matches!(field, engine::record_change::WorkField::Estimate) {
+                let Ok(number) = value.trim().parse::<f64>() else {
                     status(world, binding.area, "Estimate must be a number");
                     return;
                 };
@@ -772,19 +832,32 @@ pub(super) fn save_field(world: &mut World, entity: Entity) {
                 }
                 serde_json::json!(number)
             } else {
-                Value::String(value)
+                Value::String(value.trim().into())
             };
-            if let Err(error) = engine::private_work::WorkMetadata::parse(&fds) {
-                status(world, binding.area, error.to_string());
-                return;
+            engine::record_change::Mutation::Work { field, value }
+        }
+        "head" | "body" => {
+            let action = engine::actions::Action::EditRecordText {
+                target: binding.uid.clone(),
+                head: (editor.property == "head").then(|| value.clone()),
+                body: (editor.property == "body").then_some(value),
+            };
+            match execute(world, &binding, entity, action) {
+                Ok(()) => {
+                    world.get_mut::<PropertyEditor>(entity).unwrap().pending = Some(submitted)
+                }
+                Err(error) => status(world, binding.area, error),
             }
-            engine::actions::Action::SetExtension {
-                target,
-                namespace: "work".into(),
-                fds,
-            }
+            return;
         }
         _ => return,
+    };
+    let action = engine::actions::Action::ChangeRecord {
+        request: engine::record_change::Request {
+            id: nucleus::new_uid("op"),
+            record_uid: binding.uid.clone(),
+            mutation,
+        },
     };
     match execute(world, &binding, entity, action) {
         Ok(()) => {
@@ -807,6 +880,12 @@ pub(super) fn commit_edits(world: &mut World) {
         .map(|(entity, editor)| (entity, editor.focused))
         .collect();
     for (entity, focused) in editors {
+        if world
+            .get::<crate::record_binding::TextBinding>(entity)
+            .is_some()
+        {
+            continue;
+        }
         if escape && focus == Some(entity) {
             if let Some(binding) = world.get::<RecordBinding>(entity).cloned() {
                 let data = world
@@ -835,7 +914,6 @@ pub(super) fn commit_edits(world: &mut World) {
                     let mut editor = world.get_mut::<PropertyEditor>(entity).unwrap();
                     editor.observed = value;
                     editor.baseline = baseline(&data, &property);
-                    editor.conflict = false;
                 }
             }
         } else if focused && focus != Some(entity) {
@@ -846,6 +924,7 @@ pub(super) fn commit_edits(world: &mut World) {
 }
 
 pub(super) fn layout(world: &mut World) {
+    super::placement::begin_frame(world);
     let mut resized = false;
     for (text, layout, computed, mut size, mut node, mut wrapping) in world
         .query::<(
@@ -965,6 +1044,33 @@ pub(super) fn layout(world: &mut World) {
 }
 
 pub(super) fn place(world: &mut World, entity: Entity, position: DVec2, size: Vec2) {
+    if let Some(row) = world.get::<Row>(entity) {
+        let owner = row.area;
+        let config = row.config.clone();
+        if world.get::<super::placement::Placed>(entity).is_none() {
+            let area = world.get::<InfluenceArea>(owner).unwrap();
+            let center = DVec2::from_array(area.center);
+            let spatial = crate::topology::spatial(world, owner);
+            let offset = position - center;
+            let fallback = spatial.position(center)
+                + spatial.rotation() * bevy::math::DVec3::new(offset.x, 0.0, offset.y);
+            let Some(point) =
+                super::placement::initial(world, entity, owner, &config, fallback, size)
+            else {
+                return;
+            };
+            super::placement::finish(world, entity, point);
+            world.entity_mut(entity).insert(LastLayout(fallback));
+        }
+        if config.placement != super::SpawnPlacement::Source
+            && world.get::<crate::layout::LayoutBox>(entity).is_none()
+        {
+            if let Some(mut item) = world.get_mut::<CanvasItem>(entity) {
+                item.size = size;
+            }
+            return;
+        }
+    }
     if let Some(mut layout) = world.get_mut::<crate::layout::LayoutBox>(entity) {
         if layout.rules.axes[1].sizing == crate::layout::Sizing::Fit {
             let axis = &mut layout.rules.axes[1];

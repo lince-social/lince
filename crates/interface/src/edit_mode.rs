@@ -38,6 +38,7 @@ pub struct EditMode {
     canvas: bool,
     notifications: bool,
     information: bool,
+    shortcuts: bool,
     customization: bool,
     pub(crate) areas: bool,
     content: Option<Entity>,
@@ -67,6 +68,7 @@ pub enum EditAction {
     Canvas,
     Notifications,
     Information,
+    Shortcuts,
     Customization,
     Areas,
     Area(crate::area_panel::AreaAction),
@@ -106,6 +108,12 @@ impl Plugin for EditModePlugin {
     fn build(&self, app: &mut App) {
         if !app.is_plugin_added::<ActionsPlugin>() {
             app.add_plugins(ActionsPlugin);
+        }
+        if !app.is_plugin_added::<crate::operation::OperationPlugin>() {
+            app.add_plugins(crate::operation::OperationPlugin);
+        }
+        if !app.is_plugin_added::<crate::deletion::DeletionPlugin>() {
+            app.add_plugins(crate::deletion::DeletionPlugin);
         }
         if !app.is_plugin_added::<crate::color_picker::ColorPickerPlugin>() {
             app.add_plugins(crate::color_picker::ColorPickerPlugin);
@@ -396,7 +404,7 @@ fn setup(world: &mut World) {
             root,
             toolbar,
             EditAction::DisarmAreaChanges,
-            "Disarm area changes",
+            "Turn off property changes for all areas",
         );
         world
             .entity_mut(disarm)
@@ -465,11 +473,22 @@ fn setup(world: &mut World) {
             canvas: false,
             notifications: false,
             information: false,
+            shortcuts: false,
             customization: false,
             areas: false,
             content: None,
         });
         let bindings = [
+            KeyBinding::new(
+                KeyCode::Delete,
+                Modifiers::NONE,
+                crate::actions![crate::deletion::DeleteSelected],
+            ),
+            KeyBinding::new(
+                KeyCode::KeyK,
+                Modifiers::CONTROL,
+                crate::actions![crate::operation::OpenOperation],
+            ),
             KeyBinding::new(
                 KeyCode::KeyE,
                 Modifiers::ALT,
@@ -555,6 +574,7 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
             | EditAction::Canvas
             | EditAction::Notifications
             | EditAction::Information
+            | EditAction::Shortcuts
             | EditAction::Customization
             | EditAction::Credits
             | EditAction::EditSand(_)
@@ -577,12 +597,14 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
             | EditAction::Area(_)
             | EditAction::Notifications
             | EditAction::Information
+            | EditAction::Shortcuts
             | EditAction::Customization
             | EditAction::Credits
             | EditAction::EditSand(_)
     ) {
         world.get_mut::<EditMode>(root).unwrap().general = action == EditAction::General;
         world.get_mut::<EditMode>(root).unwrap().information = action == EditAction::Information;
+        world.get_mut::<EditMode>(root).unwrap().shortcuts = action == EditAction::Shortcuts;
     }
     let mode = world.get::<EditMode>(root).unwrap();
     match action {
@@ -658,7 +680,7 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
                     .is_some_and(|member| member.0 == active)
                 && world.get::<StoredSand>(sand).is_some()
             {
-                world.despawn(sand);
+                crate::deletion::request(world, root, vec![sand]);
             }
         }
         EditAction::EditSand(sand) => crate::sand_text_editor::open(world, root, sand),
@@ -710,7 +732,7 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
             mode.canvas = false;
             mode.credits = false;
         }
-        EditAction::Information => {}
+        EditAction::Information | EditAction::Shortcuts => {}
         EditAction::ResetCanvasColors => {
             if !mode.canvas || !crate::canvas_colors::save(world, root, true) {
                 return;
@@ -737,6 +759,7 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
             | EditAction::Customization
             | EditAction::Notifications
             | EditAction::Information
+            | EditAction::Shortcuts
             | EditAction::Canvas
             | EditAction::Store
             | EditAction::Credits
@@ -782,6 +805,7 @@ pub(crate) fn toggle_customization(world: &mut World, root: Entity) {
     mode.general = false;
     mode.customization = true;
     mode.information = false;
+    mode.shortcuts = false;
     mode.areas = false;
     mode.notifications = false;
     mode.canvas = false;
@@ -901,7 +925,7 @@ pub(crate) fn control(
         EditAction::CreateWorkspace => Some(Icon::Plus),
         EditAction::ConfirmRemoveWorkspace => Some(Icon::Check),
         EditAction::Credits => Some(Icon::Credits),
-        EditAction::Information => Some(Icon::Info),
+        EditAction::Information | EditAction::Shortcuts => Some(Icon::Info),
         EditAction::General => Some(Icon::General),
         EditAction::Workspaces => Some(Icon::Workspaces),
         EditAction::Store => Some(Icon::Store),
@@ -956,6 +980,9 @@ pub(crate) fn control(
             SandKind::Square => Icon::Square,
             SandKind::Text => Icon::Text,
             SandKind::EditableText => Icon::EditableText,
+            SandKind::Operation => Icon::Forward,
+            SandKind::WorkTimer => Icon::Play,
+            SandKind::AccessControl => Icon::Person,
         }),
         EditAction::SwitchWorkspace(_) | EditAction::Text(TextAction::Select(_)) => None,
     };
@@ -994,6 +1021,7 @@ pub(crate) fn render_panel(world: &mut World, root: Entity) {
     let areas = mode.areas;
     let general = mode.general;
     let information = mode.information;
+    let shortcuts = mode.shortcuts;
     let children: Vec<_> = world
         .get::<Children>(panel)
         .map(|children| children.iter().collect())
@@ -1040,6 +1068,7 @@ pub(crate) fn render_panel(world: &mut World, root: Entity) {
             .id();
         control(world, root, tabs, EditAction::General, "General");
         control(world, root, tabs, EditAction::Information, "Information");
+        control(world, root, tabs, EditAction::Shortcuts, "Cheat sheet");
         control(world, root, tabs, EditAction::Workspaces, "Workspaces");
         control(world, root, tabs, EditAction::Store, "Sand store");
         control(world, root, tabs, EditAction::Areas, "Areas of influence");
@@ -1067,6 +1096,10 @@ pub(crate) fn render_panel(world: &mut World, root: Entity) {
         let close = control(world, root, panel, EditAction::Close, "Close edit mode");
         world.entity_mut(close).insert((EditClose, ZIndex(2)));
     }
+    if shortcuts {
+        crate::shortcuts::panel(world, panel);
+        return;
+    }
     if information {
         crate::information::panel(world, root, panel);
         return;
@@ -1074,6 +1107,7 @@ pub(crate) fn render_panel(world: &mut World, root: Entity) {
     if general {
         label(world, panel, "General", 22.0);
         crate::inspection::controls(world, root, panel);
+        crate::deletion::controls(world, root, panel);
         return;
     }
     if areas {
@@ -1268,7 +1302,9 @@ pub(crate) fn render_panel(world: &mut World, root: Entity) {
             crate::sand_store::entry(world, root, panel, kind, None);
         }
         label(world, panel, "Castles", 18.0);
+        crate::instinct::store_entry(world, root, panel);
         crate::protein_castle::store_entries(world, root, panel);
+        crate::full_record::store_entry(world, root, panel);
         crate::calendar::store_entry(world, root, panel);
         crate::kanban::store_entry(world, root, panel);
         crate::custom_castle::store_entries(world, root, panel);
@@ -1396,6 +1432,7 @@ pub(crate) mod tests {
     #[cfg_attr(test, test)]
     fn workspace_name_saves_from_its_row_and_pointer_focus_has_no_outline() {
         let (mut app, root) = fixture();
+        app.add_plugins(crate::sand::SandPlugin);
         activate(&mut app, root, EditAction::Toggle);
         let mode = app.world().get::<EditMode>(root).unwrap();
         let field = mode.name.unwrap();
@@ -1416,6 +1453,26 @@ pub(crate) mod tests {
             entity: toggle,
             cause: FocusCause::Pressed,
         });
+        assert_eq!(app.world().get::<Outline>(toggle).unwrap().width, px(0));
+        app.world_mut().trigger(FocusGained {
+            entity: toggle,
+            cause: FocusCause::Navigated,
+        });
+        app.update();
+        assert_eq!(app.world().get::<Outline>(toggle).unwrap().width, px(0));
+        app.world_mut()
+            .resource_mut::<bevy::input_focus::InputFocusVisible>()
+            .0 = true;
+        app.world_mut().trigger(FocusGained {
+            entity: toggle,
+            cause: FocusCause::Navigated,
+        });
+        app.update();
+        assert_eq!(app.world().get::<Outline>(toggle).unwrap().width, px(2));
+        app.world_mut()
+            .resource_mut::<bevy::input_focus::InputFocusVisible>()
+            .0 = false;
+        app.update();
         assert_eq!(app.world().get::<Outline>(toggle).unwrap().width, px(0));
     }
 
@@ -1691,6 +1748,8 @@ pub(crate) mod tests {
         );
         activate(&mut app, root, EditAction::Store);
         activate(&mut app, root, EditAction::RemoveSand(sand));
+        assert!(app.world().get_entity(editor).is_ok());
+        crate::deletion::Decision(true).apply(app.world_mut(), root);
         assert!(app.world().get_entity(editor).is_err());
     }
 

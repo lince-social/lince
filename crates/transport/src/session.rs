@@ -20,10 +20,18 @@ pub struct Session {
     last_ephemeral: HashMap<String, Vec<serde_json::Value>>,
     joined_rooms: Vec<String>,
     collab_records: HashSet<String>,
+    collab_versions: std::sync::Mutex<HashMap<String, String>>,
+    last_cursors: HashMap<String, Vec<crate::protocol::CollabCursor>>,
     action_intent: Option<ActionIntentSession>,
     action_intent_initialization_error: Option<(String, Option<String>)>,
     action_intent_initialized: bool,
     local_sync: bool,
+}
+
+impl Drop for Session {
+    fn drop(&mut self) {
+        self.hub.leave_cursor(None, &self.connection_id);
+    }
 }
 
 impl Session {
@@ -43,6 +51,8 @@ impl Session {
             last_ephemeral: HashMap::new(),
             joined_rooms: Vec::new(),
             collab_records: HashSet::new(),
+            collab_versions: std::sync::Mutex::new(HashMap::new()),
+            last_cursors: HashMap::new(),
             action_intent: None,
             action_intent_initialization_error: None,
             action_intent_initialized: false,
@@ -308,13 +318,31 @@ impl Session {
                         code: Some("collab_not_visible".into()),
                     }];
                 }
-                match self.engine.collab_snapshot(&record_uid).await {
-                    Ok(snapshot_base64) => {
+                match self.engine.collab_state(&record_uid).await {
+                    Ok((snapshot_base64, version)) => {
                         self.collab_records.insert(record_uid.clone());
+                        self.collab_versions
+                            .lock()
+                            .expect("document versions")
+                            .insert(record_uid.clone(), version.clone());
+                        let writable = self
+                            .engine
+                            .record_text_permissions(self.subject.as_deref(), &record_uid)
+                            .await
+                            .unwrap_or_default()
+                            .into_iter()
+                            .filter_map(|property| match property {
+                                protein::authority::Property::Head => Some("head".into()),
+                                protein::authority::Property::Body => Some("body".into()),
+                                _ => None,
+                            })
+                            .collect();
                         vec![ServerMessage::CollabState {
                             id,
                             record_uid,
                             snapshot_base64,
+                            version,
+                            writable,
                         }]
                     }
                     Err(e) => {
@@ -328,7 +356,43 @@ impl Session {
                 }
             }
             ClientMessage::CollabLeave { record_uid } => {
+                self.hub
+                    .leave_cursor(Some(&record_uid), &self.connection_id);
+                self.last_cursors.remove(&record_uid);
                 self.collab_records.remove(&record_uid);
+                self.collab_versions
+                    .lock()
+                    .expect("document versions")
+                    .remove(&record_uid);
+                vec![]
+            }
+            ClientMessage::CollabPresence {
+                record_uid,
+                property,
+                anchor,
+                focus,
+            } => {
+                if self.collab_records.contains(&record_uid)
+                    && matches!(property.as_str(), "head" | "body")
+                    && anchor.len() <= 2048
+                    && focus.len() <= 2048
+                    && self
+                        .engine
+                        .may_read_record(self.subject.as_deref(), &record_uid)
+                        .await
+                        .unwrap_or(false)
+                {
+                    self.hub.cursor(
+                        &record_uid,
+                        crate::protocol::CollabCursor {
+                            session: self.connection_id.clone(),
+                            person: self.subject.clone(),
+                            property,
+                            anchor,
+                            focus,
+                        },
+                    );
+                }
                 vec![]
             }
             ClientMessage::CollabUpdate {
@@ -425,6 +489,7 @@ impl Session {
             crate::SyncEvent::Fact(fact) => self.on_fact(&fact).await,
             crate::SyncEvent::Refresh => self.refresh().await,
             crate::SyncEvent::Ephemeral => self.tick_ephemeral().await,
+            crate::SyncEvent::Presence => self.tick_cursors().await,
         }
     }
 
@@ -500,7 +565,11 @@ impl Session {
     }
 
     pub fn has_ephemeral_subscriptions(&self) -> bool {
-        self.subscriptions.values().any(protein::is_ephemeral)
+        !self.collab_records.is_empty() || self.subscriptions.values().any(protein::is_ephemeral)
+    }
+
+    pub fn presence_changes(&self) -> tokio::sync::watch::Receiver<u64> {
+        self.hub.presence_changes()
     }
 
     pub async fn refresh(&mut self) -> Vec<ServerMessage> {
@@ -518,11 +587,9 @@ impl Session {
                 .await
                 .unwrap_or(false)
             {
-                match self.engine.collab_snapshot(&record_uid).await {
-                    Ok(snapshot_base64) => out.push(ServerMessage::CollabChange {
-                        record_uid: record_uid.clone(),
-                        snapshot_base64,
-                    }),
+                match self.collab_delta(&record_uid).await {
+                    Ok(Some(message)) => out.push(message),
+                    Ok(None) => {}
                     Err(error) => out.push(action_error(record_uid.clone(), error)),
                 }
             } else {
@@ -537,11 +604,56 @@ impl Session {
         out
     }
 
-    pub async fn tick_ephemeral(&mut self) -> Vec<ServerMessage> {
+    async fn tick_cursors(&mut self) -> Vec<ServerMessage> {
         if !self.subject_may_act().await {
+            self.hub.leave_cursor(None, &self.connection_id);
             return vec![session_expired()];
         }
         let mut out = Vec::new();
+        for uid in self.collab_records.clone() {
+            if !self
+                .engine
+                .may_read_record(self.subject.as_deref(), &uid)
+                .await
+                .unwrap_or(false)
+            {
+                self.hub.leave_cursor(Some(&uid), &self.connection_id);
+                self.collab_records.remove(&uid);
+                self.last_cursors.remove(&uid);
+                out.push(ServerMessage::CollabCursors {
+                    record_uid: uid,
+                    cursors: Vec::new(),
+                });
+                continue;
+            }
+            let mut cursors = Vec::new();
+            for cursor in self.hub.cursors(&uid) {
+                if cursor.session != self.connection_id
+                    && self
+                        .engine
+                        .may_read_record(cursor.person.as_deref(), &uid)
+                        .await
+                        .unwrap_or(false)
+                {
+                    cursors.push(cursor);
+                }
+            }
+            if self.last_cursors.get(&uid) != Some(&cursors) {
+                self.last_cursors.insert(uid.clone(), cursors.clone());
+                out.push(ServerMessage::CollabCursors {
+                    record_uid: uid,
+                    cursors,
+                });
+            }
+        }
+        out
+    }
+
+    pub async fn tick_ephemeral(&mut self) -> Vec<ServerMessage> {
+        let mut out = self.tick_cursors().await;
+        if !self.subject_may_act().await {
+            return out;
+        }
         let ephemeral: Vec<(String, Protein)> = self
             .subscriptions
             .iter()
@@ -696,11 +808,8 @@ impl Session {
                 .await
                 .unwrap_or(false)
         {
-            if let Ok(snapshot_base64) = self.engine.collab_snapshot(&fact.record_uid).await {
-                out.push(ServerMessage::CollabChange {
-                    record_uid: fact.record_uid.clone(),
-                    snapshot_base64,
-                });
+            if let Ok(Some(message)) = self.collab_delta(&fact.record_uid).await {
+                out.push(message);
             }
         }
         for (id, protein) in &self.subscriptions {
@@ -720,6 +829,30 @@ impl Session {
             }
         }
         out
+    }
+
+    async fn collab_delta(&self, uid: &str) -> Result<Option<ServerMessage>, EngineError> {
+        let version = self
+            .collab_versions
+            .lock()
+            .expect("document versions")
+            .get(uid)
+            .cloned();
+        let Some(version) = version else {
+            return Ok(None);
+        };
+        let Some((update_base64, version)) = self.engine.collab_since(uid, &version).await? else {
+            return Ok(None);
+        };
+        self.collab_versions
+            .lock()
+            .expect("document versions")
+            .insert(uid.into(), version.clone());
+        Ok(Some(ServerMessage::CollabChange {
+            record_uid: uid.into(),
+            update_base64,
+            version,
+        }))
     }
 
     pub async fn may_use_lane(&self) -> bool {

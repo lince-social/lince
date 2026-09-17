@@ -139,6 +139,13 @@ impl PropertyRule {
 pub struct InfluenceArea {
     pub id: String,
     pub name: String,
+    pub enabled: bool,
+    pub include_right_edge: bool,
+    pub attraction_enabled: bool,
+    pub changes_enabled: bool,
+    pub change_filter: Option<crate::protein_area::Config>,
+    pub color: [u8; 3],
+    pub opacity: f32,
     pub center: [f64; 2],
     pub size: [f64; 2],
     pub depth: f64,
@@ -169,6 +176,13 @@ impl InfluenceArea {
         Self {
             id: bytes.iter().map(|byte| format!("{byte:02x}")).collect(),
             name: "Area of influence".into(),
+            enabled: true,
+            include_right_edge: true,
+            attraction_enabled: true,
+            changes_enabled: true,
+            change_filter: None,
+            color: [128, 102, 217],
+            opacity: 0.18,
             center: center.to_array(),
             size: size.to_array(),
             depth: size.min_element(),
@@ -195,6 +209,8 @@ impl InfluenceArea {
             && self.id.bytes().all(|byte| byte.is_ascii_hexdigit())
             && !self.name.trim().is_empty()
             && self.name.chars().count() <= 80
+            && self.opacity.is_finite()
+            && (0.0..=1.0).contains(&self.opacity)
             && DVec2::from_array(self.center).is_finite()
             && size.is_finite()
             && size.min_element() >= 1.0
@@ -214,6 +230,10 @@ impl InfluenceArea {
             && self.rules.len() <= MAX_RULES
             && self.rules.iter().all(PropertyRule::validate)
             && self.changes.validate()
+            && self
+                .change_filter
+                .as_ref()
+                .is_none_or(crate::protein_area::Config::valid)
             && self.scale.is_finite()
             && (0.05..=20.0).contains(&self.scale)
             && self.sorting.as_ref().is_none_or(|sort| {
@@ -235,7 +255,10 @@ impl InfluenceArea {
 
     pub fn contains(&self, point: DVec2) -> bool {
         let point = (point - DVec2::from_array(self.center)) / DVec2::from_array(self.size);
-        if !point.is_finite() || point.abs().max_element() > 0.5 {
+        if !point.is_finite()
+            || point.abs().max_element() > 0.5
+            || (!self.include_right_edge && point.x == 0.5)
+        {
             return false;
         }
         match &self.shape {
@@ -250,7 +273,12 @@ impl InfluenceArea {
     }
 
     pub(crate) fn force_for_match(&self, point: DVec2, matches: bool) -> DVec2 {
-        if self.strength == 0.0 || !self.reaches(point) || !matches {
+        if !self.enabled
+            || !self.attraction_enabled
+            || self.strength == 0.0
+            || !self.reaches(point)
+            || !matches
+        {
             return DVec2::ZERO;
         }
         let delta = self.target_position() - point;

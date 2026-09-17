@@ -195,6 +195,9 @@ pub fn synchronize(world: &mut World) -> bool {
                 .is_some_and(|s| s.active == member.0)
                 && world.get::<crate::sand_placement::Pinned>(*e).is_none()
                 && world
+                    .get::<crate::protein_area::placement::Pending>(*e)
+                    .is_none()
+                && world
                     .get::<crate::layout::LayoutBox>(*e)
                     .is_none_or(|layout| layout.parent.is_none())
         })

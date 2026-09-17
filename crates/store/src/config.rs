@@ -11,6 +11,7 @@ pub struct Configuration {
     pub show_command_notifications: bool,
     pub command_notification_seconds: f64,
     pub delete_confirmation: bool,
+    pub sand_delete_confirmation: bool,
     pub error_toast_seconds: f64,
     pub keybinding_mode: i64,
     pub transfer_reservation_default: String,
@@ -124,6 +125,7 @@ pub async fn get(pool: &SqlitePool) -> Result<Option<Configuration>, StoreError>
             show_command_notifications: r.get::<f64, _>("command_notification_seconds") > 0.0,
             command_notification_seconds: r.get("command_notification_seconds"),
             delete_confirmation: r.get::<i64, _>("delete_confirmation") != 0,
+            sand_delete_confirmation: r.get::<i64, _>("sand_delete_confirmation") != 0,
             error_toast_seconds: r.get("error_toast_seconds"),
             keybinding_mode: r.get("keybinding_mode"),
             transfer_reservation_default: r.get("transfer_reservation_default"),
@@ -247,4 +249,28 @@ pub async fn set_transfer_remainder_policy(
     .execute(pool)
     .await?;
     Ok(())
+}
+
+pub async fn deletion_confirmations(pool: &SqlitePool) -> Result<(bool, bool), StoreError> {
+    ensure_default(pool).await?;
+    sqlx::query_as(
+        "SELECT sand_delete_confirmation, delete_confirmation FROM configuration WHERE id = 1",
+    )
+    .fetch_one(pool)
+    .await
+}
+
+pub async fn set_deletion_confirmation(
+    pool: &SqlitePool,
+    records: bool,
+    enabled: bool,
+) -> Result<(bool, bool), StoreError> {
+    ensure_default(pool).await?;
+    let query = if records {
+        "UPDATE configuration SET delete_confirmation = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1"
+    } else {
+        "UPDATE configuration SET sand_delete_confirmation = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1"
+    };
+    sqlx::query(query).bind(enabled).execute(pool).await?;
+    deletion_confirmations(pool).await
 }

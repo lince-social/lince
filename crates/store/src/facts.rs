@@ -264,7 +264,42 @@ pub async fn level(pool: &SqlitePool, record_uid: &str) -> Result<DecimalValue, 
             StoreError::Decode(format!("level of {record_uid} overflows i128").into())
         })?;
     }
-    Ok(total)
+    total
+        .aligned_add(quantity_offset(pool, record_uid, None).await?)
+        .ok_or_else(|| StoreError::Decode("quantity level overflows i128".into()))
+}
+
+pub async fn quantity_offset(
+    pool: &SqlitePool,
+    record_uid: &str,
+    at: Option<DateTime<Utc>>,
+) -> Result<DecimalValue, StoreError> {
+    let raw: Option<String> = if let Some(at) = at {
+        sqlx::query_scalar("SELECT json_extract(value, '$.value.offset') FROM sync_op WHERE tbl = 'record' AND uid = ? AND field = 'property:quantity' AND (json_extract(value, '$.clock') >> 16) <= ? ORDER BY json_extract(value, '$.clock') DESC, json_extract(value, '$.peer') DESC, json_extract(value, '$.change_uid') DESC LIMIT 1")
+            .bind(record_uid).bind(at.timestamp_millis()).fetch_optional(pool).await?
+    } else {
+        sqlx::query_scalar("SELECT json_extract(value, '$.offset') FROM record_property WHERE record_uid = ? AND property = 'quantity'").bind(record_uid).fetch_optional(pool).await?
+    };
+    raw.map(|raw| {
+        DecimalValue::parse_inferred(&raw)
+            .map_err(|error| StoreError::Decode(error.to_string().into()))
+    })
+    .transpose()
+    .map(|value| value.unwrap_or_else(zero))
+}
+
+pub(crate) fn checkpoint_base(
+    value: &serde_json::Value,
+    level: DecimalValue,
+) -> Result<DecimalValue, StoreError> {
+    match value["quantity_offset"].as_str() {
+        Some(offset) => crate::exact::difference(
+            level,
+            DecimalValue::parse_inferred(offset)
+                .map_err(|error| StoreError::Decode(error.to_string().into()))?,
+        ),
+        None => Ok(level),
+    }
 }
 
 async fn level_anchor(
@@ -292,7 +327,10 @@ async fn level_anchor(
         let level = DecimalValue::parse_inferred(text).map_err(|error| {
             StoreError::Decode(format!("checkpoint level is not an exact decimal: {error}").into())
         })?;
-        return Ok((level, Some(row.get::<i64, _>("rowid"))));
+        return Ok((
+            checkpoint_base(&json, level)?,
+            Some(row.get::<i64, _>("rowid")),
+        ));
     }
     Ok((zero(), None))
 }

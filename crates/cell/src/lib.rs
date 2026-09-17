@@ -16,6 +16,7 @@ use store::Store;
 pub use admin_bootstrap::{AdminBootstrap, ensure_admin};
 pub use store::config::InterfaceStorage;
 pub use transport::{ClientMessage, LaneEvent, LaneHub, ServerMessage, Session, SyncEvents};
+pub use transport::protocol::CollabCursor;
 pub use transport::live_client;
 pub use utils::diagnostics::{
     Diagnostics, Journal as DiagnosticJournal, Notice, Subscription as DiagnosticSubscription,
@@ -34,6 +35,22 @@ pub struct CellRuntime {
 }
 
 impl CellRuntime {
+    pub async fn deletion_confirmations(&self) -> Result<(bool, bool), IoError> {
+        store::config::deletion_confirmations(&self.store.pool)
+            .await
+            .map_err(IoError::other)
+    }
+
+    pub async fn set_deletion_confirmation(
+        &self,
+        records: bool,
+        enabled: bool,
+    ) -> Result<(bool, bool), IoError> {
+        store::config::set_deletion_confirmation(&self.store.pool, records, enabled)
+            .await
+            .map_err(IoError::other)
+    }
+
     pub async fn interface_storage(&self) -> Result<InterfaceStorage, IoError> {
         store::config::interface_storage(&self.store.pool)
             .await

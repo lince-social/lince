@@ -1,10 +1,5 @@
-use crate::{
-    area::InfluenceArea,
-    area_mutation,
-    edit_mode::{EditAction, control, label},
-};
+use crate::{area::InfluenceArea, area_mutation, edit_mode::label};
 use bevy::{a11y::AccessibilityNode, prelude::*, text::EditableText};
-use engine::area_transition::RecordChanges;
 
 #[derive(Clone)]
 struct QuantityMode(Entity, engine::area_transition::QuantityOperation);
@@ -44,8 +39,8 @@ struct Field {
 pub(crate) fn render(world: &mut World, root: Entity, panel: Entity, entity: Entity) {
     let area = world.get::<InfluenceArea>(entity).unwrap().clone();
     let heading = label(world, panel, "Record changes", 18.0);
-    world.entity_mut(heading).insert(crate::icons::Tooltip("Changes apply to matching Records when their Sands cross the local outline, with or without physics. Copies of one Record count together. Editing or switching workspaces disarms the Area.".into()));
-    let status = label(world, panel, "Disarmed", 14.0);
+    world.entity_mut(heading).insert(crate::icons::Tooltip("Changes apply to matching Records when their Sands cross the local outline, with or without physics. Copies of one Record count together. Configured changes work automatically while the Area and property changes are enabled.".into()));
+    let status = label(world, panel, "Waiting", 14.0);
     world.entity_mut(status).insert((
         area_mutation::StatusLabel(entity),
         crate::icons::Tooltip::default(),
@@ -143,61 +138,6 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity, entity: Ent
             }
         }
     }
-    let controls = crate::area_panel::row(world, panel);
-    control(
-        world,
-        root,
-        controls,
-        EditAction::Area(crate::area_panel::AreaAction::PreviewChanges),
-        "Preview Record changes",
-    );
-    if area_mutation::previewed(world, entity) {
-        for (title, changes) in [
-            ("Entry", &area.changes.enter),
-            ("Exit", &area.changes.leave),
-        ] {
-            label(
-                world,
-                panel,
-                &format!("{title}: {}", describe(changes)),
-                14.0,
-            );
-        }
-        if !area_mutation::armed(world, entity) {
-            control(
-                world,
-                root,
-                controls,
-                EditAction::Area(crate::area_panel::AreaAction::ArmChanges),
-                "Grant the previewed Record changes for future crossings in this workspace. Existing Records are not changed now. Disarm stays available beside Edit mode.",
-            );
-        }
-    }
-    control(
-        world,
-        root,
-        controls,
-        EditAction::Area(crate::area_panel::AreaAction::DisarmChanges),
-        "Disarm Record changes",
-    );
-}
-
-fn describe(changes: &RecordChanges) -> String {
-    let mut parts = Vec::new();
-    if let Some(quantity) = &changes.quantity {
-        parts.push(format!("Quantity: {quantity}"));
-    }
-    if !changes.assert.is_empty() {
-        parts.push(format!("+ {}", changes.assert.join(", ")));
-    }
-    if !changes.retract.is_empty() {
-        parts.push(format!("− {}", changes.retract.join(", ")));
-    }
-    if parts.is_empty() {
-        "—".into()
-    } else {
-        parts.join("; ")
-    }
 }
 
 pub(crate) fn autosave(world: &mut World) {
@@ -231,7 +171,7 @@ pub(crate) fn autosave(world: &mut World) {
         area_mutation::disarm(
             world,
             target,
-            "Disarmed after an edit. Preview again to arm.",
+            "Property changes inactive after an edit. Configured changes resume automatically.",
         );
         let mut area = world.get::<InfluenceArea>(target).unwrap().clone();
         let changes = if enter {
@@ -279,6 +219,7 @@ pub(crate) fn invalid_fields(world: &mut World, area: Entity) -> bool {
 
 pub(crate) mod tests {
     use super::*;
+    use crate::edit_mode::EditAction;
     use crate::{
         actions::Action,
         area::{Property as MatchProperty, PropertyRule, ShapeKind},

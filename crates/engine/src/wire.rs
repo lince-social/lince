@@ -354,6 +354,10 @@ pub enum WireResponse {
     Applied {
         applied: usize,
     },
+    BatchSaved {
+        applied: usize,
+        complete: bool,
+    },
     Roster {
         roster: Option<crate::roster::SignedRoster>,
     },
@@ -1590,7 +1594,10 @@ impl Wire {
                     };
                 }
                 match self.engine.import_op_batch(&batch).await {
-                    Ok(applied) => WireResponse::Applied { applied },
+                    Ok(applied) => WireResponse::BatchSaved {
+                        applied,
+                        complete: self.engine.batch_is_saved(&batch).await.unwrap_or(false),
+                    },
                     Err(error) => WireResponse::Error {
                         message: error.to_string(),
                     },
@@ -1834,7 +1841,10 @@ impl Wire {
                     };
                 }
                 match self.engine.import_grant_batch(&root, &batch).await {
-                    Ok(applied) => WireResponse::Applied { applied },
+                    Ok(applied) => WireResponse::BatchSaved {
+                        applied,
+                        complete: self.engine.batch_is_saved(&batch).await.unwrap_or(false),
+                    },
                     Err(error) => WireResponse::Refused {
                         code: "grant_denied".into(),
                         message: error.to_string(),
@@ -2575,7 +2585,9 @@ impl Wire {
                         .cloned();
                     if let Some(live) = live {
                         match wire.exchange(&live, &request).await {
-                            Ok(WireResponse::Applied { .. }) => return Delivery::Sent,
+                            Ok(WireResponse::BatchSaved { complete: true, .. }) => {
+                                return Delivery::Sent;
+                            }
                             Ok(other) => return Delivery::Failed(format!("{other:?}")),
                             Err(error) => tracing::debug!(
                                 contact = %contact.record_uid,
@@ -2601,7 +2613,7 @@ impl Wire {
                         return wire.mail_if_due(&contact, root.as_deref(), &batch).await;
                     };
                     match wire.exchange(&connection, &request).await {
-                        Ok(WireResponse::Applied { .. }) => Delivery::Sent,
+                        Ok(WireResponse::BatchSaved { complete: true, .. }) => Delivery::Sent,
                         Ok(other) => Delivery::Failed(format!("{other:?}")),
                         Err(error) => Delivery::Failed(error.to_string()),
                     }

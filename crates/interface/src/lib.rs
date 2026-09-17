@@ -19,6 +19,9 @@ pub mod icons;
 pub mod castle;
 
 #[cfg(feature = "native-runtime")]
+pub mod access_control;
+
+#[cfg(feature = "native-runtime")]
 pub mod color_picker;
 
 #[cfg(feature = "native-runtime")]
@@ -50,6 +53,15 @@ pub mod canvas_controls;
 
 #[cfg(feature = "native-runtime")]
 pub mod edit_mode;
+
+#[cfg(feature = "native-runtime")]
+pub mod shortcuts;
+
+#[cfg(feature = "native-runtime")]
+pub mod deletion;
+
+#[cfg(feature = "native-runtime")]
+pub mod operation;
 
 #[cfg(feature = "native-runtime")]
 pub mod inspection;
@@ -129,12 +141,36 @@ pub mod cell_bridge;
 pub mod record_view;
 
 #[cfg(feature = "native-runtime")]
+pub mod record_binding;
+
+#[cfg(feature = "native-runtime")]
+pub mod work_timer;
+
+#[cfg(feature = "native-runtime")]
+pub mod full_record;
+
+#[cfg(feature = "native-runtime")]
+pub mod thread_castle;
+
+#[cfg(feature = "native-runtime")]
 pub mod protein_area;
 #[cfg(feature = "native-runtime")]
 pub mod protein_castle;
 
 #[cfg(feature = "native-runtime")]
 pub mod instance;
+
+#[cfg(feature = "native-runtime")]
+pub mod instinct;
+
+#[cfg(feature = "native-runtime")]
+pub mod description;
+
+#[cfg(feature = "native-runtime")]
+pub mod fiote;
+
+#[cfg(feature = "native-runtime")]
+pub mod tutorial;
 
 #[cfg(feature = "native-runtime")]
 pub mod tray;

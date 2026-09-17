@@ -50,6 +50,8 @@ pub enum AreaAction {
     Finish,
     Cancel,
     Remove,
+    AttractionEnabled,
+    ChangesEnabled,
     PreviewChanges,
     ArmChanges,
     DisarmChanges,
@@ -141,6 +143,23 @@ pub(crate) fn apply(world: &mut World, root: Entity, action: AreaAction) {
         .and_then(|editor| editor.selected)
         .filter(|entity| owns(world, root, *entity));
     match action {
+        AreaAction::AttractionEnabled | AreaAction::ChangesEnabled => {
+            if let Some(entity) = selected {
+                let mut area = world.get_mut::<InfluenceArea>(entity).unwrap();
+                match action {
+                    AreaAction::AttractionEnabled => {
+                        area.attraction_enabled = !area.attraction_enabled
+                    }
+                    _ => area.changes_enabled = !area.changes_enabled,
+                }
+                let enable_changes = action == AreaAction::ChangesEnabled && area.changes_enabled;
+                crate::area_mutation::disarm(world, entity, "Applying behavior settings");
+                if enable_changes {
+                    crate::area_mutation::preview(world, root, entity);
+                    crate::area_mutation::arm(world, root, entity);
+                }
+            }
+        }
         AreaAction::PreviewChanges | AreaAction::ArmChanges | AreaAction::DisarmChanges => {
             if let Some(entity) = selected {
                 match action {
@@ -151,7 +170,7 @@ pub(crate) fn apply(world: &mut World, root: Entity, action: AreaAction) {
                     _ => crate::area_mutation::disarm(
                         world,
                         entity,
-                        "Disarmed. Already submitted changes may still finish.",
+                        "Property changes inactive. Already submitted changes may still finish.",
                     ),
                 }
             }
@@ -208,9 +227,7 @@ pub(crate) fn apply(world: &mut World, root: Entity, action: AreaAction) {
         }
         AreaAction::Remove => {
             if let Some(entity) = selected {
-                crate::area_mutation::disarm(world, entity, "Disarmed after deletion.");
-                world.despawn(entity);
-                world.get_mut::<AreaEditor>(root).unwrap().selected = None;
+                crate::deletion::request(world, root, vec![entity]);
             }
         }
         _ => {
@@ -275,7 +292,9 @@ struct ForceSlider {
 }
 
 fn force_status(area: &InfluenceArea) -> &'static str {
-    if area.strength == 0.0 {
+    if !area.enabled || !area.attraction_enabled {
+        "Attraction is disabled. Enable the Area and attraction to apply this force."
+    } else if area.strength == 0.0 {
         "Force is off. Raise the slider and choose matching properties to move Sands."
     } else if area.rules.is_empty() && area.filter.is_none() {
         "Choose matching properties below. No Sands are affected yet."
@@ -352,7 +371,7 @@ fn force_controls(world: &mut World, root: Entity, panel: Entity, entity: Entity
                     crate::area_mutation::disarm(
                         world,
                         area,
-                        "Disarmed after an edit. Preview again to arm.",
+                        "Property changes inactive after an edit. Configured changes resume automatically.",
                     );
                     *world.get_mut::<InfluenceArea>(area).unwrap() = next;
                 });
@@ -455,7 +474,7 @@ pub(crate) fn autosave(world: &mut World) {
         crate::area_mutation::disarm(
             world,
             target,
-            "Disarmed after an edit. Preview again to arm.",
+            "Property changes inactive after an edit. Configured changes resume automatically.",
         );
         let mut next = world.get::<InfluenceArea>(target).unwrap().clone();
         let number = value
@@ -509,6 +528,15 @@ pub(crate) fn autosave(world: &mut World) {
                 let mut placement = crate::topology::spatial(world, target);
                 placement.depth = Some(next.depth);
                 world.entity_mut(target).insert(placement);
+            }
+            if let Some(before) = world.get::<crate::canvas::CanvasItem>(target).copied() {
+                let after = crate::canvas::CanvasItem {
+                    position: DVec2::from_array(next.center),
+                    size: DVec2::from_array(next.size).as_vec2(),
+                };
+                if before.position != after.position || before.size != after.size {
+                    crate::layout::edited(world, target, before, after);
+                }
             }
             *world.get_mut::<InfluenceArea>(target).unwrap() = next;
         }
@@ -832,6 +860,20 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
     }
     let Some(entity) = selected else { return };
     let area = world.get::<InfluenceArea>(entity).unwrap().clone();
+    for (action, title, enabled) in [
+        (
+            AreaAction::AttractionEnabled,
+            "Attraction",
+            area.attraction_enabled,
+        ),
+        (
+            AreaAction::ChangesEnabled,
+            "Change properties",
+            area.changes_enabled,
+        ),
+    ] {
+        choice(world, root, panel, action, title, enabled);
+    }
     field(
         world,
         root,
@@ -840,6 +882,30 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
         Field::Name,
         "Name",
         area.name.clone(),
+    );
+    label(world, panel, "Background", 14.0);
+    let [r, g, b] = area.color;
+    let picker = crate::color_picker::spawn(
+        world,
+        panel,
+        "Area background",
+        [r, g, b, (area.opacity * 255.0).round() as u8],
+        true,
+    );
+    world.entity_mut(picker).observe(
+        move |event: On<crate::color_picker::ColorChanged>, mut commands: Commands| {
+            let rgba = event.rgba;
+            commands.queue(move |world: &mut World| {
+                if !owns(world, root, entity)
+                    || !world.get::<EditMode>(root).is_some_and(|mode| mode.enabled)
+                {
+                    return;
+                }
+                let mut area = world.get_mut::<InfluenceArea>(entity).unwrap();
+                area.color = [rgba[0], rgba[1], rgba[2]];
+                area.opacity = f32::from(rgba[3]) / 255.0;
+            });
+        },
     );
     crate::protein_area::controls(world, root, panel, entity);
     crate::protein_area::filter::controls(world, panel, entity);
@@ -976,6 +1042,45 @@ pub(crate) mod tests {
     }
 
     #[cfg_attr(test, test)]
+    fn color_controls_validate_and_save_area_appearance() {
+        let (mut app, root) = fixture();
+        EditAction::Area(AreaAction::Add(ShapeKind::Square)).apply(app.world_mut(), root);
+        let area = app
+            .world()
+            .get::<AreaEditor>(root)
+            .unwrap()
+            .selected
+            .unwrap();
+        let input = app
+            .world_mut()
+            .query::<&crate::color_picker::ColorPicker>()
+            .iter(app.world())
+            .next()
+            .unwrap()
+            .editor;
+        app.world_mut()
+            .get_mut::<EditableText>(input)
+            .unwrap()
+            .editor
+            .set_text("#33aaff59");
+        app.update();
+        for invalid in ["invalid", "-1", "#123456789"] {
+            app.world_mut()
+                .get_mut::<EditableText>(input)
+                .unwrap()
+                .editor
+                .set_text(invalid);
+            app.update();
+        }
+        let area = app.world().get::<InfluenceArea>(area).unwrap();
+        assert_eq!(area.color, [51, 170, 255]);
+        assert_eq!(area.opacity, 89.0 / 255.0);
+        let saved: InfluenceArea =
+            serde_json::from_value(serde_json::to_value(area).unwrap()).unwrap();
+        assert_eq!(&saved, area);
+    }
+
+    #[cfg_attr(test, test)]
     fn reach_controls_validate_radius_and_preserve_it_when_switching_modes() {
         let (mut app, root) = fixture();
         EditAction::Area(AreaAction::Add(ShapeKind::Circle)).apply(app.world_mut(), root);
@@ -1084,6 +1189,8 @@ pub(crate) mod tests {
         );
         assert_eq!(app.world().get::<ScrollPosition>(panel).unwrap().0.y, 160.0);
         crate::sand_placement::PlacementAction::Delete.apply(app.world_mut(), entity);
+        assert!(app.world().get_entity(entity).is_ok());
+        crate::deletion::Decision(true).apply(app.world_mut(), root);
         assert!(app.world().get_entity(entity).is_err());
         assert_eq!(app.world().get::<AreaEditor>(root).unwrap().selected, None);
     }
@@ -1271,10 +1378,12 @@ pub(crate) mod tests {
         assert!(app.world().get::<EditMode>(root).unwrap().enabled);
         assert_eq!(app.world().get::<InfluenceArea>(entity).unwrap(), &after);
         EditAction::Area(AreaAction::Remove).apply(app.world_mut(), root);
+        crate::deletion::Decision(true).apply(app.world_mut(), root);
         assert!(app.world().get::<InfluenceArea>(entity).is_none());
     }
 
     crate::laboratory_cases! {
+        color_controls_validate_and_save_area_appearance,
         target_and_depth_controls_validate_and_preserve_offsets_on_redraw,
         reach_controls_validate_radius_and_preserve_it_when_switching_modes,
         selecting_the_same_area_preserves_panel_fields_and_scroll,

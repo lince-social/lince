@@ -147,25 +147,8 @@ impl Action for PlacementAction {
             {
                 return;
             }
-            if world.get::<crate::area::InfluenceArea>(entity).is_some() {
-                if !crate::area_panel::owns(world, parent, entity) {
-                    return;
-                }
-                crate::area_mutation::disarm(world, entity, "Disarmed after deletion.");
-                world.despawn(entity);
-                if let Some(mut editor) = world.get_mut::<crate::area_panel::AreaEditor>(parent)
-                    && editor.selected == Some(entity)
-                {
-                    editor.selected = None;
-                    editor.cancel();
-                }
-                crate::edit_mode::render_panel(world, parent);
-            } else if world.get::<crate::topology::assets::ImportedAsset>(entity).is_some() {
-                crate::canvas_selection::clear(world, parent);
-                world.despawn(entity);
-            } else if world.get::<crate::sand_store::StoredSand>(entity).is_some() {
-                crate::edit_mode::EditAction::RemoveSand(entity).apply(world, parent);
-            }
+            let targets = crate::canvas_selection::companions(world, parent, entity);
+            crate::deletion::request(world, parent, targets);
             return;
         }
         if world.get::<crate::area::InfluenceArea>(entity).is_some() {
@@ -191,10 +174,21 @@ impl Action for PlacementAction {
             return;
         }
         if matches!(self, Self::Pin) {
-            if world.get::<crate::topology::presentation::SpatialRoot>(parent).is_some()
-                && (world.get::<crate::canvas_selection::SandGroup>(entity).is_some()
-                    || world.get::<crate::topology::assets::ImportedAsset>(entity).is_some()) {
-                crate::notifications::report(world, "Topology", "Screen pinning is available for individual content Sands. Use world pinning for this object.");
+            if world
+                .get::<crate::topology::presentation::SpatialRoot>(parent)
+                .is_some()
+                && (world
+                    .get::<crate::canvas_selection::SandGroup>(entity)
+                    .is_some()
+                    || world
+                        .get::<crate::topology::assets::ImportedAsset>(entity)
+                        .is_some())
+            {
+                crate::notifications::report(
+                    world,
+                    "Topology",
+                    "Screen pinning is available for individual content Sands. Use world pinning for this object.",
+                );
                 return;
             }
             if crate::layout::linked(world, entity) && world.get::<Pinned>(entity).is_none() {
@@ -394,8 +388,7 @@ fn menu(world: &mut World) {
     };
     let Some((root, target)) = target else { return };
     let area = world.get::<crate::area::InfluenceArea>(target).is_some();
-    let deletable = area || world.get::<crate::sand_store::StoredSand>(target).is_some()
-        || world.get::<crate::topology::assets::ImportedAsset>(target).is_some();
+    let deletable = crate::canvas_selection::eligible(world, root, target);
     let panel = world
         .spawn((
             PlacementMenu,
@@ -409,8 +402,7 @@ fn menu(world: &mut World) {
                     288
                 } else {
                     252
-                }) + 36
-                    * (i32::from(grouping.0) + i32::from(grouping.1) + i32::from(!area))),
+                }) + 36 * (i32::from(grouping.0) + 2 * i32::from(grouping.1) + 1)),
                 height: px(48),
                 align_items: AlignItems::Center,
                 justify_content: JustifyContent::Center,
@@ -439,6 +431,23 @@ fn menu(world: &mut World) {
         ),
         ChildOf(panel),
     ));
+    if area {
+        world.spawn((
+            IconButton::new(Icon::General, "Configure this area and its behaviors"),
+            IconStyle {
+                size: 20.0,
+                padding: 6.0,
+                ..default()
+            },
+            ActionButton::new(
+                root,
+                crate::actions![crate::edit_mode::EditAction::Area(
+                    crate::area_panel::AreaAction::Select(target)
+                )],
+            ),
+            ChildOf(panel),
+        ));
+    }
     let mut buttons = Vec::new();
     if !area {
         buttons.extend([
@@ -476,6 +485,12 @@ fn menu(world: &mut World) {
         ));
     }
     for (show, action, icon, name) in [
+        (
+            grouping.1,
+            crate::canvas_selection::GroupAction::Detach,
+            Icon::Ungroup,
+            "Ungroup this component",
+        ),
         (
             grouping.0,
             crate::canvas_selection::GroupAction::Group,

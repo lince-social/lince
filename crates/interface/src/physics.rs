@@ -49,9 +49,17 @@ struct WorkspaceContacts<'w, 's> {
 
 impl CollisionHooks for WorkspaceContacts<'_, '_> {
     fn filter_pairs(&self, first: Entity, second: Entity, _: &mut Commands) -> bool {
-        let first = self.colliders.get(first).map_or(first, |collider| collider.body);
-        let second = self.colliders.get(second).map_or(second, |collider| collider.body);
-        if first == second { return false; }
+        let first = self
+            .colliders
+            .get(first)
+            .map_or(first, |collider| collider.body);
+        let second = self
+            .colliders
+            .get(second)
+            .map_or(second, |collider| collider.body);
+        if first == second {
+            return false;
+        }
         if let Ok([first, second]) = self.spatial.get_many([first, second]) {
             return first.root == second.root && first.workspace == second.workspace;
         }
@@ -153,12 +161,29 @@ impl Plugin for WorkspacePhysicsPlugin {
 }
 
 pub(crate) fn held(world: &World, sand: Entity) -> bool {
-    if crate::canvas_pan::dragged(world) == Some(sand) {
+    if world
+        .get::<crate::protein_area::placement::Pending>(sand)
+        .is_some()
+        || crate::canvas_pan::dragged(world) == Some(sand)
+    {
         return true;
     }
     let mut focus = world
         .get_resource::<InputFocus>()
         .and_then(|focus| focus.get());
+    let mut cursor = focus;
+    while let Some(entity) = cursor {
+        if world
+            .get::<crate::protein_area::RecordBinding>(entity)
+            .is_some()
+            || world
+                .get::<crate::record_binding::TextBinding>(entity)
+                .is_some()
+        {
+            return false;
+        }
+        cursor = world.get::<ChildOf>(entity).map(ChildOf::parent);
+    }
     while let Some(entity) = focus {
         if entity == sand {
             return true;
@@ -187,6 +212,9 @@ fn synchronize(world: &mut World) -> bool {
         .iter(world)
         .filter(|(entity, item, parent, member, pin)| {
             world.get::<crate::area::InfluenceArea>(*entity).is_none()
+                && world
+                    .get::<crate::protein_area::placement::Pending>(*entity)
+                    .is_none()
                 && world
                     .get::<crate::layout::LayoutBox>(*entity)
                     .is_none_or(|layout| layout.parent.is_none())
@@ -440,14 +468,17 @@ fn simulate(world: &mut World) {
     let spatial = world.contains_resource::<crate::topology::physics::Runtime>();
     let changed = if spatial {
         crate::topology::physics::synchronize(world)
-    } else { synchronize(world) };
+    } else {
+        synchronize(world)
+    };
     world
         .run_system_cached(apply_forces)
         .expect("update workspace forces");
-    let awake = spatial && crate::topology::physics::awake(world) || world
-        .query::<(&BodyLink, Has<Sleeping>)>()
-        .iter(world)
-        .any(|(body, sleeping)| !body.held && !sleeping);
+    let awake = spatial && crate::topology::physics::awake(world)
+        || world
+            .query::<(&BodyLink, Has<Sleeping>)>()
+            .iter(world)
+            .any(|(body, sleeping)| !body.held && !sleeping);
     let delta = world
         .get_resource::<Time<Real>>()
         .map_or(STEP, Time::delta)
@@ -474,7 +505,9 @@ fn simulate(world: &mut World) {
     } else {
         world.resource_mut::<Simulation>().accumulated = Duration::ZERO;
     }
-    if spatial { crate::topology::physics::apply(world); }
+    if spatial {
+        crate::topology::physics::apply(world);
+    }
     let updates: Vec<_> = world
         .query::<(Entity, &BodyLink, &Position)>()
         .iter(world)
@@ -505,10 +538,11 @@ fn simulate(world: &mut World) {
             ));
         }
     }
-    let active = spatial && crate::topology::physics::awake(world) || world
-        .query::<(&BodyLink, Has<Sleeping>)>()
-        .iter(world)
-        .any(|(body, sleeping)| !body.held && !sleeping);
+    let active = spatial && crate::topology::physics::awake(world)
+        || world
+            .query::<(&BodyLink, Has<Sleeping>)>()
+            .iter(world)
+            .any(|(body, sleeping)| !body.held && !sleeping);
     if let Some(wake) = world.get_resource::<crate::wake::WakeSignal>().cloned()
         && active
         && world.resource::<Simulation>().timer.is_none()
@@ -574,10 +608,16 @@ pub(crate) mod tests {
         crate::layout::attach(app.world_mut(), sand, area).unwrap();
         let before = app.world().get::<CanvasItem>(sand).unwrap().position;
         advance(&mut app, 120);
-        assert_eq!(app.world().get::<CanvasItem>(sand).unwrap().position, before);
+        assert_eq!(
+            app.world().get::<CanvasItem>(sand).unwrap().position,
+            before
+        );
         crate::layout::detach(app.world_mut(), sand);
         advance(&mut app, 120);
-        assert_ne!(app.world().get::<CanvasItem>(sand).unwrap().position, before);
+        assert_ne!(
+            app.world().get::<CanvasItem>(sand).unwrap().position,
+            before
+        );
     }
 
     #[cfg_attr(test, test)]
@@ -856,6 +896,26 @@ pub(crate) mod tests {
         app.world_mut().resource_mut::<InputFocus>().clear();
         advance(&mut app, 120);
         assert!(app.world().get::<CanvasItem>(sand).unwrap().position.x < 150.0);
+    }
+
+    #[test]
+    fn bound_record_fields_keep_moving_while_focused() {
+        let (mut app, root, _, sand) = fixture(DVec2::ZERO);
+        app.world_mut()
+            .entity_mut(sand)
+            .insert(crate::protein_area::RecordBinding {
+                area: root,
+                uid: nucleus::new_uid("r"),
+                source: crate::protein_area::Source::Local,
+            });
+        let editor = app.world_mut().spawn(ChildOf(sand)).id();
+        let mut focus = InputFocus::default();
+        focus.set(editor, bevy::input_focus::FocusCause::Pressed);
+        app.insert_resource(focus);
+        crate::workspace_config::set_physics(app.world_mut(), root, 1, true);
+        advance(&mut app, 120);
+        assert!(app.world().get::<CanvasItem>(sand).unwrap().position.x < 150.0);
+        assert_eq!(app.world().resource::<InputFocus>().get(), Some(editor));
     }
 
     #[cfg_attr(test, test)]

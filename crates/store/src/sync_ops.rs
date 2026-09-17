@@ -555,7 +555,12 @@ pub fn op_in_scope_with_links(
         "record" => match kind {
             "tombstone" => true,
             "crdt" | "snapshot" => names("head") || names("body"),
-            "set" => !field.is_empty() && names(field),
+            "set" => {
+                let property = field.strip_prefix("property:").unwrap_or(field);
+                !property.is_empty()
+                    && (names(property)
+                        || (property.starts_with("work.log:") && names("work.logs")))
+            }
             _ => false,
         },
         "fact" => names("quantity"),
@@ -802,6 +807,8 @@ pub async fn prune(pool: &SqlitePool, dry_run: bool) -> Result<PruneReport, Stor
     };
 
     const PRUNABLE: &str = "seq <= ?
+           AND NOT (tbl = 'record' AND field = 'property:quantity')
+           AND tbl != 'record_assertion'
            AND seq NOT IN (SELECT seq FROM sync_outbox)
            AND (EXISTS (SELECT 1 FROM sync_op n
                          WHERE n.tbl = sync_op.tbl

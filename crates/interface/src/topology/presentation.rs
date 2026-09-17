@@ -218,8 +218,7 @@ pub fn synchronize(world: &mut World) {
             }
             continue;
         }
-        if world.get::<crate::area::InfluenceArea>(entity).is_some()
-            || world.get::<super::assets::ImportedAsset>(entity).is_some()
+        if world.get::<super::assets::ImportedAsset>(entity).is_some()
             || world.get::<crate::sand_placement::Pinned>(entity).is_some()
         {
             continue;
@@ -340,6 +339,12 @@ pub fn synchronize(world: &mut World) {
                 }));
         }
         let placement = spatial(world, entity);
+        let area = world.get::<crate::area::InfluenceArea>(entity).is_some();
+        world.entity_mut(body).insert(if area {
+            Visibility::Hidden
+        } else {
+            Visibility::Inherited
+        });
         let scale = world
             .get::<crate::area_effects::AreaScale>(entity)
             .map_or(1.0, |s| s.0);
@@ -377,14 +382,21 @@ pub fn synchronize(world: &mut World) {
                 .with_scale(Vec3::new(clipped_size.x, depth, clipped_size.y)),
         );
         world.get_mut::<Transform>(face).unwrap().set_if_neq(
-            Transform::from_xyz(clipped_center.x, 0.01, clipped_center.y)
-                .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2))
-                .with_scale(Vec3::new(clipped_size.x, clipped_size.y, 1.0)),
+            Transform::from_xyz(
+                clipped_center.x,
+                if area { 0.0 } else { 0.01 },
+                clipped_center.y,
+            )
+            .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2))
+            .with_scale(Vec3::new(clipped_size.x, clipped_size.y, 1.0)),
         );
         let visible = world
             .get::<Workspaces>(root)
             .is_some_and(|spaces| spaces.active == workspace)
-            && clipped_size.min_element() > 0.0;
+            && clipped_size.min_element() > 0.0
+            && world
+                .get::<crate::protein_area::placement::Pending>(entity)
+                .is_none();
         world
             .get_mut::<Visibility>(visual)
             .unwrap()

@@ -86,6 +86,7 @@ impl Engine {
     ) -> Result<Vec<String>, EngineError> {
         use crate::actions::Action;
         let named: Vec<&String> = match action {
+            Action::ChangeRecord { request } => vec![&request.record_uid],
             Action::CreateMessage { thread, .. } => vec![thread],
             Action::CreateMessageDraft {
                 conversation,

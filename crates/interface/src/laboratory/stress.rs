@@ -139,7 +139,7 @@ impl StressRun {
     }
 
     pub fn kind(&self) -> SandKind {
-        SandKind::ALL[(self.workload / 2).min(2)]
+        SandKind::ALL[(self.workload / 2).min(SandKind::ALL.len() - 1)]
     }
     pub fn physics(&self) -> bool {
         self.workload % 2 == 1
@@ -203,19 +203,18 @@ impl StressRun {
                     "Sand",
                     DVec2::new(x * f64::from(span.x), y * f64::from(span.y) + 130.0),
                 );
-                let size = if self.kind() == SandKind::Square {
-                    Vec2::splat(12.0)
-                } else {
-                    Vec2::new(64.0, 32.0)
+                let size = match self.kind() {
+                    SandKind::Square => Vec2::splat(12.0),
+                    SandKind::Operation | SandKind::AccessControl => Vec2::new(520.0, 540.0),
+                    SandKind::Text | SandKind::EditableText => Vec2::new(64.0, 32.0),
+                    SandKind::WorkTimer => Vec2::new(248.0, 184.0),
                 };
                 world.get_mut::<CanvasItem>(sand).unwrap().size = size;
                 if let Some(content) = world
                     .get::<crate::sand_store::StoredSand>(sand)
                     .and_then(|sand| sand.content)
+                    && let Some(mut area) = world.get_mut::<crate::sand_text::SandText>(content)
                 {
-                    let mut area = world
-                        .get_mut::<crate::sand_text::SandText>(content)
-                        .unwrap();
                     area.offset = [2.0; 2];
                     area.size = [60.0, 28.0];
                     let mut node = world.get_mut::<Node>(content).unwrap();

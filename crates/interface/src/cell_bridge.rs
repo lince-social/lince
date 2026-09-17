@@ -85,7 +85,7 @@ pub fn connect(runtime: cell::CellRuntime, wake: WakeSignal) -> CellBridge {
                 (sender.max_capacity() - sender.capacity()) as u64
             }),
         });
-    let mut sync_events = cell::SyncEvents::new(&runtime.engine);
+    let mut sync_events = cell::SyncEvents::new(&runtime.engine).with_presence(session.presence_changes());
     let closed = Arc::new(AtomicBool::new(false));
     let ended = ConnectionEnded {
         closed: closed.clone(),

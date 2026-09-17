@@ -7,6 +7,9 @@ struct ContentScroll {
 }
 
 pub(super) fn scroll(world: &mut World, parent: Entity, offset: Vec2) -> bool {
+    if world.get::<crate::area::InfluenceArea>(parent).is_some() {
+        return false;
+    }
     let viewport = world
         .get::<ChildOf>(parent)
         .and_then(|parent| world.get::<ComputedNode>(parent.parent()))

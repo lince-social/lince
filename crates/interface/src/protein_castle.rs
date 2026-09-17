@@ -290,6 +290,11 @@ fn cancel(world: &mut World, owner: Entity, kind: Option<RequestKind>) {
     }
 }
 
+pub(crate) fn remove(world: &mut World, owner: Entity) {
+    cancel(world, owner, None);
+    world.despawn(owner);
+}
+
 pub(crate) fn status(world: &mut World, owner: Entity, message: impl Into<String>) {
     if let Some(mut view) = world.get_mut::<View>(owner) {
         view.status = message.into();

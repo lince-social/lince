@@ -77,7 +77,7 @@ async fn drive(
         uuid::Uuid::new_v4().to_string(),
         login.clone(),
     );
-    let mut events = cell::SyncEvents::new(&state.cell.engine);
+    let mut events = cell::SyncEvents::new(&state.cell.engine).with_presence(session.presence_changes());
     let mut revoked = login.watch_revocation();
     let mut rate_window = std::time::Instant::now();
     let mut message_count = 0;

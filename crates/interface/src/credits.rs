@@ -3,6 +3,8 @@ pub const LATO_LICENSE: &str = include_str!("../../../assets/fonts/Lato/OFL.txt"
 pub const LUCIDE_LICENSE: &str = include_str!("../../../assets/icons/lucide/LICENSE");
 pub const AVIAN_LICENSE: &str = include_str!("../licenses/avian-MIT.txt");
 pub const CHRONO_LICENSE: &str = include_str!("../licenses/chrono.txt");
+pub const LORO_LICENSE: &str = include_str!("../licenses/loro-MIT.txt");
+pub const ACCESSKIT_LICENSE: &str = include_str!("../licenses/accesskit-MIT.txt");
 
 pub struct Attribution {
     pub name: &'static str,
@@ -11,6 +13,19 @@ pub struct Attribution {
 }
 
 pub const ATTRIBUTIONS: &[Attribution] = &[
+    Attribution { name: "pulldown-cmark", author: "Raph Levien and contributors", license: include_str!("../licenses/pulldown-cmark-MIT.txt") },
+    Attribution { name: "mermaid-rs-renderer", author: "1jehuang and contributors", license: include_str!("../licenses/mermaid-rs-renderer-MIT.txt") },
+    Attribution { name: "resvg", author: "Yevhenii Reizner and contributors", license: include_str!("../licenses/resvg-MIT.txt") },
+    Attribution {
+        name: "AccessKit",
+        author: "The AccessKit contributors",
+        license: ACCESSKIT_LICENSE,
+    },
+    Attribution {
+        name: "Loro",
+        author: "Loro contributors",
+        license: LORO_LICENSE,
+    },
     Attribution {
         name: "Chrono",
         author: "Kang Seonghoon and Chrono contributors",

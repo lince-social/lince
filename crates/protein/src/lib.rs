@@ -271,6 +271,14 @@ impl Default for LinkDirection {
 pub struct ThreadsInclude {
     #[serde(default = "default_messages_limit")]
     pub messages_limit: usize,
+    #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
+    pub message_limits: std::collections::BTreeMap<String, usize>,
+}
+
+impl Default for ThreadsInclude {
+    fn default() -> Self {
+        Self { messages_limit: 50, message_limits: Default::default() }
+    }
 }
 
 fn default_messages_limit() -> usize {
@@ -684,12 +692,13 @@ async fn execute_auth(store: &Store, subject: Option<&str>) -> Result<Vec<Value>
     let can = |key| subject.is_none() || principal.as_ref().is_some_and(|user| user.permits(key));
     let mut out = Vec::new();
     if can("role:read") {
-        for (id, name, permissions) in store::auth::list_roles(&store.pool).await? {
+        for role in store::roles::catalog(&store.pool, can("permission:read")).await? {
             out.push(json!({
                 "kind": "role",
-                "id": id.to_string(),
-                "name": name,
-                "permissions": if can("permission:read") { permissions } else { vec![] },
+                "id": role.id.to_string(),
+                "name": role.name,
+                "revision": role.revision,
+                "permissions": role.permissions,
             }));
         }
     }
@@ -1820,7 +1829,7 @@ async fn attach_includes(
     }
     if let Some(threads) = &include.threads {
         row["threads"] =
-            json!(threads_for_record(store, record_uid, threads.messages_limit).await?);
+            json!(threads_for_record(store, record_uid, threads).await?);
     }
     if let Some(extension) = &include.extension {
         row["extension"] =
@@ -2073,7 +2082,7 @@ async fn links_for_record(
 async fn threads_for_record(
     store: &Store,
     record_uid: &str,
-    messages_limit: usize,
+    settings: &ThreadsInclude,
 ) -> Result<Vec<Value>, ProteinError> {
     let Some(thread_of) = store::concepts::resolve(&store.pool, "thread-of").await? else {
         return Ok(vec![]);
@@ -2089,14 +2098,18 @@ async fn threads_for_record(
         if thread.kind != "thread" || !thread.quantity.is_positive() {
             continue;
         }
+        let messages_limit = settings.message_limits.get(&thread.uid).copied().unwrap_or(settings.messages_limit);
         let mut messages = Vec::new();
-        let linked_messages = match &message_in {
+        let mut linked_messages = match &message_in {
             Some(message_in) => {
-                store::assertions::subjects_pointing_to(&store.pool, message_in, &thread.uid)
+                store::assertions::recent_messages(&store.pool, message_in, &thread.uid, messages_limit.saturating_add(1))
                     .await?
             }
             None => Vec::new(),
         };
+        let has_more = linked_messages.len() > messages_limit;
+        linked_messages.truncate(messages_limit);
+        linked_messages.reverse();
         for message in linked_messages {
             if message.kind != "message" || !message.quantity.is_positive() {
                 continue;
@@ -2208,6 +2221,8 @@ async fn threads_for_record(
             "sender": thread_sender,
             "organ_name": thread_organ_name,
             "messages": messages,
+            "messages_has_more": has_more,
+            "messages_limit": messages_limit,
         }));
     }
     Ok(out)
@@ -7057,7 +7072,7 @@ async fn execute_transfers(
         let negotiation_write_blockers =
             viewer.negotiation_write_blockers(is_creator, is_participant, is_invitee);
         let can_write_negotiation = negotiation_write_blockers.is_empty();
-        let mut threads = threads_for_record(store, uid, 100).await?;
+        let mut threads = threads_for_record(store, uid, &ThreadsInclude { messages_limit: 100, ..Default::default() }).await?;
         for thread in &mut threads {
             if let Some(object) = thread.as_object_mut() {
                 object.insert(

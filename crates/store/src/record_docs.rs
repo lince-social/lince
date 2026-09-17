@@ -450,13 +450,23 @@ pub async fn put(
     snapshot: &[u8],
     through_seq: i64,
 ) -> Result<(), StoreError> {
+    let mut tx = crate::write_tx(pool).await?;
+    put_on(&mut tx, record_uid, snapshot, through_seq).await?;
+    tx.commit().await
+}
+
+pub async fn put_on(
+    tx: &mut Transaction<'_, Sqlite>,
+    record_uid: &str,
+    snapshot: &[u8],
+    through_seq: i64,
+) -> Result<(), StoreError> {
     validate_snapshot(snapshot)?;
     validate_through_seq(through_seq)?;
-    let mut tx = crate::write_tx(pool).await?;
-    advance_generation_on(&mut tx, record_uid, None).await?;
+    advance_generation_on(tx, record_uid, None).await?;
     sqlx::query("DELETE FROM record_doc WHERE CAST(record_uid AS TEXT) = ?")
         .bind(record_uid)
-        .execute(&mut *tx)
+        .execute(&mut **tx)
         .await?;
     sqlx::query(
         "INSERT INTO record_doc
@@ -467,9 +477,8 @@ pub async fn put(
     .bind(snapshot)
     .bind(through_seq)
     .bind(Utc::now().to_rfc3339())
-    .execute(&mut *tx)
+    .execute(&mut **tx)
     .await?;
-    tx.commit().await?;
     Ok(())
 }
 

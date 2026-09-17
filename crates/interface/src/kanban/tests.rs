@@ -71,7 +71,7 @@ fn preset_uses_valid_connected_areas_and_editable_task_fields() {
         .iter(app.world())
         .cloned()
         .collect();
-    assert_eq!(areas.len(), 15);
+    assert_eq!(areas.len(), 8);
     for area in &areas {
         assert!(area.validate(), "{}", area.name);
         if let Some(config) = area.protein.as_ref().or(area.filter.as_ref()) {
@@ -82,7 +82,25 @@ fn preset_uses_valid_connected_areas_and_editable_task_fields() {
     app.update();
     assert_eq!(
         app.world_mut().query::<&Part>().iter(app.world()).count(),
-        14
+        7
+    );
+    assert_eq!(
+        app.world_mut()
+            .query_filtered::<&crate::castle::Castle, With<CanvasItem>>()
+            .iter(app.world())
+            .count(),
+        7
+    );
+    assert!(
+        !app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == "Kanban")
+    );
+    let source = area(app.world(), owner, &board.source).unwrap();
+    assert_eq!(
+        crate::topology::groups::members(app.world(), source).len(),
+        15
     );
     let saved = snapshot(app.world_mut(), root);
     assert_eq!(saved.len(), 1);
@@ -103,7 +121,6 @@ async fn setup_creation_transfer_and_exit_preserve_card_identity() {
     .insert_resource(crate::wake::WakeSignal::new(|| {}))
     .add_plugins(crate::cell_bridge::CellBridgePlugin);
     app.update();
-    Command::Start.apply(app.world_mut(), owner);
     let board = app.world().get::<Kanban>(owner).unwrap().clone();
     let backlog = area(app.world(), owner, &board.columns[0].area).unwrap();
     let todo = area(app.world(), owner, &board.columns[1].area).unwrap();
@@ -119,7 +136,7 @@ async fn setup_creation_transfer_and_exit_preserve_card_identity() {
             app.world()
                 .get::<ChildOf>(parent.parent())
                 .and_then(|parent| app.world().get::<Part>(parent.parent()))
-                .is_some_and(|part| part.owner == owner && part.column == 0 && !part.count)
+                .is_some_and(|part| part.owner == owner && part.column == 0)
         })
         .unwrap()
         .0;
@@ -208,7 +225,23 @@ async fn setup_creation_transfer_and_exit_preserve_card_identity() {
             .is_some_and(|layout| layout.order == 1)
     })
     .await;
-    Command::Move(1).apply(app.world_mut(), card);
+    let destination = crate::topology::position(app.world(), todo).unwrap();
+    app.world_mut()
+        .init_resource::<crate::topology::input::PointerState>();
+    let width = app.world().get::<CanvasItem>(card).unwrap().size.x;
+    assert!(app.world().get::<TaskCard>(card).is_some());
+    begin_drag(app.world_mut(), card, destination);
+    crate::topology::set_position(app.world_mut(), card, destination);
+    app.update();
+    assert_eq!(app.world().get::<CanvasItem>(card).unwrap().size.x, width);
+    assert_eq!(app.world().get::<Card>(card).unwrap().column, Some(backlog));
+    assert_eq!(
+        app.world().get::<RecordProperties>(card).unwrap().0["quantity_exact"],
+        "0"
+    );
+    app.world_mut()
+        .resource_mut::<crate::topology::input::PointerState>()
+        .drag = None;
     until(&mut app, |world| {
         world
             .get::<Card>(card)
@@ -235,4 +268,140 @@ async fn setup_creation_transfer_and_exit_preserve_card_identity() {
     })
     .await;
     assert!(app.world().get::<RecordBinding>(card).is_some());
+}
+
+#[test]
+fn columns_touch_after_resize_and_source_unlock_preserves_its_connection() {
+    let (mut app, _, owner) = fixture();
+    app.update();
+    let board = app.world().get::<Kanban>(owner).unwrap().clone();
+    let columns: Vec<_> = board
+        .columns
+        .iter()
+        .map(|c| area(app.world(), owner, &c.area).unwrap())
+        .collect();
+    let source = area(app.world(), owner, &board.source).unwrap();
+    let mut rules = app
+        .world()
+        .get::<LayoutBox>(columns[1])
+        .unwrap()
+        .rules
+        .clone();
+    rules.axes[0].size = 420.0;
+    crate::layout::configure(app.world_mut(), columns[1], rules).unwrap();
+    app.update();
+    for pair in columns.windows(2) {
+        let first = app.world().get::<CanvasItem>(pair[0]).unwrap();
+        let second = app.world().get::<CanvasItem>(pair[1]).unwrap();
+        let edge = crate::topology::position(app.world(), pair[0]).unwrap().x
+            + f64::from(first.size.x) * 0.5;
+        let next = crate::topology::position(app.world(), pair[1]).unwrap().x
+            - f64::from(second.size.x) * 0.5;
+        assert!((edge - next).abs() < 1e-8);
+        let boundary = DVec2::new(edge, 0.0);
+        assert!(
+            !app.world()
+                .get::<InfluenceArea>(pair[0])
+                .unwrap()
+                .contains(boundary)
+        );
+        assert!(
+            app.world()
+                .get::<InfluenceArea>(pair[1])
+                .unwrap()
+                .contains(boundary)
+        );
+    }
+    let before = crate::topology::position(app.world(), source).unwrap();
+    let translation = DVec3::new(30.0, 0.0, 50.0);
+    crate::topology::groups::transform(
+        app.world_mut(),
+        owner,
+        translation,
+        bevy::math::DQuat::IDENTITY,
+    );
+    app.update();
+    assert_eq!(
+        crate::topology::position(app.world(), source),
+        Some(before + translation)
+    );
+    let source_position = crate::topology::position(app.world(), source).unwrap();
+    assert!(source_position.z > 360.0);
+    crate::canvas_selection::detach(app.world_mut(), source);
+    assert!(
+        app.world()
+            .get::<crate::canvas_selection::SandGroup>(columns[0])
+            .is_some()
+    );
+    assert!(
+        crate::sand_placement::Placement::capture(app.world(), source)
+            .group
+            .is_none()
+    );
+    let detached = source_position + DVec3::new(400.0, 0.0, 200.0);
+    crate::topology::set_position(app.world_mut(), source, detached);
+    app.update();
+    assert_eq!(
+        crate::topology::position(app.world(), source),
+        Some(detached)
+    );
+    let config = app
+        .world()
+        .get::<InfluenceArea>(source)
+        .unwrap()
+        .protein
+        .as_ref()
+        .unwrap();
+    assert_eq!(
+        config.spawn_targets,
+        board
+            .columns
+            .iter()
+            .map(|c| c.area.clone())
+            .collect::<Vec<_>>()
+    );
+    assert_eq!(
+        config.placement,
+        crate::protein_area::SpawnPlacement::MatchingAreas
+    );
+    let original_root = app.world().get::<ChildOf>(owner).unwrap().parent();
+    let saved_board = snapshot(app.world_mut(), original_root).pop().unwrap();
+    let saved_areas: Vec<_> = board
+        .ids()
+        .map(|id| {
+            let entity = area(app.world(), owner, id).unwrap();
+            (
+                app.world().get::<InfluenceArea>(entity).unwrap().clone(),
+                crate::sand_placement::Placement::capture(app.world(), entity),
+            )
+        })
+        .collect();
+    let restored_root = app
+        .world_mut()
+        .spawn((
+            crate::container::BoxRoot,
+            crate::workspace::Workspaces::default(),
+        ))
+        .id();
+    let mut restored_source = None;
+    for (saved, placement) in saved_areas {
+        let is_source = saved.id == board.source;
+        let entity = crate::area::spawn_area(app.world_mut(), restored_root, 1, saved).unwrap();
+        placement.restore(app.world_mut(), entity);
+        if is_source {
+            restored_source = Some(entity);
+        }
+    }
+    saved_board.restore(app.world_mut(), restored_root);
+    app.update();
+    let restored_source = restored_source.unwrap();
+    assert_eq!(
+        crate::topology::position(app.world(), restored_source),
+        Some(detached)
+    );
+    assert!(
+        app.world()
+            .get::<crate::canvas_selection::SandGroup>(restored_source)
+            .is_none()
+    );
 }

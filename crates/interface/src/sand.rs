@@ -35,6 +35,7 @@ impl Plugin for SandPlugin {
             .register_type::<ImageSand>()
             .register_type::<InBox>()
             .init_resource::<InputFocus>()
+            .init_resource::<bevy::input_focus::InputFocusVisible>()
             .add_systems(
                 PostUpdate,
                 button_borders
@@ -74,6 +75,7 @@ impl Plugin for SandPlugin {
 
 fn button_borders(
     settings: Res<crate::tokens::ThemeSettings>,
+    focus_visible: Res<bevy::input_focus::InputFocusVisible>,
     mut buttons: Query<
         (
             Entity,
@@ -91,8 +93,8 @@ fn button_borders(
 ) {
     for (entity, mut node, color, outline) in &mut buttons {
         if let Some(mut outline) = outline
-            && outline.width == px(1)
-            && outline.offset == px(0)
+            && outline.width != px(0)
+            && (!focus_visible.0 || (outline.width == px(1) && outline.offset == px(0)))
         {
             outline.width = px(0);
         }
@@ -191,9 +193,25 @@ pub(crate) mod tests {
             Color::NONE
         );
         assert_eq!(app.world().get::<Outline>(button).unwrap().width, px(0));
+        app.world_mut()
+            .resource_mut::<bevy::input_focus::InputFocusVisible>()
+            .0 = true;
         app.world_mut().get_mut::<Outline>(button).unwrap().width = px(2);
         app.update();
         assert_eq!(app.world().get::<Outline>(button).unwrap().width, px(2));
+        app.world_mut()
+            .resource_mut::<bevy::input_focus::InputFocusVisible>()
+            .0 = false;
+        app.world_mut().trigger(FocusGained {
+            entity: button,
+            cause: FocusCause::Navigated,
+        });
+        app.update();
+        assert_eq!(app.world().get::<Outline>(button).unwrap().width, px(0));
+        assert_eq!(
+            app.world().get::<Node>(button).unwrap().border,
+            UiRect::all(px(BUTTON_BORDER_WIDTH))
+        );
         assert_eq!(app.world().get::<Node>(button).unwrap().width, px(160));
         assert_eq!(app.world().get::<Node>(button).unwrap().height, px(48));
     }

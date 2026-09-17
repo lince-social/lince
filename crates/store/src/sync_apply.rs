@@ -393,6 +393,16 @@ pub async fn upsert_assertion(
             .await?;
         }
     }
+    if s("role").as_deref().unwrap_or("ordinary") == "ordinary" {
+        let subject = s("subject_uid").unwrap_or_default();
+        let predicate = s("predicate_uid").unwrap_or_default();
+        let object = s("object_uid");
+        sqlx::query("INSERT INTO record_assertion (uid, subject_uid, predicate_uid, object_uid, role, quantity_mantissa, quantity_scale, unit_uid, asserted_by, created_at, retracted_at) VALUES (?, ?, ?, ?, 'ordinary', ?, ?, ?, ?, ?, ?) ON CONFLICT(uid) DO UPDATE SET quantity_mantissa = excluded.quantity_mantissa, quantity_scale = excluded.quantity_scale, unit_uid = excluded.unit_uid")
+            .bind(uid).bind(&subject).bind(&predicate).bind(&object).bind(s("quantity_mantissa")).bind(value["quantity_scale"].as_i64()).bind(s("unit_uid")).bind(s("asserted_by")).bind(s("created_at").unwrap_or_else(|| Utc::now().to_rfc3339())).bind(Utc::now().to_rfc3339()).execute(&mut *tx).await?;
+        project_ordinary_assertion(&mut tx, &subject, &predicate, object.as_deref()).await?;
+        tx.commit().await?;
+        return Ok(());
+    }
     let res = sqlx::query(
         "INSERT OR IGNORE INTO record_assertion
            (uid, subject_uid, predicate_uid, object_uid, role,
@@ -438,6 +448,32 @@ pub async fn retract_assertion(
     )
     .execute(pool)
     .await?;
+    let tuple: Option<(String, String, Option<String>)> = sqlx::query_as("SELECT subject_uid, predicate_uid, object_uid FROM record_assertion WHERE uid = ? AND role = 'ordinary'").bind(uid).fetch_optional(pool).await?;
+    if let Some((subject, predicate, object)) = tuple {
+        let mut tx = crate::write_tx(pool).await?;
+        project_ordinary_assertion(&mut tx, &subject, &predicate, object.as_deref()).await?;
+        tx.commit().await?;
+    }
+    Ok(())
+}
+
+pub(crate) async fn project_ordinary_assertion(
+    tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
+    subject: &str,
+    predicate: &str,
+    object: Option<&str>,
+) -> Result<(), StoreError> {
+    let winner: Option<String> = sqlx::query_scalar("SELECT a.uid FROM record_assertion a WHERE a.subject_uid = ? AND a.predicate_uid = ? AND a.object_uid IS ? AND a.role = 'ordinary' AND NOT EXISTS (SELECT 1 FROM sync_op o WHERE o.tbl = 'record_assertion' AND o.uid = a.uid AND o.kind = 'tombstone') ORDER BY a.uid DESC LIMIT 1")
+        .bind(subject).bind(predicate).bind(object).fetch_optional(&mut **tx).await?;
+    sqlx::query("UPDATE record_assertion SET retracted_at = COALESCE(retracted_at, ?) WHERE subject_uid = ? AND predicate_uid = ? AND object_uid IS ? AND role = 'ordinary'")
+        .bind(Utc::now().to_rfc3339()).bind(subject).bind(predicate).bind(object).execute(&mut **tx).await?;
+    if let Some(winner) = winner {
+        let identity: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM record_assertion WHERE subject_uid = ? AND predicate_uid = ? AND object_uid IS ? AND role = 'identity' AND retracted_at IS NULL)")
+            .bind(subject).bind(predicate).bind(object).fetch_one(&mut **tx).await?;
+        if !identity {
+            sqlx::query("UPDATE record_assertion SET retracted_at = NULL, retracted_by = NULL WHERE uid = ?").bind(winner).execute(&mut **tx).await?;
+        }
+    }
     Ok(())
 }
 

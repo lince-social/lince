@@ -44,6 +44,46 @@ fn text(world: &mut World, parent: Entity, editable: bool, measured: Vec2) -> En
 }
 
 #[test]
+fn detaching_fill_preserves_visible_size_until_reattached() {
+    let mut world = World::new();
+    let root = world
+        .spawn((
+            crate::canvas::CanvasView::default(),
+            ComputedNode {
+                size: Vec2::splat(4000.0),
+                inverse_scale_factor: 1.0,
+                ..default()
+            },
+        ))
+        .id();
+    let parent = canvas(&mut world, root, Vec2::new(340.0, 640.0));
+    let child = canvas(&mut world, root, Vec2::new(100.0, 80.0));
+    let mut rules = Rules::fixed(Vec2::new(340.0, 640.0));
+    rules.arrangement = Arrangement::Column;
+    rules.padding = 12.0;
+    configure(&mut world, parent, rules).unwrap();
+    let mut rules = Rules::fixed(Vec2::new(100.0, 80.0));
+    rules.axes[0].sizing = Sizing::Fill;
+    configure(&mut world, child, rules).unwrap();
+    attach(&mut world, child, parent).unwrap();
+    engine::resolve(&mut world);
+    assert_eq!(world.get::<CanvasItem>(child).unwrap().size.x, 316.0);
+    detach(&mut world, child);
+    for _ in 0..10 {
+        engine::resolve(&mut world);
+        assert_eq!(world.get::<CanvasItem>(child).unwrap().size.x, 316.0);
+    }
+    attach(&mut world, child, parent).unwrap();
+    configure(&mut world, child, rules).unwrap();
+    engine::resolve(&mut world);
+    assert_eq!(
+        world.get::<LayoutRuntime>(child).unwrap().parent,
+        Some(parent)
+    );
+    assert_eq!(world.get::<CanvasItem>(child).unwrap().size.x, 316.0);
+}
+
+#[test]
 fn title_growth_reaches_nested_squares_and_scroll_stops_it_on_each_axis() {
     let mut world = World::new();
     let root = world.spawn_empty().id();

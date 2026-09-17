@@ -362,6 +362,7 @@ fn remote_rows_are_isolated_cancelled_replies_are_ignored_and_large_views_are_bo
 }
 
 crate::laboratory_cases! {
+    record_source_stays_stable_while_paused_and_typing_resumes_at_selection,
     async independent_sorting_uses_live_protein_order_without_spawning_and_clears_on_stop,
     async protein_pull_filters_query_real_properties_without_spawning_and_isolate_sources,
     protein_filter_errors_clear_membership_and_quiet_updates_reuse_the_cache,
@@ -376,6 +377,103 @@ crate::laboratory_cases! {
     templates_validate_and_request_only_bound_properties_even_before_rows_exist,
     async area_reads_real_records_preserves_entities_edits_and_deletes_through_actions,
     remote_rows_are_isolated_cancelled_replies_are_ignored_and_large_views_are_bounded,
+}
+
+#[cfg_attr(test, test)]
+fn record_source_stays_stable_while_paused_and_typing_resumes_at_selection() {
+    use bevy::{
+        input_focus::{FocusCause, InputFocus},
+        text::{EditableText, FontCx, LayoutCx},
+        time::TimeUpdateStrategy,
+        ui::widget::TextScroll,
+    };
+    use std::time::Duration;
+
+    let (mut app, _, owner) = fixture();
+    app.insert_resource(TimeUpdateStrategy::ManualDuration(Duration::from_millis(
+        250,
+    )));
+    let mut config = crate::full_record::config("record-a", Source::Local);
+    config
+        .bindings
+        .retain(|binding| matches!(binding.property.as_str(), "head" | "body"));
+    let source = "# Title\n\nThinking about **this**.\n\nAnother block.";
+    let data = json!({"uid":"record-a", "head":"Title", "body":source});
+    app.world_mut()
+        .get_mut::<InfluenceArea>(owner)
+        .unwrap()
+        .protein = Some(config.clone());
+    app.world_mut().resource_mut::<Runtime>().areas.insert(
+        owner,
+        State {
+            applied: Some(config),
+            data: vec![data],
+            ready: true,
+            dirty: true,
+            ..default()
+        },
+    );
+    rows::reconcile(app.world_mut(), owner);
+    let editor = app
+        .world_mut()
+        .query::<(Entity, &EditableText)>()
+        .iter(app.world())
+        .find(|(_, text)| text.value().to_string() == source)
+        .unwrap()
+        .0;
+    app.update();
+    let node = app.world().get::<Node>(editor).unwrap().clone();
+    let parent = app.world().get::<ChildOf>(editor).unwrap().parent();
+    let mut fonts = FontCx::default();
+    let font = app
+        .world()
+        .resource::<Assets<Font>>()
+        .get(&app.world().resource::<crate::theme::Typography>().0)
+        .unwrap();
+    fonts.collection.register_fonts(font.data.clone(), None);
+    fonts.set_sans_serif_family("Lato").unwrap();
+    let mut layout = LayoutCx::default();
+    let start = source.find("this").unwrap();
+    app.world_mut()
+        .get_mut::<EditableText>(editor)
+        .unwrap()
+        .editor
+        .driver(&mut fonts.context, &mut layout.0)
+        .select_byte_range(start, start + 4);
+    app.world_mut()
+        .resource_mut::<InputFocus>()
+        .set(editor, FocusCause::Pressed);
+    app.world_mut()
+        .entity_mut(editor)
+        .insert(TextScroll(Vec2::new(0.0, 24.0)));
+    for _ in 0..240 {
+        app.update();
+        let world = app.world();
+        let text = world.get::<EditableText>(editor).unwrap();
+        assert_eq!(text.value().to_string(), source);
+        assert_eq!(text.editor.raw_selection().anchor().index(), start);
+        assert_eq!(text.editor.raw_selection().focus().index(), start + 4);
+        assert_eq!(world.resource::<InputFocus>().get(), Some(editor));
+        assert_eq!(world.get::<Node>(editor).unwrap(), &node);
+        assert_eq!(world.get::<ChildOf>(editor).unwrap().parent(), parent);
+        assert_eq!(world.get::<TextScroll>(editor).unwrap().0.y, 24.0);
+    }
+    assert!(app.world().resource::<Time>().elapsed_secs() >= 60.0);
+    app.world_mut()
+        .get_mut::<EditableText>(editor)
+        .unwrap()
+        .editor
+        .driver(&mut fonts.context, &mut layout.0)
+        .insert_or_replace_selection("that");
+    app.update();
+    assert_eq!(
+        app.world()
+            .get::<EditableText>(editor)
+            .unwrap()
+            .value()
+            .to_string(),
+        source.replacen("this", "that", 1)
+    );
 }
 
 #[cfg_attr(test, test)]
@@ -1436,4 +1534,35 @@ async fn independent_sorting_uses_live_protein_order_without_spawning_and_clears
             DVec2::ZERO
         );
     }
+}
+
+#[test]
+fn thread_history_and_deletion_stay_scoped_to_the_bound_record() {
+    let mut world = World::new();
+    world.init_resource::<Runtime>();
+    let area = world.spawn_empty().id();
+    let editor = world.spawn_empty().id();
+    let binding = RecordBinding { area, uid: "record".into(), source: Source::Local };
+    world.resource_mut::<Runtime>().areas.insert(area, State {
+        ready: true,
+        subscription: Some("thread-feed".into()),
+        applied: Some(crate::full_record::config("test", Source::Local)),
+        data: vec![json!({"uid":"record", "threads":[{"uid":"thread", "messages":[{"uid":"message"}]}]})],
+        ..default()
+    });
+    assert!(load_thread_messages(&mut world, &binding, "unrelated", 100).is_err());
+    load_thread_messages(&mut world, &binding, "thread", 100).unwrap();
+    let state = &world.resource::<Runtime>().areas[&area];
+    let ClientMessage::Subscribe { id, protein } = state.pending.front().unwrap() else { panic!("expected subscription") };
+    assert_eq!(id, "thread-feed");
+    assert_eq!(protein.include.threads.as_ref().unwrap().message_limits["thread"], 100);
+    assert_eq!(state.data[0]["uid"], "record");
+    assert!(execute(&mut world, &binding, editor, engine::actions::Action::DeleteRecord { target: "unrelated".into() }).is_err());
+    execute(&mut world, &binding, editor, engine::actions::Action::DeleteRecord { target: "message".into() }).unwrap();
+    assert!(matches!(world.resource::<Runtime>().areas[&area].pending.back(), Some(ClientMessage::Act { action: engine::actions::Action::DeleteRecord { target }, .. }) if target == "message"));
+    receive(&mut world, area, ServerMessage::Error { id: "thread-feed".into(), message: "History unavailable".into(), code: None });
+    assert_eq!(world.resource::<Runtime>().areas[&area].data[0]["uid"], "record");
+    assert_eq!(thread_load_error(&world, area), Some("History unavailable"));
+    load_thread_messages(&mut world, &binding, "thread", 100).unwrap();
+    assert_eq!(thread_load_error(&world, area), None);
 }

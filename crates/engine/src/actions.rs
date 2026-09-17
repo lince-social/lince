@@ -40,6 +40,9 @@ fn validate_saved_protein_shape(ast: &serde_json::Value) -> Result<(), EngineErr
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "action", rename_all = "kebab-case")]
 pub enum Action {
+    ChangeRecord {
+        request: crate::record_change::Request,
+    },
     CreateRecord {
         slug: Option<String>,
         kind: RecordKind,
@@ -982,6 +985,15 @@ pub enum Action {
     CreateRole {
         name: String,
     },
+    RenameRole {
+        role: i64,
+        expected_revision: i64,
+        name: String,
+    },
+    DeleteRole {
+        role: i64,
+        expected_revision: i64,
+    },
     CreateUser {
         username: String,
         name: String,
@@ -1817,6 +1829,9 @@ impl Engine {
         self.authorize_action(&action, actor.as_deref()).await?;
         let mut outcome = ActionOutcome::default();
         match action {
+            Action::ChangeRecord { request } => {
+                outcome = self.change_record(request, actor.as_deref()).await?;
+            }
             Action::CreateRecordWithTags {
                 head,
                 body,
@@ -1878,56 +1893,33 @@ impl Engine {
                     .await?;
             }
             Action::SetQuantityExact { target, amount } => {
-                let uid = self.resolve(&target).await?;
-                self.reject_direct_transfer_record_mutation(&uid).await?;
-                let target_value =
-                    nucleus::DecimalValue::parse_inferred(amount.trim()).map_err(|_| {
-                        EngineError::Conflict {
-                            code: "quantity_invalid",
-                            message: format!("`{amount}` is not an exact decimal amount"),
-                        }
-                    })?;
-                let current = store::records::quantity(&self.store.pool, &uid)
-                    .await?
-                    .unwrap_or_else(store::exact::zero);
-                if target_value != current {
-                    outcome.facts = self
-                        .append(
-                            NewFact {
-                                actor_uid: actor,
-                                ..NewFact::quantity(
-                                    uid,
-                                    store::exact::difference(target_value, current)?,
-                                    Cause::user_edit(),
-                                )
-                            },
-                            now,
-                        )
-                        .await?;
-                }
+                outcome = self
+                    .change_record(
+                        crate::record_change::Request {
+                            id: nucleus::new_uid("op"),
+                            record_uid: self.resolve(&target).await?,
+                            mutation: crate::record_change::Mutation::Quantity { value: amount },
+                        },
+                        actor.as_deref(),
+                    )
+                    .await?;
             }
             Action::SetQuantity { target, value } => {
-                let uid = self.resolve(&target).await?;
-                self.reject_direct_transfer_record_mutation(&uid).await?;
-                let current = store::records::quantity(&self.store.pool, &uid)
-                    .await?
-                    .unwrap_or_else(store::exact::zero);
-                let target_value = store::exact::from_f64(value);
-                if target_value != current {
-                    outcome.facts = self
-                        .append(
-                            NewFact {
-                                actor_uid: actor,
-                                ..NewFact::quantity(
-                                    uid,
-                                    store::exact::difference(target_value, current)?,
-                                    Cause::user_edit(),
-                                )
-                            },
-                            now,
-                        )
-                        .await?;
+                if !value.is_finite() {
+                    return Err(EngineError::Consequence("Quantity must be finite".into()));
                 }
+                outcome = self
+                    .change_record(
+                        crate::record_change::Request {
+                            id: nucleus::new_uid("op"),
+                            record_uid: self.resolve(&target).await?,
+                            mutation: crate::record_change::Mutation::Quantity {
+                                value: store::exact::from_f64(value).to_string(),
+                            },
+                        },
+                        actor.as_deref(),
+                    )
+                    .await?;
             }
             Action::TransitionRecord {
                 subject,
@@ -2671,25 +2663,22 @@ impl Engine {
             }
             Action::EditRecordText { target, head, body } => {
                 let uid = self.resolve(&target).await?;
-                self.reject_direct_transfer_record_mutation(&uid).await?;
-                self.write_record_text(&uid, head.as_deref(), body.as_deref())
-                    .await?;
                 outcome.facts = self
-                    .annotate(
-                        uid,
-                        actor,
-                        serde_json::json!({ "edit": { "head": head, "body": body } }),
-                        now,
-                    )
+                    .write_record_text_as(&uid, head.as_deref(), body.as_deref(), actor.as_deref())
                     .await?;
             }
             Action::SetSlug { target, slug } => {
-                let uid = self.resolve(&target).await?;
-                self.reject_direct_transfer_record_mutation(&uid).await?;
-                let slug = slug.filter(|s| !s.is_empty());
-                store::records::set_slug(&self.store.pool, &uid, slug.as_deref()).await?;
-                outcome.facts = self
-                    .annotate(uid, actor, serde_json::json!({ "slug": slug }), now)
+                outcome = self
+                    .change_record(
+                        crate::record_change::Request {
+                            id: nucleus::new_uid("op"),
+                            record_uid: self.resolve(&target).await?,
+                            mutation: crate::record_change::Mutation::Slug {
+                                value: slug.filter(|value| !value.is_empty()),
+                            },
+                        },
+                        actor.as_deref(),
+                    )
                     .await?;
             }
             Action::SetUnit { target, unit } => {
@@ -2706,6 +2695,20 @@ impl Engine {
                 fds,
             } => {
                 let uid = self.resolve(&target).await?;
+                if namespace == "work" {
+                    return self
+                        .change_record(
+                            crate::record_change::Request {
+                                id: nucleus::new_uid("op"),
+                                record_uid: uid,
+                                mutation: crate::record_change::Mutation::WorkMetadata {
+                                    value: fds,
+                                },
+                            },
+                            actor.as_deref(),
+                        )
+                        .await;
+                }
                 store::records::set_extension(&self.store.pool, &uid, &namespace, &fds).await?;
                 outcome.facts = self
                     .annotate(
@@ -3986,28 +3989,21 @@ impl Engine {
                 let predicate_uid = store::concepts::resolve(&self.store.pool, &predicate)
                     .await?
                     .ok_or_else(|| EngineError::UnknownRecord(predicate))?;
-                let unit_uid = self.resolve_concept_opt(unit).await?;
-                let quantity = quantity
-                    .map(|value| {
-                        nucleus::DecimalValue::parse_inferred(&value)
-                            .map_err(|error| EngineError::Consequence(error.to_string()))
-                    })
-                    .transpose()?;
-                outcome.created = Some(
-                    store::assertions::assert(
-                        &self.store.pool,
-                        store::assertions::NewAssertion {
-                            subject_uid: &subject_uid,
-                            predicate_uid: &predicate_uid,
-                            object_uid: object_uid.as_deref(),
-                            role: store::assertions::AssertionRole::Ordinary,
-                            quantity,
-                            unit_uid: unit_uid.as_deref(),
-                            asserted_by: actor.as_deref(),
+                outcome = self
+                    .change_record(
+                        crate::record_change::Request {
+                            id: nucleus::new_uid("op"),
+                            record_uid: subject_uid.clone(),
+                            mutation: crate::record_change::Mutation::Assertion {
+                                predicate: predicate_uid.clone(),
+                                object: object_uid.clone(),
+                                quantity,
+                                unit,
+                            },
                         },
+                        actor.as_deref(),
                     )
-                    .await?,
-                );
+                    .await?;
                 if object_uid.is_some() && is_order_like(&self.store.pool, &predicate_uid).await? {
                     for cycle in kind_cycles(&self.store.pool, &predicate_uid).await? {
                         if cycle.contains(&subject_uid)
@@ -4023,16 +4019,6 @@ impl Engine {
                         }
                     }
                 }
-                let mut targets = vec![subject_uid];
-                targets.extend(object_uid);
-                outcome.facts = self
-                    .annotate_many(
-                        targets,
-                        actor,
-                        serde_json::json!({ "assertion": outcome.created }),
-                        now,
-                    )
-                    .await?;
             }
             Action::ImportInstinct => {
                 for name in crate::instinct::VOCABULARY {
@@ -4179,15 +4165,16 @@ impl Engine {
                 let row = store::assertions::get(&self.store.pool, &assertion)
                     .await?
                     .ok_or_else(|| EngineError::UnknownRecord(assertion.clone()))?;
-                store::assertions::retract(&self.store.pool, &assertion, actor.as_deref()).await?;
-                let mut targets = vec![row.subject_uid];
-                targets.extend(row.object_uid);
-                outcome.facts = self
-                    .annotate_many(
-                        targets,
-                        actor,
-                        serde_json::json!({ "assertion_retracted": assertion }),
-                        now,
+                outcome = self
+                    .change_record(
+                        crate::record_change::Request {
+                            id: nucleus::new_uid("op"),
+                            record_uid: row.subject_uid,
+                            mutation: crate::record_change::Mutation::RetractAssertion {
+                                assertion,
+                            },
+                        },
+                        actor.as_deref(),
                     )
                     .await?;
             }
@@ -8907,6 +8894,21 @@ impl Engine {
                 store::concepts::declare_equivalence(&self.store.pool, &a, &b, actor.as_deref())
                     .await?;
             }
+            Action::RenameRole {
+                role,
+                expected_revision,
+                name,
+            } => {
+                self.change_role(actor.as_deref(), role, expected_revision, Some(&name))
+                    .await?;
+            }
+            Action::DeleteRole {
+                role,
+                expected_revision,
+            } => {
+                self.change_role(actor.as_deref(), role, expected_revision, None)
+                    .await?;
+            }
             Action::CreateRole { name } => {
                 self.require_permission(actor.as_deref(), "role:create")
                     .await?;
@@ -9226,10 +9228,12 @@ impl Engine {
             }
             Action::CreateRole { name } => {
                 self.require_permission(actor, "role:create").await?;
-                if name.trim().is_empty() || name.len() > 100 {
+                if !store::roles::valid_name(name) {
                     return Err(EngineError::Consequence("Invalid role name".into()));
                 }
             }
+            Action::RenameRole { .. } => self.require_permission(actor, "role:update").await?,
+            Action::DeleteRole { .. } => self.require_permission(actor, "role:delete").await?,
             Action::UpdateUser { user, .. } | Action::DeleteUser { user } => {
                 self.require_permission(
                     actor,
@@ -10802,6 +10806,7 @@ impl Engine {
             | Action::Activate { .. }
             | Action::Deactivate { .. }
             | Action::EditRecordText { .. }
+            | Action::ChangeRecord { .. }
             | Action::SetSlug { .. }
             | Action::SetUnit { .. }
             | Action::SetExtension { .. }
@@ -10953,6 +10958,8 @@ impl Engine {
             | Action::ReopenTransferPromise { .. }
             | Action::CompensateTransferOccurrenceSettlement { .. }
             | Action::CreateRole { .. }
+            | Action::RenameRole { .. }
+            | Action::DeleteRole { .. }
             | Action::CreateUser { .. }
             | Action::UpdateUser { .. }
             | Action::DeleteUser { .. }

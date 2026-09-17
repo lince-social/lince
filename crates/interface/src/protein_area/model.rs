@@ -67,9 +67,22 @@ impl Binding {
     }
 }
 
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum SpawnPlacement {
+    #[default]
+    Source,
+    MatchingAreas,
+    Physics,
+}
+
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Config {
     pub task_cards: bool,
+    pub placement: SpawnPlacement,
+    pub spawn_targets: Vec<String>,
+    pub settling_ticks: u16,
+    #[serde(default)]
+    pub show_labels: bool,
     pub closest_end_date: bool,
     #[serde(default)]
     pub calendar_dates: bool,
@@ -88,9 +101,13 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             task_cards: false,
+            placement: SpawnPlacement::Source,
+            spawn_targets: Vec::new(),
+            settling_ticks: 120,
+            show_labels: false,
             closest_end_date: false,
             calendar_dates: false,
-            enabled: false,
+            enabled: true,
             source: Source::Local,
             draft: ProteinDraft::default(),
             bindings: vec![Binding::new("head"), Binding::new("body")],
@@ -127,7 +144,13 @@ impl Config {
     }
 
     pub fn valid(&self) -> bool {
-        self.draft.valid_storage()
+        self.settling_ticks <= 600
+            && self.spawn_targets.len() <= 256
+            && self
+                .spawn_targets
+                .iter()
+                .all(|id| id.len() == 32 && id.bytes().all(|b| b.is_ascii_hexdigit()))
+            && self.draft.valid_storage()
             && self.grouping.valid()
             && self.bindings.len() <= 32
             && self.bindings.iter().all(Binding::valid)
@@ -155,6 +178,21 @@ impl Config {
             .map(|binding| binding.property.clone())
             .collect();
         fields.extend(["uid", "kind", "organ"].map(str::to_string));
+        if self
+            .bindings
+            .iter()
+            .any(|binding| binding.property == "work_timer")
+        {
+            fields.retain(|field| field != "work_timer");
+            fields.extend(["work_logs", "spent_seconds", "running_since"].map(str::to_string));
+        }
+        if self
+            .bindings
+            .iter()
+            .any(|binding| binding.property == "threads")
+        {
+            query.include.threads = Some(protein::ThreadsInclude { messages_limit: 50, ..Default::default() });
+        }
         if self.calendar_dates {
             fields.extend(["head", "start_date", "due_date"].map(str::to_string));
         }

@@ -48,6 +48,7 @@ async fn fixture() -> (App, Arc<engine::Engine>, Entity, Entity, Entity, String)
     .insert_resource(crate::wake::WakeSignal::new(|| {}));
     let root = app.world_mut().spawn(Workspaces::default()).id();
     let mut area = InfluenceArea::new(AreaShape::Square, DVec2::ZERO, DVec2::splat(100.0));
+    area.changes_enabled = false;
     area.rules = vec![PropertyRule {
         property: Property::Quantity,
         value: "0".into(),
@@ -80,6 +81,10 @@ async fn fixture() -> (App, Arc<engine::Engine>, Entity, Entity, Entity, String)
 }
 
 fn enable(app: &mut App, root: Entity, area: Entity) {
+    app.world_mut()
+        .get_mut::<InfluenceArea>(area)
+        .unwrap()
+        .changes_enabled = true;
     preview(app.world_mut(), root, area);
     assert!(previewed(app.world(), area));
     arm(app.world_mut(), root, area);
@@ -128,6 +133,22 @@ async fn quantity(engine: &engine::Engine, uid: &str) -> String {
         .as_str()
         .unwrap()
         .into()
+}
+
+#[cfg(test)]
+#[tokio::test]
+async fn appearance_changes_keep_record_transitions_armed() {
+    let (mut app, engine, root, area, sand, uid) = fixture().await;
+    enable(&mut app, root, area);
+    {
+        let mut area = app.world_mut().get_mut::<InfluenceArea>(area).unwrap();
+        area.color = [255, 128, 0];
+        area.opacity = 0.4;
+    }
+    move_to(&mut app, sand, 0.0);
+    pump(&mut app).await;
+    assert!(armed(app.world(), area));
+    assert_eq!(quantity(&engine, &uid).await, "-3");
 }
 
 #[cfg(test)]
@@ -383,7 +404,7 @@ async fn edits_switches_and_disarming_cancel_unsubmitted_changes() {
         .unwrap()
         .center[0] = 200.0;
     pump(&mut app).await;
-    assert!(!armed(app.world(), area));
+    assert!(armed(app.world(), area));
     assert_eq!(quantity(&engine, &uid).await, "0");
     enable(&mut app, root, area);
     app.world_mut().get_mut::<Workspaces>(root).unwrap().active = 2;
@@ -576,5 +597,36 @@ async fn immunity_suppresses_record_transitions_and_cancels_pending_previews() {
     enable(&mut app, root, area);
     move_to(&mut app, sand, 0.0);
     pump(&mut app).await;
+    assert_eq!(quantity(&engine, &uid).await, "-3");
+}
+
+#[cfg(test)]
+#[tokio::test]
+async fn configured_changes_start_automatically_and_area_switch_stops_writes() {
+    let (mut app, engine, _, area, sand, uid) = fixture().await;
+    app.world_mut()
+        .get_mut::<InfluenceArea>(area)
+        .unwrap()
+        .changes_enabled = true;
+    pump(&mut app).await;
+    assert!(armed(app.world(), area));
+    move_to(&mut app, sand, 0.0);
+    pump(&mut app).await;
+    assert_eq!(quantity(&engine, &uid).await, "-3");
+    app.world_mut()
+        .get_mut::<InfluenceArea>(area)
+        .unwrap()
+        .enabled = false;
+    pump(&mut app).await;
+    move_to(&mut app, sand, 100.0);
+    pump(&mut app).await;
+    assert!(!armed(app.world(), area));
+    assert_eq!(quantity(&engine, &uid).await, "-3");
+    app.world_mut()
+        .get_mut::<InfluenceArea>(area)
+        .unwrap()
+        .enabled = true;
+    pump(&mut app).await;
+    assert!(armed(app.world(), area));
     assert_eq!(quantity(&engine, &uid).await, "-3");
 }

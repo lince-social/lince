@@ -62,7 +62,10 @@ fn setup(world: &mut World) {
 }
 
 fn save(
-    mut editors: Query<(&EditableText, &mut RecordEditor, &mut AutoSave)>,
+    mut editors: Query<
+        (&EditableText, &mut RecordEditor, &mut AutoSave),
+        Without<crate::record_binding::TextBinding>,
+    >,
     mut labels: Query<&mut Text>,
     mut view: ResMut<RecordsView>,
     bridge: NonSend<CellBridge>,
@@ -240,6 +243,9 @@ fn snapshot(world: &mut World, rows: Vec<serde_json::Value>) {
             if world.get::<crate::area::RecordProperties>(*card) != Some(&properties) {
                 world.entity_mut(*card).insert(properties);
             }
+            if crate::record_binding::active(world, *editor) {
+                continue;
+            }
             let current = world
                 .get::<EditableText>(*editor)
                 .unwrap()
@@ -319,6 +325,36 @@ fn snapshot(world: &mut World, rows: Vec<serde_json::Value>) {
             ..crate::sand::editable(head)
         });
         world.entity_mut(card).replace_children(&[editor, status]);
+        let button = world
+            .spawn((
+                Square,
+                crate::actions::ActionButton::new(
+                    card,
+                    crate::actions![crate::full_record::Open(
+                        crate::protein_area::RecordBinding {
+                            area: card,
+                            uid: uid.into(),
+                            source: crate::protein_area::Source::Local
+                        }
+                    )],
+                ),
+                ChildOf(card),
+            ))
+            .id();
+        crate::edit_mode::label(world, button, "Open Record", 14.0);
+        if crate::record_binding::enabled(world) {
+            crate::record_binding::attach(
+                world,
+                editor,
+                crate::protein_area::RecordBinding {
+                    area: card,
+                    uid: uid.into(),
+                    source: crate::protein_area::Source::Local,
+                },
+                "head",
+                Some(status),
+            );
+        }
         crate::workspace::place_record(world, view.root, card, uid);
         view.records.insert(uid.into(), (card, editor));
     }

@@ -12,15 +12,21 @@ pub enum SandKind {
     Square,
     Text,
     EditableText,
+    Operation,
+    WorkTimer,
+    AccessControl,
 }
 
 impl SandKind {
-    pub const ALL: [Self; 3] = [Self::Square, Self::Text, Self::EditableText];
+    pub const ALL: [Self; 6] = [Self::Square, Self::Text, Self::EditableText, Self::Operation, Self::WorkTimer, Self::AccessControl];
     pub fn name(self) -> &'static str {
         match self {
             Self::Square => "Square",
             Self::Text => "Plain text",
             Self::EditableText => "Editable text",
+            Self::Operation => "Operation",
+            Self::WorkTimer => "Work timer",
+            Self::AccessControl => "Access Control",
         }
     }
     pub fn description(self) -> &'static str {
@@ -28,6 +34,9 @@ impl SandKind {
             Self::Square => "An empty space to compose with.",
             Self::Text => "A simple text label.",
             Self::EditableText => "A note you can write in.",
+            Self::Operation => "Run commands or set a Record quantity to zero by slug.",
+            Self::WorkTimer => "Start or pause work on a Record and see elapsed time.",
+            Self::AccessControl => "Manage local users, Roles and permissions.",
         }
     }
 }
@@ -131,7 +140,7 @@ pub(crate) fn entry(
     };
     world.init_resource::<StoreFont>();
     let style_kind = match kind {
-        SandKind::Square => crate::tokens::SandStyleKind::Square,
+        SandKind::Square | SandKind::Operation | SandKind::WorkTimer | SandKind::AccessControl => crate::tokens::SandStyleKind::Square,
         SandKind::Text => crate::tokens::SandStyleKind::Text,
         SandKind::EditableText => crate::tokens::SandStyleKind::EditableText,
     };
@@ -154,7 +163,11 @@ pub(crate) fn entry(
         .number();
     let size = existing
         .and_then(|(entity, _)| world.get::<CanvasItem>(entity).map(|item| item.size))
-        .unwrap_or(Vec2::new(width, height));
+        .unwrap_or(if matches!(kind, SandKind::Operation | SandKind::AccessControl) {
+            Vec2::new(520.0, 540.0)
+        } else {
+            Vec2::new(width, height)
+        });
     let texts = existing
         .map(|(entity, _)| sand_text::snapshot(world, entity))
         .unwrap_or_else(|| {
@@ -355,7 +368,11 @@ pub fn spawn_sand(
             SandCredits(crate::credits::ATTRIBUTIONS),
             CanvasItem {
                 position,
-                size: Vec2::new(248.0, 184.0),
+                size: if matches!(kind, SandKind::Operation | SandKind::AccessControl) {
+                    Vec2::new(520.0, 540.0)
+                } else {
+                    Vec2::new(248.0, 184.0)
+                },
             },
             Node {
                 flex_direction: FlexDirection::Column,
@@ -369,18 +386,20 @@ pub fn spawn_sand(
         ))
         .id();
     let content = match kind {
+        SandKind::Operation => Some(crate::operation::populate(world, root, sand)),
+        SandKind::AccessControl => Some(crate::access_control::populate(world, root, sand)),
         SandKind::Square => None,
-        SandKind::Text | SandKind::EditableText => Some(sand_text::spawn(
+        SandKind::Text | SandKind::EditableText | SandKind::WorkTimer => Some(sand_text::spawn(
             world,
             sand,
             SavedText {
-                area: SandText::new(kind == SandKind::EditableText),
+                area: SandText::new(matches!(kind, SandKind::EditableText | SandKind::WorkTimer)),
                 text: text.into(),
             },
         )),
     };
     world.entity_mut(sand).insert(StoredSand { kind, content });
-    if kind != SandKind::Square {
+    if !matches!(kind, SandKind::Square | SandKind::Operation | SandKind::WorkTimer | SandKind::AccessControl) {
         world.entity_mut(sand).remove::<(Square, Outline)>();
     }
     sand

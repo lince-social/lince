@@ -98,8 +98,11 @@ async fn known_peer_pushes_ops_over_iroh() {
         .expect("push succeeds");
 
     match response {
-        WireResponse::Applied { applied } => assert!(applied > 0, "B applied nothing"),
-        other => panic!("expected Applied, got {other:?}"),
+        WireResponse::BatchSaved {
+            applied,
+            complete: true,
+        } => assert!(applied > 0, "B applied nothing"),
+        other => panic!("expected a saved batch, got {other:?}"),
     }
 
     let landed = store::records::resolve(&b.store.pool, "shared")

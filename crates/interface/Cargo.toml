@@ -11,6 +11,11 @@ description = "Native Interface runtime for Lince."
 [features]
 default = ["native-runtime"]
 native-runtime = [
+    "dep:reqwest",
+    "dep:pulldown-cmark",
+    "dep:mermaid-rs-renderer",
+    "dep:resvg",
+    "dep:accesskit",
     "dep:bevy",
     "dep:cell",
     "dep:tokio",
@@ -29,6 +34,8 @@ native-runtime = [
     "dep:nucleus",
     "dep:tempfile",
     "dep:chrono",
+    "dep:loro",
+    "dep:base64",
     "bevy/bevy_core_pipeline",
     "bevy/bevy_input_focus",
     "bevy/bevy_text",
@@ -50,6 +57,13 @@ native-runtime = [
 ]
 
 [dependencies]
+reqwest = { workspace = true, optional = true }
+pulldown-cmark = { version = "=0.13.4", default-features = false, optional = true }
+mermaid-rs-renderer = { version = "=0.3.1", default-features = false, optional = true }
+resvg = { version = "=0.48.1", default-features = false, features = ["text"], optional = true }
+accesskit = { version = "=0.24.1", optional = true }
+loro = { workspace = true, optional = true }
+base64 = { workspace = true, optional = true }
 chrono = { workspace = true, optional = true }
 nucleus = { workspace = true, optional = true }
 tempfile = { version = "=3.27.0", optional = true }
@@ -60,7 +74,7 @@ protein = { path = "../protein", optional = true }
 engine = { path = "../engine", optional = true }
 serde_json = { workspace = true, optional = true, features = ["float_roundtrip"] }
 serde = { workspace = true, optional = true }
-image = { version = "=0.25.10", default-features = false, features = ["png"], optional = true }
+image = { version = "=0.25.10", default-features = false, features = ["png", "jpeg", "gif", "webp"], optional = true }
 getrandom = { workspace = true, optional = true }
 avian3d = { version = "=0.7.0", default-features = false, features = ["3d", "f64", "parry-f64", "enhanced-determinism", "xpbd_joints"], optional = true }
 toml = { workspace = true, optional = true }
@@ -82,6 +96,10 @@ resvg = { version = "0.48.1", default-features = false }
 [dev-dependencies]
 nucleus = { workspace = true }
 tempfile = "=3.27.0"
+
+[[example]]
+name = "area_ground_smoke"
+required-features = ["native-runtime"]
 
 [[example]]
 name = "frontend_smoke"
@@ -117,6 +135,14 @@ required-features = ["native-runtime"]
 
 [lints]
 workspace = true
+
+[[example]]
+name = "thread_castle_smoke"
+required-features = ["native-runtime"]
+
+[[example]]
+name = "access_control_smoke"
+required-features = ["native-runtime"]
 
 [[example]]
 name = "castle_smoke"
@@ -168,4 +194,16 @@ required-features = ["native-runtime"]
 
 [[example]]
 name = "kanban_smoke"
+required-features = ["native-runtime"]
+
+[[example]]
+name = "record_collaboration_smoke"
+required-features = ["native-runtime"]
+
+[[example]]
+name = "instinct_smoke"
+required-features = ["native-runtime"]
+
+[[example]]
+name = "tutorial_smoke"
 required-features = ["native-runtime"]

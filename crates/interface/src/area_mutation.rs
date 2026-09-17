@@ -37,8 +37,21 @@ impl AreaChanges {
     }
 }
 
+#[derive(Component)]
+pub(crate) struct Preparing;
+
+#[derive(Component)]
+struct Suspended(InfluenceArea);
+
 #[derive(Component, Default)]
 pub struct MutationStatus(pub String);
+
+#[derive(Message, Clone)]
+pub struct TransitionApplied {
+    pub area: Entity,
+    pub record: String,
+    pub inside: bool,
+}
 
 #[derive(Component)]
 pub(crate) struct HeldPoint(pub DVec3);
@@ -85,6 +98,7 @@ struct ApplyAreaChanges;
 
 impl Plugin for AreaMutationPlugin {
     fn build(&self, app: &mut App) {
+        app.add_message::<TransitionApplied>();
         app.init_resource::<Mutations>()
             .add_message::<CellMessage>()
             .add_systems(
@@ -172,10 +186,14 @@ pub fn disarm_all(world: &mut World, root: Entity) {
         .map(|(entity, _, _)| entity)
         .collect();
     for area in areas {
+        world
+            .get_mut::<InfluenceArea>(area)
+            .unwrap()
+            .changes_enabled = false;
         disarm(
             world,
             area,
-            "Disarmed. Already submitted changes may still finish.",
+            "Property changes inactive. Already submitted changes may still finish.",
         );
     }
 }
@@ -184,17 +202,18 @@ pub fn preview(world: &mut World, root: Entity, entity: Entity) {
     if !crate::area_panel::owns(world, root, entity) {
         return;
     }
-    disarm(world, entity, "Disarmed");
+    disarm(world, entity, "Property changes inactive");
     let area = world.get::<InfluenceArea>(entity).unwrap().clone();
-    if !area.validate()
+    if world.get::<Preparing>(entity).is_some()
+        || !area.enabled
+        || !area.changes_enabled
+        || !area.validate()
         || area.changes.is_empty()
-        || (area.filter.is_none() && area.rules.is_empty())
-        || (area.filter.is_some()
-            && !world
-                .get::<crate::protein_area::filter::Matches>(entity)
-                .is_some_and(|filter| {
-                    filter.current && filter.source == crate::protein_area::Source::Local
-                }))
+        || (area.change_filter.is_none() && area.filter.is_none() && area.rules.is_empty())
+        || ((area.change_filter.is_some() || area.filter.is_some())
+            && !change_matches(world, entity, &area).is_some_and(|filter| {
+                filter.current && filter.source == crate::protein_area::Source::Local
+            }))
         || crate::area_mutation_panel::invalid_fields(world, entity)
     {
         status(
@@ -212,7 +231,7 @@ pub fn preview(world: &mut World, root: Entity, entity: Entity) {
     status(
         world,
         entity,
-        "Preview ready. Arming allows future crossings to change matching Records. Records already inside stay unchanged until they cross a boundary.",
+        "Preview ready. Enabled property changes allow future crossings to change matching Records. Records already inside stay unchanged until they cross a boundary.",
     );
 }
 
@@ -227,10 +246,11 @@ pub fn arm(world: &mut World, root: Entity, entity: Entity) {
         status(
             world,
             entity,
-            "Connect to a Cell before arming Record changes.",
+            "Connect to a Cell to enable property changes.",
         );
         return;
     }
+    world.entity_mut(entity).remove::<Suspended>();
     let area = world.get::<InfluenceArea>(entity).unwrap().clone();
     let workspace = world.get::<WorkspaceMember>(entity).unwrap().0;
     let records = records(world);
@@ -250,7 +270,7 @@ pub fn arm(world: &mut World, root: Entity, entity: Entity) {
     status(
         world,
         entity,
-        "Armed for future crossings. Stops after an edit, a workspace switch, an error, or disarming.",
+        "Property changes enabled for future crossings. Settings and permissions are checked automatically.",
     );
 }
 
@@ -275,6 +295,7 @@ fn records(world: &mut World) -> Vec<Record> {
             &WorkspaceMember,
         ), (
             Without<Pinned>,
+            Without<crate::protein_area::placement::Pending>,
             Without<crate::protein_area::RemoteRecord>,
             bevy::ecs::query::Allow<bevy::ecs::entity_disabling::Disabled>,
         )>()
@@ -315,19 +336,15 @@ fn records(world: &mut World) -> Vec<Record> {
             );
     }
     let filters: Vec<_> = world
-        .query::<(
-            Entity,
-            &crate::protein_area::filter::Matches,
-            &ChildOf,
-            &WorkspaceMember,
-        )>()
+        .query::<(Entity, &InfluenceArea, &ChildOf, &WorkspaceMember)>()
         .iter(world)
         .collect();
     for record in records.values_mut() {
-        for (entity, filter, parent, member) in &filters {
+        for (entity, area, parent, member) in &filters {
             if parent.parent() == record.root
                 && member.0 == record.workspace
-                && filter.allows(&record.properties, None)
+                && change_matches(world, *entity, area)
+                    .is_some_and(|filter| filter.allows(&record.properties, None))
             {
                 record.filters.insert(*entity);
             }
@@ -386,8 +403,15 @@ fn baseline(grant: &mut Grant, records: &[Record]) {
 }
 
 fn valid_grant(world: &World, entity: Entity, grant: &Grant) -> bool {
-    world.get::<InfluenceArea>(entity) == Some(&grant.area)
-        && crate::topology::spatial(world, entity) == grant.placement
+    world.get::<InfluenceArea>(entity).is_some_and(|area| {
+        if area == &grant.area {
+            return true;
+        }
+        let mut expected = grant.area.clone();
+        expected.color = area.color;
+        expected.opacity = area.opacity;
+        area == &expected
+    }) && crate::topology::spatial(world, entity) == grant.placement
         && world
             .get::<ChildOf>(entity)
             .is_some_and(|parent| parent.parent() == grant.root)
@@ -423,7 +447,7 @@ fn send(world: &World, id: String, action: Action) -> bool {
 fn stop_pending(world: &mut World, pending: &Pending, message: &str) {
     crate::notifications::report(world, "interface::areas", message);
     for (area, _) in &pending.areas {
-        disarm(world, *area, message);
+        suspend(world, *area, message);
     }
 }
 
@@ -453,7 +477,7 @@ fn receive(world: &mut World, messages: Vec<ServerMessage>, records: &[Record]) 
                 disarm(
                     world,
                     area,
-                    "Disarmed because the Cell connection stopped. Check Records before arming again.",
+                    "Property changes inactive because the Cell connection stopped. Check Records before property changes can resume.",
                 );
             }
             world.resource_mut::<Mutations>().pending.clear();
@@ -473,15 +497,20 @@ fn receive(world: &mut World, messages: Vec<ServerMessage>, records: &[Record]) 
                 stop_pending(
                     world,
                     &pending,
-                    &format!("Disarmed. Change was not confirmed: {error}"),
+                    &format!("Property changes inactive. Change was not confirmed: {error}"),
                 );
                 continue;
             }
         };
         if pending.applying {
-            for (area, _) in pending.areas {
+            for (area, inside) in pending.areas {
+                world.write_message(TransitionApplied { area, record: pending.target.clone(), inside });
                 if armed(world, area) {
-                    status(world, area, "Armed. Last Record change saved.");
+                    status(
+                        world,
+                        area,
+                        "Property changes enabled. Last Record change saved.",
+                    );
                 }
             }
             continue;
@@ -491,7 +520,7 @@ fn receive(world: &mut World, messages: Vec<ServerMessage>, records: &[Record]) 
             stop_pending(
                 world,
                 &pending,
-                "Disarmed. The Cell did not return a valid change preview.",
+                "Property changes inactive. The Cell did not return a valid change preview.",
             );
             continue;
         };
@@ -532,7 +561,7 @@ fn submit(
         stop_pending(
             world,
             &pending,
-            "Disarmed. The Area, Sand or immunity changed before submission.",
+            "Property changes inactive. The Area, Sand or immunity changed before submission.",
         );
         return;
     }
@@ -561,7 +590,7 @@ fn submit(
             stop_pending(
                 world,
                 &pending,
-                "Disarmed. The Cell could not accept this change.",
+                "Property changes inactive. The Cell could not accept this change.",
             );
         }
         return;
@@ -588,6 +617,7 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
         .read(world.resource::<Messages<CellMessage>>())
         .map(|message| message.0.clone())
         .collect();
+    activate_configured(world);
     if world.resource::<Mutations>().grants.is_empty()
         && world.resource::<Mutations>().pending.is_empty()
     {
@@ -605,7 +635,7 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
         disarm(
             world,
             area,
-            "Disarmed after an Area edit or workspace change. Preview again to arm.",
+            "Property changes inactive after an Area edit or workspace change. Configured changes resume automatically.",
         );
     }
     receive(world, messages, &records);
@@ -726,7 +756,7 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
             for area in involved {
                 stopped.push((
                     area,
-                    "Disarmed. Overlapping Areas request conflicting Record changes.",
+                    "Property changes inactive. Overlapping Areas request conflicting Record changes.",
                 ));
             }
             continue;
@@ -775,7 +805,7 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
             for area in involved {
                 stopped.push((
                     area,
-                    "Disarmed. The Cell could not accept a preview request.",
+                    "Property changes inactive. The Cell could not accept a preview request.",
                 ));
             }
         }
@@ -783,7 +813,7 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
     world.insert_resource(state);
     let mut reported = HashSet::new();
     for (area, message) in stopped {
-        disarm(world, area, message);
+        suspend(world, area, message);
         if reported.insert(message) {
             crate::notifications::report(world, "interface::areas", message);
         }
@@ -799,16 +829,16 @@ fn labels(
     for (label, mut text, mut tooltip) in &mut labels {
         let value = statuses
             .get(label.0)
-            .map_or("Disarmed", |status| status.0.as_str());
+            .map_or("Property changes inactive", |status| status.0.as_str());
         if tooltip.0 != value {
             tooltip.0 = value.into();
         }
         let title = if state.grants.contains_key(&label.0) {
-            "Armed"
+            "Property changes enabled"
         } else if state.previews.contains_key(&label.0) {
             "Preview"
         } else {
-            "Disarmed"
+            "Property changes inactive"
         };
         if text.0 != title {
             text.0 = title.into();
@@ -831,10 +861,58 @@ impl Record {
         if self.immune.contains(&grant.entity) {
             return false;
         }
-        if grant.area.filter.is_some() {
+        if grant.area.change_filter.is_some() || grant.area.filter.is_some() {
             self.filters.contains(&grant.entity)
         } else {
             grant.area.matches(&self.properties)
         }
+    }
+}
+
+fn change_matches<'a>(
+    world: &'a World,
+    entity: Entity,
+    area: &InfluenceArea,
+) -> Option<&'a crate::protein_area::filter::Matches> {
+    if area.change_filter.is_some() {
+        world
+            .get::<crate::protein_area::filter::ChangeMatches>(entity)
+            .map(|m| &m.0)
+    } else {
+        world.get::<crate::protein_area::filter::Matches>(entity)
+    }
+}
+
+fn activate_configured(world: &mut World) {
+    if crate::laboratory::active(world) || world.get_non_send::<CellBridge>().is_none() {
+        return;
+    }
+    let areas: Vec<_> = world
+        .query::<(Entity, &InfluenceArea, &ChildOf, &WorkspaceMember)>()
+        .iter(world)
+        .filter(|(entity, area, parent, member)| {
+            area.enabled
+                && area.changes_enabled
+                && !area.changes.is_empty()
+                && !armed(world, *entity)
+                && world
+                    .get::<Suspended>(*entity)
+                    .is_none_or(|s| &s.0 != *area)
+                && world
+                    .get::<Workspaces>(parent.parent())
+                    .is_some_and(|w| w.active == member.0)
+        })
+        .map(|(entity, _, parent, _)| (entity, parent.parent()))
+        .collect();
+    for (entity, root) in areas {
+        preview(world, root, entity);
+        arm(world, root, entity);
+    }
+}
+
+fn suspend(world: &mut World, entity: Entity, message: &str) {
+    disarm(world, entity, message);
+    if let Some(area) = world.get::<InfluenceArea>(entity).cloned() {
+        world.entity_mut(entity).insert(Suspended(area));
     }
 }

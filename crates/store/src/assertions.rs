@@ -371,6 +371,26 @@ pub async fn retract_tx(
     if let Some(actor) = retracted_by {
         record_reference_tx(tx, actor).await?;
     }
+    if row.role == "ordinary" {
+        let removed: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM sync_op WHERE tbl = 'record_assertion' AND uid = ? AND kind = 'tombstone')").bind(uid).fetch_one(&mut **tx).await?;
+        if removed {
+            return Ok(false);
+        }
+        let observed: Vec<String> = sqlx::query_scalar("SELECT a.uid FROM record_assertion a WHERE a.subject_uid = ? AND a.predicate_uid = ? AND a.object_uid IS ? AND a.role = 'ordinary' AND NOT EXISTS (SELECT 1 FROM sync_op o WHERE o.tbl = 'record_assertion' AND o.uid = a.uid AND o.kind = 'tombstone')")
+            .bind(&row.subject_uid).bind(&row.predicate_uid).bind(&row.object_uid).fetch_all(&mut **tx).await?;
+        for member in &observed {
+            sqlx::query(
+                "UPDATE record_assertion SET retracted_at = ?, retracted_by = ? WHERE uid = ?",
+            )
+            .bind(Utc::now().to_rfc3339())
+            .bind(retracted_by)
+            .bind(member)
+            .execute(&mut **tx)
+            .await?;
+            log_mutation_tx(tx, member, OpKind::Tombstone, None).await?;
+        }
+        return Ok(!observed.is_empty());
+    }
     if row.retracted_at.is_some() {
         return Ok(false);
     }
@@ -1085,6 +1105,35 @@ pub async fn subjects_pointing_to(
     )
     .bind(predicate_uid)
     .bind(object_uid)
+    .fetch_all(pool)
+    .await?
+    .into_iter()
+    .map(map_record)
+    .collect()
+}
+
+pub async fn recent_messages(
+    pool: &SqlitePool,
+    predicate_uid: &str,
+    thread: &str,
+    limit: usize,
+) -> Result<Vec<crate::records::RecordRow>, StoreError> {
+    sqlx::query(
+        "SELECT r.*,
+                (SELECT predicate_uid FROM record_assertion identity
+                  WHERE identity.subject_uid = r.uid AND identity.role = 'identity'
+                    AND identity.retracted_at IS NULL) AS identity_predicate_uid
+           FROM record r
+          WHERE r.kind = 'message' AND r.deleted_at IS NULL
+            AND r.quantity_mantissa != '0' AND r.quantity_mantissa NOT LIKE '-%'
+            AND EXISTS (SELECT 1 FROM record_assertion a
+                WHERE a.subject_uid = r.uid AND a.predicate_uid = ?
+                  AND a.object_uid = ? AND a.retracted_at IS NULL)
+          ORDER BY r.created_at DESC, r.uid DESC LIMIT ?",
+    )
+    .bind(predicate_uid)
+    .bind(thread)
+    .bind(i64::try_from(limit).unwrap_or(i64::MAX))
     .fetch_all(pool)
     .await?
     .into_iter()

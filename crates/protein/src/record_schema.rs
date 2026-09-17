@@ -27,6 +27,8 @@ pub fn fields() -> Vec<Field> {
         ("spent_seconds", "Time spent (seconds)", "number", false),
         ("running_since", "Running since", "timestamp", false),
         ("work_logs", "Work logs", "logs", true),
+        ("work_timer", "Work timer", "timer", true),
+        ("threads", "Threads and messages", "threads", true),
         ("created_at", "Created", "timestamp", false),
         ("updated_at", "Updated", "timestamp", false),
     ]
@@ -82,7 +84,18 @@ pub(crate) async fn attach(
             .cloned()
             .unwrap_or_default();
         if wants("work_logs") {
-            value["work_logs"] = json!(logs);
+            let entries: Vec<(String, String)> = store::sqlx::query_as("SELECT property, value FROM record_property WHERE record_uid = ? AND property LIKE 'work.log:%' AND json_type(value) = 'object' ORDER BY json_extract(value, '$.start'), property")
+                .bind(&record.uid).fetch_all(&store.pool).await?;
+            let mut identified = logs.clone();
+            for (index, log) in identified.iter_mut().enumerate() {
+                log["id"] = json!(
+                    entries
+                        .get(index)
+                        .map(|entry| entry.0.clone())
+                        .unwrap_or_else(|| format!("work.log:seed-{index}"))
+                );
+            }
+            value["work_logs"] = json!(identified);
         }
         let mut spent = 0i64;
         let mut running = Value::Null;

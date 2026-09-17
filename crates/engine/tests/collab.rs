@@ -216,7 +216,10 @@ async fn deleted_record_freezes_its_doc() {
         .await
         .unwrap()
         .len();
-    assert_eq!(after, before + 1, "the op stays relayable in the log");
+    assert_eq!(
+        after, before,
+        "edits received after deletion are not admitted"
+    );
     assert!(
         store::records::get(&b.store.pool, &note)
             .await

@@ -88,7 +88,7 @@ pub fn transform(world: &mut World, entity: Entity, translation: DVec3, rotation
             crate::area_mutation::disarm(
                 world,
                 entity,
-                "Disarmed after a group edit. Preview again to arm.",
+                "Property changes will resume with the updated group.",
             );
         }
     }

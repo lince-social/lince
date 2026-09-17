@@ -69,6 +69,7 @@ pub(crate) fn stress_app() -> (App, Entity) {
             crate::theme::ThemePlugin,
             crate::sand::SandPlugin,
             crate::sand_text::SandTextPlugin,
+            crate::operation::OperationPlugin,
             crate::effect::EffectPlugin,
             crate::physics::WorkspacePhysicsPlugin,
         ))

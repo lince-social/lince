@@ -19,6 +19,7 @@ impl Engine {
     pub async fn checkpoint_all(&self, now: DateTime<Utc>) -> Result<Vec<Fact>, EngineError> {
         let signer = self.signer.lock().await.clone();
         let mut out = Vec::new();
+        let _serial = self.import_lock.lock().await;
         for (uid, level) in store::records::all_levels(&self.store.pool).await? {
             let last = store::facts::for_record(&self.store.pool, &uid, 1).await?;
             match last.first() {
@@ -26,6 +27,7 @@ impl Engine {
                 Some(f) if f.cause.kind == CauseKind::Checkpoint => continue,
                 Some(_) => {}
             }
+            let offset = store::facts::quantity_offset(&self.store.pool, &uid, None).await?;
             if let Some(fact) = append_one(
                 &self.store,
                 NewFact {
@@ -42,6 +44,7 @@ impl Engine {
                         serde_json::json!({
                             "level": level.canonical(),
                             "level_scale": level.scale(),
+                            "quantity_offset": offset.to_string(),
                         })
                         .to_string(),
                     ),

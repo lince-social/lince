@@ -2,6 +2,7 @@ mod date_order;
 pub(crate) mod filter;
 pub(crate) mod grouping;
 mod model;
+pub(crate) mod placement;
 mod property_actions;
 mod rows;
 pub(crate) mod tests;
@@ -15,45 +16,10 @@ use crate::{
 use bevy::prelude::*;
 use cell::{ClientMessage, ServerMessage};
 pub use grouping::{GroupAxis, Grouping};
-pub use model::{Binding, Config, OverflowMode, Source};
+pub use model::{Binding, Config, OverflowMode, Source, SpawnPlacement};
 use serde_json::Value;
 use std::collections::{HashMap, VecDeque};
 pub(crate) use ui::controls;
-
-pub(crate) fn open_query(world: &mut World, owner: Entity) {
-    let Some(parent) = world.get::<ChildOf>(owner) else {
-        return;
-    };
-    let root = parent.parent();
-    if !crate::area_panel::owns(world, root, owner) {
-        return;
-    }
-    let existing: Vec<_> = world
-        .query::<(Entity, &QueryEditor)>()
-        .iter(world)
-        .filter(|(_, editor)| editor.0 == owner)
-        .map(|(entity, _)| entity)
-        .collect();
-    for editor in existing {
-        world.despawn(editor);
-    }
-    let Some(config) = world
-        .get::<InfluenceArea>(owner)
-        .and_then(|area| area.protein.clone())
-    else {
-        return;
-    };
-    let workspace = world
-        .get::<crate::workspace::WorkspaceMember>(owner)
-        .unwrap()
-        .0;
-    let position = world
-        .get::<crate::canvas::CanvasView>(root)
-        .map_or(bevy::math::DVec2::ZERO, |view| view.center);
-    let entity = crate::protein_castle::spawn(world, root, workspace, position, config.draft);
-    world.entity_mut(entity).insert(QueryEditor(owner));
-    crate::protein_castle::refresh_editor(world, entity);
-}
 
 pub(crate) fn calendar_feed(world: &World, owner: Entity) -> Option<(&[Value], String)> {
     let state = world.get_resource::<Runtime>()?.areas.get(&owner)?;
@@ -71,6 +37,44 @@ pub(crate) fn calendar_status(world: &World, owner: Entity) -> &str {
         .get_resource::<Runtime>()
         .and_then(|r| r.areas.get(&owner))
         .map_or("Stopped", |s| s.status.as_str())
+}
+
+pub(crate) fn thread_load_error(world: &World, owner: Entity) -> Option<&str> {
+    let state = world.get_resource::<Runtime>()?.areas.get(&owner)?;
+    state.thread_error.as_deref()
+}
+
+pub(crate) fn load_thread_messages(
+    world: &mut World,
+    binding: &RecordBinding,
+    thread: &str,
+    limit: usize,
+) -> Result<(), String> {
+    let state = world.get_resource::<Runtime>()
+        .and_then(|runtime| runtime.areas.get(&binding.area))
+        .ok_or("Thread connection is closed")?;
+    let config = state.applied.as_ref().ok_or("Thread connection is closed")?;
+    if config.source != binding.source || !state.data.iter()
+        .filter(|row| row["uid"].as_str() == Some(&binding.uid))
+        .flat_map(|row| row["threads"].as_array().into_iter().flatten())
+        .any(|row| row["uid"].as_str() == Some(thread))
+    {
+        return Err("Thread is not attached to this Record".into());
+    }
+    if state.pending.len() >= 64 { return Err("Wait for pending changes".into()); }
+    let id = state.subscription.clone().ok_or("Thread connection is closed")?;
+    let mut protein = query(world, binding.area, config)?;
+    let mut limits = state.thread_limits.clone();
+    limits.insert(thread.into(), limit);
+    let include = protein.include.threads.as_mut().ok_or("Threads are not included")?;
+    include.message_limits = limits.clone();
+    let state = world.resource_mut::<Runtime>().into_inner().areas.get_mut(&binding.area).unwrap();
+    state.thread_limits = limits;
+    state.thread_requests += 1;
+    state.thread_error = None;
+    state.pending.push_back(ClientMessage::Subscribe { id, protein });
+    if let Some(wake) = world.get_resource::<crate::wake::WakeSignal>() { wake.ring(); }
+    Ok(())
 }
 
 pub(crate) fn save_date(world: &mut World, editor: Entity, date: &str) -> Result<(), String> {
@@ -111,12 +115,16 @@ impl Drop for Remote {
 
 #[derive(Default)]
 struct State {
+    thread_limits: std::collections::BTreeMap<String, usize>,
+    thread_requests: usize,
+    thread_error: Option<String>,
     revision: u64,
     applied: Option<Config>,
     subscription: Option<String>,
     remote: Option<Remote>,
     ready: bool,
     login: bool,
+    retry_at: Option<std::time::Instant>,
     status: String,
     data: Vec<Value>,
     ordered_day: Option<chrono::NaiveDate>,
@@ -173,15 +181,19 @@ fn id(world: &mut World) -> String {
 }
 
 fn stop(world: &mut World, owner: Entity) {
-    if let Some(target) = world.get::<filter::Subscription>(owner).map(|s| s.0) {
+    if let Some((target, changes)) = world.get::<filter::Subscription>(owner).map(|s| (s.0, s.1)) {
         if world.get_entity(target).is_ok() {
-            world.entity_mut(target).remove::<filter::Matches>();
+            if changes {
+                world.entity_mut(target).remove::<filter::ChangeMatches>();
+            } else {
+                world.entity_mut(target).remove::<filter::Matches>();
+            }
         }
         if crate::area_mutation::armed(world, target) {
             crate::area_mutation::disarm(
                 world,
                 target,
-                "Disarmed after the Protein filter changed or stopped.",
+                "Property changes inactive after the Protein filter changed or stopped.",
             );
         }
     }
@@ -285,7 +297,14 @@ fn start(world: &mut World, owner: Entity, config: Config) {
                     .pending
                     .push_back(ClientMessage::Subscribe { id, protein: query });
             }
-            Err(error) => state.status = error,
+            Err(error) => {
+                state.status = error;
+                if matches!(config.source, Source::Organ(_)) {
+                    state.retry_at =
+                        Some(std::time::Instant::now() + std::time::Duration::from_secs(5));
+                    retry_wake(world);
+                }
+            }
         }
     } else {
         state.status = "Stopped".into();
@@ -311,7 +330,27 @@ fn status(world: &mut World, owner: Entity, message: impl Into<String>) {
     }
 }
 
+fn retry_wake(world: &World) {
+    if let Some(wake) = world.get_resource::<crate::wake::WakeSignal>().cloned() {
+        tokio::spawn(async move {
+            tokio::time::sleep(std::time::Duration::from_secs(5)).await;
+            wake.ring();
+        });
+    }
+}
+
 fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
+    let snapshot = matches!(&message, ServerMessage::Snapshot { .. });
+    crate::work_timer::receive(world, &message);
+    if let Some(Source::Organ(organ)) = world
+        .resource::<Runtime>()
+        .areas
+        .get(&owner)
+        .and_then(|state| state.applied.as_ref())
+        .map(|config| config.source.clone())
+    {
+        crate::record_binding::receive(world, Source::Organ(organ), message.clone());
+    }
     let mut runtime = world.resource_mut::<Runtime>();
     let Some(state) = runtime.areas.get_mut(&owner) else {
         return;
@@ -320,6 +359,10 @@ fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
         ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows }
             if state.subscription.as_ref() == Some(&id) =>
         {
+            if snapshot {
+                state.thread_requests = state.thread_requests.saturating_sub(1);
+                state.thread_error = None;
+            }
             state.revision = state.revision.wrapping_add(1);
             if rows.len() > 100_000
                 || rows
@@ -331,6 +374,7 @@ fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
                 state.data.clear();
                 state.dirty = true;
             } else {
+                state.ready = true;
                 state.order = std::sync::Arc::new(
                     rows.iter()
                         .filter_map(|row| row["uid"].as_str().map(str::to_string))
@@ -366,6 +410,11 @@ fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
             }
         }
         ServerMessage::Error { id, message, .. } => {
+            if state.subscription.as_ref() == Some(&id) && state.thread_requests > 0 {
+                state.thread_requests -= 1;
+                state.thread_error = Some(message);
+                return;
+            }
             if id != "connection"
                 && id != crate::cell_bridge::CONNECTION
                 && state.subscription.as_ref() != Some(&id)
@@ -374,6 +423,10 @@ fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
                 return;
             }
             state.status = message.clone();
+            if id == "connection" {
+                state.retry_at =
+                    Some(std::time::Instant::now() + std::time::Duration::from_secs(5));
+            }
             let alert = message.clone();
             if id == "connection"
                 || id == crate::cell_bridge::CONNECTION
@@ -389,6 +442,9 @@ fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
                 rows::action_finished(world, editor, Some(message));
             }
             crate::notifications::report(world, "Protein Area", &alert);
+            if id == "connection" {
+                retry_wake(world);
+            }
         }
         _ => {}
     }
@@ -425,6 +481,17 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
             .iter(world)
             .filter_map(|(entity, _)| configuration(world, entity).map(|config| (entity, config))),
     );
+    for (entity, config) in &mut configs {
+        let owner = world
+            .get::<filter::Subscription>(*entity)
+            .map_or(*entity, |s| s.0);
+        if world
+            .get::<InfluenceArea>(owner)
+            .is_some_and(|area| !area.enabled)
+        {
+            config.enabled = false;
+        }
+    }
     let gone: Vec<_> = world
         .resource::<Runtime>()
         .areas
@@ -445,6 +512,16 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
         }
     }
     for (owner, config) in configs {
+        let retry = world
+            .resource::<Runtime>()
+            .areas
+            .get(&owner)
+            .and_then(|state| state.retry_at)
+            .is_some_and(|at| std::time::Instant::now() >= at);
+        if retry && config.enabled {
+            start(world, owner, config);
+            continue;
+        }
         let previous = world
             .resource::<Runtime>()
             .areas
@@ -587,6 +664,34 @@ pub fn execute(
         return Err("Wait for pending changes".into());
     }
     let target = match &action {
+        engine::actions::Action::DeleteRecord { target } => {
+            let attached = state.data.iter().filter(|row| row["uid"].as_str() == Some(&binding.uid))
+                .flat_map(|row| row["threads"].as_array().into_iter().flatten())
+                .flat_map(|thread| thread["messages"].as_array().into_iter().flatten())
+                .any(|message| message["uid"].as_str() == Some(target));
+            if target != &binding.uid && !attached {
+                return Err("Message is not attached to this Record".into());
+            }
+            &binding.uid
+        }
+        engine::actions::Action::CreateThread { target, .. } => target,
+        engine::actions::Action::CreateMessage { thread, .. } => {
+            let row = state
+                .data
+                .iter()
+                .find(|row| row["uid"].as_str() == Some(&binding.uid))
+                .unwrap();
+            if !row["threads"]
+                .as_array()
+                .into_iter()
+                .flatten()
+                .any(|item| item["uid"].as_str() == Some(thread))
+            {
+                return Err("Thread is not attached to this Record".into());
+            }
+            &binding.uid
+        }
+        engine::actions::Action::ChangeRecord { request } => &request.record_uid,
         engine::actions::Action::AssertRecord { subject, .. } => subject,
         engine::actions::Action::RetractAssertion { assertion } => {
             let row = state
@@ -613,13 +718,26 @@ pub fn execute(
         | engine::actions::Action::SetSlug { target, .. }
         | engine::actions::Action::SetQuantityExact { target, .. }
         | engine::actions::Action::SetExtension { target, .. }
-        | engine::actions::Action::DeleteRecord { target } => target,
+        => target,
         _ => return Err("Unsupported bound Record Action".into()),
     };
     if target != &binding.uid {
         return Err("Action target differs from the bound Record".into());
     }
-    let id = id(world);
+    let id = match &action {
+        engine::actions::Action::ChangeRecord { request } => request.id.clone(),
+        _ => id(world),
+    };
+    let durable = if let engine::actions::Action::ChangeRecord { request } = &action {
+        if crate::record_binding::enabled(world) {
+            crate::record_binding::submit(world, binding, request.clone())?;
+            true
+        } else {
+            false
+        }
+    } else {
+        false
+    };
     let state = world
         .resource_mut::<Runtime>()
         .into_inner()
@@ -627,12 +745,42 @@ pub fn execute(
         .get_mut(&binding.area)
         .unwrap();
     state.actions.insert(id.clone(), editor);
-    state.pending.push_back(ClientMessage::Act { id, action });
+    if !durable {
+        state.pending.push_back(ClientMessage::Act { id, action });
+    }
     state.status = "Saving".into();
     if let Some(wake) = world.get_resource::<crate::wake::WakeSignal>() {
         wake.ring();
     }
     Ok(())
+}
+
+pub(crate) fn editor_sender(
+    world: &World,
+    binding: &RecordBinding,
+) -> Option<tokio::sync::mpsc::Sender<ClientMessage>> {
+    match &binding.source {
+        Source::Local => world
+            .get_non_send::<CellBridge>()
+            .map(|bridge| bridge.outgoing.clone()),
+        Source::Organ(_) => {
+            let areas = &world.get_resource::<Runtime>()?.areas;
+            areas
+                .get(&binding.area)
+                .into_iter()
+                .chain(areas.values())
+                .filter(|state| {
+                    state.ready
+                        && state
+                            .applied
+                            .as_ref()
+                            .is_some_and(|config| config.source == binding.source)
+                })
+                .filter_map(|state| state.remote.as_ref())
+                .find(|remote| !remote.outgoing.is_closed())
+                .map(|remote| remote.outgoing.clone())
+        }
+    }
 }
 
 pub(crate) fn editor_changed(world: &mut World, editor: Entity) {
@@ -713,7 +861,12 @@ fn mirror_editor(world: &mut World, owner: Entity) {
 
 fn configuration(world: &World, entity: Entity) -> Option<Config> {
     if let Some(filter) = world.get::<filter::Subscription>(entity) {
-        world.get::<InfluenceArea>(filter.0)?.filter.clone()
+        let area = world.get::<InfluenceArea>(filter.0)?;
+        if filter.1 {
+            area.change_filter.clone()
+        } else {
+            area.filter.clone()
+        }
     } else {
         world.get::<InfluenceArea>(entity)?.protein.clone()
     }
@@ -722,10 +875,14 @@ fn configuration(world: &World, entity: Entity) -> Option<Config> {
 fn set_configuration(world: &mut World, entity: Entity, config: Option<Config>) {
     let filter = world
         .get::<filter::Subscription>(entity)
-        .map(|filter| filter.0);
-    if let Some(mut area) = world.get_mut::<InfluenceArea>(filter.unwrap_or(entity)) {
-        if filter.is_some() {
-            area.filter = config;
+        .map(|filter| (filter.0, filter.1));
+    if let Some(mut area) = world.get_mut::<InfluenceArea>(filter.map_or(entity, |f| f.0)) {
+        if let Some((_, changes)) = filter {
+            if changes {
+                area.change_filter = config;
+            } else {
+                area.filter = config;
+            }
         } else {
             area.protein = config;
         }
@@ -754,7 +911,7 @@ pub(crate) fn ordered_records(
         world
             .query::<(Entity, &filter::Subscription)>()
             .iter(world)
-            .find(|(_, s)| s.0 == owner)
+            .find(|(_, s)| s.0 == owner && !s.1)
             .map(|(e, _)| e)
     } else {
         Some(owner)

@@ -1094,12 +1094,18 @@ async fn a_quantity_written_in_a_lingua_file_becomes_true_in_the_database() {
         .expect("facts");
     let deltas: Vec<String> = facts.iter().map(|f| f.delta.to_string()).collect();
     assert!(
-        deltas.contains(&"10.50".to_string()),
-        "appended the DIFFERENCE from 2, not the number itself: {deltas:?}"
-    );
-    assert!(
         !deltas.contains(&"12.50".to_string()),
-        "a level is a fold of Facts, never an assignment: {deltas:?}"
+        "setting a level must not add that level again: {deltas:?}"
+    );
+    e.rebuild_read_model().await.unwrap();
+    assert_eq!(
+        store::records::get(&e.store.pool, &uid)
+            .await
+            .unwrap()
+            .unwrap()
+            .quantity
+            .to_string(),
+        "12.50"
     );
 }
 

@@ -4,6 +4,7 @@ use bevy::{
 };
 use serde::{Deserialize, Serialize};
 
+mod area_summary;
 pub mod areas;
 pub mod assets;
 pub mod groups;
@@ -37,6 +38,7 @@ impl Plugin for TopologyPlugin {
                 (
                     view::synchronize,
                     assets::update,
+                    area_summary::update,
                     presentation::synchronize,
                     areas::update,
                     ui::update,

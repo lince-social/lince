@@ -520,11 +520,18 @@ pub(super) fn layout(
         };
         let center = origin + start + size * 0.5;
         let owner_placement = crate::topology::spatial(world, owner);
-        let owner_center = world.get::<InfluenceArea>(owner).map_or(DVec2::ZERO, |area| DVec2::from_array(area.center));
+        let owner_center = world
+            .get::<InfluenceArea>(owner)
+            .map_or(DVec2::ZERO, |area| DVec2::from_array(area.center));
         let local = center - owner_center;
-        let point = owner_placement.position(owner_center) + owner_placement.rotation() * bevy::math::DVec3::new(local.x, 0.0, local.y);
+        let point = owner_placement.position(owner_center)
+            + owner_placement.rotation() * bevy::math::DVec3::new(local.x, 0.0, local.y);
         let world_center = DVec2::new(point.x, point.z);
-        world.entity_mut(entity).insert(crate::topology::Spatial { elevation: point.y, rotation: owner_placement.rotation, ..default() });
+        world.entity_mut(entity).insert(crate::topology::Spatial {
+            elevation: point.y,
+            rotation: owner_placement.rotation,
+            ..default()
+        });
         if let Some(mut area) = world.get_mut::<InfluenceArea>(entity) {
             if area.center != world_center.to_array()
                 || area.size != size.to_array()

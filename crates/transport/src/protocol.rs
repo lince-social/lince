@@ -3,6 +3,15 @@ use protein::Protein;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct CollabCursor {
+    pub session: String,
+    pub person: Option<String>,
+    pub property: String,
+    pub anchor: String,
+    pub focus: String,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ClientMessage {
@@ -67,6 +76,12 @@ pub enum ClientMessage {
     },
     CollabLeave {
         record_uid: String,
+    },
+    CollabPresence {
+        record_uid: String,
+        property: String,
+        anchor: String,
+        focus: String,
     },
     CollabUpdate {
         id: String,
@@ -151,14 +166,21 @@ pub enum ServerMessage {
         id: String,
         record_uid: String,
         snapshot_base64: String,
+        version: String,
+        writable: Vec<String>,
     },
     CollabChange {
         record_uid: String,
-        snapshot_base64: String,
+        update_base64: String,
+        version: String,
     },
     CollabAck {
         id: String,
         record_uid: String,
+    },
+    CollabCursors {
+        record_uid: String,
+        cursors: Vec<CollabCursor>,
     },
     LaneEvent {
         room: String,

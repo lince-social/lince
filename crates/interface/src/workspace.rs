@@ -107,6 +107,8 @@ struct Document {
     calendars: Vec<crate::calendar::SavedCalendar>,
     #[serde(default)]
     kanbans: Vec<crate::kanban::SavedKanban>,
+    #[serde(default)]
+    instincts: Vec<crate::instinct::SavedInstinct>,
 }
 
 impl Document {
@@ -114,6 +116,7 @@ impl Document {
         let ids: HashSet<_> = self.workspaces.iter().map(|space| space.id).collect();
         let area_ids: HashSet<_> = self.areas.iter().map(|saved| &saved.area.id).collect();
         self.theme.validate()
+            && self.instincts.iter().all(|saved| ids.contains(&saved.workspace) && saved.valid())
             && self.kanbans.iter().all(|saved| ids.contains(&saved.workspace) && saved.valid())
             && self
                 .layouts
@@ -271,6 +274,9 @@ fn initialize(world: &mut World) {
                 for saved in document.kanbans {
                     saved.restore(world, root);
                 }
+                for saved in document.instincts {
+                    saved.restore(world, root);
+                }
                 for saved in document.imports {
                     let entity = crate::topology::assets::spawn(
                         world,
@@ -295,6 +301,12 @@ fn initialize(world: &mut World) {
                     world.get_mut::<CanvasItem>(entity).unwrap().size = Vec2::from_array(sand.size);
                     sand.placement.restore(world, entity);
                     let mut content = None;
+                    if sand.kind == SandKind::Operation {
+                        content = Some(crate::operation::populate(world, root, entity));
+                    }
+                    if sand.kind == SandKind::AccessControl {
+                        content = Some(crate::access_control::populate(world, root, entity));
+                    }
                     for text in sand.texts {
                         let block = sand_text::spawn(world, entity, text);
                         content.get_or_insert(block);
@@ -333,8 +345,14 @@ fn initialize(world: &mut World) {
             };
         }
         let topology = active.topology;
+        let seed = !restored && spaces.error.is_none()
+            && world.get::<crate::instinct::SeedInstinct>(root).is_some();
         world.entity_mut(root).insert((spaces, topology));
+        world.entity_mut(root).remove::<crate::instinct::SeedInstinct>();
         crate::workspace_config::initialize(world, root);
+        if seed {
+            crate::instinct::spawn(world, root, 1, DVec2::ZERO, Default::default());
+        }
     }
 }
 
@@ -610,6 +628,7 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
         proteins: crate::protein_castle::snapshot(world, root),
         calendars: crate::calendar::snapshot(world, root),
         kanbans: crate::kanban::snapshot(world, root),
+        instincts: crate::instinct::snapshot(world, root),
     }
 }
 
@@ -753,6 +772,48 @@ pub(crate) mod tests {
         app.world_mut().write_message(AppExit::Success);
         app.update();
         app.world_mut().resource_mut::<Messages<AppExit>>().clear();
+    }
+
+    #[cfg_attr(test, test)]
+    fn instinct_seeds_once_and_saved_or_deleted_readers_stay_that_way() {
+        fn seeded(path: PathBuf) -> (App, Entity) {
+            let mut app = App::new();
+            crate::laboratory::isolate(app.world_mut());
+            app.init_resource::<Assets<Font>>()
+                .init_resource::<Typography>()
+                .init_resource::<InputFocus>()
+                .add_plugins(WorkspacePlugin)
+                .insert_resource(WorkspaceFile::new(path));
+            let root = app.world_mut().spawn((BoxRoot, crate::instinct::SeedInstinct)).id();
+            app.update();
+            flush(&mut app);
+            (app, root)
+        }
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("interface.json");
+        let (mut app, root) = seeded(path.clone());
+        let reader = app.world_mut().query_filtered::<Entity, With<crate::instinct::Instinct>>()
+            .single(app.world()).unwrap();
+        assert_eq!(app.world().get::<WorkspaceMember>(reader).unwrap().0, 1);
+        assert_eq!(app.world().get::<ChildOf>(reader).unwrap().parent(), root);
+        app.world_mut().get_mut::<crate::instinct::Instinct>(reader).unwrap().page = Some("tool".into());
+        flush(&mut app);
+        drop(app);
+        let (mut app, _) = seeded(path.clone());
+        let (reader, instinct) = app.world_mut().query::<(Entity, &crate::instinct::Instinct)>()
+            .single(app.world()).unwrap();
+        assert_eq!(instinct.page.as_deref(), Some("tool"));
+        app.world_mut().despawn(reader);
+        flush(&mut app);
+        drop(app);
+        let (mut app, _) = seeded(path.clone());
+        assert_eq!(app.world_mut().query::<&crate::instinct::Instinct>().iter(app.world()).count(), 0);
+        drop(app);
+        let path = directory.path().join("broken.json");
+        std::fs::write(&path, b"broken").unwrap();
+        let (mut app, root) = seeded(path);
+        assert!(app.world().get::<Workspaces>(root).unwrap().error.is_some());
+        assert_eq!(app.world_mut().query::<&crate::instinct::Instinct>().iter(app.world()).count(), 0);
     }
 
     #[test]
@@ -1427,6 +1488,7 @@ pub(crate) mod tests {
     }
 
     crate::laboratory_cases! {
+        instinct_seeds_once_and_saved_or_deleted_readers_stay_that_way,
         protein_group_settings_are_saved_without_generated_areas,
         sand_groups_survive_workspace_restart_and_saved_record_regrouping,
         areas_restore_identity_shape_properties_and_workspace_and_reject_invalid_snapshots,

@@ -61,6 +61,7 @@ struct Drawing {
     pattern: f32,
     spacing: f32,
     thickness: f32,
+    spatial: Option<crate::topology::view::View>,
 }
 
 #[derive(Component)]
@@ -77,6 +78,10 @@ struct PatternMaterial {
     geometry: Vec4,
     #[uniform(2)]
     viewport: Vec4,
+    #[uniform(3)]
+    eye: Vec4,
+    #[uniform(4)]
+    rotation: Mat4,
 }
 
 impl UiMaterial for PatternMaterial {
@@ -137,6 +142,10 @@ fn draw(world: &mut World) {
             continue;
         };
         let drawing = Drawing {
+            spatial: world
+                .get::<crate::topology::view::View>(root)
+                .copied()
+                .filter(|view| view.spatial),
             spacing: world
                 .get_resource::<crate::tokens::ThemeSettings>()
                 .map(|settings| {
@@ -203,7 +212,18 @@ fn draw(world: &mut World) {
             ink: color(drawing.colors.grid).to_linear().to_vec4(),
             geometry: Vec4::new(x, y, spacing, drawing.pattern / 100.0),
             viewport: drawing.viewport.extend(drawing.thickness).extend(0.0),
+            eye: drawing
+                .spatial
+                .map_or(Vec4::ZERO, |view| ground_eye(view, drawing.spacing)),
+            rotation: drawing.spatial.map_or(Mat4::IDENTITY, |view| {
+                Mat4::from_quat(Quat::from_euler(EulerRot::YXZ, view.yaw, view.pitch, 0.0))
+            }),
         };
+        let mut material = material;
+        if drawing.spatial.is_some() {
+            material.geometry.z = drawing.spacing;
+            material.viewport.w = (PerspectiveProjection::default().fov * 0.5).tan();
+        }
         if let Some(grid) = world.get::<Grid>(root) {
             let handle = grid.material.clone();
             *world
@@ -264,6 +284,15 @@ fn draw(world: &mut World) {
     }
 }
 
+fn ground_eye(view: crate::topology::view::View, spacing: f32) -> Vec4 {
+    Vec4::new(
+        view.position[0].rem_euclid(f64::from(spacing)) as f32,
+        view.position[1] as f32,
+        view.position[2].rem_euclid(f64::from(spacing)) as f32,
+        1.0,
+    )
+}
+
 pub(crate) mod tests {
     use super::*;
 
@@ -285,7 +314,23 @@ pub(crate) mod tests {
         assert!(grid_axis(0.0, 0.0, 800.0, 32.0).is_none());
     }
 
+    #[cfg_attr(test, test)]
+    fn ground_grid_retains_world_phase_after_distant_camera_movement() {
+        let mut view = crate::topology::view::View {
+            spatial: true,
+            position: [7.0, 500.0, -11.0],
+            ..default()
+        };
+        let near = ground_eye(view, 32.0);
+        view.position[0] += 1e12;
+        view.position[2] -= 1e12;
+        assert_eq!(ground_eye(view, 32.0), near);
+        view.position[0] += 4.0;
+        assert_eq!(ground_eye(view, 32.0).x, near.x + 4.0);
+    }
+
     crate::laboratory_cases! {
         grid_follows_pan_and_zoom_at_distant_coordinates,
+        ground_grid_retains_world_phase_after_distant_camera_movement,
     }
 }

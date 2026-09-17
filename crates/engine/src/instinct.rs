@@ -76,15 +76,43 @@ impl BundledRecord {
 
     pub fn position(&self) -> f64 {
         self.parent_line()
-            .or_else(|| {
-                self.projection
-                    .assertions
-                    .iter()
-                    .find(|line| line.predicate == "position")
-            })
-            .and_then(|line| line.quantity.as_deref())
-            .and_then(|value| value.parse().ok())
+            .into_iter()
+            .chain(
+                ["instinct", "position"]
+                    .into_iter()
+                    .filter_map(|predicate| {
+                        self.projection
+                            .assertions
+                            .iter()
+                            .find(|line| !line.identity && line.predicate == predicate)
+                    }),
+            )
+            .filter_map(|line| line.quantity.as_deref()?.parse::<f64>().ok())
+            .find(|value| value.is_finite())
             .unwrap_or(f64::MAX)
+    }
+
+    fn order_path(&self, all: &[BundledRecord]) -> Vec<(f64, String, String)> {
+        let mut output = Vec::new();
+        let mut current = self;
+        let mut seen = Vec::new();
+        loop {
+            let uid = &current.projection.uid;
+            if seen.contains(&uid) {
+                break;
+            }
+            seen.push(uid);
+            output.push((current.position(), current.head.clone(), uid.clone()));
+            let Some(parent) = current
+                .parent_uid()
+                .and_then(|uid| all.iter().find(|record| record.projection.uid == uid))
+            else {
+                break;
+            };
+            current = parent;
+        }
+        output.reverse();
+        output
     }
 
     pub fn parent_uid(&self) -> Option<&str> {
@@ -138,8 +166,12 @@ impl BundledRecord {
 }
 
 pub fn records() -> Vec<BundledRecord> {
+    records_from(BUNDLE)
+}
+
+fn records_from(sources: &[(&str, &str)]) -> Vec<BundledRecord> {
     let mut projected = Vec::new();
-    for (name, source) in BUNDLE {
+    for (name, source) in sources {
         projected.extend(project_source(name, source));
     }
     projected.retain(|record| {
@@ -203,9 +235,9 @@ pub fn records() -> Vec<BundledRecord> {
         .collect();
 
     let snapshot = output.clone();
-    let paths: HashMap<String, Vec<f64>> = snapshot
+    let paths: HashMap<_, _> = snapshot
         .iter()
-        .map(|record| (record.projection.uid.clone(), record.path(&snapshot)))
+        .map(|record| (record.projection.uid.clone(), record.order_path(&snapshot)))
         .collect();
     output.sort_by(|left, right| {
         let empty = Vec::new();
@@ -214,12 +246,18 @@ pub fn records() -> Vec<BundledRecord> {
         left_path
             .iter()
             .zip(right_path.iter())
-            .find_map(|(left, right)| match left.total_cmp(right) {
-                std::cmp::Ordering::Equal => None,
-                ordering => Some(ordering),
+            .find_map(|(left, right)| {
+                match left
+                    .0
+                    .total_cmp(&right.0)
+                    .then(left.1.cmp(&right.1))
+                    .then(left.2.cmp(&right.2))
+                {
+                    std::cmp::Ordering::Equal => None,
+                    ordering => Some(ordering),
+                }
             })
             .unwrap_or_else(|| left_path.len().cmp(&right_path.len()))
-            .then(left.head.cmp(&right.head))
     });
     output
 }
@@ -237,6 +275,77 @@ fn project_source(name: &str, source: &str) -> Vec<anicca::ProjectedRecord> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn instinct_and_part_of_amounts_order_pages_and_their_contents() {
+        let records = records_from(&[(
+            "Order.lingua",
+            r#"
+Later (@later: 0, is #chapter, #instinct: 2) {
+Later.
+}
+First (@first: 0, is #chapter, #instinct: 1) {
+First.
+}
+Child last (@last: 0, #instinct: 1, #part-of @first: 2) {
+Last.
+}
+Child first (@child: 0, #instinct: 99, #part-of @first: 1) {
+Child.
+}
+Nested chapter (@nested: 0, is #chapter, #instinct, #part-of @first: 3) {
+Nested.
+}
+Not included (@excluded: 0) {
+Hidden.
+}
+"#,
+        )]);
+        let slugs: Vec<_> = records
+            .iter()
+            .map(|record| record.slug.as_deref().unwrap())
+            .collect();
+        assert_eq!(slugs, ["first", "child", "last", "nested", "later"]);
+        assert_eq!(records[1].entry_uid(&records), records[0].projection.uid);
+        assert_eq!(records[3].entry_uid(&records), records[3].projection.uid);
+        assert_eq!(records[3].path(&records), [1.0, 3.0]);
+    }
+
+    #[test]
+    fn tied_roots_keep_their_descendants_together() {
+        let records = records_from(&[(
+            "Ties.lingua",
+            r#"
+B root (@b: 0, #instinct) {
+B.
+}
+A child (@b-child: 0, is #chapter, #instinct, #part-of @b: 1) {
+B child.
+}
+A root (@a: 0, #instinct) {
+A.
+}
+Z child (@a-child: 0, is #chapter, #instinct, #part-of @a: 2) {
+A child.
+}
+"#,
+        )]);
+        assert_eq!(
+            records
+                .iter()
+                .map(|record| record.slug.as_deref().unwrap())
+                .collect::<Vec<_>>(),
+            ["a", "a-child", "b", "b-child"]
+        );
+    }
+
+    #[test]
+    fn philosophy_and_tool_are_the_first_bundled_pages() {
+        let records = records();
+        let pages: Vec<_> = records.iter().filter(|record| record.is_entry()).collect();
+        assert_eq!(pages[0].slug.as_deref(), Some("philosophy"));
+        assert_eq!(pages[1].slug.as_deref(), Some("tool"));
+    }
 
     #[test]
     fn bundled_records_receive_missing_identities_before_projection() {

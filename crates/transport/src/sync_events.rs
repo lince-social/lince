@@ -6,12 +6,14 @@ pub enum SyncEvent {
     Fact(Fact),
     Refresh,
     Ephemeral,
+    Presence,
 }
 
 pub struct SyncEvents {
     facts: broadcast::Receiver<Fact>,
     queries: watch::Receiver<u64>,
     ephemeral: tokio::time::Interval,
+    presence: Option<watch::Receiver<u64>>,
 }
 
 impl SyncEvents {
@@ -22,11 +24,18 @@ impl SyncEvents {
             facts: engine.subscribe(),
             queries: engine.watch_query_changes(),
             ephemeral,
+            presence: None,
         }
+    }
+
+    pub fn with_presence(mut self, presence: watch::Receiver<u64>) -> Self {
+        self.presence = Some(presence);
+        self
     }
 
     pub async fn next(&mut self, ephemeral: bool) -> Option<SyncEvent> {
         tokio::select! {
+            _ = async { self.presence.as_mut().expect("presence receiver").changed().await }, if self.presence.is_some() => Some(SyncEvent::Presence),
             fact = self.facts.recv() => match fact {
                 Ok(fact) => Some(SyncEvent::Fact(fact)),
                 Err(broadcast::error::RecvError::Lagged(_)) => {

@@ -9,12 +9,14 @@ use bevy::text::EditableText;
 
 #[derive(Clone)]
 enum Command {
+    Placement(SpawnPlacement),
+    SettlingTicks(u16),
+    SpawnTarget(String),
     Tasks,
     ClosestDate,
     Enable,
     Remove,
     Query,
-    ToggleRun,
     Source(bool),
     Organ(String),
     Add(String),
@@ -249,23 +251,34 @@ impl Action for Command {
             configuration = None;
         } else if let Some(config) = configuration.as_mut() {
             match self {
+                Self::Placement(value) => config.placement = *value,
+                Self::SettlingTicks(value) => config.settling_ticks = *value,
+                Self::SpawnTarget(id) => {
+                    if config.spawn_targets.contains(id) {
+                        config.spawn_targets.retain(|target| target != id);
+                    } else {
+                        config.spawn_targets.push(id.clone());
+                    }
+                }
+                _ => {}
+            }
+            match self {
                 Self::ClosestDate => config.closest_end_date = !config.closest_end_date,
                 Self::Tasks => {
                     config.task_cards = true;
                     config.bindings = Config::tasks().bindings;
                 }
-                Self::ToggleRun => config.enabled = !config.enabled,
                 Self::Source(remote) => {
                     config.source = if *remote {
                         Source::Organ(String::new())
                     } else {
                         Source::Local
                     };
-                    config.enabled = false;
+                    config.enabled = true;
                 }
                 Self::Organ(uid) => {
                     config.source = Source::Organ(uid.clone());
-                    config.enabled = false;
+                    config.enabled = true;
                 }
                 Self::Add(property) if config.bindings.len() < 32 => {
                     config.bindings.push(Binding::new(property))
@@ -376,7 +389,7 @@ pub(super) fn inputs(world: &mut World) {
         match field {
             Field::Organ => {
                 config.source = Source::Organ(value.clone());
-                config.enabled = false;
+                config.enabled = true;
             }
             Field::Width => {
                 if let Some(number) = number {
@@ -481,7 +494,14 @@ pub(crate) fn controls(world: &mut World, _: Entity, panel: Entity, owner: Entit
         world,
         panel,
         if filtering {
-            "Protein filter"
+            if world
+                .get::<filter::Subscription>(owner)
+                .is_some_and(|s| s.1)
+            {
+                "Match for property changes"
+            } else {
+                "Match for attraction and sorting"
+            }
         } else {
             "Protein"
         },
@@ -501,19 +521,83 @@ pub(crate) fn controls(world: &mut World, _: Entity, panel: Entity, owner: Entit
         );
         return;
     };
+    if !filtering {
+        crate::dropdown::spawn(
+            world,
+            panel,
+            owner,
+            "Spawn placement",
+            match config.placement {
+                SpawnPlacement::Source => "At the source",
+                SpawnPlacement::MatchingAreas => "In matching areas",
+                SpawnPlacement::Physics => "After physics steps",
+            },
+            vec![
+                (
+                    "At the source".into(),
+                    crate::actions![Command::Placement(SpawnPlacement::Source)],
+                ),
+                (
+                    "In matching areas".into(),
+                    crate::actions![Command::Placement(SpawnPlacement::MatchingAreas)],
+                ),
+                (
+                    "After physics steps".into(),
+                    crate::actions![Command::Placement(SpawnPlacement::Physics)],
+                ),
+            ],
+        );
+        if config.placement == SpawnPlacement::Physics {
+            crate::dropdown::spawn(
+                world,
+                panel,
+                owner,
+                "Initial physics steps",
+                &config.settling_ticks.to_string(),
+                [30, 120, 300, 600]
+                    .into_iter()
+                    .map(|ticks| {
+                        (
+                            ticks.to_string(),
+                            crate::actions![Command::SettlingTicks(ticks)],
+                        )
+                    })
+                    .collect(),
+            );
+        }
+        if config.placement != SpawnPlacement::Source {
+            label(world, panel, "Destination areas · empty selects all", 14.0);
+            let root = world.get::<ChildOf>(owner).map(ChildOf::parent);
+            let member = world
+                .get::<crate::workspace::WorkspaceMember>(owner)
+                .copied();
+            let targets: Vec<_> = world
+                .query::<(
+                    Entity,
+                    &InfluenceArea,
+                    &ChildOf,
+                    &crate::workspace::WorkspaceMember,
+                )>()
+                .iter(world)
+                .filter(|(e, _, parent, workspace)| {
+                    *e != owner && Some(parent.parent()) == root && Some(**workspace) == member
+                })
+                .map(|(_, a, _, _)| (a.id.clone(), a.name.clone()))
+                .collect();
+            for (id, title) in targets {
+                let selected = config.spawn_targets.contains(&id);
+                text_button(
+                    world,
+                    panel,
+                    owner,
+                    Command::SpawnTarget(id),
+                    &format!("{} {title}", if selected { "✓" } else { "○" }),
+                    "Choose this destination area",
+                );
+            }
+        }
+    }
     let row = crate::area_panel::row(world, panel);
-    button(
-        world,
-        row,
-        owner,
-        Command::ToggleRun,
-        if config.enabled {
-            Icon::Stop
-        } else {
-            Icon::Play
-        },
-        "Start or stop the live Protein",
-    );
     button(
         world,
         row,

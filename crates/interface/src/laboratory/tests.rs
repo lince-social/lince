@@ -148,7 +148,7 @@ fn laboratory_stress_is_temporary_bounded_and_never_saved_as_a_user_workspace() 
     }
     let report = &app.world().resource::<Laboratory>().reports[0];
     assert!(report.complete);
-    assert_eq!(report.stops.len(), 6);
+    assert_eq!(report.stops.len(), SandKind::ALL.len() * 2);
     assert!(report.measurements.iter().all(|row| row.sands <= 4));
     for kind in SandKind::ALL {
         for physics in [false, true] {
@@ -225,14 +225,14 @@ fn stress_stops_at_a_slow_baseline_and_aborts_severe_slowdowns_during_warmup() {
             budget_ms: 20.0,
         };
         let mut run = super::stress::StressRun::new(config, false, Vec2::new(1000.0, 800.0));
-        for _ in 0..40 {
+        for _ in 0..SandKind::ALL.len() * 16 {
             run.advance(app.world_mut(), root, if emergency { 1500.0 } else { 25.0 });
             if run.report.complete {
                 break;
             }
         }
         assert!(run.report.complete);
-        assert_eq!(run.report.measurements.len(), 6);
+        assert_eq!(run.report.measurements.len(), SandKind::ALL.len() * 2);
         assert!(run.report.measurements.iter().all(|row| !row.within_budget
             && row.sands == 0
             && row.emergency_stop == emergency

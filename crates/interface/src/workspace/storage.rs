@@ -281,6 +281,7 @@ pub(crate) mod tests {
             proteins: Vec::new(),
             calendars: Vec::new(),
             kanbans: Vec::new(),
+            instincts: Vec::new(),
             theme: Default::default(),
             active: 1,
             workspaces,

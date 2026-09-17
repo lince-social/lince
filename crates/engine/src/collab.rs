@@ -1,18 +1,19 @@
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap};
+use std::sync::Arc;
 
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD as B64;
-use loro::{ExportMode, LoroDoc, UpdateOptions, VersionVector};
+use loro::{ExportMode, LoroDoc, VersionVector};
+use protein::authority::Property;
 
+use crate::collab_guard::{AcceptedDoc, GuardError, Limits, PreparedDelta};
 use crate::error::EngineError;
 
 const MAX_OPEN_DOCS: usize = 64;
 const COMPACT_OPS: i64 = 100;
-const COMPACT_BYTES: usize = 256 * 1024;
 
 struct OpenDoc {
-    doc: LoroDoc,
-    snapshot_vv: VersionVector,
+    doc: Arc<AcceptedDoc>,
     last_used: u64,
 }
 
@@ -22,167 +23,104 @@ pub struct DocRegistry {
     tick: u64,
 }
 
-struct LoadedState {
-    snapshot: Option<Vec<u8>>,
-    tail: Vec<(i64, String)>,
+pub fn limits() -> Limits {
+    Limits {
+        peers: 4096,
+        delta_atoms: 1_048_576,
+        ..Limits::default()
+    }
 }
 
-pub struct TextWrite {
-    pub head: String,
-    pub body: String,
-    pub tail_b64: String,
+fn refused(error: impl std::fmt::Display) -> EngineError {
+    EngineError::Consequence(format!("Collaborative edit refused: {error}"))
+}
+
+pub fn encode_version(version: &VersionVector) -> String {
+    B64.encode(version.encode())
+}
+
+pub fn decode_version(value: &str) -> Result<VersionVector, EngineError> {
+    if value.len() > 128 * 1024 {
+        return Err(refused("document version is too large"));
+    }
+    VersionVector::decode(&B64.decode(value).map_err(refused)?).map_err(refused)
 }
 
 impl crate::Engine {
-    async fn load_state(&self, record_uid: &str) -> Result<LoadedState, EngineError> {
-        let doc_row = store::record_docs::get(&self.store.pool, record_uid).await?;
-        let through = doc_row.as_ref().map(|d| d.through_seq).unwrap_or(0);
-        let tail = store::record_docs::doc_tail(&self.store.pool, record_uid, through).await?;
-        Ok(LoadedState {
-            snapshot: doc_row.map(|d| d.snapshot),
-            tail,
-        })
-    }
-
-    fn with_doc<T>(
-        &self,
-        record_uid: &str,
-        loaded: LoadedState,
-        seed: Option<(String, String)>,
-        work: impl FnOnce(&LoroDoc, &VersionVector) -> Result<T, EngineError>,
-    ) -> Result<T, EngineError> {
-        let mut registry = self
-            .collab_docs
-            .lock()
-            .map_err(|_| EngineError::Consequence("collab registry poisoned".into()))?;
-        registry.tick += 1;
-        let tick = registry.tick;
-        if !registry.docs.contains_key(record_uid) {
-            let doc = LoroDoc::new();
-            let mut had_history = false;
-            if let Some(snapshot) = &loaded.snapshot {
-                doc.import(snapshot)
-                    .map_err(|e| EngineError::Consequence(format!("doc snapshot import: {e}")))?;
-                had_history = true;
-            }
-            let snapshot_vv = doc.oplog_vv();
-            for (_seq, value) in &loaded.tail {
-                if let Ok(bytes) = B64.decode(value) {
-                    let _ = doc.import(&bytes);
-                    had_history = true;
-                }
-            }
-            if !had_history {
-                if let Some((head, body)) = seed {
-                    let _ = doc.set_peer_id(seed_peer_id(record_uid, &head, &body));
-                    if !head.is_empty() {
-                        let _ = doc.get_text("head").update(&head, UpdateOptions::default());
-                    }
-                    if !body.is_empty() {
-                        let _ = doc.get_text("body").update(&body, UpdateOptions::default());
-                    }
-                    doc.commit();
-                    let _ = doc.set_peer_id(random_peer_id());
-                }
-            }
-            registry.docs.insert(
-                record_uid.to_string(),
-                OpenDoc {
-                    doc,
-                    snapshot_vv,
-                    last_used: tick,
-                },
-            );
-        }
-        let entry = registry.docs.get_mut(record_uid).expect("just ensured");
-        entry.last_used = tick;
-        let out = work(&entry.doc, &entry.snapshot_vv);
+    fn cache_doc(&self, uid: &str, doc: Arc<AcceptedDoc>) {
+        let mut registry = self.collab_docs.lock().expect("document registry");
+        registry.tick = registry.tick.wrapping_add(1);
+        let last_used = registry.tick;
+        registry.docs.insert(uid.into(), OpenDoc { doc, last_used });
         if registry.docs.len() > MAX_OPEN_DOCS {
-            let evict = registry
+            let oldest = registry
                 .docs
                 .iter()
-                .min_by_key(|(_, open)| open.last_used)
+                .min_by_key(|(_, entry)| entry.last_used)
                 .map(|(uid, _)| uid.clone());
-            if let Some(uid) = evict {
-                registry.docs.remove(&uid);
+            if let Some(oldest) = oldest {
+                registry.docs.remove(&oldest);
             }
         }
-        out
     }
 
-    pub async fn write_record_text(
-        &self,
-        uid: &str,
-        head: Option<&str>,
-        body: Option<&str>,
-    ) -> Result<(), EngineError> {
-        let _op = self.import_lock.lock().await;
-        let record = store::records::get(&self.store.pool, uid)
-            .await?
-            .ok_or_else(|| EngineError::UnknownRecord(uid.to_string()))?;
-        let loaded = self.load_state(uid).await?;
-        let head_owned = head.map(str::to_string);
-        let body_owned = body.map(str::to_string);
-        let write = self.with_doc(
-            uid,
-            loaded,
-            Some((record.head.clone(), record.body.clone())),
-            move |doc, snapshot_vv| {
-                if let Some(new) = &head_owned {
-                    doc.get_text("head")
-                        .update(new, UpdateOptions::default())
-                        .map_err(|e| EngineError::Consequence(format!("text update: {e}")))?;
-                }
-                if let Some(new) = &body_owned {
-                    doc.get_text("body")
-                        .update(new, UpdateOptions::default())
-                        .map_err(|e| EngineError::Consequence(format!("text update: {e}")))?;
-                }
-                let tail = doc
-                    .export(ExportMode::updates(snapshot_vv))
-                    .map_err(|e| EngineError::Consequence(format!("tail export: {e}")))?;
-                Ok(TextWrite {
-                    head: doc.get_text("head").to_string(),
-                    body: doc.get_text("body").to_string(),
-                    tail_b64: B64.encode(tail),
-                })
-            },
-        )?;
-        if let Some(local) = store::cells::local(&self.store.pool).await? {
-            store::sync_ops::append(
-                &self.store.pool,
-                "record",
-                uid,
-                "",
-                store::sync_ops::OpKind::Crdt,
-                Some(&write.tail_b64),
-                nucleus::hlc::next(),
-                &local.uid,
-                &local.organ_uid,
-                None,
-                store::replica::root_of(&self.store.pool, uid)
-                    .await?
-                    .as_deref(),
-            )
-            .await?;
+    async fn accepted_doc(&self, uid: &str) -> Result<Arc<AcceptedDoc>, EngineError> {
+        {
+            let mut registry = self.collab_docs.lock().map_err(refused)?;
+            registry.tick = registry.tick.wrapping_add(1);
+            let tick = registry.tick;
+            if let Some(entry) = registry.docs.get_mut(uid) {
+                entry.last_used = tick;
+                return Ok(entry.doc.clone());
+            }
         }
-        store::records::set_text(&self.store.pool, uid, Some(&write.head), Some(&write.body))
-            .await?;
-        self.maybe_compact(uid, write.tail_b64.len()).await?;
-        Ok(())
+        let stored = store::record_docs::get(&self.store.pool, uid).await?;
+        let through = stored.as_ref().map_or(0, |row| row.through_seq);
+        let tail = store::record_docs::doc_tail(&self.store.pool, uid, through).await?;
+        let mut accepted = if let Some(stored) = stored {
+            AcceptedDoc::from_trusted_snapshot(&stored.snapshot, &limits()).map_err(refused)?
+        } else if tail.is_empty() {
+            let record = store::records::get(&self.store.pool, uid)
+                .await?
+                .ok_or_else(|| EngineError::UnknownRecord(uid.into()))?;
+            let doc = LoroDoc::new();
+            doc.set_peer_id(seed_peer_id(uid, &record.head, &record.body))
+                .map_err(refused)?;
+            for (key, text) in [("head", record.head), ("body", record.body)] {
+                doc.get_text(key).insert(0, &text).map_err(refused)?;
+            }
+            doc.commit();
+            let snapshot = doc.export(ExportMode::Snapshot).map_err(refused)?;
+            let accepted =
+                AcceptedDoc::from_trusted_snapshot(&snapshot, &limits()).map_err(refused)?;
+            store::record_docs::put(&self.store.pool, uid, accepted.snapshot(), 0).await?;
+            accepted
+        } else {
+            AcceptedDoc::empty(&limits()).map_err(refused)?
+        };
+        for (_, encoded) in tail {
+            let bytes = B64.decode(&encoded).map_err(refused)?;
+            accepted = accepted
+                .prepare_replica(&bytes, &limits())
+                .map_err(refused)?
+                .into_accepted_after_commit();
+        }
+        let doc = Arc::new(accepted);
+        self.cache_doc(uid, doc.clone());
+        Ok(doc)
     }
 
     pub async fn may_read_record(
         &self,
         subject: Option<&str>,
-        record_uid: &str,
+        uid: &str,
     ) -> Result<bool, EngineError> {
         let Some(subject) = subject else {
             return Ok(true);
         };
         let query = protein::Protein {
             source: protein::Source::Record,
-            filter: vec![protein::Predicate::UidEq(record_uid.into())],
+            filter: vec![protein::Predicate::UidEq(uid.into())],
             fields: Some(vec!["uid".into()]),
             include: Default::default(),
             aggregate: None,
@@ -194,62 +132,25 @@ impl crate::Engine {
             .is_empty())
     }
 
-    pub async fn doc_text(&self, uid: &str) -> Result<(String, String), EngineError> {
-        let loaded = self.load_state(uid).await?;
-        self.with_doc(uid, loaded, None, |doc, _| {
-            Ok((
-                doc.get_text("head").to_string(),
-                doc.get_text("body").to_string(),
-            ))
-        })
-    }
-
-    pub async fn collab_snapshot(&self, uid: &str) -> Result<String, EngineError> {
-        let record = store::records::get(&self.store.pool, uid)
-            .await?
-            .ok_or_else(|| EngineError::UnknownRecord(uid.to_string()))?;
-        let loaded = self.load_state(uid).await?;
-        self.with_doc(
-            uid,
-            loaded,
-            Some((record.head.clone(), record.body.clone())),
-            |doc, _| {
-                let snapshot = doc
-                    .export(ExportMode::Snapshot)
-                    .map_err(|e| EngineError::Consequence(format!("snapshot export: {e}")))?;
-                Ok(B64.encode(snapshot))
-            },
-        )
-    }
-
-    pub async fn apply_client_crdt_update(
+    pub async fn record_text_permissions(
         &self,
-        uid: &str,
-        update_b64: &str,
-    ) -> Result<(), EngineError> {
-        self.apply_client_crdt_update_as(uid, update_b64, None)
-            .await
-    }
-
-    pub async fn apply_client_crdt_update_as(
-        &self,
-        uid: &str,
-        update_b64: &str,
         actor: Option<&str>,
-    ) -> Result<(), EngineError> {
-        self.access_scope(
-            true,
-            self.apply_client_crdt_update_inner(uid, update_b64, actor),
+        uid: &str,
+    ) -> Result<BTreeSet<Property>, EngineError> {
+        self.record_property_permissions(
+            actor,
+            uid,
+            BTreeSet::from([Property::Head, Property::Body]),
         )
         .await
     }
 
-    async fn apply_client_crdt_update_inner(
+    pub(crate) async fn record_property_permissions(
         &self,
-        uid: &str,
-        update_b64: &str,
         actor: Option<&str>,
-    ) -> Result<(), EngineError> {
+        uid: &str,
+        requested: BTreeSet<Property>,
+    ) -> Result<BTreeSet<Property>, EngineError> {
         self.authorize_action(
             &crate::actions::Action::EditRecordText {
                 target: uid.into(),
@@ -260,179 +161,412 @@ impl crate::Engine {
         )
         .await?;
         self.reject_direct_transfer_record_mutation(uid).await?;
-        let _op = self.import_lock.lock().await;
-        let update = B64
-            .decode(update_b64)
-            .map_err(|_| EngineError::Consequence("collab update is not valid base64".into()))?;
+        if !self.may_read_record(actor, uid).await? {
+            return Err(EngineError::Forbidden("Record is no longer visible".into()));
+        }
         let record = store::records::get(&self.store.pool, uid)
             .await?
-            .ok_or_else(|| EngineError::UnknownRecord(uid.to_string()))?;
-        let loaded = self.load_state(uid).await?;
-        let write = self.with_doc(
-            uid,
-            loaded,
-            Some((record.head.clone(), record.body.clone())),
-            move |doc, snapshot_vv| {
-                doc.import(&update)
-                    .map_err(|e| EngineError::Consequence(format!("collab import: {e}")))?;
-                let tail = doc
-                    .export(ExportMode::updates(snapshot_vv))
-                    .map_err(|e| EngineError::Consequence(format!("tail export: {e}")))?;
-                Ok(TextWrite {
-                    head: doc.get_text("head").to_string(),
-                    body: doc.get_text("body").to_string(),
-                    tail_b64: B64.encode(tail),
+            .ok_or_else(|| EngineError::UnknownRecord(uid.into()))?;
+        if record.kind == "message" {
+            if let Some(metadata) =
+                store::records::get_extension(&self.store.pool, uid, "lince.message").await?
+            {
+                if metadata["state"] == "writing"
+                    && actor.is_some_and(|actor| metadata["operator"].as_str() != Some(actor))
+                {
+                    return Err(EngineError::Forbidden(
+                        "Only the message's writer may change it while it is being written".into(),
+                    ));
+                }
+            }
+        }
+        let both = requested;
+        let Some(actor) = actor else {
+            return Ok(both);
+        };
+        let Some(person) = store::auth::person_access(&self.store.pool, actor).await? else {
+            return Ok(both);
+        };
+        let Some(role) = person.role_id else {
+            return Ok(both);
+        };
+        let Some(policy) = store::role_policies::get(&self.store.pool, role)
+            .await?
+            .and_then(|row| row.policy)
+        else {
+            return Ok(both);
+        };
+        let policy: protein::authority::RolePolicy =
+            serde_json::from_value(policy).map_err(EngineError::Json)?;
+        let mut allowed = BTreeSet::new();
+        for grant in policy.grants {
+            if grant.operation != protein::authority::Operation::Update {
+                continue;
+            }
+            let query = protein::Protein {
+                source: protein::Source::Record,
+                filter: vec![protein::Predicate::UidEq(uid.into()), grant.selector],
+                fields: Some(vec!["uid".into()]),
+                include: Default::default(),
+                aggregate: None,
+                order: vec![],
+                limit: Some(1),
+            };
+            if !protein::execute_for(&self.store, &query, Some(actor))
+                .await?
+                .is_empty()
+            {
+                allowed.extend(grant.properties.intersection(&both).cloned());
+            }
+        }
+        Ok(allowed)
+    }
+
+    pub async fn doc_text(&self, uid: &str) -> Result<(String, String), EngineError> {
+        let doc = self.accepted_doc(uid).await?;
+        Ok((doc.head().into(), doc.body().into()))
+    }
+
+    pub async fn collab_snapshot(&self, uid: &str) -> Result<String, EngineError> {
+        Ok(self.collab_state(uid).await?.0)
+    }
+
+    pub async fn collab_state(&self, uid: &str) -> Result<(String, String), EngineError> {
+        let _serial = self.import_lock.lock().await;
+        let doc = self.accepted_doc(uid).await?;
+        Ok((B64.encode(doc.snapshot()), encode_version(&doc.version())))
+    }
+
+    pub async fn collab_since(
+        &self,
+        uid: &str,
+        version: &str,
+    ) -> Result<Option<(String, String)>, EngineError> {
+        let version = decode_version(version)?;
+        let _serial = self.import_lock.lock().await;
+        let doc = self.accepted_doc(uid).await?;
+        if doc.version() == version {
+            return Ok(None);
+        }
+        Ok(Some((
+            B64.encode(doc.export_updates(&version).map_err(refused)?),
+            encode_version(&doc.version()),
+        )))
+    }
+
+    pub async fn collab_version(&self, uid: &str) -> Result<String, EngineError> {
+        Ok(encode_version(&self.accepted_doc(uid).await?.version()))
+    }
+
+    pub(crate) async fn text_update_is_saved(
+        &self,
+        uid: &str,
+        update: &str,
+    ) -> Result<bool, EngineError> {
+        if update.len() > limits().snapshot_bytes * 2 {
+            return Ok(false);
+        }
+        let raw = match B64.decode(update) {
+            Ok(raw) => raw,
+            Err(_) => return Ok(false),
+        };
+        let doc = self.accepted_doc(uid).await?;
+        Ok(doc
+            .prepare_replica(&raw, &limits())
+            .is_ok_and(|prepared| prepared.is_duplicate()))
+    }
+
+    async fn persist_text(
+        &self,
+        uid: &str,
+        prepared: PreparedDelta,
+        publish: bool,
+        actor: Option<&str>,
+        incoming: Option<(&crate::sync::WireOp, Option<&str>)>,
+        receipt: Option<(&str, &str)>,
+    ) -> Result<Option<nucleus::Fact>, EngineError> {
+        if prepared.is_duplicate() && incoming.is_none() && receipt.is_none() {
+            return Ok(None);
+        }
+        let publish = publish && !prepared.is_duplicate();
+        let candidate = &prepared;
+        let has_history: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM sync_op WHERE tbl = 'record' AND uid = ? AND kind IN ('crdt', 'snapshot'))").bind(uid).fetch_one(&self.store.pool).await?;
+        let beginning = VersionVector::default();
+        let delta = candidate
+            .export_updates(if has_history {
+                prepared.base_version()
+            } else {
+                &beginning
+            })
+            .map_err(refused)?;
+        let relay = if let Some((op, _)) = incoming {
+            let local = store::cells::local(&self.store.pool).await?;
+            let record = store::records::get(&self.store.pool, uid).await?;
+            !prepared.is_duplicate()
+                && local.is_some_and(|local| {
+                    op.organ_uid != local.organ_uid
+                        && record.and_then(|record| record.organ_uid).as_deref()
+                            == Some(local.organ_uid.as_str())
                 })
-            },
-        )?;
-        let local = store::cells::local(&self.store.pool).await?;
-        if let Some(local) = &local {
-            store::sync_ops::append(
-                &self.store.pool,
+        } else {
+            false
+        };
+        let signer = self.signer.lock().await.clone();
+        let now = chrono::Utc::now();
+        let mut tx = store::write_tx(&self.store.pool).await?;
+        if let Some((id, payload)) = receipt {
+            let original: Option<String> = store::sqlx::query_scalar(
+                "SELECT payload FROM record_change_receipt WHERE actor = ? AND change_uid = ?",
+            )
+            .bind(actor.unwrap_or(""))
+            .bind(id)
+            .fetch_optional(&mut *tx)
+            .await?;
+            if let Some(original) = original {
+                if original != payload {
+                    return Err(refused("Change identity was already used for another edit"));
+                }
+                return Ok(None);
+            }
+            let result = serde_json::json!({"change_id":id,"state":"saved"}).to_string();
+            store::sqlx::query("INSERT INTO record_change_receipt (actor, change_uid, record_uid, payload, result) VALUES (?, ?, ?, ?, ?)")
+                .bind(actor.unwrap_or("")).bind(id).bind(uid).bind(payload).bind(result).execute(&mut *tx).await?;
+        }
+        if let Some((op, root)) = incoming {
+            store::sqlx::query("INSERT OR IGNORE INTO sync_op (tbl, uid, field, kind, value, hlc, actor_cell, organ_uid, replica_root) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                .bind(&op.tbl).bind(&op.uid).bind(&op.field).bind(&op.kind).bind(&op.value)
+                .bind(op.hlc).bind(&op.actor_cell).bind(&op.organ_uid).bind(root).execute(&mut *tx).await?;
+        }
+        store::sqlx::query("UPDATE record SET head = ?, body = ?, updated_at = ? WHERE uid = ? AND deleted_at IS NULL")
+            .bind(candidate.head()).bind(candidate.body()).bind(now.to_rfc3339()).bind(uid)
+            .execute(&mut *tx).await?
+            .rows_affected().checked_sub(1).ok_or_else(|| EngineError::UnknownRecord(uid.into()))?;
+        if publish || relay {
+            store::sync_ops::log_local_tx(
+                &mut tx,
                 "record",
                 uid,
                 "",
                 store::sync_ops::OpKind::Crdt,
-                Some(&write.tail_b64),
-                nucleus::hlc::next(),
-                &local.uid,
-                &local.organ_uid,
-                None,
-                store::replica::root_of(&self.store.pool, uid)
-                    .await?
-                    .as_deref(),
+                Some(B64.encode(&delta)),
             )
             .await?;
         }
-        store::records::set_text(&self.store.pool, uid, Some(&write.head), Some(&write.body))
-            .await?;
-        self.maybe_compact(uid, write.tail_b64.len()).await?;
-        let _ = self
-            .append(
-                nucleus::fact::NewFact {
+        let through: i64 = store::sqlx::query_scalar(
+            "SELECT COALESCE(through_seq, 0) FROM record_doc WHERE record_uid = ?",
+        )
+        .bind(uid)
+        .fetch_optional(&mut *tx)
+        .await?
+        .unwrap_or(0);
+        let count: i64 = store::sqlx::query_scalar("SELECT COUNT(*) FROM sync_op WHERE tbl = 'record' AND uid = ? AND kind = 'crdt' AND seq > ?")
+            .bind(uid).bind(through).fetch_one(&mut *tx).await?;
+        if count >= COMPACT_OPS {
+            let seq: i64 = store::sqlx::query_scalar("SELECT COALESCE(MAX(seq), 0) FROM sync_op")
+                .fetch_one(&mut *tx)
+                .await?;
+            store::record_docs::put_on(&mut tx, uid, candidate.snapshot(), seq).await?;
+        }
+        let fact = if publish {
+            crate::append::append_one_in_transaction(
+                &mut tx,
+                nucleus::NewFact {
                     uid: None,
-                    record_uid: uid.to_string(),
+                    record_uid: uid.into(),
                     delta: nucleus::fact::zero_delta(),
                     at: None,
-                    actor_uid: actor.map(str::to_string),
-                    cause: nucleus::fact::Cause {
-                        kind: nucleus::fact::CauseKind::Sync,
-                        uid: local.map(|organ| organ.uid),
-                    },
-                    payload: Some("{\"collab\":true}".to_string()),
+                    actor_uid: actor.map(str::to_owned),
+                    cause: nucleus::Cause::user_edit(),
+                    payload: Some("{\"collab\":true}".into()),
                 },
-                chrono::Utc::now(),
+                now,
+                signer.as_ref(),
             )
-            .await;
+            .await?
+        } else {
+            None
+        };
+        tx.commit().await?;
+        self.cache_doc(uid, Arc::new(prepared.into_accepted_after_commit()));
+        Ok(fact)
+    }
+
+    pub async fn write_record_text(
+        &self,
+        uid: &str,
+        head: Option<&str>,
+        body: Option<&str>,
+    ) -> Result<(), EngineError> {
+        self.write_record_text_as(uid, head, body, None).await?;
         Ok(())
+    }
+
+    pub async fn write_record_text_as(
+        &self,
+        uid: &str,
+        head: Option<&str>,
+        body: Option<&str>,
+        actor: Option<&str>,
+    ) -> Result<Vec<nucleus::Fact>, EngineError> {
+        let permissions = self.record_text_permissions(actor, uid).await?;
+        if (head.is_some() && !permissions.contains(&Property::Head))
+            || (body.is_some() && !permissions.contains(&Property::Body))
+        {
+            return Err(EngineError::Forbidden(
+                "This text property is not writable".into(),
+            ));
+        }
+        let _serial = self.import_lock.lock().await;
+        let doc = self.accepted_doc(uid).await?;
+        let cell = store::cells::local(&self.store.pool)
+            .await?
+            .ok_or_else(|| refused("local Cell is unavailable"))?;
+        let peer = seed_peer_id(&cell.uid, "author", uid);
+        let prepared = doc
+            .prepare_text(peer, head, body, &limits())
+            .map_err(refused)?;
+        let fact = self
+            .persist_text(uid, prepared, true, actor, None, None)
+            .await?;
+        drop(_serial);
+        if let Some(fact) = &fact {
+            self.observe_committed_fact(fact.clone(), chrono::Utc::now())
+                .await?;
+        }
+        Ok(fact.into_iter().collect())
+    }
+
+    pub async fn apply_client_crdt_update(
+        &self,
+        uid: &str,
+        update: &str,
+    ) -> Result<(), EngineError> {
+        self.apply_client_crdt_update_as(uid, update, None).await
+    }
+
+    pub async fn apply_client_crdt_update_as(
+        &self,
+        uid: &str,
+        update: &str,
+        actor: Option<&str>,
+    ) -> Result<(), EngineError> {
+        self.apply_text_change_as(uid, update, actor, None)
+            .await
+            .map(|_| ())
+    }
+
+    pub(crate) async fn apply_text_change_as(
+        &self,
+        uid: &str,
+        update: &str,
+        actor: Option<&str>,
+        receipt: Option<(&str, &str)>,
+    ) -> Result<Vec<nucleus::Fact>, EngineError> {
+        self.access_scope(true, async {
+            let permissions = self.record_text_permissions(actor, uid).await?;
+            if update.len() > limits().delta_bytes * 2 {
+                return Err(refused("edit is too large"));
+            }
+            let raw = B64.decode(update).map_err(refused)?;
+            let _serial = self.import_lock.lock().await;
+            let doc = self.accepted_doc(uid).await?;
+            let prepared = doc
+                .prepare_delta(&raw, &permissions, &limits())
+                .map_err(refused)?;
+            let fact = self
+                .persist_text(uid, prepared, true, actor, None, receipt)
+                .await?;
+            drop(_serial);
+            if let Some(fact) = fact {
+                self.observe_committed_fact(fact, chrono::Utc::now()).await
+            } else {
+                Ok(Vec::new())
+            }
+        })
+        .await
     }
 
     pub(crate) async fn apply_remote_crdt(
         &self,
         uid: &str,
-        value_b64: &str,
-        was_snapshot: bool,
+        update: &str,
+        _was_snapshot: bool,
     ) -> Result<Result<(), String>, EngineError> {
-        let Ok(update) = B64.decode(value_b64) else {
-            return Ok(Err("crdt op is not valid base64".into()));
-        };
-        let loaded = self.load_state(uid).await?;
-        let applied = self.with_doc(uid, loaded, None, move |doc, _| {
-            Ok(match doc.import(&update) {
-                Ok(_) => Ok(TextPair {
-                    head: doc.get_text("head").to_string(),
-                    body: doc.get_text("body").to_string(),
-                }),
-                Err(e) => Err(format!("loro import: {e}")),
-            })
-        })?;
-        match applied {
-            Ok(text) => {
-                store::sync_apply::set_record_text_raw(
-                    &self.store.pool,
-                    uid,
-                    &text.head,
-                    &text.body,
-                )
-                .await?;
-                if !was_snapshot {
-                    self.maybe_compact(uid, value_b64.len()).await?;
-                }
-                Ok(Ok(()))
-            }
-            Err(reason) => Ok(Err(reason)),
+        if update.len() > limits().snapshot_bytes * 2 {
+            return Ok(Err("document is too large".into()));
         }
+        let raw = match B64.decode(update) {
+            Ok(raw) => raw,
+            Err(error) => return Ok(Err(error.to_string())),
+        };
+        let doc = self.accepted_doc(uid).await?;
+        let prepared = match doc.prepare_replica(&raw, &limits()) {
+            Ok(prepared) => prepared,
+            Err(error) => return Ok(Err(error.to_string())),
+        };
+        self.persist_text(uid, prepared, false, None, None, None)
+            .await?;
+        Ok(Ok(()))
     }
 
-    async fn maybe_compact(&self, uid: &str, last_tail_len: usize) -> Result<(), EngineError> {
-        let through = store::record_docs::get(&self.store.pool, uid)
-            .await?
-            .map(|d| d.through_seq)
-            .unwrap_or(0);
-        let ops = store::record_docs::crdt_ops_since(&self.store.pool, uid, through).await?;
-        if ops < COMPACT_OPS && last_tail_len < COMPACT_BYTES {
-            return Ok(());
+    pub(crate) async fn import_text_op(
+        &self,
+        op: &crate::sync::WireOp,
+        root: Option<&str>,
+    ) -> Result<bool, EngineError> {
+        let update = op
+            .value
+            .as_deref()
+            .ok_or_else(|| refused("missing text operations"))?;
+        if update.len() > limits().snapshot_bytes * 2 {
+            return Err(refused("document is too large"));
         }
-        self.compact_doc(uid).await?;
-        Ok(())
+        let doc = self.accepted_doc(&op.uid).await?;
+        let prepared = doc
+            .prepare_replica(&B64.decode(update).map_err(refused)?, &limits())
+            .map_err(refused)?;
+        let changed = !prepared.is_duplicate();
+        self.persist_text(&op.uid, prepared, false, None, Some((op, root)), None)
+            .await?;
+        Ok(changed)
     }
 
     pub async fn compact_doc(&self, uid: &str) -> Result<bool, EngineError> {
         if store::sync_apply::record_deleted(&self.store.pool, uid).await? != Some(false) {
             return Ok(false);
         }
-        let max_seq = store::sync_ops::max_seq(&self.store.pool).await?;
-        let loaded = self.load_state(uid).await?;
-        let snapshot = self.with_doc(uid, loaded, None, |doc, _| {
-            doc.export(ExportMode::Snapshot)
-                .map_err(|e| EngineError::Consequence(format!("snapshot export: {e}")))
-        })?;
-        if snapshot.is_empty() {
-            return Ok(false);
-        }
-        {
-            let mut registry = self
-                .collab_docs
-                .lock()
-                .map_err(|_| EngineError::Consequence("collab registry poisoned".into()))?;
-            if let Some(open) = registry.docs.get_mut(uid) {
-                open.snapshot_vv = open.doc.oplog_vv();
-            }
-        }
-        store::record_docs::put(&self.store.pool, uid, &snapshot, max_seq).await?;
-        let Some(local) = store::cells::local(&self.store.pool).await? else {
-            return Ok(false);
-        };
+        let doc = self.accepted_doc(uid).await?;
+        let seq = store::sync_ops::max_seq(&self.store.pool).await?;
+        store::record_docs::put(&self.store.pool, uid, doc.snapshot(), seq).await?;
+        let cell = store::cells::local(&self.store.pool)
+            .await?
+            .ok_or_else(|| refused("Local Cell is unavailable"))?;
         store::sync_ops::append(
             &self.store.pool,
             "record",
             uid,
             "",
             store::sync_ops::OpKind::Snapshot,
-            Some(&B64.encode(&snapshot)),
+            Some(&B64.encode(doc.snapshot())),
             nucleus::hlc::next(),
-            &local.uid,
-            &local.organ_uid,
+            &cell.uid,
+            &cell.organ_uid,
             None,
-            store::replica::root_of(&self.store.pool, uid)
-                .await?
-                .as_deref(),
+            None,
         )
         .await?;
         Ok(true)
     }
 
     pub async fn compact_stale_docs(&self) -> Result<usize, EngineError> {
-        let _op = self.import_lock.lock().await;
+        let _serial = self.import_lock.lock().await;
         let stale =
             store::record_docs::records_needing_compaction(&self.store.pool, COMPACT_OPS).await?;
-        let mut compacted = 0;
+        let mut count = 0;
         for uid in stale {
-            if self.compact_doc(&uid).await? {
-                compacted += 1;
-            }
+            count += usize::from(self.compact_doc(&uid).await?);
         }
-        Ok(compacted)
+        Ok(count)
     }
 
     pub fn close_record_doc(&self, uid: &str) {
@@ -442,24 +576,19 @@ impl crate::Engine {
     }
 }
 
-struct TextPair {
-    head: String,
-    body: String,
-}
-
 fn seed_peer_id(uid: &str, head: &str, body: &str) -> u64 {
     use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();
-    hasher.update(uid.as_bytes());
-    hasher.update([0]);
-    hasher.update(head.as_bytes());
-    hasher.update([0]);
-    hasher.update(body.as_bytes());
+    for value in [uid, head, body] {
+        hasher.update(value.as_bytes());
+        hasher.update([0]);
+    }
     let digest = hasher.finalize();
-    u64::from_le_bytes(digest[..8].try_into().expect("8 bytes")) | 1
+    u64::from_le_bytes(digest[..8].try_into().expect("peer identity")) | 1
 }
 
-fn random_peer_id() -> u64 {
-    let uuid = uuid::Uuid::new_v4();
-    u64::from_le_bytes(uuid.as_bytes()[..8].try_into().expect("8 bytes")) | 1
+impl From<GuardError> for EngineError {
+    fn from(error: GuardError) -> Self {
+        refused(error)
+    }
 }

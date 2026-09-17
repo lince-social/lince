@@ -175,6 +175,68 @@ impl AcceptedDoc {
         self.version.clone()
     }
 
+    pub fn export_updates(&self, version: &VersionVector) -> Result<Vec<u8>, GuardError> {
+        self.doc
+            .export(ExportMode::updates(version))
+            .map_err(|_| GuardError::ExportRefused)
+    }
+
+    pub fn prepare_text(
+        &self,
+        peer: u64,
+        head: Option<&str>,
+        body: Option<&str>,
+        limits: &Limits,
+    ) -> Result<PreparedDelta, GuardError> {
+        let doc = import_snapshot(&self.snapshot)?;
+        doc.set_peer_id(peer).map_err(|_| GuardError::InvalidId)?;
+        for (field, value) in [("head", head), ("body", body)] {
+            if let Some(value) = value {
+                bounded(value.len(), limits.text_bytes, "text bytes")?;
+                doc.get_text(field)
+                    .update(value, loro::UpdateOptions::default())
+                    .map_err(|_| GuardError::InvalidState)?;
+            }
+        }
+        doc.commit();
+        let schema =
+            doc.export_json_updates_without_peer_compression(&self.version, &doc.oplog_vv());
+        self.prepare_delta(
+            &encode_bounded(&schema, limits.delta_bytes, "delta bytes")?,
+            &both_properties(),
+            limits,
+        )
+    }
+
+    pub fn prepare_replica(
+        &self,
+        bytes: &[u8],
+        limits: &Limits,
+    ) -> Result<PreparedDelta, GuardError> {
+        bounded(bytes.len(), limits.snapshot_bytes, "replica bytes")?;
+        let doc = isolate_import(import_snapshot(&self.snapshot)?, |doc| {
+            let status = doc.import(bytes).map_err(|_| GuardError::ImportRefused)?;
+            if status.pending.is_some_and(|pending| !pending.is_empty()) {
+                return Err(GuardError::PendingDependencies);
+            }
+            Ok(())
+        })?;
+        validate_document(&doc, limits)?;
+        let schema =
+            doc.export_json_updates_without_peer_compression(&self.version, &doc.oplog_vv());
+        let mut admission = limits.clone();
+        admission.delta_bytes = limits.history_bytes;
+        admission.delta_changes = limits.history_changes;
+        admission.delta_operations = limits.history_atoms;
+        admission.delta_atoms = limits.history_atoms;
+        admission.delta_dependencies = limits.history_atoms;
+        self.prepare_delta(
+            &encode_bounded(&schema, admission.delta_bytes, "replica delta bytes")?,
+            &both_properties(),
+            &admission,
+        )
+    }
+
     pub fn prepare_delta(
         &self,
         raw_json: &[u8],
@@ -252,6 +314,10 @@ impl AcceptedDoc {
 }
 
 impl PreparedDelta {
+    pub fn export_updates(&self, version: &VersionVector) -> Result<Vec<u8>, GuardError> {
+        self.candidate.export_updates(version)
+    }
+
     pub fn head(&self) -> &str {
         self.candidate.head()
     }

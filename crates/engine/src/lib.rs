@@ -9,6 +9,7 @@ pub mod body_links;
 pub mod checkpoint;
 pub mod collab;
 pub mod collab_guard;
+pub mod record_change;
 #[allow(dead_code)]
 pub mod communication;
 pub mod directory;
@@ -25,6 +26,7 @@ pub mod karma_runtime;
 pub mod karma_timezone;
 pub mod lingua_file;
 pub mod login;
+mod role_management;
 pub mod mailbox;
 pub mod pairing;
 pub mod peers;

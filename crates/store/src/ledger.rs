@@ -363,7 +363,9 @@ pub async fn level_at(
             .aligned_add(crate::exact::read_decimal(&row, "delta")?)
             .ok_or_else(overflow)?;
     }
-    Ok(level)
+    level
+        .aligned_add(crate::facts::quantity_offset(pool, record_uid, Some(at)).await?)
+        .ok_or_else(overflow)
 }
 
 pub async fn level_series(
@@ -376,7 +378,7 @@ pub async fn level_series(
     let opening = level;
     let rows = sqlx::query(
         "SELECT at, delta_mantissa, delta_scale FROM fact
-          WHERE record_uid = ? AND at >= ? AND at < ?
+          WHERE record_uid = ? AND at > ? AND at < ?
           ORDER BY at, rowid",
     )
     .bind(record_uid)
@@ -385,13 +387,39 @@ pub async fn level_series(
     .fetch_all(pool)
     .await?;
 
-    let mut series = Vec::with_capacity(rows.len() + 1);
-    series.push((instant(from), opening));
+    let mut events = Vec::new();
     for row in rows {
-        level = level
-            .aligned_add(crate::exact::read_decimal(&row, "delta")?)
-            .ok_or_else(overflow)?;
-        series.push((row.get::<String, _>("at"), level));
+        events.push((
+            row.get::<String, _>("at"),
+            false,
+            crate::exact::read_decimal(&row, "delta")?,
+        ));
+    }
+    let assignments: Vec<(i64, String, String, String)> = sqlx::query_as("SELECT DISTINCT json_extract(value, '$.clock'), json_extract(value, '$.peer'), json_extract(value, '$.change_uid'), json_extract(value, '$.value.offset') FROM sync_op WHERE tbl = 'record' AND uid = ? AND field = 'property:quantity' AND (json_extract(value, '$.clock') >> 16) >= ? AND (json_extract(value, '$.clock') >> 16) <= ? ORDER BY 1, 2, 3")
+        .bind(record_uid).bind(from.timestamp_millis()).bind(to.timestamp_millis()).fetch_all(pool).await?;
+    for (clock, _, _, raw) in assignments {
+        if let Some(at) = DateTime::from_timestamp_millis(nucleus::hlc::wall_ms(clock))
+            .filter(|at| *at > from && *at < to)
+        {
+            let offset = DecimalValue::parse_inferred(&raw)
+                .map_err(|error| StoreError::Decode(error.to_string().into()))?;
+            events.push((instant(at), true, offset));
+        }
+    }
+    events.sort_by(|left, right| left.0.cmp(&right.0));
+    let mut offset = crate::facts::quantity_offset(pool, record_uid, Some(from)).await?;
+    let mut series = Vec::with_capacity(events.len() + 1);
+    series.push((instant(from), opening));
+    for (at, assignment, value) in events {
+        let delta = if assignment {
+            let change = crate::exact::difference(value, offset)?;
+            offset = value;
+            change
+        } else {
+            value
+        };
+        level = level.aligned_add(delta).ok_or_else(overflow)?;
+        series.push((at, level));
     }
     Ok(series)
 }
@@ -423,7 +451,10 @@ async fn checkpoint_before(
         let level = DecimalValue::parse_inferred(text).map_err(|error| {
             StoreError::Decode(format!("checkpoint level is not an exact decimal: {error}").into())
         })?;
-        return Ok((level, Some(row.get::<i64, _>("rowid"))));
+        return Ok((
+            crate::facts::checkpoint_base(&json, level)?,
+            Some(row.get::<i64, _>("rowid")),
+        ));
     }
     Ok((zero(), None))
 }

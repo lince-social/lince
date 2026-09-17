@@ -388,56 +388,56 @@ impl Action for Command {
                         .filter(|value| !value.is_empty())
                         .map(str::to_string)
                 };
-                engine::actions::Action::AssertRecord {
-                    subject: form.binding.uid.clone(),
-                    predicate: if assignee {
-                        "assigned-to".into()
-                    } else {
-                        values[0].trim().trim_start_matches('#').into()
+                engine::actions::Action::ChangeRecord {
+                    request: engine::record_change::Request {
+                        id: nucleus::new_uid("op"),
+                        record_uid: form.binding.uid.clone(),
+                        mutation: engine::record_change::Mutation::Assertion {
+                            predicate: if assignee {
+                                "assigned-to".into()
+                            } else {
+                                values[0].trim().trim_start_matches('#').into()
+                            },
+                            object: optional(if assignee { 0 } else { 1 }),
+                            quantity: if assignee { None } else { optional(2) },
+                            unit: if assignee { None } else { optional(3) },
+                        },
                     },
-                    object: optional(if assignee { 0 } else { 1 }),
-                    quantity: if assignee { None } else { optional(2) },
-                    unit: if assignee { None } else { optional(3) },
                 }
             }
-            Self::RemoveRelation(uid) => engine::actions::Action::RetractAssertion {
-                assertion: uid.clone(),
+            Self::RemoveRelation(uid) => engine::actions::Action::ChangeRecord {
+                request: engine::record_change::Request {
+                    id: nucleus::new_uid("op"),
+                    record_uid: form.binding.uid.clone(),
+                    mutation: engine::record_change::Mutation::RetractAssertion {
+                        assertion: uid.clone(),
+                    },
+                },
             },
             Self::SaveLog | Self::AddLog | Self::RemoveLog => {
-                if data["work_logs"] != form.data["work_logs"] {
-                    status(
-                        world,
-                        form.binding.area,
-                        "Work logs changed elsewhere. Reload the form first.",
-                    );
-                    return;
-                }
-                let mut logs = data["work_logs"].as_array().cloned().unwrap_or_default();
-                let log = json!({"start":values[0].trim(),"end":if values[1].trim().is_empty() { Value::Null } else { json!(values[1].trim()) }});
-                match self {
-                    Self::AddLog => logs.push(log),
-                    Self::SaveLog if form.index < logs.len() => logs[form.index] = log,
-                    Self::RemoveLog if form.index < logs.len() => {
-                        logs.remove(form.index);
-                    }
-                    _ => {
+                let log_id = if matches!(self, Self::AddLog) {
+                    format!("work.log:{}", nucleus::new_uid("op"))
+                } else {
+                    let Some(id) = form.data["work_logs"]
+                        .as_array()
+                        .and_then(|logs| logs.get(form.index))
+                        .and_then(|log| log["id"].as_str())
+                    else {
                         status(world, form.binding.area, "Choose a work log");
                         return;
-                    }
-                }
-                let mut fds = data["extension"].clone();
-                if !fds.is_object() {
-                    fds = json!({});
-                }
-                fds["logs"] = json!(logs);
-                if let Err(error) = engine::private_work::WorkMetadata::parse(&fds) {
-                    status(world, form.binding.area, error.to_string());
-                    return;
-                }
-                engine::actions::Action::SetExtension {
-                    target: form.binding.uid.clone(),
-                    namespace: "work".into(),
-                    fds,
+                    };
+                    id.to_owned()
+                };
+                let value = (!matches!(self, Self::RemoveLog)).then(|| json!({
+                    "start": values[0].trim(),
+                    "end": if values[1].trim().is_empty() { Value::Null } else { json!(values[1].trim()) }
+                }));
+                engine::actions::Action::ChangeRecord {
+                    request: engine::record_change::Request {
+                        id: nucleus::new_uid("op"),
+                        record_uid: form.binding.uid.clone(),
+                        mutation: engine::record_change::Mutation::WorkLog { log_id, value },
+                    },
                 }
             }
             _ => return,

@@ -67,7 +67,7 @@ impl Action for Change {
         crate::area_mutation::disarm(
             world,
             owner,
-            "Disarmed after an Area edit. Preview again to arm.",
+            "Property changes inactive after an Area edit. Configured changes resume automatically.",
         );
         world.entity_mut(owner).insert(area);
         let values: Vec<_> = world
@@ -196,9 +196,9 @@ pub(crate) fn controls(world: &mut World, _root: Entity, panel: Entity, owner: E
         owner,
         Change::Sort,
         if area.sorting.is_some() {
-            Icon::Stop
+            Icon::Check
         } else {
-            Icon::Play
+            Icon::Close
         },
         "Toggle sorting of existing Sands. Uses the Protein filter order, or the spawning query order. Without a query, uses Record identity. Does not spawn Sands.",
         area.sorting.is_some(),

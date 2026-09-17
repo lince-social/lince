@@ -124,6 +124,64 @@ impl Engine {
         self.import_ops(batch, None).await
     }
 
+    pub async fn batch_is_saved(&self, batch: &OpBatch) -> Result<bool, EngineError> {
+        for op in &batch.ops {
+            let exists: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM sync_op WHERE actor_cell = ? AND hlc = ? AND tbl = ? AND uid = ? AND field = ? AND kind = ?)")
+                .bind(&op.actor_cell).bind(op.hlc).bind(&op.tbl).bind(&op.uid).bind(&op.field).bind(&op.kind)
+                .fetch_one(&self.store.pool).await?;
+            if !exists {
+                return Ok(false);
+            }
+            if op.tbl == "record" && matches!(op.kind.as_str(), "crdt" | "snapshot") {
+                let Some(value) = op.value.as_deref() else {
+                    return Ok(false);
+                };
+                if !self.text_update_is_saved(&op.uid, value).await? {
+                    return Ok(false);
+                }
+            } else if op.kind == "fact" {
+                let Some(fact) = &op.fact else {
+                    return Ok(false);
+                };
+                let saved: bool = store::sqlx::query_scalar(
+                    "SELECT EXISTS(SELECT 1 FROM fact WHERE uid = ? AND record_uid = ?)",
+                )
+                .bind(&op.uid)
+                .bind(&fact.record_uid)
+                .fetch_one(&self.store.pool)
+                .await?;
+                if !saved {
+                    return Ok(false);
+                }
+            } else if op.tbl == "record_assertion" {
+                let saved: Option<String> = store::sqlx::query_scalar(
+                    "SELECT value FROM sync_op WHERE actor_cell = ? AND hlc = ?",
+                )
+                .bind(&op.actor_cell)
+                .bind(op.hlc)
+                .fetch_one(&self.store.pool)
+                .await?;
+                let normalize = |raw: Option<&str>| {
+                    let mut value = json_value(raw);
+                    if let Some(object) = value.as_object_mut() {
+                        object.remove("predicate_name");
+                    }
+                    value
+                };
+                if normalize(saved.as_deref()) != normalize(op.value.as_deref()) {
+                    return Ok(false);
+                }
+            } else {
+                let matches: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM sync_op WHERE actor_cell = ? AND hlc = ? AND value IS ?)")
+                    .bind(&op.actor_cell).bind(op.hlc).bind(&op.value).fetch_one(&self.store.pool).await?;
+                if !matches {
+                    return Ok(false);
+                }
+            }
+        }
+        Ok(true)
+    }
+
     pub async fn import_mailed_batch(
         &self,
         opened: &crate::seal::OpenedBundle,
@@ -157,6 +215,33 @@ impl Engine {
         }
         if !nucleus::hlc::within_drift(op.hlc) {
             return Ok(Some("op is stamped too far in the future"));
+        }
+        let existing: Option<(String, String, String, String, Option<String>)> =
+            store::sqlx::query_as(
+                "SELECT tbl, uid, field, kind, value FROM sync_op WHERE actor_cell = ? AND hlc = ?",
+            )
+            .bind(&op.actor_cell)
+            .bind(op.hlc)
+            .fetch_optional(&self.store.pool)
+            .await?;
+        if let Some((tbl, uid, field, kind, value)) = existing {
+            if tbl != op.tbl || uid != op.uid || field != op.field || kind != op.kind {
+                return Ok(Some("operation identity was reused for a different change"));
+            }
+            if !matches!(kind.as_str(), "crdt" | "snapshot" | "fact") {
+                let normalize = |raw: Option<&str>| {
+                    let mut value = json_value(raw);
+                    if tbl == "record_assertion" {
+                        if let Some(object) = value.as_object_mut() {
+                            object.remove("predicate_name");
+                        }
+                    }
+                    value
+                };
+                if normalize(value.as_deref()) != normalize(op.value.as_deref()) {
+                    return Ok(Some("operation identity has conflicting content"));
+                }
+            }
         }
         if op.tbl == "record_extension" && store::people::is_standing_field(&op.field) {
             let ours = store::organs::local(&self.store.pool)
@@ -371,12 +456,46 @@ impl Engine {
                 .await?;
                 continue;
             };
+            let before = applied;
             match (op.tbl.as_str(), kind) {
                 ("fact", OpKind::Fact) => {
-                    if self.import_fact_op(op, &batch.from_organ).await? {
+                    if self
+                        .import_fact_op(op, &batch.from_organ, replica_root)
+                        .await?
+                    {
                         applied += 1;
                         if let Some(fact) = &op.fact {
                             touched.push(fact.record_uid.clone());
+                        }
+                    }
+                }
+                ("record", OpKind::Set) if op.field.starts_with("property:") => {
+                    if store::sync_apply::record_deleted(pool, &op.uid).await? == Some(true) {
+                        continue;
+                    }
+                    store::sync_apply::ensure_record_stub(
+                        pool,
+                        &op.uid,
+                        "plain",
+                        &op.organ_uid,
+                        replica_root,
+                        Some(op.hlc),
+                    )
+                    .await?;
+                    match self.import_property_op(op, replica_root).await {
+                        Ok(true) => {
+                            applied += 1;
+                            touched.push(op.uid.clone());
+                        }
+                        Ok(false) => {}
+                        Err(error) => {
+                            store::organs::quarantine(
+                                pool,
+                                &batch.from_organ,
+                                &error.to_string(),
+                                &serde_json::to_string(op).unwrap_or_default(),
+                            )
+                            .await?;
                         }
                     }
                 }
@@ -486,9 +605,6 @@ impl Engine {
                         .await?;
                         continue;
                     }
-                    if !self.log_incoming(op, kind, from, replica_root).await? {
-                        continue;
-                    }
                     match store::sync_apply::record_deleted(pool, &op.uid).await? {
                         Some(true) => continue,
                         Some(false) => {}
@@ -504,19 +620,13 @@ impl Engine {
                             .await?;
                         }
                     }
-                    match self
-                        .materialise(Materialise {
-                            op,
-                            kind,
-                            replica_root,
-                            undelete: false,
-                        })
-                        .await
-                    {
-                        Ok(outcome) => {
-                            let outcome = outcome.unwrap_or_default();
-                            applied += outcome.applied;
-                            touched.extend(outcome.touched);
+                    match self.import_text_op(op, replica_root).await {
+                        Ok(changed) => {
+                            nucleus::hlc::observe(op.hlc);
+                            if changed {
+                                applied += 1;
+                                touched.push(op.uid.clone());
+                            }
                         }
                         Err(EngineError::Consequence(reason)) => {
                             store::organs::quarantine(
@@ -539,6 +649,9 @@ impl Engine {
                     )
                     .await?;
                 }
+            }
+            if applied > before {
+                self.relay_record_change(op, kind, replica_root).await?;
             }
         }
         if !karma_definitions.is_empty() {
@@ -563,6 +676,7 @@ impl Engine {
                 }
             }
         }
+        drop(_import);
         touched.sort();
         touched.dedup();
         let subjects = touched.iter().take(32).cloned().collect();
@@ -590,7 +704,61 @@ impl Engine {
         Ok((applied, subjects))
     }
 
-    async fn import_fact_op(&self, op: &WireOp, from_organ: &str) -> Result<bool, EngineError> {
+    async fn relay_record_change(
+        &self,
+        op: &WireOp,
+        kind: OpKind,
+        root: Option<&str>,
+    ) -> Result<(), EngineError> {
+        if !matches!(kind, OpKind::Set | OpKind::Tombstone) || op.field.starts_with("property:") {
+            return Ok(());
+        }
+        let Some(local) = store::cells::local(&self.store.pool).await? else {
+            return Ok(());
+        };
+        if op.organ_uid == local.organ_uid {
+            return Ok(());
+        }
+        let subject: Option<String> = match op.tbl.as_str() {
+            "record" | "record_extension" => Some(op.uid.clone()),
+            "record_assertion" => {
+                store::sqlx::query_scalar("SELECT subject_uid FROM record_assertion WHERE uid = ?")
+                    .bind(&op.uid)
+                    .fetch_optional(&self.store.pool)
+                    .await?
+            }
+            _ => None,
+        };
+        let Some(subject) = subject else {
+            return Ok(());
+        };
+        let target = root.unwrap_or(&subject);
+        let owner: Option<String> =
+            store::sqlx::query_scalar("SELECT organ_uid FROM record WHERE uid = ?")
+                .bind(target)
+                .fetch_optional(&self.store.pool)
+                .await?
+                .flatten();
+        if owner.as_deref() == Some(local.organ_uid.as_str()) {
+            store::sync_ops::log_local(
+                &self.store.pool,
+                &op.tbl,
+                &op.uid,
+                &op.field,
+                kind,
+                op.value.clone(),
+            )
+            .await?;
+        }
+        Ok(())
+    }
+
+    async fn import_fact_op(
+        &self,
+        op: &WireOp,
+        from_organ: &str,
+        root: Option<&str>,
+    ) -> Result<bool, EngineError> {
         let pool = &self.store.pool;
         let Some(fact) = &op.fact else {
             store::organs::quarantine(
@@ -602,6 +770,11 @@ impl Engine {
             .await?;
             return Ok(false);
         };
+        if fact.uid != op.uid {
+            return Err(EngineError::Consequence(
+                "Fact identity differs from its operation".into(),
+            ));
+        }
         if !nucleus::fact::verify_chain_step(fact) {
             store::organs::quarantine(
                 pool,
@@ -626,31 +799,13 @@ impl Engine {
             .await?;
             return Ok(false);
         }
-        if sync_ops::append(
-            pool,
-            "fact",
-            &op.uid,
-            "",
-            OpKind::Fact,
-            None,
-            op.hlc,
-            &op.actor_cell,
-            &op.organ_uid,
-            Some(from_organ),
-            None,
-        )
-        .await?
-        .is_none()
-        {
-            return Ok(false);
-        }
         nucleus::hlc::observe(op.hlc);
         store::sync_apply::ensure_record_stub(
             pool,
             &fact.record_uid,
             "plain",
             &op.organ_uid,
-            None,
+            root,
             Some(op.hlc),
         )
         .await?;
@@ -669,8 +824,10 @@ impl Engine {
         let mut news = imported;
         let signer = self.signer.lock().await.clone();
         let mut tx = store::write_tx(&self.store.pool).await?;
+        store::sqlx::query("INSERT OR IGNORE INTO sync_op (tbl, uid, field, kind, value, hlc, actor_cell, organ_uid, replica_root) VALUES ('fact', ?, '', 'fact', NULL, ?, ?, ?, ?)")
+            .bind(&op.uid).bind(op.hlc).bind(&op.actor_cell).bind(&op.organ_uid).bind(root).execute(&mut *tx).await?;
         if store::facts::exists(&mut tx, news.uid.as_ref().unwrap()).await? {
-            tx.rollback().await?;
+            tx.commit().await?;
             return Ok(false);
         }
         news.actor_uid.get_or_insert_with(|| {
@@ -849,15 +1006,43 @@ impl Engine {
                 }
             }
             let mut outcome = Delivery::Sent;
+            let mut delivered_text = Vec::new();
             for root in roots {
                 let slice: Vec<_> = log_rows
                     .iter()
                     .filter(|op| op.replica_root == root)
                     .cloned()
                     .collect();
+                let mut operations = self.hydrate_ops(slice).await?;
+                for op in &mut operations {
+                    if op.tbl == "record" && matches!(op.kind.as_str(), "crdt" | "snapshot") {
+                        let version: Option<String> = store::sqlx::query_scalar("SELECT version FROM record_doc_delivery WHERE record_uid = ? AND contact_organ = ?")
+                            .bind(&op.uid).bind(&contact_uid).fetch_optional(pool).await?;
+                        let version = version.unwrap_or_else(|| {
+                            crate::collab::encode_version(&loro::VersionVector::default())
+                        });
+                        if let Some((update, next_version)) =
+                            self.collab_since(&op.uid, &version).await?
+                        {
+                            op.kind = "crdt".into();
+                            op.value = Some(update);
+                            delivered_text.push((op.uid.clone(), next_version));
+                        } else {
+                            op.value = None;
+                        }
+                    }
+                }
+                operations.retain(|op| {
+                    !(op.tbl == "record"
+                        && matches!(op.kind.as_str(), "crdt" | "snapshot")
+                        && op.value.is_none())
+                });
+                if operations.is_empty() {
+                    continue;
+                }
                 let batch = OpBatch {
                     from_organ: from_organ.clone(),
-                    ops: self.hydrate_ops(slice).await?,
+                    ops: operations,
                 };
                 use nucleus::sync::{Activity, Direction, Instance, Outcome, Summary, Update};
                 let activity = Activity {
@@ -911,6 +1096,17 @@ impl Engine {
             }
             match outcome {
                 Delivery::Sent => {
+                    for (uid, version) in &delivered_text {
+                        let mut tx = store::write_tx(pool).await?;
+                        let previous: Option<String> = store::sqlx::query_scalar("SELECT version FROM record_doc_delivery WHERE record_uid = ? AND contact_organ = ?").bind(uid).bind(&contact_uid).fetch_optional(&mut *tx).await?;
+                        let mut acknowledged = crate::collab::decode_version(version)?;
+                        if let Some(previous) = previous {
+                            acknowledged.merge(&crate::collab::decode_version(&previous)?);
+                        }
+                        store::sqlx::query("INSERT INTO record_doc_delivery (record_uid, contact_organ, version) VALUES (?, ?, ?) ON CONFLICT(record_uid, contact_organ) DO UPDATE SET version = excluded.version")
+                            .bind(uid).bind(&contact_uid).bind(crate::collab::encode_version(&acknowledged)).execute(&mut *tx).await?;
+                        tx.commit().await?;
+                    }
                     if let Some(high) = kept.iter().map(|row| row.seq).max() {
                         store::organs::advance_peer_acked_seq(pool, &contact_uid, high).await?;
                     }
@@ -1045,6 +1241,14 @@ impl Engine {
         };
         let mut out = Materialised::default();
         match (op.tbl.as_str(), kind) {
+            ("record", OpKind::Set) if op.field.starts_with("property:") => {
+                if store::sync_apply::record_deleted(pool, &op.uid).await? != Some(true)
+                    && self.materialise_property_op(op).await?
+                {
+                    out.applied += 1;
+                    out.touched.push(op.uid.clone());
+                }
+            }
             ("record", OpKind::Set) => {
                 if (op.field == "head" || op.field == "body")
                     && store::record_docs::has_crdt_history(pool, &op.uid).await?
@@ -1122,6 +1326,9 @@ impl Engine {
                         )
                         .await?;
                     }
+                }
+                if op.field == "work" || op.field.starts_with("work.") {
+                    self.project_work_registers(&op.uid).await?;
                 }
                 out.applied += 1;
                 out.touched.push(op.uid.clone());

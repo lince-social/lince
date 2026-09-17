@@ -40,6 +40,7 @@ pub mod recurrence;
 pub mod replica;
 pub mod role_permissions;
 pub mod role_policies;
+pub mod roles;
 pub mod roster;
 pub mod seed;
 pub mod senses;

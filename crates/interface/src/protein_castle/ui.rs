@@ -53,8 +53,9 @@ impl Action for Command {
                 return;
             }
             Self::Delete => {
-                cancel(world, owner, None);
-                world.despawn(owner);
+                if let Some(root) = world.get::<ChildOf>(owner).map(ChildOf::parent) {
+                    crate::deletion::request(world, root, vec![owner]);
+                }
                 return;
             }
             Self::Run => {

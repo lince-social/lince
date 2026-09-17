@@ -197,12 +197,18 @@ pub(crate) fn refresh(world: &mut World) {
             Option<&GeneratedGroup>,
         )>()
         .iter(world)
-        .filter(|(_, area, _, _, _, group)| area.validate() || group.is_some())
+        .filter(|(_, area, _, _, _, group)| area.enabled && (area.validate() || group.is_some()))
         .map(|(entity, area, parent, member, filter, group)| Field {
             entity,
             root: parent.parent(),
             workspace: member.0,
-            area: area.clone(),
+            area: {
+                let mut area = area.clone();
+                if !area.attraction_enabled {
+                    area.strength = 0.0;
+                }
+                area
+            },
             filter_tick: filter.as_ref().map(|f| f.last_changed().get()),
             filter: filter.as_ref().map(|f| {
                 previous

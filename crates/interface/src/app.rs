@@ -23,7 +23,6 @@ pub fn run_native_interface(
     let mut app = interface_app_at(data_dir.join("interface-assets"));
     app.insert_resource(CellHandle(runtime)).add_plugins((
         crate::cell_bridge::CellBridgePlugin,
-        crate::record_view::RecordViewPlugin,
         crate::tray::TrayPlugin,
     ));
     app.insert_resource(crate::workspace::WorkspaceFile::with_settings(
@@ -31,6 +30,7 @@ pub fn run_native_interface(
         storage,
     )?);
     app.insert_resource(crate::tray::InterfaceWindowSettings { close_suspends });
+    app.add_systems(Startup, canvas);
     app.insert_non_send(instance.events());
     app.run();
     Ok(())
@@ -40,9 +40,9 @@ pub fn connected_app(runtime: cell::CellRuntime) -> App {
     let mut app = interface_app();
     app.insert_resource(CellHandle(runtime)).add_plugins((
         crate::cell_bridge::CellBridgePlugin,
-        crate::record_view::RecordViewPlugin,
         crate::tray::TrayPlugin,
     ));
+    app.add_systems(Startup, canvas);
     app
 }
 
@@ -103,12 +103,19 @@ fn interface_app_at(directory: std::path::PathBuf) -> App {
     .insert_resource(ClearColor(PAPER))
     .add_plugins((
         crate::information::InformationPlugin,
+        crate::access_control::AccessControlPlugin,
         crate::protein_castle::ProteinCastlePlugin,
         crate::protein_area::ProteinAreaPlugin,
+        crate::record_binding::RecordBindingPlugin,
+        crate::work_timer::WorkTimerPlugin,
         crate::calendar::CalendarPlugin,
         crate::kanban::KanbanPlugin,
         crate::laboratory::LaboratoryPlugin,
         crate::topology::TopologyPlugin,
+        crate::description::DescriptionPlugin,
+        crate::instinct::InstinctPlugin,
+        crate::thread_castle::ThreadCastlePlugin,
+        crate::tutorial::TutorialPlugin,
     ))
     .insert_resource(idle_settings())
     .add_systems(Startup, camera);
@@ -117,6 +124,10 @@ fn interface_app_at(directory: std::path::PathBuf) -> App {
     );
     app.insert_resource(wake);
     app
+}
+
+fn canvas(mut commands: Commands) {
+    commands.spawn((crate::container::BoxRoot, crate::instinct::SeedInstinct));
 }
 
 fn camera(mut commands: Commands) {
@@ -156,4 +167,37 @@ fn camera(mut commands: Commands) {
         },
         Transform::from_rotation(Quat::from_euler(EulerRot::XYZ, -0.8, 0.4, 0.0)),
     ));
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn native_startup_has_one_empty_canvas_without_automatic_record_view() {
+        let mut app = App::new();
+        app.add_systems(Startup, canvas);
+        app.add_message::<crate::cell_bridge::CellMessage>();
+        app.update();
+        app.world_mut()
+            .write_message(crate::cell_bridge::CellMessage(cell::ServerMessage::Snapshot {
+                id: crate::cell_bridge::RECORDS.into(),
+                rows: vec![serde_json::json!({"uid":"record-a", "head":"Apple", "slug":"apple"})],
+            }));
+        app.update();
+        assert_eq!(
+            app.world_mut()
+                .query_filtered::<Entity, With<crate::container::BoxRoot>>()
+                .iter(app.world())
+                .count(),
+            1
+        );
+        assert_eq!(
+            app.world_mut()
+                .query::<&crate::area::RecordProperties>()
+                .iter(app.world())
+                .count(),
+            0
+        );
+    }
 }

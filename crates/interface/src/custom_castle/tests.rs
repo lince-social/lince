@@ -343,3 +343,25 @@ fn capture_includes_layout_children_and_rejects_partial_or_cyclic_compositions()
     castle.parts = vec![castle.parts[1].clone(); MAX_PARTS + 1];
     assert!(!castle.valid());
 }
+
+#[test]
+fn instinct_castles_keep_their_page_when_saved_and_placed_again() {
+    let directory = tempfile::tempdir().unwrap();
+    let (mut app, root) = fixture(directory.path());
+    let world = app.world_mut();
+    let reader = crate::instinct::spawn(
+        world,
+        root,
+        1,
+        DVec2::ZERO,
+        crate::instinct::Instinct { page: Some("tool".into()) },
+    );
+    world.entity_mut(root).insert(SandSelection(vec![reader]));
+    let castle = CustomCastle::capture(world, root, "Reading").unwrap();
+    let encoded = serde_json::to_string(&castle).unwrap();
+    let castle: CustomCastle = serde_json::from_str(&encoded).unwrap();
+    let copies = castle.spawn(world, root).unwrap();
+    assert_eq!(copies.len(), 1);
+    assert_eq!(world.get::<crate::instinct::Instinct>(copies[0]).unwrap().page.as_deref(), Some("tool"));
+    assert_ne!(reader, copies[0]);
+}

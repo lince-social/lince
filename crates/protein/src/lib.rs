@@ -1485,22 +1485,31 @@ pub async fn matching_among(
         .collect())
 }
 
+pub async fn select_records(
+    store: &Store,
+    protein: &Protein,
+    visible: Option<&HashSet<String>>,
+) -> Result<Vec<store::records::RecordRow>, ProteinError> {
+    let mut rows = matching_records(store, protein, visible).await?;
+    rows.retain(|row| row.slug.as_deref() != Some(store::cells::LOCAL_CELL_SLUG));
+    if protein.aggregate.is_none() {
+        rows = order_records(store, rows, &protein.order).await?;
+        if let Some(limit) = protein.limit {
+            rows.truncate(limit);
+        }
+    }
+    Ok(rows)
+}
+
 async fn execute_records(
     store: &Store,
     protein: &Protein,
     visible: Option<&HashSet<String>>,
 ) -> Result<Vec<Value>, ProteinError> {
-    let mut rows = matching_records(store, protein, visible).await?;
-
-    rows.retain(|r| r.slug.as_deref() != Some(store::cells::LOCAL_CELL_SLUG));
+    let rows = select_records(store, protein, visible).await?;
 
     if let Some(agg) = &protein.aggregate {
         return Ok(aggregate_records(&rows, agg));
-    }
-
-    rows = order_records(store, rows, &protein.order).await?;
-    if let Some(limit) = protein.limit {
-        rows.truncate(limit);
     }
 
     let mut out = Vec::with_capacity(rows.len());

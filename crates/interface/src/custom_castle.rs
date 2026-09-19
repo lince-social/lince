@@ -44,6 +44,8 @@ enum Content {
     Sand {
         kind: SandKind,
         texts: Vec<SavedText>,
+        #[serde(default)]
+        timer: Option<crate::work_timer::LocalTimer>,
     },
     Calendar(Calendar),
     Instinct(crate::instinct::Instinct),
@@ -92,8 +94,12 @@ impl CustomCastle {
                 return false;
             }
             let valid = match &part.content {
-                Content::Sand { texts, .. } => {
-                    texts.len() <= 256 && texts.iter().all(SavedText::validate)
+                Content::Sand { texts, timer, kind } => {
+                    texts.len() <= 256
+                        && texts.iter().all(SavedText::validate)
+                        && timer
+                            .as_ref()
+                            .is_none_or(|timer| *kind == SandKind::WorkTimer && timer.valid())
                 }
                 Content::Calendar(calendar) => calendar.valid(),
                 Content::Instinct(instinct) => instinct.valid(),
@@ -236,6 +242,7 @@ impl CustomCastle {
                 Content::Sand {
                     kind: sand.kind,
                     texts: crate::sand_text::snapshot(world, entity),
+                    timer: world.get::<crate::work_timer::LocalTimer>(entity).cloned(),
                 }
             } else if let Some(calendar) = world.get::<CalendarSand>(entity) {
                 Content::Calendar(calendar.0.clone())
@@ -336,7 +343,7 @@ impl CustomCastle {
         for part in &self.parts {
             let position = origin + DVec2::from_array(part.position);
             let entity = match &part.content {
-                Content::Sand { kind, texts } => {
+                Content::Sand { kind, texts, timer } => {
                     let entity = crate::sand_store::spawn_sand(
                         world,
                         root,
@@ -356,13 +363,19 @@ impl CustomCastle {
                         let child = crate::sand_text::spawn(world, entity, text.clone());
                         content.get_or_insert(child);
                     }
+                    if let Some(timer) = timer {
+                        world.entity_mut(entity).insert(timer.clone());
+                    }
                     world.entity_mut(entity).insert(StoredSand {
                         kind: *kind,
                         content,
                     });
                     if !matches!(
                         kind,
-                        SandKind::Square | SandKind::Operation | SandKind::WorkTimer | SandKind::AccessControl
+                        SandKind::Square
+                            | SandKind::Operation
+                            | SandKind::WorkTimer
+                            | SandKind::AccessControl
                     ) {
                         world
                             .entity_mut(entity)

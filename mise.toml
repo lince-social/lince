@@ -4,16 +4,12 @@ tools = { "cargo:git-cliff" = "latest", "cargo:cargo-edit" = "latest", "gh" = "l
 run = "./scripts/other/release.sh"
 
 [tasks.dev]
-description = "Run an independent Lince and open its native interface"
+description = "Run Lince in test_lince without a tray icon or stopping the service"
 run = "bash scripts/interface/run-dev.sh"
 
 [tasks.test]
-run = """
-systemctl --user stop lince.service
-mprocs --names lince,test \
-    "cargo watch -x run" \
-    "cargo watch -x 'run -- --directory /home/user/.config/test_lince'"
-"""
+description = "Run the isolated development instance"
+run = "bash scripts/interface/run-dev.sh"
 
 [tasks.lince]
 description = "Run Lince: the Cell runtime plus its native interface, one process"

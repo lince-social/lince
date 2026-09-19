@@ -218,6 +218,7 @@ fn main() -> Result<(), Error> {
                 .expect("UI instance was claimed before opening the Cell"),
             &utils::config::lince_data_dir()
                 .expect("UI data directory was resolved before opening the Cell"),
+            !has_arg(&args, "--no-tray"),
         );
         runtime.block_on(cell.shutdown());
         result?;
@@ -259,6 +260,8 @@ fn print_help() {
     println!("      --port <port>     Override only the peer/local listen port");
     println!("      --listen-addr <addr>  Override the local listen address");
     println!("      --quiet          Suppress normal status output");
+    #[cfg(feature = "ui")]
+    println!("      --no-tray        Skip the tray icon and quit when the window closes");
     #[cfg(feature = "facade")]
     {
         println!("      --facade         Serve the browser Kanban and record view");

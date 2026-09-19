@@ -1,9 +1,12 @@
+mod assignees;
 mod date_order;
 pub(crate) mod filter;
 pub(crate) mod grouping;
+mod history;
 mod model;
 pub(crate) mod placement;
 mod property_actions;
+mod record_layout;
 mod rows;
 pub(crate) mod tests;
 mod ui;
@@ -20,6 +23,28 @@ pub use model::{Binding, Config, OverflowMode, Source, SpawnPlacement};
 use serde_json::Value;
 use std::collections::{HashMap, VecDeque};
 pub(crate) use ui::controls;
+
+pub(crate) fn attach_field_history(world: &mut World, entity: Entity) {
+    history::attach_text(world, entity);
+}
+
+pub(crate) fn sync_field_history(world: &mut World, entity: Entity, value: &str) {
+    history::synced_text(world, entity, value);
+}
+
+pub(crate) fn preview_record(world: &mut World, parent: Entity, config: &Config, data: &Value) {
+    rows::content(
+        world,
+        parent,
+        config,
+        data,
+        Some(RecordBinding {
+            area: parent,
+            uid: String::new(),
+            source: Source::Local,
+        }),
+    );
+}
 
 pub(crate) fn calendar_feed(world: &World, owner: Entity) -> Option<(&[Value], String)> {
     let state = world.get_resource::<Runtime>()?.areas.get(&owner)?;
@@ -50,30 +75,55 @@ pub(crate) fn load_thread_messages(
     thread: &str,
     limit: usize,
 ) -> Result<(), String> {
-    let state = world.get_resource::<Runtime>()
+    let state = world
+        .get_resource::<Runtime>()
         .and_then(|runtime| runtime.areas.get(&binding.area))
         .ok_or("Thread connection is closed")?;
-    let config = state.applied.as_ref().ok_or("Thread connection is closed")?;
-    if config.source != binding.source || !state.data.iter()
-        .filter(|row| row["uid"].as_str() == Some(&binding.uid))
-        .flat_map(|row| row["threads"].as_array().into_iter().flatten())
-        .any(|row| row["uid"].as_str() == Some(thread))
+    let config = state
+        .applied
+        .as_ref()
+        .ok_or("Thread connection is closed")?;
+    if config.source != binding.source
+        || !state
+            .data
+            .iter()
+            .filter(|row| row["uid"].as_str() == Some(&binding.uid))
+            .flat_map(|row| row["threads"].as_array().into_iter().flatten())
+            .any(|row| row["uid"].as_str() == Some(thread))
     {
         return Err("Thread is not attached to this Record".into());
     }
-    if state.pending.len() >= 64 { return Err("Wait for pending changes".into()); }
-    let id = state.subscription.clone().ok_or("Thread connection is closed")?;
+    if state.pending.len() >= 64 {
+        return Err("Wait for pending changes".into());
+    }
+    let id = state
+        .subscription
+        .clone()
+        .ok_or("Thread connection is closed")?;
     let mut protein = query(world, binding.area, config)?;
     let mut limits = state.thread_limits.clone();
     limits.insert(thread.into(), limit);
-    let include = protein.include.threads.as_mut().ok_or("Threads are not included")?;
+    let include = protein
+        .include
+        .threads
+        .as_mut()
+        .ok_or("Threads are not included")?;
     include.message_limits = limits.clone();
-    let state = world.resource_mut::<Runtime>().into_inner().areas.get_mut(&binding.area).unwrap();
+    let state = world
+        .resource_mut::<Runtime>()
+        .into_inner()
+        .areas
+        .get_mut(&binding.area)
+        .unwrap();
     state.thread_limits = limits;
     state.thread_requests += 1;
     state.thread_error = None;
-    state.pending.push_back(ClientMessage::Subscribe { id, protein });
-    if let Some(wake) = world.get_resource::<crate::wake::WakeSignal>() { wake.ring(); }
+    state
+        .pending
+        .push_back(ClientMessage::Subscribe { id, protein });
+    if let Some(wake) = world.get_resource::<crate::wake::WakeSignal>() {
+        wake.ring();
+    }
     Ok(())
 }
 
@@ -163,7 +213,14 @@ impl Plugin for ProteinAreaPlugin {
             )
             .add_systems(
                 PostUpdate,
-                (ui::inputs, rows::commit_edits)
+                (
+                    ui::inputs,
+                    history::update,
+                    rows::commit_edits,
+                    property_actions::commit_edits,
+                    assignees::update,
+                )
+                    .chain()
                     .after(bevy::text::EditableTextSystems)
                     .before(crate::actions::ApplyActions),
             )
@@ -397,7 +454,13 @@ fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
             state.login = true;
             state.status = "Login required".into();
         }
-        ServerMessage::ActionOk { id, warnings, .. } => {
+        ServerMessage::ActionOk {
+            id,
+            warnings,
+            created,
+            data,
+            ..
+        } => {
             if let Some(editor) = state.actions.remove(&id) {
                 let message = if warnings.is_empty() {
                     "Saved".into()
@@ -406,6 +469,15 @@ fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
                 };
                 state.status = message;
                 drop(runtime);
+                history::finished(
+                    world,
+                    &id,
+                    created,
+                    data.as_ref()
+                        .and_then(|data| data["changed"].as_bool())
+                        .unwrap_or(true),
+                    true,
+                );
                 rows::action_finished(world, editor, None);
             }
         }
@@ -439,6 +511,7 @@ fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
             }
             if let Some(editor) = state.actions.remove(&id) {
                 drop(runtime);
+                history::finished(world, &id, None, false, false);
                 rows::action_finished(world, editor, Some(message));
             }
             crate::notifications::report(world, "Protein Area", &alert);
@@ -665,7 +738,10 @@ pub fn execute(
     }
     let target = match &action {
         engine::actions::Action::DeleteRecord { target } => {
-            let attached = state.data.iter().filter(|row| row["uid"].as_str() == Some(&binding.uid))
+            let attached = state
+                .data
+                .iter()
+                .filter(|row| row["uid"].as_str() == Some(&binding.uid))
                 .flat_map(|row| row["threads"].as_array().into_iter().flatten())
                 .flat_map(|thread| thread["messages"].as_array().into_iter().flatten())
                 .any(|message| message["uid"].as_str() == Some(target));
@@ -717,8 +793,7 @@ pub fn execute(
         engine::actions::Action::EditRecordText { target, .. }
         | engine::actions::Action::SetSlug { target, .. }
         | engine::actions::Action::SetQuantityExact { target, .. }
-        | engine::actions::Action::SetExtension { target, .. }
-        => target,
+        | engine::actions::Action::SetExtension { target, .. } => target,
         _ => return Err("Unsupported bound Record Action".into()),
     };
     if target != &binding.uid {
@@ -738,6 +813,7 @@ pub fn execute(
     } else {
         false
     };
+    history::capture(world, binding, editor, &action);
     let state = world
         .resource_mut::<Runtime>()
         .into_inner()

@@ -20,6 +20,7 @@ struct Trial {
     started: std::time::Instant,
     scrolled: Option<u32>,
     captured: bool,
+    picker: Option<(Entity, u32, Option<Vec2>)>,
 }
 
 fn exercise(world: &mut World) {
@@ -37,6 +38,7 @@ fn exercise(world: &mut World) {
             started: std::time::Instant::now(),
             scrolled: None,
             captured: false,
+            picker: None,
         });
         return;
     }
@@ -109,14 +111,26 @@ fn exercise(world: &mut World) {
         assert_eq!(cards, 16);
         assert!(
             world
-                .query::<(&Text, &ComputedNode)>()
+                .query::<(&bevy::text::EditableText, &ComputedNode)>()
                 .iter(world)
                 .any(|(text, node)| {
-                    text.0.starts_with("Task ")
+                    text.value().to_string().starts_with("Task ")
                         && node.size().y * node.inverse_scale_factor() > 30.0
                 }),
             "Long Task titles must wrap and grow their cards"
         );
+        for (text, scroll) in world
+            .query::<(&bevy::text::EditableText, &bevy::ui::widget::TextScroll)>()
+            .iter(world)
+        {
+            if text.value().to_string().starts_with("Task ") {
+                assert!(
+                    scroll.0.y.abs() < 1.0,
+                    "Growing titles must show their first line: {:?}",
+                    scroll.0
+                );
+            }
+        }
         let cropped = world
             .query::<&lince_interface::topology::presentation::Surface>()
             .iter(world)
@@ -125,13 +139,76 @@ fn exercise(world: &mut World) {
         assert!(cropped > 0, "Scrolling must crop Task surfaces");
         world
             .spawn(Screenshot::primary_window())
-            .observe(save_to_disk("/tmp/lince-kanban.png"))
-            .observe(
-                |_: On<ScreenshotCaptured>, mut exit: MessageWriter<AppExit>| {
-                    exit.write(AppExit::Success);
-                },
-            );
+            .observe(save_to_disk("/tmp/lince-kanban.png"));
+        let row = world
+            .query::<(
+                Entity,
+                &CanvasItem,
+                &lince_interface::area::RecordProperties,
+            )>()
+            .iter(world)
+            .find(|(_, _, properties)| {
+                properties.0["head"]
+                    .as_str()
+                    .is_some_and(|head| head.starts_with("Task 11 "))
+            })
+            .unwrap()
+            .0;
+        click_label(world, row, "Empty properties");
+        world.resource_mut::<Trial>().picker = Some((row, frame, None));
     }
+    if let Some((row, started, size)) = world.resource::<Trial>().picker {
+        if size.is_none() && frame > started + 20 {
+            click_label(world, row, "Assignees ▾");
+            let size = world.get::<CanvasItem>(row).unwrap().size;
+            world.resource_mut::<Trial>().picker = Some((row, frame, Some(size)));
+        } else if let Some(size) = size
+            && frame > started + 30
+        {
+            let current = world.get::<CanvasItem>(row).unwrap().size;
+            assert!(
+                (current - size).length() < 1.0,
+                "Assignee popup resized the Record: {size:?} -> {current:?}"
+            );
+            let popup = world
+                .query::<(&GlobalZIndex, &ChildOf, &Node)>()
+                .iter(world)
+                .find(|(z, _, _)| z.0 == 90)
+                .unwrap();
+            assert_eq!(popup.1.parent(), root);
+            assert_eq!(popup.2.position_type, PositionType::Absolute);
+            world.resource_mut::<Trial>().picker = None;
+            world
+                .spawn(Screenshot::primary_window())
+                .observe(save_to_disk("/tmp/lince-record-assignees.png"))
+                .observe(
+                    |_: On<ScreenshotCaptured>, mut exit: MessageWriter<AppExit>| {
+                        exit.write(AppExit::Success);
+                    },
+                );
+        }
+    }
+}
+
+fn click_label(world: &mut World, row: Entity, label: &str) {
+    let button = world
+        .query::<(&Text, &ChildOf)>()
+        .iter(world)
+        .find_map(|(text, parent)| {
+            if !text.0.contains(label) {
+                return None;
+            }
+            let button = world.get::<lince_interface::actions::ActionButton>(parent.parent())?;
+            let mut cursor = parent.parent();
+            loop {
+                if cursor == row {
+                    return Some(button.clone());
+                }
+                cursor = world.get::<ChildOf>(cursor)?.parent();
+            }
+        })
+        .unwrap();
+    button.actions.run(world, button.target);
 }
 
 #[tokio::main]
@@ -153,6 +230,21 @@ async fn main() {
                     lingua: "g_local".into(),
                     name: name.into(),
                     parents: Vec::new(),
+                },
+                None,
+            )
+            .await
+            .unwrap();
+    }
+    for head in ["Ada", "Bea"] {
+        engine
+            .act(
+                engine::actions::Action::CreateRecord {
+                    slug: None,
+                    kind: nucleus::RecordKind::Person,
+                    head: head.into(),
+                    body: String::new(),
+                    quantity: 0.0,
                 },
                 None,
             )

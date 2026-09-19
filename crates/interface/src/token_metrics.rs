@@ -40,7 +40,7 @@ struct Metrics {
 }
 
 #[derive(Component, Clone, Default)]
-struct IconMetrics([Metric; 3]);
+struct IconMetrics([Metric; 2]);
 
 pub(crate) fn icons(world: &mut World) {
     let entities: Vec<_> = world
@@ -52,19 +52,17 @@ pub(crate) fn icons(world: &mut World) {
             .get::<IconMetrics>(entity)
             .cloned()
             .unwrap_or_default();
-        let ratios = [Token::IconSize, Token::IconPadding, Token::IconRoundness].map(|token| {
+        let ratios = [Token::IconSize, Token::IconPadding].map(|token| {
             resolve(world, entity, token).0.number()
                 / token.default_value(Default::default()).number()
         });
         let style = *world.get::<crate::icons::IconStyle>(entity).unwrap();
         let size = metrics.0[0].scale(style.size, ratios[0]);
         let padding = metrics.0[1].scale(style.padding, ratios[1]);
-        let radius = metrics.0[2].scale(style.radius, ratios[2]);
-        if (size, padding, radius) != (style.size, style.padding, style.radius) {
+        if (size, padding) != (style.size, style.padding) {
             let mut style = world.get_mut::<crate::icons::IconStyle>(entity).unwrap();
             style.size = size;
             style.padding = padding;
-            style.radius = radius;
         }
         world.entity_mut(entity).insert(metrics);
     }

@@ -79,16 +79,12 @@ fn exercise(world: &mut World) {
             world.resource_mut::<Exercise>().stage = 3;
         }
         3 => {
-            activate(world, EditAction::Area(AreaAction::PreviewChanges));
-            assert!(!lince_interface::area_mutation::armed(
+            if !lince_interface::area_mutation::armed(
                 world,
-                world.resource::<Exercise>().area.unwrap()
-            ));
-            assert_eq!(quantity, 0.0);
-            world.resource_mut::<Exercise>().stage = 4;
-        }
-        4 => {
-            activate(world, EditAction::Area(AreaAction::ArmChanges));
+                world.resource::<Exercise>().area.unwrap(),
+            ) {
+                return;
+            }
             world.resource_mut::<Exercise>().stage = 5;
         }
         5 => {
@@ -105,23 +101,12 @@ fn exercise(world: &mut World) {
             world.resource_mut::<Exercise>().stage = 7;
         }
         7 if quantity == 1.0 => {
-            let disarm = world
-                .query::<(&EditControl, &Node)>()
-                .iter(world)
-                .find(|(control, _)| control.action == EditAction::DisarmAreaChanges)
-                .unwrap()
-                .1;
-            assert_eq!(disarm.display, Display::Flex);
             activate(world, EditAction::Toggle);
             world.resource_mut::<Exercise>().stage = 8;
         }
         8 => {
             assert!(!world.get::<EditMode>(root).unwrap().enabled);
-            activate(world, EditAction::DisarmAreaChanges);
-            world.resource_mut::<Exercise>().stage = 9;
-        }
-        9 => {
-            assert!(!lince_interface::area_mutation::armed(
+            assert!(lince_interface::area_mutation::armed(
                 world,
                 world.resource::<Exercise>().area.unwrap()
             ));
@@ -141,7 +126,7 @@ fn exercise(world: &mut World) {
             let path = world.resource::<Exercise>().path.clone();
             world.spawn(Screenshot::primary_window()).observe(save_to_disk(path)).observe(|capture: On<ScreenshotCaptured>, mut exit: MessageWriter<AppExit>| {
                 assert!(capture.image.data.as_ref().unwrap().chunks_exact(4).any(|pixel| pixel[0] > 40 && pixel[1] > 40 && pixel[2] > 40));
-                println!("Area changes smoke passed: preview, explicit grant, real entry/exit changes, and Disarm outside Edit mode.");
+                println!("Area changes smoke passed: automatic activation, real entry/exit changes, and continued operation outside Edit mode.");
                 exit.write(AppExit::Success);
             });
             world.resource_mut::<Exercise>().stage = 12;

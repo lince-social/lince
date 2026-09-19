@@ -78,7 +78,10 @@ fn preset_uses_valid_connected_areas_and_editable_task_fields() {
             config.query().unwrap();
         }
     }
-    assert_eq!(config().bindings.iter().filter(|b| b.editable).count(), 6);
+    assert_eq!(
+        config().bindings,
+        crate::full_record::config("record", crate::protein_area::Source::Local).bindings
+    );
     app.update();
     assert_eq!(
         app.world_mut().query::<&Part>().iter(app.world()).count(),
@@ -128,35 +131,18 @@ async fn setup_creation_transfer_and_exit_preserve_card_identity() {
         crate::area_mutation::armed(world, backlog) && crate::area_mutation::armed(world, todo)
     })
     .await;
-    let editor = app
-        .world_mut()
-        .query::<(Entity, &EditableText, &ChildOf)>()
-        .iter(app.world())
-        .find(|(_, _, parent)| {
-            app.world()
-                .get::<ChildOf>(parent.parent())
-                .and_then(|parent| app.world().get::<Part>(parent.parent()))
-                .is_some_and(|part| part.owner == owner && part.column == 0)
-        })
-        .unwrap()
-        .0;
-    app.world_mut()
-        .get_mut::<EditableText>(editor)
-        .unwrap()
-        .editor
-        .set_text("Task card");
-    Command::Add(0, editor).apply(app.world_mut(), owner);
+    Command::Add(0).apply(app.world_mut(), owner);
     let source = area(app.world(), owner, &board.source).unwrap();
     until(&mut app, |world| {
         crate::protein_area::calendar_feed(world, source)
-            .is_some_and(|(rows, _)| rows.iter().any(|r| r["head"] == "Task card"))
+            .is_some_and(|(rows, _)| rows.iter().any(|r| r["head"] == ""))
     })
     .await;
     let uid = crate::protein_area::calendar_feed(app.world(), source)
         .unwrap()
         .0
         .iter()
-        .find(|r| r["head"] == "Task card")
+        .find(|r| r["head"] == "")
         .unwrap()["uid"]
         .as_str()
         .unwrap()
@@ -180,14 +166,6 @@ async fn setup_creation_transfer_and_exit_preserve_card_identity() {
         app.update();
     }
     assert_eq!(app.world().get::<Card>(card).unwrap().column, Some(backlog));
-    assert!(
-        app.world()
-            .get::<EditableText>(editor)
-            .unwrap()
-            .value()
-            .to_string()
-            .is_empty()
-    );
     let earlier = engine
         .act(
             engine::actions::Action::CreateRecordWithTags {
@@ -229,7 +207,7 @@ async fn setup_creation_transfer_and_exit_preserve_card_identity() {
     app.world_mut()
         .init_resource::<crate::topology::input::PointerState>();
     let width = app.world().get::<CanvasItem>(card).unwrap().size.x;
-    assert!(app.world().get::<TaskCard>(card).is_some());
+    assert!(app.world().get::<RecordCard>(card).is_some());
     begin_drag(app.world_mut(), card, destination);
     crate::topology::set_position(app.world_mut(), card, destination);
     app.update();

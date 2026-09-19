@@ -91,12 +91,14 @@ tokens! {
     FontSize, "Text size", Number(16.0), Number(16.0), Some((8.0,32.0));
     IconSize, "Icon size", Number(24.0), Number(24.0), Some((12.0,48.0));
     IconPadding, "Icon padding", Number(7.0), Number(7.0), Some((0.0,24.0));
-    IconRoundness, "Icon roundness", Number(4.0), Number(4.0), Some((0.0,32.0));
+    ControlRoundness, "Button roundness", Number(0.0), Number(0.0), Some((0.0,32.0));
     ControlBorder, "Control border thickness", Number(1.0), Number(1.0), Some((0.0,8.0));
     PanelWidth, "Panel width", Number(376.0), Number(376.0), Some((280.0,1200.0));
     CustomizationWidth, "Customization width", Number(720.0), Number(720.0), Some((360.0,1600.0));
     TooltipWidth, "Tooltip width", Number(280.0), Number(280.0), Some((120.0,800.0));
     TooltipRoundness, "Tooltip roundness", Number(4.0), Number(4.0), Some((0.0,32.0));
+    ControlsCornerColor, "Controls corner color", Rgba([148,148,156,255]), Rgba([100,100,112,255]), None;
+    ControlsCornerTransparency, "Controls corner transparency", Number(0.0), Number(0.0), Some((0.0,100.0));
     GridSpacing, "Grid spacing", Number(32.0), Number(32.0), Some((8.0,128.0));
     GridThickness, "Grid thickness", Number(1.0), Number(1.0), Some((0.5,4.0));
 }

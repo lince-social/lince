@@ -5,7 +5,8 @@ You may be working alongside other agents spawned by the human. Do not spawn par
 Never touch AGENTS.md or README.md.
 Never touch .lingua files unless explicitly asked, they are for user readability, simple language focused on what things are and how they work, plus eventual next tasks only the developers touch.
 
-The human might ask you to do something that is L/l number or range "Do L 505-507" or just "l505-507" That means tasks from lines 505 to 507 from Lince.lingua. They might ask for a specific line too. Do the task/s asked, say in the end what has been build and if not, why. Do the tasks in order of lines.
+Do the task/s asked, say in the end what has been build and if not, why. Do the tasks in order of lines.
+
 The feature requests the human makes will be of frontend and/or backend. Make sure you code the respective frontend and backend part of features, so if there is extra UI and it's not reusing some backend feature you should build the frontend one. If it is purely backend then implement only that. If it envolves interaction of users in some form you should recommend the building of UI, the human will approve it with their comments. Whenever you finish a feature, with it's frontend/backend changes if needed, plus tests for correctness, performance and security if needed, you should read Lince.lingua and suggest the next task. That way we always are making a complete implementation of an idea, not leaving parts of it behind and suggesting to take more work. Do not think of Lince being in a phase or in a version, just code more things, let the human manage that.
 
 When planning things, you should just suggest a plan, never create a file that contains the plan, the bottleneck should always be the human manually typing or copypasting in .lingua files, that you should not touch.

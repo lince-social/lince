@@ -11,6 +11,8 @@ use bevy::{
     prelude::*,
 };
 
+pub(crate) mod corner;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CanvasAction {
     Recenter,
@@ -71,12 +73,14 @@ const CONTROL_HEIGHT: f32 = 40.0;
 fn toolbar_bundle(view: Entity) -> impl Bundle {
     (
         CanvasToolbar(view),
+        bevy::picking::hover::Hovered::default(),
+        Visibility::Hidden,
         crate::inspection::InspectionExcluded,
         crate::castle::Castle,
         Node {
             position_type: PositionType::Absolute,
-            right: px(12),
-            bottom: px(12),
+            right: px(0),
+            bottom: px(0),
             max_width: percent(96),
             flex_wrap: FlexWrap::NoWrap,
             align_items: AlignItems::Center,
@@ -113,6 +117,8 @@ impl Plugin for CanvasControlsPlugin {
         }
         app.init_resource::<InputFocus>()
             .init_resource::<InputFocusVisible>()
+            .init_resource::<Assets<Image>>()
+            .init_resource::<crate::tokens::ThemeSettings>()
             .add_observer(activate)
             .add_observer(scroll_toolbar)
             .add_observer(
@@ -135,6 +141,10 @@ impl Plugin for CanvasControlsPlugin {
                 },
             )
             .add_systems(Update, (create_controls, label_controls).chain())
+            .add_systems(
+                PostUpdate,
+                corner::update.before(bevy::ui::UiSystems::Prepare),
+            )
             .add_systems(
                 PostUpdate,
                 reveal_toolbar_focus.after(bevy::ui::UiSystems::Layout),

@@ -38,7 +38,8 @@ impl Plugin for SandPlugin {
             .init_resource::<bevy::input_focus::InputFocusVisible>()
             .add_systems(
                 PostUpdate,
-                button_borders
+                (button_borders, button_roundness)
+                    .chain()
                     .in_set(StyleButtons)
                     .after(crate::icons::SyncIcons)
                     .after(crate::token_style::ApplyTokenStyles)
@@ -83,11 +84,14 @@ fn button_borders(
             Option<&BorderColor>,
             Option<&mut Outline>,
         ),
-        Or<(
-            With<WidgetButton>,
-            With<crate::actions::ActionButton>,
-            With<EditableText>,
-        )>,
+        (
+            Without<crate::canvas_controls::corner::ControlsCorner>,
+            Or<(
+                With<WidgetButton>,
+                With<crate::actions::ActionButton>,
+                With<EditableText>,
+            )>,
+        ),
     >,
     mut commands: Commands,
 ) {
@@ -113,6 +117,30 @@ fn button_borders(
             commands
                 .entity(entity)
                 .insert(crate::token_style::border(crate::tokens::Token::Accent));
+        }
+    }
+}
+
+fn button_roundness(world: &mut World) {
+    let buttons: Vec<_> = world
+        .query_filtered::<Entity, (
+            With<Node>,
+            Without<crate::canvas_controls::corner::ControlsCorner>,
+            Or<(With<WidgetButton>, With<crate::actions::ActionButton>)>,
+        )>()
+        .iter(world)
+        .collect();
+    for entity in buttons {
+        let radius = BorderRadius::all(px(crate::token_style::resolve(
+            world,
+            entity,
+            crate::tokens::Token::ControlRoundness,
+        )
+        .0
+        .number()));
+        let mut node = world.get_mut::<Node>(entity).unwrap();
+        if node.border_radius != radius {
+            node.border_radius = radius;
         }
     }
 }
@@ -218,5 +246,69 @@ pub(crate) mod tests {
 
     crate::laboratory_cases! {
         every_action_button_uses_the_shared_border_without_resizing_its_content,
+        text_and_icon_buttons_share_default_and_custom_roundness,
+    }
+
+    #[cfg_attr(test, test)]
+    fn text_and_icon_buttons_share_default_and_custom_roundness() {
+        let mut app = App::new();
+        crate::laboratory::isolate(app.world_mut());
+        app.add_plugins((crate::icons::IconPlugin, SandPlugin));
+        let text = app
+            .world_mut()
+            .spawn((
+                button(0),
+                Node {
+                    border_radius: BorderRadius::all(px(8)),
+                    ..default()
+                },
+            ))
+            .id();
+        let icon = app
+            .world_mut()
+            .spawn(crate::icons::IconButton::new(
+                crate::icons::Icon::Plus,
+                "Add",
+            ))
+            .id();
+        let action = app
+            .world_mut()
+            .spawn((
+                Node::default(),
+                crate::actions::ActionButton::new(text, crate::actions![]),
+            ))
+            .id();
+        let editor = app
+            .world_mut()
+            .spawn((
+                editable(""),
+                Node {
+                    border_radius: BorderRadius::all(px(9)),
+                    ..default()
+                },
+            ))
+            .id();
+        for radius in [0.0, 6.0, 0.0] {
+            app.world_mut()
+                .resource_mut::<crate::tokens::ThemeSettings>()
+                .global
+                .set(
+                    crate::tokens::Token::ControlRoundness,
+                    crate::tokens::TokenValue::Number(radius),
+                );
+            for _ in 0..3 {
+                app.update();
+            }
+            for entity in [text, icon, action] {
+                assert_eq!(
+                    app.world().get::<Node>(entity).unwrap().border_radius,
+                    BorderRadius::all(px(radius))
+                );
+            }
+            assert_eq!(
+                app.world().get::<Node>(editor).unwrap().border_radius,
+                BorderRadius::all(px(9))
+            );
+        }
     }
 }

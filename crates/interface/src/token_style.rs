@@ -54,7 +54,7 @@ pub fn kind(world: &World, entity: Entity) -> Option<SandStyleKind> {
     }
     if let Some(sand) = world.get::<StoredSand>(entity) {
         return Some(match sand.kind {
-            SandKind::Square | SandKind::Operation | SandKind::WorkTimer | SandKind::AccessControl => SandStyleKind::Square,
+            SandKind::Square | SandKind::Operation | SandKind::WorkTimer | SandKind::AccessControl | SandKind::Sync => SandStyleKind::Square,
             SandKind::Text => SandStyleKind::Text,
             SandKind::EditableText => SandStyleKind::EditableText,
         });

@@ -360,9 +360,9 @@ mod tests {
     #[test]
     fn summaries_separate_filters_from_edits_and_truncate_unicode() {
         let mut area = InfluenceArea::new(AreaShape::Square, DVec2::ZERO, DVec2::splat(200.0));
-        area.protein = Some(crate::protein_area::Config::tasks());
+        area.protein = Some(crate::protein_area::Config::records());
         area.strength = 100.0;
-        area.filter = Some(crate::protein_area::Config::tasks());
+        area.filter = Some(crate::protein_area::Config::records());
         area.changes.enter.quantity = Some("-2".into());
         area.changes.enter.assert.push("next".into());
         let rows = lines(&area);

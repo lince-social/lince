@@ -14,6 +14,8 @@ pub(crate) use ui::store_entry;
 pub const DATE_SELECTED: &str = "Date selected";
 
 pub const CREDITS: &[crate::credits::Attribution] = &[
+    crate::credits::SYMBOLS,
+    crate::credits::FONTIQUE,
     crate::credits::Attribution {
         name: "Chrono",
         author: "Kang Seonghoon and Chrono contributors",

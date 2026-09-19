@@ -8,7 +8,8 @@ use crate::error::EngineError;
 const MARKDOWN_EXTENSION: &str = "md";
 const MISSING_TICKS_BEFORE_DELETE: u32 = 2;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum FileFormat {
     #[default]
     Markdown,
@@ -67,6 +68,29 @@ pub struct FileConflict {
 }
 
 impl Engine {
+    pub(crate) async fn file_sync_protein(
+        &self,
+        uid: &str,
+    ) -> Result<protein::Protein, EngineError> {
+        let record = store::records::get(&self.store.pool, uid)
+            .await?
+            .filter(|row| row.kind == "protein" && row.quantity > store::exact::zero())
+            .ok_or_else(|| EngineError::Consequence("Choose an active saved Protein".into()))?;
+        let ast = store::records::get_extension(&self.store.pool, &record.uid, "lince.protein")
+            .await?
+            .ok_or_else(|| EngineError::Consequence("The saved Protein has no query".into()))?;
+        let query: protein::Protein = serde_json::from_value(ast)
+            .map_err(|error| EngineError::Consequence(format!("Invalid sync Protein: {error}")))?;
+        protein::validate(&query).map_err(|error| EngineError::Consequence(error.to_string()))?;
+        if query.source != protein::Source::Record || query.aggregate.is_some() {
+            return Err(EngineError::Consequence(
+                "Directory sync needs a Record Protein without aggregation".into(),
+            ));
+        }
+        protein::matching_records(&self.store, &query, None).await?;
+        Ok(query)
+    }
+
     pub async fn file_sync_tick(
         &self,
         dir: &Path,
@@ -120,10 +144,17 @@ impl Engine {
         organ_uid: &str,
         state: &mut FileSyncState,
     ) -> Result<FileSyncReport, EngineError> {
-        std::fs::create_dir_all(dir).map_err(EngineError::Io)?;
         let mut report = FileSyncReport::default();
         let config =
             store::records::get_extension(&self.store.pool, organ_uid, "lince.file_sync").await?;
+        if let Some(uid) = config
+            .as_ref()
+            .and_then(|value| value.get("protein"))
+            .and_then(serde_json::Value::as_str)
+        {
+            self.file_sync_protein(uid).await?;
+        }
+        std::fs::create_dir_all(dir).map_err(EngineError::Io)?;
         let formats = configured_formats(config.as_ref());
         let mut disk = HashMap::new();
         for format in &formats {
@@ -802,6 +833,19 @@ impl Engine {
         organ_uid: &str,
         config: Option<&serde_json::Value>,
     ) -> Result<Vec<store::records::RecordRow>, EngineError> {
+        if let Some(uid) = config
+            .and_then(|value| value.get("protein"))
+            .and_then(serde_json::Value::as_str)
+        {
+            let mut query = self.file_sync_protein(uid).await?;
+            query
+                .filter
+                .push(protein::Predicate::OrganEq(organ_uid.to_string()));
+            query.filter.push(protein::Predicate::Not(Box::new(
+                protein::Predicate::SlugEq(store::organs::LOCAL_ORGAN_SLUG.into()),
+            )));
+            return Ok(protein::select_records(&self.store, &query, None).await?);
+        }
         let mut filter = vec![protein::Predicate::OrganEq(organ_uid.to_string())];
         if let Some(extra) = configured_filter(config) {
             filter.push(extra);

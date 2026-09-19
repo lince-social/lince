@@ -41,7 +41,6 @@ pub struct EditMode {
     shortcuts: bool,
     customization: bool,
     pub(crate) areas: bool,
-    content: Option<Entity>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -52,7 +51,6 @@ pub enum EditAction {
     CreateWorkspace,
     TogglePhysics,
     ReloadWorkspaceSettings,
-    DisarmAreaChanges,
     SwitchWorkspace(u64),
     RemoveWorkspace(u64),
     ConfirmRemoveWorkspace,
@@ -97,7 +95,18 @@ pub struct EditControl {
 #[derive(Component, Clone, Copy, PartialEq, Eq)]
 pub enum EditField {
     WorkspaceName,
-    StartingText,
+}
+
+#[derive(Component)]
+struct StoreFilter {
+    input: Entity,
+    groups: Vec<StoreFilterGroup>,
+    observed: String,
+}
+
+struct StoreFilterGroup {
+    heading: Entity,
+    entries: Vec<Entity>,
 }
 
 #[derive(Component)]
@@ -139,6 +148,7 @@ impl Plugin for EditModePlugin {
                 PostUpdate,
                 (
                     autosave_name,
+                    filter_store,
                     crate::customization::autosave,
                     crate::canvas_colors::autosave,
                     crate::sand_text_editor::autosave,
@@ -260,6 +270,66 @@ fn autosave_name(world: &mut World) {
                 text.0 = name.trim().into();
             }
         }
+    }
+}
+
+fn descendant_text(world: &World, entity: Entity, value: &mut String) {
+    if let Some(text) = world.get::<Text>(entity) {
+        value.push_str(&text.0);
+        value.push(' ');
+    }
+    if let Some(children) = world.get::<Children>(entity) {
+        for child in children {
+            descendant_text(world, *child, value);
+        }
+    }
+}
+
+fn filter_store(world: &mut World) {
+    let filters: Vec<_> = world
+        .query::<(Entity, &StoreFilter)>()
+        .iter(world)
+        .filter_map(|(panel, filter)| {
+            let input = world.get::<EditableText>(filter.input)?.value().to_string();
+            let value = input.trim().to_lowercase();
+            (value != filter.observed).then(|| {
+                (
+                    panel,
+                    value,
+                    filter
+                        .groups
+                        .iter()
+                        .map(|group| (group.heading, group.entries.clone()))
+                        .collect::<Vec<_>>(),
+                )
+            })
+        })
+        .collect();
+    for (panel, filter, groups) in filters {
+        for (heading, entries) in groups {
+            let mut visible = false;
+            for entry in entries {
+                let mut value = String::new();
+                descendant_text(world, entry, &mut value);
+                let matches = filter.is_empty() || value.to_lowercase().contains(&filter);
+                if let Some(mut node) = world.get_mut::<Node>(entry) {
+                    node.display = if matches {
+                        Display::Flex
+                    } else {
+                        Display::None
+                    };
+                }
+                visible |= matches;
+            }
+            if let Some(mut node) = world.get_mut::<Node>(heading) {
+                node.display = if visible {
+                    Display::Flex
+                } else {
+                    Display::None
+                };
+            }
+        }
+        world.get_mut::<StoreFilter>(panel).unwrap().observed = filter;
     }
 }
 
@@ -399,17 +469,6 @@ fn setup(world: &mut World) {
         ));
         let toolbar = crate::canvas_controls::toolbar(world, root);
         let toggle = control(world, root, toolbar, EditAction::Toggle, "Edit mode");
-        let disarm = control(
-            world,
-            root,
-            toolbar,
-            EditAction::DisarmAreaChanges,
-            "Turn off property changes for all areas",
-        );
-        world
-            .entity_mut(disarm)
-            .insert(crate::area_mutation::DisarmControl(root));
-        world.get_mut::<Node>(disarm).unwrap().display = Display::None;
         world.entity_mut(toggle).insert(Node {
             width: px(120),
             justify_content: JustifyContent::Center,
@@ -476,7 +535,6 @@ fn setup(world: &mut World) {
             shortcuts: false,
             customization: false,
             areas: false,
-            content: None,
         });
         let bindings = [
             KeyBinding::new(
@@ -541,10 +599,6 @@ fn notices(
 }
 
 fn apply(world: &mut World, root: Entity, action: EditAction) {
-    if action == EditAction::DisarmAreaChanges {
-        crate::area_mutation::disarm_all(world, root);
-        return;
-    }
     let Some(mode) = world.get::<EditMode>(root) else {
         return;
     };
@@ -653,20 +707,15 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
             world.get_mut::<EditMode>(root).unwrap().confirm_remove = None;
         }
         EditAction::AddSand(kind) => {
-            let initial = mode
-                .content
-                .and_then(|entity| world.get::<EditableText>(entity))
-                .map(|text| text.value().to_string())
-                .unwrap_or_default();
             let active = world.get::<Workspaces>(root).unwrap().active;
             let center = world.get::<CanvasView>(root).unwrap().center;
             if !center.is_finite() {
                 return;
             }
-            let initial = if initial.is_empty() && kind != SandKind::Square {
-                kind.name()
+            let initial = if kind == SandKind::Square {
+                ""
             } else {
-                &initial
+                kind.name()
             };
             spawn_sand(world, root, active, kind, initial, center);
         }
@@ -744,7 +793,7 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
             }
             return;
         }
-        EditAction::Open | EditAction::Toggle | EditAction::DisarmAreaChanges => {}
+        EditAction::Open | EditAction::Toggle => {}
     }
     if matches!(
         action,
@@ -956,7 +1005,6 @@ pub(crate) fn control(
             }
         }
         EditAction::ReloadWorkspaceSettings => Some(Icon::Reset),
-        EditAction::DisarmAreaChanges => Some(Icon::Close),
         EditAction::TogglePhysics => None,
         EditAction::Notifications => Some(Icon::Bell),
         EditAction::ResetCanvasColors => Some(Icon::Reset),
@@ -983,6 +1031,7 @@ pub(crate) fn control(
             SandKind::Operation => Icon::Forward,
             SandKind::WorkTimer => Icon::Play,
             SandKind::AccessControl => Icon::Person,
+            SandKind::Sync => Icon::Reset,
         }),
         EditAction::SwitchWorkspace(_) | EditAction::Text(TextAction::Select(_)) => None,
     };
@@ -1010,6 +1059,17 @@ pub(crate) fn control(
 }
 
 pub(crate) fn render_panel(world: &mut World, root: Entity) {
+    render_panel_content(world, root);
+    let panel = world.get::<EditMode>(root).unwrap().panel;
+    world.spawn((ChildOf(panel), Node {
+        height: px(16),
+        min_height: px(16),
+        flex_shrink: 0.0,
+        ..default()
+    }));
+}
+
+fn render_panel_content(world: &mut World, root: Entity) {
     let mode = world.get::<EditMode>(root).unwrap();
     let panel = mode.panel;
     let confirm = mode.confirm_remove;
@@ -1258,31 +1318,21 @@ pub(crate) fn render_panel(world: &mut World, root: Entity) {
             EditAction::Credits,
             "Sand credits and licenses",
         );
-        label(
-            world,
-            panel,
-            "Add a Sand at the camera. Notes are saved as you type.",
-            14.0,
-        );
-        label(world, panel, "Starting text", 14.0);
+        label(world, panel, "Filter", 14.0);
         let bundle = text_editor("", world.resource::<Typography>(), 0);
-        let content = world
+        let filter = world
             .spawn((
                 bundle,
-                EditField::StartingText,
                 ChildOf(panel),
                 crate::token_style::background(crate::tokens::Token::Surface),
             ))
             .id();
         world
-            .get_mut::<EditableText>(content)
+            .get_mut::<EditableText>(filter)
             .unwrap()
-            .max_characters = Some(4096);
-        world
-            .get_mut::<EditableText>(content)
-            .unwrap()
-            .visible_lines = Some(1.0);
-        world.entity_mut(content).insert((
+            .max_characters = Some(200);
+        world.get_mut::<EditableText>(filter).unwrap().visible_lines = Some(1.0);
+        world.entity_mut(filter).insert((
             Node {
                 width: percent(100),
                 height: px(36),
@@ -1293,35 +1343,99 @@ pub(crate) fn render_panel(world: &mut World, root: Entity) {
             },
             crate::token_style::border(crate::tokens::Token::Accent),
         ));
-        if let Some(mut node) = world.get_mut::<AccessibilityNode>(content) {
-            node.set_label("Starting text for the new Sand");
+        if let Some(mut node) = world.get_mut::<AccessibilityNode>(filter) {
+            node.set_label("Filter Sand store");
         }
-        world.get_mut::<EditMode>(root).unwrap().content = Some(content);
-        label(world, panel, "Sands", 18.0);
-        for kind in SandKind::ALL {
-            crate::sand_store::entry(world, root, panel, kind, None);
+        let sands_heading = label(world, panel, "Sands", 18.0);
+        let sands_group = store_group(world, panel);
+        let mut sand_entries = Vec::new();
+        for kind in SandKind::ALL
+            .into_iter()
+            .filter(|kind| *kind != SandKind::Sync)
+        {
+            crate::sand_store::entry(world, root, sands_group, kind, None);
+            sand_entries.push(*world.get::<Children>(sands_group).unwrap().last().unwrap());
         }
-        label(world, panel, "Castles", 18.0);
-        crate::instinct::store_entry(world, root, panel);
-        crate::protein_castle::store_entries(world, root, panel);
-        crate::full_record::store_entry(world, root, panel);
-        crate::calendar::store_entry(world, root, panel);
-        crate::kanban::store_entry(world, root, panel);
-        crate::custom_castle::store_entries(world, root, panel);
-        crate::topology::ui::store_controls(world, root, panel);
+        let castles_heading = label(world, panel, "Castles", 18.0);
+        let castles_group = store_group(world, panel);
+        let mut castle_entries = Vec::new();
+        let entry = store_group(world, castles_group);
+        crate::sand_store::entry(world, root, entry, SandKind::Sync, None);
+        castle_entries.push(entry);
+        let entry = store_group(world, castles_group);
+        crate::instinct::store_entry(world, root, entry);
+        castle_entries.push(entry);
+        let entry = store_group(world, castles_group);
+        crate::protein_castle::store_entries(world, root, entry);
+        castle_entries.push(entry);
+        let entry = store_group(world, castles_group);
+        crate::full_record::store_entry(world, root, entry);
+        castle_entries.push(entry);
+        let entry = store_group(world, castles_group);
+        crate::calendar::store_entry(world, root, entry);
+        castle_entries.push(entry);
+        let entry = store_group(world, castles_group);
+        crate::kanban::store_entry(world, root, entry);
+        castle_entries.push(entry);
+        let entry = store_group(world, castles_group);
+        crate::custom_castle::store_entries(world, root, entry);
+        castle_entries.push(entry);
+        let entry = store_group(world, castles_group);
+        crate::topology::ui::store_controls(world, root, entry);
+        castle_entries.push(entry);
         let sands: Vec<_> = world
             .query::<(Entity, &ChildOf, &workspace::WorkspaceMember, &StoredSand)>()
             .iter(world)
             .filter(|(_, parent, member, _)| parent.parent() == root && member.0 == active)
             .map(|(entity, _, _, sand)| (entity, sand.kind))
             .collect();
-        if !sands.is_empty() {
-            label(world, panel, "In this workspace", 18.0);
-        }
+        let workspace_heading = label(world, panel, "In this workspace", 18.0);
+        let workspace_group = store_group(world, panel);
+        let mut workspace_entries = Vec::new();
         for (index, (entity, kind)) in sands.into_iter().enumerate() {
-            crate::sand_store::entry(world, root, panel, kind, Some((entity, index)));
+            crate::sand_store::entry(world, root, workspace_group, kind, Some((entity, index)));
+            workspace_entries.push(
+                *world
+                    .get::<Children>(workspace_group)
+                    .unwrap()
+                    .last()
+                    .unwrap(),
+            );
         }
+        world.entity_mut(panel).insert(StoreFilter {
+            input: filter,
+            groups: vec![
+                StoreFilterGroup {
+                    heading: sands_heading,
+                    entries: sand_entries,
+                },
+                StoreFilterGroup {
+                    heading: castles_heading,
+                    entries: castle_entries,
+                },
+                StoreFilterGroup {
+                    heading: workspace_heading,
+                    entries: workspace_entries,
+                },
+            ],
+            observed: "\0".into(),
+        });
     }
+}
+
+fn store_group(world: &mut World, parent: Entity) -> Entity {
+    world
+        .spawn((
+            Node {
+                width: percent(100),
+                flex_direction: FlexDirection::Column,
+                row_gap: px(10),
+                flex_shrink: 0.0,
+                ..default()
+            },
+            ChildOf(parent),
+        ))
+        .id()
 }
 
 pub(crate) mod tests {
@@ -1335,7 +1449,7 @@ pub(crate) mod tests {
     #[derive(Resource, Default)]
     struct Toggles(Vec<(Entity, bool)>);
 
-    fn fixture() -> (App, Entity) {
+    pub(crate) fn fixture() -> (App, Entity) {
         let mut app = App::new();
         crate::laboratory::isolate(app.world_mut());
         app.init_resource::<Assets<Font>>()
@@ -1366,6 +1480,44 @@ pub(crate) mod tests {
             .0;
         app.world_mut().trigger(Activate { entity });
         app.update();
+    }
+
+    #[test]
+    fn store_cards_have_inert_content_previews_and_all_tabs_have_bottom_space() {
+        let (mut app, root) = fixture();
+        EditAction::Open.apply(app.world_mut(), root);
+        EditAction::Store.apply(app.world_mut(), root);
+        let world = app.world_mut();
+        let previews: Vec<_> = world.query_filtered::<Entity, With<crate::sand_store::SandPreview>>().iter(world).collect();
+        assert!(previews.len() >= 13);
+        for preview in previews {
+            let card = world.get::<ChildOf>(preview).unwrap().parent();
+            assert!(world.get::<ActionButton>(card).is_some());
+            assert_eq!(world.get::<Node>(card).unwrap().padding, UiRect::all(px(10)));
+            let mut pending = vec![preview];
+            while let Some(entity) = pending.pop() {
+                assert!(world.get::<ActionButton>(entity).is_none());
+                assert!(world.get::<EditableText>(entity).is_none());
+                assert!(world.get::<crate::canvas::CanvasItem>(entity).is_none());
+                assert!(world.get::<bevy::input_focus::tab_navigation::TabIndex>(entity).is_none());
+                if let Some(children) = world.get::<Children>(entity) {
+                    pending.extend(children.iter());
+                }
+            }
+        }
+        for expected in ["Run", "00:00:00", "Record Castle", "Thread Castle", "Protein Castle"] {
+            assert!(world.query::<&Text>().iter(world).any(|text| text.0 == expected), "Missing {expected}");
+        }
+        assert!(!world.query::<&Text>().iter(world).any(|text| text.0 == "+" || text.0.contains("text area")));
+        assert!(!world.query::<&crate::icons::Tooltip>().iter(world).any(|tip| tip.0 == "Record slug or identity"));
+        for action in [EditAction::General, EditAction::Areas, EditAction::Store, EditAction::Workspaces, EditAction::Credits] {
+            action.apply(world, root);
+            let panel = world.get::<EditMode>(root).unwrap().panel;
+            let content = *world.get::<Children>(panel).unwrap().last().unwrap();
+            let node = world.get::<Node>(content).unwrap();
+            assert_eq!(node.height, px(16));
+            assert_eq!(node.flex_shrink, 0.0);
+        }
     }
 
     #[cfg_attr(test, test)]
@@ -1682,7 +1834,7 @@ pub(crate) mod tests {
     }
 
     #[cfg_attr(test, test)]
-    fn workspace_and_store_controls_work_and_preserve_created_content() {
+    fn workspace_and_store_controls_work_with_filtering_and_default_content() {
         let (mut app, root) = fixture();
         activate(&mut app, root, EditAction::Toggle);
         activate(&mut app, root, EditAction::CreateWorkspace);
@@ -1698,12 +1850,37 @@ pub(crate) mod tests {
             "Drawing"
         );
         activate(&mut app, root, EditAction::Store);
-        let content = app.world().get::<EditMode>(root).unwrap().content.unwrap();
+        let (filter, sand_entries) = {
+            let store = app
+                .world_mut()
+                .query::<&StoreFilter>()
+                .single(app.world())
+                .unwrap();
+            (store.input, store.groups[0].entries.clone())
+        };
         app.world_mut()
-            .get_mut::<EditableText>(content)
+            .get_mut::<EditableText>(filter)
             .unwrap()
             .editor
-            .set_text("My note");
+            .set_text("timer");
+        app.update();
+        for entry in sand_entries {
+            let visible = app.world().get::<Node>(entry).unwrap().display == Display::Flex;
+            assert_eq!(
+                visible,
+                app.world()
+                    .get::<crate::sand_store::StoreEntry>(entry)
+                    .unwrap()
+                    .0
+                    == SandKind::WorkTimer
+            );
+        }
+        app.world_mut()
+            .get_mut::<EditableText>(filter)
+            .unwrap()
+            .editor
+            .set_text("");
+        app.update();
         activate(&mut app, root, EditAction::AddSand(SandKind::EditableText));
         let (sand, state, member) = app
             .world_mut()
@@ -1718,7 +1895,7 @@ pub(crate) mod tests {
                 .unwrap()
                 .value()
                 .to_string(),
-            "My note"
+            "Editable text"
         );
         assert!(
             app.world()
@@ -1744,7 +1921,7 @@ pub(crate) mod tests {
                 .unwrap()
                 .value()
                 .to_string(),
-            "My note"
+            "Editable text"
         );
         activate(&mut app, root, EditAction::Store);
         activate(&mut app, root, EditAction::RemoveSand(sand));
@@ -1807,7 +1984,7 @@ pub(crate) mod tests {
         edit_button_emits_one_scoped_event_and_close_restores_focus,
         canvas_colors_save_valid_fields_and_stay_with_their_workspace,
         text_properties_save_while_typing_without_replacing_the_focused_editor,
-        workspace_and_store_controls_work_and_preserve_created_content,
+        workspace_and_store_controls_work_with_filtering_and_default_content,
         workspace_rows_keep_delete_icons_with_their_workspace,
     }
 }

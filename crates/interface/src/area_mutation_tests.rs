@@ -395,7 +395,10 @@ async fn edits_switches_and_disarming_cancel_unsubmitted_changes() {
     move_to(&mut app, sand, 0.0);
     app.update();
     assert!(!app.world().resource::<Mutations>().pending.is_empty());
-    disarm_all(app.world_mut(), root);
+    app.world_mut()
+        .get_mut::<InfluenceArea>(area)
+        .unwrap()
+        .changes_enabled = false;
     pump(&mut app).await;
     assert_eq!(quantity(&engine, &uid).await, "0");
     enable(&mut app, root, area);

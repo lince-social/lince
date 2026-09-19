@@ -66,6 +66,7 @@ pub struct ThreadCastlePlugin;
 impl Plugin for ThreadCastlePlugin {
     fn build(&self, app: &mut App) {
         app.add_observer(scroll)
+            .add_systems(Update, crate::full_record::receive.after(crate::cell_bridge::ReceiveCell))
             .add_systems(
                 PostUpdate,
                 anchor_scroll.after(bevy::ui::UiSystems::PostLayout),

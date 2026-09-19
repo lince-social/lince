@@ -1,4 +1,5 @@
 pub const BEVY_LICENSE: &str = include_str!("../licenses/bevy-MIT.txt");
+pub const SYMBOLS_LICENSE: &str = include_str!("../../../assets/fonts/NotoSansSymbols2/OFL.txt");
 pub const LATO_LICENSE: &str = include_str!("../../../assets/fonts/Lato/OFL.txt");
 pub const LUCIDE_LICENSE: &str = include_str!("../../../assets/icons/lucide/LICENSE");
 pub const AVIAN_LICENSE: &str = include_str!("../licenses/avian-MIT.txt");
@@ -12,10 +13,36 @@ pub struct Attribution {
     pub license: &'static str,
 }
 
+pub const SYMBOLS: Attribution = Attribution {
+    name: "Noto Sans Symbols 2",
+    author: "The Noto Project Authors",
+    license: SYMBOLS_LICENSE,
+};
+
+pub const FONTIQUE: Attribution = Attribution {
+    name: "Fontique",
+    author: "The Parley Authors",
+    license: include_str!("../licenses/fontique-MIT.txt"),
+};
+
 pub const ATTRIBUTIONS: &[Attribution] = &[
-    Attribution { name: "pulldown-cmark", author: "Raph Levien and contributors", license: include_str!("../licenses/pulldown-cmark-MIT.txt") },
-    Attribution { name: "mermaid-rs-renderer", author: "1jehuang and contributors", license: include_str!("../licenses/mermaid-rs-renderer-MIT.txt") },
-    Attribution { name: "resvg", author: "Yevhenii Reizner and contributors", license: include_str!("../licenses/resvg-MIT.txt") },
+    SYMBOLS,
+    FONTIQUE,
+    Attribution {
+        name: "pulldown-cmark",
+        author: "Raph Levien and contributors",
+        license: include_str!("../licenses/pulldown-cmark-MIT.txt"),
+    },
+    Attribution {
+        name: "mermaid-rs-renderer",
+        author: "1jehuang and contributors",
+        license: include_str!("../licenses/mermaid-rs-renderer-MIT.txt"),
+    },
+    Attribution {
+        name: "resvg",
+        author: "Yevhenii Reizner and contributors",
+        license: include_str!("../licenses/resvg-MIT.txt"),
+    },
     Attribution {
         name: "AccessKit",
         author: "The AccessKit contributors",

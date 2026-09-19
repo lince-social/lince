@@ -85,6 +85,8 @@ struct SavedSand {
     workspace: u64,
     position: [f64; 2],
     size: [f32; 2],
+    #[serde(default)]
+    timer: Option<crate::work_timer::LocalTimer>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -116,8 +118,14 @@ impl Document {
         let ids: HashSet<_> = self.workspaces.iter().map(|space| space.id).collect();
         let area_ids: HashSet<_> = self.areas.iter().map(|saved| &saved.area.id).collect();
         self.theme.validate()
-            && self.instincts.iter().all(|saved| ids.contains(&saved.workspace) && saved.valid())
-            && self.kanbans.iter().all(|saved| ids.contains(&saved.workspace) && saved.valid())
+            && self
+                .instincts
+                .iter()
+                .all(|saved| ids.contains(&saved.workspace) && saved.valid())
+            && self
+                .kanbans
+                .iter()
+                .all(|saved| ids.contains(&saved.workspace) && saved.valid())
             && self
                 .layouts
                 .iter()
@@ -158,6 +166,10 @@ impl Document {
                     && valid_geometry(sand.position, sand.size)
                     && sand.texts.len() <= 128
                     && sand.texts.iter().all(SavedText::validate)
+                    && sand
+                        .timer
+                        .as_ref()
+                        .is_none_or(|timer| sand.kind == SandKind::WorkTimer && timer.valid())
             })
             && self.records.iter().all(|record| {
                 record.tokens.validate()
@@ -307,6 +319,9 @@ fn initialize(world: &mut World) {
                     if sand.kind == SandKind::AccessControl {
                         content = Some(crate::access_control::populate(world, root, entity));
                     }
+                    if sand.kind == SandKind::Sync {
+                        content = Some(crate::sync_castle::populate(world, root, entity));
+                    }
                     for text in sand.texts {
                         let block = sand_text::spawn(world, entity, text);
                         content.get_or_insert(block);
@@ -319,6 +334,9 @@ fn initialize(world: &mut World) {
                         sand.tokens,
                         crate::token_style::AppliedSize(Vec2::from_array(sand.size)),
                     ));
+                    if let Some(timer) = sand.timer {
+                        world.entity_mut(entity).insert(timer);
+                    }
                     world.entity_mut(entity).insert(StoredSand {
                         kind: sand.kind,
                         content,
@@ -345,10 +363,13 @@ fn initialize(world: &mut World) {
             };
         }
         let topology = active.topology;
-        let seed = !restored && spaces.error.is_none()
+        let seed = !restored
+            && spaces.error.is_none()
             && world.get::<crate::instinct::SeedInstinct>(root).is_some();
         world.entity_mut(root).insert((spaces, topology));
-        world.entity_mut(root).remove::<crate::instinct::SeedInstinct>();
+        world
+            .entity_mut(root)
+            .remove::<crate::instinct::SeedInstinct>();
         crate::workspace_config::initialize(world, root);
         if seed {
             crate::instinct::spawn(world, root, 1, DVec2::ZERO, Default::default());
@@ -592,6 +613,7 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
                 tokens: crate::token_style::overrides(world, entity),
                 kind: sand.kind,
                 texts: sand_text::snapshot(world, entity),
+                timer: world.get::<crate::work_timer::LocalTimer>(entity).cloned(),
                 workspace: member.0,
                 position: item.position.to_array(),
                 size: item.size.to_array(),
@@ -784,7 +806,10 @@ pub(crate) mod tests {
                 .init_resource::<InputFocus>()
                 .add_plugins(WorkspacePlugin)
                 .insert_resource(WorkspaceFile::new(path));
-            let root = app.world_mut().spawn((BoxRoot, crate::instinct::SeedInstinct)).id();
+            let root = app
+                .world_mut()
+                .spawn((BoxRoot, crate::instinct::SeedInstinct))
+                .id();
             app.update();
             flush(&mut app);
             (app, root)
@@ -792,28 +817,68 @@ pub(crate) mod tests {
         let directory = tempfile::tempdir().unwrap();
         let path = directory.path().join("interface.json");
         let (mut app, root) = seeded(path.clone());
-        let reader = app.world_mut().query_filtered::<Entity, With<crate::instinct::Instinct>>()
-            .single(app.world()).unwrap();
+        let reader = app
+            .world_mut()
+            .query_filtered::<Entity, With<crate::instinct::Instinct>>()
+            .single(app.world())
+            .unwrap();
         assert_eq!(app.world().get::<WorkspaceMember>(reader).unwrap().0, 1);
         assert_eq!(app.world().get::<ChildOf>(reader).unwrap().parent(), root);
-        app.world_mut().get_mut::<crate::instinct::Instinct>(reader).unwrap().page = Some("tool".into());
+        app.world_mut()
+            .get_mut::<crate::instinct::Instinct>(reader)
+            .unwrap()
+            .page = Some("tool".into());
         flush(&mut app);
         drop(app);
         let (mut app, _) = seeded(path.clone());
-        let (reader, instinct) = app.world_mut().query::<(Entity, &crate::instinct::Instinct)>()
-            .single(app.world()).unwrap();
+        let (reader, instinct) = app
+            .world_mut()
+            .query::<(Entity, &crate::instinct::Instinct)>()
+            .single(app.world())
+            .unwrap();
         assert_eq!(instinct.page.as_deref(), Some("tool"));
         app.world_mut().despawn(reader);
         flush(&mut app);
         drop(app);
         let (mut app, _) = seeded(path.clone());
-        assert_eq!(app.world_mut().query::<&crate::instinct::Instinct>().iter(app.world()).count(), 0);
+        assert_eq!(
+            app.world_mut()
+                .query::<&crate::instinct::Instinct>()
+                .iter(app.world())
+                .count(),
+            0
+        );
         drop(app);
         let path = directory.path().join("broken.json");
         std::fs::write(&path, b"broken").unwrap();
         let (mut app, root) = seeded(path);
         assert!(app.world().get::<Workspaces>(root).unwrap().error.is_some());
-        assert_eq!(app.world_mut().query::<&crate::instinct::Instinct>().iter(app.world()).count(), 0);
+        assert_eq!(
+            app.world_mut()
+                .query::<&crate::instinct::Instinct>()
+                .iter(app.world())
+                .count(),
+            0
+        );
+    }
+
+    #[test]
+    fn standalone_time_log_and_running_stopwatch_survive_restart() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("interface.json");
+        let (mut app, root) = fixture(Some(path.clone()));
+        let sand = crate::sand_store::spawn_sand(app.world_mut(), root, 1, SandKind::WorkTimer, "", DVec2::ZERO);
+        let timer: crate::work_timer::LocalTimer = serde_json::from_value(serde_json::json!({"logs":[
+            {"id":"work.log:first", "start":"2026-09-19T10:00:00Z", "end":"2026-09-19T10:05:00Z"},
+            {"id":"work.log:running", "start":"2026-09-19T11:00:00Z", "end":null}
+        ]})).unwrap();
+        app.world_mut().entity_mut(sand).insert(timer.clone());
+        flush(&mut app);
+        drop(app);
+        let (mut app, _) = fixture(Some(path));
+        let restored = app.world_mut().query::<&crate::work_timer::LocalTimer>().single(app.world()).unwrap();
+        assert_eq!(restored, &timer);
+        assert!(restored.valid());
     }
 
     #[test]
@@ -821,17 +886,53 @@ pub(crate) mod tests {
         let directory = tempfile::tempdir().unwrap();
         let path = directory.path().join("interface.json");
         let (mut app, root) = fixture(Some(path.clone()));
-        let sand = crate::sand_store::spawn_sand(app.world_mut(), root, 1, SandKind::Square, "", DVec2::new(30.0, 40.0));
-        app.world_mut().entity_mut(sand).insert(crate::topology::Spatial { depth: Some(27.0), ..default() });
-        let asset = crate::topology::assets::ImportedAsset { id: "a".repeat(32), file: "source.glb".into(), name: "Model".into(), scale: 100.0 };
-        let imported = crate::topology::assets::spawn(app.world_mut(), root, 1, DVec2::new(200.0, 300.0), asset.clone());
+        let sand = crate::sand_store::spawn_sand(
+            app.world_mut(),
+            root,
+            1,
+            SandKind::Square,
+            "",
+            DVec2::new(30.0, 40.0),
+        );
+        app.world_mut()
+            .entity_mut(sand)
+            .insert(crate::topology::Spatial {
+                depth: Some(27.0),
+                ..default()
+            });
+        let asset = crate::topology::assets::ImportedAsset {
+            id: "a".repeat(32),
+            file: "source.glb".into(),
+            name: "Model".into(),
+            scale: 100.0,
+        };
+        let imported = crate::topology::assets::spawn(
+            app.world_mut(),
+            root,
+            1,
+            DVec2::new(200.0, 300.0),
+            asset.clone(),
+        );
         crate::topology::assets::spawn(app.world_mut(), root, 1, DVec2::new(-200.0, -300.0), asset);
-        let mut influence = crate::area::InfluenceArea::new(crate::area::AreaShape::Square, DVec2::new(80.0, 90.0), DVec2::splat(50.0));
+        let mut influence = crate::area::InfluenceArea::new(
+            crate::area::AreaShape::Square,
+            DVec2::new(80.0, 90.0),
+            DVec2::splat(50.0),
+        );
         influence.depth = 19.0;
         let area = crate::area::spawn_area(app.world_mut(), root, 1, influence).unwrap();
-        for entity in [sand, imported, area] { app.world_mut().entity_mut(entity).insert(crate::canvas_selection::SandGroup([3; 16])); }
+        for entity in [sand, imported, area] {
+            app.world_mut()
+                .entity_mut(entity)
+                .insert(crate::canvas_selection::SandGroup([3; 16]));
+        }
         crate::topology::groups::attach(app.world_mut(), &[sand, imported, area]);
-        crate::topology::groups::transform(app.world_mut(), imported, bevy::math::DVec3::new(500.0, 70.0, -300.0), bevy::math::DQuat::from_rotation_y(0.7));
+        crate::topology::groups::transform(
+            app.world_mut(),
+            imported,
+            bevy::math::DVec3::new(500.0, 70.0, -300.0),
+            bevy::math::DQuat::from_rotation_y(0.7),
+        );
         let before = snapshot(app.world_mut(), root);
         flush(&mut app);
         let (mut restored, root) = fixture(Some(path));
@@ -840,13 +941,23 @@ pub(crate) mod tests {
         assert_eq!(after.areas[0].area.depth, 19.0);
         assert_eq!(after.sands[0].placement.spatial.depth, Some(27.0));
         let placements = |document: &Document| {
-            let mut placements: Vec<_> = document.imports.iter().map(|asset| serde_json::to_string(&asset.placement).unwrap()).collect();
+            let mut placements: Vec<_> = document
+                .imports
+                .iter()
+                .map(|asset| serde_json::to_string(&asset.placement).unwrap())
+                .collect();
             placements.sort();
             placements
         };
         assert_eq!(placements(&before), placements(&after));
-        assert_eq!(serde_json::to_value(&before.areas[0].placement).unwrap(), serde_json::to_value(&after.areas[0].placement).unwrap());
-        assert_eq!(serde_json::to_value(&before.sands[0].placement).unwrap(), serde_json::to_value(&after.sands[0].placement).unwrap());
+        assert_eq!(
+            serde_json::to_value(&before.areas[0].placement).unwrap(),
+            serde_json::to_value(&after.areas[0].placement).unwrap()
+        );
+        assert_eq!(
+            serde_json::to_value(&before.sands[0].placement).unwrap(),
+            serde_json::to_value(&after.sands[0].placement).unwrap()
+        );
     }
 
     #[cfg_attr(test, test)]

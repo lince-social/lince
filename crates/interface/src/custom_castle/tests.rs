@@ -238,11 +238,14 @@ fn picker_separates_builtins_and_custom_and_saves_through_controls() {
     let library = storage::directory(world).unwrap();
     assert_eq!(storage::entries(&library).0[0].1, "My pair");
     let add = world
-        .query::<(Entity, &crate::icons::IconButton)>()
+        .query::<(Entity, &Text)>()
         .iter(world)
-        .find(|(_, i)| i.label == "Add My pair at the camera")
+        .find(|(_, text)| text.0 == "My pair")
         .unwrap()
         .0;
+    let metadata = world.get::<ChildOf>(add).unwrap().parent();
+    let add = world.get::<ChildOf>(metadata).unwrap().parent();
+    assert!(world.get::<crate::actions::ActionButton>(add).is_some());
     world.trigger(bevy::ui_widgets::Activate { entity: add });
     app.update();
     let world = app.world_mut();
@@ -364,4 +367,23 @@ fn instinct_castles_keep_their_page_when_saved_and_placed_again() {
     assert_eq!(copies.len(), 1);
     assert_eq!(world.get::<crate::instinct::Instinct>(copies[0]).unwrap().page.as_deref(), Some("tool"));
     assert_ne!(reader, copies[0]);
+}
+
+#[test]
+fn composed_time_castle_keeps_its_standalone_log() {
+    let directory = tempfile::tempdir().unwrap();
+    let (mut app, root) = fixture(directory.path());
+    let world = app.world_mut();
+    let sand = crate::sand_store::spawn_sand(world, root, 1, SandKind::WorkTimer, "", DVec2::ZERO);
+    let timer: crate::work_timer::LocalTimer = serde_json::from_value(serde_json::json!({"logs":[
+        {"id":"work.log:running", "start":"2026-09-19T10:00:00Z", "end":null}
+    ]})).unwrap();
+    world.entity_mut(sand).insert(timer.clone());
+    world.entity_mut(root).insert(SandSelection(vec![sand]));
+    let castle = CustomCastle::capture(world, root, "Time").unwrap();
+    assert!(castle.valid());
+    let restored: CustomCastle = serde_json::from_str(&serde_json::to_string(&castle).unwrap()).unwrap();
+    let copies = restored.spawn(world, root).unwrap();
+    assert_eq!(copies.len(), 1);
+    assert_eq!(world.get::<crate::work_timer::LocalTimer>(copies[0]).unwrap(), &timer);
 }

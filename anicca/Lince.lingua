@@ -496,51 +496,56 @@ When interacting with other parties, it is important to know how much you can tr
 Interface (@interface: 1, is #chapter, #instinct, #done) { r_99NWECF19VKV94HQQ3G3ASMC4M
 Interfaces should ask for as little attention as possible throughout the user's life. The best interface is Interfaceless. Built-in UI is minimal, not taking screenspace from users and flexible, fitting many Needs. Choices can be done quickly. Full control is always available. Components are flat by default, preffering 2D forces us to convey information only with flat data, not layers and composition, constraining the space forces minimalism. Shadows and hints can be used for subtle differentiation of areas, components and data. Built-in castles shoudld be focused in displaying mainly inputs or buttons, never phrases or paragraphs, to force self-explanatory design. Tooltips and placeholders should contain minimal text. The defaults are flat, quiet and mostly black and white, with the purple palette already in the Record. Common choices should be quick, and the person should be able to inspect and change the details. Sands: the widgets/components that live in the Box. Smaller pieces can be composed into groups, with interactions between them and other sands, receiving data from a Protein stream and executing Protein Actions in certain interactions. We should have the fundamental blocks to construct several types of workflows. Protein supplies authorized reads. Backend Actions remain responsible for writes and permissions. Files, network messages and imported packages are validated where they enter Lince. Lince's visual identity is black and white by default, with purple as the supporting color. Purple Cobalt: #3730A3, Nocturnal Purple: #6366F1, Deep Lead: #121214, Gray: #A7B4C2, Ice White: #F8FAFC.
 
-# Goals of Part A - Dogfeeding:
+
+- [ ] Working Kanban Workflow with all it's Sands and Castles and Areas of Influence.
+	- Time Castle (currently as the Work timer sand): if not tied to record works as a cronometer, if no record shows it's past worklog of time spent, with total occupying the, current and past list.
+	- Calendar Castle: buggy
+
+	- [x] Record Castle (inspired by web's Record sand)
+		- Can be used to create a record, when we send a createRecord event this castle listens and enters create record mode, showing the same properties (that make sense) that are shown in the filled record state, to be edited before creation.
+
+		- [x] Collaboration: Use one editor wherever a Record's information appears so when changes are made by another person to a common data between both of you it is felt instantly: in the Record Sand, a card, a table cell or a conversation. Writing in one place should be visible in the others and to people who share that Record. This can mean the text sand when hosting a Record property it has attatched to it some capabilities to deal with the possible Collaboration feature that has many people possibly changing such record.
+
+		- [x] Be able to edit a Record with Loro, CRDT, so someone that is syncing with the Lince owner of the Record I am editing can see my edits. Includes Record title, description and other properties like quantity, assertions, slug, work metadata...
+		
+		- [x] Cursor position so the edits dont look like a ghost.
+
+		- [x] Edit titles, descriptions and other supported properties collaboratively, with visible cursors. Use the same field binding everywhere while preserving each property's rules for quantities, unique slugs and permissions.
+
+		- [x] Show who wrote each message in threads.
+
+		- [x] Add sand for start/pause on the time tracking spent on that sand of work log metadata property. Maybe it can be always showing total time when paused and time of current play when play (common behavior).
+	
+		- [ ] Show recent changes that displaced a local edit, including the previous value so the person can recover it. Explain when this short-lived record of changes expires.
+		- [ ] In threads, keep private drafts and reusable replies together, and say what sending will do.
+		- [ ] Add Text Sand that starts as a local draft and creates a Record when interaction X happens: dunno.
+
+- [x] Make NixOS service point to main. Can we make github actions build the binary (already working) and NixOS use it?
+- [/] Fiote: Agent collaborating with changing the .lingua files with crdt so they receive updates to things they are looking at and dont overwrite what i did, their edits go through crdt. Being able to ask it to do tasks, changing the state of the task, then changing the code and rebuilding. Then if i say it is done it commits all the related changes of it (no worktrees). Then takes local personal data to test if this change maintains same expected information to still exist correctly, as one more test inside the suite. Then pushes to the staging branch. Then suggests next task. Have that process as personal data, because we put those instructions into the record description of the fiote's corresponding record.
+
+
+
+
+
+
+
+- [ ] Make each sand possibly configurable, so i can enter in a castle/sand and click a san and get some extra ui that the sand says can be used, like a slider for property X, that is then used in it's customization (as if they had specific tokens just for them).
+- [ ] Relation Castle, seeing records as Task Castle and aggregating with protein the assertion links between the records filtered (use a new Line sand (and arrange in this relation castle so the arrowline is 3 line sands, in a group, one long and two for the arrow, make this sand be configurable to have the tip of this line sand be squared by default, but configurable by having an extension in each side with size and a curvature, can be anything that is one line. but then it becomes a square with a custom component in the side and then it should become)).
+- [ ] Instead of square sand have shape sand, configurable with math? How to make it's usage cost the same as a specific square sand?
+
 - [ ] Task management
-	- [/] Full CRUD with kanban workflows.
-	- [/] Time Tracking.
-	- [/] Calendar features.
 	- [ ] Custom columns for labeling data state: dropdowns with many custom made options.
 	- [/] Having threads in a Record, being able to send messages seing who sent it.
 		- [ ] Seeing images, gifs and emojis inside messages. Reactions with emojis (only?).
+
 - [ ] Organ Discovery and Management: be able to add other nodes, chat and use login to Sync.
 - [ ] Users and Access control: selecting who can read/write what.
 	- [ ] If i set users to be able to log in my Organ, i must allow them to see the Organs they have logins into. So full Organ discovery and management and login is one of the tasks of Part A. 
 	- [/] External users being able to access a browser in real time to read/write data: Facade.
 
-This pc workflow:
-- [ ] Be able to run Lince not from the cloned git, but from a release in origin so local builts dont restart the default service. Then pint at a dir for File Sync, read .lingua files that are Lince's tasks and have real time collaboration with Fiote by asking it to do X, it moves to some WIP state and reboots Lince for one to use/test when ready, then takes local personal data to test if this change maintains same expected information to still exist correctly, as one more test inside the suite to securely push to main or some earlier staging/testing branch.
-
-## Stages of the Goals of Part A:
-- [/] Make it work: i'm still developing it, after it is bughunt time we can cross this part.
-- [ ] Make it right
-- [ ] Make it fast
-
-# Part A's Tasks:
-
-
-- [/] Task Castle: pre-made group of sands for a classic card inside a kanban system: Record title, assignees (if any, else empty assignee icon), dates (start-end) and assertions, these properties shown are editable if clicked.
-	- [ ] Assignee
-
-- [x] Calendar Castle:
-	- [x] Days of month.
-	- [x] Buttons to pass through the months/years quickly, like < year > | < month> . On top of the days of the month, clicking the arrows moves one, clicking the year/month opens a selector with years/months.
-	- [x] Clicking a day Events yyyy-mm-dd selected, make it so the calendar castle fires that event and the date related property that opened it is in a group with it, and the event is listened only inside that group (this enclosuring of events by group i want to be a feature, if not already, and i want to be configurable, by default putting things in groups doesnt do it, but we can make it a group that blocks certain events from leaving).
-	- [x] When selecting a start-end period i will have two fields, one should be able to click one and select a date for start, then select the other and select a date to end.
-	- [x] This should be built to be used by date related properties, and also to be put in the canvas as a big calendar that can be resized (like normal sands/castles) to occupy most of the screen and have records inside, shown in one day, or in a range of days. I can change the month/year in the buttons, or scroll down/up. What gives me data to be able to put those records according to their dates is a protein spawning area that
-
-- [x] Full Record Castle (inspired by web's Record sand, to be able to edit all of a record, it's title/desc/qty/slug/assertions/threads-messages...):
-	- [x] Collaboration: Use one editor wherever a Record's information appears so when changes are made by another person to a common data between both of you it is felt instantly: in the Record Sand, a card, a table cell or a conversation. Writing in one place should be visible in the others and to people who share that Record. This can mean the text sand when hosting a Record property it has attatched to it some capabilities to deal with the possible Collaboration feature that has many people possibly changing such record.
-	- [x] Be able to edit a Record with Loro, CRDT, so someone that is syncing with the Lince owner of the Record I am editing can see my edits. Includes Record title, description and other properties like quantity, assertions, slug, work metadata...
-	- [x] Cursor position so the edits dont look like a ghost.
-	- [x] Edit titles, descriptions and other supported properties collaboratively, with visible cursors. Use the same field binding everywhere while preserving each property's rules for quantities, unique slugs and permissions.
-	- [x] Show who wrote each message in threads.
-	- [x] Add sand for start/pause on the time tracking spent on that sand of work log metadata property. Maybe it can be always showing total time when paused and time of current play when play (common behavior).
-	
-	- [ ] Show recent changes that displaced a local edit, including the previous value so the person can recover it. Explain when this short-lived record of changes expires.
-	- [ ] In threads, keep private drafts and reusable replies together, and say what sending will do.
-	- [ ] Add Text Sand that starts as a local draft and creates a Record when interaction X happens: dunno.
+sand store should be a separate button, if its just for spawning it doesnt need edit mode.
+make shortcut for deleting sand (not needing to be in edit mode).
+make shortcuts configurable.
 
 - [/] Instinct, grabs the #instinct records when building to embed in the Instinct sand, that is in seed of first workspace. It should include content to explain what Lince is in a high level (humans' job). We can have text to explain and tutorials to teach. Take inspiration from games, tutorials are already things developed over and over again:
 	- [/] See if there isnt some ready made thing in bevy to help. When building new features, we might need to add to AGENTS.md that the respective tutorial step of the idea needs to be refactored/built, maybe we can make use of the Laboratory primitives for this, so that simulating movements and interactions for laboratory and enacting/expecting/blocking-other-things in steps of Instinct Tutorial should use it aswell, not reimplementing this control of Interface.
@@ -575,8 +580,6 @@ This pc workflow:
 - [ ] Stress testing adding many 1mb, 10mb, 100mb, 1gb 3d assets. See how many we can handle.
 - [ ] Fixing the insane amount of memory taken when we go into 3D. There is some witchcraft going on there that spawns goblins to live in RAM when in 3D mode, it's their tax for painting it really fast. This gets worse the more we move.
 -
-# Complete v1.0.0 (may have things pushed to part A):
-
 - What if when we develop computer vision models, we can see the workflow happening in real time? Start playing with the concept of cameras inside of Lince, the feed can be continuously received to remodel the 3d represetation. The old modeling may change and things might get moved, Fiote could look at the two scenes and fill in the gap: Reposition an area to be on top of an item that changed places, maybe even updating a property of such item like location.If something is gone without me modeling it 
 
 record castle should open without record selected.
@@ -631,7 +634,7 @@ record castle should open without record selected.
   - [ ] Being able to copy it as image or like a portal to the real thing, making an area and opening a portal to a Record's description so i can have a piece of canvas in some location not only to draw but to do anything, a generic portal.
 
 Future Topology Work:
-- [ ] Optimize the shit out of it.
+- [ ] Optimize performance.
 - [ ] Convert .blend into .gltf as a lince util, without needing blender installed. So i can import a .blend from the internet or use Blender locally to build something and import in the canvas.
 - [ ] Would be cool to have a path seeking system in the Area of Influence of attraction, that can make sands attracted to it no-clip others or give them a route to follow, so if i put my area of influence inside a house that has windows closed but open door the sands can be told to turn around and go through the door, not going straight in the direction of the area of influence.
 - [ ] Workspace collaboration: one can share a workspace, in Workspace Sync so many people can live/replica sync and work under a shared topology. Practically, this can be a workspace existing under a Lince Organ that is running --server, that machine doesnt open an interface, but we can still crud it's workspaces so we in our personal computer can use it as a shared point for collaboration on a joint and exact same workspace with our sync features.
@@ -672,6 +675,7 @@ Areas of Influence are shapes you put in the canvas. They can have some logic be
 - Attraction/Repulsion: they can attract sands or repel them. Based on a property from db they hold, or just affect general sands.
 - Changing Properties: when Sands/Castles enter or leave the area, they can gain or lose some property in the records that are represented in the sand (through Protein).
 
+- 
 
 Areas of Influence:
 - [x] Tab in edit panel to add many types of areas, i can add a specific shape or draw it on canvas, must be one complete perimeter, cant be an open line, must be closed.

@@ -10,6 +10,8 @@ use std::sync::Arc;
 pub(crate) use persistence::{SavedInstinct, snapshot};
 
 pub const CREDITS: &[crate::credits::Attribution] = &[
+    crate::credits::SYMBOLS,
+    crate::credits::FONTIQUE,
     crate::credits::Attribution {
         name: "pulldown-cmark",
         author: "Raph Levien and contributors",
@@ -254,12 +256,13 @@ impl Action for Command {
 }
 
 pub(crate) fn store_entry(world: &mut World, root: Entity, parent: Entity) {
-    reader::button(
+    crate::sand_store::castle_entry(
         world,
-        parent,
         root,
+        parent,
         "Instinct",
-        "Add an Instinct Castle",
+        "Read Lince's guide and tutorials.",
         Command::Create,
+        |world, root| spawn(world, root, 1, DVec2::ZERO, Instinct::default()),
     );
 }

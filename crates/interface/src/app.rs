@@ -16,6 +16,7 @@ pub fn run_native_interface(
     runtime: cell::CellRuntime,
     instance: &crate::instance::InstanceGuard,
     data_dir: &std::path::Path,
+    tray_enabled: bool,
 ) -> std::io::Result<()> {
     let storage = tokio::runtime::Handle::current().block_on(runtime.interface_storage())?;
     let close_suspends =
@@ -29,7 +30,10 @@ pub fn run_native_interface(
         data_dir.join("interface.json"),
         storage,
     )?);
-    app.insert_resource(crate::tray::InterfaceWindowSettings { close_suspends });
+    app.insert_resource(crate::tray::InterfaceWindowSettings {
+        close_suspends,
+        tray_enabled,
+    });
     app.add_systems(Startup, canvas);
     app.insert_non_send(instance.events());
     app.run();
@@ -104,6 +108,7 @@ fn interface_app_at(directory: std::path::PathBuf) -> App {
     .add_plugins((
         crate::information::InformationPlugin,
         crate::access_control::AccessControlPlugin,
+        crate::sync_castle::SyncCastlePlugin,
         crate::protein_castle::ProteinCastlePlugin,
         crate::protein_area::ProteinAreaPlugin,
         crate::record_binding::RecordBindingPlugin,

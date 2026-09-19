@@ -73,7 +73,12 @@ pub(crate) fn snapshot(world: &mut World, root: Entity) -> Vec<SavedProteinCastl
             &ProteinCastle,
         )>()
         .iter(world)
-        .filter(|(entity, parent, _, _, _)| parent.parent() == root && world.get::<crate::protein_area::QueryEditor>(*entity).is_none())
+        .filter(|(entity, parent, _, _, _)| {
+            parent.parent() == root
+                && world
+                    .get::<crate::protein_area::QueryEditor>(*entity)
+                    .is_none()
+        })
         .map(|(entity, _, member, item, castle)| SavedProteinCastle {
             workspace: member.0,
             draft: castle.draft.clone(),
@@ -241,15 +246,14 @@ pub fn spawn(
 }
 
 pub(crate) fn store_entries(world: &mut World, root: Entity, parent: Entity) {
-    let row = ui::row(world, parent);
-    crate::edit_mode::label(world, row, "Protein Castle", 18.0);
-    ui::icon(
+    crate::sand_store::castle_entry(
         world,
-        row,
         root,
+        parent,
+        "Protein Castle",
+        "Build a query and browse live results.",
         ui::Command::Create,
-        crate::icons::Icon::Plus,
-        "Add a Protein Castle",
+        |world, root| spawn(world, root, 1, DVec2::ZERO, ProteinDraft::default()),
     );
 }
 
@@ -441,7 +445,12 @@ fn receive_message(world: &mut World, message: ServerMessage) {
                 result.revision += 1;
                 result.error = None;
                 let current = result.current;
-                let saved = world.get::<View>(owner).filter(|view| view.saving || view.status == "Saved" || view.status.starts_with("Saved · ")).map(|view| view.status.clone());
+                let saved = world
+                    .get::<View>(owner)
+                    .filter(|view| {
+                        view.saving || view.status == "Saved" || view.status.starts_with("Saved · ")
+                    })
+                    .map(|view| view.status.clone());
                 status(
                     world,
                     owner,

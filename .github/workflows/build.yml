@@ -7,68 +7,20 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
-    inputs:
-      build_android:
-        description: Build the Tauri Android package
-        required: false
-        default: false
-        type: boolean
-      android_artifact:
-        description: Android artifact type
-        required: false
-        default: apk
-        type: choice
-        options:
-          - apk
-          - aab
-          - both
-      build_ios:
-        description: Build the Tauri iOS package
-        required: false
-        default: false
-        type: boolean
-      ios_target:
-        description: iOS target
-        required: false
-        default: simulator
-        type: choice
-        options:
-          - simulator
-          - device
 
 permissions:
   contents: write
 
+concurrency:
+  group: app-release-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  RUSTFLAGS: "-D warnings"
 
 jobs:
-  check:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install Linux system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libxcb1-dev \
-            libxkbcommon-dev \
-            libxkbcommon-x11-dev
-
-      - name: Check
-        shell: bash
-        run: |
-          set -euo pipefail
-          export RUSTFLAGS="-D warnings"
-          cargo check --locked -p lince
-
-  desktop:
-    needs: check
+  binary:
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -76,234 +28,40 @@ jobs:
       matrix:
         include:
           - os: ubuntu-24.04
-            artifact: x86_64-unknown-linux-gnu-desktop
-
+            target: x86_64-unknown-linux-gnu
+            extension: ""
           - os: macos-latest
-            artifact: aarch64-apple-darwin-desktop
-
+            target: aarch64-apple-darwin
+            extension: ""
           - os: windows-latest
-            artifact: x86_64-pc-windows-msvc-desktop
+            target: x86_64-pc-windows-msvc
+            extension: ".exe"
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
 
-      - name: Install Linux Tauri dependencies
+      - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            build-essential \
-            curl \
-            file \
-            libayatana-appindicator3-dev \
-            librsvg2-dev \
-            libssl-dev \
-            libwebkit2gtk-4.1-dev \
-            libxdo-dev \
-            wget
-
-      - name: Cache cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: desktop-${{ runner.os }}-${{ matrix.artifact }}-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Check desktop crate
-        shell: bash
-        env:
-          LINCE_REVISION: ${{ github.sha }}
-        run: |
-          set -euo pipefail
-          export RUSTFLAGS="-D warnings"
-          cargo check --release --locked -p lince-desktop
-
-      - name: Create Tauri bundles
-        uses: tauri-apps/tauri-action@v0
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          RUSTFLAGS: "-D warnings"
-          LINCE_REVISION: ${{ github.sha }}
-        with:
-          projectPath: crates/desktop
-          args: --verbose
-
-      - name: Collect desktop artifacts
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p desktop-artifacts
-
-          if [[ -d target/release/bundle ]]; then
-            find target/release/bundle -type f \
-              \( -name '*.deb' -o -name '*.AppImage' -o -name '*.dmg' -o -name '*.app.tar.gz' -o -name '*.msi' -o -name '*.exe' \) \
-              -exec cp {} desktop-artifacts/ \;
-          fi
-
-          if [[ -d crates/desktop/target/release/bundle ]]; then
-            find crates/desktop/target/release/bundle -type f \
-              \( -name '*.deb' -o -name '*.AppImage' -o -name '*.dmg' -o -name '*.app.tar.gz' -o -name '*.msi' -o -name '*.exe' \) \
-              -exec cp {} desktop-artifacts/ \;
-          fi
-
-          if [[ "${{ runner.os }}" == "macOS" ]]; then
-            cp scripts/install/macos-desktop-setup.sh desktop-artifacts/lince-macos-desktop-setup.sh
-            chmod +x desktop-artifacts/lince-macos-desktop-setup.sh
-          fi
-
-          test -n "$(find desktop-artifacts -maxdepth 1 -type f)"
-
-          artifact_slug="${{ matrix.artifact }}"
-          target_triple="${artifact_slug%-desktop}"
-
-          cd desktop-artifacts
-          for asset in *; do
-            case "$asset" in
-              *.sha256|*.target) continue ;;
-            esac
-            if command -v sha256sum >/dev/null 2>&1; then
-              sha256sum "$asset" > "${asset}.sha256"
-            else
-              shasum -a 256 "$asset" > "${asset}.sha256"
-            fi
-            printf '%s\n' "$target_triple" > "${asset}.target"
-          done
-
-      - name: Upload desktop artifact (temp)
-        uses: actions/upload-artifact@v4
-        with:
-          name: lince-desktop-artifacts-${{ matrix.artifact }}
-          path: desktop-artifacts/*
-          if-no-files-found: error
-          retention-days: 1
-
-  android:
-    if: github.event_name == 'workflow_dispatch' && inputs.build_android
-    needs: check
-    runs-on: ubuntu-24.04
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            build-essential \
-            curl \
-            file \
-            libssl-dev \
             pkg-config \
-            wget
-
-      - name: Install Rust Android targets
-        run: |
-          rustup target add \
-            aarch64-linux-android \
-            armv7-linux-androideabi \
-            i686-linux-android \
-            x86_64-linux-android
-
-      - name: Install Tauri CLI
-        run: cargo install tauri-cli --locked --version '^2'
-
-      - name: Cache cargo
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-            crates/desktop/target
-          key: android-${{ runner.os }}-${{ inputs.android_artifact }}-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Prepare Tauri Android project
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd crates/desktop
-          if [[ ! -d gen/android ]]; then
-            cargo tauri android init --ci
-          fi
-
-      - name: Build Android package
-        shell: bash
-        env:
-          RUSTFLAGS: "-D warnings"
-        run: |
-          set -euo pipefail
-          cd crates/desktop
-          case "${{ inputs.android_artifact }}" in
-            apk)
-              cargo tauri android build --apk --verbose
-              ;;
-            aab)
-              cargo tauri android build --verbose
-              ;;
-            both)
-              cargo tauri android build --apk --verbose
-              cargo tauri android build --verbose
-              ;;
-          esac
-
-      - name: Collect Android artifacts
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p mobile-artifacts
-          find crates/desktop/gen/android -type f \
-            \( -name '*.apk' -o -name '*.aab' \) \
-            -exec cp {} mobile-artifacts/ \;
-          test -n "$(find mobile-artifacts -maxdepth 1 -type f)"
-          cd mobile-artifacts
-          for asset in *; do
-            sha256sum "$asset" > "${asset}.sha256"
-          done
-
-      - name: Upload Android artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: lince-mobile-artifacts-android-${{ inputs.android_artifact }}
-          path: mobile-artifacts/*
-          if-no-files-found: error
-          retention-days: 7
-
-  ios:
-    if: github.event_name == 'workflow_dispatch' && inputs.build_ios
-    needs: check
-    runs-on: macos-latest
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install Rust iOS targets
-        run: |
-          rustup target add \
-            aarch64-apple-ios \
-            aarch64-apple-ios-sim
-
-      - name: Install Tauri CLI
-        run: cargo install tauri-cli --locked --version '^2'
+            libssl-dev \
+            libsqlite3-dev \
+            libwayland-dev \
+            libxkbcommon-dev \
+            libx11-dev \
+            libxcb1-dev \
+            libxrandr-dev \
+            libxi-dev \
+            libxcursor-dev \
+            libgl1-mesa-dev \
+            libvulkan-dev
 
       - name: Cache cargo
         uses: actions/cache@v4
@@ -312,64 +70,58 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-            crates/desktop/target
-          key: ios-${{ runner.os }}-${{ inputs.ios_target }}-${{ hashFiles('**/Cargo.lock') }}
+          key: binary-${{ runner.os }}-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Prepare Tauri iOS project
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd crates/desktop
-          if [[ ! -d gen/apple ]]; then
-            cargo tauri ios init --ci
-          fi
-
-      - name: Build iOS package
-        shell: bash
+      - name: Check native Lince
         env:
-          RUSTFLAGS: "-D warnings"
-        run: |
-          set -euo pipefail
-          cd crates/desktop
-          case "${{ inputs.ios_target }}" in
-            simulator)
-              cargo tauri ios build --target aarch64-apple-ios-sim --verbose
-              ;;
-            device)
-              cargo tauri ios build --target aarch64-apple-ios --verbose
-              ;;
-          esac
+          LINCE_REVISION: ${{ github.sha }}
+          BUILD_TARGET: ${{ matrix.target }}
+        run: cargo check --release --locked --package lince --target "$BUILD_TARGET"
+        shell: bash
 
-      - name: Collect iOS artifacts
+      - name: Build native Lince
+        env:
+          LINCE_REVISION: ${{ github.sha }}
+          BUILD_TARGET: ${{ matrix.target }}
+        run: cargo build --release --locked --package lince --target "$BUILD_TARGET"
+        shell: bash
+
+      - name: Package binary
+        env:
+          BUILD_TARGET: ${{ matrix.target }}
+          BINARY_EXTENSION: ${{ matrix.extension }}
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p mobile-artifacts
-          find crates/desktop/gen/apple crates/desktop/target target -type f \
-            \( -name '*.ipa' -o -name '*.app' -o -name '*.app.tar.gz' \) \
-            -exec cp -R {} mobile-artifacts/ \; 2>/dev/null || true
-          test -n "$(find mobile-artifacts -maxdepth 1 -mindepth 1)"
-          cd mobile-artifacts
-          for asset in *; do
-            if [[ -d "$asset" ]]; then
-              tar -czf "${asset}.tar.gz" "$asset"
-              rm -rf "$asset"
-              asset="${asset}.tar.gz"
-            fi
-            shasum -a 256 "$asset" > "${asset}.sha256"
-          done
+          mkdir -p binary-artifacts package/lince/bin
+          install -m755 "target/$BUILD_TARGET/release/lince$BINARY_EXTENSION" "package/lince/bin/lince$BINARY_EXTENSION"
+          install -m644 LICENSE package/lince/LICENSE
+          printf '%s\n' "$GITHUB_SHA" > package/lince/revision
+          if [ "$RUNNER_OS" = Windows ]; then
+            asset="lince-$BUILD_TARGET.zip"
+            7z a "binary-artifacts/$asset" ./package/lince
+          else
+            asset="lince-$BUILD_TARGET.tar.gz"
+            tar -czf "binary-artifacts/$asset" -C package lince
+          fi
+          if command -v sha256sum >/dev/null 2>&1; then
+            sha256sum "binary-artifacts/$asset" > "binary-artifacts/$asset.sha256"
+          else
+            shasum -a 256 "binary-artifacts/$asset" > "binary-artifacts/$asset.sha256"
+          fi
+          printf '%s\n' "$BUILD_TARGET" > "binary-artifacts/$asset.target"
 
-      - name: Upload iOS artifact
+      - name: Upload binaries
         uses: actions/upload-artifact@v4
         with:
-          name: lince-mobile-artifacts-ios-${{ inputs.ios_target }}
-          path: mobile-artifacts/*
+          name: lince-binary-artifacts-${{ matrix.target }}
+          path: binary-artifacts/*
           if-no-files-found: error
           retention-days: 7
 
   publish-rolling:
     if: github.ref == 'refs/heads/main'
-    needs: [desktop]
+    needs: [binary]
     runs-on: ubuntu-latest
     env:
       ROLLING_TAG: rolling-${{ github.run_number }}
@@ -377,10 +129,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download desktop artifacts
+      - name: Download binary artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: lince-desktop-artifacts-*
+          pattern: lince-binary-artifacts-*
           path: release-artifacts
           merge-multiple: true
 
@@ -446,14 +198,32 @@ jobs:
               --repo "$GH_REPO" \
               --target "$GITHUB_SHA" \
               --title "Latest $TAG" \
-              --notes "Latest desktop release from the main branch."
+              --notes "Latest native Lince release from the main branch."
           fi
 
           gh release upload "$TAG" release-artifacts/* --clobber --repo "$GH_REPO"
 
+
+      - name: Publish main binaries for NixOS
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          if ! gh release view main-binary --repo "$GH_REPO" >/dev/null 2>&1; then
+            gh release create main-binary \
+              --repo "$GH_REPO" \
+              --target "$GITHUB_SHA" \
+              --title "Lince main binaries" \
+              --prerelease \
+              --notes "Native binaries from the latest successful main build."
+          fi
+          gh release upload main-binary release-artifacts/lince-*.tar.gz* release-artifacts/lince-*.zip* \
+            --clobber --repo "$GH_REPO"
+
   publish-tag:
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [desktop]
+    needs: [binary]
     runs-on: ubuntu-latest
 
     steps:
@@ -469,10 +239,10 @@ jobs:
       - name: Generate release notes
         run: git cliff --latest -o RELEASE_NOTES.md
 
-      - name: Download desktop artifacts
+      - name: Download binary artifacts
         uses: actions/download-artifact@v4
         with:
-          pattern: lince-desktop-artifacts-*
+          pattern: lince-binary-artifacts-*
           path: release-artifacts
           merge-multiple: true
 

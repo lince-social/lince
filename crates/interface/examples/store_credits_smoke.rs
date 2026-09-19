@@ -1,4 +1,5 @@
 use bevy::{
+    a11y::AccessibilityNode,
     diagnostic::FrameCount,
     input::{ButtonState, mouse::MouseButtonInput},
     prelude::*,
@@ -11,7 +12,7 @@ use lince_interface::{
     app::interface_app,
     container::BoxRoot,
     credits::LicenseAccordion,
-    edit_mode::{EditAction, EditField, EditMode},
+    edit_mode::{EditAction, EditMode},
     icons::{IconButton, Tooltip},
     sand_store::StoreEntry,
 };
@@ -75,9 +76,9 @@ fn store_layout(world: &mut World, root: Entity) {
         JustifyContent::FlexStart
     );
     let editor = world
-        .query::<(Entity, &EditField)>()
+        .query::<(Entity, &AccessibilityNode)>()
         .iter(world)
-        .find(|(_, field)| **field == EditField::StartingText)
+        .find(|(_, node)| node.label() == Some("Filter Sand store"))
         .unwrap()
         .0;
     let mut entries: Vec<_> = world
@@ -86,10 +87,7 @@ fn store_layout(world: &mut World, root: Entity) {
         .collect();
     entries.sort_by(|a, b| rect(world, *a).min.y.total_cmp(&rect(world, *b).min.y));
     assert_eq!(entries.len(), 3);
-    assert!((rect(world, entries[0]).min.y - rect(world, editor).max.y - 10.0).abs() <= 2.0);
-    for pair in entries.windows(2) {
-        assert!((rect(world, pair[1]).min.y - rect(world, pair[0]).max.y - 10.0).abs() <= 2.0);
-    }
+    assert!(rect(world, entries[0]).min.y > rect(world, editor).max.y);
     for entity in world.query_filtered::<Entity, With<Tooltip>>().iter(world) {
         let mut cursor = Some(entity);
         while let Some(entity) = cursor {

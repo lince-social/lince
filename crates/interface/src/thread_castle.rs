@@ -79,6 +79,7 @@ impl Plugin for ThreadCastlePlugin {
 }
 
 pub fn populate(world: &mut World, parent: Entity, binding: RecordBinding, data: &Value) {
+    crate::fiote::session::populate(world, parent, binding.clone());
     crate::edit_mode::label(world, parent, "Threads", 20.0);
     let tabs = world
         .spawn((
@@ -168,6 +169,9 @@ fn form(world: &mut World, parent: Entity, binding: RecordBinding, thread: Optio
         },
         Send,
     );
+    if let Some(thread) = &thread {
+        crate::fiote::session::thread_controls(world, container, thread, &binding);
+    }
     world.entity_mut(container).insert(ThreadForm {
         binding,
         thread,

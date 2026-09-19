@@ -3,7 +3,6 @@ const WIDGET_READY = "lince:widget-ready";
 const WIDGET_ACTION = "lince:widget-action";
 const WIDGET_ERROR = "lince:bridge-error";
 const WIDGET_EVENT = "lince:bridge-event";
-const WIDGET_SPACE_PAN = "lince:widget-space-pan";
 const PROTEIN_SUBSCRIBE = "lince:protein-subscribe";
 const PROTEIN_SUBSCRIBE_SAVED = "lince:protein-subscribe-saved";
 const PROTEIN_UNSUBSCRIBE = "lince:protein-unsubscribe";
@@ -88,18 +87,6 @@ const PROTEIN_ACTION_RESULT = "lince:protein-action-result";
       },
       "*",
     );
-  }
-
-  function isTypingTarget(target) {
-    return Boolean(
-      target?.closest?.("input, textarea, select, [contenteditable='true']"),
-    );
-  }
-
-  function setHostSpacePan(enabled) {
-    send(WIDGET_SPACE_PAN, {
-      enabled: Boolean(enabled),
-    });
   }
 
   function assignDetail(detail) {
@@ -214,25 +201,6 @@ const PROTEIN_ACTION_RESULT = "lince:protein-action-result";
         pending.reject(error);
       }
     }
-  });
-
-  window.addEventListener("keydown", (event) => {
-    if (event.code !== "Space" || isTypingTarget(event.target)) {
-      return;
-    }
-
-    event.preventDefault();
-    setHostSpacePan(true);
-  });
-
-  window.addEventListener("keyup", (event) => {
-    if (event.code === "Space") {
-      setHostSpacePan(false);
-    }
-  });
-
-  window.addEventListener("blur", () => {
-    setHostSpacePan(false);
   });
 
   window.LinceWidgetHost = {

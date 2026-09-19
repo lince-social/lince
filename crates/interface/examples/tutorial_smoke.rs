@@ -220,6 +220,7 @@ async fn main() {
         engine,
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
         wire: Default::default(),
+        fiote: None,
         information: None,
     };
     let directory = tempfile::tempdir().unwrap();

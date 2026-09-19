@@ -516,9 +516,6 @@
   // showing — that pair goes through the board, which is the only thing that
   // can see every frame.
   //
-  // This marks the LOSERS rather than showing the winner, so a sand that pulls
-  // lynx-ui.css without lynx-ui.js (instinct.html) keeps plain CSS tooltips
-  // instead of losing them entirely.
   const TOOLTIP_SHOWN = "lince:tooltip-shown";
   const tooltipDocumentId = `${Date.now()}-${Math.random()}`;
   function suppressEveryTooltipExcept(target) {

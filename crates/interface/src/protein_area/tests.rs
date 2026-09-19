@@ -328,6 +328,7 @@ async fn area_reads_real_records_preserves_entities_edits_and_deletes_through_ac
         store: engine.store.clone(),
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
         wire: Default::default(),
+        fiote: None,
         information: None,
     };
     app.insert_resource(crate::app::CellHandle(cell))
@@ -784,6 +785,7 @@ async fn relationship_and_work_log_controls_apply_backend_actions() {
         store: engine.store.clone(),
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
         wire: Default::default(),
+        fiote: None,
         information: None,
     };
     app.insert_resource(crate::app::CellHandle(cell))
@@ -1175,6 +1177,7 @@ async fn grouping_updates_from_live_record_actions_without_displaying_the_group_
         store: engine.store.clone(),
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
         wire: Default::default(),
+        fiote: None,
         information: None,
     };
     app.insert_resource(crate::app::CellHandle(cell))
@@ -1353,6 +1356,7 @@ async fn protein_pull_filters_query_real_properties_without_spawning_and_isolate
         store: engine.store.clone(),
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
         wire: Default::default(),
+        fiote: None,
         information: None,
     };
     app.insert_resource(crate::app::CellHandle(cell))
@@ -1637,6 +1641,7 @@ async fn independent_sorting_uses_live_protein_order_without_spawning_and_clears
         store: engine.store.clone(),
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
         wire: Default::default(),
+        fiote: None,
         information: None,
     };
     app.insert_resource(crate::app::CellHandle(cell))

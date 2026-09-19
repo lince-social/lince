@@ -266,6 +266,7 @@ async fn existing_backend_handles_user_lifecycle_role_replacement_and_permission
         engine: engine.clone(),
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
         wire: Default::default(),
+        fiote: None,
         information: None,
     };
     app.insert_resource(crate::app::CellHandle(runtime))

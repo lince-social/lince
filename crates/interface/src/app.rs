@@ -122,6 +122,7 @@ fn interface_app_at(directory: std::path::PathBuf) -> App {
         crate::thread_castle::ThreadCastlePlugin,
         crate::tutorial::TutorialPlugin,
     ))
+    .add_plugins(crate::fiote::session::Plugin)
     .insert_resource(idle_settings())
     .add_systems(Startup, camera);
     let wake = crate::wake::WakeSignal::from_proxy(

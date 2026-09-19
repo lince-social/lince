@@ -2,6 +2,7 @@
 
 pub mod admin_bootstrap;
 pub mod discovery;
+pub mod fiote;
 pub mod information;
 pub mod sync_runner;
 pub mod transfer;
@@ -17,6 +18,10 @@ pub use admin_bootstrap::{AdminBootstrap, ensure_admin};
 pub use store::config::InterfaceStorage;
 pub use transport::{ClientMessage, LaneEvent, LaneHub, ServerMessage, Session, SyncEvents};
 pub use transport::protocol::CollabCursor;
+pub use ::fiote::config::{
+    ProviderKind as FioteProvider, Request as FioteRequest, Secret as FioteSecret,
+    Settings as FioteSettings, Status as FioteStatus,
+};
 pub use transport::live_client;
 pub use utils::diagnostics::{
     Diagnostics, Journal as DiagnosticJournal, Notice, Subscription as DiagnosticSubscription,
@@ -32,6 +37,7 @@ pub struct CellRuntime {
     pub lanes: Arc<LaneHub>,
     pub wire: WireSlot,
     pub information: Option<information::InformationChannel>,
+    pub fiote: Option<Arc<fiote::Host>>,
 }
 
 impl CellRuntime {
@@ -64,11 +70,15 @@ impl CellRuntime {
     }
 
     pub fn local_session(&self) -> Session {
-        Session::local(
+        let session = Session::local(
             self.engine.clone(),
             self.lanes.clone(),
             nucleus::new_uid("local-ui"),
-        )
+        );
+        match &self.fiote {
+            Some(host) => session.with_fiote(host.clone()),
+            None => session,
+        }
     }
 }
 
@@ -142,6 +152,11 @@ impl Cell {
             lanes,
             wire: Arc::new(tokio::sync::RwLock::new(wire.clone())),
             information: None,
+            fiote: Some(Arc::new(
+                fiote::Host::open(engine.clone(), key_dir.join("fiote"))
+                    .await
+                    .map_err(IoError::other)?,
+            )),
         };
 
         if let Some(wire) = wire.clone()
@@ -174,6 +189,9 @@ impl Cell {
     }
 
     pub async fn shutdown(mut self) {
+        if let Some(fiote) = &self.runtime.fiote {
+            fiote.stop_all().await;
+        }
         if let Some(wire) = self.runtime.wire.write().await.take() {
             wire.shutdown().await;
         }

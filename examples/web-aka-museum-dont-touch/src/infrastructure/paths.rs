@@ -8,10 +8,6 @@ pub fn static_dir() -> PathBuf {
     crate_root_dir().join("static")
 }
 
-pub fn board_state_path() -> PathBuf {
-    web_config_dir().join("board-state.json")
-}
-
 pub fn sand_dir() -> PathBuf {
     web_config_dir().join("sand")
 }

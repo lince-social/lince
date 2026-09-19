@@ -1,6 +1,22 @@
 use bevy::prelude::*;
+pub mod session;
 
 pub const CREDITS: &[crate::credits::Attribution] = &[
+    crate::credits::Attribution {
+        name: "reqwest",
+        author: "Sean McArthur and contributors",
+        license: include_str!("../licenses/reqwest-MIT.txt"),
+    },
+    crate::credits::Attribution {
+        name: "genai",
+        author: "Jeremy Chone",
+        license: include_str!("../licenses/genai-MIT.txt"),
+    },
+    crate::credits::Attribution {
+        name: "cap-std",
+        author: include_str!("../licenses/cap-std-COPYRIGHT.txt"),
+        license: include_str!("../licenses/cap-std-MIT.txt"),
+    },
     crate::credits::SYMBOLS,
     crate::credits::FONTIQUE,
     crate::credits::Attribution {

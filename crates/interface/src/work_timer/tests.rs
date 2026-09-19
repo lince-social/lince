@@ -70,6 +70,7 @@ async fn record_log_crud_uses_shared_mutations_and_reference_changes_preserve_lo
             store: engine.store.clone(),
             lanes: std::sync::Arc::new(cell::LaneHub::new()),
             wire: Default::default(),
+            fiote: None,
             information: None,
         }))
         .add_plugins((

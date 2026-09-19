@@ -30,10 +30,6 @@ pub struct InstalledPackageSummary {
     pub initial_height: u8,
     pub requires_server: bool,
     pub permissions: Vec<String>,
-    #[serde(default)]
-    pub is_group: bool,
-    #[serde(default)]
-    pub member_count: usize,
 }
 
 #[derive(Clone)]
@@ -53,8 +49,7 @@ impl PackageCatalogStore {
     }
 
     pub fn list(&self) -> Result<Vec<InstalledPackageSummary>, String> {
-        let mut groups = Vec::new();
-        let mut singles = Vec::new();
+        let mut packages = Vec::new();
 
         for entry in std::fs::read_dir(&*self.dir).map_err(|error| {
             format!("Nao consegui ler a pasta ~/.config/lince/web/sand: {error}")
@@ -72,20 +67,10 @@ impl PackageCatalogStore {
 
             let bytes = std::fs::read(&path)
                 .map_err(|error| format!("Nao consegui ler um widget local: {error}"))?;
-            if crate::domain::workspace_archive::is_workspace_archive_bytes(&bytes) {
-                groups.push(summary_from_group(&filename, &bytes)?);
-                continue;
-            }
             let package = parse_lince_package(filename, &bytes)?;
-            singles.push(summary_from_package(package));
+            packages.push(summary_from_package(package));
         }
 
-        let group_ids: std::collections::HashSet<String> =
-            groups.iter().map(|group| group.id.clone()).collect();
-        singles.retain(|single| !group_ids.contains(&single.id));
-
-        let mut packages = groups;
-        packages.extend(singles);
         packages.sort_by(|left, right| left.title.to_lowercase().cmp(&right.title.to_lowercase()));
         Ok(packages)
     }
@@ -130,81 +115,7 @@ pub fn summary_from_package(package: LincePackage) -> InstalledPackageSummary {
         initial_height: manifest.initial_height,
         requires_server: manifest.requires_server,
         permissions: manifest.permissions,
-        is_group: false,
-        member_count: 0,
     }
-}
-
-fn summary_from_group(filename: &str, bytes: &[u8]) -> Result<InstalledPackageSummary, String> {
-    let imported = crate::domain::workspace_archive::parse_workspace_archive(filename, bytes)?;
-    let id = package_id_from_filename(filename);
-    let member_count = imported.workspace.cards.len();
-
-    let primary = imported
-        .workspace
-        .cards
-        .iter()
-        .min_by_key(|card| card.z_index)
-        .and_then(|card| {
-            imported
-                .packages
-                .iter()
-                .find(|package| package.archive_filename() == card.package_name)
-        })
-        .or_else(|| imported.packages.first());
-
-    let manifest = primary.map(|package| package.manifest.clone());
-    let title = if imported.workspace.name.trim().is_empty() {
-        manifest
-            .as_ref()
-            .map(|manifest| manifest.title.clone())
-            .unwrap_or_else(|| id.clone())
-    } else {
-        imported.workspace.name.clone()
-    };
-
-    Ok(InstalledPackageSummary {
-        id,
-        filename: filename.to_string(),
-        icon: manifest
-            .as_ref()
-            .map(|manifest| manifest.icon.clone())
-            .unwrap_or_else(|| "▤".to_string()),
-        title,
-        author: manifest
-            .as_ref()
-            .map(|manifest| manifest.author.clone())
-            .unwrap_or_else(|| "Lince".to_string()),
-        version: manifest
-            .as_ref()
-            .map(|manifest| manifest.version.clone())
-            .unwrap_or_else(|| "1.0.0".to_string()),
-        description: manifest
-            .as_ref()
-            .map(|manifest| manifest.description.clone())
-            .unwrap_or_default(),
-        details: manifest
-            .as_ref()
-            .map(|manifest| manifest.details.clone())
-            .unwrap_or_default(),
-        initial_width: manifest
-            .as_ref()
-            .map(|manifest| manifest.initial_width)
-            .unwrap_or(6),
-        initial_height: manifest
-            .as_ref()
-            .map(|manifest| manifest.initial_height)
-            .unwrap_or(5),
-        requires_server: manifest
-            .as_ref()
-            .map(|manifest| manifest.requires_server)
-            .unwrap_or(false),
-        permissions: manifest
-            .map(|manifest| manifest.permissions)
-            .unwrap_or_default(),
-        is_group: true,
-        member_count,
-    })
 }
 
 fn resolve_package_path(dir: &Path, original: &str, normalized: &str) -> PathBuf {

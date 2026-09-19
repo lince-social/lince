@@ -16,6 +16,8 @@ pub(super) struct Form {
     index: usize,
     pub(super) fields: Vec<(Entity, String)>,
     pending: Option<Vec<String>>,
+    attempted: Option<Vec<String>>,
+    saving_log: bool,
 }
 
 #[derive(Clone)]
@@ -26,7 +28,6 @@ pub(super) enum Command {
     AddLog,
     RemoveLog,
     Page(bool),
-    Reset,
 }
 
 fn input(
@@ -55,6 +56,7 @@ fn input(
         crate::token_style::border(crate::tokens::Token::Accent),
         ChildOf(parent),
     ));
+    super::history::attach_text(world, entity);
     (entity, value)
 }
 
@@ -84,7 +86,7 @@ pub(super) fn spawn(
 ) {
     let count = data[property].as_array().map_or(0, Vec::len);
     let index = index.min(if property == "work_logs" {
-        count.saturating_sub(1)
+        count
     } else {
         count.saturating_sub(1) / 16
     });
@@ -103,11 +105,11 @@ pub(super) fn spawn(
         label(
             world,
             row,
-            &format!(
-                "{} / {}",
-                if logs.is_empty() { 0 } else { index + 1 },
-                logs.len()
-            ),
+            &if index == logs.len() {
+                "New work log".into()
+            } else {
+                format!("{} / {}", index + 1, logs.len())
+            },
             14.0,
         );
         button(
@@ -134,22 +136,6 @@ pub(super) fn spawn(
             "Timestamp with timezone; blank keeps this log running",
         ));
         let row = crate::area_panel::row(world, parent);
-        button(
-            world,
-            row,
-            parent,
-            Command::SaveLog,
-            Icon::Save,
-            "Save the selected work log",
-        );
-        button(
-            world,
-            row,
-            parent,
-            Command::AddLog,
-            Icon::Plus,
-            "Add a work log using these times",
-        );
         button(
             world,
             row,
@@ -222,23 +208,7 @@ pub(super) fn spawn(
                 fields.push(input(world, parent, title, String::new(), hint));
             }
         }
-        button(
-            world,
-            parent,
-            parent,
-            Command::AddRelation,
-            Icon::Plus,
-            "Add this assignment or assertion",
-        );
     }
-    button(
-        world,
-        parent,
-        parent,
-        Command::Reset,
-        Icon::Reset,
-        "Reload current values and discard this form's edits",
-    );
     world.entity_mut(parent).insert(Form {
         binding,
         property: property.into(),
@@ -246,6 +216,8 @@ pub(super) fn spawn(
         index,
         fields,
         pending: None,
+        attempted: None,
+        saving_log: false,
     });
 }
 
@@ -273,6 +245,13 @@ fn current(world: &World, form: &Form) -> Option<Value> {
 }
 
 fn rebuild(world: &mut World, entity: Entity, form: &Form, data: &Value, index: usize) {
+    let focus = world
+        .get_resource::<bevy::input_focus::InputFocus>()
+        .and_then(|focus| focus.get());
+    let focused = form
+        .fields
+        .iter()
+        .position(|(field, _)| Some(*field) == focus);
     let children: Vec<_> = world
         .get::<Children>(entity)
         .into_iter()
@@ -290,6 +269,15 @@ fn rebuild(world: &mut World, entity: Entity, form: &Form, data: &Value, index: 
         data,
         index,
     );
+    if let Some(focused) = focused
+        && let Some(field) = world
+            .get::<Form>(entity)
+            .and_then(|form| form.fields.get(focused))
+            .map(|(field, _)| *field)
+        && let Some(mut focus) = world.get_resource_mut::<bevy::input_focus::InputFocus>()
+    {
+        focus.set(field, bevy::input_focus::FocusCause::Pressed);
+    }
 }
 
 pub(super) fn refresh(world: &mut World, entity: Entity, data: &Value) -> bool {
@@ -311,6 +299,23 @@ pub(super) fn finished(world: &mut World, entity: Entity, error: Option<String>)
         return;
     };
     world.get_mut::<Form>(entity).unwrap().pending = None;
+    if form.saving_log {
+        if error.is_none() {
+            let mut current = world.get_mut::<Form>(entity).unwrap();
+            if let Some(sent) = form.pending {
+                for ((_, initial), value) in current.fields.iter_mut().zip(&sent) {
+                    *initial = value.clone();
+                }
+                current.data["work_logs"][form.index]["start"] = json!(sent[0].trim());
+                current.data["work_logs"][form.index]["end"] = if sent[1].trim().is_empty() {
+                    Value::Null
+                } else {
+                    json!(sent[1].trim())
+                };
+            }
+        }
+        return;
+    }
     if error.is_none()
         && form
             .pending
@@ -320,6 +325,73 @@ pub(super) fn finished(world: &mut World, entity: Entity, error: Option<String>)
         if let Some(data) = current(world, &form) {
             rebuild(world, entity, &form, &data, form.index);
         }
+    }
+}
+
+pub(super) fn commit_edits(world: &mut World, mut previous_focus: Local<Option<Entity>>) {
+    let focus = world
+        .get_resource::<bevy::input_focus::InputFocus>()
+        .and_then(|focus| focus.get());
+    let enter = world
+        .get_resource::<ButtonInput<KeyCode>>()
+        .is_some_and(|keys| {
+            keys.just_pressed(KeyCode::Enter) || keys.just_pressed(KeyCode::NumpadEnter)
+        });
+    let forms: Vec<_> = world
+        .query::<(Entity, &Form)>()
+        .iter(world)
+        .filter(|(_, form)| form.pending.is_none())
+        .filter(|(_, form)| {
+            form.fields.iter().all(|(entity, _)| {
+                world
+                    .get::<EditableText>(*entity)
+                    .is_some_and(|text| !text.is_composing() && text.pending_paste.is_none())
+            })
+        })
+        .filter_map(|(entity, form)| {
+            let values = values(world, form);
+            let changed = form.attempted.as_ref() != Some(&values)
+                && values
+                    .iter()
+                    .zip(&form.fields)
+                    .any(|(value, (_, initial))| value != initial);
+            let focused = form.fields.iter().any(|(entity, _)| Some(*entity) == focus);
+            let blurred = form
+                .fields
+                .iter()
+                .any(|(entity, _)| Some(*entity) == *previous_focus)
+                && !focused;
+            let existing_log = form.property == "work_logs"
+                && form.data["work_logs"]
+                    .as_array()
+                    .is_some_and(|logs| logs.get(form.index).is_some());
+            (changed && (existing_log || blurred || (focused && enter))).then_some((
+                entity,
+                values,
+                form.property.clone(),
+                existing_log,
+            ))
+        })
+        .collect();
+    *previous_focus = focus;
+    for (entity, values, property, existing_log) in forms {
+        if property == "work_logs"
+            && !existing_log
+            && !values
+                .first()
+                .is_some_and(|value| chrono::DateTime::parse_from_rfc3339(value.trim()).is_ok())
+        {
+            continue;
+        }
+        world.get_mut::<Form>(entity).unwrap().attempted = Some(values);
+        let command = if existing_log {
+            Command::SaveLog
+        } else if property == "work_logs" {
+            Command::AddLog
+        } else {
+            Command::AddRelation
+        };
+        command.apply(world, entity);
     }
 }
 
@@ -335,7 +407,7 @@ impl Action for Command {
             status(world, form.binding.area, "Record is no longer available");
             return;
         };
-        if matches!(self, Self::Reset | Self::Page(_)) {
+        if matches!(self, Self::Page(_)) {
             let index = if let Self::Page(next) = self {
                 if values(world, &form)
                     .iter()
@@ -345,13 +417,13 @@ impl Action for Command {
                     status(
                         world,
                         form.binding.area,
-                        "Save or reset the form before changing pages",
+                        "Wait for edits to save before changing pages",
                     );
                     return;
                 }
                 let count = data[&form.property].as_array().map_or(0, Vec::len);
                 let last = if form.property == "work_logs" {
-                    count.saturating_sub(1)
+                    count
                 } else {
                     count.saturating_sub(1) / 16
                 };
@@ -443,7 +515,11 @@ impl Action for Command {
             _ => return,
         };
         match execute(world, &form.binding, entity, action) {
-            Ok(()) => world.get_mut::<Form>(entity).unwrap().pending = Some(values),
+            Ok(()) => {
+                let mut form = world.get_mut::<Form>(entity).unwrap();
+                form.pending = Some(values);
+                form.saving_log = matches!(self, Self::SaveLog);
+            }
             Err(error) => status(world, form.binding.area, error),
         }
     }

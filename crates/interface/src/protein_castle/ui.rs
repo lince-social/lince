@@ -392,6 +392,7 @@ fn input(
             list,
             previous: value.into(),
         },
+        crate::tutorial::TutorialField::Query(owner, path.into()),
         Node {
             width: percent(100),
             min_width: px(80),

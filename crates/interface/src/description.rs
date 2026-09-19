@@ -11,6 +11,8 @@ use crate::{
 use bevy::{prelude::*, text::EditableText};
 
 pub const CREDITS: &[crate::credits::Attribution] = &[
+    crate::credits::SYMBOLS,
+    crate::credits::FONTIQUE,
     crate::credits::Attribution {
         name: "reqwest",
         author: "Sean McArthur and contributors",
@@ -141,21 +143,9 @@ pub(crate) fn attach_editor(world: &mut World, parent: Entity, input: Entity, co
         .unwrap()
         .value()
         .to_string();
-    let controls = world
-        .spawn((
-            Node {
-                column_gap: px(8),
-                ..default()
-            },
-            Rendered,
-            ChildOf(parent),
-        ))
-        .id();
-    button(world, controls, parent, "Read", Mode(false));
-    button(world, controls, parent, "Edit description", Mode(true));
     let preview = spawn(world, parent, &source, context);
     world.entity_mut(parent).insert(Editor { input, preview });
-    world.get_mut::<Node>(input).unwrap().display = Display::None;
+    world.get_mut::<Node>(input).unwrap().display = Display::Flex;
 }
 
 pub(crate) fn refresh_readonly(world: &mut World, container: Entity, source: &str) {
@@ -185,28 +175,6 @@ fn sync_editors(world: &mut World) {
         .collect();
     for (preview, source) in changes {
         set(world, preview, &source);
-    }
-}
-
-#[derive(Clone)]
-struct Mode(bool);
-impl Action for Mode {
-    fn apply(&self, world: &mut World, owner: Entity) {
-        let Some(editor) = world.get::<Editor>(owner) else {
-            return;
-        };
-        let (input, preview) = (editor.input, editor.preview);
-        world.get_mut::<Node>(input).unwrap().display =
-            if self.0 { Display::Flex } else { Display::None };
-        world.get_mut::<Node>(preview).unwrap().display =
-            if self.0 { Display::None } else { Display::Flex };
-        if let Some(mut focus) = world.get_resource_mut::<bevy::input_focus::InputFocus>() {
-            if self.0 {
-                focus.set(input, bevy::input_focus::FocusCause::Pressed);
-            } else {
-                focus.clear();
-            }
-        }
     }
 }
 
@@ -269,10 +237,15 @@ impl Action for Link {
     }
 }
 
-#[derive(Resource)]
+#[derive(Resource, Clone)]
 struct Fonts {
     bold: Handle<Font>,
     italic: Handle<Font>,
+}
+
+pub(crate) fn preview_fonts(world: &mut World, preview: &mut World) {
+    world.init_resource::<Fonts>();
+    preview.insert_resource(world.resource::<Fonts>().clone());
 }
 impl FromWorld for Fonts {
     fn from_world(world: &mut World) -> Self {

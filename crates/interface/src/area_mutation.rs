@@ -59,9 +59,6 @@ pub(crate) struct HeldPoint(pub DVec3);
 #[derive(Component)]
 pub(crate) struct StatusLabel(pub Entity);
 
-#[derive(Component)]
-pub(crate) struct DisarmControl(pub Entity);
-
 #[derive(Clone, Copy)]
 struct Visit {
     inside: bool,
@@ -175,26 +172,6 @@ pub fn disarm(world: &mut World, entity: Entity, message: &str) {
     }
     for area in affected {
         status(world, area, message);
-    }
-}
-
-pub fn disarm_all(world: &mut World, root: Entity) {
-    let areas: Vec<_> = world
-        .query::<(Entity, &InfluenceArea, &ChildOf)>()
-        .iter(world)
-        .filter(|(_, _, parent)| parent.parent() == root)
-        .map(|(entity, _, _)| entity)
-        .collect();
-    for area in areas {
-        world
-            .get_mut::<InfluenceArea>(area)
-            .unwrap()
-            .changes_enabled = false;
-        disarm(
-            world,
-            area,
-            "Property changes inactive. Already submitted changes may still finish.",
-        );
     }
 }
 
@@ -504,7 +481,11 @@ fn receive(world: &mut World, messages: Vec<ServerMessage>, records: &[Record]) 
         };
         if pending.applying {
             for (area, inside) in pending.areas {
-                world.write_message(TransitionApplied { area, record: pending.target.clone(), inside });
+                world.write_message(TransitionApplied {
+                    area,
+                    record: pending.target.clone(),
+                    inside,
+                });
                 if armed(world, area) {
                     status(
                         world,
@@ -824,7 +805,6 @@ fn labels(
     mut labels: Query<(&StatusLabel, &mut Text, &mut crate::icons::Tooltip)>,
     statuses: Query<&MutationStatus>,
     state: Res<Mutations>,
-    mut controls: Query<(&DisarmControl, &mut Node)>,
 ) {
     for (label, mut text, mut tooltip) in &mut labels {
         let value = statuses
@@ -842,16 +822,6 @@ fn labels(
         };
         if text.0 != title {
             text.0 = title.into();
-        }
-    }
-    for (control, mut node) in &mut controls {
-        let display = if state.grants.values().any(|grant| grant.root == control.0) {
-            Display::Flex
-        } else {
-            Display::None
-        };
-        if node.display != display {
-            node.display = display;
         }
     }
 }

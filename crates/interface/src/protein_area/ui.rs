@@ -12,7 +12,7 @@ enum Command {
     Placement(SpawnPlacement),
     SettlingTicks(u16),
     SpawnTarget(String),
-    Tasks,
+    Records,
     ClosestDate,
     Enable,
     Remove,
@@ -264,9 +264,10 @@ impl Action for Command {
             }
             match self {
                 Self::ClosestDate => config.closest_end_date = !config.closest_end_date,
-                Self::Tasks => {
-                    config.task_cards = true;
-                    config.bindings = Config::tasks().bindings;
+                Self::Records => {
+                    config.record_cards = true;
+                    config.show_labels = true;
+                    config.bindings = Config::records().bindings;
                 }
                 Self::Source(remote) => {
                     config.source = if *remote {
@@ -728,9 +729,9 @@ pub(crate) fn controls(world: &mut World, _: Entity, panel: Entity, owner: Entit
         world,
         panel,
         owner,
-        Command::Tasks,
-        "Task Castle",
-        "Use editable title, assignees, dates, Assertions, and quantity",
+        Command::Records,
+        "Record Castle",
+        "Use the Record Castle with editable properties",
     );
     input(
         world,

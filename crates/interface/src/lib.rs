@@ -22,6 +22,9 @@ pub mod castle;
 pub mod access_control;
 
 #[cfg(feature = "native-runtime")]
+pub mod sync_castle;
+
+#[cfg(feature = "native-runtime")]
 pub mod color_picker;
 
 #[cfg(feature = "native-runtime")]
@@ -86,6 +89,9 @@ pub mod custom_castle;
 
 #[cfg(feature = "native-runtime")]
 pub mod sand_text;
+
+#[cfg(feature = "native-runtime")]
+pub mod scroll_sand;
 
 #[cfg(feature = "native-runtime")]
 pub mod layout;

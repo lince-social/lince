@@ -8,25 +8,14 @@ const TITLES: [&str; 5] = [
     "Property on entry",
     "Property on exit",
 ];
-fn instructions(step: usize, prefix: &str) -> String {
-    match step {
-        0 => format!("Use your normal workspace. Two sample Records have been added to the local Organ.\n\n1. Click Edit mode > Areas of influence > Add square.\n2. In Protein, click + (Make this a Protein Area).\n3. Click its pencil to open the query. Under Filters, click + (Add a condition), choose Text contains and enter:\n{prefix}\nClick Run in the query Castle.\n4. Back in the area's Row template, keep Title and Description; use Add property (+) > Quantity.\n\nRun applies the query to the area. Both sample cards should appear. Scroll the edit panel to reach each section."),
-        1 => format!("1. In Areas of influence, click Add circle. This is a separate force area.\n2. Under Filter, click Add property > Title. In Equals, enter:\n{prefix} 1\n3. Keep Attraction enabled. In Force, choose Attract and raise Strength (for example, 100). Choose Reach > Unlimited.\n4. Turn on Physics at the top of the panel. Move the area away from sample 1 if their centers overlap.\n\nWatch sample 1 move toward the area."),
-        2 => "Select the same circle under Selection in Areas of influence. Under Force, click Repel. Leave Attraction enabled and Strength above zero.\n\nWatch sample 1 move away. The check uses the force actually applied to the card.".into(),
-        3 => format!("1. Turn Physics off at the top of Areas of influence so the cards stay where you drag them.\n2. Click Add square for a separate property area. Move its outline into empty space, away from the cards, before setting changes. Under Filter > Add property, choose Title. Set Equals to:\n{prefix} 1\n3. Under Record changes, set On entry > Quantity to 1 and On exit > Quantity to 0. Keep Change properties enabled.\n4. Drag sample 1 inside the square. If it was already inside when you enabled changes, drag it outside first and wait for the area to finish saving. Use the card's edge to drag; its center must cross the outline.\n\nWait for the card's Quantity to show 1."),
-        _ => "Drag sample 1 outside the property square until its center crosses the outline. Its On exit > Quantity value should still be 0.\n\nWait for the card's Quantity to return to 0. The Organ must confirm the change before you can finish.".into(),
-    }
-}
-
 pub(super) fn render(world: &mut World, root: Entity) {
     let session = world.get::<Session>(root).unwrap();
-    let (content, step, unlocked, complete, error, prefix) = (
+    let (content, step, unlocked, complete, error) = (
         session.content,
         session.step,
         session.unlocked,
         session.completed,
         session.error.is_some(),
-        session.sample_prefix.clone(),
     );
     if let Some(children) = world.get::<Children>(content) {
         let children: Vec<_> = children.iter().collect();
@@ -94,11 +83,6 @@ pub(super) fn render(world: &mut World, root: Entity) {
         },
         18.0,
     );
-    let instructions = if complete {
-        "You used the edit panel to spawn Records, apply attraction and repulsion, and save property changes on entry and exit. Your areas remain in this workspace. You can keep editing them with the same controls.".into()
-    } else {
-        instructions(step, &prefix)
-    };
     let mut accessibility = accesskit::Node::new(accesskit::Role::ScrollView);
     accessibility.set_label("Tutorial instructions");
     let instructions_box = world
@@ -119,8 +103,11 @@ pub(super) fn render(world: &mut World, root: Entity) {
         .observe(scroll)
         .observe(keyboard)
         .id();
-    let text = crate::edit_mode::label(world, instructions_box, &instructions, 15.0);
-    world.get_mut::<Node>(text).unwrap().width = percent(100);
+    world.entity_mut(root).insert(super::guide::Guide {
+        container: instructions_box,
+        instructions: Vec::new(),
+        current: None,
+    });
     let controls = world
         .spawn((
             Node {
@@ -231,4 +218,65 @@ fn keyboard(
     };
     scroll.0.y = position.clamp(0.0, max);
     event.propagate(false);
+}
+
+pub(super) fn checklist(
+    world: &mut World,
+    root: Entity,
+    instructions: &[super::guide::Instruction],
+    current: Option<usize>,
+) {
+    let container = world.get::<super::guide::Guide>(root).unwrap().container;
+    if let Some(children) = world.get::<Children>(container) {
+        for child in children.iter().collect::<Vec<_>>() {
+            world.despawn(child);
+        }
+    }
+    let mut current_row = None;
+    for (index, instruction) in instructions.iter().enumerate() {
+        let active = current == Some(index);
+        let row = world
+            .spawn((
+                Node {
+                    width: percent(100),
+                    flex_shrink: 0.0,
+                    padding: UiRect::all(px(6)),
+                    border: UiRect::left(px(if active { 3 } else { 0 })),
+                    ..default()
+                },
+                crate::token_style::border(crate::tokens::Token::Connections),
+                ChildOf(container),
+            ))
+            .id();
+        let value = format!(
+            "{} {}",
+            if instruction.done {
+                "[x]"
+            } else if active {
+                "Now:"
+            } else {
+                "[ ]"
+            },
+            instruction.text
+        );
+        if active {
+            crate::description::heading(world, row, &value, 15.0);
+        } else {
+            let text = crate::edit_mode::label(world, row, &value, 14.0);
+            world.get_mut::<Node>(text).unwrap().width = percent(100);
+        }
+        if active {
+            world.entity_mut(row).insert(crate::token_style::background(
+                crate::tokens::Token::ConnectionFill,
+            ));
+            let mut accessibility = accesskit::Node::new(accesskit::Role::Status);
+            accessibility.set_label(value.as_str());
+            accessibility.set_live(accesskit::Live::Polite);
+            world
+                .entity_mut(row)
+                .insert(bevy::a11y::AccessibilityNode::from(accessibility));
+            current_row = Some(row);
+        }
+    }
+    world.get_mut::<super::guide::Guide>(root).unwrap().current = current_row;
 }

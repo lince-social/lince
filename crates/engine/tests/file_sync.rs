@@ -1287,3 +1287,246 @@ async fn renaming_a_file_renames_the_record_it_carries_the_uid_of() {
         text
     );
 }
+
+async fn sync_protein(e: &Engine, name: &str) -> String {
+    e.act(Action::SaveProtein {
+        slug: "directory-selection".into(), head: "Directory selection".into(),
+        ast: serde_json::json!({"source":"record", "where":[{"all":[{"kind_eq":"plain"},{"text_contains":name}]}]}),
+    }, None).await.unwrap().created.unwrap()
+}
+
+#[tokio::test]
+async fn configured_protein_syncs_one_format_and_tracks_saved_query_changes() {
+    for format in [
+        engine::file_sync::FileFormat::Lingua,
+        engine::file_sync::FileFormat::Markdown,
+    ] {
+        let (e, organ) = cell_with_local_organ().await;
+        let first = plain(&e, "Selected first", "Original body").await;
+        plain(&e, "Second note", "Second body").await;
+        let protein = sync_protein(&e, "Selected").await;
+        let dir = tmp_dir();
+        e.act(
+            Action::ConfigureFileSync {
+                protein: protein.clone(),
+                path: dir.to_string_lossy().into(),
+                format,
+                enabled: true,
+            },
+            None,
+        )
+        .await
+        .unwrap();
+        let config = store::records::get_extension(&e.store.pool, &organ, "lince.file_sync")
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(config["protein"], protein);
+        assert!(config.get("formats").is_none());
+        let mut state = FileSyncState::new();
+        e.file_sync_tick(&dir, &organ, &mut state).await.unwrap();
+        let path = dir.join(format!("Selected first.{}", format.extension()));
+        assert!(path.exists());
+        assert!(
+            !dir.join(format!("Second note.{}", format.extension()))
+                .exists()
+        );
+        assert_eq!(std::fs::read_dir(&dir).unwrap().count(), 1);
+        let text = std::fs::read_to_string(&path)
+            .unwrap()
+            .replace("Original body", "Edited body");
+        std::fs::write(&path, text).unwrap();
+        e.file_sync_tick(&dir, &organ, &mut state).await.unwrap();
+        assert_eq!(
+            store::records::get(&e.store.pool, &first)
+                .await
+                .unwrap()
+                .unwrap()
+                .body,
+            "Edited body"
+        );
+        sync_protein(&e, "Second").await;
+        e.file_sync_tick(&dir, &organ, &mut state).await.unwrap();
+        assert!(
+            dir.join(format!("Second note.{}", format.extension()))
+                .exists()
+        );
+        e.act(
+            Action::ConfigureFileSync {
+                protein: String::new(),
+                path: String::new(),
+                format,
+                enabled: false,
+            },
+            None,
+        )
+        .await
+        .unwrap();
+        let config = store::records::get_extension(&e.store.pool, &organ, "lince.file_sync")
+            .await
+            .unwrap()
+            .unwrap();
+        assert_eq!(config["enabled"], false);
+        assert_eq!(config["protein"], protein);
+        std::fs::remove_dir_all(dir).unwrap();
+    }
+}
+
+#[tokio::test]
+async fn invalid_directory_or_protein_leaves_sync_configuration_unchanged() {
+    let (e, organ) = cell_with_local_organ().await;
+    let protein = sync_protein(&e, "Selected").await;
+    let dir = tmp_dir();
+    for (protein, path) in [
+        (protein.clone(), "relative/path".to_string()),
+        ("missing-protein".into(), dir.to_string_lossy().into()),
+    ] {
+        assert!(
+            e.act(
+                Action::ConfigureFileSync {
+                    protein,
+                    path,
+                    format: engine::file_sync::FileFormat::Lingua,
+                    enabled: true
+                },
+                None
+            )
+            .await
+            .is_err()
+        );
+        assert!(
+            store::records::get_extension(&e.store.pool, &organ, "lince.file_sync")
+                .await
+                .unwrap()
+                .is_none()
+        );
+    }
+    e.act(
+        Action::ConfigureFileSync {
+            protein: protein.clone(),
+            path: dir.to_string_lossy().into(),
+            format: engine::file_sync::FileFormat::Lingua,
+            enabled: true,
+        },
+        None,
+    )
+    .await
+    .unwrap();
+    e.act(
+        Action::SetQuantity {
+            target: protein,
+            value: 0.0,
+        },
+        None,
+    )
+    .await
+    .unwrap();
+    std::fs::write(dir.join("Unimported.lingua"), "Must stay untouched").unwrap();
+    assert!(
+        e.file_sync_tick(&dir, &organ, &mut FileSyncState::new())
+            .await
+            .is_err()
+    );
+    assert_eq!(
+        std::fs::read_to_string(dir.join("Unimported.lingua")).unwrap(),
+        "Must stay untouched"
+    );
+    assert!(
+        store::records::resolve(&e.store.pool, "Unimported")
+            .await
+            .unwrap()
+            .is_none()
+    );
+    std::fs::remove_dir_all(dir).unwrap();
+}
+
+#[tokio::test]
+async fn remote_admin_cannot_configure_computer_directory_sync() {
+    let (e, organ) = cell_with_local_organ().await;
+    e.act(
+        Action::CreateRole {
+            name: "admin".into(),
+        },
+        None,
+    )
+    .await
+    .unwrap();
+    let actor = e
+        .act(
+            Action::CreateUser {
+                username: "sync-admin".into(),
+                name: "Sync admin".into(),
+                password: "test-password-long".into(),
+                role: "admin".into(),
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    let result = e
+        .act(
+            Action::ConfigureFileSync {
+                protein: "anything".into(),
+                path: "/tmp/directory-sync-forbidden".into(),
+                format: engine::file_sync::FileFormat::Lingua,
+                enabled: true,
+            },
+            Some(actor.clone()),
+        )
+        .await;
+    assert!(matches!(
+        result,
+        Err(engine::error::EngineError::Forbidden(_))
+    ));
+    let result = e
+        .act(
+            Action::SetExtension {
+                target: organ.clone(),
+                namespace: "lince.file_sync".into(),
+                fds: serde_json::json!({"enabled":true,"path":"/tmp/directory-sync-forbidden"}),
+            },
+            Some(actor),
+        )
+        .await;
+    assert!(matches!(
+        result,
+        Err(engine::error::EngineError::Forbidden(_))
+    ));
+    assert!(
+        store::records::get_extension(&e.store.pool, &organ, "lince.file_sync")
+            .await
+            .unwrap()
+            .is_none()
+    );
+}
+
+#[tokio::test]
+async fn protein_directory_sync_honors_order_and_limit() {
+    let (e, organ) = cell_with_local_organ().await;
+    plain(&e, "First", "One").await;
+    plain(&e, "Last", "Two").await;
+    let protein = e.act(Action::SaveProtein {
+        slug: "limited-sync".into(), head: "Limited sync".into(),
+        ast: serde_json::json!({"source":"record","where":[{"all":[{"kind_eq":"plain"}]}],"order":[{"desc":"head"}],"limit":1}),
+    }, None).await.unwrap().created.unwrap();
+    let dir = tmp_dir();
+    e.act(
+        Action::ConfigureFileSync {
+            protein,
+            path: dir.to_string_lossy().into(),
+            format: engine::file_sync::FileFormat::Markdown,
+            enabled: true,
+        },
+        None,
+    )
+    .await
+    .unwrap();
+    e.file_sync_tick(&dir, &organ, &mut FileSyncState::new())
+        .await
+        .unwrap();
+    assert!(dir.join("Last.md").exists());
+    assert!(!dir.join("First.md").exists());
+    std::fs::remove_dir_all(dir).unwrap();
+}

@@ -77,7 +77,11 @@ pub enum SpawnPlacement {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Config {
-    pub task_cards: bool,
+    pub record_cards: bool,
+    #[serde(default)]
+    pub viewport_height: Option<f32>,
+    #[serde(default)]
+    pub group_with_source: bool,
     pub placement: SpawnPlacement,
     pub spawn_targets: Vec<String>,
     pub settling_ticks: u16,
@@ -100,7 +104,9 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
-            task_cards: false,
+            record_cards: false,
+            viewport_height: None,
+            group_with_source: false,
             placement: SpawnPlacement::Source,
             spawn_targets: Vec::new(),
             settling_ticks: 120,
@@ -121,30 +127,29 @@ impl Default for Config {
 }
 
 impl Config {
-    pub fn tasks() -> Self {
+    pub fn records() -> Self {
         Self {
-            task_cards: true,
-            bindings: [
-                "head",
-                "assignees",
-                "start_date",
-                "due_date",
-                "assertions",
-                "quantity_exact",
-            ]
-            .into_iter()
-            .map(|property| Binding {
-                editable: true,
-                overflow: OverflowMode::GrowDown,
-                ..Binding::new(property)
-            })
-            .collect(),
+            record_cards: true,
+            show_labels: true,
+            bindings: protein::record_schema::fields()
+                .into_iter()
+                .filter(|field| field.editable)
+                .map(|field| Binding {
+                    editable: true,
+                    overflow: OverflowMode::GrowDown,
+                    height: if field.key == "body" { 72.0 } else { 32.0 },
+                    ..Binding::new(field.key)
+                })
+                .collect(),
             ..Default::default()
         }
     }
 
     pub fn valid(&self) -> bool {
-        self.settling_ticks <= 600
+        self.viewport_height
+            .is_none_or(|height| height.is_finite() && (80.0..=4000.0).contains(&height))
+            && (!self.group_with_source || self.placement == SpawnPlacement::Source)
+            && self.settling_ticks <= 600
             && self.spawn_targets.len() <= 256
             && self
                 .spawn_targets
@@ -191,7 +196,10 @@ impl Config {
             .iter()
             .any(|binding| binding.property == "threads")
         {
-            query.include.threads = Some(protein::ThreadsInclude { messages_limit: 50, ..Default::default() });
+            query.include.threads = Some(protein::ThreadsInclude {
+                messages_limit: 50,
+                ..Default::default()
+            });
         }
         if self.calendar_dates {
             fields.extend(["head", "start_date", "due_date"].map(str::to_string));

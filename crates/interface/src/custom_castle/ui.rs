@@ -157,31 +157,28 @@ pub(crate) fn store_entries(world: &mut World, root: Entity, parent: Entity) {
         label(world, parent, "No custom Castles saved yet.", 14.0);
     }
     for (filename, name, count) in entries {
-        let entry = row(world, parent);
-        let title = label(world, entry, &format!("{name} · {count} parts"), 16.0);
-        let mut node = world.get_mut::<Node>(title).unwrap();
-        node.flex_grow = 1.0;
-        node.flex_shrink = 1.0;
-        node.flex_basis = px(0);
-        node.min_width = px(0);
-        world.spawn((
-            IconButton::new(
-                Icon::Info,
-                format!(
-                    "Back up this custom Castle file: {}",
-                    directory.join(&filename).display()
-                ),
-            ),
-            ChildOf(entry),
-        ));
-        icon(
+        let Ok(castle) = storage::load(&directory, &filename) else {
+            continue;
+        };
+        let path = directory.join(&filename);
+        let entry = crate::sand_store::castle_entry(
             world,
-            entry,
             root,
-            Icon::Plus,
-            &format!("Add {name} at the camera"),
+            parent,
+            &name,
+            &format!("A saved composition of {count} parts."),
             Command::Add(filename),
+            |world, root| {
+                let _ = castle.spawn(world, root);
+                crate::sand_store::preview::compose(world, root)
+            },
         );
+        world
+            .entity_mut(entry)
+            .insert(crate::icons::Tooltip(format!(
+                "Back up this custom Castle file: {}",
+                path.display()
+            )));
     }
     for error in errors.iter().take(3) {
         label(world, parent, error, 13.0);

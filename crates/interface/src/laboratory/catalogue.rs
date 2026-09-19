@@ -32,6 +32,7 @@ pub fn catalogue() -> Vec<super::Case> {
     crate::icons::tests::laboratory_cases(&mut cases);
     crate::information::tests::laboratory_cases(&mut cases);
     crate::information::sync::tests::laboratory_cases(&mut cases);
+    crate::sync_castle::tests::laboratory_cases(&mut cases);
     crate::inspection::tests::laboratory_cases(&mut cases);
     crate::instance::tests::laboratory_cases(&mut cases);
     crate::notifications::tests::laboratory_cases(&mut cases);

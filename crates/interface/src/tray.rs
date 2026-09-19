@@ -35,12 +35,14 @@ struct TrayState {
 #[derive(Resource, Clone, Copy)]
 pub struct InterfaceWindowSettings {
     pub close_suspends: bool,
+    pub tray_enabled: bool,
 }
 
 impl Default for InterfaceWindowSettings {
     fn default() -> Self {
         Self {
             close_suspends: true,
+            tray_enabled: true,
         }
     }
 }
@@ -81,7 +83,9 @@ fn setup(world: &mut World) {
         saved_window: None,
     });
     world.insert_resource(sender.clone());
-    start_platform(world, sender);
+    if world.resource::<InterfaceWindowSettings>().tray_enabled {
+        start_platform(world, sender);
+    }
 }
 
 fn close_requests(
@@ -90,12 +94,15 @@ fn close_requests(
     mut windows: Query<&mut Window, With<PrimaryWindow>>,
     mut state: NonSendMut<TrayState>,
     mut commands: Commands,
+    mut exit: MessageWriter<AppExit>,
 ) {
     for request in requests.read() {
         let Ok(mut window) = windows.get_mut(request.window) else {
             continue;
         };
-        if settings.close_suspends {
+        if !settings.tray_enabled {
+            exit.write(AppExit::Success);
+        } else if settings.close_suspends {
             state.saved_window = Some((request.window, window.clone()));
             commands
                 .entity(request.window)
@@ -383,8 +390,40 @@ pub(crate) mod tests {
         assert_eq!(app.should_exit(), None);
     }
 
+    #[cfg_attr(test, test)]
+    fn closing_without_a_tray_exits_regardless_of_saved_window_settings() {
+        for close_suspends in [false, true] {
+            let (mut app, window, _) = fixture();
+            app.insert_resource(InterfaceWindowSettings {
+                close_suspends,
+                tray_enabled: false,
+            });
+            app.world_mut()
+                .write_message(WindowCloseRequested { window });
+            app.update();
+            assert_eq!(app.should_exit(), Some(AppExit::Success));
+            assert!(app.world().get::<Window>(window).is_some());
+        }
+    }
+
+    #[cfg_attr(test, test)]
+    fn disabled_tray_starts_without_registering_a_platform_icon() {
+        let (mut app, _, _) = fixture();
+        app.world_mut()
+            .resource_mut::<InterfaceWindowSettings>()
+            .tray_enabled = false;
+        setup(app.world_mut());
+        assert!(app.world().contains_resource::<TraySender>());
+        #[cfg(target_os = "linux")]
+        assert!(app.world().get_non_send::<LinuxService>().is_none());
+        #[cfg(any(target_os = "macos", target_os = "windows"))]
+        assert!(app.world().get_non_send::<DesktopTray>().is_none());
+    }
+
     crate::laboratory_cases! {
         close_request_suspends_the_window_until_the_tray_restores_it,
         disabling_close_suspension_minimizes_without_closing_the_window,
+        closing_without_a_tray_exits_regardless_of_saved_window_settings,
+        disabled_tray_starts_without_registering_a_platform_icon,
     }
 }

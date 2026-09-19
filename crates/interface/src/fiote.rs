@@ -1,6 +1,8 @@
 use bevy::prelude::*;
 
 pub const CREDITS: &[crate::credits::Attribution] = &[
+    crate::credits::SYMBOLS,
+    crate::credits::FONTIQUE,
     crate::credits::Attribution {
         name: "Lince logo",
         author: "Lince",

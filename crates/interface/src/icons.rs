@@ -53,6 +53,7 @@ pub enum Icon {
     Previous,
     Next,
     Person,
+    Engine,
     Credits,
 }
 
@@ -98,7 +99,7 @@ impl Default for IconStyle {
             color: INK,
             background: PAPER,
             border_color: PURPLE,
-            radius: 4.0,
+            radius: 0.0,
         }
     }
 }
@@ -318,6 +319,35 @@ fn sync(
     }
 }
 
+fn repeats_button_text(world: &World, entity: Entity, tooltip: &str) -> bool {
+    if world.get::<bevy::ui_widgets::Button>(entity).is_none() {
+        return false;
+    }
+    fn append(world: &World, entity: Entity, text: &mut String) {
+        if world.get::<Visibility>(entity) == Some(&Visibility::Hidden)
+            || world
+                .get::<Node>(entity)
+                .is_some_and(|node| node.display == Display::None)
+        {
+            return;
+        }
+        if let Some(label) = world.get::<Text>(entity) {
+            text.push_str(&label.0);
+        }
+        if let Some(span) = world.get::<TextSpan>(entity) {
+            text.push_str(&span.0);
+        }
+        if let Some(children) = world.get::<Children>(entity) {
+            for child in children {
+                append(world, *child, text);
+            }
+        }
+    }
+    let mut text = String::new();
+    append(world, entity, &mut text);
+    text == tooltip
+}
+
 fn hints(world: &mut World) {
     let state = world.resource::<Hints>();
     let target = state
@@ -330,11 +360,15 @@ fn hints(world: &mut World) {
     let content = target.and_then(|target| {
         let text = world.get::<Tooltip>(target)?.0.clone();
         let node = world.get::<ComputedNode>(target)?;
-        if text.is_empty() || node.size().min_element() <= 0.0 {
+        if text.is_empty()
+            || node.size().min_element() <= 0.0
+            || repeats_button_text(world, target, &text)
+        {
             return None;
         }
-        let size = node.size();
-        let position = world.get::<UiGlobalTransform>(target)?.translation;
+        let transform = world.get::<UiGlobalTransform>(target)?;
+        let a = transform.transform_point2(-node.size() * 0.5);
+        let b = transform.transform_point2(node.size() * 0.5);
         let mut root = target;
         loop {
             if world.get::<Visibility>(root) == Some(&Visibility::Hidden)
@@ -350,11 +384,25 @@ fn hints(world: &mut World) {
             root = world.get::<ChildOf>(root)?.parent();
         }
         let viewport = world.get::<ComputedNode>(root)?;
-        let scale = viewport.inverse_scale_factor();
-        let point = (position - world.get::<UiGlobalTransform>(root)?.translation
-            + viewport.size() * 0.5)
-            * scale;
-        Some((root, text, point, size * scale, viewport.size() * scale))
+        let scale = world
+            .get::<ComputedUiRenderTargetInfo>(root)
+            .filter(|target| target.physical_size() != UVec2::ZERO)
+            .map_or(viewport.inverse_scale_factor(), |target| {
+                target.scale_factor().recip()
+            });
+        let ui_scale = world.get_resource::<UiScale>().map_or(1.0, |scale| scale.0);
+        let bounds = crate::topology::presentation::bounds(world, target)
+            .map(|bounds| Rect::from_corners(bounds.min / ui_scale, bounds.max / ui_scale))
+            .unwrap_or_else(|| Rect::from_corners(a * scale, b * scale));
+        let origin =
+            (world.get::<UiGlobalTransform>(root)?.translation - viewport.size() * 0.5) * scale;
+        Some((
+            root,
+            text,
+            bounds.center() - origin,
+            bounds.size(),
+            viewport.size() * scale,
+        ))
     });
     let Some((root, text, point, size, viewport)) = content else {
         world.resource_mut::<Hints>().shown = None;
@@ -706,5 +754,99 @@ pub(crate) mod tests {
         atlas_contains_every_icon_and_straight_alpha_for_tinting,
         keyboard_labels_show_and_hide_without_intercepting_pointer_input,
         hover_events_show_a_square_timeout_without_reopening_and_reenter_reuses_it,
+        duplicate_button_labels_are_suppressed_and_dynamic_labels_are_checked,
+        tooltips_are_centered_above_the_button_at_display_scale,
+    }
+
+    #[cfg_attr(test, test)]
+    fn duplicate_button_labels_are_suppressed_and_dynamic_labels_are_checked() {
+        let mut app = app();
+        let root = app
+            .world_mut()
+            .spawn((
+                BoxRoot,
+                ComputedNode {
+                    size: Vec2::new(800.0, 640.0),
+                    ..default()
+                },
+            ))
+            .id();
+        let button = app
+            .world_mut()
+            .spawn((
+                bevy::ui_widgets::Button,
+                Tooltip("Save changes".into()),
+                ComputedNode {
+                    size: Vec2::splat(40.0),
+                    ..default()
+                },
+                ChildOf(root),
+            ))
+            .id();
+        let label = app
+            .world_mut()
+            .spawn((Text::new("Save "), ChildOf(button)))
+            .id();
+        let span = app
+            .world_mut()
+            .spawn((TextSpan::new("changes"), ChildOf(label)))
+            .id();
+        app.world_mut().trigger(SandHoveredOn { entity: button });
+        app.update();
+        assert!(app.world().resource::<Hints>().tip.is_none());
+        app.world_mut().get_mut::<TextSpan>(span).unwrap().0 = "all".into();
+        app.update();
+        let tip = app.world().resource::<Hints>().tip.unwrap().1;
+        assert_eq!(app.world().get::<Text>(tip).unwrap().0, "Save changes");
+        app.world_mut().get_mut::<TextSpan>(span).unwrap().0 = "changes".into();
+        app.update();
+        assert_eq!(app.world().get::<Node>(tip).unwrap().display, Display::None);
+    }
+
+    #[cfg_attr(test, test)]
+    fn tooltips_are_centered_above_the_button_at_display_scale() {
+        let mut app = app();
+        let root = app
+            .world_mut()
+            .spawn((
+                BoxRoot,
+                ComputedNode {
+                    size: Vec2::new(1600.0, 1280.0),
+                    inverse_scale_factor: 0.5,
+                    ..default()
+                },
+                UiGlobalTransform::from(bevy::math::Affine2::from_translation(Vec2::new(
+                    800.0, 640.0,
+                ))),
+            ))
+            .id();
+        let button = app
+            .world_mut()
+            .spawn((
+                IconButton::new(Icon::Plus, "Add"),
+                ChildOf(root),
+                ComputedNode {
+                    size: Vec2::splat(80.0),
+                    inverse_scale_factor: 0.5,
+                    ..default()
+                },
+                UiGlobalTransform::from(bevy::math::Affine2::from_translation(Vec2::new(
+                    1200.0, 1100.0,
+                ))),
+            ))
+            .id();
+        app.update();
+        app.world_mut().trigger(SandHoveredOn { entity: button });
+        app.update();
+        let tip = app.world().resource::<Hints>().tip.unwrap().1;
+        app.world_mut().entity_mut(tip).insert(ComputedNode {
+            size: Vec2::new(160.0, 64.0),
+            inverse_scale_factor: 0.5,
+            ..default()
+        });
+        app.update();
+        let node = app.world().get::<Node>(tip).unwrap();
+        assert_eq!(node.left, px(560));
+        assert_eq!(node.top, px(490));
     }
 }

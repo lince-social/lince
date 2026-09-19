@@ -37,9 +37,15 @@ impl Plugin for AreaInputPlugin {
 }
 
 pub(crate) fn canvas_point(world: &World, root: Entity, screen: Vec2) -> Option<DVec2> {
-    if world.get::<crate::topology::presentation::SpatialRoot>(root).is_some() {
-        let plane = world.get::<crate::topology::view::View>(root).map_or(0.0, |v| v.plane);
-        return crate::topology::input::plane_point(world, root, screen, plane).map(|p| DVec2::new(p.x, p.z));
+    if world
+        .get::<crate::topology::presentation::SpatialRoot>(root)
+        .is_some()
+    {
+        let plane = world
+            .get::<crate::topology::view::View>(root)
+            .map_or(0.0, |v| v.plane);
+        return crate::topology::input::plane_point(world, root, screen, plane)
+            .map(|p| DVec2::new(p.x, p.z));
     }
     let view = world.get::<CanvasView>(root)?;
     let node = world.get::<ComputedNode>(root)?;
@@ -86,11 +92,9 @@ fn hit_areas(world: &mut World) {
                 .map(|(entity, hit)| (*entity, hit.clone()))
         });
     let Some((root, hit)) = hit else { return };
-    if world.get::<crate::topology::presentation::SpatialRoot>(root).is_some() { return; }
-    if !world.get::<EditMode>(root).is_some_and(|mode| mode.enabled)
-        || world
-            .get::<AreaEditor>(root)
-            .is_some_and(|editor| editor.tool.is_some())
+    if world
+        .get::<crate::topology::presentation::SpatialRoot>(root)
+        .is_some()
     {
         return;
     }
@@ -198,6 +202,12 @@ fn input(
     for event in cursor.read_mut(&mut events) {
         if event.pointer_id != PointerId::Mouse {
             continue;
+        }
+        if matches!(event.action, PointerAction::Press(PointerButton::Secondary))
+            && let Some(root) = world.resource_mut::<Gesture>().0.take()
+            && let Some(mut editor) = world.get_mut::<AreaEditor>(root)
+        {
+            editor.cancel();
         }
         let active = world.resource::<Gesture>().0;
         if active.is_none()

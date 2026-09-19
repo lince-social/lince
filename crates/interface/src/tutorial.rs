@@ -1,6 +1,10 @@
+mod guide;
+mod highlight;
 mod observation;
 pub(crate) mod tests;
 mod view;
+
+pub use highlight::TutorialHighlight;
 
 use crate::{
     actions::Action,
@@ -19,11 +23,21 @@ impl Plugin for TutorialPlugin {
             Update,
             update.after(crate::protein_area::UpdateProteinAreas),
         );
+        app.add_systems(
+            PostUpdate,
+            highlight::position.after(bevy::ui::UiSystems::PostLayout),
+        );
     }
 }
 
 #[derive(Component)]
 pub struct Tutorial;
+
+#[derive(Component, Clone, Debug, PartialEq, Eq)]
+pub(crate) enum TutorialField {
+    Query(Entity, String),
+    Quantity(Entity, bool),
+}
 
 #[derive(Component)]
 struct Session {
@@ -189,6 +203,7 @@ impl Action for Command {
         };
         if matches!(self, Self::Close) {
             world.get_mut::<Session>(root).unwrap().hidden = true;
+            highlight::clear(world, root);
             return;
         }
         if world.get::<Workspaces>(root).unwrap().active != session.workspace {
@@ -510,6 +525,7 @@ fn update(
             node.display = display;
         }
         if !visible {
+            highlight::clear(world, root);
             continue;
         }
         let result = if world.get::<Session>(root).unwrap().completed {
@@ -518,6 +534,7 @@ fn update(
             verify(world, root)
         };
         let disabled = world.get::<bevy::ui::InteractionDisabled>(next).is_some();
+        guide::update(world, root, result.is_ok());
         if result.is_ok() && disabled {
             world
                 .entity_mut(next)

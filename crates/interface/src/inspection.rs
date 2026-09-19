@@ -17,6 +17,7 @@ use std::collections::HashSet;
 
 #[derive(Component, Clone)]
 pub struct Inspection {
+    pub click: bool,
     pub hover: bool,
     pub contours: bool,
     pub events: bool,
@@ -29,7 +30,8 @@ pub struct Inspection {
 impl Default for Inspection {
     fn default() -> Self {
         Self {
-            hover: true,
+            click: false,
+            hover: false,
             contours: false,
             events: false,
             hidden: false,
@@ -76,9 +78,15 @@ impl Action for Setting {
     fn apply(&self, world: &mut World, _: Entity) {
         if let Some(mut state) = world.get_mut::<Inspection>(self.root) {
             match self.index {
-                0 => state.hover = !state.hover,
-                1 => state.contours = !state.contours,
-                2 => state.events = !state.events,
+                0 => {
+                    state.click = !state.click;
+                    if !state.click {
+                        state.selected = None;
+                    }
+                }
+                1 => state.hover = !state.hover,
+                2 => state.contours = !state.contours,
+                3 => state.events = !state.events,
                 _ => state.hidden = !state.hidden,
             }
         }
@@ -125,13 +133,7 @@ pub(crate) fn controls(world: &mut World, root: Entity, panel: Entity) {
             ChildOf(panel),
         ))
         .id();
-    crate::edit_mode::label(
-        world,
-        panel,
-        "Ctrl + right-drag selects Sands. Group and Ungroup are beside the selection.",
-        12.0,
-    );
-    for (index, name) in ["Hover", "Groups", "Events", "Hidden"]
+    for (index, name) in ["Click", "Hover", "Groups", "Events", "Hidden"]
         .into_iter()
         .enumerate()
     {
@@ -239,7 +241,7 @@ fn input(
             state.suppressed = None;
         }
         state.hovered = candidate.filter(|entity| Some(*entity) != state.suppressed);
-        if pressed && !control && chain.contains(&root) {
+        if state.click && pressed && !control && chain.contains(&root) {
             state.selected = candidate;
             state.suppressed = None;
         }
@@ -255,8 +257,14 @@ fn settings(
         let Ok(state) = states.get(setting.root) else {
             continue;
         };
-        let enabled = [state.hover, state.contours, state.events, state.hidden][setting.index];
-        let name = ["Hover", "Groups", "Events", "Hidden"][setting.index];
+        let enabled = [
+            state.click,
+            state.hover,
+            state.contours,
+            state.events,
+            state.hidden,
+        ][setting.index];
+        let name = ["Click", "Hover", "Groups", "Events", "Hidden"][setting.index];
         let value = format!("{name}: {}", if enabled { "on" } else { "off" });
         for child in children {
             if let Ok(mut text) = labels.get_mut(*child)
@@ -360,10 +368,21 @@ fn preview(world: &World, entity: Entity) -> String {
 }
 
 pub(crate) fn bounds(world: &World, entity: Entity) -> Option<Rect> {
-    if world.get::<crate::topology::presentation::SpatialRoot>(entity).is_some() {
-        return world.get::<Camera>(world.get_resource::<crate::topology::presentation::SceneCamera>()?.0)?.logical_viewport_rect();
+    if world
+        .get::<crate::topology::presentation::SpatialRoot>(entity)
+        .is_some()
+    {
+        return world
+            .get::<Camera>(
+                world
+                    .get_resource::<crate::topology::presentation::SceneCamera>()?
+                    .0,
+            )?
+            .logical_viewport_rect();
     }
-    if let Some(bounds) = crate::topology::presentation::bounds(world, entity) { return Some(bounds); }
+    if let Some(bounds) = crate::topology::presentation::bounds(world, entity) {
+        return Some(bounds);
+    }
     let computed = world.get::<ComputedNode>(entity)?;
     let transform = world.get::<UiGlobalTransform>(entity)?;
     let scale = computed.inverse_scale_factor();
@@ -456,7 +475,6 @@ pub(crate) fn edit_connection(
         EditAction::CreateWorkspace => "Workspace Clicked Add",
         EditAction::TogglePhysics => "Workspace Physics Clicked Toggle",
         EditAction::ReloadWorkspaceSettings => "Workspace Settings Clicked Reload",
-        EditAction::DisarmAreaChanges => "Area Record Changes Turned Off",
         EditAction::SwitchWorkspace(_) => "Workspace Clicked Switch",
         EditAction::RemoveWorkspace(_) => "Workspace Clicked Confirm Removal",
         EditAction::ConfirmRemoveWorkspace => "Workspace Clicked Remove",
@@ -509,7 +527,7 @@ fn draw(world: &mut World) {
     for (root, state) in roots {
         let focus = state
             .selected
-            .filter(|entity| world.get_entity(*entity).is_ok())
+            .filter(|entity| state.click && world.get_entity(*entity).is_ok())
             .or(if state.hover { state.hovered } else { None });
         let related = focus
             .map(|entity| family(world, root, entity))
@@ -728,6 +746,61 @@ fn draw(world: &mut World) {
 
 pub(crate) mod tests {
     use super::*;
+    use bevy::{camera::NormalizedRenderTarget, picking::backend::HitData};
+
+    #[cfg_attr(test, test)]
+    fn inspection_defaults_are_off_and_click_controls_selection() {
+        let mut app = App::new();
+        crate::laboratory::isolate(app.world_mut());
+        app.init_resource::<Assets<Font>>()
+            .init_resource::<Typography>()
+            .init_resource::<bevy::input_focus::InputFocus>()
+            .init_resource::<HoverMap>()
+            .add_message::<PointerInput>()
+            .add_plugins((
+                crate::workspace::WorkspacePlugin,
+                crate::edit_mode::EditModePlugin,
+                InspectionPlugin,
+            ));
+        let root = app.world_mut().spawn(crate::container::BoxRoot).id();
+        app.update();
+        EditAction::Open.apply(app.world_mut(), root);
+        let target = app.world_mut().spawn((Square, ChildOf(root))).id();
+        app.world_mut()
+            .resource_mut::<HoverMap>()
+            .entry(PointerId::Mouse)
+            .or_default()
+            .insert(target, HitData::new(root, 0.0, None, None));
+        let press = PointerInput::new(
+            PointerId::Mouse,
+            bevy::picking::pointer::Location {
+                target: NormalizedRenderTarget::None {
+                    width: 800,
+                    height: 600,
+                },
+                position: Vec2::ZERO,
+            },
+            PointerAction::Press(PointerButton::Primary),
+        );
+
+        let state = app.world().get::<Inspection>(root).unwrap();
+        assert!(!state.click);
+        assert!(!state.hover);
+        assert!(!state.contours);
+        assert!(!state.events);
+        assert!(!state.hidden);
+        app.world_mut().write_message(press.clone());
+        app.update();
+        assert_eq!(app.world().get::<Inspection>(root).unwrap().selected, None);
+
+        app.world_mut().get_mut::<Inspection>(root).unwrap().click = true;
+        app.world_mut().write_message(press);
+        app.update();
+        assert_eq!(
+            app.world().get::<Inspection>(root).unwrap().selected,
+            Some(target)
+        );
+    }
 
     #[cfg_attr(test, test)]
     fn built_in_inspection_opt_out_is_inherited_without_hiding_authored_sands() {
@@ -846,10 +919,71 @@ pub(crate) mod tests {
     }
 
     crate::laboratory_cases! {
+        inspection_defaults_are_off_and_click_controls_selection,
         built_in_inspection_opt_out_is_inherited_without_hiding_authored_sands,
         selection_includes_nested_castles_and_siblings_but_not_other_groups,
         action_sequences_describe_their_real_targets_without_executing,
         disconnected_boxes_do_not_appear_as_working_event_routes,
         hidden_preview_reads_descendants_without_revealing_them,
+        click_off_hides_inspection_even_when_canvas_selection_sets_a_target,
+    }
+
+    #[cfg_attr(test, test)]
+    fn click_off_hides_inspection_even_when_canvas_selection_sets_a_target() {
+        let (mut app, root) = crate::edit_mode::tests::fixture();
+        EditAction::Open.apply(app.world_mut(), root);
+        let world = app.world_mut();
+        world.init_resource::<Drawing>();
+        let sand = world
+            .spawn((
+                Square,
+                ChildOf(root),
+                ComputedNode {
+                    size: Vec2::splat(100.0),
+                    ..default()
+                },
+                crate::icons::Tooltip("A Sand tooltip".into()),
+            ))
+            .id();
+        let button = world
+            .spawn((
+                Square,
+                ChildOf(sand),
+                ComputedNode {
+                    size: Vec2::splat(40.0),
+                    ..default()
+                },
+                EventConnections(vec![Connection {
+                    target: sand,
+                    name: "Button Clicked".into(),
+                }]),
+            ))
+            .id();
+        world.get_mut::<Inspection>(root).unwrap().selected = Some(sand);
+        draw(world);
+        assert!(world.resource::<Drawing>().marks.is_empty());
+        let click = Setting { root, index: 0 };
+        click.apply(world, root);
+        draw(world);
+        assert!(
+            world
+                .resource::<Drawing>()
+                .marks
+                .iter()
+                .any(|mark| matches!(mark, Mark::Line(..)))
+        );
+        assert!(!world.resource::<Drawing>().entities.is_empty());
+        click.apply(world, root);
+        world.get_mut::<Inspection>(root).unwrap().selected = Some(button);
+        draw(world);
+        assert!(world.resource::<Drawing>().marks.is_empty());
+        assert!(world.resource::<Drawing>().entities.is_empty());
+        world.get_mut::<Inspection>(root).unwrap().hover = true;
+        world.get_mut::<Inspection>(root).unwrap().hovered = Some(sand);
+        draw(world);
+        assert!(!world.resource::<Drawing>().marks.is_empty());
+        world.get_mut::<Inspection>(root).unwrap().hover = false;
+        draw(world);
+        assert!(world.resource::<Drawing>().marks.is_empty());
     }
 }

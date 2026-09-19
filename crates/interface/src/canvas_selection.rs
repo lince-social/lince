@@ -648,9 +648,10 @@ pub(crate) fn transform_members(
     if !eligible(world, root, entity) {
         return;
     }
-    if world
+    if (world
         .get::<crate::topology::presentation::SpatialRoot>(root)
         .is_some()
+        || before.size == after.size)
         && world
             .get::<crate::topology::groups::GroupPose>(entity)
             .is_some()

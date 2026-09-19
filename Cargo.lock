@@ -5278,6 +5278,7 @@ dependencies = [
  "bevy",
  "chrono",
  "engine",
+ "fontique",
  "getrandom 0.4.3",
  "image",
  "ksni",

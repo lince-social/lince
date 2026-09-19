@@ -91,6 +91,18 @@ fn exercise(world: &mut World) {
             click(world, "Tutorial: Areas of Influence")
         }
         2 => {
+            if highlighted(world, "Show controls") {
+                let corner = world
+                    .query::<(Entity, &bevy::a11y::AccessibilityNode)>()
+                    .iter(world)
+                    .find(|(_, node)| node.label() == Some("Show controls"))
+                    .unwrap()
+                    .0;
+                world
+                    .resource_mut::<bevy::input_focus::InputFocus>()
+                    .set(corner, bevy::input_focus::FocusCause::Navigated);
+                return;
+            }
             assert_eq!(
                 world
                     .query::<&lince_interface::workspace::Workspaces>()
@@ -107,11 +119,20 @@ fn exercise(world: &mut World) {
                     .count(),
                 0
             );
-            click(world, "Edit mode") && click(world, "Areas of influence")
+            highlighted(world, "Edit mode") && click(world, "Edit mode")
         }
-        3 => click(world, "Add square"),
-        4 => click(world, "Make this a Protein Area"),
+        3 => highlighted(world, "Areas of influence") && click(world, "Areas of influence"),
+        4 => highlighted(world, "Add square") && click(world, "Add square"),
         5 => {
+            highlighted(world, "Make this a Protein Area")
+                && click(world, "Make this a Protein Area")
+        }
+        6 => {
+            assert!(highlighted(
+                world,
+                "Edit the query in a Protein Castle; changes return to this Area"
+            ));
+            let height = world.query::<&Window>().single(world).unwrap().height();
             let (shell, geometry, transform) = world
                 .query::<(
                     &lince_interface::fiote::Fiote,
@@ -122,7 +143,11 @@ fn exercise(world: &mut World) {
                 .unwrap();
             assert!(geometry.size().x > 350.0 && geometry.size().y > 100.0);
             let bubble = world.get::<ComputedNode>(shell.bubble).unwrap();
-            assert!(bubble.size().x < 430.0 && bubble.size().y < 650.0);
+            let size = bubble.size() * bubble.inverse_scale_factor();
+            assert!(
+                size.x < 430.0 && size.y <= height * 0.72 + 34.0,
+                "Tutorial bubble is too large: {size:?}, window height {height}"
+            );
             let right = transform.translation.x + geometry.size().x * 0.5;
             let mode = world
                 .query::<&lince_interface::edit_mode::EditMode>()
@@ -151,6 +176,40 @@ fn exercise(world: &mut World) {
         progress.phase += 1;
         progress.wait = 0;
     }
+}
+
+fn highlighted(world: &mut World, title: &str) -> bool {
+    let outline = world
+        .query::<(
+            &lince_interface::tutorial::TutorialHighlight,
+            &Node,
+            &ComputedNode,
+            &UiGlobalTransform,
+            &Pickable,
+        )>()
+        .iter(world)
+        .find(|(highlight, _, _, _, _)| {
+            world
+                .get::<Tooltip>(highlight.target)
+                .is_some_and(|tip| tip.0 == title)
+                || world
+                    .get::<bevy::a11y::AccessibilityNode>(highlight.target)
+                    .is_some_and(|node| node.label() == Some(title))
+        });
+    let Some((highlight, node, geometry, position, pickable)) = outline else {
+        return false;
+    };
+    if geometry.size().min_element() <= 0.0 {
+        return false;
+    }
+    assert_eq!(node.display, Display::Flex);
+    assert!(!pickable.is_hoverable && !pickable.should_block_lower);
+    let target = world.get::<UiGlobalTransform>(highlight.target).unwrap();
+    assert!(
+        (target.translation - position.translation).length() < 5.0,
+        "Highlight must follow its real control"
+    );
+    true
 }
 
 #[tokio::main]

@@ -54,7 +54,7 @@ fn growing_nested_records_keep_valid_layout_and_expand_column_content() {
     );
 }
 
-fn fixture() -> (App, Entity, Entity) {
+pub(super) fn fixture() -> (App, Entity, Entity) {
     let mut app = App::new();
     crate::laboratory::isolate(app.world_mut());
     app.add_plugins(MinimalPlugins)
@@ -79,7 +79,192 @@ fn fixture() -> (App, Entity, Entity) {
     (app, root, owner)
 }
 
-async fn until(app: &mut App, predicate: impl Fn(&World) -> bool) {
+#[test]
+fn record_castle_scrolls_and_moves_with_its_source_without_layout_drift() {
+    use crate::{canvas::CanvasItem, canvas_selection::SandGroup, topology};
+    use bevy::math::{DQuat, DVec3};
+    let (mut app, _, owner) = fixture();
+    let config = crate::full_record::config("record", Source::Local);
+    let restored: Config = serde_json::from_str(&serde_json::to_string(&config).unwrap()).unwrap();
+    assert_eq!(restored, config);
+    assert!(restored.valid());
+    app.world_mut().resource_mut::<Runtime>().areas.insert(
+        owner,
+        State {
+            applied: Some(config),
+            data: vec![json!({"uid":"record", "head":"Title", "body":"Description"})],
+            ready: true,
+            dirty: true,
+            ..default()
+        },
+    );
+    rows::reconcile(app.world_mut(), owner);
+    rows::layout(app.world_mut());
+    let row = app.world().resource::<Runtime>().areas[&owner].row_entities["record"];
+    assert!(
+        app.world()
+            .get::<crate::scroll_sand::ScrollSand>(row)
+            .is_some()
+    );
+    assert_eq!(
+        app.world().get::<Node>(row).unwrap().overflow,
+        Overflow::scroll_y()
+    );
+    assert_eq!(app.world().get::<CanvasItem>(row).unwrap().size.y, 640.0);
+    assert_eq!(
+        app.world().get::<SandGroup>(owner),
+        app.world().get::<SandGroup>(row)
+    );
+    assert!(app.world().get::<SandGroup>(owner).is_some());
+    let offset = topology::position(app.world(), row).unwrap()
+        - topology::position(app.world(), owner).unwrap();
+    for target in [owner, row, owner, row] {
+        let before = topology::position(app.world(), owner).unwrap();
+        let delta = DVec3::new(40.0, 0.0, -20.0);
+        topology::groups::transform(app.world_mut(), target, delta, DQuat::IDENTITY);
+        assert_eq!(
+            topology::position(app.world(), owner).unwrap(),
+            before + delta
+        );
+        assert_eq!(
+            topology::position(app.world(), row).unwrap(),
+            before + delta + offset
+        );
+        rows::layout(app.world_mut());
+        assert_eq!(
+            topology::position(app.world(), row).unwrap(),
+            before + delta + offset
+        );
+    }
+    for target in [owner, row] {
+        let before = *app.world().get::<CanvasItem>(target).unwrap();
+        let origin = topology::position(app.world(), owner).unwrap();
+        let after = CanvasItem {
+            position: before.position + DVec2::new(35.0, 20.0),
+            ..before
+        };
+        *app.world_mut().get_mut::<CanvasItem>(target).unwrap() = after;
+        crate::canvas_selection::transform_members(app.world_mut(), target, before, after);
+        assert_eq!(
+            topology::position(app.world(), owner).unwrap(),
+            origin + DVec3::new(35.0, 0.0, 20.0)
+        );
+        assert_eq!(
+            app.world().get::<InfluenceArea>(owner).unwrap().center,
+            [origin.x + 35.0, origin.z + 20.0]
+        );
+        rows::layout(app.world_mut());
+        assert_eq!(
+            topology::position(app.world(), row).unwrap(),
+            origin + DVec3::new(35.0, 0.0, 20.0) + offset
+        );
+    }
+    app.world_mut().get_mut::<ScrollPosition>(row).unwrap().0.y = 120.0;
+    {
+        let mut runtime = app.world_mut().resource_mut::<Runtime>();
+        let state = runtime.areas.get_mut(&owner).unwrap();
+        state.data[0]["head"] = json!("Updated");
+        state.dirty = true;
+    }
+    rows::reconcile(app.world_mut(), owner);
+    assert_eq!(app.world().get::<ScrollPosition>(row).unwrap().0.y, 120.0);
+}
+
+#[test]
+fn property_autosave_keeps_newer_edits_and_does_not_repeat_failed_requests() {
+    use bevy::text::EditableText;
+    let (mut app, _, owner) = fixture();
+    let config = Config {
+        bindings: vec![Binding {
+            editable: true,
+            ..Binding::new("slug")
+        }],
+        ..default()
+    };
+    app.world_mut().resource_mut::<Runtime>().areas.insert(
+        owner,
+        State {
+            applied: Some(config),
+            data: vec![json!({"uid":"record", "slug":"original"})],
+            ready: true,
+            dirty: true,
+            ..default()
+        },
+    );
+    rows::reconcile(app.world_mut(), owner);
+    let editor = app
+        .world_mut()
+        .query_filtered::<Entity, With<rows::PropertyEditor>>()
+        .single(app.world())
+        .unwrap();
+    app.world_mut()
+        .resource_mut::<bevy::input_focus::InputFocus>()
+        .set(editor, bevy::input_focus::FocusCause::Pressed);
+    app.world_mut()
+        .get_mut::<EditableText>(editor)
+        .unwrap()
+        .editor
+        .set_text("first");
+    rows::commit_edits(app.world_mut());
+    assert_eq!(
+        app.world().resource::<Runtime>().areas[&owner]
+            .pending
+            .len(),
+        1
+    );
+    app.world_mut()
+        .get_mut::<EditableText>(editor)
+        .unwrap()
+        .editor
+        .set_text("second");
+    rows::commit_edits(app.world_mut());
+    assert_eq!(
+        app.world().resource::<Runtime>().areas[&owner]
+            .pending
+            .len(),
+        1
+    );
+    rows::action_finished(app.world_mut(), editor, None);
+    rows::commit_edits(app.world_mut());
+    assert_eq!(
+        app.world().resource::<Runtime>().areas[&owner]
+            .pending
+            .len(),
+        2
+    );
+    rows::action_finished(app.world_mut(), editor, Some("Permission denied".into()));
+    for _ in 0..10 {
+        rows::commit_edits(app.world_mut());
+    }
+    assert_eq!(
+        app.world().resource::<Runtime>().areas[&owner]
+            .pending
+            .len(),
+        2
+    );
+    assert_eq!(
+        app.world()
+            .get::<EditableText>(editor)
+            .unwrap()
+            .value()
+            .to_string(),
+        "second"
+    );
+    app.world_mut()
+        .get_mut::<EditableText>(editor)
+        .unwrap()
+        .editor
+        .set_text("third");
+    rows::commit_edits(app.world_mut());
+    assert_eq!(
+        app.world().resource::<Runtime>().areas[&owner]
+            .pending
+            .len(),
+        3
+    );
+}
+
+pub(super) async fn until(app: &mut App, predicate: impl Fn(&World) -> bool) {
     tokio::time::timeout(std::time::Duration::from_secs(10), async {
         loop {
             app.update();
@@ -209,7 +394,6 @@ async fn area_reads_real_records_preserves_entities_edits_and_deletes_through_ac
         .unwrap()
         .editor
         .set_text("Renamed");
-    rows::save_field(app.world_mut(), editor);
     until(&mut app, |world| {
         world
             .get::<crate::area::RecordProperties>(row)
@@ -557,6 +741,7 @@ async fn relationship_and_work_log_controls_apply_backend_actions() {
     use crate::actions::Action as _;
     use property_actions::{Command, Form};
     let (mut app, _, owner) = fixture();
+    app.init_resource::<ButtonInput<KeyCode>>();
     let engine = std::sync::Arc::new(engine::Engine::open_memory().await.unwrap());
     let mut ids = Vec::new();
     for (head, kind) in [
@@ -634,27 +819,20 @@ async fn relationship_and_work_log_controls_apply_backend_actions() {
             .map(|(entity, _)| entity)
             .unwrap()
     };
-    let form = find(app.world_mut(), "assignees");
-    let field = app.world().get::<Form>(form).unwrap().fields[0].0;
-    app.world_mut()
-        .get_mut::<bevy::text::EditableText>(field)
-        .unwrap()
-        .editor
-        .set_text(&ids[1]);
-    Command::AddRelation.apply(app.world_mut(), form);
+    let field = app
+        .world_mut()
+        .query_filtered::<Entity, With<assignees::Field>>()
+        .iter(app.world())
+        .next()
+        .unwrap();
+    assignees::Select(ids[1].clone()).apply(app.world_mut(), field);
     until(&mut app, |world| {
         world.resource::<Runtime>().areas[&owner].data[0]["assignees"]
             .as_array()
             .is_some_and(|values| values.len() == 1)
     })
     .await;
-    let assertion =
-        app.world().resource::<Runtime>().areas[&owner].data[0]["assignees"][0]["assertion"]
-            .as_str()
-            .unwrap()
-            .to_string();
-    let form = find(app.world_mut(), "assignees");
-    Command::RemoveRelation(assertion).apply(app.world_mut(), form);
+    assignees::Select(ids[1].clone()).apply(app.world_mut(), field);
     until(&mut app, |world| {
         world.resource::<Runtime>().areas[&owner].data[0]["assignees"] == json!([])
     })
@@ -666,7 +844,16 @@ async fn relationship_and_work_log_controls_apply_backend_actions() {
         .unwrap()
         .editor
         .set_text("planned");
-    Command::AddRelation.apply(app.world_mut(), form);
+    app.world_mut()
+        .resource_mut::<bevy::input_focus::InputFocus>()
+        .set(field, bevy::input_focus::FocusCause::Pressed);
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::Enter);
+    app.update();
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .reset_all();
     until(&mut app, |world| {
         world.resource::<Runtime>().areas[&owner].data[0]["assertions"]
             .as_array()
@@ -685,7 +872,16 @@ async fn relationship_and_work_log_controls_apply_backend_actions() {
             .editor
             .set_text(value);
     }
-    Command::AddLog.apply(app.world_mut(), form);
+    app.world_mut()
+        .resource_mut::<bevy::input_focus::InputFocus>()
+        .set(fields[1].0, bevy::input_focus::FocusCause::Pressed);
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .press(KeyCode::Enter);
+    app.update();
+    app.world_mut()
+        .resource_mut::<ButtonInput<KeyCode>>()
+        .reset_all();
     until(&mut app, |world| {
         world.resource::<Runtime>().areas[&owner].data[0]["work_logs"]
             .as_array()
@@ -693,6 +889,18 @@ async fn relationship_and_work_log_controls_apply_backend_actions() {
     })
     .await;
     let form = find(app.world_mut(), "work_logs");
+    let field = app.world().get::<Form>(form).unwrap().fields[1].0;
+    app.world_mut()
+        .get_mut::<bevy::text::EditableText>(field)
+        .unwrap()
+        .editor
+        .set_text("2026-09-13T11:00:00Z");
+    until(&mut app, |world| {
+        world.resource::<Runtime>().areas[&owner].data[0]["work_logs"][0]["end"]
+            == "2026-09-13T11:00:00Z"
+    })
+    .await;
+    assert_eq!(app.world().get::<Form>(form).unwrap().fields[1].0, field);
     Command::RemoveLog.apply(app.world_mut(), form);
     until(&mut app, |world| {
         world.resource::<Runtime>().areas[&owner].data[0]["work_logs"] == json!([])
@@ -1542,7 +1750,11 @@ fn thread_history_and_deletion_stay_scoped_to_the_bound_record() {
     world.init_resource::<Runtime>();
     let area = world.spawn_empty().id();
     let editor = world.spawn_empty().id();
-    let binding = RecordBinding { area, uid: "record".into(), source: Source::Local };
+    let binding = RecordBinding {
+        area,
+        uid: "record".into(),
+        source: Source::Local,
+    };
     world.resource_mut::<Runtime>().areas.insert(area, State {
         ready: true,
         subscription: Some("thread-feed".into()),
@@ -1553,15 +1765,51 @@ fn thread_history_and_deletion_stay_scoped_to_the_bound_record() {
     assert!(load_thread_messages(&mut world, &binding, "unrelated", 100).is_err());
     load_thread_messages(&mut world, &binding, "thread", 100).unwrap();
     let state = &world.resource::<Runtime>().areas[&area];
-    let ClientMessage::Subscribe { id, protein } = state.pending.front().unwrap() else { panic!("expected subscription") };
+    let ClientMessage::Subscribe { id, protein } = state.pending.front().unwrap() else {
+        panic!("expected subscription")
+    };
     assert_eq!(id, "thread-feed");
-    assert_eq!(protein.include.threads.as_ref().unwrap().message_limits["thread"], 100);
+    assert_eq!(
+        protein.include.threads.as_ref().unwrap().message_limits["thread"],
+        100
+    );
     assert_eq!(state.data[0]["uid"], "record");
-    assert!(execute(&mut world, &binding, editor, engine::actions::Action::DeleteRecord { target: "unrelated".into() }).is_err());
-    execute(&mut world, &binding, editor, engine::actions::Action::DeleteRecord { target: "message".into() }).unwrap();
-    assert!(matches!(world.resource::<Runtime>().areas[&area].pending.back(), Some(ClientMessage::Act { action: engine::actions::Action::DeleteRecord { target }, .. }) if target == "message"));
-    receive(&mut world, area, ServerMessage::Error { id: "thread-feed".into(), message: "History unavailable".into(), code: None });
-    assert_eq!(world.resource::<Runtime>().areas[&area].data[0]["uid"], "record");
+    assert!(
+        execute(
+            &mut world,
+            &binding,
+            editor,
+            engine::actions::Action::DeleteRecord {
+                target: "unrelated".into()
+            }
+        )
+        .is_err()
+    );
+    execute(
+        &mut world,
+        &binding,
+        editor,
+        engine::actions::Action::DeleteRecord {
+            target: "message".into(),
+        },
+    )
+    .unwrap();
+    assert!(
+        matches!(world.resource::<Runtime>().areas[&area].pending.back(), Some(ClientMessage::Act { action: engine::actions::Action::DeleteRecord { target }, .. }) if target == "message")
+    );
+    receive(
+        &mut world,
+        area,
+        ServerMessage::Error {
+            id: "thread-feed".into(),
+            message: "History unavailable".into(),
+            code: None,
+        },
+    );
+    assert_eq!(
+        world.resource::<Runtime>().areas[&area].data[0]["uid"],
+        "record"
+    );
     assert_eq!(thread_load_error(&world, area), Some("History unavailable"));
     load_thread_messages(&mut world, &binding, "thread", 100).unwrap();
     assert_eq!(thread_load_error(&world, area), None);

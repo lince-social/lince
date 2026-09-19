@@ -114,6 +114,7 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity, entity: Ent
                 valid: true,
             });
             if matches!(property, Property::Quantity) {
+                world.entity_mut(input).insert(crate::tutorial::TutorialField::Quantity(entity, enter));
                 let row = crate::area_panel::row(world, panel);
                 for operation in engine::area_transition::QuantityOperation::ALL {
                     let button = world

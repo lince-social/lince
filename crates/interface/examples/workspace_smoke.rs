@@ -131,7 +131,6 @@ fn exercise(world: &mut World) {
         }
         34 => activate(world, EditAction::Store),
         38 => {
-            edit(world, EditField::StartingText, "A note from the Sand store");
             activate(world, EditAction::AddSand(SandKind::EditableText));
         }
         44 => {
@@ -146,7 +145,7 @@ fn exercise(world: &mut World) {
                     .unwrap()
                     .value()
                     .to_string(),
-                "A note from the Sand store"
+                "Editable text"
             );
             world.resource_mut::<Exercise>().note = Some(entity);
             world

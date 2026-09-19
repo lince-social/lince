@@ -69,13 +69,14 @@ fn row(world: &mut World, parent: Entity) -> Entity {
 }
 
 pub(crate) fn store_entry(world: &mut World, root: Entity, parent: Entity) {
-    button(
+    crate::sand_store::castle_entry(
         world,
-        parent,
         root,
+        parent,
         "Calendar",
-        "Add a Calendar Castle",
+        "Browse dates and plan Records.",
         Command::Create,
+        |world, root| spawn(world, root, 1, DVec2::ZERO, Calendar::default()),
     );
 }
 

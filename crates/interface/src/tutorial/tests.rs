@@ -158,6 +158,7 @@ async fn tutorial_checks_real_protein_and_confirmed_entry_exit_changes() {
         crate::protein_castle::ProteinCastlePlugin,
         crate::area_mutation::AreaMutationPlugin,
         crate::edit_mode::EditModePlugin,
+        crate::canvas_controls::CanvasControlsPlugin,
         TutorialPlugin,
     ))
     .init_resource::<Assets<Font>>()
@@ -183,6 +184,11 @@ async fn tutorial_checks_real_protein_and_confirmed_entry_exit_changes() {
     click(app.world_mut(), root, "Add square");
     let existing = selected(app.world(), root);
     let before = app.world().get::<InfluenceArea>(existing).unwrap().clone();
+    crate::edit_mode::EditAction::Credits.apply(app.world_mut(), root);
+    crate::edit_mode::EditAction::Close.apply(app.world_mut(), root);
+    app.world_mut()
+        .resource_mut::<bevy::input_focus::InputFocus>()
+        .clear();
     Start.apply(app.world_mut(), root);
     let workspace = app.world().get::<Workspaces>(root).unwrap().active;
     assert_eq!(
@@ -199,6 +205,35 @@ async fn tutorial_checks_real_protein_and_confirmed_entry_exit_changes() {
             .contains("Add square")
     );
     assert_eq!(*app.world().get::<InfluenceArea>(existing).unwrap(), before);
+    let corner = current(app.world_mut(), root, "bottom-right corner");
+    app.world_mut()
+        .resource_mut::<bevy::input_focus::InputFocus>()
+        .set(corner, bevy::input_focus::FocusCause::Navigated);
+    app.update();
+    let edit = current(app.world_mut(), root, "Open Edit mode");
+    assert_eq!(
+        app.world()
+            .get::<crate::edit_mode::EditControl>(edit)
+            .unwrap()
+            .action,
+        crate::edit_mode::EditAction::Toggle
+    );
+    app.world_mut().get_mut::<Workspaces>(root).unwrap().active = workspace + 1;
+    app.update();
+    assert_eq!(
+        app.world_mut()
+            .query::<&TutorialHighlight>()
+            .iter(app.world())
+            .count(),
+        0
+    );
+    app.world_mut().get_mut::<Workspaces>(root).unwrap().active = workspace;
+    app.update();
+    current(app.world_mut(), root, "Open Edit mode");
+    click(app.world_mut(), root, "Edit mode");
+    current(app.world_mut(), root, "Open Areas of influence");
+    click(app.world_mut(), root, "Areas of influence");
+    current(app.world_mut(), root, "Add a square");
     Command::Step(4).apply(app.world_mut(), root);
     Command::Next.apply(app.world_mut(), root);
     assert_eq!(app.world().get::<Session>(root).unwrap().step, 0);
@@ -210,6 +245,7 @@ async fn tutorial_checks_real_protein_and_confirmed_entry_exit_changes() {
         .clone();
     click(app.world_mut(), root, "Add square");
     let source = selected(app.world(), root);
+    current(app.world_mut(), root, "In Protein");
     click(app.world_mut(), source, "Make this a Protein Area");
     assert!(
         verify(app.world_mut(), root)
@@ -217,6 +253,15 @@ async fn tutorial_checks_real_protein_and_confirmed_entry_exit_changes() {
             .contains("Quantity")
     );
     choose(app.world_mut(), source, "Add property", "Quantity");
+    current(app.world_mut(), root, "Protein pencil");
+    assert!(
+        app.world()
+            .get::<guide::Guide>(root)
+            .unwrap()
+            .instructions
+            .iter()
+            .any(|instruction| instruction.done && instruction.text.contains("add Quantity"))
+    );
     click(
         app.world_mut(),
         source,
@@ -227,10 +272,39 @@ async fn tutorial_checks_real_protein_and_confirmed_entry_exit_changes() {
         .query_filtered::<Entity, With<crate::protein_castle::ProteinCastle>>()
         .single(app.world())
         .unwrap();
+    current(app.world_mut(), root, "add a condition");
     click(app.world_mut(), editor, "Add a condition");
+    current(app.world_mut(), root, "Enter Area lesson");
+    choose(app.world_mut(), editor, "Condition", "Quantity =");
+    let condition = current(app.world_mut(), root, "Choose Text contains");
+    assert!(
+        app.world()
+            .get::<crate::dropdown::Dropdown>(condition)
+            .is_some()
+    );
+    app.world_mut()
+        .trigger(bevy::ui_widgets::Activate { entity: condition });
+    app.world_mut().flush();
+    let option = current(app.world_mut(), root, "Choose Text contains");
+    assert_eq!(
+        app.world()
+            .get::<AccessibilityNode>(option)
+            .unwrap()
+            .label(),
+        Some("Text contains")
+    );
+    assert_ne!(condition, option);
+    app.world_mut()
+        .trigger(bevy::ui_widgets::Activate { entity: condition });
+    app.world_mut().flush();
     choose(app.world_mut(), editor, "Condition", "Text contains");
+    let field = current(app.world_mut(), root, "Enter Area lesson");
+    assert!(
+        matches!(app.world().get::<TutorialField>(field), Some(TutorialField::Query(owner, path)) if *owner == editor && path.ends_with("/text_contains"))
+    );
     input(app.world_mut(), "Property value", 0, &prefix);
     app.update();
+    current(app.world_mut(), root, "Click Run");
     assert!(verify(app.world_mut(), root).is_err());
     click(
         app.world_mut(),
@@ -238,6 +312,7 @@ async fn tutorial_checks_real_protein_and_confirmed_entry_exit_changes() {
         "Run this query and keep results live",
     );
     until(&mut app, |world| verify(world, root).is_ok()).await;
+    current(app.world_mut(), root, "Continue to the next lesson");
     assert_eq!(rows(app.world_mut(), root).len(), 2);
     let sample = rows(app.world_mut(), root)[0].0;
     app.world_mut()
@@ -297,6 +372,22 @@ async fn tutorial_checks_real_protein_and_confirmed_entry_exit_changes() {
     click(app.world_mut(), root, "Add property");
     click(app.world_mut(), root, "Title");
     input(app.world_mut(), "Equals", 0, &format!("{prefix} 1"));
+    app.update();
+    let entry = current(app.world_mut(), root, "On entry");
+    assert_eq!(
+        app.world().get::<TutorialField>(entry),
+        Some(&TutorialField::Quantity(change, true))
+    );
+    input(app.world_mut(), "Quantity", 0, "1");
+    app.update();
+    let exit = current(app.world_mut(), root, "On exit");
+    assert_eq!(
+        app.world().get::<TutorialField>(exit),
+        Some(&TutorialField::Quantity(change, false))
+    );
+    input(app.world_mut(), "Quantity", 0, "2");
+    app.update();
+    current(app.world_mut(), root, "On entry");
     input(app.world_mut(), "Quantity", 0, "1");
     input(app.world_mut(), "Quantity", 1, "0");
     app.update();
@@ -309,6 +400,22 @@ async fn tutorial_checks_real_protein_and_confirmed_entry_exit_changes() {
     })
     .await;
     assert!(verify(app.world_mut(), root).is_err());
+    crate::edit_mode::EditAction::Close.apply(app.world_mut(), root);
+    guide::update(app.world_mut(), root, false);
+    let highlighted: Vec<_> = app
+        .world_mut()
+        .query::<&TutorialHighlight>()
+        .iter(app.world())
+        .map(|highlight| highlight.target)
+        .collect();
+    assert!(highlighted.contains(&change));
+    assert!(
+        rows(app.world_mut(), root)
+            .iter()
+            .any(|(entity, uid, _, _)| highlighted.contains(entity)
+                && Some(uid) == app.world().get::<Session>(root).unwrap().records.first())
+    );
+    crate::edit_mode::EditAction::Open.apply(app.world_mut(), root);
     move_sample(app.world_mut(), root, true);
     app.update();
     move_sample(app.world_mut(), root, false);
@@ -338,6 +445,13 @@ async fn tutorial_checks_real_protein_and_confirmed_entry_exit_changes() {
     let change_before = app.world().get::<InfluenceArea>(change).unwrap().clone();
     Command::Close.apply(app.world_mut(), root);
     assert_eq!(
+        app.world_mut()
+            .query::<&TutorialHighlight>()
+            .iter(app.world())
+            .count(),
+        0
+    );
+    assert_eq!(
         app.world().get::<Workspaces>(root).unwrap().active,
         workspace
     );
@@ -356,4 +470,34 @@ async fn tutorial_checks_real_protein_and_confirmed_entry_exit_changes() {
         app.world().get::<Workspaces>(root).unwrap().entries.len(),
         1
     );
+}
+
+fn current(world: &mut World, root: Entity, expected: &str) -> Entity {
+    let verified = verify(world, root).is_ok();
+    guide::update(world, root, verified);
+    let guide = world.get::<guide::Guide>(root).unwrap();
+    let instruction = guide
+        .instructions
+        .iter()
+        .find(|instruction| !instruction.done)
+        .unwrap();
+    assert!(
+        instruction.text.contains(expected),
+        "Expected {expected}, got {}",
+        instruction.text
+    );
+    let targets: Vec<_> = world
+        .query::<(&TutorialHighlight, &Pickable)>()
+        .iter(world)
+        .map(|(highlight, pickable)| {
+            assert!(!pickable.is_hoverable && !pickable.should_block_lower);
+            highlight.target
+        })
+        .collect();
+    assert_eq!(
+        targets.len(),
+        1,
+        "The current instruction {expected} must highlight one real control"
+    );
+    targets[0]
 }

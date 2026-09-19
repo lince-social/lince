@@ -106,12 +106,6 @@ pub const GROUPS: &[(&str, &[(&str, &str)])] = &[
 
 pub(crate) fn panel(world: &mut World, parent: Entity) {
     crate::edit_mode::label(world, parent, "Cheat sheet", 22.0);
-    crate::edit_mode::label(
-        world,
-        parent,
-        "On macOS, use Command for text selection and clipboard shortcuts, and Option for word movement and deletion.",
-        14.0,
-    );
     for (group, shortcuts) in GROUPS {
         crate::edit_mode::label(world, parent, group, 18.0);
         for (keys, description) in *shortcuts {

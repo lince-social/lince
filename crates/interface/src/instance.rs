@@ -256,6 +256,21 @@ pub(crate) mod tests {
         assert!(claim(directory.path()).await.unwrap().is_some());
     }
 
+    #[cfg_attr(test, tokio::test)]
+    async fn separate_directories_keep_their_owners_and_wake_requests_independent() {
+        let normal_directory = tempfile::tempdir().unwrap();
+        let test_directory = tempfile::tempdir().unwrap();
+        let normal = claim(normal_directory.path()).await.unwrap().unwrap();
+        let development = claim(test_directory.path()).await.unwrap().unwrap();
+        assert!(claim(test_directory.path()).await.unwrap().is_none());
+        assert!(development.events().take_show());
+        assert!(!normal.events().take_show());
+        drop(development);
+        assert!(claim(test_directory.path()).await.unwrap().is_some());
+        assert!(claim(normal_directory.path()).await.unwrap().is_none());
+        assert!(normal.events().take_show());
+    }
+
     #[cfg(unix)]
     #[cfg_attr(test, tokio::test)]
     async fn malformed_control_messages_cannot_trigger_show() {
@@ -273,6 +288,7 @@ pub(crate) mod tests {
 
     crate::laboratory_cases! {
         async second_launch_wakes_the_owner_and_lock_lasts_until_shutdown,
+        async separate_directories_keep_their_owners_and_wake_requests_independent,
         #[cfg(unix)]
         async malformed_control_messages_cannot_trigger_show,
     }

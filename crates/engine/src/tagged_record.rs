@@ -16,14 +16,10 @@ impl Engine {
         actor: Option<String>,
         now: DateTime<Utc>,
     ) -> Result<ActionOutcome, EngineError> {
-        if head.trim().is_empty()
-            || head.len() > 500
-            || body.len() > 40000
-            || !quantity.is_finite()
-            || tags.len() > 40
-        {
+        if head.len() > 500 || body.len() > 40000 || !quantity.is_finite() || tags.len() > 40 {
             return Err(EngineError::Consequence(
-                "Enter a title and at most 40 tags.".into(),
+                "Use at most 500 bytes for the title, 40000 for the description, and 40 tags."
+                    .into(),
             ));
         }
         let mut resolved = Vec::new();

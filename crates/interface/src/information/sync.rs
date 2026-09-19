@@ -85,7 +85,7 @@ fn connect(world: &mut World) {
     world.insert_resource(SyncWake { open, task });
 }
 
-pub(super) fn panel(world: &mut World, root: Entity, parent: Entity) {
+pub(crate) fn panel(world: &mut World, root: Entity, parent: Entity) {
     world.spawn((
         SyncPanel {
             root,
@@ -284,7 +284,7 @@ fn render(world: &mut World) {
     for (panel, root) in panels {
         world.entity_mut(panel).despawn_children();
         world.get_mut::<SyncPanel>(panel).unwrap().revision = Some(revision);
-        label(world, panel, "Sync", 22.0);
+        label(world, panel, "Sync activity", 22.0);
         if let Some(error) = &error {
             label(world, panel, error, 14.0);
         }

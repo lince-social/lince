@@ -21,54 +21,6 @@ struct Row {
 struct LastLayout(bevy::math::DVec3);
 
 #[derive(Component)]
-struct Summary {
-    property: String,
-}
-
-#[derive(Clone)]
-struct ToggleProperty(Entity);
-
-impl Action for ToggleProperty {
-    fn apply(&self, world: &mut World, _: Entity) {
-        let Some(mut node) = world.get_mut::<Node>(self.0) else {
-            return;
-        };
-        let opened = node.display == Display::None;
-        node.display = if opened { Display::Flex } else { Display::None };
-        let focus = opened
-            .then(|| {
-                descendants(world, self.0)
-                    .into_iter()
-                    .find(|e| world.get::<EditableText>(*e).is_some())
-            })
-            .flatten();
-        if let Some(mut current) = world.get_resource_mut::<bevy::input_focus::InputFocus>() {
-            if let Some(focus) = focus {
-                current.set(focus, bevy::input_focus::FocusCause::Pressed);
-            } else {
-                current.clear();
-            }
-        }
-    }
-}
-
-fn summary(property: &str, data: &Value) -> String {
-    let value = display(&data[property]);
-    if value.is_empty() {
-        match property {
-            "head" => "Untitled".into(),
-            "start_date" => "Start date".into(),
-            "due_date" => "End date".into(),
-            "assertions" => "Assertions".into(),
-            "assignees" => String::new(),
-            _ => property.into(),
-        }
-    } else {
-        value
-    }
-}
-
-#[derive(Component)]
 struct EditorSize {
     mode: OverflowMode,
     minimum: Vec2,
@@ -78,7 +30,7 @@ struct EditorSize {
 }
 
 #[derive(Component)]
-struct PropertyContainer(String);
+pub(super) struct PropertyContainer(pub(super) String);
 
 fn baseline(data: &Value, property: &str) -> Value {
     let mut value = serde_json::json!({property: data[property]});
@@ -94,7 +46,7 @@ pub(super) struct PropertyEditor {
     observed: String,
     baseline: Value,
     pending: Option<String>,
-    focused: bool,
+    attempted: Option<String>,
 }
 
 pub(super) fn display(value: &Value) -> String {
@@ -160,70 +112,16 @@ pub(super) fn content(
     data: &Value,
     binding: Option<RecordBinding>,
 ) {
-    if config.task_cards {
-        world.entity_mut(row).insert(crate::kanban::TaskCard);
+    let sections = config
+        .record_cards
+        .then(|| super::record_layout::create(world, row));
+    if config.record_cards {
+        world.entity_mut(row).insert(crate::full_record::RecordCard);
     }
     for property in &config.bindings {
-        let summary_button = config.task_cards.then(|| {
-            let entity = world
-                .spawn((
-                    Square,
-                    crate::sand::button(0),
-                    Node {
-                        width: percent(100),
-                        min_height: px(28),
-                        max_height: if property.property == "head" {
-                            Val::Auto
-                        } else {
-                            px(72)
-                        },
-                        overflow: Overflow::clip(),
-                        flex_shrink: 0.0,
-                        ..default()
-                    },
-                    ChildOf(row),
-                    Tooltip(format!("Edit {}", property.property)),
-                ))
-                .id();
-            if property.property == "assignees"
-                && let Some(image) = crate::icons::image(world, Icon::Person)
-            {
-                world.spawn((
-                    image,
-                    Node {
-                        width: px(24),
-                        height: px(24),
-                        flex_shrink: 0.0,
-                        ..default()
-                    },
-                    Pickable::IGNORE,
-                    ChildOf(entity),
-                ));
-            }
-            let text = crate::edit_mode::label(
-                world,
-                entity,
-                &summary(&property.property, data),
-                if property.property == "head" {
-                    18.0
-                } else {
-                    14.0
-                },
-            );
-            world.entity_mut(text).insert((
-                Summary {
-                    property: property.property.clone(),
-                },
-                TextLayout::linebreak(bevy::text::LineBreak::WordBoundary),
-                Node {
-                    width: px(0),
-                    min_width: px(0),
-                    flex_grow: 1.0,
-                    ..default()
-                },
-            ));
-            entity
-        });
+        let parent = sections
+            .as_ref()
+            .map_or(row, |sections| sections.parent(&property.property, data));
         let horizontal = matches!(
             property.overflow,
             OverflowMode::ScrollRight | OverflowMode::GrowRight
@@ -237,7 +135,7 @@ pub(super) fn content(
                     align_self: AlignSelf::FlexStart,
                     align_items: AlignItems::FlexStart,
                     flex_direction: FlexDirection::Column,
-                    width: if config.task_cards {
+                    width: if config.record_cards {
                         percent(100)
                     } else if grow_x {
                         Val::Auto
@@ -245,7 +143,7 @@ pub(super) fn content(
                         px(width)
                     },
                     min_width: if grow_x { px(width) } else { px(0) },
-                    max_width: if config.task_cards {
+                    max_width: if config.record_cards {
                         percent(100)
                     } else {
                         px((config.width - 24.0).max(24.0))
@@ -267,7 +165,7 @@ pub(super) fn content(
                 },
                 ScrollPosition::default(),
                 PropertyContainer(property.property.clone()),
-                ChildOf(row),
+                ChildOf(parent),
                 Tooltip(
                     protein::record_schema::fields()
                         .iter()
@@ -276,13 +174,6 @@ pub(super) fn content(
                 ),
             ))
             .id();
-        if let Some(button) = summary_button {
-            world.get_mut::<Node>(container).unwrap().display = Display::None;
-            world.entity_mut(button).insert(ActionButton::new(
-                row,
-                crate::actions![ToggleProperty(container)],
-            ));
-        }
         if property.square {
             world
                 .entity_mut(container)
@@ -296,7 +187,7 @@ pub(super) fn content(
         if config.show_labels
             && !matches!(
                 property.property.as_str(),
-                "threads" | "assertions" | "assignees" | "work_logs"
+                "threads" | "assertions" | "work_logs"
             )
         {
             let label = protein::record_schema::fields()
@@ -318,12 +209,11 @@ pub(super) fn content(
                 continue;
             }
         }
-        if editable
-            && matches!(
-                property.property.as_str(),
-                "assertions" | "assignees" | "work_logs"
-            )
-        {
+        if editable && property.property == "assignees" {
+            super::assignees::field(world, container, binding.clone().unwrap(), data);
+            continue;
+        }
+        if editable && matches!(property.property.as_str(), "assertions" | "work_logs") {
             property_actions::spawn(
                 world,
                 container,
@@ -356,8 +246,18 @@ pub(super) fn content(
             editor.max_characters = Some(65_536);
             editor.visible_lines = None;
             world.entity_mut(entity).insert((
-                PropertyEditor { property: property.property.clone(), observed: text, baseline: baseline(data, &property.property), pending: None, focused: false },
-                binding.clone().unwrap(), Tooltip("Edit this Record property. Leaving the field saves it through its Organ; Escape restores the current value.".into()),
+                PropertyEditor {
+                    property: property.property.clone(),
+                    observed: text,
+                    baseline: baseline(data, &property.property),
+                    pending: None,
+                    attempted: None,
+                },
+                binding.clone().unwrap(),
+                Tooltip(
+                    "Edit this Record property. Changes save automatically. Ctrl-Z undoes edits."
+                        .into(),
+                ),
             ));
             if matches!(property.property.as_str(), "head" | "body")
                 && crate::record_binding::enabled(world)
@@ -371,6 +271,11 @@ pub(super) fn content(
                     Some(status),
                 );
             }
+            if !matches!(property.property.as_str(), "head" | "body")
+                || !crate::record_binding::enabled(world)
+            {
+                super::history::attach_text(world, entity);
+            }
             entity
         } else {
             let font = world.resource::<crate::theme::Typography>().text(18.0);
@@ -380,7 +285,9 @@ pub(super) fn content(
         };
         world.entity_mut(text_entity).insert((
             Node {
-                width: if horizontal && !editable {
+                width: if config.record_cards {
+                    percent(100)
+                } else if horizontal && !editable {
                     Val::Auto
                 } else {
                     px((width - 8.0).max(16.0))
@@ -392,7 +299,9 @@ pub(super) fn content(
                 },
                 min_width: if horizontal { Val::Auto } else { px(0) },
                 flex_shrink: 0.0,
-                max_width: if horizontal && !grow_x {
+                max_width: if config.record_cards {
+                    percent(100)
+                } else if horizontal && !grow_x {
                     Val::Auto
                 } else {
                     px((config.width - 32.0).max(16.0))
@@ -430,25 +339,16 @@ pub(super) fn content(
             if matches!(property.property.as_str(), "start_date" | "due_date") {
                 let button =
                     crate::calendar::date_button(world, row, text_entity, &property.property);
-                if config.task_cards {
-                    world.entity_mut(button).insert(ChildOf(container));
-                }
-            }
-            let save = world
-                .spawn((
-                    Square,
-                    ActionButton::new(text_entity, crate::actions![SaveField(text_entity)]),
-                    IconButton::new(Icon::Save, "Save this Record property"),
-                    ChildOf(row),
-                ))
-                .id();
-            let _ = save;
-            if config.task_cards {
-                world.entity_mut(save).insert(ChildOf(container));
+                world.entity_mut(button).insert(ChildOf(container));
             }
         }
     }
-    if let Some(binding) = binding.clone() {
+    if let Some(sections) = sections {
+        super::record_layout::arrange(world, row, &sections, data);
+    }
+    if !config.record_cards
+        && let Some(binding) = binding.clone()
+    {
         let button = world
             .spawn((
                 Square,
@@ -470,13 +370,6 @@ pub(super) fn content(
     }
 }
 
-#[derive(Clone)]
-struct SaveField(Entity);
-impl Action for SaveField {
-    fn apply(&self, world: &mut World, _: Entity) {
-        save_field(world, self.0);
-    }
-}
 #[derive(Clone)]
 struct Delete(RecordBinding);
 impl Action for Delete {
@@ -610,6 +503,9 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
                         world.despawn(child);
                     }
                 }
+                if config.viewport_height.is_some() {
+                    crate::scroll_sand::attach(world, entity);
+                }
                 content(world, entity, &config, &data, Some(binding));
             } else {
                 refresh(world, entity, &data);
@@ -650,19 +546,8 @@ fn descendants(world: &World, entity: Entity) -> Vec<Entity> {
 }
 
 fn refresh(world: &mut World, row: Entity, data: &Value) {
-    for entity in descendants(world, row) {
-        if let Some(summary_field) = world.get::<Summary>(entity) {
-            let value = summary(&summary_field.property, data);
-            if let Some(mut text) = world.get_mut::<Text>(entity) {
-                text.0 = value;
-            }
-        }
-    }
-    let children: Vec<_> = world
-        .get::<Children>(row)
+    let children: Vec<_> = descendants(world, row)
         .into_iter()
-        .flatten()
-        .copied()
         .filter_map(|child| {
             world
                 .get::<PropertyContainer>(child)
@@ -675,7 +560,9 @@ fn refresh(world: &mut World, row: Entity, data: &Value) {
         {
             continue;
         }
-        if property_actions::refresh(world, container, data) {
+        if super::assignees::refresh(world, container, data)
+            || property_actions::refresh(world, container, data)
+        {
             continue;
         }
         let text = display(&data[&property]);
@@ -702,11 +589,20 @@ fn refresh(world: &mut World, row: Entity, data: &Value) {
                 if editor.pending.is_some() || dirty {
                     continue;
                 }
-                world
-                    .get_mut::<EditableText>(entity)
+                if world
+                    .get::<EditableText>(entity)
                     .unwrap()
-                    .editor
-                    .set_text(&text);
+                    .value()
+                    .to_string()
+                    != text
+                {
+                    world
+                        .get_mut::<EditableText>(entity)
+                        .unwrap()
+                        .editor
+                        .set_text(&text);
+                }
+                super::history::synced_text(world, entity, &text);
                 let mut editor = world.get_mut::<PropertyEditor>(entity).unwrap();
                 editor.observed = text.clone();
                 editor.baseline = baseline(data, &property);
@@ -718,6 +614,9 @@ fn refresh(world: &mut World, row: Entity, data: &Value) {
 }
 
 pub(super) fn action_finished(world: &mut World, entity: Entity, error: Option<String>) {
+    if super::assignees::finished(world, entity, error.clone()) {
+        return;
+    }
     if crate::thread_castle::finished(world, entity, error.clone()) {
         return;
     }
@@ -805,16 +704,18 @@ pub(super) fn save_field(world: &mut World, entity: Entity) {
     }
     let value = text.value().to_string();
     let submitted = value.clone();
-    if value == editor.observed {
+    if value == editor.observed || editor.attempted.as_ref() == Some(&value) {
         return;
     }
-    let mutation = match editor.property.as_str() {
+    let property = editor.property.clone();
+    world.get_mut::<PropertyEditor>(entity).unwrap().attempted = Some(value.clone());
+    let mutation = match property.as_str() {
         "slug" => engine::record_change::Mutation::Slug {
             value: (!value.trim().is_empty()).then(|| value.trim().to_owned()),
         },
         "quantity_exact" => engine::record_change::Mutation::Quantity { value },
         "start_date" | "due_date" | "estimate_min" => {
-            let field = match editor.property.as_str() {
+            let field = match property.as_str() {
                 "start_date" => engine::record_change::WorkField::Start,
                 "due_date" => engine::record_change::WorkField::Due,
                 _ => engine::record_change::WorkField::Estimate,
@@ -839,8 +740,8 @@ pub(super) fn save_field(world: &mut World, entity: Entity) {
         "head" | "body" => {
             let action = engine::actions::Action::EditRecordText {
                 target: binding.uid.clone(),
-                head: (editor.property == "head").then(|| value.clone()),
-                body: (editor.property == "body").then_some(value),
+                head: (property == "head").then(|| value.clone()),
+                body: (property == "body").then_some(value),
             };
             match execute(world, &binding, entity, action) {
                 Ok(()) => {
@@ -868,65 +769,20 @@ pub(super) fn save_field(world: &mut World, entity: Entity) {
 }
 
 pub(super) fn commit_edits(world: &mut World) {
-    let focus = world
-        .get_resource::<bevy::input_focus::InputFocus>()
-        .and_then(|focus| focus.get());
-    let escape = world
-        .get_resource::<ButtonInput<KeyCode>>()
-        .is_some_and(|keys| keys.just_pressed(KeyCode::Escape));
     let editors: Vec<_> = world
-        .query::<(Entity, &PropertyEditor)>()
+        .query_filtered::<Entity, With<PropertyEditor>>()
         .iter(world)
-        .map(|(entity, editor)| (entity, editor.focused))
         .collect();
-    for (entity, focused) in editors {
-        if world
-            .get::<crate::record_binding::TextBinding>(entity)
-            .is_some()
-        {
-            continue;
-        }
-        if escape && focus == Some(entity) {
-            if let Some(binding) = world.get::<RecordBinding>(entity).cloned() {
-                let data = world
-                    .resource::<Runtime>()
-                    .areas
-                    .get(&binding.area)
-                    .and_then(|state| {
-                        state
-                            .data
-                            .iter()
-                            .find(|row| row["uid"].as_str() == Some(&binding.uid))
-                    })
-                    .cloned();
-                if let Some(data) = data {
-                    let property = world
-                        .get::<PropertyEditor>(entity)
-                        .unwrap()
-                        .property
-                        .clone();
-                    let value = display(&data[&property]);
-                    world
-                        .get_mut::<EditableText>(entity)
-                        .unwrap()
-                        .editor
-                        .set_text(&value);
-                    let mut editor = world.get_mut::<PropertyEditor>(entity).unwrap();
-                    editor.observed = value;
-                    editor.baseline = baseline(&data, &property);
-                }
-            }
-        } else if focused && focus != Some(entity) {
-            save_field(world, entity);
-        }
-        world.get_mut::<PropertyEditor>(entity).unwrap().focused = focus == Some(entity);
+    for entity in editors {
+        save_field(world, entity);
     }
+    super::record_layout::update(world);
 }
 
 pub(super) fn layout(world: &mut World) {
     super::placement::begin_frame(world);
     let mut resized = false;
-    for (text, layout, computed, mut size, mut node, mut wrapping) in world
+    for (text, layout, computed, mut size, mut node, mut wrapping, scroll) in world
         .query::<(
             &EditableText,
             &bevy::text::TextLayoutInfo,
@@ -934,6 +790,7 @@ pub(super) fn layout(world: &mut World) {
             &mut EditorSize,
             &mut Node,
             &mut TextLayout,
+            Option<&mut bevy::ui::widget::TextScroll>,
         )>()
         .iter_mut(world)
     {
@@ -948,7 +805,17 @@ pub(super) fn layout(world: &mut World) {
             }
         }
         let measured = layout.size * computed.inverse_scale_factor();
-        let height = measured.y.ceil().max(size.minimum.y);
+        if size.mode == OverflowMode::GrowDown
+            && measured.y > 0.0
+            && computed.content_box().height() * computed.inverse_scale_factor() >= measured.y
+            && let Some(mut scroll) = scroll
+            && scroll.0 != Vec2::ZERO
+        {
+            scroll.0 = Vec2::ZERO;
+        }
+        let inset = (computed.size().y - computed.content_box().height()).max(0.0)
+            * computed.inverse_scale_factor();
+        let height = (measured.y + inset).ceil().max(size.minimum.y);
         if height.is_finite() && node.height != px(height) {
             node.height = px(height);
             resized = true;
@@ -1002,6 +869,7 @@ pub(super) fn layout(world: &mut World) {
             .sum::<f32>()
             + 24.0
             + (count.saturating_sub(1) as f32 * 8.0);
+        let height = config.viewport_height.unwrap_or(height);
         if let Some(cell) = world.get::<grouping::Cell>(*entity).copied() {
             grouped
                 .entry(*area)
@@ -1061,6 +929,23 @@ pub(super) fn place(world: &mut World, entity: Entity, position: DVec2, size: Ve
             };
             super::placement::finish(world, entity, point);
             world.entity_mut(entity).insert(LastLayout(fallback));
+            if config.group_with_source {
+                let mut placement = crate::topology::spatial(world, entity);
+                placement.rotation = spatial.rotation;
+                world.entity_mut(entity).insert(placement);
+                let group = world
+                    .get::<crate::canvas_selection::SandGroup>(owner)
+                    .copied()
+                    .unwrap_or_else(|| {
+                        let mut id = [0; 16];
+                        getrandom::fill(&mut id).expect("group identity");
+                        crate::canvas_selection::SandGroup(id)
+                    });
+                world.entity_mut(owner).insert(group);
+                world.entity_mut(entity).insert(group);
+                let members = crate::topology::groups::members(world, owner);
+                crate::topology::groups::attach(world, &members);
+            }
         }
         if config.placement != super::SpawnPlacement::Source
             && world.get::<crate::layout::LayoutBox>(entity).is_none()

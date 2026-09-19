@@ -318,6 +318,12 @@ pub enum Action {
     },
     MailboxCollectNow,
     MailboxOutbound,
+    ConfigureFileSync {
+        protein: String,
+        path: String,
+        format: crate::file_sync::FileFormat,
+        enabled: bool,
+    },
     FileSyncStatus {
         organ: String,
     },
@@ -2694,6 +2700,11 @@ impl Engine {
                 namespace,
                 fds,
             } => {
+                if namespace == "lince.file_sync" && actor.is_some() {
+                    return Err(EngineError::Forbidden(
+                        "Only the local owner can configure directory sync".into(),
+                    ));
+                }
                 let uid = self.resolve(&target).await?;
                 if namespace == "work" {
                     return self
@@ -3571,6 +3582,63 @@ impl Engine {
                     "label": label,
                     "quota_bytes": quota_bytes,
                 }));
+            }
+            Action::ConfigureFileSync {
+                protein,
+                path,
+                format,
+                enabled,
+            } => {
+                if actor.is_some() {
+                    return Err(EngineError::Forbidden(
+                        "Only the local owner can configure directory sync".into(),
+                    ));
+                }
+                let organ = store::organs::local(&self.store.pool)
+                    .await?
+                    .ok_or_else(|| EngineError::Consequence("Local Organ is unavailable".into()))?;
+                let config = if enabled {
+                    let path = path.trim();
+                    if !std::path::Path::new(path).is_absolute() {
+                        return Err(EngineError::Consequence(
+                            "Choose an absolute directory path".into(),
+                        ));
+                    }
+                    if std::path::Path::new(path).exists() && !std::path::Path::new(path).is_dir() {
+                        return Err(EngineError::Consequence(
+                            "The sync path must be a directory".into(),
+                        ));
+                    }
+                    let uid = self.resolve(&protein).await?;
+                    self.file_sync_protein(&uid).await?;
+                    serde_json::json!({"enabled": true, "path": path, "format": format, "protein": uid})
+                } else {
+                    let mut config = store::records::get_extension(
+                        &self.store.pool,
+                        &organ.uid,
+                        "lince.file_sync",
+                    )
+                    .await?
+                    .filter(serde_json::Value::is_object)
+                    .unwrap_or_else(|| serde_json::json!({}));
+                    config["enabled"] = false.into();
+                    config
+                };
+                store::records::set_extension(
+                    &self.store.pool,
+                    &organ.uid,
+                    "lince.file_sync",
+                    &config,
+                )
+                .await?;
+                outcome.facts = self
+                    .annotate(
+                        organ.uid,
+                        actor,
+                        serde_json::json!({"extension": "lince.file_sync"}),
+                        now,
+                    )
+                    .await?;
             }
             Action::FileSyncStatus { organ } => {
                 let organ_uid = self.resolve(&organ).await?;
@@ -10937,7 +11005,8 @@ impl Engine {
             | Action::PauseKarmaFrequency { .. } => "karma:update",
             Action::RevokeKarmaGrant { .. } => "karma:delete",
 
-            Action::DeleteRecord { .. }
+            Action::ConfigureFileSync { .. }
+            | Action::DeleteRecord { .. }
             | Action::DeleteMessageDraft { .. }
             | Action::CreateTransfer { .. }
             | Action::AddressTransferInvitation { .. }

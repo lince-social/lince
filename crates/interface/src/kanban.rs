@@ -8,7 +8,7 @@ use crate::{
     area_mutation::{HeldPoint as HeldMembership, Preparing},
     canvas::CanvasItem,
     cell_bridge::{CellBridge, CellMessage},
-    icons::{Icon, IconButton, Tooltip},
+    icons::{Icon, IconButton},
     layout::{Arrangement, LayoutBox, LayoutRuntime, Rules, Sizing},
     protein_area::{Config, RecordBinding},
     workspace::WorkspaceMember,
@@ -16,7 +16,6 @@ use crate::{
 use bevy::{
     math::{DVec2, DVec3},
     prelude::*,
-    text::EditableText,
 };
 use cell::{ClientMessage, ServerMessage};
 pub(crate) use persistence::{SavedKanban, snapshot};
@@ -92,8 +91,7 @@ struct Card {
     quantity: String,
 }
 
-#[derive(Component)]
-pub(crate) struct TaskCard;
+use crate::full_record::RecordCard;
 
 #[derive(Resource, Default)]
 struct Requests {
@@ -106,7 +104,7 @@ struct Requests {
 enum Request {
     Concepts,
     Concept,
-    Create(Entity, String),
+    Create(usize),
 }
 
 pub struct KanbanPlugin;
@@ -137,7 +135,7 @@ fn rectangle(center: DVec2, size: DVec2) -> InfluenceArea {
 }
 
 fn config() -> Config {
-    let mut config = Config::tasks();
+    let mut config = Config::records();
     config.enabled = true;
     config.closest_end_date = true;
     config.draft.query = json!({"source":"record", "where":[{"all":[{"kind_eq":"plain"},{"concept_in":"task"}]}], "order":[{"asc":"due_date"}], "limit":null});
@@ -260,7 +258,7 @@ pub(crate) fn restore(
     position: DVec2,
     board: Kanban,
 ) -> Entity {
-    let owner = sand(world, root, workspace, position, Vec2::new(340.0, 128.0));
+    let owner = sand(world, root, workspace, position, Vec2::new(340.0, 80.0));
     world
         .entity_mut(owner)
         .insert((board.clone(), View::default()));
@@ -325,15 +323,17 @@ fn button(
 }
 
 pub(crate) fn store_entry(world: &mut World, root: Entity, parent: Entity) {
-    let row = ui_row(world, parent);
-    crate::edit_mode::label(world, row, "Kanban Castle", 18.0);
-    button(
+    crate::sand_store::castle_entry(
         world,
-        row,
         root,
-        Icon::Plus,
-        "Add Kanban Areas, column controls, and Task Castles",
+        parent,
+        "Kanban Castle",
+        "Move Tasks through columns of work.",
         Command::Create,
+        |world, root| {
+            spawn(world, root, 1, DVec2::ZERO).unwrap();
+            crate::sand_store::preview::compose(world, root)
+        },
     );
 }
 
@@ -343,7 +343,7 @@ fn header(world: &mut World, owner: Entity, column: usize, position: DVec2) -> E
     let entity = if column == 0 {
         owner
     } else {
-        sand(world, root, workspace, position, Vec2::new(340.0, 128.0))
+        sand(world, root, workspace, position, Vec2::new(340.0, 80.0))
     };
     world.entity_mut(entity).insert(Part { owner, column });
     let row = ui_row(world, entity);
@@ -359,43 +359,20 @@ fn header(world: &mut World, owner: Entity, column: usize, position: DVec2) -> E
         world,
         row,
         owner,
-        Icon::General,
-        "Configure this column and all its behaviors",
-        Command::Column(column),
+        Icon::Plus,
+        "Create a blank Record in this column",
+        Command::Add(column),
     );
-    let count = crate::edit_mode::label(world, entity, "… tasks", 13.0);
-    world.entity_mut(count).insert(Status);
-    let row = ui_row(world, entity);
-    let editor = world
-        .spawn(crate::sand::text_editor(
-            "",
-            world.resource::<crate::theme::Typography>(),
-            0,
-        ))
-        .id();
-    world.entity_mut(editor).insert((
-        ChildOf(row),
-        Tooltip("New Task title".into()),
-        Node {
-            width: px(0),
-            flex_grow: 1.0,
-            min_width: px(0),
-            min_height: px(28),
-            ..default()
-        },
-    ));
-    world
-        .get_mut::<EditableText>(editor)
-        .unwrap()
-        .max_characters = Some(500);
     button(
         world,
         row,
         owner,
-        Icon::Plus,
-        "Create a Task in this column",
-        Command::Add(column, editor),
+        Icon::Engine,
+        "Configure this column and all its behaviors",
+        Command::Column(column),
     );
+    let count = crate::edit_mode::label(world, entity, "… records", 13.0);
+    world.entity_mut(count).insert(Status);
     entity
 }
 
@@ -407,7 +384,7 @@ enum Command {
     Create,
     Initialize,
     Column(usize),
-    Add(usize, Entity),
+    Add(usize),
 }
 
 impl Action for Command {
@@ -464,7 +441,7 @@ impl Action for Command {
                         .apply(world, root);
                 }
             }
-            Self::Add(index, editor) => {
+            Self::Add(index) => {
                 if board
                     .columns
                     .iter()
@@ -479,16 +456,11 @@ impl Action for Command {
                     .resource::<Requests>()
                     .pending
                     .values()
-                    .any(|(_, r)| matches!(r, Request::Create(e, _) if e == editor))
+                    .any(|(target, request)| {
+                        *target == owner
+                            && matches!(request, Request::Create(column) if column == index)
+                    })
                 {
-                    return;
-                }
-                let head = world
-                    .get::<EditableText>(*editor)
-                    .map(|text| text.value().to_string())
-                    .unwrap_or_default();
-                if head.trim().is_empty() {
-                    world.get_mut::<View>(owner).unwrap().status = "Enter a Task title".into();
                     return;
                 }
                 let Some(changes) = board
@@ -512,7 +484,7 @@ impl Action for Command {
                         .is_ok_and(|roundtrip| roundtrip.exact_numeric_cmp(*value).is_eq())
                 }) else {
                     world.get_mut::<View>(owner).unwrap().status =
-                        "This quantity cannot be used when creating a Task".into();
+                        "This quantity cannot be used when creating a Record".into();
                     return;
                 };
                 let mut tags = changes.assert;
@@ -520,11 +492,11 @@ impl Action for Command {
                 tags.retain(|tag| !changes.retract.contains(tag));
                 tags.sort();
                 tags.dedup();
-                request(world, owner, Request::Create(*editor, head.clone()), |id| {
+                request(world, owner, Request::Create(*index), |id| {
                     ClientMessage::Act {
                         id,
                         action: engine::actions::Action::CreateRecordWithTags {
-                            head,
+                            head: String::new(),
                             body: String::new(),
                             quantity: quantity.to_f64(),
                             tags,
@@ -605,13 +577,8 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                 world.get_mut::<View>(owner).unwrap().setup = true;
             }
             ServerMessage::ActionOk { .. } => {
-                if let Request::Create(editor, submitted) = kind {
-                    if let Some(mut text) = world.get_mut::<EditableText>(editor) {
-                        if text.value().to_string() == submitted {
-                            text.editor.set_text("");
-                        }
-                    }
-                    world.get_mut::<View>(owner).unwrap().status = "Task created".into();
+                if matches!(kind, Request::Create(_)) {
+                    world.get_mut::<View>(owner).unwrap().status = "Record created".into();
                 }
             }
             ServerMessage::Error { message, .. } => {
@@ -679,7 +646,7 @@ fn update(world: &mut World) {
         maintain(world, owner, &board);
     }
     let released: Vec<_> = world
-        .query_filtered::<Entity, (With<TaskCard>, With<HeldMembership>, Without<Card>)>()
+        .query_filtered::<Entity, (With<RecordCard>, With<HeldMembership>, Without<Card>)>()
         .iter(world)
         .filter(|entity| {
             world
@@ -726,7 +693,7 @@ fn maintain(world: &mut World, owner: Entity, board: &Kanban) {
             .iter(world)
             .find(|(_, p)| p.owner == owner && p.column == index)
             .map(|(e, _)| e);
-        let position = item.position + DVec2::new(0.0, -f64::from(item.size.y) * 0.5 - 64.0);
+        let position = item.position + DVec2::new(0.0, -f64::from(item.size.y) * 0.5 - 40.0);
         let part = part.unwrap_or_else(|| header(world, owner, index, position));
         if world.get::<CanvasItem>(part).unwrap().size.x != item.size.x {
             world.get_mut::<CanvasItem>(part).unwrap().size.x = item.size.x;
@@ -784,7 +751,7 @@ fn maintain(world: &mut World, owner: Entity, board: &Kanban) {
                 world,
                 label,
                 if status {
-                    format!("{count} tasks")
+                    format!("{count} records")
                 } else {
                     title.clone()
                 },

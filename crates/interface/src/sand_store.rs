@@ -1,3 +1,5 @@
+pub(crate) mod preview;
+
 use crate::{
     canvas::CanvasItem,
     sand::{InBox, Square},
@@ -15,18 +17,28 @@ pub enum SandKind {
     Operation,
     WorkTimer,
     AccessControl,
+    Sync,
 }
 
 impl SandKind {
-    pub const ALL: [Self; 6] = [Self::Square, Self::Text, Self::EditableText, Self::Operation, Self::WorkTimer, Self::AccessControl];
+    pub const ALL: [Self; 7] = [
+        Self::Square,
+        Self::Text,
+        Self::EditableText,
+        Self::Operation,
+        Self::WorkTimer,
+        Self::AccessControl,
+        Self::Sync,
+    ];
     pub fn name(self) -> &'static str {
         match self {
             Self::Square => "Square",
             Self::Text => "Plain text",
             Self::EditableText => "Editable text",
             Self::Operation => "Operation",
-            Self::WorkTimer => "Work timer",
+            Self::WorkTimer => "Time Castle",
             Self::AccessControl => "Access Control",
+            Self::Sync => "Sync",
         }
     }
     pub fn description(self) -> &'static str {
@@ -35,8 +47,9 @@ impl SandKind {
             Self::Text => "A simple text label.",
             Self::EditableText => "A note you can write in.",
             Self::Operation => "Run commands or set a Record quantity to zero by slug.",
-            Self::WorkTimer => "Start or pause work on a Record and see elapsed time.",
+            Self::WorkTimer => "A standalone stopwatch or a Record’s editable work log.",
             Self::AccessControl => "Manage local users, Roles and permissions.",
+            Self::Sync => "Sync a Protein to a directory as .lingua or Markdown.",
         }
     }
 }
@@ -74,16 +87,10 @@ pub(crate) struct PreviewSource(pub Entity);
 pub(crate) struct PreviewKind(pub crate::tokens::SandStyleKind);
 
 #[derive(Component)]
-pub(crate) struct Dimensions(Entity, usize);
+pub(crate) struct Dimensions(Entity);
 
-fn dimensions(size: Vec2, areas: usize) -> String {
-    format!(
-        "{:.0} × {:.0} · {} text area{}",
-        size.x,
-        size.y,
-        areas,
-        if areas == 1 { "" } else { "s" }
-    )
+fn dimensions(size: Vec2) -> String {
+    format!("{:.0} × {:.0}", size.x, size.y)
 }
 
 pub(crate) fn refresh(
@@ -99,18 +106,16 @@ pub(crate) fn refresh(
                 node.height = px(item.size.y);
                 node.left = px((72.0 - item.size.x) * 0.5);
                 node.top = px((64.0 - item.size.y) * 0.5);
-                node.border = UiRect::all(px(if sand.kind == SandKind::Square {
-                    crate::sand::BUTTON_BORDER_WIDTH / scale
-                } else {
-                    0.0
-                }));
+                if sand.kind == SandKind::Square {
+                    node.border = UiRect::all(px(crate::sand::BUTTON_BORDER_WIDTH / scale));
+                }
                 transform.scale = Vec2::splat(scale);
             }
         }
     }
     for (source, mut text) in &mut labels {
         if let Ok((item, _)) = items.get(source.0) {
-            let value = dimensions(item.size, source.1);
+            let value = dimensions(item.size);
             if text.0 != value {
                 text.0 = value;
             }
@@ -134,13 +139,14 @@ pub(crate) fn entry(
     kind: SandKind,
     existing: Option<(Entity, usize)>,
 ) {
-    use crate::{
-        edit_mode::{EditAction, control, label},
-        theme::Typography,
-    };
+    use crate::edit_mode::{EditAction, control, label};
     world.init_resource::<StoreFont>();
     let style_kind = match kind {
-        SandKind::Square | SandKind::Operation | SandKind::WorkTimer | SandKind::AccessControl => crate::tokens::SandStyleKind::Square,
+        SandKind::Square
+        | SandKind::Operation
+        | SandKind::WorkTimer
+        | SandKind::AccessControl
+        | SandKind::Sync => crate::tokens::SandStyleKind::Square,
         SandKind::Text => crate::tokens::SandStyleKind::Text,
         SandKind::EditableText => crate::tokens::SandStyleKind::EditableText,
     };
@@ -163,11 +169,16 @@ pub(crate) fn entry(
         .number();
     let size = existing
         .and_then(|(entity, _)| world.get::<CanvasItem>(entity).map(|item| item.size))
-        .unwrap_or(if matches!(kind, SandKind::Operation | SandKind::AccessControl) {
-            Vec2::new(520.0, 540.0)
-        } else {
-            Vec2::new(width, height)
-        });
+        .unwrap_or(
+            if matches!(
+                kind,
+                SandKind::Operation | SandKind::AccessControl | SandKind::Sync
+            ) {
+                Vec2::new(520.0, 540.0)
+            } else {
+                Vec2::new(width, height)
+            },
+        );
     let texts = existing
         .map(|(entity, _)| sand_text::snapshot(world, entity))
         .unwrap_or_else(|| {
@@ -192,7 +203,7 @@ pub(crate) fn entry(
             Node {
                 width: percent(100),
                 column_gap: px(10),
-                padding: UiRect::axes(px(0), px(8)),
+                padding: UiRect::all(px(10)),
                 align_items: AlignItems::FlexStart,
                 justify_content: JustifyContent::FlexStart,
                 flex_shrink: 0.0,
@@ -225,61 +236,42 @@ pub(crate) fn entry(
             },
         ))
         .id();
-    let scale = (68.0 / size.x).min(60.0 / size.y).min(1.0);
-    let miniature = world
-        .spawn((
-            Square,
-            Outline {
-                width: px(0),
-                ..default()
-            },
-            ChildOf(preview),
-            Pickable::IGNORE,
-            PreviewKind(style_kind),
+    let (mut scene, scene_root) = preview::scene(world);
+    let source = spawn_sand(&mut scene, scene_root, 1, kind, kind.name(), DVec2::ZERO);
+    if matches!(
+        kind,
+        SandKind::Square | SandKind::Text | SandKind::EditableText | SandKind::WorkTimer
+    ) {
+        if let Some(children) = scene.get::<Children>(source) {
+            let children: Vec<_> = children.iter().collect();
+            for child in children {
+                scene.despawn(child);
+            }
+        }
+        for text in texts {
+            sand_text::spawn(&mut scene, source, text);
+        }
+    }
+    if kind == SandKind::WorkTimer {
+        let input = scene
+            .get::<Children>(source)
+            .and_then(|children| children.first().copied());
+        crate::work_timer::populate(&mut scene, source, None, &serde_json::Value::Null, input);
+    }
+    let miniature = preview::snapshot(&scene, source, world, preview);
+    preview::fit(world, miniature, size);
+    world.entity_mut(miniature).insert(PreviewKind(style_kind));
+    if kind == SandKind::Square {
+        let scale = (68.0 / size.x).min(60.0 / size.y).min(1.0);
+        world.get_mut::<Node>(miniature).unwrap().border =
+            UiRect::all(px(crate::sand::BUTTON_BORDER_WIDTH / scale));
+        world.entity_mut(miniature).insert((
             crate::token_style::background(crate::tokens::Token::SandBackground),
             crate::token_style::border(crate::tokens::Token::SandBorder),
-            UiTransform::from_scale(Vec2::splat(scale)),
-            Node {
-                position_type: PositionType::Absolute,
-                left: px((72.0 - size.x) * 0.5),
-                top: px((64.0 - size.y) * 0.5),
-                width: px(size.x),
-                height: px(size.y),
-                border: UiRect::all(px(if kind == SandKind::Square {
-                    crate::sand::BUTTON_BORDER_WIDTH / scale
-                } else {
-                    0.0
-                })),
-                overflow: Overflow::clip(),
-                ..default()
-            },
-        ))
-        .id();
+        ));
+    }
     if let Some((source, _)) = existing {
         world.entity_mut(miniature).insert(PreviewSource(source));
-    }
-    if kind != SandKind::Square {
-        world.entity_mut(miniature).remove::<(Square, Outline)>();
-    }
-    for saved in &texts {
-        let font = world.resource::<Typography>().text(22.0);
-        world.spawn((
-            Text::new(saved.text.chars().take(160).collect::<String>()),
-            font,
-            crate::token_style::text(crate::tokens::Token::Ink),
-            Pickable::IGNORE,
-            saved.area.tokens.clone(),
-            ChildOf(miniature),
-            Node {
-                position_type: PositionType::Absolute,
-                left: px(saved.area.offset[0]),
-                top: px(saved.area.offset[1]),
-                width: px(saved.area.size[0]),
-                height: px(saved.area.size[1]),
-                overflow: Overflow::clip(),
-                ..default()
-            },
-        ));
     }
     let metadata = world
         .spawn((
@@ -312,24 +304,22 @@ pub(crate) fn entry(
         },
     ));
     label(world, metadata, kind.description(), 13.0);
-    let measurement = label(world, metadata, &dimensions(size, texts.len()), 12.0);
+    let measurement = label(world, metadata, &dimensions(size), 12.0);
     if let Some((source, _)) = existing {
-        world
-            .entity_mut(measurement)
-            .insert(Dimensions(source, texts.len()));
+        world.entity_mut(measurement).insert(Dimensions(source));
     }
-    let buttons = world
-        .spawn((
-            ChildOf(row),
-            Node {
-                flex_direction: FlexDirection::Column,
-                row_gap: px(4),
-                flex_shrink: 0.0,
-                ..default()
-            },
-        ))
-        .id();
     if let Some((entity, index)) = existing {
+        let buttons = world
+            .spawn((
+                ChildOf(row),
+                Node {
+                    flex_direction: FlexDirection::Column,
+                    row_gap: px(4),
+                    flex_shrink: 0.0,
+                    ..default()
+                },
+            ))
+            .id();
         control(
             world,
             root,
@@ -344,9 +334,84 @@ pub(crate) fn entry(
             EditAction::RemoveSand(entity),
             &format!("Remove {} {}", kind.name(), index + 1),
         );
-    } else {
-        label(world, buttons, "+", 22.0);
     }
+}
+
+pub(crate) fn castle_entry(
+    world: &mut World,
+    root: Entity,
+    parent: Entity,
+    title: &str,
+    description: &str,
+    action: impl crate::actions::Action,
+    populate: impl FnOnce(&mut World, Entity) -> Entity,
+) -> Entity {
+    let (mut scene, scene_root) = preview::scene(world);
+    let source = populate(&mut scene, scene_root);
+    let size = scene
+        .get::<CanvasItem>(source)
+        .map_or(Vec2::new(560.0, 720.0), |item| item.size);
+    let row = world
+        .spawn((
+            crate::castle::Castle,
+            crate::sand::button(0),
+            crate::actions::ActionButton::new(root, crate::actions![action]),
+            crate::token_style::border(crate::tokens::Token::Accent),
+            ChildOf(parent),
+            Node {
+                width: percent(100),
+                padding: UiRect::all(px(10)),
+                column_gap: px(10),
+                align_items: AlignItems::FlexStart,
+                flex_shrink: 0.0,
+                ..default()
+            },
+        ))
+        .id();
+    let preview = world
+        .spawn((
+            SandPreview,
+            ChildOf(row),
+            Pickable::IGNORE,
+            Node {
+                width: px(72),
+                height: px(64),
+                flex_shrink: 0.0,
+                overflow: Overflow::clip(),
+                ..default()
+            },
+        ))
+        .id();
+    let miniature = preview::snapshot(&scene, source, world, preview);
+    preview::fit(world, miniature, size);
+    let metadata = world
+        .spawn((
+            ChildOf(row),
+            Node {
+                min_width: px(0),
+                flex_grow: 1.0,
+                flex_basis: px(0),
+                flex_direction: FlexDirection::Column,
+                row_gap: px(4),
+                ..default()
+            },
+        ))
+        .id();
+    world.init_resource::<StoreFont>();
+    let font = TextFont {
+        font: world.resource::<StoreFont>().0.clone().into(),
+        font_size: FontSize::Px(16.0),
+        ..default()
+    };
+    world.spawn((
+        Text::new(title),
+        font,
+        crate::token_style::text(crate::tokens::Token::Ink),
+        ChildOf(metadata),
+    ));
+    crate::edit_mode::label(world, metadata, description, 13.0);
+    crate::edit_mode::label(world, metadata, &dimensions(size), 12.0);
+    row
 }
 
 pub fn spawn_sand(
@@ -357,19 +422,29 @@ pub fn spawn_sand(
     text: &str,
     position: DVec2,
 ) -> Entity {
-    let elevation = world.get::<crate::topology::view::View>(root).map_or(0.0, |view| view.plane);
+    let elevation = world
+        .get::<crate::topology::view::View>(root)
+        .map_or(0.0, |view| view.plane);
     let sand = world
         .spawn((
             Square,
             InBox(root),
             ChildOf(root),
             WorkspaceMember(workspace),
-            crate::topology::Spatial { elevation, ..default() },
+            crate::topology::Spatial {
+                elevation,
+                ..default()
+            },
             SandCredits(crate::credits::ATTRIBUTIONS),
             CanvasItem {
                 position,
-                size: if matches!(kind, SandKind::Operation | SandKind::AccessControl) {
+                size: if matches!(
+                    kind,
+                    SandKind::Operation | SandKind::AccessControl | SandKind::Sync
+                ) {
                     Vec2::new(520.0, 540.0)
+                } else if kind == SandKind::WorkTimer {
+                    Vec2::new(360.0, 520.0)
                 } else {
                     Vec2::new(248.0, 184.0)
                 },
@@ -388,6 +463,7 @@ pub fn spawn_sand(
     let content = match kind {
         SandKind::Operation => Some(crate::operation::populate(world, root, sand)),
         SandKind::AccessControl => Some(crate::access_control::populate(world, root, sand)),
+        SandKind::Sync => Some(crate::sync_castle::populate(world, root, sand)),
         SandKind::Square => None,
         SandKind::Text | SandKind::EditableText | SandKind::WorkTimer => Some(sand_text::spawn(
             world,
@@ -399,7 +475,14 @@ pub fn spawn_sand(
         )),
     };
     world.entity_mut(sand).insert(StoredSand { kind, content });
-    if !matches!(kind, SandKind::Square | SandKind::Operation | SandKind::WorkTimer | SandKind::AccessControl) {
+    if !matches!(
+        kind,
+        SandKind::Square
+            | SandKind::Operation
+            | SandKind::WorkTimer
+            | SandKind::AccessControl
+            | SandKind::Sync
+    ) {
         world.entity_mut(sand).remove::<(Square, Outline)>();
     }
     sand

@@ -53,13 +53,26 @@ fn rich_text_preserves_code_and_resolves_record_link_targets() {
 #[cfg_attr(test, test)]
 fn mermaid_renders_pixels_and_reports_invalid_diagrams() {
     let (width, height, pixels) = diagram::rasterize("graph LR\n A[Readable text]").unwrap();
-    let label_pixels = pixels.chunks_exact(4).enumerate().filter(|(index, rgba)| {
-        let x = *index as u32 % width;
-        let y = *index as u32 / width;
-        x > width / 4 && x < width * 3 / 4 && y > height / 3 && y < height * 2 / 3
-            && rgba[0] < 150 && rgba[1] < 150 && rgba[2] < 150 && rgba[3] > 0
-    }).count();
-    assert!(label_pixels > 10, "Diagram labels must be rendered with a bundled font");
+    let label_pixels = pixels
+        .chunks_exact(4)
+        .enumerate()
+        .filter(|(index, rgba)| {
+            let x = *index as u32 % width;
+            let y = *index as u32 / width;
+            x > width / 4
+                && x < width * 3 / 4
+                && y > height / 3
+                && y < height * 2 / 3
+                && rgba[0] < 150
+                && rgba[1] < 150
+                && rgba[2] < 150
+                && rgba[3] > 0
+        })
+        .count();
+    assert!(
+        label_pixels > 10,
+        "Diagram labels must be rendered with a bundled font"
+    );
     let (width, height, pixels) = diagram::rasterize("graph LR\n A[Protein] --> B[Sand]").unwrap();
     assert!(width > 20 && height > 20);
     assert_eq!(pixels.len(), width as usize * height as usize * 4);
@@ -90,8 +103,6 @@ fn preview_keeps_the_same_editor_and_follows_its_changes() {
         },
     );
     let preview = world.get::<Editor>(parent).unwrap().preview;
-    assert_eq!(world.get::<Node>(input).unwrap().display, Display::None);
-    Mode(true).apply(&mut world, parent);
     assert_eq!(world.get::<Node>(input).unwrap().display, Display::Flex);
     world
         .get_mut::<EditableText>(input)
@@ -103,7 +114,7 @@ fn preview_keeps_the_same_editor_and_follows_its_changes() {
         world.get::<Description>(preview).unwrap().source,
         "## Changed"
     );
-    Mode(false).apply(&mut world, parent);
+    assert_eq!(world.get::<Node>(preview).unwrap().display, Display::Flex);
     assert_eq!(world.get::<Editor>(parent).unwrap().input, input);
     assert!(protects(&world, preview));
     assert!(!protects(&world, input));

@@ -11,6 +11,8 @@ description = "The running Lince Cell: engine, wire and every supervisor that ke
 name = "cell"
 
 [dependencies]
+fiote = { workspace = true }
+tempfile = "=3.27.0"
 async-trait = { workspace = true }
 chrono = { workspace = true }
 crossterm = { workspace = true }

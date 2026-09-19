@@ -15,6 +15,10 @@ pub struct CollabCursor {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ClientMessage {
+    Fiote {
+        id: String,
+        request: fiote::config::Request,
+    },
     SyncInspect {
         id: String,
         before: Option<i64>,
@@ -122,6 +126,10 @@ pub enum ClientMessage {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ServerMessage {
+    Fiote {
+        id: String,
+        status: fiote::config::Status,
+    },
     SyncStatus {
         id: String,
         overview: nucleus::sync::Overview,

@@ -1,6 +1,7 @@
 #![recursion_limit = "256"]
 
 pub mod lane;
+pub mod fiote;
 pub mod live;
 pub mod live_client;
 pub mod protocol;

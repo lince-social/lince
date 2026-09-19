@@ -71,13 +71,13 @@ pub async fn d3_license() -> Response {
 
 pub async fn mermaid_js() -> Response {
     asset_response(js(include_bytes!(
-        "../../../src/sand/instinct/mermaid.min.js"
+        "../../../static/vendored/mermaid/mermaid.min.js"
     )))
 }
 
 pub async fn mermaid_license() -> Response {
     asset_response(text(include_bytes!(
-        "../../../src/sand/instinct/LICENSE.txt"
+        "../../../static/vendored/mermaid/LICENSE.txt"
     )))
 }
 
@@ -108,17 +108,10 @@ pub async fn loro_license() -> Response {
 
 fn embedded_asset(path: &str) -> Option<EmbeddedAsset> {
     match path {
-        "styles.css" => Some(css(include_bytes!("../../../static/styles.css"))),
         "ai-builder.css" => Some(css(include_bytes!("../../../static/ai-builder.css"))),
         "lince_logo_white.svg" => Some(svg(include_bytes!("../../../static/lince_logo_white.svg"))),
         "presentation/ai/main.js" => Some(js(include_bytes!(
             "../../../static/presentation/ai/main.js"
-        ))),
-        "presentation/board/grid.js" => Some(js(include_bytes!(
-            "../../../static/presentation/board/grid.js"
-        ))),
-        "presentation/board/interactions.js" => Some(js(include_bytes!(
-            "../../../static/presentation/board/interactions.js"
         ))),
         "presentation/board/LynxDS-components.js" => Some(js(include_bytes!(
             "../../../static/presentation/board/LynxDS-components.js"
@@ -128,12 +121,6 @@ fn embedded_asset(path: &str) -> Option<EmbeddedAsset> {
         ))),
         "presentation/board/lynx-ui.js" => Some(js(include_bytes!(
             "../../../static/presentation/board/lynx-ui.js"
-        ))),
-        "presentation/board/main.js" => Some(js(include_bytes!(
-            "../../../static/presentation/board/main.js"
-        ))),
-        "presentation/board/store.js" => Some(js(include_bytes!(
-            "../../../static/presentation/board/store.js"
         ))),
         "presentation/board/widget-bridge.js" => Some(js(include_bytes!(
             "../../../static/presentation/board/widget-bridge.js"

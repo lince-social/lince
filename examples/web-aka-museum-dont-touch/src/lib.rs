@@ -1,27 +1,19 @@
 pub mod cell_surface;
 
-#[cfg(test)]
-mod board_js_tests;
 mod cell_bootstrap;
 mod domain;
 mod infrastructure;
 mod presentation;
 pub mod sand;
+#[cfg(test)]
+mod vault_js_tests;
 
 pub use crate::domain::lince_package::{LincePackage, slugify};
 
 use {
     crate::{
-        domain::{
-            board::{
-                AppBootstrap, AppRuntimeInfo, BoardCard, BoardState, ServerBootstrap,
-                ViewerBootstrap,
-            },
-            widget_bridge::WidgetBridgeSnapshot,
-        },
-        infrastructure::{
-            board_state_store::BoardStateStore, package_catalog_store::PackageCatalogStore,
-        },
+        domain::host::{ServerProfile, ViewerProfile},
+        infrastructure::package_catalog_store::PackageCatalogStore,
         presentation::http::{live_proxy, media_assets, static_assets},
     },
     std::{
@@ -50,11 +42,9 @@ const HEARTBEAT_PERIOD_SECS: u64 = 60;
 
 #[derive(Clone)]
 struct CellApiState {
-    board_state: BoardStateStore,
     engine: Arc<engine::Engine>,
     jwt_secret: Arc<String>,
     lanes: Arc<LaneHub>,
-    listening_port: u16,
     local_auth_required: bool,
     wire: crate::presentation::http::wire_supervisor::WireSlot,
     packages: PackageCatalogStore,
@@ -75,7 +65,7 @@ pub async fn serve_cell_api_only(
         body::Body,
         extract::{Multipart, Path, State, WebSocketUpgrade, ws::WebSocket},
         http::{HeaderMap, HeaderName, HeaderValue, StatusCode, header},
-        response::{Html, IntoResponse, Response},
+        response::{IntoResponse, Response},
         routing::{get, post},
     };
     use serde::{Deserialize, Serialize};
@@ -163,7 +153,7 @@ pub async fn serve_cell_api_only(
     async fn viewer_from_headers(
         state: &CellApiState,
         headers: &HeaderMap,
-    ) -> Option<ViewerBootstrap> {
+    ) -> Option<ViewerProfile> {
         if !state.local_auth_required {
             return None;
         }
@@ -179,7 +169,7 @@ pub async fn serve_cell_api_only(
         {
             return None;
         }
-        Some(ViewerBootstrap {
+        Some(ViewerProfile {
             id: user.uid.clone(),
             username: user.username,
             name: user.name,
@@ -191,8 +181,8 @@ pub async fn serve_cell_api_only(
     fn server_bootstrap_from_organ(
         organ: store::organs::OrganRecord,
         local_auth_required: bool,
-    ) -> ServerBootstrap {
-        ServerBootstrap {
+    ) -> ServerProfile {
+        ServerProfile {
             id: organ.uid,
             name: organ.head,
             base_url: organ.base_url,
@@ -206,14 +196,7 @@ pub async fn serve_cell_api_only(
         }
     }
 
-    async fn local_server_bootstrap(
-        state: &CellApiState,
-        viewer_present: bool,
-    ) -> Vec<ServerBootstrap> {
-        organ_list(state, viewer_present).await
-    }
-
-    async fn organ_list(state: &CellApiState, viewer_present: bool) -> Vec<ServerBootstrap> {
+    async fn organ_list(state: &CellApiState, viewer_present: bool) -> Vec<ServerProfile> {
         let mut servers = Vec::new();
         if let Ok(Some(local)) = store::organs::local(&state.store.pool).await {
             let mut row = server_bootstrap_from_organ(local, state.local_auth_required);
@@ -228,7 +211,7 @@ pub async fn serve_cell_api_only(
                     continue;
                 }
                 let login = held.get(&contact.record_uid);
-                servers.push(ServerBootstrap {
+                servers.push(ServerProfile {
                     id: contact.record_uid.clone(),
                     name: contact.head.clone(),
                     base_url: contact.base_url.clone(),
@@ -250,24 +233,6 @@ pub async fn serve_cell_api_only(
             }
         }
         servers
-    }
-
-    async fn index(State(state): State<CellApiState>, headers: HeaderMap) -> impl IntoResponse {
-        let board_state = state.board_state.snapshot().await;
-        let viewer = viewer_from_headers(&state, &headers).await;
-        let servers = local_server_bootstrap(&state, viewer.is_some()).await;
-        let bootstrap = AppBootstrap::new(
-            WidgetBridgeSnapshot::default(),
-            board_state,
-            servers,
-            AppRuntimeInfo {
-                port: state.listening_port,
-                version: env!("CARGO_PKG_VERSION"),
-                revision: utils::build_info::revision(),
-            },
-            viewer,
-        );
-        Html(crate::presentation::pages::render_app(&bootstrap))
     }
 
     async fn login(
@@ -316,78 +281,6 @@ pub async fn serve_cell_api_only(
                 .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))?,
         );
         Ok(response)
-    }
-
-    async fn get_board_state(
-        State(state): State<CellApiState>,
-        headers: HeaderMap,
-    ) -> Result<impl IntoResponse, (StatusCode, String)> {
-        authenticate_headers(&state, &headers).await?;
-        Ok(Json(state.board_state.snapshot().await))
-    }
-
-    async fn put_board_state(
-        State(state): State<CellApiState>,
-        headers: HeaderMap,
-        Json(next_state): Json<BoardState>,
-    ) -> Result<impl IntoResponse, (axum::http::StatusCode, String)> {
-        authenticate_headers(&state, &headers).await?;
-        state
-            .board_state
-            .replace(next_state)
-            .await
-            .map(Json)
-            .map_err(|error| (axum::http::StatusCode::BAD_REQUEST, error))
-    }
-
-    async fn export_workspace(
-        State(state): State<CellApiState>,
-        headers: HeaderMap,
-        Path(workspace_id): Path<String>,
-    ) -> Result<Response, (StatusCode, String)> {
-        authenticate_headers(&state, &headers).await?;
-        let board_state = state.board_state.snapshot().await;
-        let workspace = board_state
-            .workspaces
-            .iter()
-            .find(|workspace| workspace.id == workspace_id)
-            .cloned()
-            .ok_or_else(|| (StatusCode::NOT_FOUND, "Workspace nao encontrada.".into()))?;
-        let mut packages = Vec::new();
-        let mut seen = std::collections::BTreeSet::new();
-        for card in workspace.cards.iter().filter(|card| card.kind == "package") {
-            let package = if card.package_name.trim().is_empty() {
-                crate::domain::workspace_archive::reconstruct_package_from_card(card)
-            } else {
-                state
-                    .packages
-                    .load_by_filename(card.package_name.trim())
-                    .or_else(|_| {
-                        crate::domain::workspace_archive::reconstruct_package_from_card(card)
-                    })
-            }
-            .map_err(|message| (StatusCode::BAD_GATEWAY, message))?;
-            if seen.insert(package.archive_filename()) {
-                packages.push(package);
-            }
-        }
-        let archive =
-            crate::domain::workspace_archive::build_workspace_archive(&workspace, &packages)
-                .map_err(|message| (StatusCode::BAD_GATEWAY, message))?;
-        let filename = format!(
-            "{}.workspace.sand",
-            crate::domain::lince_package::slugify(&workspace.name)
-        );
-
-        Response::builder()
-            .status(StatusCode::OK)
-            .header(header::CONTENT_TYPE, "application/zip")
-            .header(
-                header::CONTENT_DISPOSITION,
-                format!("attachment; filename=\"{filename}\""),
-            )
-            .body(Body::from(archive))
-            .map_err(|error| (StatusCode::INTERNAL_SERVER_ERROR, error.to_string()))
     }
 
     async fn list_notifications(
@@ -453,39 +346,6 @@ pub async fn serve_cell_api_only(
         authenticate_headers(&state, &headers).await?;
         let viewer = viewer_from_headers(&state, &headers).await.is_some();
         Ok(Json(organ_list(&state, viewer).await))
-    }
-
-    #[derive(Serialize)]
-    struct GroupCardsResponse {
-        workspace_name: String,
-        cards: Vec<BoardCard>,
-    }
-
-    async fn get_local_group(
-        State(state): State<CellApiState>,
-        headers: HeaderMap,
-        Path(filename): Path<String>,
-    ) -> Result<impl IntoResponse, (StatusCode, String)> {
-        authenticate_headers(&state, &headers).await?;
-        let safe = std::path::Path::new(&filename)
-            .file_name()
-            .and_then(|value| value.to_str())
-            .ok_or_else(|| {
-                (
-                    StatusCode::BAD_REQUEST,
-                    "Nome de grupo invalido.".to_string(),
-                )
-            })?;
-        let path = crate::infrastructure::paths::sand_dir().join(safe);
-        let bytes = tokio::fs::read(&path)
-            .await
-            .map_err(|_| (StatusCode::NOT_FOUND, "Grupo nao encontrado.".to_string()))?;
-        let imported = crate::domain::workspace_archive::parse_workspace_archive(safe, &bytes)
-            .map_err(|message| (StatusCode::UNPROCESSABLE_ENTITY, message))?;
-        Ok(Json(GroupCardsResponse {
-            workspace_name: imported.workspace.name,
-            cards: imported.workspace.cards,
-        }))
     }
 
     #[derive(Serialize)]
@@ -1673,11 +1533,9 @@ pub async fn serve_cell_api_only(
     let _file_sync_supervisor = engine::file_sync::spawn_supervisor(engine.clone());
     let _heartbeat = engine.clone().run(HEARTBEAT_PERIOD_SECS);
     let state = CellApiState {
-        board_state: BoardStateStore::new().map_err(IoError::other)?,
         engine,
         jwt_secret: Arc::new(jwt_secret),
         lanes: lanes.clone(),
-        listening_port: local_addr.port(),
         local_auth_required,
         wire: wire_slot,
         packages,
@@ -1696,24 +1554,12 @@ pub async fn serve_cell_api_only(
             "/organ/{organ}/session",
             post(open_remote_session).delete(close_remote_session),
         )
-        .route(
-            "/host/board/state",
-            get(get_board_state).put(put_board_state),
-        )
-        .route(
-            "/host/board/workspaces/{workspace_id}/export",
-            get(export_workspace),
-        )
         .route("/host/notifications", get(list_notifications))
         .route(
             "/host/notifications/{notification_id}/{answer}",
             post(answer_thread_notification),
         )
         .route("/host/packages/local", get(list_local_packages))
-        .route(
-            "/host/packages/local/group/{filename}",
-            get(get_local_group),
-        )
         .route("/host/packages/local/{package_id}", get(get_local_package))
         .route(
             "/host/packages/local/by-filename/{filename}/content/{*asset_path}",
@@ -1750,7 +1596,6 @@ pub async fn serve_cell_api_only(
     let serve_ui = mode == HttpServeMode::FullUi;
     let router = if serve_ui {
         router
-            .route("/", get(index))
             .route("/favicon.ico", get(static_assets::favicon))
             .route("/board/frame.js", get(static_assets::frame_js))
             .route("/board/editor.js", get(static_assets::editor_js))

@@ -11,6 +11,12 @@ name = "fiote"
 path = "src/lib.rs"
 
 [dependencies]
+async-trait = { workspace = true }
+cap-std = "=4.0.3"
+genai = "=0.6.5"
+reqwest = { workspace = true }
+tempfile = "=3.27.0"
+url = "2.5.8"
 serde = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }

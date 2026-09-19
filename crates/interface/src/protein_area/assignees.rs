@@ -635,6 +635,7 @@ mod tests {
             store: engine.store.clone(),
             lanes: std::sync::Arc::new(cell::LaneHub::new()),
             wire: default(),
+            fiote: None,
             information: None,
         }))
         .insert_resource(crate::wake::WakeSignal::new(|| {}))

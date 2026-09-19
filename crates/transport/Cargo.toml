@@ -14,6 +14,7 @@ default = []
 axum = ["dep:axum", "dep:dirs", "dep:futures", "dep:portable-pty"]
 
 [dependencies]
+fiote = { workspace = true }
 nucleus = { workspace = true }
 store = { workspace = true }
 utils = { workspace = true }

@@ -26,6 +26,7 @@ pub struct Session {
     action_intent_initialization_error: Option<(String, Option<String>)>,
     action_intent_initialized: bool,
     local_sync: bool,
+    fiote: Option<Arc<dyn crate::fiote::Service>>,
 }
 
 impl Drop for Session {
@@ -57,6 +58,7 @@ impl Session {
             action_intent_initialization_error: None,
             action_intent_initialized: false,
             local_sync: false,
+            fiote: None,
         }
     }
 
@@ -79,6 +81,11 @@ impl Session {
 
     pub fn connection_id(&self) -> &str {
         &self.connection_id
+    }
+
+    pub fn with_fiote(mut self, service: Arc<dyn crate::fiote::Service>) -> Self {
+        self.fiote = Some(service);
+        self
     }
 
     pub fn joined_rooms(&self) -> &[String] {
@@ -152,6 +159,10 @@ impl Session {
                 | ClientMessage::SignedAct { .. }
                 | ClientMessage::CollabUpdate { .. }
                 | ClientMessage::SessionAuthenticate { .. }
+                | ClientMessage::Fiote {
+                    request: fiote::config::Request::Configure { .. },
+                    ..
+                }
         );
         let work = Box::pin(self.handle_inner(msg));
         let operation = async { Ok(work.await) };
@@ -165,6 +176,20 @@ impl Session {
 
     async fn handle_inner(&mut self, msg: ClientMessage) -> Vec<ServerMessage> {
         match msg {
+            ClientMessage::Fiote { id, request } => {
+                let result = match &self.fiote {
+                    Some(service) if self.local_sync => service.handle(request).await,
+                    _ => Err("Fiote settings and execution are available only on the local Cell.".into()),
+                };
+                vec![match result {
+                    Ok(status) => ServerMessage::Fiote { id, status },
+                    Err(message) => ServerMessage::Error {
+                        id,
+                        message,
+                        code: Some("fiote".into()),
+                    },
+                }]
+            }
             ClientMessage::SyncInspect { id, before } => self.sync_status(id, before).await,
             ClientMessage::SyncHistoryPolicy { id, retention } => {
                 if !self.local_sync {
@@ -694,6 +719,30 @@ impl Session {
     }
 
     async fn act(&self, id: String, action: engine::actions::Action) -> ServerMessage {
+        if self.local_sync
+            && let Some(service) = &self.fiote
+            && let engine::actions::Action::CreateMessage {
+                thread, body, author: None, state: nucleus::MessageState::Finished,
+                parent: None, references,
+            } = &action
+            && references.is_empty()
+        {
+            match service.send(thread, body).await {
+                Ok(Some(outcome)) => return ServerMessage::ActionOk {
+                    id,
+                    created: outcome.created,
+                    facts: outcome.facts.len(),
+                    warnings: outcome.warnings,
+                    data: outcome.data,
+                },
+                Ok(None) => {},
+                Err(message) => return ServerMessage::Error {
+                    id,
+                    message,
+                    code: Some("fiote".into()),
+                },
+            }
+        }
         match self.engine.act(action, self.subject.clone()).await {
             Ok(outcome) => ServerMessage::ActionOk {
                 id,

@@ -78,49 +78,78 @@ struct AddCastle(bool);
 
 impl Action for AddCastle {
     fn apply(&self, world: &mut World, root: Entity) {
-        if crate::laboratory::active(world) {
-            return;
-        }
-        let area = if self.0 {
-            crate::thread_castle::open(world, root, "pending", Source::Local)
-        } else {
-            open(world, root, "pending", Source::Local)
-        };
-        let Some(area) = area else { return };
-        world
-            .get_mut::<crate::area::InfluenceArea>(area)
-            .unwrap()
-            .protein
-            .as_mut()
-            .unwrap()
-            .enabled = false;
-        let id = format!("store-record-{}", area.to_bits());
-        let result = world
-            .get_non_send::<crate::cell_bridge::CellBridge>()
-            .ok_or("The local Organ is not connected.")
-            .and_then(|bridge| {
-                bridge
-                    .outgoing
-                    .try_send(cell::ClientMessage::Act {
-                        id: id.clone(),
-                        action: engine::actions::Action::CreateRecord {
+        create(world, root, self.0, false);
+    }
+}
+
+#[derive(Clone)]
+struct AddFiote;
+
+impl Action for AddFiote {
+    fn apply(&self, world: &mut World, root: Entity) {
+        create(world, root, false, true);
+    }
+}
+
+fn create(world: &mut World, root: Entity, threads: bool, fiote: bool) {
+    if crate::laboratory::active(world) {
+        return;
+    }
+    let area = if threads {
+        crate::thread_castle::open(world, root, "pending", Source::Local)
+    } else {
+        open(world, root, "pending", Source::Local)
+    };
+    let Some(area) = area else { return };
+    if fiote {
+        let mut area = world.get_mut::<crate::area::InfluenceArea>(area).unwrap();
+        area.name = "Fiote Castle".into();
+        let config = area.protein.as_mut().unwrap();
+        config.record_cards = false;
+        config
+            .bindings
+            .retain(|binding| matches!(binding.property.as_str(), "head" | "body" | "threads"));
+    }
+    world
+        .get_mut::<crate::area::InfluenceArea>(area)
+        .unwrap()
+        .protein
+        .as_mut()
+        .unwrap()
+        .enabled = false;
+    let id = format!("store-record-{}", area.to_bits());
+    let result = world
+        .get_non_send::<crate::cell_bridge::CellBridge>()
+        .ok_or("The local Organ is not connected.")
+        .and_then(|bridge| {
+            bridge
+                .outgoing
+                .try_send(cell::ClientMessage::Act {
+                    id: id.clone(),
+                    action: if fiote {
+                        engine::actions::Action::CreateAgent {
+                            head: "Fiote".into(),
+                            operated_by: None,
+                        }
+                    } else {
+                        engine::actions::Action::CreateRecord {
                             slug: None,
                             kind: nucleus::RecordKind::Plain,
                             head: String::new(),
                             body: String::new(),
                             quantity: 0.0,
-                        },
-                    })
-                    .map_err(|_| "The local Organ is busy or disconnected. Try again.")
-            });
-        match result {
-            Ok(()) => {
-                world.entity_mut(area).insert(Creating(id));
-            }
-            Err(error) => {
-                world.despawn(area);
-                crate::notifications::report(world, "interface::record", error);
-            }
+                        }
+                    },
+                })
+                .map_err(|_| "The local Organ is busy or disconnected. Try again.")
+        });
+    match result {
+        Ok(()) => {
+            world.entity_mut(area).insert(Creating(id));
+        }
+        Err(error) => {
+            world.despawn(area);
+            crate::notifications::report(world, "interface::record", error);
         }
     }
 }
@@ -183,6 +212,15 @@ pub(crate) fn receive(
 }
 
 pub(crate) fn store_entry(world: &mut World, root: Entity, parent: Entity) {
+    crate::sand_store::castle_entry(
+        world,
+        root,
+        parent,
+        "Fiote Castle",
+        "An agent with its prompt in the description and a session in each thread.",
+        AddFiote,
+        |world, _| preview(world, false),
+    );
     crate::sand_store::castle_entry(
         world,
         root,
@@ -255,6 +293,7 @@ mod tests {
             store: engine.store.clone(),
             lanes: std::sync::Arc::new(cell::LaneHub::new()),
             wire: Default::default(),
+            fiote: None,
             information: None,
         };
         let mut app = App::new();
@@ -276,12 +315,13 @@ mod tests {
         app.update();
         AddCastle(false).apply(app.world_mut(), root);
         AddCastle(true).apply(app.world_mut(), root);
+        AddFiote.apply(app.world_mut(), root);
         let entities: Vec<_> = app
             .world_mut()
             .query_filtered::<Entity, With<Creating>>()
             .iter(app.world())
             .collect();
-        assert_eq!(entities.len(), 2);
+        assert_eq!(entities.len(), 3);
         app.world_mut()
             .get_mut::<crate::workspace::Workspaces>(root)
             .unwrap()
@@ -323,7 +363,18 @@ mod tests {
             let rows = protein::execute(&engine.store, &query).await.unwrap();
             assert_eq!(rows.len(), 1);
             assert!(rows[0]["slug"].is_null());
-            assert_eq!(rows[0]["head"], "");
+            assert_eq!(
+                rows[0]["head"],
+                if area.name == "Fiote Castle" {
+                    "Fiote"
+                } else {
+                    ""
+                }
+            );
+            if area.name == "Fiote Castle" {
+                assert!(!config.record_cards);
+                assert_eq!(config.bindings.len(), 3);
+            }
             if area.name == "Thread Castle" {
                 assert_eq!(config.bindings.len(), 1);
                 assert_eq!(config.bindings[0].property, "threads");
@@ -341,6 +392,7 @@ mod tests {
         let root = world.spawn(crate::workspace::Workspaces::default()).id();
         AddCastle(false).apply(&mut world, root);
         AddCastle(true).apply(&mut world, root);
+        AddFiote.apply(&mut world, root);
         assert_eq!(
             world
                 .query::<&crate::area::InfluenceArea>()

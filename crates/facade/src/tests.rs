@@ -40,6 +40,7 @@ async fn fixture() -> State {
             engine,
             lanes: Arc::new(cell::LaneHub::new()),
             wire: Arc::new(tokio::sync::RwLock::new(None)),
+            fiote: None,
             information: None,
         },
         auth: Arc::new(auth::Auth::default()),

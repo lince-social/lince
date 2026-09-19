@@ -497,37 +497,32 @@ Interface (@interface: 1, is #chapter, #instinct, #done) { r_99NWECF19VKV94HQQ3G
 Interfaces should ask for as little attention as possible throughout the user's life. The best interface is Interfaceless. Built-in UI is minimal, not taking screenspace from users and flexible, fitting many Needs. Choices can be done quickly. Full control is always available. Components are flat by default, preffering 2D forces us to convey information only with flat data, not layers and composition, constraining the space forces minimalism. Shadows and hints can be used for subtle differentiation of areas, components and data. Built-in castles shoudld be focused in displaying mainly inputs or buttons, never phrases or paragraphs, to force self-explanatory design. Tooltips and placeholders should contain minimal text. The defaults are flat, quiet and mostly black and white, with the purple palette already in the Record. Common choices should be quick, and the person should be able to inspect and change the details. Sands: the widgets/components that live in the Box. Smaller pieces can be composed into groups, with interactions between them and other sands, receiving data from a Protein stream and executing Protein Actions in certain interactions. We should have the fundamental blocks to construct several types of workflows. Protein supplies authorized reads. Backend Actions remain responsible for writes and permissions. Files, network messages and imported packages are validated where they enter Lince. Lince's visual identity is black and white by default, with purple as the supporting color. Purple Cobalt: #3730A3, Nocturnal Purple: #6366F1, Deep Lead: #121214, Gray: #A7B4C2, Ice White: #F8FAFC.
 
 
+- [x] Make NixOS service point to main. Can we make github actions build the binary (already working) and NixOS use it?
+
 - [ ] Working Kanban Workflow with all it's Sands and Castles and Areas of Influence.
-	- Time Castle (currently as the Work timer sand): if not tied to record works as a cronometer, if no record shows it's past worklog of time spent, with total occupying the, current and past list.
-	- Calendar Castle: buggy
-
 	- [x] Record Castle (inspired by web's Record sand)
-		- Can be used to create a record, when we send a createRecord event this castle listens and enters create record mode, showing the same properties (that make sense) that are shown in the filled record state, to be edited before creation.
+		- [x] Can be used to create a record, when we send a createRecord event this castle listens and enters create record mode, showing the same properties (that make sense) that are shown in the filled record state, to be edited before creation.
+		- [x] Collaboration: Use one editor wherever a Record's information appears so when changes are made by another person to a common data between both of you it is felt instantly: in the Record Sand, a card, a table cell or a conversation. Writing in one place should be visible in the others and to people who share that Record. This can mean the text sand when hosting a Record property it has attatched to it some capabilities to deal with the possible Collaboration feature that has many people possibly changing such record. Be able to edit a Record with Loro, CRDT, so someone that is syncing with the Lince owner of the Record I am editing can see my edits. Includes Record title, description and other properties like quantity, assertions, slug, work metadata... Cursor position so the edits dont look like a ghost. Edit titles, descriptions and other supported properties collaboratively, with visible cursors. Use the same field binding everywhere while preserving each property's rules for quantities, unique slugs and permissions. Show who wrote each message in threads.
 
-		- [x] Collaboration: Use one editor wherever a Record's information appears so when changes are made by another person to a common data between both of you it is felt instantly: in the Record Sand, a card, a table cell or a conversation. Writing in one place should be visible in the others and to people who share that Record. This can mean the text sand when hosting a Record property it has attatched to it some capabilities to deal with the possible Collaboration feature that has many people possibly changing such record.
+- [/] Fiote:
+	- [ ] Providers abstraction
+	- [ ] Tool calling for editing files
+	- [ ] Editing .lingua files with CRDT so user can edit them in real time with the agent and neither overwrites the other, they are all edits that pass through the collaboration/sync/op/crdt (i dont know how, you tell me).
+	- [ ] Being able to talk to a Fiote, with description as it's system prompt throught the Record-Thread(session) castles.
+	- [ ] Having by default system prompt into a Fiote the following:
+		You are called Fiote, Lince's agent. You can read the Lingua skill for understanding how to work with .lingua files. The user might be making edits to them, and you may also edit them. Both Actor's edits will go through the CRDT capabilities of Lince, to not overwrite the changes of another with last write wins. The user might ask you to complete a work, it will be inside a Record, that you can access through the .lingua files you have access. In that case you should move it to the correct column with assertions like #todo, #wip (look at the kanban castle's default columns) and change the corresponding quantity for the column to match. When you finish the work report to the user. Say what has been finished, what has not, and why. Suggest next work to be done, which may be finishing a part of what you just did because you wanted the user's direction, or taking up new work.
+	- [ ] 
+	 Agent collaborating with changing the .lingua files with crdt so they receive updates to things they are looking at and dont overwrite what i did, their edits go through crdt. Being able to ask it to do tasks, changing the state of the task, then changing the code and rebuilding. Then if i say it is done it commits all the related changes of it (no worktrees). Then takes local personal data to test if this change maintains same expected information to still exist correctly, as one more test inside the suite. Then pushes to the staging branch. Then suggests next task. Have that process as personal data, because we put those instructions into the record description of the fiote's corresponding record.
 
-		- [x] Be able to edit a Record with Loro, CRDT, so someone that is syncing with the Lince owner of the Record I am editing can see my edits. Includes Record title, description and other properties like quantity, assertions, slug, work metadata...
-		
-		- [x] Cursor position so the edits dont look like a ghost.
 
-		- [x] Edit titles, descriptions and other supported properties collaboratively, with visible cursors. Use the same field binding everywhere while preserving each property's rules for quantities, unique slugs and permissions.
 
-		- [x] Show who wrote each message in threads.
 
-		- [x] Add sand for start/pause on the time tracking spent on that sand of work log metadata property. Maybe it can be always showing total time when paused and time of current play when play (common behavior).
-	
-		- [ ] Show recent changes that displaced a local edit, including the previous value so the person can recover it. Explain when this short-lived record of changes expires.
+- Calendar bugs:
+
+- Record castle ideas:
+	- [ ] Show recent changes that displaced a local edit, including the previous value so the person can recover it. Explain when this short-lived record of changes expires.
 		- [ ] In threads, keep private drafts and reusable replies together, and say what sending will do.
 		- [ ] Add Text Sand that starts as a local draft and creates a Record when interaction X happens: dunno.
-
-- [x] Make NixOS service point to main. Can we make github actions build the binary (already working) and NixOS use it?
-- [/] Fiote: Agent collaborating with changing the .lingua files with crdt so they receive updates to things they are looking at and dont overwrite what i did, their edits go through crdt. Being able to ask it to do tasks, changing the state of the task, then changing the code and rebuilding. Then if i say it is done it commits all the related changes of it (no worktrees). Then takes local personal data to test if this change maintains same expected information to still exist correctly, as one more test inside the suite. Then pushes to the staging branch. Then suggests next task. Have that process as personal data, because we put those instructions into the record description of the fiote's corresponding record.
-
-
-
-
-
-
 
 - [ ] Make each sand possibly configurable, so i can enter in a castle/sand and click a san and get some extra ui that the sand says can be used, like a slider for property X, that is then used in it's customization (as if they had specific tokens just for them).
 - [ ] Relation Castle, seeing records as Task Castle and aggregating with protein the assertion links between the records filtered (use a new Line sand (and arrange in this relation castle so the arrowline is 3 line sands, in a group, one long and two for the arrow, make this sand be configurable to have the tip of this line sand be squared by default, but configurable by having an extension in each side with size and a curvature, can be anything that is one line. but then it becomes a square with a custom component in the side and then it should become)).
@@ -650,7 +645,6 @@ Future Topology Work:
 - [ ] Castles:
 	- [ ] Karma
 	- [ ] Transfer
-	- [ ] Fiote
 	- [ ] Ontology
 - [ ] Access to camera can introduce hand waving controls, like pinch zoom, area selection in edit mode, select sand, delete sand. move camera angle and position...
 
@@ -666,6 +660,79 @@ These remain possibilities for the owner to consider, without an implementation 
 - [ ] There are modelings of cities, and regions in cities, AECO (Architecture, Engineering, Construction and Operations i think) that make simulations an digital representations of present moment from factories to harbors and railines. Built in UE5, Unity and Blender, bbwe could use them. These maps can show the modeled reality and ecords that compose them, the needs and contributions, ownership, transactions and automations related to them. For the factory cases, we can have ergonomics around stock management, orders all possibly as open data. A disruption at a mineral supplier could reveal consequences further along the chain.
 	
 } r_99NWECF19VKV94HQQ3G3ASMC4M
+
+Access Control (@access-control: 0) {
+
+**Access Control: remaining concerns**
+
+Updated 2026-09-16. These are deferred concerns and recommendations, not implemented behavior. Each Actor has at most one assigned Role per Organ; replacing it must remove the previous Role's authority. The owner's decision supersedes the older additive-Role wording in Lince.lingua. Do not add Role inheritance or multiple assigned Roles.
+
+**Management gaps**
+
+- Login management is not the whole Actor model. Keep Person identity, credentials, active standing and Role assignment distinct. Deleting a login keeps its Person Record. Define management of Actors without passwords, devices and other supported Actor kinds before expanding the UI.
+- Remove authority tied to the name `admin` before allowing that Role to be renamed or deleted. Protect actual recovery access instead of counting users with that Role name. Restoring an Actor must not revive revoked credentials or devices.
+- Define delegated management with an explicit list of assignable Roles; do not attempt to prove arbitrary filter containment. A manager must not strengthen an assignable Role to bypass their own limits.
+- The current Auth query does not return editable read rules, their revisions, scoped write grants or effective-access explanations. Expose those through the existing access machinery before building their editors. Permission checkboxes alone do not describe scoped access.
+- Save policy changes with expected revisions, dependency information and audit entries together. Authorize them using the authority before the change. Show conflicts and require a fresh review rather than overwriting another manager's edit.
+
+**Consistent enforcement**
+
+Use the same backend checks for direct requests, ordinary Record edits, collaboration and Area effects. Check current authority, attempted properties and assertions, and the complete resulting Record before committing. Reject an entire effect if any part is forbidden. Protect credential, assignment and domain-owned fields from generic editing shortcuts.
+
+The Area apply path currently checks coarse `record:update`, readability, expected state and duplicate requests, then writes quantity and assertions directly. It still needs the scoped before/after authorization used by other Record changes. Review the current source again before implementation; a checkbox or hidden control cannot close that gap.
+
+The existing scoped authorizer requires one grant to cover a complete Record change in both its old and new states. Recommendation: keep that simpler rule initially. Combining grants within one Role is a separate, unresolved proposal; introduce it only for a concrete workflow. It must never mean combining several assigned Roles.
+
+Validate every policy branch, referenced identity and work limit. Missing references, including under negation, must fail closed. Distinguish exact Concept matching from descendant matching. Display sorting, pagination and selected fields are not access rules. Time-dependent rules need explicit expiry behavior.
+
+**Cost of permission checks**
+
+The Auth query still loads all users and Roles and performs extra lookups per user. Add backend paging and batch those lookups if account lists grow; paging the interface alone cannot bound that database work.
+
+Write preparation currently depends on whole metadata snapshots, a default 4,096-Record limit, and loading unrelated policies and personal filters. Do not fix this by merely raising limits or removing validation.
+
+Cache validated rule structure by revision with bounded memory. Use indexed, batched lookups for affected Records and relevant relationships. Read current Role assignment and session state when applying an operation; avoid caching final allow decisions initially. Bound request size and graph work rather than the Organ's total Record count.
+
+Track policy dependencies, including new edges, removed links and changed ancestry. Structural edits can change access to other Records and must be authorized before and after; cache invalidation alone is insufficient. Keep transactions short, measure lock contention, and avoid scanning every Actor or building an Actor-by-Record permission table.
+
+**Restricted and unprivileged workspaces**
+
+The accepted unprivileged workspace grants no extra authority. Separate reading its definition, editing the shared layout and changing its Records. Adding an Area cannot grant its viewers new Record permissions.
+
+Recommend an authorized shared template, a view adapted to the current Actor, and personal layout changes saved only when customized. Keep original Record references and source Organ identity. Do not create a saved clone on every visit or permission change, or silently copy active behavior into personal layouts.
+
+The native workspace model is local, and the current Cell bridge uses a local owner session. Shared workspace identities, admission, revisions and authenticated restricted sessions still need backend support. Choosing a user in the management Sand must not be treated as signing in as that user.
+
+Use an explicit entry rule for the original workspace, with the adapted view as a fallback. Entry cannot promise that every future Area action will succeed: Records, filters and permissions change. Authorize actual operations without comparing everyone's permissions or solving arbitrary filter containment.
+
+A template can reveal private information through literal text, names, assets, query definitions and history. Permission to discover it is not permission to copy its contents. Publish literal template content to an explicit audience, protect Record bindings separately, and filter private data before delivery. Never share the entire local multi-workspace document as a shortcut.
+
+**Area effects and authority**
+
+Sharing an Area does not delegate its author's authority. If Bob moves a Sand while Alice watches, Alice's client must not execute Bob's effect using Alice's greater permissions. Bind effects to an authenticated initiating action. Remote movement, restored layouts and replayed events must not generate new mutations under another viewer.
+
+Keep copied, imported and restored Areas disarmed. Bind arming and pending effects to the Actor, Organ, workspace and configuration revision. Revoke that binding on login, permission or configuration changes. Preserve the existing preview-and-arm interaction without requiring confirmation on every crossing.
+
+One intended transition needs one request identity reused on retry; only its origin submits it. Multiple viewers can otherwise apply successive increments using separate fresh previews. Client geometry is not proof of authority, and server-wide physics simulation is unnecessary for authorizing the requested change.
+
+Keep pending work attached to its original session. Never fall back to the local owner when remote login expires. Preserve source Organs when copying bindings; exclude credentials, drafts, queued changes and armed state. Defer effects spanning several Organs until partial-failure behavior is defined. Show rejected effects clearly and pause them instead of retrying every frame.
+
+**Read privacy and revocation**
+
+Whole-Record reads and property-level writes do not establish property-level read privacy. Queries, document snapshots, collaboration, exports, history, attachments and presence all need the appropriate filtering. Shared title/body documents require a deliberate storage and sync decision before claiming independent field privacy.
+
+Authorize before pagination, counts and aggregates. Use the real evaluator for previews, with bounded samples and explanations that do not disclose hidden data. Recheck when saving.
+
+After revocation, new reads, writes and queued deliveries must use current authority. Invalidate stale subscriptions and pending decisions, including across reconnects. Already delivered bytes cannot be recalled.
+
+**Verification still needed for those changes**
+
+- Compare scoped decisions with a simple reference evaluator. Cover broad reads with narrow writes, Role replacement, category changes, missing references under negation, indirect graph changes, stale policy saves and rejected partial effects.
+- Measure checks with 1,000, 10,000 and 100,000 unrelated Records, then grow relevant relationships separately. Track database work, memory, latency and contention; include databases above the current snapshot limit.
+- Test revoked access between preview and apply, queued delivery after revocation, Bob's movement observed by Alice, duplicate viewers, disarmed copies, preserved source Organs, and direct requests that bypass the UI.
+- Inspect delivered workspace and subscription payloads for private content. Measure entry and idle work while increasing unrelated Actors and Records. Repeated entry must not create extra saved copies.
+	
+}
 
 Areas of Influence (@areas-of-influence: 0, #instinct, #part-of @interface) {
 
@@ -1278,4 +1345,329 @@ Learning how hardware works, and how to build and research it is fun and cool. H
 	- [ ] CAD-like for modeling mechanical parts.
 	- [ ] CAD-like for modeling electrical parts.
 	- [ ] Biology lab.
+
+AI text below:
+
+
+
+
+
+# CAD for Ailuros — research
+
+Researched 2026-09-16. Answers the `- [ ] Research` box in `Ailuros` (`@ailuros`).
+Question asked: how does CAD work in the core, can we embed an open source one in
+Lince — possibly as an external castle that still behaves natively — or do we
+build our own.
+
+Lince is MIT. The interface is Bevy 0.19 + avian3d, native, no embedded browser
+(CEF rejected, Servo unresolved). Those three facts eliminate most of the field
+before any geometry question is asked.
+
+## 1. What a CAD program actually is
+
+Every parametric CAD, from CATIA to Dune3D, is the same five layers stacked.
+Nothing about the stack is secret; each layer is decades of edge cases.
+
+**Layer 1 — the geometry kernel.** Curves and surfaces, almost always NURBS
+(non-uniform rational B-splines): control points, knot vector, weights. A plane,
+a cylinder and a torus are usually kept as analytic special cases because exact
+forms intersect far better than sampled ones. This layer answers "where is this
+surface at parameter (u,v)" and "where do these two surfaces cross".
+
+**Layer 2 — topology (B-rep).** Boundary representation: a solid is a shell, a
+shell is faces, a face is a trimmed surface bounded by loops of edges, an edge is
+a curve between two vertices, and every one of them carries a tolerance. The
+topology is what makes a bag of surfaces a watertight object. Booleans
+(union/subtract/intersect) are the hard part: intersect every surface pair, build
+the intersection curves, split faces along them, classify each piece as inside or
+outside the other solid, stitch the survivors. Tangency, near-tangency and
+coincident faces are where kernels die. This is why there are perhaps six
+production-grade B-rep kernels on Earth — Parasolid, ACIS, CGM, OCCT, Solid
+Modeling Solutions, and whatever Autodesk uses internally.
+
+**Layer 3 — the constraint solver.** A sketch is points and lines plus
+constraints (coincident, parallel, tangent, distance, angle, equal). The solver
+turns those into a system of nonlinear equations and runs Newton-Raphson (usually
+with a rank/DoF analysis first, to report under- and over-constrained sketches
+instead of diverging). Solvespace's solver and Zoo's `ezpz` are both this. It is
+a smaller, much more tractable problem than the kernel.
+
+**Layer 4 — the feature tree (history).** A part is not geometry, it is a recipe:
+sketch → extrude → fillet → pattern, replayed on every edit. This is what makes
+CAD parametric, and it produces the single worst problem in the field:
+
+> **Topological naming.** "Fillet the edge between face 3 and face 7" has to
+> survive the earlier sketch changing so that the old face 7 no longer exists.
+> Kernels name topology by generation order, so an upstream edit silently
+> repoints the fillet at the wrong edge and the model explodes. FreeCAD lived
+> with this for fifteen years and only shipped a real fix in 1.0 (the Ondsel
+> naming algorithm). Any "build our own" plan pays this cost, and it is not a
+> geometry cost — it is a persistent-identity cost, which is Lince's home turf.
+
+**Layer 5 — tessellation and exchange.** The screen never sees B-rep; faces get
+meshed into triangles per frame budget, with a separate high-quality mesh for
+export. Interchange is STEP (ISO 10303, AP203/214/242 — the only format that
+carries real B-rep between systems), IGES (dead but everywhere), STL/3MF for
+printing, glTF for display.
+
+### The alternative stacks
+
+- **Mesh CSG.** Skip exact surfaces; keep triangle meshes and do robust boolean
+  ops on them. Manifold's algorithm guarantees manifold-in → manifold-out. This
+  is what OpenSCAD uses now. Cheap, robust, but you lose exact circles, exact
+  fillets, and STEP export fidelity.
+- **Implicit / f-rep.** A shape is a function f(x,y,z) < 0. Union is min,
+  intersection is max, blends and lattices and offsets are trivial, booleans can
+  never fail because there is no topology to corrupt. Mesh only at the end (dual
+  contouring). This is libfive, Curv, Fidget, and commercially nTop. The trade:
+  no exact edges to dimension, no B-rep to export, and mating/tolerancing —
+  "this piece connects to that piece" — is genuinely awkward.
+- **Voxel.** Only relevant if Ailuros' "tiny, tiny voxels" line from
+  `Interfaceless` is taken literally. Not manufacturable-precision.
+
+## 2. The decision that decides everything else
+
+Ailuros wants "the smallest piece of it, that could connect with others" — parts
+that mate, with tolerances, with build instructions as a Trail. That is a
+B-rep/STEP problem, not an implicit problem. Implicit is the only option that
+drops cleanly into a Bevy canvas at interactive rates with no C++ in the build,
+and it is the wrong representation for the stated use.
+
+So: exactness is needed, and exactness is not obtainable in pure Rust today.
+
+## 3. The field itself
+
+Before asking what we can embed, what exists and how each one is built.
+
+### The commercial tier — kernels you rent
+
+Almost no CAD vendor writes its own kernel. There are four that matter and they
+are licensed, not sold, at five to six figures plus royalties.
+
+- **Parasolid** (Siemens, from the 1988 Romulus lineage) — the industry default.
+  NX, Solid Edge, SolidWorks (until its own fork), **Onshape**, **Shapr3D**,
+  **Plasticity**. If a young commercial CAD feels unreasonably solid at
+  booleans and fillets, it is Parasolid underneath and the company's real work
+  is the UI.
+- **ACIS** (Spatial/Dassault) — the other old one. DraftSight, many CAM tools.
+- **CGM** (Dassault) — CATIA's kernel, now sold separately.
+- **D-Cubed DCM** (Siemens) — not a kernel, the *constraint solver* half,
+  licensed separately and used by most of the above. That it is a separate
+  product is the evidence that layer 3 is genuinely separable.
+
+What renting buys: thirty years of boolean edge cases and someone else's
+liability. What it costs: money, a closed binary, and no chance of it living
+inside an MIT program. Out of reach for us, and worth knowing precisely *what*
+is out of reach — the kernel, not the application.
+
+### The free field
+
+- **FreeCAD** (LGPL) — OCCT + Coin3D + Qt + Python. A workbench shell rather
+  than a program; every discipline is a plugin. Its Python layer means a feature
+  is a script, which is the pattern worth stealing. 1.0 finally shipped the
+  topological-naming fix. Huge, C++, a whole desktop app — a teacher, not a
+  dependency.
+- **Dune3D** (GTK4, v1.4.0 "Einstein", Jan 2026) — Solvespace's solver + OCCT +
+  a modern UI, 33 MB, one person, 2.5 years. The proof that the stack is
+  assemblable at small scale by one determined human.
+- **SolveSpace** (GPLv3) — tiny, its own kernel and its own NURBS, and the
+  solver everyone else extracts. Famous for the solver, limited at booleans.
+- **OpenSCAD** (GPL) — script only, no GUI model, **no constraint solver, no
+  feature tree**, mesh CSG (now on Manifold). The existence proof that layers 3
+  and 4 are optional if your input language is good enough. Its descendants:
+  **ImplicitCAD**, **Curv**, **Antimony**.
+- **CadQuery** and **build123d** (Apache-2.0, Python over OCCT) — the closest
+  prior art to what Lince should do. A part is a program; selectors pick faces
+  and edges by *query* ("the topmost circular face") rather than by index, which
+  is an answer to topological naming that sidesteps persistent ids entirely.
+  Read build123d's selector design before designing ours.
+- **BRL-CAD** (BSD/LGPL, in continuous development since **1979**, ~1M lines) —
+  the great unknown major. Its architecture is a third option nobody else
+  offers: CSG-primary, and geometry is evaluated by **ray-tracing** (`librt`)
+  rather than tessellated. Instead of computing a boundary, you shoot rays and
+  classify intervals per ray, which makes booleans trivially robust and gives
+  you analysis (mass, shielding, line-of-sight) as a by-product. It is slow to
+  edit, alien to modern CAD UI, and unmatched at "is this assembly actually
+  solid". Worth knowing about if Ailuros ever needs to *analyse* a device rather
+  than draw one.
+- **openNURBS** (Rhino, freely licensed C++ with source) — not a kernel, a
+  read/write library for the `.3dm` format plus NURBS evaluation. The way into
+  the Rhino/Grasshopper world if that ever matters.
+- **Blender / Gmsh / Salome** — mesh modelling, meshing and FEA respectively.
+  Adjacent, not CAD.
+- **Zoo Design Studio** — the app is open source, the geometry engine is a
+  hosted GPU service; the "3D view" is a video stream over WebSocket. Their
+  language KCL is Rust and their solver `ezpz` is MIT. Take those two, leave the
+  architecture.
+- **nTop** — commercial implicit modelling, originally built on Matt Keeter's
+  libfive. The proof that f-rep is a real engineering stack and not a demo, for
+  lattices, blends and generative shapes specifically.
+
+## 4. Candidates, filtered
+
+Filter order: license compatible with MIT → no browser, no Qt/GTK app → buildable
+in our tree → geometry depth.
+
+### Usable
+
+| Thing | License | What it is | Verdict |
+|---|---|---|---|
+| **OCCT** (via `opencascade-rs` / `occt-rs`) | LGPL-2.1 **with a narrow exception** — see below | The only free production B-rep kernel. Booleans, fillets, STEP r/w, healing. Powers FreeCAD, Dune3D, CadQuery, KiCad's 3D. | Usable, with a licensing catch that bites our single-binary shape. Cost: a C++ build (CMake, minutes to tens of minutes), and the Rust bindings are partial. `bschwind/opencascade-rs` is the established one but thin; `occt-rs` is 2026, early, partly AI-written, AGPL-with-CLA — avoid that one. |
+| **`ezpz`** (Zoo/KittyCAD) | MIT | 2D geometric constraint solver in Rust, ships in Zoo Design Studio, works native or wasm. Built specifically because slvs is GPL and D-Cubed is expensive. | Best-in-class fit. Layer 3 is solved for us, for free, in-language. |
+| **Manifold** — `meshbool` (pure Rust port, Apache-2.0, tracks upstream v3.5.1, passes 245 of the C++ tests), or `manifold-csg` (bindings) | Apache-2.0 | Guaranteed-manifold mesh booleans. | The pragmatic middle. No C++ needed with `meshbool`. `meshbool` is small and young (7 stars) but the boolean core is the part that is done. |
+| **Fidget** (Matt Keeter) | MPL-2.0 | Implicit-surface evaluation with a hand-written aarch64/x86_64 JIT, 31× over its own interpreter; manifold dual contouring meshing; 2D/3D bitmap rendering. | The best Rust engine in the whole survey, for the representation we probably don't want. Keep for organic/lattice/blend work, not for mating parts. |
+| **truck** / **monstertruck** | Apache-2.0 | Pure-Rust B-rep with NURBS, `truck-shapeops` booleans, `truck-stepio` STEP. `monstertruck` is virtualritz's fork (upstream PRs were stalling) adding a rewritten fillet engine with per-edge and variable radii, chamfers, `Result`-returning booleans, shape healing, T-splines, STEP assembly output. | The only pure-Rust path to exact B-rep. Booleans exist but are not battle-hardened — the docs themselves ship a "robust version of splitting closed edges and faces" as a separate opt-in, which tells you what the default is. |
+| **`csgrs`** | MIT | OpenSCAD-shaped CSG over BSP trees, wired into the dimforge ecosystem (nalgebra/parry/rapier) we already use via avian3d. 32/64-bit, wasm. | Easiest thing to get a shape on screen with. Ceiling is low. |
+
+### Read the OCCT exception before counting on it
+
+I read the actual text (`OCCT_LGPL_EXCEPTION.txt`). It is much narrower than its
+reputation:
+
+> "The object code form of a 'work that uses the Library' can incorporate
+> material from a header file that is part of the Library. As a special
+> exception to the GNU Lesser General Public License version 2.1, you may
+> distribute such object code incorporating material from header files provided
+> with the Open CASCADE Technology libraries (including code of CDL generic
+> classes) under terms of your choice, provided that you give prominent notice
+> in supporting documentation to this code that it makes use of or is based on
+> facilities provided by the Open CASCADE Technology software."
+
+That only lifts the header/inline/template-instantiation clause of LGPL 2.1. It
+does **not** grant general static-linking freedom. So the ordinary LGPL rule
+still applies: dynamic linking is fine and our own code stays MIT, but the user
+must be able to swap in their own build of the library. Lince ships as **one
+binary** (`lince`, Cell plus optional UI) — statically linking OCCT into it would
+put us in the "provide object files or otherwise allow relinking" obligation,
+which is a distribution and CI problem, not a code problem. Dynamic linking a
+system OCCT is clean but makes the single binary depend on a large C++ library
+being present, which contradicts the whole point of shipping one file. Decide
+this before writing any binding code; it is the actual blocker on OCCT, not the
+API.
+
+### Rejected, and why
+
+- **FreeCAD / Dune3D / SolveSpace as embedded apps** — all are Qt/GTK
+  applications with their own event loop and document model. Embedding means
+  either a second window we do not control or a browser we already rejected.
+  Dune3D (v1.4.0 "Einstein", Jan 2026, GTK4) is worth studying as a design: it
+  is precisely Solvespace's solver + OCCT + a modern UI, in 33 MB. That is the
+  architecture, proven at small scale, by one person.
+- **Solvespace's `slvs` / the `slvs` Rust crate** — GPLv3. Incompatible with MIT
+  Lince. `ezpz` exists to replace exactly this.
+- **Zoo Design Studio** — the app is open, the geometry engine is not: it is a
+  hosted GPU service and the 3D view is a **video stream over WebSocket**. Nothing
+  to embed, and it inverts our model of where data lives. Take `ezpz` and leave
+  the rest.
+- **Fornjot** — the obvious answer two years ago, an all-Rust b-rep kernel. Hanno
+  Braun ended it; the repository was archived 2026-06-19 with the goals
+  explicitly not reached. Read its post-mortems before starting a kernel.
+- **`zenith-cad-kernel`** — from-scratch Rust B-rep, exact booleans, STEP, ~132k
+  lines, 8 crates, MPL-2.0. Written in **29 days** (2026-08-19 → 09-16) by one
+  person with an AI, zero stars, cannot read all real STEP files. Genuinely
+  interesting and completely unproven. Watch; do not depend.
+- **CADmium** — browser CAD over `truck`, prototype, quiet since 2024.
+- **libfive / Curv** — C++ ancestors of Fidget. Use Fidget instead.
+
+## 5. What "external castle that behaves natively" costs
+
+Worth pricing honestly, because it sounds free and is not.
+
+A separate process holding the model means the geometry state lives **outside the
+Box**. Protein supplies authorized reads and Actions own writes; a CAD process
+with its own document is a second source of truth with no Protein binding, so no
+Area of Influence can filter parts, no Protein Action can change a dimension, and
+nothing about the model syncs to another Organ. We would have to invent a bridge
+whose only job is re-teaching the external tool what a Record is — the same
+mistake the web crate made with its own state, one process further away.
+
+It also breaks rendering: to "behave natively" the castle must draw inside our
+canvas, and an external GTK/Qt app cannot. The only ways are a video stream
+(Zoo's answer — and it forces their hosted-engine architecture on us) or shared
+GPU buffers (fragile, platform-specific).
+
+And determinism. The interface already runs avian3d with `enhanced-determinism`,
+and the DST plan wants a seed to reproduce a run exactly. If part geometry ends
+up in Records that sync, a nondeterministic kernel — floating-point tolerance
+decisions, thread-order-dependent boolean results — is a **sync divergence**, not
+just a rendering wobble. An in-process Rust library we can pin and seed is
+checkable; an external binary is not.
+
+Conclusion: an external process is fine as a **converter** (feed it a file, get a
+file back, e.g. headless FreeCAD for a STEP import we cannot parse) and wrong as
+a castle.
+
+## 6. What this points at
+
+Not "embed a CAD". Not "write a kernel". The third thing:
+
+**Lince owns layers 3 and 4, and borrows layers 1, 2 and 5.**
+
+Layer 4 — the feature tree with stable names — is the part Lince is already
+unusually well equipped for. A feature tree is an ordered DAG of parameterised
+operations with durable identity, which is a Record tree with `@part-of` and
+uids. The topological naming problem is a persistent-identity problem, and
+Lince's whole thesis is that identity is a uid, never a position. A sketch
+dimension that is a Record quantity is dimension-driven design for free, and
+makes a part a thing you can Need, contribute to, transfer and sync — which no
+CAD file can be. That is the part worth building, and it is the part nobody else
+has.
+
+Layers 1–2 stay borrowed: `monstertruck`/`truck` while it holds, OCCT when
+exactness wins over the single-binary constraint, `meshbool` for display-time and
+for anything that only has to be printable. Layer 3 is `ezpz`. Layer 5 is
+`truck-stepio` plus our own tessellation into Bevy meshes. Fidget lives beside
+it all as a second representation for the organic parts, never as the mating
+geometry.
+
+**The one architectural decision, and it has to be made on day one.** Layers 3
+and 4 — sketch points as Records, constraints as assertions, the feature DAG —
+are portable across every kernel in this document. Layers 1 and 2 are not: a mesh
+fillet is not a B-rep fillet, and a feature tree written directly against mesh
+CSG does not carry forward, it gets rewritten. So the kernel must sit behind one
+narrow internal trait from the very first commit — roughly `solid from profile +
+extrusion`, `boolean`, `fillet edges`, `tessellate`, `export` — with mesh CSG as
+its first implementation and B-rep as a later one. Put that seam in on day one
+and the prototype is a prototype; leave it out and the prototype is a throwaway.
+That is the only decision here that is expensive to reverse.
+
+Concretely the first honest step is small: one castle that holds a 2D sketch
+whose points are Records and whose constraints are assertions, solved by `ezpz`,
+extruded into a Bevy mesh through that trait, implemented by `csgrs` or
+`meshbool`. No kernel, no C++, no external process, MIT throughout. If
+sketch-plus-extrude-plus-boolean survives contact with a real part, the B-rep
+question becomes answerable with evidence rather than by survey.
+
+## 7. Numbers worth keeping
+
+- Production free B-rep kernels: **one** (OCCT). Rust ones: **zero proven**.
+- Fornjot: **archived 2026-06-19**, goals not met, after ~4 years.
+- Dune3D: one person, 2.5 years, 33 MB, solver + OCCT + GTK4 — the whole
+  architecture, at the smallest size anyone has managed.
+- FreeCAD: **15 years** to fix topological naming.
+- Fidget JIT: 1024² brute-force, 5.8 s interpreted → **182 ms** JIT.
+
+## Sources
+
+- Fornjot archived: https://github.com/hannobraun/fornjot · https://www.fornjot.app/
+- truck: https://github.com/ricosjp/truck · https://docs.rs/truck-shapeops
+- monstertruck: https://github.com/virtualritz/monstertruck
+- zenith: https://github.com/hinatahugu29/zenith-cad-kernel
+- opencascade-rs: https://github.com/bschwind/opencascade-rs · occt-rs: https://github.com/occt-rs/occt-rs
+- Fidget: https://github.com/mkeeter/fidget · https://www.mattkeeter.com/projects/fidget/ · meshing idea: https://www.mattkeeter.com/blog/2026-07-03-meshing/
+- Manifold: https://github.com/elalish/manifold · meshbool: https://github.com/BorgerLand/meshbool · manifold-csg: https://github.com/zmerlynn/manifold-csg
+- csgrs: https://github.com/timschmidt/csgrs
+- ezpz: https://github.com/KittyCAD/ezpz · https://zoo.dev/blog/announcing-solver
+- Zoo engine as video stream: https://github.com/KittyCAD/modeling-app
+- slvs GPL: https://solvespace.com/library.pl · https://github.com/thekakkun/rust_slvs
+- Dune3D: https://github.com/dune3d/dune3d · https://docs.dune3d.org/en/latest/why-another-3d-cad.html · FOSDEM 2026: https://fosdem.org/2026/schedule/event/UUVWPM-dune_3d_-_2_12_years_in_the_3rd_dimension/
+- Topological naming: https://github.com/FreeCAD/FreeCAD-documentation/blob/main/wiki/Topological_naming_problem.md
+- B-rep vs implicit: https://www.ntop.com/resources/blog/understanding-the-basics-of-b-reps-and-implicits/
+- libfive: https://github.com/libfive/libfive
+- CADmium: https://mattferraro.dev/posts/cadmium
+- OCCT exception text: https://raw.githubusercontent.com/Open-Cascade-SAS/OCCT/master/OCCT_LGPL_EXCEPTION.txt
+- BRL-CAD: https://brl-cad.github.io/docs/index.html · https://brlcad.org/~maths22/books/en/HACKING_BRL-CAD.html
+- openNURBS: https://www.rhino3d.com/features/developer/opennurbs/
+- Parasolid / the rented-kernel tier: https://en.wikipedia.org/wiki/Parasolid
+
 }

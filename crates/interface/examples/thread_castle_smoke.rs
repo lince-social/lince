@@ -36,7 +36,7 @@ fn main() {
                 engine.act(engine::actions::Action::CreateMessage { thread: thread.clone(), body: if index == count - 1 { format!("## {title}\n\nA **rich** message with _formatting_.\n\n```mermaid\ngraph LR\n A[Record] --> B[Thread]\n```\n\n![Lince logo](data:image/png;base64,{embedded_logo})\n\nMessage {index}") } else { format!("Message {index}") }, author: None, state: nucleus::MessageState::Finished, parent: None, references: Vec::new() }, None).await.unwrap();
             }
         }
-        (cell::CellRuntime { store: engine.store.clone(), engine, lanes: Arc::new(cell::LaneHub::new()), wire: Default::default(), information: None }, record)
+        (cell::CellRuntime { store: engine.store.clone(), engine, lanes: Arc::new(cell::LaneHub::new()), wire: Default::default(), fiote: None, information: None }, record)
     });
     let _entered = runtime.enter();
     runtime.spawn(async {

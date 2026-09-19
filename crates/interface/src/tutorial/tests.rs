@@ -147,6 +147,7 @@ async fn tutorial_checks_real_protein_and_confirmed_entry_exit_changes() {
         store: engine.store.clone(),
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
         wire: Default::default(),
+        fiote: None,
         information: None,
     };
     let mut app = App::new();

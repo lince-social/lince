@@ -5,8 +5,6 @@ mod configuration;
 mod conversation;
 mod document_viewer;
 mod freedoom;
-#[path = "instinct/mod.rs"]
-mod instinct;
 #[path = "kanban/mod.rs"]
 mod kanban;
 #[path = "karma/mod.rs"]
@@ -103,22 +101,10 @@ impl OfficialWidgetBuilder {
     }
 }
 
-const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 25] = [
-    OfficialWidgetBuilder::Html {
-        feature_flag: shell::FEATURE_FLAG,
-        source_builder: shell::edit_source,
-    },
-    OfficialWidgetBuilder::Html {
-        feature_flag: shell::FEATURE_FLAG,
-        source_builder: shell::zoom_source,
-    },
+const OFFICIAL_WIDGETS: [OfficialWidgetBuilder; 22] = [
     OfficialWidgetBuilder::Html {
         feature_flag: shell::FEATURE_FLAG,
         source_builder: shell::ai_source,
-    },
-    OfficialWidgetBuilder::Package {
-        feature_flag: instinct::FEATURE_FLAG,
-        package_builder: instinct::package,
     },
     OfficialWidgetBuilder::Package {
         feature_flag: document_viewer::FEATURE_FLAG,

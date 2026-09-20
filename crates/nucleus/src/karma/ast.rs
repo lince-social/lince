@@ -8,12 +8,14 @@ use super::{
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(schemars::JsonSchema)]
 pub enum ProgramSchema {
     #[serde(rename = "karma.program.v1")]
     V1,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(schemars::JsonSchema)]
 pub struct ProgramAst {
     pub schema: ProgramSchema,
     pub slug: Slug,
@@ -30,6 +32,7 @@ pub struct ProgramAst {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(schemars::JsonSchema)]
 pub struct ParameterDefinition {
     pub value_type: ValueType,
     pub default: LiteralValue,
@@ -37,12 +40,14 @@ pub struct ParameterDefinition {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(schemars::JsonSchema)]
 pub struct OutputRef {
     pub node: LocalId,
     pub port: LocalId,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(schemars::JsonSchema)]
 pub struct InputBinding {
     pub source: OutputRef,
     pub expected_type: ValueType,
@@ -63,6 +68,7 @@ impl ProgramAst {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(schemars::JsonSchema)]
 pub struct NodeAst {
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub inputs: BTreeMap<LocalId, InputBinding>,
@@ -72,6 +78,7 @@ pub struct NodeAst {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum NodeOperation {
     Trigger {
         source: TriggerSource,
@@ -134,6 +141,7 @@ pub enum NodeOperation {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum ThresholdDirection {
     Above,
     Below,
@@ -147,6 +155,7 @@ impl NodeOperation {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum TriggerSource {
     Manual,
     Fact {
@@ -172,6 +181,7 @@ pub enum TriggerSource {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum InputSource {
     Parameter { parameter: LocalId },
     RecordQuantity { record: ResolvedReference },
@@ -182,6 +192,7 @@ pub enum InputSource {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum ExpressionAst {
     Literal {
         value: LiteralValue,
@@ -240,12 +251,14 @@ impl ExpressionAst {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum UnaryOperator {
     Not,
     Negate,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(schemars::JsonSchema)]
 pub struct DecimalPrecision {
     pub scale: u8,
     pub rounding: Rounding,
@@ -255,6 +268,7 @@ pub struct DecimalPrecision {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum DeclaredUnit {
     Dimensionless,
     Unit { unit: TypedUid },
@@ -262,6 +276,7 @@ pub enum DeclaredUnit {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum BinaryOperator {
     Add,
     Subtract,
@@ -279,6 +294,7 @@ pub enum BinaryOperator {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(schemars::JsonSchema)]
 pub struct StateContract {
     pub persistence: StatePersistence,
     pub reset: StateResetPolicy,
@@ -289,6 +305,7 @@ pub struct StateContract {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum StatePersistence {
     Program,
     Workflow,
@@ -297,6 +314,7 @@ pub enum StatePersistence {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum StateResetPolicy {
     Never,
     Manual,
@@ -306,6 +324,7 @@ pub enum StateResetPolicy {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum LateEventPolicy {
     Ignore,
     Recompute,
@@ -315,6 +334,7 @@ pub enum LateEventPolicy {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum StateMigrationPolicy {
     Reset,
     RequireExplicit,
@@ -323,6 +343,7 @@ pub enum StateMigrationPolicy {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum SimulationStatePolicy {
     Clone,
     Reset,

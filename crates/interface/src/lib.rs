@@ -156,6 +156,9 @@ pub mod work_timer;
 pub mod full_record;
 
 #[cfg(feature = "native-runtime")]
+pub mod record_creation;
+
+#[cfg(feature = "native-runtime")]
 pub mod thread_castle;
 
 #[cfg(feature = "native-runtime")]

@@ -1,7 +1,9 @@
-use crate::config::{ProviderKind, Secret, Settings};
+use crate::config::{Secret, Settings};
 use async_trait::async_trait;
+use futures::StreamExt;
 use genai::chat::{
-    ChatMessage, ChatOptions, ChatRequest, ContentPart, StopReason, Tool, ToolResponse,
+    ChatMessage, ChatOptions, ChatRequest, ChatStreamEvent, ContentPart, StopReason, Tool,
+    ToolResponse,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -28,17 +30,31 @@ pub enum Message {
     },
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ToolDefinition {
     pub name: String,
     pub description: String,
     pub schema: Value,
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Reply {
     pub text: String,
     pub calls: Vec<ToolCall>,
+}
+
+#[async_trait]
+pub trait TextOutput: Send + Sync {
+    async fn update(&self, text: &str) -> Result<(), String>;
+}
+
+pub struct DiscardText;
+
+#[async_trait]
+impl TextOutput for DiscardText {
+    async fn update(&self, _: &str) -> Result<(), String> {
+        Ok(())
+    }
 }
 
 #[async_trait]
@@ -49,6 +65,18 @@ pub trait Provider: Send + Sync {
         messages: &[Message],
         tools: &[ToolDefinition],
     ) -> Result<Reply, String>;
+
+    async fn stream(
+        &self,
+        system: &str,
+        messages: &[Message],
+        tools: &[ToolDefinition],
+        output: &dyn TextOutput,
+    ) -> Result<Reply, String> {
+        let reply = self.complete(system, messages, tools).await?;
+        output.update(&reply.text).await?;
+        Ok(reply)
+    }
 }
 
 pub struct GenaiProvider {
@@ -58,12 +86,8 @@ pub struct GenaiProvider {
 
 impl GenaiProvider {
     pub fn new(settings: &Settings, key: &Secret) -> Result<Self, String> {
-        let adapter = match settings.provider {
-            ProviderKind::OpenAi => genai::adapter::AdapterKind::OpenAI,
-            ProviderKind::Anthropic => genai::adapter::AdapterKind::Anthropic,
-            ProviderKind::Gemini => genai::adapter::AdapterKind::Gemini,
-            ProviderKind::Ollama => genai::adapter::AdapterKind::Ollama,
-        };
+        let adapter = genai::adapter::AdapterKind::from_lower_str(&settings.provider.0)
+            .ok_or("This provider adapter is unavailable.")?;
         let http = reqwest::Client::builder()
             .redirect(reqwest::redirect::Policy::none())
             .connect_timeout(std::time::Duration::from_secs(15))
@@ -153,5 +177,96 @@ impl Provider for GenaiProvider {
             })
             .collect();
         Ok(Reply { text, calls })
+    }
+
+    async fn stream(
+        &self,
+        system: &str,
+        messages: &[Message],
+        tools: &[ToolDefinition],
+        output: &dyn TextOutput,
+    ) -> Result<Reply, String> {
+        let request = ChatRequest::new(messages.iter().map(message).collect())
+            .with_system(system)
+            .with_tools(
+                tools
+                    .iter()
+                    .map(|tool| {
+                        Tool::new(&tool.name)
+                            .with_description(&tool.description)
+                            .with_schema(tool.schema.clone())
+                    })
+                    .collect::<Vec<_>>(),
+            );
+        let options = ChatOptions::default()
+            .with_max_tokens(4096)
+            .with_capture_content(true)
+            .with_capture_tool_calls(true);
+        let mut stream = self
+            .client
+            .exec_chat_stream(self.target.clone(), request, Some(&options))
+            .await
+            .map_err(|_| "Provider request failed. Check the endpoint, model and credentials.")?
+            .stream;
+        let mut text = String::new();
+        let mut dirty = false;
+        let mut first = true;
+        let mut flush = tokio::time::interval(std::time::Duration::from_millis(60));
+        flush.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+        loop {
+            let event = tokio::select! {
+                event = stream.next() => event,
+                _ = flush.tick(), if dirty => {
+                    output.update(&text).await?;
+                    dirty = false;
+                    continue;
+                }
+            };
+            match event {
+                Some(Ok(ChatStreamEvent::Chunk(chunk))) => {
+                    if text.len() + chunk.content.len() > crate::runtime::MAX_CONTEXT_BYTES {
+                        output.update(&text).await?;
+                        return Err("The provider reply exceeded the text limit.".into());
+                    }
+                    text.push_str(&chunk.content);
+                    dirty = true;
+                    if first && !text.is_empty() {
+                        output.update(&text).await?;
+                        dirty = false;
+                        first = false;
+                    }
+                }
+                Some(Ok(ChatStreamEvent::End(end))) => {
+                    output.update(&text).await?;
+                    if !matches!(
+                        end.captured_stop_reason,
+                        Some(
+                            StopReason::Completed(_)
+                                | StopReason::ToolCall(_)
+                                | StopReason::StopSequence(_)
+                        )
+                    ) {
+                        return Err("The provider stopped before completing its reply.".into());
+                    }
+                    let calls = end
+                        .captured_into_tool_calls()
+                        .unwrap_or_default()
+                        .into_iter()
+                        .map(|call| ToolCall {
+                            id: call.call_id,
+                            name: call.fn_name,
+                            arguments: call.fn_arguments,
+                            signatures: call.thought_signatures,
+                        })
+                        .collect();
+                    return Ok(Reply { text, calls });
+                }
+                Some(Ok(_)) => {}
+                Some(Err(_)) | None => {
+                    output.update(&text).await?;
+                    return Err("The provider stream was interrupted before completion.".into());
+                }
+            }
+        }
     }
 }

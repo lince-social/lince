@@ -700,9 +700,18 @@ pub(crate) fn transform_members(
             continue;
         }
         *world.get_mut::<CanvasItem>(member).unwrap() = CanvasItem { position, size };
+        if let Some(mut area) = world.get_mut::<crate::area::InfluenceArea>(member) {
+            area.center = position.to_array();
+            area.size = size.as_dvec2().to_array();
+        }
+        crate::layout::edited(world, member, item, CanvasItem { position, size });
         if let Some(mut pin) = world.get_mut::<Pinned>(member) {
             pin.moved(movement, viewport.as_vec2());
         }
+    }
+    if world.get::<SandGroup>(entity).is_some() {
+        let members = crate::topology::groups::members(world, entity);
+        crate::topology::groups::attach(world, &members);
     }
 }
 

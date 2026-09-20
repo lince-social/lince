@@ -77,9 +77,13 @@ pub enum SpawnPlacement {
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Config {
+    #[serde(default)]
+    pub fiote: bool,
     pub record_cards: bool,
     #[serde(default)]
     pub viewport_height: Option<f32>,
+    #[serde(default)]
+    pub max_height: Option<f32>,
     #[serde(default)]
     pub group_with_source: bool,
     pub placement: SpawnPlacement,
@@ -104,8 +108,10 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            fiote: false,
             record_cards: false,
             viewport_height: None,
+            max_height: None,
             group_with_source: false,
             placement: SpawnPlacement::Source,
             spawn_targets: Vec::new(),
@@ -148,6 +154,9 @@ impl Config {
     pub fn valid(&self) -> bool {
         self.viewport_height
             .is_none_or(|height| height.is_finite() && (80.0..=4000.0).contains(&height))
+            && self
+                .max_height
+                .is_none_or(|height| height.is_finite() && (80.0..=4000.0).contains(&height))
             && (!self.group_with_source || self.placement == SpawnPlacement::Source)
             && self.settling_ticks <= 600
             && self.spawn_targets.len() <= 256

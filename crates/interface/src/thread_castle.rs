@@ -1,4 +1,9 @@
+mod controls;
+#[cfg(test)]
+mod integration;
+pub(crate) mod message_view;
 pub(crate) mod tests;
+pub(crate) mod transcript;
 
 use crate::{
     actions::Action,
@@ -16,6 +21,10 @@ pub struct ThreadCastle {
     tabs: Entity,
     active: Option<String>,
     pages: HashMap<String, Entity>,
+    prefer_first: bool,
+    status: Entity,
+    creating: bool,
+    select_new: Option<String>,
 }
 
 #[derive(Component)]
@@ -23,7 +32,6 @@ struct Page {
     castle: Entity,
     uid: String,
     tab: Entity,
-    tab_label: Entity,
     viewport: Entity,
     list: Entity,
     older: Entity,
@@ -50,6 +58,10 @@ struct Message {
     status: Entity,
     confirmation: Entity,
     pending: bool,
+    identity: Entity,
+    author_name: Entity,
+    input: Entity,
+    preview: Entity,
 }
 
 #[derive(Component)]
@@ -65,8 +77,37 @@ pub struct ThreadCastlePlugin;
 
 impl Plugin for ThreadCastlePlugin {
     fn build(&self, app: &mut App) {
+        app.add_plugins(crate::record_creation::RecordCreationPlugin);
+        app.add_systems(
+            Update,
+            transcript::receive.after(crate::cell_bridge::ReceiveCell),
+        );
         app.add_observer(scroll)
-            .add_systems(Update, crate::full_record::receive.after(crate::cell_bridge::ReceiveCell))
+            .add_systems(
+                PostUpdate,
+                message_view::sync_edits
+                    .after(crate::record_binding::SyncBindings)
+                    .before(bevy::ui::UiSystems::Layout),
+            )
+            .add_systems(
+                PostUpdate,
+                composer_keys.before(bevy::text::EditableTextSystems),
+            )
+            .add_systems(
+                PostUpdate,
+                (
+                    submit_keys,
+                    select_focused_tab,
+                    composer_size,
+                    message_view::statuses,
+                )
+                    .after(bevy::text::EditableTextSystems)
+                    .before(bevy::ui::UiSystems::Layout),
+            )
+            .add_systems(
+                Update,
+                crate::full_record::receive.after(crate::cell_bridge::ReceiveCell),
+            )
             .add_systems(
                 PostUpdate,
                 anchor_scroll.after(bevy::ui::UiSystems::PostLayout),
@@ -79,8 +120,35 @@ impl Plugin for ThreadCastlePlugin {
 }
 
 pub fn populate(world: &mut World, parent: Entity, binding: RecordBinding, data: &Value) {
+    if let Some(mut node) = world.get_mut::<Node>(parent) {
+        node.border = UiRect::all(px(1));
+        node.padding = UiRect::all(px(8));
+    }
+    world
+        .entity_mut(parent)
+        .insert(crate::token_style::border(crate::tokens::Token::Accent));
     crate::fiote::session::populate(world, parent, binding.clone());
-    crate::edit_mode::label(world, parent, "Threads", 20.0);
+    let header = world
+        .spawn((
+            Node {
+                align_items: AlignItems::Center,
+                column_gap: px(6),
+                flex_shrink: 0.0,
+                ..default()
+            },
+            ChildOf(parent),
+        ))
+        .id();
+    crate::edit_mode::label(world, header, "Threads", 20.0);
+    let add = control(world, header, parent, "+", controls::Add);
+    world.entity_mut(add).insert(Node {
+        width: px(28),
+        height: px(28),
+        align_items: AlignItems::Center,
+        justify_content: JustifyContent::Center,
+        ..default()
+    });
+    let status = message_view::status(world, parent);
     let tabs = world
         .spawn((
             Node {
@@ -93,27 +161,25 @@ pub fn populate(world: &mut World, parent: Entity, binding: RecordBinding, data:
             ChildOf(parent),
         ))
         .id();
-    form(world, parent, binding.clone(), None);
+    let prefer_first = world
+        .get::<crate::area::InfluenceArea>(binding.area)
+        .and_then(|area| area.protein.as_ref())
+        .is_some_and(|config| config.fiote);
     world.entity_mut(parent).insert(ThreadCastle {
         binding,
         tabs,
         active: None,
         pages: HashMap::new(),
+        prefer_first,
+        status,
+        creating: false,
+        select_new: None,
     });
     refresh(world, parent, data);
 }
 
 pub fn open(world: &mut World, root: Entity, reference: &str, source: Source) -> Option<Entity> {
-    let area = crate::full_record::open(world, root, reference, source)?;
-    let entity = area;
-    let mut area = world.get_mut::<crate::area::InfluenceArea>(entity)?;
-    area.name = "Thread Castle".into();
-    let config = area.protein.as_mut()?;
-    config.draft.name = "Threads".into();
-    config
-        .bindings
-        .retain(|binding| binding.property == "threads");
-    Some(entity)
+    crate::full_record::open(world, root, reference, source)
 }
 
 fn control(
@@ -138,40 +204,60 @@ fn form(world: &mut World, parent: Entity, binding: RecordBinding, thread: Optio
             ChildOf(parent),
         ))
         .id();
+    let composer = world
+        .spawn((
+            Node {
+                width: percent(100),
+                align_items: AlignItems::End,
+                column_gap: px(4),
+                border: UiRect::top(px(1)),
+                ..default()
+            },
+            crate::token_style::border(crate::tokens::Token::Accent),
+            ChildOf(container),
+        ))
+        .id();
     let input = world
         .spawn((
             crate::sand::text_editor("", world.resource::<crate::theme::Typography>(), 0),
-            ChildOf(container),
+            ChildOf(composer),
+            crate::sand::Borderless,
+            crate::icons::Tooltip("Message · Enter to send · Shift+Enter for a new line · Mention @slug or @\"Agent name\"".into()),
         ))
         .insert(Node {
-            width: percent(100),
-            min_height: px(48),
+            flex_grow: 1.0,
+            flex_basis: px(0),
+            min_width: px(0),
+            min_height: px(32),
+            padding: UiRect::all(px(6)),
             max_height: px(160),
             ..default()
         })
         .id();
     world.get_mut::<EditableText>(input).unwrap().max_characters = Some(65_536);
-    if thread.is_none() {
-        let mut editor = world.get_mut::<EditableText>(input).unwrap();
-        editor.allow_newlines = false;
-        editor.visible_lines = Some(1.0);
-        editor.max_characters = Some(256);
+    world.get_mut::<EditableText>(input).unwrap().visible_lines = Some(1.0);
+    world.get_mut::<TextFont>(input).unwrap().font_size = 16.0.into();
+    let send = control(world, composer, container, "↑", Send);
+    world.entity_mut(send).insert((
+        crate::sand::Borderless,
+        crate::icons::Tooltip("Send message".into()),
+    ));
+    if let Some(mut accessibility) = world.get_mut::<AccessibilityNode>(send) {
+        accessibility.set_label("Send message");
     }
-    let status = crate::edit_mode::label(world, container, "", 12.0);
-    control(
-        world,
-        container,
-        container,
-        if thread.is_some() {
-            "Send message"
-        } else {
-            "Add thread"
-        },
-        Send,
-    );
+    let status = message_view::status(world, container);
+
     if let Some(thread) = &thread {
         crate::fiote::session::thread_controls(world, container, thread, &binding);
     }
+    let mut children: Vec<_> = world
+        .get::<Children>(container)
+        .unwrap()
+        .iter()
+        .filter(|child| *child != composer)
+        .collect();
+    children.push(composer);
+    world.entity_mut(container).replace_children(&children);
     world.entity_mut(container).insert(ThreadForm {
         binding,
         thread,
@@ -194,21 +280,53 @@ fn page(
             Node {
                 width: percent(100),
                 flex_direction: FlexDirection::Column,
-                row_gap: px(8),
+                row_gap: px(4),
+                padding: UiRect::all(px(0)),
                 flex_shrink: 0.0,
                 ..default()
             },
             ChildOf(castle),
         ))
         .id();
-    let tab = control(world, tabs, castle, title, Switch(uid.into()));
-    let tab_label = world.get::<Children>(tab).unwrap()[0];
+    let tab = world
+        .spawn((
+            AccessibilityNode::from(accesskit::Node::new(accesskit::Role::Tab)),
+            Node {
+                align_items: AlignItems::Center,
+                height: px(32),
+                flex_shrink: 0.0,
+                ..default()
+            },
+            ChildOf(tabs),
+        ))
+        .id();
     let editor = world
         .spawn((
             crate::sand::text_editor(title, world.resource::<crate::theme::Typography>(), 0),
-            ChildOf(entity),
+            ChildOf(tab),
+            TabName {
+                castle,
+                thread: uid.into(),
+            },
         ))
+        .insert(Node {
+            min_width: px(80),
+            max_width: px(200),
+            height: px(32),
+            padding: UiRect::all(px(4)),
+            ..default()
+        })
         .id();
+    world.get_mut::<TextFont>(editor).unwrap().font_size = 14.0.into();
+    let delete = control(world, tab, entity, "×", controls::AskDelete);
+    world.entity_mut(delete).insert(Node {
+        width: px(28),
+        height: px(32),
+        align_items: AlignItems::Center,
+        justify_content: JustifyContent::Center,
+        ..default()
+    });
+    let status = message_view::status(world, entity);
     crate::record_binding::attach(
         world,
         editor,
@@ -217,21 +335,22 @@ fn page(
             ..binding.clone()
         },
         "head",
-        None,
+        Some(status),
     );
     {
         let mut title = world.get_mut::<EditableText>(editor).unwrap();
         title.allow_newlines = false;
         title.visible_lines = Some(1.0);
+        title.max_characters = Some(256);
     }
-    let status = crate::edit_mode::label(world, entity, "", 12.0);
+    let status = message_view::status(world, entity);
     let older = control(world, entity, entity, "Older messages", LoadOlder);
     let viewport = world
         .spawn((
             Node {
                 width: percent(100),
-                height: px(360),
-                min_height: px(120),
+                max_height: px(360),
+                min_height: px(80),
                 overflow: Overflow::scroll_y(),
                 flex_direction: FlexDirection::Column,
                 flex_shrink: 0.0,
@@ -252,7 +371,7 @@ fn page(
             Node {
                 width: percent(100),
                 flex_direction: FlexDirection::Column,
-                row_gap: px(12),
+                row_gap: px(2),
                 flex_shrink: 0.0,
                 ..default()
             },
@@ -264,7 +383,6 @@ fn page(
         castle,
         uid: uid.into(),
         tab,
-        tab_label,
         viewport,
         list,
         older,
@@ -278,91 +396,11 @@ fn page(
     entity
 }
 
-fn message(world: &mut World, parent: Entity, binding: &RecordBinding, data: &Value) -> Entity {
-    let uid = data["uid"].as_str().unwrap();
-    let entity = world
-        .spawn((
-            Node {
-                width: percent(100),
-                flex_direction: FlexDirection::Column,
-                flex_shrink: 0.0,
-                row_gap: px(4),
-                ..default()
-            },
-            ChildOf(parent),
-        ))
-        .id();
-    let author = data["author"].as_str().unwrap_or("Unknown author");
-    let author = if data["organ_uid"].as_str() == Some(author) {
-        data["organ_name"].as_str().unwrap_or(author)
-    } else {
-        author
-    };
-    crate::edit_mode::label(world, entity, &format!("Written by {author}"), 13.0);
-    if let Some(at) = data["created_at"].as_str() {
-        crate::edit_mode::label(world, entity, at, 12.0);
-    }
-    let status = crate::edit_mode::label(world, entity, "", 12.0);
-    let input = world
-        .spawn((
-            crate::sand::text_editor(
-                data["body"].as_str().unwrap_or_default(),
-                world.resource::<crate::theme::Typography>(),
-                0,
-            ),
-            ChildOf(entity),
-        ))
-        .id();
-    world.get_mut::<EditableText>(input).unwrap().max_characters = Some(65_536);
-    crate::record_binding::attach(
-        world,
-        input,
-        RecordBinding {
-            uid: uid.into(),
-            ..binding.clone()
-        },
-        "body",
-        Some(status),
-    );
-    crate::description::attach_editor(
-        world,
-        entity,
-        input,
-        crate::description::Context {
-            owner: entity,
-            source: binding.source.clone(),
-        },
-    );
-    control(world, entity, entity, "Delete message", AskDelete(true));
-    let confirmation = world
-        .spawn((
-            Node {
-                display: Display::None,
-                width: percent(100),
-                flex_wrap: FlexWrap::Wrap,
-                column_gap: px(6),
-                ..default()
-            },
-            ChildOf(entity),
-        ))
-        .id();
-    crate::edit_mode::label(world, confirmation, "Delete this message Record?", 14.0);
-    control(world, confirmation, entity, "Delete Record", Delete);
-    control(world, confirmation, entity, "Cancel", AskDelete(false));
-    world.entity_mut(entity).insert(Message {
-        binding: binding.clone(),
-        uid: uid.into(),
-        status,
-        confirmation,
-        pending: false,
-    });
-    entity
-}
-
 pub fn refresh(world: &mut World, parent: Entity, data: &Value) -> bool {
     let Some(mut castle) = world.entity_mut(parent).take::<ThreadCastle>() else {
         return false;
     };
+    let mut selected_new = false;
     let mut retained = HashSet::new();
     for thread in data["threads"].as_array().into_iter().flatten() {
         let Some(uid) = thread["uid"].as_str() else {
@@ -374,11 +412,19 @@ pub fn refresh(world: &mut World, parent: Entity, data: &Value) -> bool {
             .pages
             .entry(uid.into())
             .or_insert_with(|| page(world, parent, castle.tabs, &castle.binding, uid, title));
+        if castle.select_new.as_deref() == Some(uid) {
+            selected_new = true;
+            castle.active = Some(uid.into());
+            castle.select_new = None;
+        }
         if castle.active.is_none() {
             castle.active = Some(uid.into());
         }
+        if castle.prefer_first && title == "Thread 1" {
+            castle.active = Some(uid.into());
+            castle.prefer_first = false;
+        }
         let mut page = world.entity_mut(entity).take::<Page>().unwrap();
-        world.get_mut::<Text>(page.tab_label).unwrap().0 = title.into();
         let limit = thread["messages_limit"]
             .as_u64()
             .unwrap_or(PAGE_SIZE as u64) as usize;
@@ -396,6 +442,7 @@ pub fn refresh(world: &mut World, parent: Entity, data: &Value) -> bool {
         let mut order = Vec::new();
         let mut seen = HashSet::new();
         let mut entities = Vec::new();
+        let mut previous_author = None;
         for data in thread["messages"].as_array().into_iter().flatten() {
             let Some(uid) = data["uid"].as_str() else {
                 continue;
@@ -407,7 +454,13 @@ pub fn refresh(world: &mut World, parent: Entity, data: &Value) -> bool {
             let entity = *page
                 .messages
                 .entry(uid.into())
-                .or_insert_with(|| message(world, page.list, &castle.binding, data));
+                .or_insert_with(|| message_view::spawn(world, page.list, &castle.binding, data));
+            if world.get::<transcript::Transcript>(entity).is_none() {
+                transcript::populate(world, entity, &castle.binding, data);
+            }
+            message_view::refresh(world, entity, data, previous_author);
+            previous_author = data["author"].as_str();
+            transcript::refresh(world, entity, data);
             entities.push(entity);
         }
         if !page.order.is_empty()
@@ -458,6 +511,9 @@ pub fn refresh(world: &mut World, parent: Entity, data: &Value) -> bool {
     }
     world.entity_mut(parent).insert(castle);
     show_active(world, parent);
+    if selected_new {
+        focus_composer(world, parent);
+    }
     true
 }
 
@@ -638,6 +694,112 @@ impl Action for Delete {
 #[derive(Clone)]
 struct Send;
 
+#[derive(Component)]
+struct TabName {
+    castle: Entity,
+    thread: String,
+}
+
+#[derive(Component)]
+struct SubmitRequested;
+
+fn select_focused_tab(world: &mut World) {
+    let focused = world
+        .get_resource::<bevy::input_focus::InputFocus>()
+        .and_then(|focus| focus.get());
+    let Some((castle, thread)) = focused
+        .and_then(|entity| world.get::<TabName>(entity))
+        .map(|tab| (tab.castle, tab.thread.clone()))
+    else {
+        return;
+    };
+    if let Some(mut state) = world.get_mut::<ThreadCastle>(castle)
+        && state.active.as_ref() != Some(&thread)
+    {
+        state.active = Some(thread);
+        show_active(world, castle);
+    }
+}
+
+fn composer_size(
+    forms: Query<&ThreadForm>,
+    mut inputs: Query<&mut EditableText, Changed<EditableText>>,
+) {
+    for form in &forms {
+        if let Ok(mut input) = inputs.get_mut(form.input) {
+            let lines = 1 + input
+                .value()
+                .chars()
+                .filter(|ch| *ch == '\n')
+                .take(4)
+                .count();
+            if input.visible_lines != Some(lines as f32) {
+                input.visible_lines = Some(lines as f32);
+            }
+        }
+    }
+}
+
+fn composer_keys(world: &mut World) {
+    let Some(keys) = world.get_resource::<ButtonInput<KeyCode>>() else {
+        return;
+    };
+    if !keys.just_pressed(KeyCode::Enter) && !keys.just_pressed(KeyCode::NumpadEnter) {
+        return;
+    }
+    let shift = keys.pressed(KeyCode::ShiftLeft) || keys.pressed(KeyCode::ShiftRight);
+    if [
+        KeyCode::ControlLeft,
+        KeyCode::ControlRight,
+        KeyCode::AltLeft,
+        KeyCode::AltRight,
+        KeyCode::SuperLeft,
+        KeyCode::SuperRight,
+    ]
+    .iter()
+    .any(|key| keys.pressed(*key))
+    {
+        return;
+    }
+    let focused = world
+        .get_resource::<bevy::input_focus::InputFocus>()
+        .and_then(|focus| focus.get());
+    let form = world
+        .query::<(Entity, &ThreadForm)>()
+        .iter(world)
+        .find(|(_, form)| Some(form.input) == focused)
+        .map(|(entity, form)| (entity, form.input));
+    let Some((form, input)) = form else { return };
+    let mut text = world.get_mut::<EditableText>(input).unwrap();
+    if text.is_composing()
+        || text.pending_edits.iter().any(|edit| {
+            matches!(
+                edit,
+                bevy::text::TextEdit::ImeCommit { .. } | bevy::text::TextEdit::ImeSetCompose { .. }
+            )
+        })
+    {
+        return;
+    }
+    text.pending_edits.retain(|edit| !matches!(edit, bevy::text::TextEdit::Insert(value) if value.as_str() == "\n" || value.as_str() == "\r"));
+    if shift {
+        text.queue_edit(bevy::text::TextEdit::Insert("\n".into()));
+    } else {
+        world.entity_mut(form).insert(SubmitRequested);
+    }
+}
+
+fn submit_keys(world: &mut World) {
+    let forms: Vec<_> = world
+        .query_filtered::<Entity, With<SubmitRequested>>()
+        .iter(world)
+        .collect();
+    for form in forms {
+        world.entity_mut(form).remove::<SubmitRequested>();
+        Send.apply(world, form);
+    }
+}
+
 impl Action for Send {
     fn apply(&self, world: &mut World, entity: Entity) {
         let Some(form) = world.get::<ThreadForm>(entity) else {
@@ -653,9 +815,27 @@ impl Action for Send {
             return;
         }
         let value = text.value().to_string();
-        if value.trim().is_empty() {
+        if value.trim().is_empty() && form.thread.is_some() {
             return;
         }
+        let binding = form.binding.clone();
+        let input = form.input;
+        let thread = form.thread.clone();
+        let in_thread = thread.is_some();
+        if thread.as_deref().is_some_and(|thread| {
+            crate::fiote::session::thread_command(world, &binding, thread, &value)
+        }) {
+            world
+                .get_mut::<EditableText>(input)
+                .unwrap()
+                .editor
+                .set_text("");
+            return;
+        }
+        if in_thread && !crate::fiote::session::ready(world, &binding) {
+            return;
+        }
+        let form = world.get::<ThreadForm>(entity).unwrap();
         let action = if let Some(thread) = &form.thread {
             engine::actions::Action::CreateMessage {
                 thread: thread.clone(),
@@ -683,7 +863,48 @@ impl Action for Send {
     }
 }
 
+fn focus_composer(world: &mut World, owner: Entity) {
+    let Some(castle) = world.get::<ThreadCastle>(owner) else {
+        return;
+    };
+    let (active, binding) = (castle.active.clone(), castle.binding.clone());
+    let input = world
+        .query::<&ThreadForm>()
+        .iter(world)
+        .find(|form| {
+            form.thread == active
+                && form.binding.uid == binding.uid
+                && form.binding.area == binding.area
+        })
+        .map(|form| form.input);
+    if let Some(input) = input
+        && let Some(mut focus) = world.get_resource_mut::<bevy::input_focus::InputFocus>()
+    {
+        focus.set(input, bevy::input_focus::FocusCause::Navigated);
+    }
+}
+
+pub(crate) fn created(world: &mut World, entity: Entity, created: Option<&str>) {
+    let Some(thread) = created else { return };
+    let Some(mut castle) = world.get_mut::<ThreadCastle>(entity) else {
+        return;
+    };
+    if !castle.creating {
+        return;
+    }
+    if castle.pages.contains_key(thread) {
+        castle.active = Some(thread.into());
+        show_active(world, entity);
+        focus_composer(world, entity);
+    } else {
+        castle.select_new = Some(thread.into());
+    }
+}
+
 pub(crate) fn finished(world: &mut World, entity: Entity, error: Option<String>) -> bool {
+    if controls::finished(world, entity, error.clone()) {
+        return true;
+    }
     if let Some(mut message) = world.get_mut::<Message>(entity) {
         message.pending = false;
         let (status, confirmation) = (message.status, message.confirmation);
@@ -714,6 +935,20 @@ pub(crate) fn finished(world: &mut World, entity: Entity, error: Option<String>)
     }
     world.get_mut::<Text>(status).unwrap().0 = error
         .map(|error| format!("Not sent: {error}"))
-        .unwrap_or_else(|| "Sent".into());
+        .unwrap_or_default();
     true
+}
+
+pub(crate) fn select_thread(world: &mut World, binding: &RecordBinding, thread: &str) {
+    let owners: Vec<_> = world
+        .query::<(Entity, &ThreadCastle)>()
+        .iter(world)
+        .filter(|(_, castle)| {
+            castle.binding.uid == binding.uid && castle.binding.area == binding.area
+        })
+        .map(|(owner, _)| owner)
+        .collect();
+    for owner in owners {
+        Switch(thread.to_string()).apply(world, owner);
+    }
 }

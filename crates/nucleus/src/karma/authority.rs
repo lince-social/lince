@@ -13,6 +13,7 @@ pub const GRANT_AUTHORITY_REQUEST_HASH_DOMAIN: &str = "karma.grant-authority-req
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum DelegationGrantSchema {
     V1,
 }
@@ -46,6 +47,7 @@ impl GrantStatus {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "scope", rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum GrantProgramRevisionScope {
     AnyActive,
     Exact { revision_hash: CanonicalHash },
@@ -53,6 +55,7 @@ pub enum GrantProgramRevisionScope {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "scope", rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum GrantTemplateScope {
     Any,
     Only { templates: BTreeSet<Slug> },
@@ -60,6 +63,7 @@ pub enum GrantTemplateScope {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(tag = "kind", content = "uid", rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum GrantTarget {
     Record(TypedUid),
     Concept(TypedUid),
@@ -91,24 +95,28 @@ impl GrantTarget {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "scope", rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum GrantTargetScope {
     Any,
     Only { targets: BTreeSet<GrantTarget> },
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(schemars::JsonSchema)]
 pub struct GrantWindowLimit {
     pub count: u64,
     pub duration_ms: DurationMs,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(schemars::JsonSchema)]
 pub struct GrantQuantityLimit {
     pub unit_uid: TypedUid,
     pub limit: DecimalValue,
 }
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(schemars::JsonSchema)]
 pub struct GrantBudget {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub max_intents: Option<u64>,
@@ -162,6 +170,7 @@ impl GrantBudget {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(schemars::JsonSchema)]
 pub struct DelegationGrantSpec {
     pub schema: DelegationGrantSchema,
     pub purpose: String,

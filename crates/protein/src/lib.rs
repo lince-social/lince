@@ -33,7 +33,7 @@ pub fn error_code(error: &ProteinError) -> Option<String> {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Protein {
     pub source: Source,
@@ -54,21 +54,21 @@ pub struct Protein {
 mod conjunction;
 pub mod record_schema;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Aggregate {
     pub op: AggregateOp,
     pub by: GroupBy,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum AggregateOp {
     Sum,
     Count,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum GroupBy {
     Total,
@@ -80,7 +80,7 @@ pub enum GroupBy {
     Month,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum Source {
     Record,
@@ -111,17 +111,17 @@ fn part_of_kind() -> String {
     "part-of".to_string()
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub enum Predicate {
     All(Vec<Predicate>),
     Any(Vec<Predicate>),
     Not(Box<Predicate>),
-    QuantityLt(#[serde(with = "crate::decimal_operand")] nucleus::DecimalValue),
-    QuantityLte(#[serde(with = "crate::decimal_operand")] nucleus::DecimalValue),
-    QuantityGt(#[serde(with = "crate::decimal_operand")] nucleus::DecimalValue),
-    QuantityGte(#[serde(with = "crate::decimal_operand")] nucleus::DecimalValue),
-    QuantityEq(#[serde(with = "crate::decimal_operand")] nucleus::DecimalValue),
+    QuantityLt(#[serde(with = "crate::decimal_operand")] #[schemars(with = "String")] nucleus::DecimalValue),
+    QuantityLte(#[serde(with = "crate::decimal_operand")] #[schemars(with = "String")] nucleus::DecimalValue),
+    QuantityGt(#[serde(with = "crate::decimal_operand")] #[schemars(with = "String")] nucleus::DecimalValue),
+    QuantityGte(#[serde(with = "crate::decimal_operand")] #[schemars(with = "String")] nucleus::DecimalValue),
+    QuantityEq(#[serde(with = "crate::decimal_operand")] #[schemars(with = "String")] nucleus::DecimalValue),
     UidEq(String),
     OccurrenceIn(Vec<String>),
     KindEq(String),
@@ -174,14 +174,14 @@ pub enum Predicate {
     OrganIn(Vec<String>),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum WorkDateField {
     Start,
     Due,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum DateComparison {
     Eq,
@@ -192,7 +192,7 @@ pub enum DateComparison {
     Exists,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Include {
     pub facts: Option<FactsInclude>,
@@ -211,19 +211,19 @@ pub struct Include {
     pub reference_reads: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ExtensionInclude {
     pub namespace: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ProjectionInclude {
     pub at: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct FactsInclude {
     #[serde(default = "default_fact_limit")]
@@ -234,14 +234,14 @@ fn default_fact_limit() -> i64 {
     10
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct PromisesInclude {
     #[serde(default)]
     pub state: Vec<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct LinksInclude {
     #[serde(default)]
@@ -252,7 +252,7 @@ pub struct LinksInclude {
     pub depth: usize,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum LinkDirection {
     Both,
@@ -266,7 +266,7 @@ impl Default for LinkDirection {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct ThreadsInclude {
     #[serde(default = "default_messages_limit")]
@@ -285,7 +285,7 @@ fn default_messages_limit() -> usize {
     50
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum Order {
     Asc(String),
@@ -293,14 +293,14 @@ pub enum Order {
     Link(LinkOrder),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct LinkOrder {
     pub kind: String,
     pub higher: LinkEndpoint,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum LinkEndpoint {
     From,
@@ -2165,6 +2165,7 @@ async fn threads_for_record(
                 .or_else(|| created_by.clone())
                 .or_else(|| message.organ_uid.clone())
                 .unwrap_or_else(|| "local".into());
+            let author_name = organ_name_for(store, &mut organ_names, Some(&author)).await?;
             let operator = lifecycle
                 .as_ref()
                 .and_then(|value| value.get("operator"))
@@ -2177,6 +2178,7 @@ async fn threads_for_record(
                 .and_then(Value::as_str)
                 .filter(|value| matches!(*value, "writing" | "finished" | "interrupted"))
                 .unwrap_or("finished");
+            let tool_call = store::records::get_extension(&store.pool, &message.uid, "lince.tool-call").await?;
             messages.push(json!({
                 "uid": message.uid,
                 "head": message.head,
@@ -2187,8 +2189,10 @@ async fn threads_for_record(
                 "created_by": created_by,
                 "sender": sender,
                 "author": author,
+                "author_name": author_name,
                 "operator": operator,
                 "message_state": message_state,
+                "tool_call": tool_call,
                 "organ_name": organ_name,
                 "references": record_references,
                 "live_references": match &references {

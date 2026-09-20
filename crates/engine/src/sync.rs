@@ -677,6 +677,9 @@ impl Engine {
             }
         }
         drop(_import);
+        if applied > 0 {
+            self.notify_karma_deadline_change();
+        }
         touched.sort();
         touched.dedup();
         let subjects = touched.iter().take(32).cloned().collect();

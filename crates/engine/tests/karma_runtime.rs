@@ -84,6 +84,7 @@ async fn tickless_runner_reconciles_sleeps_claims_and_rearms_without_heartbeat()
             .await
             .unwrap(),
     );
+    declare_reader(&engine, &active.record_uid).await;
     let activation_hash = active.active_activation_hash.unwrap();
 
     tokio::time::timeout(Duration::from_secs(2), async {
@@ -209,6 +210,7 @@ async fn host_default_runtime_serves_utc_and_fires_without_any_configuration() {
             .await
             .unwrap(),
     );
+    declare_reader(&engine, &active.record_uid).await;
     let activation_hash = active.active_activation_hash.unwrap();
 
     tokio::time::timeout(Duration::from_secs(5), async {
@@ -439,6 +441,7 @@ async fn manual_clock_reaches_exact_deadlines_without_wall_time() {
         now,
     )
     .await;
+    declare_reader(&engine, &active.record_uid).await;
     let activation_hash = active.active_activation_hash.unwrap();
     let runner = engine
         .clone()
@@ -598,6 +601,7 @@ async fn provider_scoped_calendar_runner_arms_and_commits_without_elapsed_fallba
             .await
             .unwrap(),
     );
+    declare_reader(&engine, &active.record_uid).await;
     let activation_hash = active.active_activation_hash.unwrap();
     tokio::time::timeout(Duration::from_secs(2), async {
         loop {
@@ -883,6 +887,7 @@ async fn director_arms_a_persisted_lease_expiry_and_recovers_after_restart() {
             .await
             .unwrap(),
     );
+    declare_reader(&engine, &active.record_uid).await;
     let activation_hash = active.active_activation_hash.unwrap();
     let cursor = store::karma::schedules::get_cursor(&engine.store.pool, &activation_hash)
         .await
@@ -1024,7 +1029,7 @@ async fn create_active_elapsed(
             .await
             .unwrap(),
     );
-    committed(
+    let active = committed(
         engine
             .activate_karma_frequency(
                 ActivateFrequencyInput {
@@ -1040,7 +1045,40 @@ async fn create_active_elapsed(
             )
             .await
             .unwrap(),
-    )
+    );
+    declare_reader(engine, &active.record_uid).await;
+    active
+}
+
+async fn declare_reader(engine: &Engine, frequency_uid: &str) {
+    let existing: i64 =
+        store::sqlx::query_scalar("SELECT count(*) FROM recurrence WHERE record_uid = ?")
+            .bind(frequency_uid)
+            .fetch_one(&engine.store.pool)
+            .await
+            .unwrap();
+    if existing != 0 {
+        return;
+    }
+    engine
+        .act(
+            engine::actions::Action::CreateRecurrence {
+                target: frequency_uid.to_string(),
+                consequences: vec![nucleus::karma::Consequence::AddQuantity {
+                    delta: Some(nucleus::fact::zero_delta()),
+                }],
+                condition: Some(format!("freq(@{frequency_uid})")),
+                gate: None,
+                carry: None,
+                note: None,
+                cadence: nucleus::karma::Cadence::every_days(1),
+                anchor_at: None,
+                request_id: None,
+            },
+            None,
+        )
+        .await
+        .unwrap();
 }
 
 async fn wait_for_occurrences(engine: &Engine, activation_hash: &CanonicalHash, minimum: i64) {

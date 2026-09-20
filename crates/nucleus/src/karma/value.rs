@@ -12,6 +12,7 @@ pub const MAX_VALUE_TYPE_DEPTH: usize = 32;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum CandidateRoute {
     Observe,
     Recommend,
@@ -22,6 +23,7 @@ pub enum CandidateRoute {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum Rounding {
     HalfUp,
     HalfEven,
@@ -97,6 +99,8 @@ fn round_ratio(
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(schemars::JsonSchema)]
+#[schemars(with = "DecimalValueWire")]
 pub struct DecimalValue {
     scale: u8,
     mantissa: i128,
@@ -337,7 +341,7 @@ impl fmt::Display for DecimalValue {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, schemars::JsonSchema)]
 struct DecimalValueWire {
     scale: u8,
     value: String,
@@ -368,6 +372,7 @@ impl<'de> Deserialize<'de> for DecimalValue {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum ValueType {
     Bool,
     I64,
@@ -515,6 +520,7 @@ fn validate_scale(scale: u8) -> Result<(), KarmaBoundaryError> {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum LiteralValue {
     Bool {
         value: bool,
@@ -666,6 +672,7 @@ impl LiteralValue {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum Sensitivity {
     Public,
     Shared,
@@ -674,6 +681,7 @@ pub enum Sensitivity {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(schemars::JsonSchema)]
 pub struct PortContract {
     pub value_type: ValueType,
     pub sensitivity: Sensitivity,

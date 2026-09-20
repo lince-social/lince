@@ -532,7 +532,7 @@ pub(crate) mod tests {
             "Lince 0.7.1 is available.",
         );
         EditAction::Open.apply(app.world_mut(), root);
-        EditAction::Notifications.apply(app.world_mut(), root);
+        crate::notifications::NotificationAction::Toggle.apply(app.world_mut(), root);
         app.update();
         let button = app
             .world_mut()

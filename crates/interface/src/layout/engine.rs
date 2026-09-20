@@ -202,6 +202,9 @@ pub fn detach(world: &mut World, entity: Entity) {
 }
 
 pub(crate) fn edited(world: &mut World, entity: Entity, before: CanvasItem, after: CanvasItem) {
+    if before.size != after.size && world.get::<LayoutBox>(entity).is_none() {
+        let _ = ensure(world, entity);
+    }
     let Some(mut layout) = world.get_mut::<LayoutBox>(entity) else {
         return;
     };

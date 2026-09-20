@@ -13,6 +13,7 @@ pub const FREQUENCY_REVISION_HASH_DOMAIN: &str = "karma.frequency-revision.v1";
 pub const FREQUENCY_PARAMETER_HASH_DOMAIN: &str = "karma.frequency-parameters.v1";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(schemars::JsonSchema)]
 pub enum FrequencySchema {
     #[serde(rename = "karma.frequency.v1")]
     V1,
@@ -20,6 +21,7 @@ pub enum FrequencySchema {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum FrequencyParameterDefinition {
     Duration {
         default: DurationMs,
@@ -99,6 +101,7 @@ impl FrequencyParameterDefinition {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum FrequencyParameterValue {
     Duration { value: DurationMs },
     PositiveInteger { value: NonZeroU32 },
@@ -106,6 +109,7 @@ pub enum FrequencyParameterValue {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum DurationBinding {
     Literal { value: DurationMs },
     Parameter { parameter: LocalId },
@@ -113,12 +117,14 @@ pub enum DurationBinding {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum PositiveIntegerBinding {
     Literal { value: NonZeroU32 },
     Parameter { parameter: LocalId },
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(schemars::JsonSchema)]
 pub struct FrequencyTimerAst {
     pub required_resolution: DurationBinding,
     pub max_lateness: DurationBinding,
@@ -127,6 +133,7 @@ pub struct FrequencyTimerAst {
 
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
 #[serde(default)]
+#[derive(schemars::JsonSchema)]
 pub struct CadenceStepAst {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub years: Option<PositiveIntegerBinding>,
@@ -162,6 +169,7 @@ impl CadenceStepAst {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(schemars::JsonSchema)]
 pub struct CadenceAst {
     pub every: CadenceStepAst,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -174,6 +182,7 @@ pub struct CadenceAst {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum FrequencyCadenceAst {
     Elapsed {
         interval: DurationBinding,
@@ -190,6 +199,7 @@ pub enum FrequencyCadenceAst {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(schemars::JsonSchema)]
 pub struct FrequencyAst {
     pub schema: FrequencySchema,
     pub slug: Slug,

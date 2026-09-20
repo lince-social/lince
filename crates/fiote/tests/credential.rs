@@ -3,16 +3,16 @@ use fiote::{CredentialSource, ProviderCredential};
 #[test]
 fn a_credential_says_where_it_came_from_and_never_prints_its_secret() {
     let credential = ProviderCredential::new(
-        "ANTHROPIC_API_KEY",
+        "LINCE_TEST_PROVIDER_KEY",
         "sk-not-a-real-token",
         CredentialSource::VaultRecord,
     );
     assert_eq!(credential.source(), CredentialSource::VaultRecord);
     assert_eq!(credential.source().as_str(), "vault Record");
-    assert_eq!(credential.variable(), "ANTHROPIC_API_KEY");
+    assert_eq!(credential.variable(), "LINCE_TEST_PROVIDER_KEY");
     let printed = format!("{credential:?}");
     assert!(!printed.contains("sk-not-a-real-token"), "{printed}");
-    assert!(printed.contains("ANTHROPIC_API_KEY"));
+    assert!(printed.contains("LINCE_TEST_PROVIDER_KEY"));
 }
 
 #[test]

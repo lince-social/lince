@@ -12,6 +12,7 @@ pub mod influence;
 pub mod input;
 pub mod physics;
 pub mod presentation;
+mod resizing;
 pub mod ui;
 pub mod view;
 

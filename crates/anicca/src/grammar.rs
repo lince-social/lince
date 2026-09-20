@@ -149,7 +149,70 @@ pub mod grammar {
     pub enum Declaration {
         Frequency(Frequency),
         Karma(Karma),
+        Extension(Extension),
         Record(Record),
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct Extension {
+        #[rust_sitter::leaf(text = "Extension")]
+        _keyword: (),
+        pub target: Reference,
+        pub namespace: ExtensionText,
+        pub fields: ExtensionObject,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct ExtensionObject {
+        #[rust_sitter::leaf(text = "{")]
+        _open: (),
+        pub fields: Vec<ExtensionField>,
+        #[rust_sitter::leaf(text = "}")]
+        _close: (),
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct ExtensionField {
+        pub key: ExtensionKey,
+        pub value: ExtensionValue,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct ExtensionKey(
+        #[rust_sitter::leaf(pattern = r"[A-Za-z_][A-Za-z0-9_-]*", transform = |v| v.to_string())]
+        pub String,
+    );
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub enum ExtensionValue {
+        Object(ExtensionObject),
+        List(ExtensionList),
+        Text(ExtensionText),
+        Number(ExtensionNumber),
+        True(#[rust_sitter::leaf(text = "true")] ()),
+        False(#[rust_sitter::leaf(text = "false")] ()),
+        Null(#[rust_sitter::leaf(text = "null")] ()),
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct ExtensionNumber(
+        #[rust_sitter::leaf(pattern = r"-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?", transform = |v| v.to_string())]
+        pub String,
+    );
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct ExtensionText(
+        #[rust_sitter::leaf(pattern = r#"\"([^\"\\]|\\.)*\""#, transform = |v| v.to_string())]
+        pub  String,
+    );
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct ExtensionList {
+        #[rust_sitter::leaf(text = "[")]
+        _open: (),
+        pub values: Vec<ExtensionValue>,
+        #[rust_sitter::leaf(text = "]")]
+        _close: (),
     }
 
     #[derive(Debug, Clone, PartialEq, Eq)]

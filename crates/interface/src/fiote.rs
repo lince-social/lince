@@ -3,6 +3,46 @@ pub mod session;
 
 pub const CREDITS: &[crate::credits::Attribution] = &[
     crate::credits::Attribution {
+        name: "agent-client-protocol",
+        author: "Agent Client Protocol Rust SDK contributors",
+        license: include_str!("../licenses/agent-client-protocol-Apache-2.0.txt"),
+    },
+    crate::credits::Attribution {
+        name: "rmcp",
+        author: "Model Context Protocol Rust SDK contributors",
+        license: include_str!("../licenses/rmcp-Apache-2.0.txt"),
+    },
+    crate::credits::Attribution {
+        name: "ureq",
+        author: "The ureq developers",
+        license: include_str!("../licenses/ureq-MIT.txt"),
+    },
+    crate::credits::Attribution {
+        name: "modelbridge",
+        author: "Ryan Sayer",
+        license: include_str!("../licenses/modelbridge-MIT.txt"),
+    },
+    crate::credits::Attribution {
+        name: "Argon2",
+        author: "RustCrypto developers",
+        license: include_str!("../licenses/argon2-MIT.txt"),
+    },
+    crate::credits::Attribution {
+        name: "ChaCha20Poly1305",
+        author: "RustCrypto developers",
+        license: include_str!("../licenses/chacha20poly1305-MIT.txt"),
+    },
+    crate::credits::Attribution {
+        name: "Schemars",
+        author: "Graham Esau and contributors",
+        license: include_str!("../licenses/schemars-MIT.txt"),
+    },
+    crate::credits::Attribution {
+        name: "Loro",
+        author: "Loro contributors",
+        license: crate::credits::LORO_LICENSE,
+    },
+    crate::credits::Attribution {
         name: "reqwest",
         author: "Sean McArthur and contributors",
         license: include_str!("../licenses/reqwest-MIT.txt"),

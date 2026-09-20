@@ -64,6 +64,18 @@ fn button(world: &mut World, text: &str) -> Option<Entity> {
         .map(|(entity, _)| entity)
 }
 
+fn focus_tab(world: &mut World, title: &str) {
+    let tab = world
+        .query::<(Entity, &EditableText)>()
+        .iter(world)
+        .find(|(_, text)| text.value().to_string() == title)
+        .unwrap()
+        .0;
+    world
+        .resource_mut::<bevy::input_focus::InputFocus>()
+        .set(tab, bevy::input_focus::FocusCause::Navigated);
+}
+
 fn descriptions(world: &mut World) -> usize {
     world
         .query_filtered::<Entity, With<Description>>()
@@ -98,7 +110,7 @@ fn exercise(world: &mut World) {
             .iter(world)
             .next()
         {
-            lince_interface::thread_castle::open(world, root, &test.record, Source::Local).unwrap();
+            lince_interface::full_record::open(world, root, &test.record, Source::Local).unwrap();
             test.stage = 1;
         }
     } else if test.stage == 1
@@ -108,7 +120,7 @@ fn exercise(world: &mut World) {
         let viewport = world
             .query::<(Entity, &ScrollPosition, &ComputedNode, &Node)>()
             .iter(world)
-            .find(|(_, _, computed, node)| computed.size().y > 100.0 && node.height == px(360))
+            .find(|(_, _, computed, node)| computed.size().y > 100.0 && node.max_height == px(360))
             .map(|(entity, _, _, _)| entity)
             .unwrap();
         world.get_mut::<ScrollPosition>(viewport).unwrap().0.y = 0.0;
@@ -131,13 +143,11 @@ fn exercise(world: &mut World) {
         ));
         test.stage = 2;
     } else if test.stage == 2 && descriptions(world) == 56 {
-        let tab = button(world, "Planning").unwrap();
-        world.trigger(Activate { entity: tab });
+        focus_tab(world, "Planning");
         test.stage = 3;
         test.ticks = 0;
     } else if test.stage == 3 && test.ticks > 30 {
-        let tab = button(world, "Discussion").unwrap();
-        world.trigger(Activate { entity: tab });
+        focus_tab(world, "Discussion");
         test.stage = 4;
         test.ticks = 0;
     } else if test.stage == 4
@@ -159,7 +169,7 @@ fn exercise(world: &mut World) {
             .query::<(&mut ScrollPosition, &Node)>()
             .iter_mut(world)
         {
-            if node.height == px(360) {
+            if node.max_height == px(360) {
                 position.0.y = 1_000_000.0;
             }
         }

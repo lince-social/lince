@@ -344,9 +344,11 @@ fn initialize(world: &mut World) {
                 }
             }
             Some(Err(error)) => {
-                spaces.error = Some(format!(
+                let message = format!(
                     "Could not load workspaces: {error}. Saved data has been kept."
-                ));
+                );
+                crate::notifications::report(world, "interface::workspaces", &message);
+                spaces.error = Some(message);
                 world.resource_mut::<WorkspaceFile>().blocked = true;
             }
             _ => {}
@@ -730,7 +732,10 @@ fn persist(world: &mut World) {
 fn report(world: &mut World, root: Entity, error: Option<String>) {
     let mut spaces = world.get_mut::<Workspaces>(root).unwrap();
     if spaces.error != error {
-        spaces.error = error;
+        spaces.error = error.clone();
+        if let Some(error) = error {
+            crate::notifications::report(world, "interface::workspaces", &error);
+        }
         if let Some(wake) = world.get_resource::<crate::wake::WakeSignal>() {
             wake.ring();
         }

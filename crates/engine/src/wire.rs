@@ -1,3 +1,5 @@
+mod presence;
+
 use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::path::Path;
@@ -215,6 +217,10 @@ impl Nearby {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "op", rename_all = "snake_case")]
 pub enum WireRequest {
+    Presence {
+        records: Vec<String>,
+        entries: Vec<crate::presence::Entry>,
+    },
     Introduction,
     Introduce {
         intro: Introduction,
@@ -348,6 +354,9 @@ pub struct SuccessionCert {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "ok", rename_all = "snake_case")]
 pub enum WireResponse {
+    Presence {
+        entries: Vec<crate::presence::Entry>,
+    },
     Introduction {
         intro: Introduction,
     },
@@ -443,6 +452,7 @@ pub struct Wire {
     nearby: Nearby,
     known_addrs: iroh::address_lookup::MemoryLookup,
     open_per_peer: Arc<Mutex<HashMap<String, usize>>>,
+    presence_connections: Arc<tokio::sync::Mutex<HashMap<String, Connection>>>,
     reach: Reach,
     live: Arc<Mutex<Option<Arc<dyn LiveSessions>>>>,
     live_connections: Arc<Mutex<HashMap<String, Connection>>>,
@@ -559,6 +569,7 @@ impl Wire {
             engine,
             reach,
             open_per_peer: Arc::new(Mutex::new(HashMap::new())),
+            presence_connections: Arc::new(tokio::sync::Mutex::new(HashMap::new())),
             nearby: Nearby::default(),
             known_addrs,
             live: Arc::new(Mutex::new(None)),
@@ -1480,6 +1491,7 @@ impl Wire {
                         && !matches!(
                             request,
                             WireRequest::Introduction
+                                | WireRequest::Presence { .. }
                                 | WireRequest::Introduce { .. }
                                 | WireRequest::Enrol { .. }
                                 | WireRequest::OfferGrant { .. }
@@ -1573,6 +1585,12 @@ impl Wire {
 
     async fn handle(&self, authenticated: &str, peer: &str, request: WireRequest) -> WireResponse {
         match request {
+            WireRequest::Presence { records, entries } => {
+                match self.engine.exchange_presence(authenticated, &records, entries).await {
+                    Ok(entries) => WireResponse::Presence { entries },
+                    Err(error) => WireResponse::Error { message: error.to_string() },
+                }
+            }
             WireRequest::Introduction | WireRequest::Introduce { .. } => {
                 match self.engine.introduction().await {
                     Ok(intro) => WireResponse::Introduction { intro },

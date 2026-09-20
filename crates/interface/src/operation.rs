@@ -13,6 +13,10 @@ use bevy::{
 use cell::{ClientMessage, ServerMessage};
 use std::collections::BTreeMap;
 
+pub(crate) const SIZE: Vec2 = Vec2::new(520.0, 40.0);
+
+const HELP: &str = "Operation cheat sheet\n@slug: set a Record’s quantity to zero.\n/: find commands.\nUp / Down: choose a suggestion.\nTab or click: complete the input.\nEnter: send the operation.\nEscape: leave Operation.\n/help: open the full cheat sheet.";
+
 const COMMANDS: &[(&str, &str, EditAction)] = &[
     ("/edit", "Open edit mode", EditAction::Open),
     ("/help", "Open the cheat sheet", EditAction::Shortcuts),
@@ -33,6 +37,7 @@ struct Catalog {
 pub struct OperationSand {
     root: Entity,
     input: Entity,
+    feedback: Entity,
     suggestions: Entity,
     status: Entity,
     query: String,
@@ -60,7 +65,8 @@ impl Plugin for OperationPlugin {
             .add_systems(Update, receive.after(ReceiveCell))
             .add_systems(
                 PostUpdate,
-                refresh
+                (refresh, feedback_visibility)
+                    .chain()
                     .after(bevy::text::EditableTextSystems)
                     .before(crate::actions::ApplyActions),
             );
@@ -101,12 +107,10 @@ impl Action for OpenOperation {
             .spawn((
                 Node {
                     width: px(520),
+                    height: px(SIZE.y),
                     max_width: percent(94),
-                    max_height: percent(90),
-                    overflow: Overflow::scroll_y(),
                     ..default()
                 },
-                ScrollPosition::default(),
                 ChildOf(overlay),
             ))
             .id();
@@ -185,35 +189,11 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
     ));
     if let Some(mut node) = world.get_mut::<Node>(sand) {
         node.flex_direction = FlexDirection::Column;
-        node.padding = UiRect::all(px(12));
-        node.row_gap = px(8);
-        node.border = UiRect::all(px(1));
-        node.overflow = Overflow::scroll_y();
+        node.padding = UiRect::ZERO;
+        node.row_gap = px(0);
+        node.border = UiRect::ZERO;
+        node.overflow = Overflow::visible();
     }
-    world
-        .entity_mut(sand)
-        .insert(ScrollPosition::default())
-        .observe(
-            |mut event: On<Pointer<bevy::picking::events::Scroll>>,
-             mut scrolls: Query<&mut ScrollPosition>| {
-                if let Ok(mut scroll) = scrolls.get_mut(event.entity) {
-                    let step = if event.unit == bevy::input::mouse::MouseScrollUnit::Line {
-                        24.0
-                    } else {
-                        1.0
-                    };
-                    scroll.0.y = (scroll.0.y - event.y * step).max(0.0);
-                    event.propagate(false);
-                }
-            },
-        );
-    label(world, sand, "Operation", 22.0);
-    label(
-        world,
-        sand,
-        "@slug sets quantity to zero. / finds commands.",
-        14.0,
-    );
     let bundle = crate::sand::text_editor("", world.resource::<Typography>(), 0);
     let input = world
         .spawn((
@@ -228,6 +208,31 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
         text.allow_newlines = false;
         text.visible_lines = Some(1.0);
     }
+    {
+        let mut node = world.get_mut::<Node>(input).unwrap();
+        node.height = percent(100);
+        node.min_height = px(SIZE.y);
+        node.padding.right = px(36);
+        node.flex_shrink = 0.0;
+    }
+    let mut accessibility = AccessibilityNode::from(accesskit::Node::new(accesskit::Role::Label));
+    accessibility.set_label(HELP);
+    let font = world.resource::<Typography>().text(18.0);
+    world.spawn((
+        Text::new("?"),
+        font,
+        crate::token_style::text(crate::tokens::Token::Ink),
+        crate::icons::Tooltip(HELP.into()),
+        bevy::input_focus::tab_navigation::TabIndex(0),
+        accessibility,
+        Node {
+            position_type: PositionType::Absolute,
+            right: px(12),
+            top: px(8),
+            ..default()
+        },
+        ChildOf(sand),
+    ));
     world
         .get_mut::<AccessibilityNode>(input)
         .unwrap()
@@ -259,6 +264,27 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
             crate::actions![OperationAction::Close],
         ),
     ]));
+    let feedback = world
+        .spawn((
+            Node {
+                display: Display::None,
+                position_type: PositionType::Absolute,
+                top: percent(100),
+                width: percent(100),
+                max_height: px(280),
+                flex_direction: FlexDirection::Column,
+                padding: UiRect::all(px(8)),
+                row_gap: px(4),
+                border: UiRect::all(px(1)),
+                ..default()
+            },
+            crate::token_style::background(crate::tokens::Token::Surface),
+            crate::token_style::border(crate::tokens::Token::Accent),
+            ZIndex(1),
+            ChildOf(sand),
+        ))
+        .id();
+    crate::scroll_sand::attach(world, feedback);
     let suggestions = world
         .spawn((
             Node {
@@ -266,17 +292,15 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
                 row_gap: px(4),
                 ..default()
             },
-            ChildOf(sand),
+            ChildOf(feedback),
         ))
         .id();
-    let status = label(world, sand, "", 14.0);
-    action_button(world, sand, sand, OperationAction::Submit, "Run");
-    if world.get::<crate::canvas::CanvasItem>(sand).is_none() {
-        action_button(world, sand, sand, OperationAction::Close, "Close");
-    }
+    let status = label(world, feedback, "", 14.0);
+    world.get_mut::<Node>(status).unwrap().display = Display::None;
     world.entity_mut(sand).insert(OperationSand {
         root,
         input,
+        feedback,
         suggestions,
         status,
         query: String::new(),
@@ -353,7 +377,7 @@ fn suggestions(catalog: &Catalog, query: &str) -> Vec<(String, String)> {
             .take(6)
             .map(|(slug, (_, head))| (format!("@{slug}"), head.clone()))
             .collect()
-    } else if query.is_empty() || query.starts_with('/') {
+    } else if query.starts_with('/') {
         COMMANDS
             .iter()
             .filter(|(command, _, _)| command.starts_with(query))
@@ -423,7 +447,7 @@ fn refresh(world: &mut World) {
         if world.get::<OperationSand>(sand).unwrap().pending.is_none()
             && (changed || idle && !message.is_empty())
         {
-            world.get_mut::<Text>(status).unwrap().0 = message;
+            self::status(world, sand, message);
         }
         render_suggestions(world, sand);
     }
@@ -435,6 +459,11 @@ fn render_suggestions(world: &mut World, sand: Entity) {
     let items = state.items.clone();
     let selected = state.selected;
     world.entity_mut(parent).despawn_children();
+    world.get_mut::<Node>(parent).unwrap().display = if items.is_empty() {
+        Display::None
+    } else {
+        Display::Flex
+    };
     for (index, (value, title)) in items.iter().enumerate() {
         let marker = if index == selected { "› " } else { "" };
         action_button(
@@ -449,7 +478,50 @@ fn render_suggestions(world: &mut World, sand: Entity) {
 
 fn status(world: &mut World, sand: Entity, message: impl Into<String>) {
     let entity = world.get::<OperationSand>(sand).unwrap().status;
-    world.get_mut::<Text>(entity).unwrap().0 = message.into();
+    let message = message.into();
+    world.get_mut::<Node>(entity).unwrap().display = if message.is_empty() {
+        Display::None
+    } else {
+        Display::Flex
+    };
+    world.get_mut::<Text>(entity).unwrap().0 = message;
+}
+
+fn feedback_visibility(world: &mut World) {
+    let focus = world.resource::<InputFocus>().get();
+    let panels: Vec<_> = world
+        .query::<(Entity, &OperationSand)>()
+        .iter(world)
+        .map(|(sand, state)| {
+            let mut current = focus;
+            let mut focused = false;
+            while let Some(entity) = current {
+                if entity == sand {
+                    focused = true;
+                    break;
+                }
+                current = world.get::<ChildOf>(entity).map(ChildOf::parent);
+            }
+            let content = !state.items.is_empty()
+                || world
+                    .get::<Text>(state.status)
+                    .is_some_and(|text| !text.0.is_empty());
+            (
+                state.feedback,
+                if focused && content {
+                    Display::Flex
+                } else {
+                    Display::None
+                },
+            )
+        })
+        .collect();
+    for (panel, display) in panels {
+        let mut node = world.get_mut::<Node>(panel).unwrap();
+        if node.display != display {
+            node.display = display;
+        }
+    }
 }
 
 fn submit(world: &mut World, sand: Entity) {

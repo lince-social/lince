@@ -54,16 +54,24 @@ fn exercise(world: &mut World) {
         lince_interface::actions::dispatch(
             world,
             root,
-            lince_interface::actions![
-                lince_interface::edit_mode::EditAction::Open,
-                lince_interface::edit_mode::EditAction::Notifications
-            ],
+            lince_interface::actions![lince_interface::notifications::NotificationAction::Toggle],
         );
     }
     if frame < 12 {
         return;
     }
     match frame {
+        18 => {
+            let bell = world
+                .query::<(Entity, &IconButton)>()
+                .iter(world)
+                .find(|(_, icon)| icon.label == "Notifications (2)")
+                .unwrap()
+                .0;
+            world
+                .resource_mut::<bevy::input_focus::InputFocus>()
+                .set(bell, bevy::input_focus::FocusCause::Navigated);
+        }
         12 => {
             assert!(
                 world
@@ -88,6 +96,21 @@ fn exercise(world: &mut World) {
                     .iter(world)
                     .any(|text| text.0.contains("connection to this Cell stopped"))
             );
+            let count = world
+                .query::<(Entity, &Text)>()
+                .iter(world)
+                .find(|(_, text)| text.0 == "2")
+                .unwrap()
+                .0;
+            let badge = world.get::<ChildOf>(count).unwrap().parent();
+            let bell = world.get::<ChildOf>(badge).unwrap().parent();
+            let badge_node = world.get::<ComputedNode>(badge).unwrap();
+            let bell_node = world.get::<ComputedNode>(bell).unwrap();
+            assert!((badge_node.size().x - badge_node.size().y).abs() < 0.5);
+            assert!((badge_node.size().x / bell_node.size().x - 0.5).abs() < 0.05);
+            let badge_position = world.get::<UiGlobalTransform>(badge).unwrap().translation;
+            let bell_position = world.get::<UiGlobalTransform>(bell).unwrap().translation;
+            assert!(badge_position.x > bell_position.x && badge_position.y < bell_position.y);
             let path = world.resource::<Capture>().path.clone();
             world
                 .spawn(Screenshot::primary_window())
@@ -96,16 +119,32 @@ fn exercise(world: &mut World) {
                     capture.saved = true;
                 });
         }
-        22 | 30 | 32 | 34 => {
+        22 | 24 | 26 | 30 | 34 | 36 | 38 => {
             let window = world
                 .query_filtered::<Entity, With<PrimaryWindow>>()
                 .single(world)
                 .unwrap();
-            if frame == 22 || frame == 30 {
+            if frame == 30 {
+                assert_eq!(world.resource::<Notifications>().log.snapshot().1.len(), 2);
+                assert!(
+                    world
+                        .query::<&IconButton>()
+                        .iter(world)
+                        .all(|icon| icon.label != "Close notification toast")
+                );
+            }
+            if frame == 22 || frame == 30 || frame == 34 {
                 let button = world
                     .query::<(Entity, &IconButton)>()
                     .iter(world)
-                    .find(|(_, icon)| icon.label == "Dismiss all notifications")
+                    .find(|(_, icon)| {
+                        icon.label
+                            == if frame == 22 {
+                                "Close notification toast"
+                            } else {
+                                "Delete all notifications"
+                            }
+                    })
                     .unwrap()
                     .0;
                 let position = world.get::<UiGlobalTransform>(button).unwrap().translation
@@ -122,7 +161,7 @@ fn exercise(world: &mut World) {
                 world.write_message(WindowEvent::MouseButtonInput(MouseButtonInput {
                     window,
                     button: MouseButton::Left,
-                    state: if frame == 32 {
+                    state: if frame == 24 || frame == 36 {
                         ButtonState::Pressed
                     } else {
                         ButtonState::Released
@@ -130,7 +169,7 @@ fn exercise(world: &mut World) {
                 }));
             }
         }
-        42 => {
+        46 => {
             assert!(
                 world
                     .resource::<Notifications>()
@@ -150,6 +189,8 @@ fn exercise(world: &mut World) {
 }
 
 fn main() {
+    let runtime = tokio::runtime::Runtime::new().unwrap();
+    let _runtime = runtime.enter();
     let directory = std::path::PathBuf::from(
         std::env::args()
             .nth(1)
@@ -191,6 +232,6 @@ fn main() {
     );
     drop(journal);
     println!(
-        "Notification smoke passed: restored history, background delivery, real dismissal click and saved dismissal."
+        "Notification smoke passed: restored history, background toast, closing a toast without deleting history, and saved deletion."
     );
 }

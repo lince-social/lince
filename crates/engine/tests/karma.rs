@@ -32,10 +32,6 @@ async fn plain(e: &Engine, slug: &str, quantity: f64) -> String {
     uid
 }
 
-fn at(s: &str) -> DateTime<Utc> {
-    DateTime::parse_from_rfc3339(s).unwrap().with_timezone(&Utc)
-}
-
 #[tokio::test]
 async fn append_updates_cache_and_is_idempotent() {
     let e = engine().await;
@@ -149,29 +145,18 @@ async fn a_rule_fires_the_moment_the_world_changes_and_says_why() {
         "the change itself must fire it"
     );
 
-    let rule = store::recurrence::get(&e.store.pool, &declared)
-        .await
-        .unwrap()
-        .expect("the rule is stored");
-    let dates = store::recurrence::occurrences(
-        &e.store.pool,
-        &rule,
-        Utc::now() - TimeDelta::days(1),
-        Utc::now() + TimeDelta::days(1),
-        Utc::now(),
+    let applications: i64 = store::sqlx::query_scalar(
+        "SELECT count(*) FROM karma_rule_application WHERE rule_uid = ? AND status = 'applied'",
     )
+    .bind(&declared)
+    .fetch_one(&e.store.pool)
     .await
     .unwrap();
-    assert!(
-        dates
-            .iter()
-            .any(|date| date.state == store::recurrence::OccurrenceState::Applied),
-        "the date the rule answered must be recorded as spent"
-    );
+    assert_eq!(applications, 1);
 }
 
 #[tokio::test]
-async fn a_rule_acts_at_most_once_per_period_however_often_it_is_poked() {
+async fn a_rule_acts_for_each_record_change() {
     let e = engine().await;
     let apples = plain(&e, "apples.stock", 10.0).await;
     let counter = plain(&e, "counter", 0.0).await;
@@ -193,15 +178,15 @@ async fn a_rule_acts_at_most_once_per_period_however_often_it_is_poked() {
     }
     assert_eq!(
         level(&e, &counter).await,
-        1.0,
-        "five pokes inside one day are one act"
+        5.0,
+        "five Record changes are five independent events"
     );
 }
 
 #[tokio::test]
 async fn a_rule_can_be_read_as_a_named_cell() {
     let e = engine().await;
-    let _income = plain(&e, "income", 100.0).await;
+    let income = plain(&e, "income", 100.0).await;
     let budget = plain(&e, "budget", 0.0).await;
     let mirror = plain(&e, "mirror", 0.0).await;
 
@@ -229,7 +214,8 @@ async fn a_rule_can_be_read_as_a_named_cell() {
     )
     .await;
 
-    e.fire_due_rules(Utc::now()).await.unwrap();
+    e.append_user(&income, 0.0).await.unwrap();
+    e.run_due_effects().await.unwrap();
     assert_eq!(
         level(&e, &mirror).await,
         50.0,
@@ -260,7 +246,8 @@ async fn the_two_flow_directions_can_be_read_apart() {
     )
     .await;
 
-    e.fire_due_rules(Utc::now()).await.unwrap();
+    e.append_user(&account, 0.0).await.unwrap();
+    e.run_due_effects().await.unwrap();
     assert_eq!(
         level(&e, &inflow).await,
         150.0,
@@ -312,7 +299,7 @@ async fn a_rule_can_propose_an_obligation_instead_of_moving_a_number() {
     let e = engine().await;
     let rent = plain(&e, "rent", 0.0).await;
 
-    support::declare_rule(
+    let rule = support::declare_rule(
         &e,
         &rent,
         Cadence::every_days(1),
@@ -328,7 +315,18 @@ async fn a_rule_can_propose_an_obligation_instead_of_moving_a_number() {
     )
     .await;
 
-    e.fire_due_rules(at("2026-03-01T08:00:00Z")).await.unwrap();
+    e.act(
+        engine::actions::Action::ApplyRecurrenceOccurrence {
+            recurrence: rule,
+            due_at: "2026-03-01T07:00:00Z".into(),
+            amount: None,
+            note: None,
+        },
+        None,
+    )
+    .await
+    .unwrap();
+    e.run_due_effects().await.unwrap();
     let promises = store::misc::list_promises(&e.store.pool).await.unwrap();
     assert!(
         promises.iter().any(|p| p.delta == -1200.0),
@@ -346,7 +344,7 @@ async fn a_rule_can_ask_instead_of_deciding() {
     let e = engine().await;
     let stock = plain(&e, "stock", 0.0).await;
 
-    support::declare_rule(
+    let rule = support::declare_rule(
         &e,
         &stock,
         Cadence::every_days(1),
@@ -361,7 +359,18 @@ async fn a_rule_can_ask_instead_of_deciding() {
     )
     .await;
 
-    e.fire_due_rules(at("2026-03-01T08:00:00Z")).await.unwrap();
+    e.act(
+        engine::actions::Action::ApplyRecurrenceOccurrence {
+            recurrence: rule,
+            due_at: "2026-03-01T07:00:00Z".into(),
+            amount: None,
+            note: None,
+        },
+        None,
+    )
+    .await
+    .unwrap();
+    e.run_due_effects().await.unwrap();
     let decisions = store::misc::list_decisions(&e.store.pool).await.unwrap();
     assert!(
         decisions.iter().any(|d| d.question == "Reorder?"),
@@ -374,7 +383,7 @@ async fn what_leaves_the_cell_is_queued_rather_than_run_mid_evaluation() {
     let e = engine().await;
     let watched = plain(&e, "watched", 0.0).await;
 
-    support::declare_rule(
+    let rule = support::declare_rule(
         &e,
         &watched,
         Cadence::every_days(1),
@@ -388,7 +397,17 @@ async fn what_leaves_the_cell_is_queued_rather_than_run_mid_evaluation() {
     )
     .await;
 
-    e.fire_due_rules(at("2026-03-01T08:00:00Z")).await.unwrap();
+    e.act(
+        engine::actions::Action::ApplyRecurrenceOccurrence {
+            recurrence: rule,
+            due_at: "2026-03-01T07:00:00Z".into(),
+            amount: None,
+            note: None,
+        },
+        None,
+    )
+    .await
+    .unwrap();
     let queued = store::misc::due_effects(&e.store.pool).await.unwrap();
     assert!(
         queued.iter().any(|effect| effect.kind == "command"),
@@ -429,7 +448,8 @@ async fn a_declared_frequency_is_what_a_condition_reads() {
     let e = engine().await;
     let pear = plain(&e, "pear", 0.0).await;
 
-    let anchor = Utc::now() - TimeDelta::days(3);
+    let start = DateTime::from_timestamp_millis(Utc::now().timestamp_millis()).unwrap();
+    let anchor = start + TimeDelta::days(1);
     store::frequency::create(
         &e.store.pool,
         store::frequency::NewFrequency {
@@ -463,9 +483,11 @@ async fn a_declared_frequency_is_what_a_condition_reads() {
     )
     .await;
 
-    e.fire_due_rules(Utc::now()).await.unwrap();
+    e.advance_karma_time(start).await.unwrap();
+    e.advance_karma_time(anchor).await.unwrap();
+    e.run_due_effects().await.unwrap();
     assert!(
-        level(&e, &pear).await > 0.0,
+        level(&e, &pear).await == 1.0,
         "a declared frequency beats, and the condition reads those beats"
     );
 }

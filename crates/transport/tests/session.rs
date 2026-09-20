@@ -75,7 +75,7 @@ async fn cursor_updates_need_a_join_and_have_payload_limits() {
         .unwrap()
         .created
         .unwrap();
-    let mut session = Session::new(engine, hub.clone(), "session", None);
+    let mut session = Session::new(engine.clone(), hub.clone(), "session", None);
     session
         .handle(ClientMessage::CollabPresence {
             record_uid: uid.clone(),
@@ -84,7 +84,7 @@ async fn cursor_updates_need_a_join_and_have_payload_limits() {
             focus: "b".into(),
         })
         .await;
-    assert!(hub.cursors(&uid).is_empty());
+    assert!(engine.presence.cursors(&uid).is_empty());
     session
         .handle(ClientMessage::CollabJoin {
             id: "join".into(),
@@ -99,7 +99,7 @@ async fn cursor_updates_need_a_join_and_have_payload_limits() {
             focus: "b".into(),
         })
         .await;
-    assert!(hub.cursors(&uid).is_empty());
+    assert!(engine.presence.cursors(&uid).is_empty());
 }
 
 async fn setup() -> (Arc<Engine>, Arc<LaneHub>) {

@@ -1,3 +1,4 @@
+pub mod extension;
 pub mod grammar;
 
 use std::collections::{BTreeMap, HashMap, HashSet, VecDeque};
@@ -17,6 +18,15 @@ pub struct ProjectedDocument {
     pub records: Vec<ProjectedRecord>,
     pub frequencies: Vec<ProjectedFrequency>,
     pub rules: Vec<ProjectedRule>,
+    pub extensions: Vec<ProjectedExtension>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ProjectedExtension {
+    pub target_slug: String,
+    pub target_uid: Option<String>,
+    pub namespace: String,
+    pub fields: serde_json::Value,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -85,11 +95,15 @@ impl std::fmt::Display for Diagnostic {
 impl std::error::Error for Diagnostic {}
 
 pub fn parse(source: &str) -> Result<Document, Diagnostic> {
+    if source.len() > 16 * 1024 * 1024 {
+        return Err(diagnostic("Lingua document exceeds 16 MiB"));
+    }
     let document = ast::parse(source).map_err(|error| Diagnostic {
         path: None,
         message: format!("{error:?}"),
     })?;
     validate_record_boundaries(&document)?;
+    extension::validate(&document)?;
     Ok(document)
 }
 
@@ -146,6 +160,7 @@ pub fn format(document: &Document) -> String {
             Declaration::Record(record) => format_record(&mut output, record),
             Declaration::Frequency(frequency) => format_frequency(&mut output, frequency),
             Declaration::Karma(karma) => format_karma(&mut output, karma),
+            Declaration::Extension(value) => extension::format_ast(&mut output, value),
         }
     }
     output
@@ -237,6 +252,7 @@ pub fn bind_reference_uids(
                 }
             }
             Declaration::Frequency(_) => {}
+            Declaration::Extension(value) => require_reference(&value.target, identities)?,
         }
     }
     Ok(format(&document))
@@ -261,6 +277,19 @@ pub fn resolve_project_references(
     project: &mut ProjectedDocument,
     identities: &BTreeMap<String, String>,
 ) -> Result<(), Diagnostic> {
+    for extension in &mut project.extensions {
+        extension.target_uid = Some(
+            identities
+                .get(&extension.target_slug)
+                .ok_or_else(|| {
+                    diagnostic(format!(
+                        "extension target `@{}` does not resolve",
+                        extension.target_slug
+                    ))
+                })?
+                .clone(),
+        );
+    }
     for record in &mut project.records {
         for assertion in &mut record.assertions {
             if let Some(slug) = &assertion.object_slug {
@@ -327,9 +356,16 @@ pub fn project(document: &Document) -> Result<ProjectedDocument, Diagnostic> {
         records: Vec::new(),
         frequencies: Vec::new(),
         rules: Vec::new(),
+        extensions: Vec::new(),
     };
     for declaration in &document.declarations {
         match declaration {
+            Declaration::Extension(value) => output.extensions.push(ProjectedExtension {
+                target_slug: value.target.slug.0.clone(),
+                target_uid: None,
+                namespace: extension::text(&value.namespace)?,
+                fields: extension::object(&value.fields, 0)?,
+            }),
             Declaration::Record(record) => {
                 let mut assertions = Vec::new();
                 let mut identity_count = 0usize;
@@ -561,10 +597,10 @@ fn checked_slug(value: String, declaration: &str) -> Result<String, Diagnostic> 
     }
 }
 
-fn diagnostic(message: String) -> Diagnostic {
+fn diagnostic(message: impl Into<String>) -> Diagnostic {
     Diagnostic {
         path: None,
-        message,
+        message: message.into(),
     }
 }
 
@@ -875,6 +911,7 @@ fn validate_document<'a>(
     use ast::{FrequencyField, RecordField, RuleField};
     for declaration in &document.declarations {
         match declaration {
+            Declaration::Extension(value) => references.push((value.target.slug.0.clone(), path)),
             Declaration::Record(record) => {
                 let title = record.title.value();
                 let label = record.header.subject.slug().unwrap_or(&title);

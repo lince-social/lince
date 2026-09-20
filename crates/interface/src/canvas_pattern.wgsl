@@ -8,6 +8,9 @@
 
 @fragment
 fn fragment(in: UiVertexOutput) -> @location(0) vec4<f32> {
+    if geometry.w <= 0.0 {
+        return vec4<f32>(0.0);
+    }
     var position = in.uv * viewport.xy - geometry.xy;
     var visible = 1.0;
     if eye.w > 0.0 {

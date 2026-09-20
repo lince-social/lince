@@ -6,9 +6,12 @@ pub(super) struct Sections {
     title: Entity,
     filled: Entity,
     toggle: Entity,
+    arrow: Entity,
     empty: Entity,
     body: Entity,
     dates: Entity,
+    threads: Entity,
+    fiote: bool,
     observed: Value,
 }
 
@@ -29,24 +32,36 @@ fn section(world: &mut World, parent: Entity) -> Entity {
 }
 
 pub(super) fn create(world: &mut World, row: Entity) -> Sections {
+    let fiote = world
+        .get::<RecordBinding>(row)
+        .and_then(|binding| world.get::<crate::area::InfluenceArea>(binding.area))
+        .and_then(|area| area.protein.as_ref())
+        .is_some_and(|config| config.fiote);
     let title = section(world, row);
     let filled = section(world, row);
     let toggle = world
         .spawn((
             crate::sand::button(0),
+            crate::sand::Borderless,
+            crate::icons::Tooltip("Empty properties".into()),
             Node {
                 width: percent(100),
                 min_height: px(28),
                 flex_shrink: 0.0,
+                align_items: AlignItems::Center,
+                column_gap: px(8),
                 ..default()
             },
             ChildOf(row),
         ))
         .id();
-    crate::edit_mode::label(world, toggle, "> Empty properties", 14.0);
+    divider(world, toggle);
+    let arrow = crate::edit_mode::label(world, toggle, "⌄", 18.0);
+    divider(world, toggle);
     let empty = section(world, row);
     world.get_mut::<Node>(empty).unwrap().display = Display::None;
     let body = section(world, row);
+    let threads = section(world, row);
     let dates = section(world, empty);
     world.get_mut::<Node>(dates).unwrap().flex_direction = FlexDirection::Row;
     world.get_mut::<Node>(dates).unwrap().column_gap = px(8);
@@ -57,13 +72,29 @@ pub(super) fn create(world: &mut World, row: Entity) -> Sections {
         title,
         filled,
         toggle,
+        arrow,
         empty,
         body,
         dates,
+        threads,
+        fiote,
         observed: Value::Null,
     };
     world.entity_mut(row).insert(sections.clone());
     sections
+}
+
+fn divider(world: &mut World, parent: Entity) {
+    world.spawn((
+        Node {
+            height: px(1),
+            flex_grow: 1.0,
+            flex_basis: px(0),
+            ..default()
+        },
+        crate::token_style::background(crate::tokens::Token::Accent),
+        ChildOf(parent),
+    ));
 }
 
 fn empty(property: &str, data: &Value) -> bool {
@@ -90,7 +121,9 @@ impl Sections {
         match property {
             "head" => self.title,
             "body" => self.body,
+            "threads" => self.threads,
             "start_date" | "due_date" => self.dates,
+            _ if self.fiote => self.empty,
             _ if empty(property, data) => self.empty,
             _ => self.filled,
         }
@@ -107,18 +140,7 @@ impl Action for Toggle {
         let opened = world.get::<Node>(sections.empty).unwrap().display == Display::None;
         world.get_mut::<Node>(sections.empty).unwrap().display =
             if opened { Display::Flex } else { Display::None };
-        if let Some(child) = world
-            .get::<Children>(sections.toggle)
-            .and_then(|children| children.first())
-            .copied()
-        {
-            world.get_mut::<Text>(child).unwrap().0 = if opened {
-                "v Empty properties"
-            } else {
-                "> Empty properties"
-            }
-            .into();
-        }
+        world.get_mut::<Text>(sections.arrow).unwrap().0 = if opened { "⌃" } else { "⌄" }.into();
     }
 }
 
@@ -166,15 +188,25 @@ pub(super) fn arrange(world: &mut World, row: Entity, sections: &Sections, data:
             node.flex_grow = 1.0;
             node.min_width = px(0);
         }
-        if !matches!(property.as_str(), "head" | "body") {
-            if empty(&property, data) {
+        if property == "threads" {
+            unfilled |= empty("threads", data);
+        } else if !matches!(property.as_str(), "head" | "body") {
+            if sections.fiote || empty(&property, data) {
                 unfilled = true;
             } else {
                 filled = true;
             }
         }
     }
-    let parent = if empty("start_date", data) {
+    let parent = if empty("threads", data) {
+        sections.empty
+    } else {
+        row
+    };
+    if world.get::<ChildOf>(sections.threads).map(ChildOf::parent) != Some(parent) {
+        world.entity_mut(sections.threads).insert(ChildOf(parent));
+    }
+    let parent = if sections.fiote || empty("start_date", data) {
         sections.empty
     } else {
         sections.filled
@@ -197,13 +229,57 @@ mod tests {
     use serde_json::json;
 
     #[test]
+    fn fiote_castle_contains_management_without_conversation() {
+        let (mut app, _, owner) = super::super::tests::fixture();
+        let mut config = Config::records();
+        config.fiote = true;
+        let uid = nucleus::new_uid("r");
+        app.world_mut()
+            .get_mut::<crate::area::InfluenceArea>(owner)
+            .unwrap()
+            .protein = Some(config.clone());
+        app.world_mut().resource_mut::<Runtime>().areas.insert(
+            owner,
+            State {
+                applied: Some(config),
+                data: vec![json!({"uid":uid,"head":"Fiote","body":"Prompt","threads":[]})],
+                ready: true,
+                dirty: true,
+                ..default()
+            },
+        );
+        rows::reconcile(app.world_mut(), owner);
+        assert_eq!(
+            app.world_mut()
+                .query::<&crate::thread_castle::ThreadCastle>()
+                .iter(app.world())
+                .count(),
+            0
+        );
+        assert_eq!(
+            app.world_mut()
+                .query::<&Sections>()
+                .iter(app.world())
+                .count(),
+            0
+        );
+        assert!(
+            app.world_mut()
+                .query::<&Text>()
+                .iter(app.world())
+                .any(|text| text.0 == "Manage Fiote")
+        );
+    }
+
+    #[test]
     fn empty_fields_collapse_and_dates_share_a_row_without_replacing_editors() {
         let (mut app, _, owner) = super::super::tests::fixture();
+        app.add_plugins(crate::record_binding::RecordBindingPlugin);
         app.world_mut().resource_mut::<Runtime>().areas.insert(
             owner,
             State {
                 applied: Some(Config::records()),
-                data: vec![json!({"uid":"record", "head":"", "body":"", "quantity_exact":"0"})],
+                data: vec![json!({"uid":"record", "head":"Test", "body":"A **description**", "quantity_exact":"0"})],
                 ready: true,
                 dirty: true,
                 ..default()
@@ -213,6 +289,28 @@ mod tests {
         update(app.world_mut());
         let row = app.world().resource::<Runtime>().areas[&owner].row_entities["record"];
         let sections = app.world().get::<Sections>(row).unwrap().clone();
+        assert!(
+            !app.world_mut()
+                .query::<&Text>()
+                .iter(app.world())
+                .any(|text| matches!(
+                    text.0.as_str(),
+                    "Title" | "Description" | "Saved" | "Opening Record…" | "> Empty properties"
+                ))
+        );
+        assert_eq!(
+            app.world_mut()
+                .query::<&crate::description::Description>()
+                .iter(app.world())
+                .count(),
+            0
+        );
+        assert!(
+            app.world_mut()
+                .query::<&bevy::text::EditableText>()
+                .iter(app.world())
+                .any(|text| text.value().to_string() == "A **description**")
+        );
         assert_eq!(
             app.world().get::<Node>(sections.empty).unwrap().display,
             Display::None
@@ -240,6 +338,7 @@ mod tests {
                 match property.as_str() {
                     "head" => sections.title,
                     "body" => sections.body,
+                    "threads" => sections.threads,
                     "start_date" | "due_date" => sections.dates,
                     _ => sections.empty,
                 }
@@ -253,8 +352,15 @@ mod tests {
                 sections.filled,
                 sections.toggle,
                 sections.empty,
-                sections.body
+                sections.body,
             ]
+        );
+        assert_eq!(
+            app.world()
+                .get::<ChildOf>(sections.threads)
+                .unwrap()
+                .parent(),
+            sections.empty
         );
         Toggle.apply(app.world_mut(), row);
         assert_eq!(
@@ -279,6 +385,46 @@ mod tests {
                 sections.dates
             );
             assert_eq!(app.world().get::<Node>(entity).unwrap().flex_grow, 1.0);
+        }
+        let threads = fields["threads"];
+        let controls: Vec<_> = app
+            .world()
+            .get::<Children>(threads)
+            .unwrap()
+            .iter()
+            .collect();
+        for (data, parent) in [
+            (json!([{"uid":"thread", "head":"Thread 1"}]), row),
+            (json!([]), sections.empty),
+        ] {
+            app.world_mut()
+                .resource_mut::<Runtime>()
+                .areas
+                .get_mut(&owner)
+                .unwrap()
+                .data[0]["threads"] = data;
+            update(app.world_mut());
+            assert_eq!(
+                app.world()
+                    .get::<ChildOf>(sections.threads)
+                    .unwrap()
+                    .parent(),
+                parent
+            );
+            assert_eq!(
+                app.world()
+                    .get::<Children>(threads)
+                    .unwrap()
+                    .iter()
+                    .collect::<Vec<_>>(),
+                controls
+            );
+            if parent == row {
+                assert_eq!(
+                    app.world().get::<Children>(row).unwrap().last(),
+                    Some(&sections.threads)
+                );
+            }
         }
     }
 }

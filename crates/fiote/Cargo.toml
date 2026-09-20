@@ -10,10 +10,21 @@ homepage.workspace = true
 name = "fiote"
 path = "src/lib.rs"
 
+[features]
+test-agent = []
+
+[[bin]]
+name = "lince-acp-test-agent"
+path = "tests/support/agent.rs"
+required-features = ["test-agent"]
+
 [dependencies]
+agent-client-protocol = "=2.2.0"
 async-trait = { workspace = true }
+futures = { workspace = true }
 cap-std = "=4.0.3"
 genai = "=0.6.5"
+modelbridge = "=0.5.2"
 reqwest = { workspace = true }
 tempfile = "=3.27.0"
 url = "2.5.8"

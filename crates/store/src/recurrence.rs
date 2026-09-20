@@ -217,7 +217,10 @@ pub async fn create(
 
     let uid = nucleus::new_uid("rec");
     let at = instant(now);
-    let anchor_at = instant(input.anchor_at);
+    let anchor_at = instant(
+        DateTime::from_timestamp_millis(input.anchor_at.timestamp_millis())
+            .ok_or_else(|| protocol("rule anchor is out of range"))?,
+    );
     let cadence_json = serde_json::to_string(&input.cadence)
         .map_err(|_| protocol("cadence could not be written"))?;
     let consequences_json = serde_json::to_string(&input.consequences)
@@ -311,7 +314,10 @@ pub async fn revise(
 
     let revision = current.revision + 1;
     let at = instant(now);
-    let anchor_at = instant(input.anchor_at);
+    let anchor_at = instant(
+        DateTime::from_timestamp_millis(input.anchor_at.timestamp_millis())
+            .ok_or_else(|| protocol("rule anchor is out of range"))?,
+    );
     let cadence_json = serde_json::to_string(&input.cadence)
         .map_err(|_| protocol("cadence could not be written"))?;
     let consequences_json = serde_json::to_string(&input.consequences)
@@ -323,7 +329,7 @@ pub async fn revise(
         "UPDATE recurrence
             SET consequences_json = ?, note = ?,
                 cadence_json = ?, anchor_at = ?, revision = ?,
-                updated_at = ?
+                updated_at = ?, condition_src = ?, gate = ?, carry = ?, actor_uid = ?
           WHERE uid = ? AND revision = ?",
     )
     .bind(&consequences_json)
@@ -332,6 +338,10 @@ pub async fn revise(
     .bind(&anchor_at)
     .bind(revision)
     .bind(&at)
+    .bind(&condition_src)
+    .bind(&gate)
+    .bind(&carry)
+    .bind(input.actor_uid)
     .bind(input.recurrence_uid)
     .bind(input.expected_revision)
     .execute(&mut *tx)
@@ -482,9 +492,19 @@ pub async fn occurrences(
     to: DateTime<Utc>,
     now: DateTime<Utc>,
 ) -> Result<Occurrences, StoreError> {
-    let anchor = parse_instant(&rule.anchor_at)?;
-    let derived = rule
-        .cadence
+    let mut anchor = parse_instant(&rule.anchor_at)?;
+    let mut cadence = rule.cadence.clone();
+    if let Some(condition) = &rule.condition {
+        let parsed = nucleus::karma::Condition::parse(&condition.source)
+            .map_err(|error| protocol(&error.to_string()))?;
+        if let Some(token) = parsed.reads().iter().find(|token| token.func == "freq")
+            && let Some(frequency) = crate::frequency::resolve(pool, &token.slug).await?
+        {
+            anchor = frequency.anchor()?;
+            cadence = frequency.cadence();
+        }
+    }
+    let derived = cadence
         .between(anchor, from, to)
         .map_err(|error| protocol(&error.to_string()))?;
     let mut result = Occurrences {
@@ -503,9 +523,13 @@ pub async fn occurrences(
         }
         let key = instant(due_at);
         let applied = applied_entry(pool, &rule.uid, due_at).await?;
+        let runtime_applied: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM karma_rule_application WHERE rule_uid = ? AND frequency_uid IS NOT NULL AND intended_at = ? AND status = 'applied')")
+            .bind(&rule.uid).bind(due_at.to_rfc3339()).fetch_one(pool).await?;
         let declared = rule.consequences.declared_delta().copied();
         let (state, amount) = if let Some((_, amount)) = applied.as_ref() {
             (OccurrenceState::Applied, Some(*amount))
+        } else if runtime_applied {
+            (OccurrenceState::Applied, declared)
         } else if skipped.contains(&key) {
             (OccurrenceState::Skipped, declared)
         } else if due_at <= now {

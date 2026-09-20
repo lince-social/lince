@@ -36,7 +36,6 @@ pub struct EditMode {
     credits: bool,
     store: bool,
     canvas: bool,
-    notifications: bool,
     information: bool,
     shortcuts: bool,
     customization: bool,
@@ -64,7 +63,6 @@ pub enum EditAction {
     Workspaces,
     Store,
     Canvas,
-    Notifications,
     Information,
     Shortcuts,
     Customization,
@@ -109,9 +107,6 @@ struct StoreFilterGroup {
     entries: Vec<Entity>,
 }
 
-#[derive(Component)]
-struct WorkspaceNotice(Entity);
-
 pub struct EditModePlugin;
 impl Plugin for EditModePlugin {
     fn build(&self, app: &mut App) {
@@ -135,7 +130,6 @@ impl Plugin for EditModePlugin {
                     setup
                         .after(PrepareWorkspaces)
                         .after(crate::canvas_controls::create_controls),
-                    notices.after(setup),
                     expand_tabs,
                     crate::sand_store::refresh.after(setup),
                 ),
@@ -438,7 +432,7 @@ fn anchor_panel(
     }
 }
 
-fn setup(world: &mut World) {
+pub(crate) fn setup(world: &mut World) {
     let roots: Vec<_> = world
         .query_filtered::<Entity, (
             With<Workspaces>,
@@ -453,20 +447,6 @@ fn setup(world: &mut World) {
                 .entity_mut(root)
                 .insert(crate::inspection::Inspection::default());
         }
-        let notice = label(world, root, "", 14.0);
-        world.entity_mut(notice).insert((
-            WorkspaceNotice(root),
-            GlobalZIndex(22),
-            crate::token_style::background(crate::tokens::Token::Surface),
-            Node {
-                display: Display::None,
-                position_type: PositionType::Absolute,
-                bottom: px(64),
-                left: px(12),
-                right: px(12),
-                ..default()
-            },
-        ));
         let toolbar = crate::canvas_controls::toolbar(world, root);
         let toggle = control(world, root, toolbar, EditAction::Toggle, "Edit mode");
         world.entity_mut(toggle).insert(Node {
@@ -530,7 +510,6 @@ fn setup(world: &mut World) {
             credits: false,
             store: false,
             canvas: false,
-            notifications: false,
             information: false,
             shortcuts: false,
             customization: false,
@@ -575,29 +554,6 @@ fn setup(world: &mut World) {
     }
 }
 
-fn notices(
-    spaces: Query<&Workspaces, Changed<Workspaces>>,
-    mut notices: Query<(&WorkspaceNotice, &mut Text, &mut Node)>,
-) {
-    for (notice, mut text, mut node) in &mut notices {
-        let Ok(spaces) = spaces.get(notice.0) else {
-            continue;
-        };
-        let value = spaces.error.as_deref().unwrap_or_default();
-        if text.0 != value {
-            text.0 = value.into();
-        }
-        let display = if value.is_empty() {
-            Display::None
-        } else {
-            Display::Flex
-        };
-        if node.display != display {
-            node.display = display;
-        }
-    }
-}
-
 fn apply(world: &mut World, root: Entity, action: EditAction) {
     let Some(mode) = world.get::<EditMode>(root) else {
         return;
@@ -620,13 +576,35 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
     if !mode.enabled {
         return;
     }
+    let active_tab = [
+        (mode.shortcuts, Some(EditAction::Shortcuts)),
+        (mode.information, Some(EditAction::Information)),
+        (mode.general, Some(EditAction::General)),
+        (mode.areas, Some(EditAction::Areas)),
+        (mode.customization, Some(EditAction::Customization)),
+        (mode.canvas, Some(EditAction::Canvas)),
+        (
+            world
+                .get::<crate::sand_text_editor::TextPanel>(mode.panel)
+                .is_some(),
+            None,
+        ),
+        (mode.credits, Some(EditAction::Credits)),
+        (mode.store, Some(EditAction::Store)),
+        (true, Some(EditAction::Workspaces)),
+    ]
+    .into_iter()
+    .find(|(active, _)| *active)
+    .and_then(|(_, tab)| tab);
+    if active_tab == Some(action) {
+        return;
+    }
     if matches!(
         action,
         EditAction::General
             | EditAction::Workspaces
             | EditAction::Store
             | EditAction::Canvas
-            | EditAction::Notifications
             | EditAction::Information
             | EditAction::Shortcuts
             | EditAction::Customization
@@ -649,7 +627,6 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
             | EditAction::Canvas
             | EditAction::Areas
             | EditAction::Area(_)
-            | EditAction::Notifications
             | EditAction::Information
             | EditAction::Shortcuts
             | EditAction::Customization
@@ -675,7 +652,6 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
             let mut mode = world.get_mut::<EditMode>(root).unwrap();
             mode.areas = true;
             mode.customization = false;
-            mode.notifications = false;
             mode.canvas = false;
             mode.credits = false;
             if let EditAction::Area(action) = action {
@@ -744,7 +720,6 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
             mode.general = false;
             mode.areas = false;
             mode.customization = false;
-            mode.notifications = false;
             mode.canvas = false;
         }
         EditAction::Customization => {
@@ -754,7 +729,6 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
         EditAction::General | EditAction::Workspaces => {
             let mut mode = world.get_mut::<EditMode>(root).unwrap();
             mode.customization = false;
-            mode.notifications = false;
             mode.store = false;
             mode.canvas = false;
             mode.credits = false;
@@ -762,23 +736,14 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
         EditAction::Store => {
             let mut mode = world.get_mut::<EditMode>(root).unwrap();
             mode.customization = false;
-            mode.notifications = false;
             mode.store = true;
             mode.canvas = false;
             mode.credits = false;
         }
         EditAction::Canvas => {
             let mut mode = world.get_mut::<EditMode>(root).unwrap();
-            mode.notifications = false;
             mode.customization = false;
             mode.canvas = true;
-            mode.credits = false;
-        }
-        EditAction::Notifications => {
-            let mut mode = world.get_mut::<EditMode>(root).unwrap();
-            mode.customization = false;
-            mode.notifications = true;
-            mode.canvas = false;
             mode.credits = false;
         }
         EditAction::Information | EditAction::Shortcuts => {}
@@ -806,7 +771,6 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
         EditAction::General
             | EditAction::Workspaces
             | EditAction::Customization
-            | EditAction::Notifications
             | EditAction::Information
             | EditAction::Shortcuts
             | EditAction::Canvas
@@ -856,7 +820,6 @@ pub(crate) fn toggle_customization(world: &mut World, root: Entity) {
     mode.information = false;
     mode.shortcuts = false;
     mode.areas = false;
-    mode.notifications = false;
     mode.canvas = false;
     mode.credits = false;
     let panel = mode.panel;
@@ -881,6 +844,9 @@ fn set_open(world: &mut World, root: Entity, enabled: bool) {
     mode.credits = false;
     let panel = mode.panel;
     let toggle = mode.toggle;
+    if enabled {
+        crate::notifications::close(world, root);
+    }
     if !enabled && let Some(mut editor) = world.get_mut::<crate::area_panel::AreaEditor>(root) {
         editor.cancel();
     }
@@ -1006,7 +972,6 @@ pub(crate) fn control(
         }
         EditAction::ReloadWorkspaceSettings => Some(Icon::Reset),
         EditAction::TogglePhysics => None,
-        EditAction::Notifications => Some(Icon::Bell),
         EditAction::ResetCanvasColors => Some(Icon::Reset),
         EditAction::CanvasColor(_, rgb) => {
             world.entity_mut(entity).insert(crate::icons::IconStyle {
@@ -1039,21 +1004,11 @@ pub(crate) fn control(
         world
             .entity_mut(entity)
             .insert(crate::icons::IconButton::new(icon, value));
-        if action == EditAction::Notifications {
-            world
-                .entity_mut(entity)
-                .insert(crate::notifications::NotificationCount);
-        }
     } else {
         world
             .entity_mut(entity)
             .insert(crate::icons::Tooltip(value.into()));
-        let text = label(world, entity, value, 15.0);
-        if action == EditAction::Notifications {
-            world
-                .entity_mut(text)
-                .insert(crate::notifications::NotificationCount);
-        }
+        label(world, entity, value, 15.0);
     }
     entity
 }
@@ -1076,7 +1031,6 @@ fn render_panel_content(world: &mut World, root: Entity) {
     let credits = mode.credits;
     let store = mode.store;
     let canvas = mode.canvas;
-    let notifications = mode.notifications;
     let customization = mode.customization;
     let areas = mode.areas;
     let general = mode.general;
@@ -1127,11 +1081,7 @@ fn render_panel_content(world: &mut World, root: Entity) {
             ))
             .id();
         control(world, root, tabs, EditAction::General, "General");
-        control(world, root, tabs, EditAction::Information, "Information");
-        control(world, root, tabs, EditAction::Shortcuts, "Cheat sheet");
-        control(world, root, tabs, EditAction::Workspaces, "Workspaces");
         control(world, root, tabs, EditAction::Store, "Sand store");
-        control(world, root, tabs, EditAction::Areas, "Areas of influence");
         control(
             world,
             root,
@@ -1139,13 +1089,10 @@ fn render_panel_content(world: &mut World, root: Entity) {
             EditAction::Customization,
             "Customization",
         );
-        control(
-            world,
-            root,
-            tabs,
-            EditAction::Notifications,
-            "Notifications",
-        );
+        control(world, root, tabs, EditAction::Workspaces, "Workspaces");
+        control(world, root, tabs, EditAction::Information, "Information");
+        control(world, root, tabs, EditAction::Shortcuts, "Cheat sheet");
+        control(world, root, tabs, EditAction::Areas, "Areas of influence");
         control(
             world,
             root,
@@ -1176,10 +1123,6 @@ fn render_panel_content(world: &mut World, root: Entity) {
     }
     if customization {
         crate::customization::render(world, root, panel);
-        return;
-    }
-    if notifications {
-        crate::notifications::panel(world, panel);
         return;
     }
     if canvas {
@@ -1216,7 +1159,6 @@ fn render_panel_content(world: &mut World, root: Entity) {
         let spaces = world.get::<Workspaces>(root).unwrap();
         let active = spaces.active;
         let entries = spaces.entries.clone();
-        let error = spaces.error.clone();
         world.get_mut::<EditMode>(root).unwrap().name = None;
         for entry in &entries {
             let row = world
@@ -1292,32 +1234,8 @@ fn render_panel_content(world: &mut World, root: Entity) {
                 );
             }
         }
-        if let Some(error) = error {
-            label(world, panel, &error, 14.0);
-        }
     } else {
-        let heading = world
-            .spawn((
-                Node {
-                    width: percent(100),
-                    flex_direction: FlexDirection::Row,
-                    justify_content: JustifyContent::SpaceBetween,
-                    align_items: AlignItems::Center,
-                    flex_shrink: 0.0,
-                    column_gap: px(8),
-                    ..default()
-                },
-                ChildOf(panel),
-            ))
-            .id();
-        label(world, heading, "Sand store", 22.0);
-        control(
-            world,
-            root,
-            heading,
-            EditAction::Credits,
-            "Sand credits and licenses",
-        );
+        label(world, panel, "Sand store", 22.0);
         label(world, panel, "Filter", 14.0);
         let bundle = text_editor("", world.resource::<Typography>(), 0);
         let filter = world
@@ -1505,7 +1423,7 @@ pub(crate) mod tests {
                 }
             }
         }
-        for expected in ["Run", "00:00:00", "Record Castle", "Thread Castle", "Protein Castle"] {
+        for expected in ["Run", "00:00:00", "Record Castle", "Fiote Castle", "Protein Castle"] {
             assert!(world.query::<&Text>().iter(world).any(|text| text.0 == expected), "Missing {expected}");
         }
         assert!(!world.query::<&Text>().iter(world).any(|text| text.0 == "+" || text.0.contains("text area")));
@@ -1518,6 +1436,72 @@ pub(crate) mod tests {
             assert_eq!(node.height, px(16));
             assert_eq!(node.flex_shrink, 0.0);
         }
+    }
+
+    #[cfg_attr(test, test)]
+    fn selected_tabs_preserve_content_and_scroll() {
+        let (mut app, root) = fixture();
+        EditAction::Open.apply(app.world_mut(), root);
+        for action in [
+            EditAction::Store,
+            EditAction::Information,
+            EditAction::Shortcuts,
+            EditAction::General,
+            EditAction::Areas,
+            EditAction::Customization,
+            EditAction::Canvas,
+            EditAction::Credits,
+            EditAction::Workspaces,
+        ] {
+            action.apply(app.world_mut(), root);
+            app.update();
+            let world = app.world_mut();
+            let panel = world.get::<EditMode>(root).unwrap().panel;
+            let children: Vec<_> = world.get::<Children>(panel).unwrap().iter().collect();
+            let scroll = Vec2::new(0.0, 42.0);
+            world.get_mut::<ScrollPosition>(panel).unwrap().0 = scroll;
+            action.apply(world, root);
+            world.flush();
+            assert!(world.get::<EditMode>(root).unwrap().enabled, "{action:?}");
+            assert_eq!(
+                world.get::<ScrollPosition>(panel).unwrap().0,
+                scroll,
+                "{action:?}"
+            );
+            assert_eq!(
+                world.get::<Children>(panel).unwrap().iter().collect::<Vec<_>>(),
+                children,
+                "{action:?}"
+            );
+        }
+    }
+
+    #[cfg_attr(test, test)]
+    fn store_credits_only_appear_in_tabs_and_reselection_keeps_filter() {
+        let (mut app, root) = fixture();
+        EditAction::Open.apply(app.world_mut(), root);
+        activate(&mut app, root, EditAction::Store);
+        let world = app.world_mut();
+        let credits: Vec<_> = world
+            .query::<(Entity, &EditControl)>()
+            .iter(world)
+            .filter(|(_, control)| control.action == EditAction::Credits)
+            .map(|(entity, _)| entity)
+            .collect();
+        assert_eq!(credits.len(), 1);
+        let tabs = world.get::<ChildOf>(credits[0]).unwrap().parent();
+        assert!(world.get::<EditTabs>(tabs).is_some());
+        let filter = world.query::<&StoreFilter>().single(world).unwrap().input;
+        world
+            .get_mut::<EditableText>(filter)
+            .unwrap()
+            .editor
+            .set_text("Square");
+        activate(&mut app, root, EditAction::Store);
+        assert_eq!(
+            app.world().get::<EditableText>(filter).unwrap().value(),
+            "Square"
+        );
     }
 
     #[cfg_attr(test, test)]
@@ -1979,6 +1963,8 @@ pub(crate) mod tests {
     }
 
     crate::laboratory_cases! {
+        selected_tabs_preserve_content_and_scroll,
+        store_credits_only_appear_in_tabs_and_reselection_keeps_filter,
         general_settings_are_separate_and_tab_entities_survive_navigation,
         workspace_name_saves_from_its_row_and_pointer_focus_has_no_outline,
         edit_button_emits_one_scoped_event_and_close_restores_focus,

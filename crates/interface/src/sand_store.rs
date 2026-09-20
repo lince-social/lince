@@ -170,10 +170,9 @@ pub(crate) fn entry(
     let size = existing
         .and_then(|(entity, _)| world.get::<CanvasItem>(entity).map(|item| item.size))
         .unwrap_or(
-            if matches!(
-                kind,
-                SandKind::Operation | SandKind::AccessControl | SandKind::Sync
-            ) {
+            if kind == SandKind::Operation {
+                crate::operation::SIZE
+            } else if matches!(kind, SandKind::AccessControl | SandKind::Sync) {
                 Vec2::new(520.0, 540.0)
             } else {
                 Vec2::new(width, height)
@@ -438,10 +437,9 @@ pub fn spawn_sand(
             SandCredits(crate::credits::ATTRIBUTIONS),
             CanvasItem {
                 position,
-                size: if matches!(
-                    kind,
-                    SandKind::Operation | SandKind::AccessControl | SandKind::Sync
-                ) {
+                size: if kind == SandKind::Operation {
+                    crate::operation::SIZE
+                } else if matches!(kind, SandKind::AccessControl | SandKind::Sync) {
                     Vec2::new(520.0, 540.0)
                 } else if kind == SandKind::WorkTimer {
                     Vec2::new(360.0, 520.0)

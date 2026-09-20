@@ -178,7 +178,13 @@ async fn genai_adapter_sends_system_history_and_tool_results() {
     let root = tempfile::tempdir().unwrap();
     let settings = fiote::config::Settings {
         enabled: true,
-        provider: Default::default(),
+        provider: fiote::adapters::Catalog::load(root.path())
+            .await
+            .unwrap()
+            .descriptors[0]
+            .id
+            .clone(),
+        auth_method: String::new(),
         model: "test-model".into(),
         endpoint: format!("http://{address}/v1/"),
         directory: root.path().into(),
@@ -247,8 +253,11 @@ async fn turn_and_context_limits_stop_before_more_provider_calls() {
     )
     .await
     .unwrap_err();
-    assert!(error.contains("eight model requests"));
-    assert_eq!(provider.0.load(std::sync::atomic::Ordering::SeqCst), 8);
+    assert!(error.contains("model requests"));
+    assert_eq!(
+        provider.0.load(std::sync::atomic::Ordering::SeqCst),
+        fiote::runtime::MAX_MODEL_REQUESTS
+    );
     assert!(error.contains("unavailable"));
     let error = run(
         &provider,
@@ -260,7 +269,10 @@ async fn turn_and_context_limits_stop_before_more_provider_calls() {
     .await
     .unwrap_err();
     assert!(error.contains("context limit"));
-    assert_eq!(provider.0.load(std::sync::atomic::Ordering::SeqCst), 8);
+    assert_eq!(
+        provider.0.load(std::sync::atomic::Ordering::SeqCst),
+        fiote::runtime::MAX_MODEL_REQUESTS
+    );
 }
 
 #[test]
@@ -269,12 +281,13 @@ fn configuration_rejects_insecure_endpoints_and_debug_redacts_keys() {
     let mut settings = fiote::config::Settings {
         enabled: true,
         provider: Default::default(),
+        auth_method: String::new(),
         model: "a-model".into(),
-        endpoint: String::new(),
+        endpoint: "https://provider.example/v1/".into(),
         directory: root.path().into(),
     };
     settings.validate().unwrap();
-    assert_eq!(settings.endpoint, "https://api.openai.com/v1/");
+    assert_eq!(settings.endpoint, "https://provider.example/v1/");
     for endpoint in [
         "http://example.org/v1",
         "https://user:secret@example.org/v1",
@@ -288,6 +301,7 @@ fn configuration_rejects_insecure_endpoints_and_debug_redacts_keys() {
         record: "record".into(),
         settings,
         api_key: Some(fiote::config::Secret("hidden-key".into())),
+        password: None,
     };
     assert!(!format!("{request:?}").contains("hidden-key"));
 }

@@ -308,6 +308,45 @@ impl KarmaDeadlineDirectorConfig {
 }
 
 impl Engine {
+    pub async fn advance_karma_time(
+        &self,
+        now: chrono::DateTime<Utc>,
+    ) -> Result<Vec<nucleus::Fact>, EngineError> {
+        let mut config = match self.configured_karma_runtime() {
+            Ok(config) => config,
+            Err(EngineError::Conflict {
+                code: "karma_runtime_unconfigured",
+                ..
+            }) => KarmaDeadlineDirectorConfig::for_host("manual-rule-clock".into())?,
+            Err(error) => return Err(error),
+        };
+        let timestamp = TimestampMs::from_millis(now.timestamp_millis())
+            .map_err(|error| EngineError::Consequence(error.to_string()))?;
+        config.clock = Arc::new(SteppedDeadlineClock(timestamp));
+        let mut directory = rebuild_directory(self, &config).await?;
+        for _ in 0..64 {
+            let due = directory.index.pop_due(timestamp);
+            if due.due.is_empty() {
+                break;
+            }
+            for armed in due.due {
+                let revision = directory
+                    .calendar_provider_by_activation
+                    .get(armed.entry.activation_hash());
+                if let DeadlineProcess::Rearm(entry) =
+                    process_deadline(self, &config, armed.entry, revision, now).await?
+                {
+                    directory.index.upsert(ArmedDeadline {
+                        entry,
+                        lane_resolution_ms: armed.lane_resolution_ms,
+                        degraded: armed.degraded,
+                    });
+                }
+            }
+        }
+        self.process_rule_occurrences(now).await
+    }
+
     pub fn start_karma_deadline_director(
         self: Arc<Self>,
         config: KarmaDeadlineDirectorConfig,
@@ -323,6 +362,23 @@ struct DeadlineDirectory {
     lease_recovery_at: Option<TimestampMs>,
     pending_occurrence_expansion: bool,
     pending_program_processing: bool,
+    pending_rule_processing: bool,
+}
+
+struct SteppedDeadlineClock(TimestampMs);
+
+impl DeadlineClock for SteppedDeadlineClock {
+    fn now(&self) -> Result<TimestampMs, EngineError> {
+        Ok(self.0)
+    }
+
+    fn sleep_until(&self, _deadline: TimestampMs) -> DeadlineSleep<'_> {
+        Box::pin(async move {
+            Ok(DeadlineClockWake::Reached {
+                observed_at: self.0,
+            })
+        })
+    }
 }
 
 async fn run_deadline_director(
@@ -336,7 +392,10 @@ async fn run_deadline_director(
 
     loop {
         let next_wake = earliest(directory.index.next_host_wake(), lease_recovery_at);
-        if directory.pending_occurrence_expansion || directory.pending_program_processing {
+        if directory.pending_occurrence_expansion
+            || directory.pending_program_processing
+            || directory.pending_rule_processing
+        {
             let expansion_now = config.clock.now()?;
             if next_wake.is_none_or(|deadline| deadline > expansion_now) {
                 let background_now = chrono_timestamp(expansion_now)?;
@@ -366,6 +425,8 @@ async fn run_deadline_director(
                 }
                 directory.pending_program_processing =
                     store::karma::runs::has_pending_occurrences(&engine.store.pool).await?;
+                engine.process_rule_occurrences(background_now).await?;
+                directory.pending_rule_processing = engine.has_rule_occurrences().await?;
                 tokio::task::yield_now().await;
                 continue;
             }
@@ -436,6 +497,8 @@ async fn run_deadline_director(
             store::karma::expansions::has_pending_schedule_occurrences(&engine.store.pool).await?;
         directory.pending_program_processing =
             store::karma::runs::has_pending_occurrences(&engine.store.pool).await?;
+        engine.process_rule_occurrences(observed_at).await?;
+        directory.pending_rule_processing = engine.has_rule_occurrences().await?;
         if reload {
             directory = rebuild_directory(&engine, &config).await?;
             lease_recovery_at = directory.lease_recovery_at;
@@ -545,6 +608,7 @@ async fn rebuild_directory(
     config: &KarmaDeadlineDirectorConfig,
 ) -> Result<DeadlineDirectory, EngineError> {
     let now = chrono_timestamp(config.clock.now()?)?;
+    let used = engine.reconcile_rule_frequencies(config, now).await?;
     let demand_policy = store::karma::schedules::ScheduleDemandPolicy {
         workload: config.workload,
         calibration: config.calibration,
@@ -615,6 +679,16 @@ async fn rebuild_directory(
         }
     }
 
+    let mut used_activations = std::collections::BTreeSet::new();
+    for uid in used {
+        if let Some(handle) =
+            store::karma::frequencies::get_handle(&engine.store.pool, &uid).await?
+            && let Some(hash) = handle.active_activation_hash
+        {
+            used_activations.insert(hash);
+        }
+    }
+    entries.retain(|entry| used_activations.contains(entry.entry.activation_hash()));
     let index = admitted_index(
         engine,
         entries,
@@ -632,6 +706,7 @@ async fn rebuild_directory(
         lease_recovery_at,
         pending_occurrence_expansion,
         pending_program_processing,
+        pending_rule_processing: engine.has_rule_occurrences().await?,
     })
 }
 

@@ -14,6 +14,7 @@ const PACKAGE_RECEIPT_DOMAIN: &str = "lince.transfer-package-receipt.v1";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[derive(schemars::JsonSchema)]
 pub enum TransferDeliveryMode {
     Hosted,
     Replicated,

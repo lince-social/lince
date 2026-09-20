@@ -74,3 +74,27 @@ async fn shortest_interval(state: &CellRuntime) -> Result<u64, String> {
         .min()
         .unwrap_or(30))
 }
+
+pub fn spawn_presence(state: CellRuntime) -> tokio::task::JoinHandle<()> {
+    tokio::spawn(async move {
+        let mut changes = state.engine.presence.changes();
+        let mut active = false;
+        let mut interval = tokio::time::interval(Duration::from_millis(250));
+        interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
+        loop {
+            tokio::select! {
+                changed = changes.changed() => { if changed.is_err() { break } }
+                _ = interval.tick(), if active => {}
+            }
+            let next = !state.engine.presence.records().is_empty();
+            let wire = state.wire.read().await.clone();
+            if (active || next) && let Some(wire) = wire {
+                if let Err(error) = wire.sync_presence().await {
+                    tracing::debug!(%error, "Cursor presence exchange failed");
+                }
+            }
+            active = next;
+            tokio::time::sleep(Duration::from_millis(150)).await;
+        }
+    })
+}

@@ -184,6 +184,7 @@ impl<'de> Deserialize<'de> for TimerPolicy {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum MissedPolicy {
     Skip,
     Coalesce,
@@ -193,6 +194,7 @@ pub enum MissedPolicy {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum InactiveGapPolicy {
     SkipToNextAnchor,
     ReplayByMissedPolicy,
@@ -200,6 +202,7 @@ pub enum InactiveGapPolicy {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum RephasePolicy {
     PreserveAnchor,
     FromLastIntended,
@@ -209,6 +212,7 @@ pub enum RephasePolicy {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum OverloadPolicy {
     PauseAndAsk,
     RejectActivation,

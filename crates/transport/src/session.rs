@@ -31,7 +31,7 @@ pub struct Session {
 
 impl Drop for Session {
     fn drop(&mut self) {
-        self.hub.leave_cursor(None, &self.connection_id);
+        self.engine.presence.leave_cursor(None, &self.connection_id);
     }
 }
 
@@ -81,6 +81,10 @@ impl Session {
 
     pub fn connection_id(&self) -> &str {
         &self.connection_id
+    }
+
+    pub fn into_native_tools(self, context: crate::native::Context) -> crate::native::NativeTools {
+        crate::native::NativeTools::new(self.engine.clone(), self, context)
     }
 
     pub fn with_fiote(mut self, service: Arc<dyn crate::fiote::Service>) -> Self {
@@ -151,6 +155,9 @@ impl Session {
         if let Some(login) = &self.login {
             login.touch();
         }
+        if self.local_sync && self.login.is_none() && matches!(msg, ClientMessage::Fiote { .. }) {
+            return self.handle_inner(msg).await;
+        }
         let engine = self.engine.clone();
         let login = self.login.clone();
         let write = matches!(
@@ -159,10 +166,7 @@ impl Session {
                 | ClientMessage::SignedAct { .. }
                 | ClientMessage::CollabUpdate { .. }
                 | ClientMessage::SessionAuthenticate { .. }
-                | ClientMessage::Fiote {
-                    request: fiote::config::Request::Configure { .. },
-                    ..
-                }
+                | ClientMessage::Fiote { .. }
         );
         let work = Box::pin(self.handle_inner(msg));
         let operation = async { Ok(work.await) };
@@ -346,6 +350,7 @@ impl Session {
                 match self.engine.collab_state(&record_uid).await {
                     Ok((snapshot_base64, version)) => {
                         self.collab_records.insert(record_uid.clone());
+                        self.engine.presence.join(&record_uid, &self.connection_id);
                         self.collab_versions
                             .lock()
                             .expect("document versions")
@@ -381,7 +386,7 @@ impl Session {
                 }
             }
             ClientMessage::CollabLeave { record_uid } => {
-                self.hub
+                self.engine.presence
                     .leave_cursor(Some(&record_uid), &self.connection_id);
                 self.last_cursors.remove(&record_uid);
                 self.collab_records.remove(&record_uid);
@@ -407,10 +412,11 @@ impl Session {
                         .await
                         .unwrap_or(false)
                 {
-                    self.hub.cursor(
+                    self.engine.presence.cursor(
                         &record_uid,
                         crate::protocol::CollabCursor {
                             session: self.connection_id.clone(),
+                            organ: None,
                             person: self.subject.clone(),
                             property,
                             anchor,
@@ -594,7 +600,7 @@ impl Session {
     }
 
     pub fn presence_changes(&self) -> tokio::sync::watch::Receiver<u64> {
-        self.hub.presence_changes()
+        self.engine.presence.changes()
     }
 
     pub async fn refresh(&mut self) -> Vec<ServerMessage> {
@@ -619,6 +625,7 @@ impl Session {
                 }
             } else {
                 self.collab_records.remove(&record_uid);
+                self.engine.presence.leave_cursor(Some(&record_uid), &self.connection_id);
                 out.push(ServerMessage::Error {
                     id: record_uid,
                     message: "Record access was removed".into(),
@@ -631,7 +638,7 @@ impl Session {
 
     async fn tick_cursors(&mut self) -> Vec<ServerMessage> {
         if !self.subject_may_act().await {
-            self.hub.leave_cursor(None, &self.connection_id);
+            self.engine.presence.leave_cursor(None, &self.connection_id);
             return vec![session_expired()];
         }
         let mut out = Vec::new();
@@ -642,7 +649,7 @@ impl Session {
                 .await
                 .unwrap_or(false)
             {
-                self.hub.leave_cursor(Some(&uid), &self.connection_id);
+                self.engine.presence.leave_cursor(Some(&uid), &self.connection_id);
                 self.collab_records.remove(&uid);
                 self.last_cursors.remove(&uid);
                 out.push(ServerMessage::CollabCursors {
@@ -652,13 +659,9 @@ impl Session {
                 continue;
             }
             let mut cursors = Vec::new();
-            for cursor in self.hub.cursors(&uid) {
+            for cursor in self.engine.presence.cursors(&uid) {
                 if cursor.session != self.connection_id
-                    && self
-                        .engine
-                        .may_read_record(cursor.person.as_deref(), &uid)
-                        .await
-                        .unwrap_or(false)
+                    && (cursor.organ.is_some() || self.engine.may_read_record(cursor.person.as_deref(), &uid).await.unwrap_or(false))
                 {
                     cursors.push(cursor);
                 }

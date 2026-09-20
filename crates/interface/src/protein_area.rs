@@ -226,6 +226,15 @@ impl Plugin for ProteinAreaPlugin {
             )
             .add_systems(
                 PostUpdate,
+                (rows::save_indicators, property_actions::save_indicators)
+                    .after(rows::commit_edits)
+                    .after(property_actions::commit_edits)
+                    .after(crate::actions::ApplyActions)
+                    .after(crate::record_binding::SyncBindings)
+                    .before(crate::sand::StyleSaveState),
+            )
+            .add_systems(
+                PostUpdate,
                 rows::layout.after(bevy::ui::UiSystems::PostLayout),
             );
     }
@@ -399,6 +408,7 @@ fn retry_wake(world: &World) {
 fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
     let snapshot = matches!(&message, ServerMessage::Snapshot { .. });
     crate::work_timer::receive(world, &message);
+    crate::thread_castle::transcript::receive_message(world, &message);
     if let Some(Source::Organ(organ)) = world
         .resource::<Runtime>()
         .areas
@@ -469,6 +479,7 @@ fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
                 };
                 state.status = message;
                 drop(runtime);
+                crate::thread_castle::created(world, editor, created.as_deref());
                 history::finished(
                     world,
                     &id,
@@ -743,10 +754,19 @@ pub fn execute(
                 .iter()
                 .filter(|row| row["uid"].as_str() == Some(&binding.uid))
                 .flat_map(|row| row["threads"].as_array().into_iter().flatten())
-                .flat_map(|thread| thread["messages"].as_array().into_iter().flatten())
-                .any(|message| message["uid"].as_str() == Some(target));
+                .any(|thread| {
+                    thread["uid"].as_str() == Some(target)
+                        || thread["messages"]
+                            .as_array()
+                            .into_iter()
+                            .flatten()
+                            .any(|message| {
+                                message["uid"].as_str() == Some(target)
+                                    || message["tool_call"]["thread"].as_str() == Some(target)
+                            })
+                });
             if target != &binding.uid && !attached {
-                return Err("Message is not attached to this Record".into());
+                return Err("Thread or message is not attached to this Record".into());
             }
             &binding.uid
         }

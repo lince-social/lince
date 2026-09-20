@@ -21,6 +21,7 @@ pub mod proof;
 pub mod reference;
 pub mod replay;
 pub mod schedule;
+pub mod simple_frequency;
 pub mod state;
 pub mod time;
 pub mod timezone_artifact;

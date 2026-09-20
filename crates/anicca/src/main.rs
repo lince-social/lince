@@ -25,6 +25,7 @@ fn run() -> Result<(), String> {
                     let mut records = 0;
                     let mut frequencies = 0;
                     let mut rules = 0;
+                    let mut extensions = 0;
                     for path in &paths {
                         let document =
                             anicca::parse_path(path).map_err(|error| error.to_string())?;
@@ -37,11 +38,14 @@ fn run() -> Result<(), String> {
                                 anicca::grammar::grammar::Declaration::Karma(karma) => {
                                     rules += karma.rules.rules.len()
                                 }
+                                anicca::grammar::grammar::Declaration::Extension(_) => {
+                                    extensions += 1
+                                }
                             }
                         }
                     }
                     println!(
-                        "checked {} .lingua files: {records} Records, {frequencies} Frequencies, {rules} Rules",
+                        "checked {} .lingua files: {records} Records, {frequencies} Frequencies, {rules} Rules, {extensions} Extensions",
                         paths.len()
                     );
                     Ok(())

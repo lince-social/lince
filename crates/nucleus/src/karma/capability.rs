@@ -25,6 +25,7 @@ pub enum CapabilityFamily {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(schemars::JsonSchema)]
 pub enum Capability {
     #[serde(rename = "karma.read")]
     KarmaRead,
@@ -153,6 +154,7 @@ impl Capability {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(transparent)]
+#[derive(schemars::JsonSchema)]
 pub struct CapabilitySet(BTreeSet<Capability>);
 
 impl CapabilitySet {

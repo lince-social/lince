@@ -12,6 +12,7 @@ const MAX_RFC3339_MILLIS: i64 = 253_402_300_799_999;
     Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, Default,
 )]
 #[serde(transparent)]
+#[derive(schemars::JsonSchema)]
 pub struct DurationMs(i64);
 
 impl DurationMs {
@@ -31,6 +32,8 @@ impl DurationMs {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(schemars::JsonSchema)]
+#[schemars(with = "String")]
 pub struct TimestampMs(i64);
 
 impl TimestampMs {

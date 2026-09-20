@@ -249,6 +249,7 @@ pub struct TransferLocationSnapshot {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
+#[derive(schemars::JsonSchema)]
 pub enum OpenPromiseReusePolicy {
     #[default]
     Duplicate,
@@ -411,6 +412,7 @@ pub fn occurrence_application_formula_hash(formula: &str) -> String {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
+#[derive(schemars::JsonSchema)]
 pub enum TransferRemainderPolicy {
     #[default]
     Visible,
@@ -515,6 +517,7 @@ pub struct TransferOccurrenceDisputeEvidence {
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[derive(schemars::JsonSchema)]
 pub enum AgreementType {
     Individual,
     Full,

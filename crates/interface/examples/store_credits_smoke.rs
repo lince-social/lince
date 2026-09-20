@@ -98,23 +98,22 @@ fn store_layout(world: &mut World, root: Entity) {
             cursor = world.get::<ChildOf>(entity).map(ChildOf::parent);
         }
     }
-    let title = world
-        .query::<(Entity, &Text)>()
-        .iter(world)
-        .find(|(_, text)| text.0 == "Sand store")
-        .unwrap()
-        .0;
     let credits = world
         .query::<(Entity, &IconButton)>()
         .iter(world)
-        .find(|(_, icon)| icon.label == "Sand credits and licenses")
+        .find(|(_, icon)| icon.label == "Licenses and credits")
+        .unwrap()
+        .0;
+    let store = world
+        .query::<(Entity, &IconButton)>()
+        .iter(world)
+        .find(|(_, icon)| icon.label == "Sand store")
         .unwrap()
         .0;
     assert_eq!(
-        world.get::<ChildOf>(title).unwrap().parent(),
+        world.get::<ChildOf>(store).unwrap().parent(),
         world.get::<ChildOf>(credits).unwrap().parent()
     );
-    assert!(rect(world, credits).min.x > rect(world, title).max.x);
     for node in world
         .query_filtered::<&Node, With<bevy::ui_widgets::Button>>()
         .iter(world)
@@ -145,11 +144,20 @@ fn exercise(world: &mut World) {
             store_layout(world, root);
             capture(world, "store");
         }
+        30 => {
+            let store = world
+                .query::<(Entity, &IconButton)>()
+                .iter(world)
+                .find(|(_, icon)| icon.label == "Sand store")
+                .unwrap()
+                .0;
+            pointer(world, store);
+        }
         36 => {
             let credits = world
                 .query::<(Entity, &IconButton)>()
                 .iter(world)
-                .find(|(_, icon)| icon.label == "Sand credits and licenses")
+                .find(|(_, icon)| icon.label == "Licenses and credits")
                 .unwrap()
                 .0;
             pointer(world, credits);
@@ -203,7 +211,7 @@ fn exercise(world: &mut World) {
         100 => {
             assert_eq!(world.resource::<Captures>().count, 4);
             println!(
-                "Store credits smoke passed: top alignment, title-row credits, no Sand tooltips, single button borders, and real clicks expanding and collapsing licenses."
+                "Store credits smoke passed: top alignment, credits tab, no Sand tooltips, single button borders, and real clicks expanding and collapsing licenses."
             );
             world.write_message(AppExit::Success);
         }

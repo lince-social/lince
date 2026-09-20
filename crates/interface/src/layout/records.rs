@@ -85,6 +85,30 @@ pub(super) fn remember(world: &mut World, entity: Entity) {
     }
 }
 
+pub(crate) fn forget(world: &mut World, entity: Entity) {
+    let Some(binding) = world.get::<RecordBinding>(entity).cloned() else {
+        return;
+    };
+    let Some(owner) = world
+        .get::<InfluenceArea>(binding.area)
+        .map(|owner| owner.id.clone())
+    else {
+        return;
+    };
+    let Some(root) = world.get::<ChildOf>(entity).map(ChildOf::parent) else {
+        return;
+    };
+    let workspace = world.get::<WorkspaceMember>(entity).map(|member| member.0);
+    if let Some(mut saved) = world.get_mut::<SavedLayouts>(root) {
+        saved.0.retain(|saved| {
+            Some(saved.workspace) != workspace
+                || saved.owner != owner
+                || saved.uid != binding.uid
+                || saved.source != binding.source
+        });
+    }
+}
+
 pub(super) fn restore(world: &mut World) {
     let rows: Vec<_> = world.query_filtered::<(Entity, &RecordBinding, &WorkspaceMember, &ChildOf), (With<CanvasItem>, Without<LayoutBox>, Without<Restored>)>()
         .iter(world).map(|(entity, binding, member, parent)| (entity, binding.clone(), member.0, parent.parent())).collect();

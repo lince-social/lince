@@ -244,7 +244,7 @@ impl Engine {
         &self,
         commit: FrequencyMutationCommit,
         now: DateTime<Utc>,
-        deadline_changed: bool,
+        _deadline_changed: bool,
     ) -> Result<FrequencyMutationCommit, EngineError> {
         let fact = match &commit {
             FrequencyMutationCommit::Committed { fact, .. } => Some(fact.clone()),
@@ -252,7 +252,7 @@ impl Engine {
                 None
             }
         };
-        if fact.is_some() && deadline_changed {
+        if fact.is_some() {
             self.notify_karma_deadline_change();
         }
         if let Some(fact) = fact {
@@ -271,6 +271,7 @@ impl Engine {
             ProgramMutationCommit::Replayed { .. } | ProgramMutationCommit::Stale { .. } => None,
         };
         if let Some(fact) = fact {
+            self.notify_karma_deadline_change();
             let _ = self.observe_committed_fact(fact, now).await?;
         }
         Ok(commit)

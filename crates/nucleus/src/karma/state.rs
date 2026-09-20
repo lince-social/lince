@@ -143,6 +143,7 @@ pub enum WorkflowStatus {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum DatumState {
     Value,
     Missing,

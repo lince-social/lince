@@ -27,11 +27,15 @@ impl Plugin for AreaInputPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Gesture>().add_systems(
             PreUpdate,
-            (hit_areas, input)
-                .chain()
-                .after(generate_hovermap)
-                .after(crate::canvas_selection::SelectInput)
-                .before(crate::inspection::InspectInput),
+            (
+                hit_areas
+                    .after(generate_hovermap)
+                    .before(crate::canvas_selection::SelectInput),
+                input
+                    .after(crate::canvas_selection::SelectInput)
+                    .before(crate::inspection::InspectInput),
+            )
+                .chain(),
         );
     }
 }
@@ -82,7 +86,7 @@ pub(crate) fn regular(kind: ShapeKind, start: DVec2, end: DVec2) -> Option<Influ
     area.validate().then_some(area)
 }
 
-fn hit_areas(world: &mut World) {
+fn hit_areas(world: &mut World, mut cursor: Local<MessageCursor<PointerInput>>) {
     let hit = world
         .resource::<HoverMap>()
         .get(&PointerId::Mouse)
@@ -91,20 +95,44 @@ fn hit_areas(world: &mut World) {
                 .min_by(|(_, a), (_, b)| a.depth.total_cmp(&b.depth))
                 .map(|(entity, hit)| (*entity, hit.clone()))
         });
-    let Some((root, hit)) = hit else { return };
+    let Some((hit_entity, hit)) = hit else { return };
+    let mut root = hit_entity;
+    while world.get::<CanvasView>(root).is_none() {
+        if world.get::<crate::canvas::CanvasItem>(root).is_some()
+            || world
+                .get::<crate::inspection::InspectionExcluded>(root)
+                .is_some()
+        {
+            return;
+        }
+        let Some(parent) = world.get::<ChildOf>(root) else {
+            return;
+        };
+        root = parent.parent();
+    }
+    if !world.get::<EditMode>(root).is_some_and(|mode| mode.enabled) {
+        return;
+    }
     if world
         .get::<crate::topology::presentation::SpatialRoot>(root)
         .is_some()
     {
         return;
     }
-    let point = world
-        .query::<(&PointerId, &bevy::picking::pointer::PointerLocation)>()
-        .iter(world)
-        .find_map(|(id, pointer)| {
-            (*id == PointerId::Mouse)
-                .then(|| pointer.location().map(|location| location.position))
-                .flatten()
+    let point = cursor
+        .read(world.resource::<Messages<PointerInput>>())
+        .filter(|event| event.pointer_id == PointerId::Mouse)
+        .last()
+        .map(|event| event.location.position)
+        .or_else(|| {
+            world
+                .query::<(&PointerId, &bevy::picking::pointer::PointerLocation)>()
+                .iter(world)
+                .find_map(|(id, pointer)| {
+                    (*id == PointerId::Mouse)
+                        .then(|| pointer.location().map(|location| location.position))
+                        .flatten()
+                })
         });
     let Some(screen) = point else { return };
     let Some(point) = canvas_point(world, root, screen) else {
@@ -127,7 +155,7 @@ fn hit_areas(world: &mut World) {
                 DVec2::from_array(area.size).as_vec2() * zoom as f32,
             );
             area.contains(point)
-                || selected == Some(*entity)
+                || (selected == Some(*entity) || area.shape.kind() != ShapeKind::Drawn)
                     && crate::canvas_resize::Edges::at(local, bounds)
                         .cursor()
                         .is_some()
@@ -138,7 +166,7 @@ fn hit_areas(world: &mut World) {
     if let Some((entity, _, _)) = candidates.first() {
         let mut hover = world.resource_mut::<HoverMap>();
         let hits = hover.get_mut(&PointerId::Mouse).unwrap();
-        hits.remove(&root);
+        hits.remove(&hit_entity);
         hits.insert(*entity, hit);
     }
 }

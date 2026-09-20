@@ -17,6 +17,8 @@ const MAX_TIME_ZONE_ID_BYTES: usize = 255;
 const MAX_TZDB_VERSION_BYTES: usize = 64;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(schemars::JsonSchema)]
+#[schemars(with = "String")]
 pub struct CivilDateTime(NaiveDateTime);
 
 impl CivilDateTime {
@@ -228,6 +230,7 @@ impl<'de> Deserialize<'de> for CivilTime {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(schemars::JsonSchema)]
 pub struct TimeZoneId(String);
 
 impl TimeZoneId {
@@ -287,6 +290,7 @@ impl<'de> Deserialize<'de> for TimeZoneId {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(schemars::JsonSchema)]
 pub struct TzdbVersion(String);
 
 impl TzdbVersion {
@@ -332,6 +336,7 @@ impl<'de> Deserialize<'de> for TzdbVersion {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(schemars::JsonSchema)]
 pub struct TzdbRevision {
     pub version: TzdbVersion,
     pub digest: CanonicalHash,
@@ -339,6 +344,7 @@ pub struct TzdbRevision {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum CivilWeekday {
     Monday,
     Tuesday,
@@ -364,6 +370,7 @@ impl From<Weekday> for CivilWeekday {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(schemars::JsonSchema)]
 pub struct WeekdaySet(BTreeSet<CivilWeekday>);
 
 impl WeekdaySet {
@@ -469,6 +476,7 @@ pub enum CalendarRule {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum GapPolicy {
     Skip,
     ShiftForward,
@@ -477,6 +485,7 @@ pub enum GapPolicy {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum FoldPolicy {
     First,
     Second,

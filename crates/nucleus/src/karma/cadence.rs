@@ -13,6 +13,7 @@ const MS_PER_DAY: i64 = 86_400_000;
     Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize,
 )]
 #[serde(rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum InvalidDay {
     #[default]
     Clamp,
@@ -24,6 +25,7 @@ pub enum InvalidDay {
     Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize,
 )]
 #[serde(default)]
+#[derive(schemars::JsonSchema)]
 pub struct CadenceStep {
     pub years: u32,
     pub months: u32,
@@ -67,6 +69,7 @@ impl CadenceStep {
     Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Default, Serialize, Deserialize,
 )]
 #[serde(tag = "kind", rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum CadenceBound {
     #[default]
     Unbounded,
@@ -79,6 +82,7 @@ pub enum CadenceBound {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(schemars::JsonSchema)]
 pub struct Cadence {
     pub every: CadenceStep,
     #[serde(default, skip_serializing_if = "Option::is_none")]

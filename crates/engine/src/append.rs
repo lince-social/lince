@@ -30,6 +30,7 @@ pub(crate) async fn append_one_in_transaction(
         }
     }
     let mut new = new;
+    crate::operation_origin::stamp(&mut new);
     if let Some(signer) = signer {
         new.actor_uid
             .get_or_insert_with(|| signer.actor_uid.clone());
@@ -66,6 +67,7 @@ pub async fn append_all(
             }
         }
         let mut new = new;
+        crate::operation_origin::stamp(&mut new);
         if let Some(signer) = signer {
             new.actor_uid
                 .get_or_insert_with(|| signer.actor_uid.clone());

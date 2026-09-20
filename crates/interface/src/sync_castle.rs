@@ -11,6 +11,10 @@ use std::collections::HashSet;
 
 #[derive(Component)]
 struct SyncCastle {
+    enabled: bool,
+    confirmed_enabled: bool,
+    toggle: Entity,
+    controls: Entity,
     path: Entity,
     selected: Entity,
     format_label: Entity,
@@ -45,6 +49,44 @@ fn status(world: &mut World, owner: Entity, value: &str) {
     world.get_mut::<Text>(entity).unwrap().0 = value.into();
 }
 
+fn config_status(config: &Value) -> &'static str {
+    if config["enabled"] != true {
+        "Stopped"
+    } else if config["path"].as_str().is_none_or(|path| path.is_empty()) {
+        "Choose a directory and save"
+    } else {
+        "Running"
+    }
+}
+
+fn set_enabled(world: &mut World, owner: Entity, enabled: bool) {
+    let mut view = world.get_mut::<SyncCastle>(owner).unwrap();
+    view.enabled = enabled;
+    let (toggle, controls) = (view.toggle, view.controls);
+    world.get_mut::<Node>(controls).unwrap().display = if enabled {
+        Display::Flex
+    } else {
+        Display::None
+    };
+    let name = if enabled {
+        "File sync: on"
+    } else {
+        "File sync: off"
+    };
+    let label = world.get::<Children>(toggle).unwrap()[0];
+    world.get_mut::<Text>(label).unwrap().0 = name.into();
+    let mut node = world
+        .get_mut::<bevy::a11y::AccessibilityNode>(toggle)
+        .unwrap();
+    node.set_role(accesskit::Role::Switch);
+    node.set_label("File sync");
+    node.set_toggled(if enabled {
+        accesskit::Toggled::True
+    } else {
+        accesskit::Toggled::False
+    });
+}
+
 fn send(world: &World, message: ClientMessage) -> Result<(), &'static str> {
     if crate::laboratory::active(world) {
         return Err("Directory sync is unavailable in the Laboratory.");
@@ -65,7 +107,7 @@ enum Command {
     Select(String, String),
     Format(FileFormat),
     Save,
-    Stop,
+    Toggle,
     Reload,
 }
 
@@ -94,20 +136,26 @@ impl Action for Command {
                 view.library_requested = false;
                 status(world, owner, "Loading…");
             }
-            Self::Save | Self::Stop => {
+            Self::Save | Self::Toggle => {
                 let path = world
                     .get::<EditableText>(view.path)
                     .unwrap()
                     .value()
                     .to_string();
-                let action = engine::actions::Action::ConfigureFileSync {
-                    protein: view.protein.clone(),
-                    path,
-                    format: view.format,
-                    enabled: matches!(self, Self::Save),
+                let action = if matches!(self, Self::Toggle) {
+                    engine::actions::Action::SetFileSyncEnabled {
+                        enabled: !view.enabled,
+                    }
+                } else {
+                    engine::actions::Action::ConfigureFileSync {
+                        protein: view.protein.clone(),
+                        path,
+                        format: view.format,
+                        enabled: true,
+                    }
                 };
-                if matches!(self, Self::Save) && view.protein.is_empty() {
-                    status(world, owner, "Choose a saved Protein");
+                if matches!(self, Self::Save) && !view.enabled {
+                    status(world, owner, "Enable file sync first");
                     return;
                 }
                 world.resource_mut::<Requests>().next += 1;
@@ -123,7 +171,11 @@ impl Action for Command {
                         world.get_mut::<SyncCastle>(owner).unwrap().pending = Some(id);
                         status(world, owner, "Saving…");
                     }
-                    Err(error) => status(world, owner, error),
+                    Err(error) => {
+                        let enabled = world.get::<SyncCastle>(owner).unwrap().confirmed_enabled;
+                        set_enabled(world, owner, enabled);
+                        status(world, owner, error);
+                    }
                 }
             }
         }
@@ -172,8 +224,26 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
             },
         );
     label(world, sand, "Sync", 22.0);
-    let selected = label(world, sand, "Choose a saved Protein", 16.0);
-    world.entity_mut(selected).insert(crate::icons::Tooltip("Sync complete matching Records from the local Organ. Save a Record query without aggregation in the Protein Castle.".into()));
+    let toggle = crate::information::action_button(
+        world,
+        sand,
+        sand,
+        "File sync: off",
+        crate::actions![Command::Toggle],
+    );
+    let controls = world
+        .spawn((
+            Node {
+                display: Display::None,
+                flex_direction: FlexDirection::Column,
+                row_gap: px(8),
+                ..default()
+            },
+            ChildOf(sand),
+        ))
+        .id();
+    let selected = label(world, controls, "All local Records", 16.0);
+    world.entity_mut(selected).insert(crate::icons::Tooltip("Sync all local Records, or choose a saved Protein without aggregation to limit which Records are written to the directory.".into()));
     let library = world
         .spawn((
             Node {
@@ -182,10 +252,10 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
                 flex_shrink: 0.0,
                 ..default()
             },
-            ChildOf(sand),
+            ChildOf(controls),
         ))
         .id();
-    label(world, sand, "Directory", 14.0);
+    label(world, controls, "Directory", 14.0);
     let mut text = crate::sand::editable("");
     text.allow_newlines = false;
     text.visible_lines = Some(1.0);
@@ -209,32 +279,35 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
                 flex_shrink: 0.0,
                 ..default()
             },
-            ChildOf(sand),
+            ChildOf(controls),
         ))
         .id();
     if let Some(mut node) = world.get_mut::<bevy::a11y::AccessibilityNode>(path) {
         node.set_label("Sync directory");
     }
-    let format_label = label(world, sand, format_name(FileFormat::Lingua), 14.0);
+    let format_label = label(world, controls, format_name(FileFormat::Lingua), 14.0);
     button(
         world,
-        sand,
+        controls,
         sand,
         ".lingua",
         Command::Format(FileFormat::Lingua),
     );
     button(
         world,
-        sand,
+        controls,
         sand,
         "Markdown (.md)",
         Command::Format(FileFormat::Markdown),
     );
-    button(world, sand, sand, "Save and start", Command::Save);
-    button(world, sand, sand, "Stop sync", Command::Stop);
+    button(world, controls, sand, "Save directory", Command::Save);
     button(world, sand, sand, "Reload settings", Command::Reload);
     let status = label(world, sand, "Loading…", 14.0);
     world.entity_mut(sand).insert(SyncCastle {
+        enabled: false,
+        confirmed_enabled: false,
+        toggle,
+        controls,
         path,
         selected,
         format_label,
@@ -247,6 +320,7 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
         pending: None,
         names: Default::default(),
     });
+    set_enabled(world, sand, false);
     crate::information::sync::panel(world, root, sand);
     sand
 }
@@ -354,9 +428,13 @@ fn receive_message(world: &mut World, message: ServerMessage) {
                     })
                     .collect();
                 world.entity_mut(parent).despawn_children();
-                if rows.is_empty() {
-                    label(world, parent, "No saved Proteins", 14.0);
-                }
+                button(
+                    world,
+                    parent,
+                    owner,
+                    "All local Records",
+                    Command::Select(String::new(), "All local Records".into()),
+                );
                 for row in rows {
                     if let Some(uid) = row["uid"].as_str() {
                         let name = row["head"].as_str().unwrap_or(uid);
@@ -375,18 +453,16 @@ fn receive_message(world: &mut World, message: ServerMessage) {
             }
             ServerMessage::Update { id, rows } if *id == subscription(owner, false) => {
                 if view.pending.is_none() {
-                    status(
-                        world,
-                        owner,
-                        if rows
-                            .first()
-                            .is_some_and(|row| row["extension"]["enabled"] == true)
-                        {
-                            "Running"
-                        } else {
-                            "Stopped"
-                        },
-                    );
+                    let config = rows
+                        .first()
+                        .map(|row| &row["extension"])
+                        .unwrap_or(&Value::Null);
+                    world
+                        .get_mut::<SyncCastle>(owner)
+                        .unwrap()
+                        .confirmed_enabled = config["enabled"] == true;
+                    set_enabled(world, owner, config["enabled"] == true);
+                    status(world, owner, config_status(config));
                 }
             }
             ServerMessage::Snapshot { id, rows, .. } if *id == subscription(owner, false) => {
@@ -411,7 +487,7 @@ fn receive_message(world: &mut World, message: ServerMessage) {
                     .editor
                     .set_text(config["path"].as_str().unwrap_or_default());
                 world.get_mut::<Text>(selected).unwrap().0 = if protein.is_empty() {
-                    "Choose a saved Protein".into()
+                    "All local Records".into()
                 } else {
                     name
                 };
@@ -419,15 +495,12 @@ fn receive_message(world: &mut World, message: ServerMessage) {
                 let mut view = world.get_mut::<SyncCastle>(owner).unwrap();
                 view.protein = protein;
                 view.format = format;
-                status(
-                    world,
-                    owner,
-                    if config["enabled"] == true {
-                        "Running"
-                    } else {
-                        "Stopped"
-                    },
-                );
+                world
+                    .get_mut::<SyncCastle>(owner)
+                    .unwrap()
+                    .confirmed_enabled = config["enabled"] == true;
+                set_enabled(world, owner, config["enabled"] == true);
+                status(world, owner, config_status(config));
             }
             ServerMessage::ActionOk { id, .. } if view.pending.as_ref() == Some(id) => {
                 let mut view = world.get_mut::<SyncCastle>(owner).unwrap();
@@ -441,7 +514,9 @@ fn receive_message(world: &mut World, message: ServerMessage) {
                     || *id == subscription(owner, true)
                     || id == crate::cell_bridge::CONNECTION =>
             {
+                let enabled = world.get::<SyncCastle>(owner).unwrap().confirmed_enabled;
                 world.get_mut::<SyncCastle>(owner).unwrap().pending = None;
+                set_enabled(world, owner, enabled);
                 status(world, owner, message);
             }
             _ => {}
@@ -537,6 +612,7 @@ pub(crate) mod tests {
             "/draft"
         );
         assert!(crate::sand_text::snapshot(&world, castle).is_empty());
+        set_enabled(&mut world, castle, true);
         Command::Save.apply(&mut world, castle);
         let view = world.get::<SyncCastle>(castle).unwrap();
         assert!(view.pending.is_none());
@@ -640,6 +716,21 @@ pub(crate) mod tests {
             .unwrap();
         }
         wait_status(&mut app, castle, "Stopped").await;
+        let controls = app.world().get::<SyncCastle>(castle).unwrap().controls;
+        assert_eq!(
+            app.world().get::<Node>(controls).unwrap().display,
+            Display::None
+        );
+        Command::Toggle.apply(app.world_mut(), castle);
+        wait_status(&mut app, castle, "Choose a directory and save").await;
+        assert_eq!(
+            app.world().get::<Node>(controls).unwrap().display,
+            Display::Flex
+        );
+        let rows = protein::execute(&engine.store, &query(false))
+            .await
+            .unwrap();
+        assert_eq!(rows[0]["extension"]["enabled"], true);
         Command::Select(protein.clone(), "Notes".into()).apply(app.world_mut(), castle);
         let directory = tempfile::tempdir().unwrap();
         let path = app.world().get::<SyncCastle>(castle).unwrap().path;
@@ -657,12 +748,16 @@ pub(crate) mod tests {
         assert_eq!(rows[0]["extension"]["protein"], protein);
         assert_eq!(rows[0]["extension"]["format"], "markdown");
         assert!(rows[0]["extension"].get("formats").is_none());
-        Command::Stop.apply(app.world_mut(), castle);
+        Command::Toggle.apply(app.world_mut(), castle);
         wait_status(&mut app, castle, "Stopped").await;
         let rows = protein::execute(&engine.store, &query(false))
             .await
             .unwrap();
         assert_eq!(rows[0]["extension"]["enabled"], false);
+        assert_eq!(
+            app.world().get::<Node>(controls).unwrap().display,
+            Display::None
+        );
     }
 
     crate::laboratory_cases! {

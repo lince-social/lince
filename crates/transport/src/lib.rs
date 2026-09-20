@@ -2,6 +2,9 @@
 
 pub mod lane;
 pub mod fiote;
+pub mod native;
+#[cfg(feature = "mcp")]
+pub mod mcp;
 pub mod live;
 pub mod live_client;
 pub mod protocol;

@@ -60,6 +60,12 @@ fn derive(
     iterations: u32,
     parallelism: u32,
 ) -> Result<DerivedKey, VaultError> {
+    if !(8..=65_536).contains(&memory_kib)
+        || !(1..=4).contains(&iterations)
+        || !(1..=4).contains(&parallelism)
+    {
+        return Err(VaultError::Unopenable);
+    }
     let params = Params::new(memory_kib, iterations, parallelism, Some(KEY_LEN))
         .map_err(|_| VaultError::Unopenable)?;
     let mut key = DerivedKey([0u8; KEY_LEN]);

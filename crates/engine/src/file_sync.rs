@@ -1,3 +1,5 @@
+mod lingua;
+
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
 
@@ -10,6 +12,7 @@ const MISSING_TICKS_BEFORE_DELETE: u32 = 2;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[derive(schemars::JsonSchema)]
 pub enum FileFormat {
     #[default]
     Markdown,
@@ -43,6 +46,7 @@ struct KnownFile {
 
 #[derive(Debug, Default)]
 pub struct FileSyncState {
+    lingua: lingua::State,
     known: HashMap<PathBuf, KnownFile>,
 }
 
@@ -156,6 +160,9 @@ impl Engine {
         }
         std::fs::create_dir_all(dir).map_err(EngineError::Io)?;
         let formats = configured_formats(config.as_ref());
+        if formats.contains(&FileFormat::Lingua) {
+            return self.lingua_sync_pass(dir, organ_uid, config.as_ref(), &mut state.lingua).await;
+        }
         let mut disk = HashMap::new();
         for format in &formats {
             disk.extend(scan_disk(dir, format.extension())?);
@@ -1370,8 +1377,8 @@ fn fact_may_touch_file_sync(fact: &nucleus::Fact) -> bool {
 pub fn spawn_supervisor(engine: std::sync::Arc<Engine>) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
         let mut running: HashMap<String, (PathBuf, tokio::task::JoinHandle<()>)> = HashMap::new();
-        let _ = reconcile_all(&engine, &mut running).await;
         let mut bus = engine.subscribe();
+        let _ = reconcile_all(&engine, &mut running).await;
         loop {
             match bus.recv().await {
                 Ok(fact) => {

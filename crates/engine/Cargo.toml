@@ -8,6 +8,7 @@ homepage.workspace = true
 description = "Lince engine: the single fact write path, the reactive Karma scheduler, effects, timers."
 
 [dependencies]
+schemars = { workspace = true }
 anicca = { workspace = true }
 argon2 = { workspace = true }
 protein = { workspace = true }

@@ -20,6 +20,7 @@ pub struct PointerState {
     pub hit: Option<(Entity, Vec3)>,
     cursor: Option<Location>,
     pub drag: Option<(Entity, DVec3)>,
+    resize: Option<super::resizing::Gesture>,
     pending_drag: Option<(Entity, Vec2, DVec3)>,
     last: Vec2,
     pan: Option<Vec2>,
@@ -103,6 +104,7 @@ pub fn pointer(
     let Some(position) = window.cursor_position() else {
         state.hit = None;
         state.drag = None;
+        state.resize = None;
         state.pending_drag = None;
         state.pan = None;
         state.zoom = None;
@@ -300,6 +302,14 @@ pub fn gestures(world: &mut World, mut cursor: Local<MessageCursor<PointerInput>
     if world
         .resource::<ButtonInput<KeyCode>>()
         .just_pressed(KeyCode::Escape)
+        && let Some(resize) = world.resource_mut::<PointerState>().resize.take()
+    {
+        resize.cancel(world);
+        world.resource_mut::<PointerState>().drag = None;
+    }
+    if world
+        .resource::<ButtonInput<KeyCode>>()
+        .just_pressed(KeyCode::Escape)
     {
         world.resource_mut::<PointerState>().pending_drag = None;
     }
@@ -379,7 +389,23 @@ pub fn gestures(world: &mut World, mut cursor: Local<MessageCursor<PointerInput>
                 let task = world
                     .get::<crate::full_record::RecordCard>(entity)
                     .is_some();
-                if task && editing_text(world) {
+                let editing = world
+                    .get::<crate::edit_mode::EditMode>(root)
+                    .is_some_and(|mode| mode.enabled);
+                if editing
+                    && let Some(resize) =
+                        super::resizing::Gesture::start(world, entity, event.location.position)
+                {
+                    let mut state = world.resource_mut::<PointerState>();
+                    state.resize = Some(resize);
+                    state.drag = Some((entity, DVec3::ZERO));
+                    state.pending_drag = None;
+                    world
+                        .resource_mut::<bevy::input_focus::InputFocus>()
+                        .clear();
+                    continue;
+                }
+                if task && !editing && editing_text(world) {
                     continue;
                 }
                 if !task
@@ -426,6 +452,14 @@ pub fn gestures(world: &mut World, mut cursor: Local<MessageCursor<PointerInput>
                 }
             }
             PointerAction::Move { .. } => {
+                if let Some(resize) = world.resource_mut::<PointerState>().resize.take() {
+                    if resize.apply(world, event.location.position) {
+                        world.resource_mut::<PointerState>().resize = Some(resize);
+                    } else {
+                        world.resource_mut::<PointerState>().drag = None;
+                    }
+                    continue;
+                }
                 if let Some((entity, start, point)) = world.resource::<PointerState>().pending_drag
                     && event.location.position.distance(start) >= 5.0
                 {
@@ -482,6 +516,7 @@ pub fn gestures(world: &mut World, mut cursor: Local<MessageCursor<PointerInput>
             PointerAction::Release(_) | PointerAction::Cancel => {
                 let mut state = world.resource_mut::<PointerState>();
                 state.drag = None;
+                state.resize = None;
                 state.pending_drag = None;
                 state.pan = None;
             }
@@ -519,6 +554,14 @@ pub fn gestures(world: &mut World, mut cursor: Local<MessageCursor<PointerInput>
             _ => {}
         }
     }
+    super::resizing::cursor(
+        world,
+        world
+            .resource::<PointerState>()
+            .resize
+            .as_ref()
+            .map(|resize| resize.edges),
+    );
 }
 
 fn editing_text(world: &World) -> bool {

@@ -1,27 +1,33 @@
+pub(crate) mod tests;
+mod ui;
+
 use crate::{
-    actions::{Action, ActionButton, ActionsPlugin},
-    icons::{Icon, IconButton},
-    sand::{Square, button},
-    theme::Typography,
+    actions::{Action, ActionsPlugin},
     wake::WakeSignal,
 };
 use bevy::prelude::*;
+use std::collections::HashSet;
+
+pub(crate) use ui::close;
 
 #[derive(Resource)]
 pub struct Notifications {
     pub log: cell::Diagnostics,
     subscription: Option<cell::DiagnosticSubscription>,
-    revision: Option<u64>,
-    count: usize,
+    revision: u64,
+    notices: Vec<cell::Notice>,
+    toasts: HashSet<u64>,
 }
 
 impl Notifications {
     pub fn new(log: cell::Diagnostics) -> Self {
+        let (revision, notices) = log.snapshot();
         Self {
             log,
             subscription: None,
-            revision: None,
-            count: 0,
+            revision,
+            notices,
+            toasts: HashSet::new(),
         }
     }
 }
@@ -33,15 +39,36 @@ impl Default for Notifications {
 }
 
 #[derive(Component)]
-pub(crate) struct NotificationPanel(Option<u64>);
+struct NotificationPanel(Option<u64>);
 
 #[derive(Component)]
-pub(crate) struct NotificationCount;
+struct NotificationCenter {
+    button: Entity,
+    panel: Option<Entity>,
+}
+
+#[derive(Component)]
+struct ToastStack(Entity);
+
+#[derive(Component)]
+struct NotificationToast {
+    id: u64,
+    occurrences: u64,
+}
+
+#[derive(Component)]
+struct NotificationCount;
+
+#[derive(Component)]
+struct NotificationBadge(Entity);
 
 #[derive(Clone, Copy)]
 pub enum NotificationAction {
-    Dismiss(u64),
-    DismissAll,
+    Toggle,
+    Close,
+    CloseToast(u64),
+    Delete(u64),
+    DeleteAll,
 }
 
 impl Action for NotificationAction {
@@ -49,20 +76,30 @@ impl Action for NotificationAction {
         vec![crate::inspection::Connection {
             target,
             name: match self {
-                Self::Dismiss(_) => "Notification Clicked Dismiss",
-                Self::DismissAll => "Notifications Clicked Dismiss All",
+                Self::Toggle => "Notifications Clicked Toggle",
+                Self::Close => "Notifications Clicked Close",
+                Self::CloseToast(_) => "Notification Toast Clicked Close",
+                Self::Delete(_) => "Notification Clicked Delete",
+                Self::DeleteAll => "Notifications Clicked Delete All",
             }
             .into(),
         }]
     }
 
-    fn apply(&self, world: &mut World, _: Entity) {
-        let log = world.resource::<Notifications>().log.clone();
-        match self {
-            Self::Dismiss(id) => log.dismiss(*id),
-            Self::DismissAll => {
+    fn apply(&self, world: &mut World, target: Entity) {
+        match *self {
+            Self::Toggle => ui::toggle(world, target),
+            Self::Close => close(world, target),
+            Self::CloseToast(id) => ui::remove_toast(world, id),
+            Self::Delete(id) => {
+                world.resource::<Notifications>().log.dismiss(id);
+                ui::remove_toast(world, id);
+            }
+            Self::DeleteAll => {
+                let log = world.resource::<Notifications>().log.clone();
                 for notice in log.snapshot().1 {
                     log.dismiss(notice.id);
+                    ui::remove_toast(world, notice.id);
                 }
             }
         }
@@ -77,7 +114,18 @@ impl Plugin for NotificationsPlugin {
             app.add_plugins(ActionsPlugin);
         }
         app.init_resource::<Notifications>()
-            .add_systems(Update, render);
+            .add_systems(
+                Update,
+                (ui::setup, render).chain().after(crate::edit_mode::setup),
+            )
+            .add_systems(
+                PostUpdate,
+                ui::render_badges
+                    .after(crate::icons::SyncIcons)
+                    .after(crate::token_metrics::layout)
+                    .before(bevy::ui::UiSystems::Prepare),
+            )
+            .add_systems(PostUpdate, ui::anchor.after(bevy::ui::UiSystems::Layout));
     }
 }
 
@@ -87,20 +135,6 @@ pub fn report(world: &World, source: &str, message: &str) {
         .map(|notifications| notifications.log.clone())
         .unwrap_or_else(cell::Diagnostics::global);
     log.report(source, message);
-}
-
-pub(crate) fn panel(world: &mut World, parent: Entity) {
-    world.spawn((
-        NotificationPanel(None),
-        ChildOf(parent),
-        Node {
-            width: percent(100),
-            flex_direction: FlexDirection::Column,
-            row_gap: px(10),
-            flex_shrink: 0.0,
-            ..default()
-        },
-    ));
 }
 
 fn recommendation(source: &str, message: &str) -> &'static str {
@@ -143,246 +177,36 @@ fn render(world: &mut World) {
         world.resource_mut::<Notifications>().subscription = Some(subscription);
     }
     let log = world.resource::<Notifications>().log.clone();
-    let revision = log.revision();
-    if world.resource::<Notifications>().revision != Some(revision) {
-        let count = log.snapshot().1.len();
+    if world.resource::<Notifications>().revision != log.revision() {
+        let (revision, notices) = log.snapshot();
         let mut state = world.resource_mut::<Notifications>();
-        state.revision = Some(revision);
-        state.count = count;
-    }
-    let count = world.resource::<Notifications>().count;
-    let mut labels =
-        world.query_filtered::<&mut crate::icons::IconButton, With<NotificationCount>>();
-    for mut label in labels.iter_mut(world) {
-        let value = if count == 0 {
-            "Notifications".into()
-        } else {
-            format!("Notifications ({count})")
-        };
-        if label.label != value {
-            label.label = value;
-        }
-    }
-    let panels: Vec<_> = world
-        .query::<(Entity, &NotificationPanel)>()
-        .iter(world)
-        .filter(|(_, panel)| panel.0 != Some(revision))
-        .map(|(entity, _)| entity)
-        .collect();
-    if panels.is_empty() {
-        return;
-    }
-    let (_, notices) = log.snapshot();
-    for panel in panels {
-        world.entity_mut(panel).despawn_children();
-        world.get_mut::<NotificationPanel>(panel).unwrap().0 = Some(revision);
-        if notices.is_empty() {
-            label(world, panel, "No notifications.", 15.0);
-            continue;
-        }
-        let row = world
-            .spawn((
-                ChildOf(panel),
-                Node {
-                    justify_content: JustifyContent::SpaceBetween,
-                    align_items: AlignItems::Center,
-                    ..default()
-                },
-            ))
-            .id();
-        label(world, row, "Notifications", 18.0);
-        dismiss(
-            world,
-            panel,
-            row,
-            NotificationAction::DismissAll,
-            "Dismiss all notifications",
-        );
-        for notice in notices.iter().rev() {
-            let row = world
-                .spawn((
-                    ChildOf(panel),
-                    Square,
-                    crate::token_style::background(crate::tokens::Token::Surface),
-                    crate::token_style::border(crate::tokens::Token::Accent),
-                    Node {
-                        padding: UiRect::all(px(12)),
-                        border: UiRect::all(px(1)),
-                        width: percent(100),
-                        column_gap: px(8),
-                        flex_shrink: 0.0,
-                        ..default()
-                    },
-                ))
-                .id();
-            let content = world
-                .spawn((
-                    ChildOf(row),
-                    Node {
-                        flex_direction: FlexDirection::Column,
-                        flex_grow: 1.0,
-                        flex_basis: px(0),
-                        min_width: px(0),
-                        row_gap: px(4),
-                        ..default()
-                    },
-                ))
-                .id();
-            label(world, content, &notice.message, 15.0);
-            if notice.source == "cell::update_available" {
-                crate::information::open_button(world, content, panel);
-            } else {
-                label(
-                    world,
-                    content,
-                    recommendation(&notice.source, &notice.message),
-                    14.0,
-                );
+        for notice in &notices {
+            if !state.notices.iter().any(|previous| {
+                previous.id == notice.id && previous.occurrences == notice.occurrences
+            }) {
+                state.toasts.insert(notice.id);
             }
-            if notice.occurrences > 1 {
-                label(
-                    world,
-                    content,
-                    &format!("Seen {} times", notice.occurrences),
-                    11.0,
-                );
-            }
-            dismiss(
-                world,
-                panel,
-                row,
-                NotificationAction::Dismiss(notice.id),
-                "Dismiss notification",
-            );
         }
+        state
+            .toasts
+            .retain(|id| notices.iter().any(|notice| notice.id == *id));
+        state.revision = revision;
+        state.notices = notices;
     }
-    if let Some(wake) = world.get_resource::<WakeSignal>() {
-        wake.ring();
-    }
-}
-
-fn label(world: &mut World, parent: Entity, value: &str, size: f32) {
-    let font = world.resource::<Typography>().text(size);
-    world.spawn((
-        Text::new(value),
-        font,
-        crate::token_style::text(crate::tokens::Token::Ink),
-        ChildOf(parent),
-    ));
-}
-
-fn dismiss(
-    world: &mut World,
-    panel: Entity,
-    parent: Entity,
-    action: NotificationAction,
-    label: &str,
-) {
-    world.spawn((
-        button(0),
-        IconButton::new(Icon::Close, label),
-        ActionButton::new(panel, crate::actions![action]),
-        ChildOf(parent),
-        Node {
-            padding: UiRect::all(px(5)),
-            flex_shrink: 0.0,
-            align_self: AlignSelf::Start,
-            ..default()
-        },
-    ));
-}
-
-pub(crate) mod tests {
-    use super::*;
-    use bevy::ui_widgets::Activate;
-    use std::sync::{
-        Arc,
-        atomic::{AtomicUsize, Ordering},
+    let count = world.resource::<Notifications>().notices.len();
+    let value = if count == 0 {
+        "Notifications".into()
+    } else {
+        format!("Notifications ({count})")
     };
-
-    #[cfg_attr(test, test)]
-    fn recommendations_distinguish_local_connections_storage_and_desktop_problems() {
-        assert!(recommendation("interface::connection", "Connection closed").contains("this Cell"));
-        assert!(recommendation("cell", "No space left on device").contains("disk space"));
-        assert!(recommendation("cell", "Permission denied").contains("your account"));
-        assert!(
-            recommendation("lince_interface::tray", "Unavailable").contains("keep using Lince")
-        );
+    for mut label in world
+        .query_filtered::<&mut crate::icons::IconButton, With<NotificationCount>>()
+        .iter_mut(world)
+    {
+        if label.label != value {
+            label.label.clone_from(&value);
+        }
     }
-
-    #[cfg_attr(test, test)]
-    fn notifications_wake_render_once_and_dismiss_through_actions() {
-        let log = cell::Diagnostics::default();
-        let wakes = Arc::new(AtomicUsize::new(0));
-        let count = wakes.clone();
-        let mut app = App::new();
-        crate::laboratory::isolate(app.world_mut());
-        app.init_resource::<Assets<Font>>()
-            .init_resource::<Typography>()
-            .insert_resource(Notifications::new(log.clone()))
-            .insert_resource(WakeSignal::new(move || {
-                count.fetch_add(1, Ordering::Relaxed);
-            }))
-            .add_plugins(NotificationsPlugin);
-        let root = app.world_mut().spawn(crate::container::BoxRoot).id();
-        panel(app.world_mut(), root);
-        app.update();
-        let before = wakes.load(Ordering::Relaxed);
-        log.report("cell", "Could not save the document");
-        assert!(wakes.load(Ordering::Relaxed) > before);
-        log.report("cell", "Could not save the document");
-        app.update();
-        let panel = app
-            .world_mut()
-            .query_filtered::<Entity, With<NotificationPanel>>()
-            .single(app.world())
-            .unwrap();
-        assert_eq!(
-            app.world().get::<Node>(panel).unwrap().display,
-            Display::Flex
-        );
-        assert!(
-            app.world_mut()
-                .query::<&Text>()
-                .iter(app.world())
-                .any(|text| text.0 == "Seen 2 times")
-        );
-        assert_eq!(
-            app.world_mut()
-                .query_filtered::<Entity, (With<Square>, Without<ActionButton>)>()
-                .iter(app.world())
-                .count(),
-            1
-        );
-        let entities = app.world().entities().len();
-        app.update();
-        assert_eq!(app.world().entities().len(), entities);
-        assert!(
-            !app.world()
-                .entity(panel)
-                .get_ref::<Node>()
-                .unwrap()
-                .is_changed()
-        );
-        let close = app
-            .world_mut()
-            .query::<(Entity, &IconButton)>()
-            .iter(app.world())
-            .find(|(_, icon)| icon.label == "Dismiss notification")
-            .unwrap()
-            .0;
-        app.world_mut().trigger(Activate { entity: close });
-        app.update();
-        app.update();
-        assert!(log.snapshot().1.is_empty());
-        assert_eq!(
-            app.world().get::<Node>(panel).unwrap().display,
-            Display::Flex
-        );
-    }
-
-    crate::laboratory_cases! {
-        recommendations_distinguish_local_connections_storage_and_desktop_problems,
-        notifications_wake_render_once_and_dismiss_through_actions,
-    }
+    ui::render_panels(world);
+    ui::render_toasts(world);
 }

@@ -8,6 +8,7 @@ const CROCKFORD: &[u8] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum ReferenceKind {
     Record,
     Fact,
@@ -107,6 +108,7 @@ impl ReferenceKind {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(schemars::JsonSchema)]
 pub struct TypedUid {
     kind: ReferenceKind,
     uid: String,
@@ -178,6 +180,7 @@ impl<'de> Deserialize<'de> for TypedUid {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(schemars::JsonSchema)]
 pub struct Slug(String);
 
 impl Slug {
@@ -231,6 +234,7 @@ impl<'de> Deserialize<'de> for Slug {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(schemars::JsonSchema)]
 pub struct LocalId(String);
 
 impl LocalId {
@@ -274,6 +278,7 @@ impl<'de> Deserialize<'de> for LocalId {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[derive(schemars::JsonSchema)]
 pub struct ResolvedReference {
     pub target: TypedUid,
     #[serde(skip_serializing_if = "Option::is_none")]

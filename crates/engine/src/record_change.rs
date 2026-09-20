@@ -6,7 +6,7 @@ use store::sqlx::{Row, Sqlite, Transaction};
 
 use crate::{Engine, EngineError, actions::ActionOutcome};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Request {
     pub id: String,
@@ -14,7 +14,7 @@ pub struct Request {
     pub mutation: Mutation,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(tag = "kind", rename_all = "snake_case", deny_unknown_fields)]
 pub enum Mutation {
     Text {
@@ -51,7 +51,7 @@ pub enum Mutation {
     },
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum WorkField {
     Start,
@@ -69,7 +69,7 @@ impl WorkField {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Register {
     pub clock: i64,
@@ -790,6 +790,16 @@ impl Engine {
             }
             _ => unreachable!(),
         };
+        if retract.is_none()
+            && store::concepts::resolve(&self.store.pool, "descendant-of").await?.as_deref() == Some(&predicate)
+            && store::records::get_extension(&self.store.pool, uid, "lince.fiote").await?.is_some()
+        {
+            let parent = object.as_deref().ok_or_else(|| invalid("Choose a Fiote parent."))?;
+            if self.fiote_parent(uid).await?.is_some_and(|existing| existing != parent) {
+                return Err(invalid("Remove the current prompt parent before choosing another."));
+            }
+            self.validate_fiote_parent(uid, Some(parent), actor).await?;
+        }
         if let Some(actor) = actor {
             if let Some(role) = store::auth::person_access(&self.store.pool, actor)
                 .await?

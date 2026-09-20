@@ -9,11 +9,18 @@ description = "Lince first-party channel: multiplexed Protein subscriptions, typ
 
 [features]
 default = []
+mcp = ["dep:axum", "dep:rmcp", "dep:tokio-util", "dep:getrandom"]
 # The reference websocket driver over axum. Off by default so pure consumers
 # (and tests) don't pull axum.
 axum = ["dep:axum", "dep:dirs", "dep:futures", "dep:portable-pty"]
 
 [dependencies]
+sha2 = { workspace = true }
+rmcp = { version = "=3.4.0", default-features = false, features = ["server", "transport-streamable-http-server"], optional = true }
+tokio-util = { workspace = true, optional = true }
+getrandom = { workspace = true, optional = true }
+loro = { workspace = true }
+schemars = { workspace = true }
 fiote = { workspace = true }
 nucleus = { workspace = true }
 store = { workspace = true }
@@ -33,6 +40,7 @@ futures = { workspace = true, optional = true }
 portable-pty = { workspace = true, optional = true }
 
 [dev-dependencies]
+reqwest = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt", "rt-multi-thread"] }
 # A live guest signs its Actions exactly as a browser would, so the workflow
 # test has to hold a real Ed25519 key rather than a stub.

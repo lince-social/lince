@@ -12,7 +12,7 @@ pub fn config(reference: &str, source: Source) -> Config {
     let mut config = Config {
         enabled: true,
         show_labels: true,
-        viewport_height: Some(640.0),
+        max_height: Some(1000.0),
         group_with_source: true,
         source,
         width: 520.0,
@@ -47,11 +47,44 @@ pub fn open(world: &mut World, root: Entity, reference: &str, source: Source) ->
             [-0.5, -0.5],
         ]),
         position,
-        DVec2::new(560.0, 680.0),
+        DVec2::new(520.0, 640.0),
     );
     area.name = "Record Castle".into();
     area.protein = Some(config(reference, source));
     crate::area::spawn_area(world, root, workspace, area)
+}
+
+pub fn open_fiote(world: &mut World, root: Entity, reference: &str) -> Option<Entity> {
+    let entity = open(world, root, reference, Source::Local)?;
+    let mut area = world.get_mut::<crate::area::InfluenceArea>(entity)?;
+    area.name = "Fiote Castle".into();
+    area.protein.as_mut()?.fiote = true;
+    Some(entity)
+}
+
+pub(crate) fn fit_source(world: &mut World, source: Entity, castle: Entity) {
+    if world
+        .get::<crate::canvas_selection::SandGroup>(source)
+        .is_none()
+        || world.get::<crate::canvas_selection::SandGroup>(source)
+            != world.get::<crate::canvas_selection::SandGroup>(castle)
+    {
+        return;
+    }
+    let Some(item) = world.get::<crate::canvas::CanvasItem>(castle).copied() else {
+        return;
+    };
+    let Some(mut area) = world.get_mut::<crate::area::InfluenceArea>(source) else {
+        return;
+    };
+    if area.center == item.position.to_array() && area.size == item.size.as_dvec2().to_array() {
+        return;
+    }
+    area.center = item.position.to_array();
+    area.size = item.size.as_dvec2().to_array();
+    world.entity_mut(source).insert(item);
+    let members = crate::topology::groups::members(world, source);
+    crate::topology::groups::attach(world, &members);
 }
 
 #[derive(Clone)]
@@ -74,11 +107,11 @@ impl Action for Open {
 struct Creating(String);
 
 #[derive(Clone)]
-struct AddCastle(bool);
+struct AddCastle;
 
 impl Action for AddCastle {
     fn apply(&self, world: &mut World, root: Entity) {
-        create(world, root, self.0, false);
+        world.trigger(crate::record_creation::CreateRecord { entity: root });
     }
 }
 
@@ -87,29 +120,17 @@ struct AddFiote;
 
 impl Action for AddFiote {
     fn apply(&self, world: &mut World, root: Entity) {
-        create(world, root, false, true);
+        create(world, root);
     }
 }
 
-fn create(world: &mut World, root: Entity, threads: bool, fiote: bool) {
+fn create(world: &mut World, root: Entity) {
     if crate::laboratory::active(world) {
         return;
     }
-    let area = if threads {
-        crate::thread_castle::open(world, root, "pending", Source::Local)
-    } else {
-        open(world, root, "pending", Source::Local)
+    let Some(area) = open_fiote(world, root, "pending") else {
+        return;
     };
-    let Some(area) = area else { return };
-    if fiote {
-        let mut area = world.get_mut::<crate::area::InfluenceArea>(area).unwrap();
-        area.name = "Fiote Castle".into();
-        let config = area.protein.as_mut().unwrap();
-        config.record_cards = false;
-        config
-            .bindings
-            .retain(|binding| matches!(binding.property.as_str(), "head" | "body" | "threads"));
-    }
     world
         .get_mut::<crate::area::InfluenceArea>(area)
         .unwrap()
@@ -124,24 +145,11 @@ fn create(world: &mut World, root: Entity, threads: bool, fiote: bool) {
         .and_then(|bridge| {
             bridge
                 .outgoing
-                .try_send(cell::ClientMessage::Act {
+                .try_send(cell::ClientMessage::Fiote {
                     id: id.clone(),
-                    action: if fiote {
-                        engine::actions::Action::CreateAgent {
-                            head: "Fiote".into(),
-                            operated_by: None,
-                        }
-                    } else {
-                        engine::actions::Action::CreateRecord {
-                            slug: None,
-                            kind: nucleus::RecordKind::Plain,
-                            head: String::new(),
-                            body: String::new(),
-                            quantity: 0.0,
-                        }
-                    },
+                    request: cell::FioteRequest::Directory,
                 })
-                .map_err(|_| "The local Organ is busy or disconnected. Try again.")
+                .map_err(|_| "The local Organ is not available.")
         });
     match result {
         Ok(()) => {
@@ -182,6 +190,7 @@ pub(crate) fn receive(
             continue;
         }
         let (id, result) = match event {
+            cell::ServerMessage::Fiote { id, status } => (id, Ok(status.record)),
             cell::ServerMessage::ActionOk { id, created, .. } => (
                 id,
                 created.ok_or_else(|| "The Organ did not return the new Record.".to_string()),
@@ -226,18 +235,9 @@ pub(crate) fn store_entry(world: &mut World, root: Entity, parent: Entity) {
         root,
         parent,
         "Record Castle",
-        "A new Record with its editable fields.",
-        AddCastle(false),
+        "Find a Record by its properties, or create one with the values you enter.",
+        AddCastle,
         |world, _| preview(world, false),
-    );
-    crate::sand_store::castle_entry(
-        world,
-        root,
-        parent,
-        "Thread Castle",
-        "Conversations on a new Record.",
-        AddCastle(true),
-        |world, _| preview(world, true),
     );
 }
 
@@ -286,14 +286,20 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn store_castles_create_records_without_slugs_and_keep_their_placement() {
+    async fn fiote_castle_opens_seeded_agent_at_original_placement() {
         let engine = std::sync::Arc::new(engine::Engine::open_memory().await.unwrap());
+        let directory = tempfile::tempdir().unwrap();
+        let host = std::sync::Arc::new(
+            cell::fiote::Host::open(engine.clone(), directory.path().into())
+                .await
+                .unwrap(),
+        );
         let runtime = cell::CellRuntime {
             engine: engine.clone(),
             store: engine.store.clone(),
             lanes: std::sync::Arc::new(cell::LaneHub::new()),
             wire: Default::default(),
-            fiote: None,
+            fiote: Some(host),
             information: None,
         };
         let mut app = App::new();
@@ -313,15 +319,13 @@ mod tests {
             ))
             .id();
         app.update();
-        AddCastle(false).apply(app.world_mut(), root);
-        AddCastle(true).apply(app.world_mut(), root);
         AddFiote.apply(app.world_mut(), root);
         let entities: Vec<_> = app
             .world_mut()
             .query_filtered::<Entity, With<Creating>>()
             .iter(app.world())
             .collect();
-        assert_eq!(entities.len(), 3);
+        assert_eq!(entities.len(), 1);
         app.world_mut()
             .get_mut::<crate::workspace::Workspaces>(root)
             .unwrap()
@@ -366,32 +370,26 @@ mod tests {
             assert_eq!(
                 rows[0]["head"],
                 if area.name == "Fiote Castle" {
-                    "Fiote"
+                    "Development Fiote"
                 } else {
                     ""
                 }
             );
             if area.name == "Fiote Castle" {
-                assert!(!config.record_cards);
-                assert_eq!(config.bindings.len(), 3);
+                assert!(config.record_cards && config.fiote);
+                assert!(config.bindings.len() > 3);
             }
-            if area.name == "Thread Castle" {
-                assert_eq!(config.bindings.len(), 1);
-                assert_eq!(config.bindings[0].property, "threads");
-            } else {
-                assert!(config.bindings.len() > 1);
-            }
+
             identities.push(uid.to_string());
         }
-        assert_ne!(identities[0], identities[1]);
+        assert_eq!(identities.len(), 1);
     }
 
     #[test]
     fn disconnected_creation_does_not_leave_an_empty_castle() {
         let mut world = World::new();
         let root = world.spawn(crate::workspace::Workspaces::default()).id();
-        AddCastle(false).apply(&mut world, root);
-        AddCastle(true).apply(&mut world, root);
+        AddCastle.apply(&mut world, root);
         AddFiote.apply(&mut world, root);
         assert_eq!(
             world

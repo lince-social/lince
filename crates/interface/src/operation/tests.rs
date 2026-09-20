@@ -65,6 +65,83 @@ fn notice(app: &App, sand: Entity) -> &str {
 }
 
 #[test]
+fn compact_sand_has_inline_help_and_submits_with_enter() {
+    let (mut app, root, window) = fixture();
+    let sand = crate::sand_store::spawn_sand(
+        app.world_mut(),
+        root,
+        1,
+        crate::sand_store::SandKind::Operation,
+        "",
+        DVec2::ZERO,
+    );
+    app.update();
+    let state = app.world().get::<OperationSand>(sand).unwrap();
+    let input = state.input;
+    let feedback = state.feedback;
+    assert_eq!(
+        app.world()
+            .get::<crate::canvas::CanvasItem>(sand)
+            .unwrap()
+            .size,
+        SIZE
+    );
+    assert_eq!(
+        app.world().get::<Node>(feedback).unwrap().display,
+        Display::None
+    );
+    assert!(state.items.is_empty());
+    assert!(
+        !app.world()
+            .get::<EditableText>(input)
+            .unwrap()
+            .allow_newlines
+    );
+    let help = app
+        .world_mut()
+        .query::<(Entity, &crate::icons::Tooltip)>()
+        .iter(app.world())
+        .find(|(_, tooltip)| tooltip.0 == HELP)
+        .unwrap()
+        .0;
+    assert_eq!(app.world().get::<Text>(help).unwrap().0, "?");
+    assert_eq!(app.world().get::<ChildOf>(help).unwrap().parent(), sand);
+    assert_eq!(
+        app.world().get::<Node>(help).unwrap().position_type,
+        PositionType::Absolute
+    );
+    assert!(
+        !app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| matches!(text.0.as_str(), "Run" | "Operation" | "Close"))
+    );
+    app.world_mut()
+        .resource_mut::<InputFocus>()
+        .set(input, FocusCause::Navigated);
+    enter(&mut app, sand, "/he");
+    assert_eq!(
+        app.world().get::<Node>(feedback).unwrap().display,
+        Display::Flex
+    );
+    key(&mut app, window, KeyCode::Tab, ButtonState::Pressed);
+    app.update();
+    key(&mut app, window, KeyCode::Enter, ButtonState::Pressed);
+    assert!(
+        app.world_mut()
+            .query::<&Text>()
+            .iter(app.world())
+            .any(|text| text.0 == "Cheat sheet")
+    );
+    assert!(app.world().get::<OperationSand>(sand).is_some());
+    app.update();
+    assert_eq!(
+        app.world().get::<Node>(feedback).unwrap().display,
+        Display::None
+    );
+}
+
+#[test]
 fn ctrl_k_focuses_one_popup_and_escape_restores_focus() {
     let (mut app, root, window) = fixture();
     let previous = app.world_mut().spawn(ChildOf(root)).id();

@@ -5,6 +5,7 @@ use crate::error::NucleusError;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum Consequence {
     CaptureEntry {
         amount: DecimalValue,

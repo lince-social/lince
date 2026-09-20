@@ -1,11 +1,13 @@
 use crate::{
-    provider::{Message, Provider},
+    provider::{DiscardText, Message, Provider, TextOutput},
     tools::Registry,
 };
 use std::{collections::HashSet, time::Duration};
 use tokio::sync::watch;
 
 pub const MAX_CONTEXT_BYTES: usize = 512 * 1024;
+pub const MAX_MODEL_REQUESTS: usize = 32;
+pub const MAX_TOOL_CALLS: usize = 64;
 
 pub async fn run(
     provider: &dyn Provider,
@@ -14,8 +16,28 @@ pub async fn run(
     tools: &Registry,
     stop: watch::Receiver<bool>,
 ) -> Result<String, String> {
+    run_streamed(provider, system, messages, tools, stop, &DiscardText).await
+}
+
+pub async fn run_streamed(
+    provider: &dyn Provider,
+    system: &str,
+    messages: Vec<Message>,
+    tools: &Registry,
+    stop: watch::Receiver<bool>,
+    output: &dyn TextOutput,
+) -> Result<String, String> {
     let mut receipts = Vec::new();
-    let result = turn(provider, system, messages, tools, stop, &mut receipts).await;
+    let result = turn(
+        provider,
+        system,
+        messages,
+        tools,
+        stop,
+        &mut receipts,
+        output,
+    )
+    .await;
     result.map_err(|error| {
         if receipts.is_empty() {
             error
@@ -28,6 +50,28 @@ pub async fn run(
     })
 }
 
+struct Prefix<'a> {
+    text: &'a str,
+    output: &'a dyn TextOutput,
+}
+
+#[async_trait::async_trait]
+impl TextOutput for Prefix<'_> {
+    async fn update(&self, text: &str) -> Result<(), String> {
+        let combined = if self.text.is_empty() {
+            text.into()
+        } else if text.is_empty() {
+            self.text.into()
+        } else {
+            format!("{}\n\n{text}", self.text)
+        };
+        if combined.len() > MAX_CONTEXT_BYTES {
+            return Err("The reply exceeds the text limit.".into());
+        }
+        self.output.update(&combined).await
+    }
+}
+
 async fn turn(
     provider: &dyn Provider,
     system: &str,
@@ -35,10 +79,12 @@ async fn turn(
     tools: &Registry,
     mut stop: watch::Receiver<bool>,
     receipts: &mut Vec<String>,
+    output: &dyn TextOutput,
 ) -> Result<String, String> {
     let definitions = tools.definitions();
     let mut call_ids = HashSet::new();
-    for _ in 0..8 {
+    let mut text = String::new();
+    for _ in 0..MAX_MODEL_REQUESTS {
         if *stop.borrow() {
             return Err("Stopped by you.".into());
         }
@@ -50,21 +96,34 @@ async fn turn(
         {
             return Err("This thread exceeds the context limit. Start another thread.".into());
         }
+        let progress = Prefix {
+            text: &text,
+            output,
+        };
         let reply = tokio::select! {
             _ = stop.changed() => return Err("Stopped by you.".into()),
-            result = tokio::time::timeout(Duration::from_secs(120), provider.complete(system, &messages, &definitions)) => {
+            result = tokio::time::timeout(Duration::from_secs(120), provider.stream(system, &messages, &definitions, &progress)) => {
                 result.map_err(|_| "The provider did not reply within two minutes.".to_string())??
             }
         };
+        progress.update(&reply.text).await?;
+        if !reply.text.is_empty() {
+            if !text.is_empty() {
+                text.push_str("\n\n");
+            }
+            text.push_str(&reply.text);
+        }
         if reply.calls.is_empty() {
             return if reply.text.trim().is_empty() {
                 Err("The provider returned an empty reply.".into())
             } else {
-                Ok(reply.text)
+                Ok(text)
             };
         }
-        if call_ids.len() + reply.calls.len() > 16 {
-            return Err("Stopped at the limit of 16 tool calls.".into());
+        if call_ids.len() + reply.calls.len() > MAX_TOOL_CALLS {
+            return Err(format!(
+                "Stopped at the limit of {MAX_TOOL_CALLS} tool calls."
+            ));
         }
         for call in &reply.calls {
             if call.id.is_empty() || !call_ids.insert(call.id.clone()) {
@@ -77,7 +136,9 @@ async fn turn(
         });
         for call in reply.calls {
             if *stop.borrow() {
-                return Err("Stopped by you. Completed file operations remain on disk.".into());
+                return Err(
+                    "Stopped by you. Completed Record and file operations remain saved.".into(),
+                );
             }
             let result = tools.run(&call.name, call.arguments).await;
             receipts.push(format!("{}: {}", call.name, result));
@@ -88,8 +149,7 @@ async fn turn(
             });
         }
     }
-    Err(
-        "Stopped at the limit of eight model requests. Completed file operations remain on disk."
-            .into(),
-    )
+    Err(format!(
+        "Stopped at the limit of {MAX_MODEL_REQUESTS} model requests. Completed Record and file operations remain saved."
+    ))
 }

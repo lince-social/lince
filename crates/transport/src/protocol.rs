@@ -3,14 +3,7 @@ use protein::Protein;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-pub struct CollabCursor {
-    pub session: String,
-    pub person: Option<String>,
-    pub property: String,
-    pub anchor: String,
-    pub focus: String,
-}
+pub use engine::presence::Cursor as CollabCursor;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]

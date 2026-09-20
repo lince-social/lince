@@ -144,6 +144,26 @@
           packages = {
             default = lince-ui;
             inherit lince lince-ui;
+          } // lib.optionalAttrs (system == "x86_64-linux") {
+            goose = pkgs.stdenvNoCC.mkDerivation {
+              pname = "goose-cli";
+              version = "1.51.0";
+              src = pkgs.fetchurl {
+                url = "https://github.com/aaif-goose/goose/releases/download/v1.51.0/goose-x86_64-unknown-linux-musl.tar.gz";
+                hash = "sha256-W/EbJCZHtP7yGC5Lvu65ocEpsyiDS56HTKTqCs7J2TU=";
+              };
+              sourceRoot = ".";
+              dontStrip = true;
+              installPhase = ''
+                install -Dm755 goose "$out/bin/goose"
+              '';
+              meta = {
+                description = "Goose ACP agent CLI";
+                license = lib.licenses.asl20;
+                mainProgram = "goose";
+                platforms = [ "x86_64-linux" ];
+              };
+            };
           };
 
           apps = {

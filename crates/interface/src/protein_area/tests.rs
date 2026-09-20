@@ -80,6 +80,75 @@ pub(super) fn fixture() -> (App, Entity, Entity) {
 }
 
 #[test]
+fn castle_content_is_capped_and_manual_resizing_survives_row_layout() {
+    use crate::canvas::CanvasItem;
+    for fiote in [false, true] {
+        let (mut app, _, owner) = fixture();
+        let uid = nucleus::new_uid("r");
+        let mut config = crate::full_record::config(&uid, Source::Local);
+        config.fiote = fiote;
+        app.world_mut()
+            .get_mut::<InfluenceArea>(owner)
+            .unwrap()
+            .protein = Some(config.clone());
+        app.world_mut().resource_mut::<Runtime>().areas.insert(
+            owner,
+            State {
+                applied: Some(config),
+                data: vec![json!({"uid":uid,"head":"Title","body":"Body"})],
+                ready: true,
+                dirty: true,
+                ..default()
+            },
+        );
+        rows::reconcile(app.world_mut(), owner);
+        let row = app.world().resource::<Runtime>().areas[&owner].row_entities[&uid];
+        let child = app
+            .world()
+            .get::<Children>(row)
+            .unwrap()
+            .iter()
+            .find(|child| {
+                app.world()
+                    .get::<Node>(*child)
+                    .is_some_and(|node| node.display != Display::None)
+            })
+            .unwrap();
+        app.world_mut().entity_mut(child).insert(ComputedNode {
+            size: Vec2::new(400.0, 1500.0),
+            inverse_scale_factor: 1.0,
+            ..default()
+        });
+        rows::layout(app.world_mut());
+        assert_eq!(app.world().get::<CanvasItem>(row).unwrap().size.y, 1000.0);
+        app.world_mut()
+            .get_mut::<ComputedNode>(child)
+            .unwrap()
+            .size
+            .y = 120.0;
+        rows::layout(app.world_mut());
+        assert!(app.world().get::<CanvasItem>(row).unwrap().size.y < 1000.0);
+        let before = *app.world().get::<CanvasItem>(row).unwrap();
+        let after = CanvasItem {
+            size: Vec2::new(650.0, 450.0),
+            ..before
+        };
+        app.world_mut().entity_mut(row).insert(after);
+        crate::layout::edited(app.world_mut(), row, before, after);
+        rows::layout(app.world_mut());
+        assert_eq!(app.world().get::<CanvasItem>(row).unwrap().size, after.size);
+        assert_eq!(
+            app.world().get::<CanvasItem>(owner).unwrap().size,
+            after.size
+        );
+        assert_eq!(
+            app.world().get::<InfluenceArea>(owner).unwrap().center,
+            after.position.to_array()
+        );
+    }
+}
+
+#[test]
 fn record_castle_scrolls_and_moves_with_its_source_without_layout_drift() {
     use crate::{canvas::CanvasItem, canvas_selection::SandGroup, topology};
     use bevy::math::{DQuat, DVec3};
@@ -110,7 +179,11 @@ fn record_castle_scrolls_and_moves_with_its_source_without_layout_drift() {
         app.world().get::<Node>(row).unwrap().overflow,
         Overflow::scroll_y()
     );
-    assert_eq!(app.world().get::<CanvasItem>(row).unwrap().size.y, 640.0);
+    assert!(app.world().get::<CanvasItem>(row).unwrap().size.y <= 1000.0);
+    assert_eq!(
+        app.world().get::<CanvasItem>(row).unwrap().size,
+        app.world().get::<CanvasItem>(owner).unwrap().size
+    );
     assert_eq!(
         app.world().get::<SandGroup>(owner),
         app.world().get::<SandGroup>(row)
@@ -1764,7 +1837,7 @@ fn thread_history_and_deletion_stay_scoped_to_the_bound_record() {
         ready: true,
         subscription: Some("thread-feed".into()),
         applied: Some(crate::full_record::config("test", Source::Local)),
-        data: vec![json!({"uid":"record", "threads":[{"uid":"thread", "messages":[{"uid":"message"}]}]})],
+        data: vec![json!({"uid":"record", "threads":[{"uid":"thread", "messages":[{"uid":"message","tool_call":{"thread":"transcript"}}]}]})],
         ..default()
     });
     assert!(load_thread_messages(&mut world, &binding, "unrelated", 100).is_err());
@@ -1802,6 +1875,20 @@ fn thread_history_and_deletion_stay_scoped_to_the_bound_record() {
     assert!(
         matches!(world.resource::<Runtime>().areas[&area].pending.back(), Some(ClientMessage::Act { action: engine::actions::Action::DeleteRecord { target }, .. }) if target == "message")
     );
+    for target in ["thread", "transcript"] {
+        execute(
+            &mut world,
+            &binding,
+            editor,
+            engine::actions::Action::DeleteRecord {
+                target: target.into(),
+            },
+        )
+        .unwrap();
+        assert!(
+            matches!(world.resource::<Runtime>().areas[&area].pending.back(), Some(ClientMessage::Act { action: engine::actions::Action::DeleteRecord { target: deleted }, .. }) if deleted == target)
+        );
+    }
     receive(
         &mut world,
         area,

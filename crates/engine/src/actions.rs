@@ -37,7 +37,7 @@ fn validate_saved_protein_shape(ast: &serde_json::Value) -> Result<(), EngineErr
     Ok(())
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(tag = "action", rename_all = "kebab-case")]
 pub enum Action {
     ChangeRecord {
@@ -51,6 +51,9 @@ pub enum Action {
         body: String,
         #[serde(default)]
         quantity: f64,
+    },
+    CreateRecordDraft {
+        draft: crate::record_creation::Draft,
     },
     SetQuantity {
         target: String,
@@ -318,6 +321,9 @@ pub enum Action {
     },
     MailboxCollectNow,
     MailboxOutbound,
+    SetFileSyncEnabled {
+        enabled: bool,
+    },
     ConfigureFileSync {
         protein: String,
         path: String,
@@ -464,6 +470,11 @@ pub enum Action {
         assertion: String,
     },
     ImportInstinct,
+    ConfigureFiote {
+        target: String,
+        prompt_parent: Option<String>,
+        run_assigned: bool,
+    },
     CreateAgent {
         head: String,
         #[serde(default)]
@@ -1052,7 +1063,7 @@ pub enum Action {
     },
 }
 
-#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum TransferSatiation {
     #[default]
@@ -1073,7 +1084,7 @@ fn default_transfer_delivery_mode() -> nucleus::transfer_delivery::TransferDeliv
     nucleus::transfer_delivery::TransferDeliveryMode::Hosted
 }
 
-#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum TransferVisibility {
     #[default]
@@ -1092,7 +1103,7 @@ impl TransferVisibility {
     }
 }
 
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum TransferReservePoint {
     #[default]
@@ -1123,7 +1134,7 @@ impl TransferReservePoint {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct TransferPromiseInput {
     #[serde(default)]
     pub uid: Option<String>,
@@ -1151,7 +1162,7 @@ pub struct TransferPromiseInput {
     pub withdrawn: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct TransferDraftRevisionInput {
     pub creator: String,
     pub slug: Option<String>,
@@ -1180,7 +1191,7 @@ pub struct TransferDraftRevisionInput {
     pub dependencies: Vec<TransferDependencyInput>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct TransferDependencyInput {
     #[serde(default)]
     pub uid: Option<String>,
@@ -1193,28 +1204,28 @@ pub struct TransferDependencyInput {
     pub required_state: String,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum TransferDependencyScopeInput {
     Transfer,
     Promise,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum TransferDependencyUpstreamKindInput {
     Transfer,
     Promise,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum TransferOccurrenceClaimRole {
     Delivery,
     Receipt,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct TransferOccurrenceBulkClaimInput {
     pub occurrence: String,
     pub transfer: String,
@@ -1224,7 +1235,7 @@ pub struct TransferOccurrenceBulkClaimInput {
     pub expected_receipt_claimed: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct TransferPlaceInput {
     #[serde(default)]
     pub lat: Option<f64>,
@@ -1234,7 +1245,7 @@ pub struct TransferPlaceInput {
     pub address: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 pub struct ConceptSeed {
     pub uid: String,
     pub name: String,
@@ -1801,6 +1812,18 @@ impl Engine {
         now: DateTime<Utc>,
         verified_authorship: Option<VerifiedActionAuthorship>,
     ) -> Result<ActionOutcome, EngineError> {
+        let changes_rules = matches!(&action,
+            Action::CreateFrequency { .. } | Action::DeleteFrequency { .. }
+            | Action::CreateRecurrence { .. } | Action::ReviseRecurrence { .. }
+            | Action::DeleteRecurrence { .. } | Action::SetRecurrencePaused { .. }
+            | Action::CreateSignal { .. } | Action::DeleteRecord { .. }
+            | Action::SetSlug { .. } | Action::CreateRecord { .. }
+            | Action::SetKarmaExecution { .. } | Action::DesignateKarmaExecutor { .. }
+        );
+        let _rule_guard = if matches!(&action,
+            Action::CreateRecurrence { .. } | Action::ReviseRecurrence { .. }
+            | Action::DeleteRecurrence { .. } | Action::SetRecurrencePaused { .. }
+        ) { Some(self.rule_execution.lock().await) } else { None };
         let outcome = if matches!(action, Action::ApplyRecurrenceOccurrence { .. })
             && !crate::already_firing()
         {
@@ -1814,6 +1837,9 @@ impl Engine {
         } else {
             Box::pin(self.act_at_inner(action, actor, now, verified_authorship)).await?
         };
+        if changes_rules {
+            self.notify_karma_deadline_change();
+        }
         if outcome.facts.is_empty() {
             self.query_changed
                 .send_modify(|revision| *revision = revision.wrapping_add(1));
@@ -1847,6 +1873,9 @@ impl Engine {
                 outcome = self
                     .create_tagged_record(head, body, quantity, tags, actor, now)
                     .await?;
+            }
+            Action::CreateRecordDraft { draft } => {
+                outcome = self.create_record_draft(draft, actor, now).await?;
             }
             Action::CreateRecord {
                 slug,
@@ -2133,6 +2162,7 @@ impl Engine {
                 let declared = self.resolve_consequences(consequences).await?;
                 let condition = self.canonical_condition(condition).await?;
                 let declared_condition = parse_rule_condition(condition, gate, carry)?;
+                Box::pin(self.validate_automatic_rule(&declared, declared_condition.as_ref(), actor.as_deref())).await?;
                 let anchor = parse_optional_instant(anchor_at.as_deref())?.unwrap_or(now);
                 let commit = store::recurrence::create(
                     &self.store.pool,
@@ -2173,6 +2203,7 @@ impl Engine {
                 let declared = self.resolve_consequences(consequences).await?;
                 let condition = self.canonical_condition(condition).await?;
                 let declared_condition = parse_rule_condition(condition, gate, carry)?;
+                Box::pin(self.validate_automatic_rule(&declared, declared_condition.as_ref(), actor.as_deref())).await?;
                 let anchor = match parse_optional_instant(anchor_at.as_deref())? {
                     Some(value) => value,
                     None => parse_instant_field(&current.anchor_at)?,
@@ -2227,153 +2258,19 @@ impl Engine {
                 })?;
             }
             Action::ApplyRecurrenceOccurrence {
-                recurrence,
-                due_at,
-                amount,
-                note,
+                recurrence, due_at, amount, note,
             } => {
-                let rule = store::recurrence::get(&self.store.pool, &recurrence)
-                    .await?
+                let mut rule = store::recurrence::get(&self.store.pool, &recurrence).await?
                     .ok_or_else(|| EngineError::UnknownRecord(recurrence.clone()))?;
-                let due = parse_instant_field(&due_at)?;
-                let produced = rule
-                    .cadence
-                    .between(
-                        parse_instant_field(&rule.anchor_at)?,
-                        due,
-                        due + chrono::Duration::nanoseconds(1),
-                    )
-                    .map_err(|error| EngineError::Conflict {
-                        code: "recurrence_cadence_invalid",
-                        message: error.to_string(),
-                    })?;
-                if !produced.dates.contains(&due) {
-                    return Err(EngineError::Conflict {
-                        code: "recurrence_occurrence_unknown",
-                        message: format!("`{due_at}` is not a date this rule produces"),
-                    });
+                if let Some(amount) = amount {
+                    let value = nucleus::DecimalValue::parse_inferred(&amount).map_err(|error| EngineError::Consequence(error.to_string()))?;
+                    rule.consequences = nucleus::karma::Consequences::new(rule.consequences.iter().cloned().map(|consequence| match consequence {
+                        nucleus::karma::Consequence::CaptureEntry { concept, .. } => nucleus::karma::Consequence::CaptureEntry { amount: value, concept },
+                        other => other,
+                    }).collect()).map_err(|error| EngineError::Consequence(error.to_string()))?;
                 }
-                if let Some(existing) =
-                    store::recurrence::applied(&self.store.pool, &rule.uid, due).await?
-                {
-                    outcome.created = Some(existing);
-                    return Ok(outcome);
-                }
-
-                let carried = match rule.condition.as_ref() {
-                    None => None,
-                    Some(condition) => {
-                        match self
-                            .evaluate_rule_condition(&rule, condition, due, now)
-                            .await?
-                        {
-                            None => return Ok(outcome),
-                            Some(value) => Some(value),
-                        }
-                    }
-                };
-
-                let capture_concept = rule.consequences.capture_concept().map(str::to_string);
-                let declared = match amount.as_deref() {
-                    Some(text) => text.trim().to_string(),
-                    None => match rule.consequences.capture_amount() {
-                        None => "0".to_string(),
-                        Some(declared) => match carried {
-                            Some(value) => value.to_string(),
-                            None => declared.to_string(),
-                        },
-                    },
-                };
-                let capture = Action::CaptureEntry {
-                    target: rule.record_uid.clone(),
-                    amount: declared,
-                    concept: capture_concept,
-                    note: note.or_else(|| rule.note.clone()),
-                    at: Some(due.to_rfc3339()),
-                    request_id: Some(store::recurrence::occurrence_request_id(&rule.uid, due)),
-                };
-                let applied =
-                    Box::pin(self.act_at_with_authorship(capture, actor.clone(), now, None))
-                        .await?;
-                outcome.facts = applied.facts;
-                outcome.created = applied.created;
-
-                for consequence in rule.consequences.iter() {
-                    let next = match consequence {
-                        nucleus::karma::Consequence::CaptureEntry { .. } => continue,
-                        nucleus::karma::Consequence::SetQuantity { value } => {
-                            let Some(figure) = value.or(carried) else {
-                                continue;
-                            };
-                            Action::SetQuantity {
-                                target: rule.record_uid.clone(),
-                                value: figure.to_f64(),
-                            }
-                        }
-                        nucleus::karma::Consequence::SetQuantityWhere { assertion, value } => {
-                            let Some(figure) = value.or(carried) else {
-                                continue;
-                            };
-                            let concept = self.resolve_concept(assertion).await?;
-                            let targets =
-                                store::ledger::records_with_concept(&self.store.pool, &concept)
-                                    .await?;
-                            for target in targets {
-                                let ran = Box::pin(self.act_at_with_authorship(
-                                    Action::SetQuantity {
-                                        target,
-                                        value: figure.to_f64(),
-                                    },
-                                    actor.clone(),
-                                    now,
-                                    None,
-                                ))
-                                .await?;
-                                outcome.facts.extend(ran.facts);
-                            }
-                            continue;
-                        }
-                        nucleus::karma::Consequence::AddQuantity { delta } => {
-                            let Some(figure) = delta.or(carried) else {
-                                continue;
-                            };
-                            Action::AddQuantity {
-                                target: rule.record_uid.clone(),
-                                delta: figure.to_f64(),
-                            }
-                        }
-                        nucleus::karma::Consequence::SetConcept { concept } => {
-                            Action::SetIdentity {
-                                subject: rule.record_uid.clone(),
-                                predicate: Some(concept.clone()),
-                            }
-                        }
-                        nucleus::karma::Consequence::AddConcept { concept } => {
-                            Action::AssertRecord {
-                                subject: rule.record_uid.clone(),
-                                predicate: concept.clone(),
-                                object: None,
-                                quantity: None,
-                                unit: None,
-                            }
-                        }
-                        nucleus::karma::Consequence::RemoveConcept { concept } => {
-                            Action::RetractRecord {
-                                subject: rule.record_uid.clone(),
-                                predicate: concept.clone(),
-                                object: None,
-                            }
-                        }
-                        outward => {
-                            self.commit_outward_consequence(&rule, outward, carried.as_ref(), now)
-                                .await?;
-                            continue;
-                        }
-                    };
-                    let ran = Box::pin(self.act_at_with_authorship(next, actor.clone(), now, None))
-                        .await?;
-                    outcome.facts.extend(ran.facts);
-                }
+                if let Some(note) = note { rule.note = Some(note); }
+                outcome.facts = Box::pin(self.apply_rule_occurrence(&rule, parse_instant_field(&due_at)?, now)).await?;
             }
             Action::SkipRecurrenceOccurrence {
                 recurrence,
@@ -2654,6 +2551,12 @@ impl Engine {
                 let uid = self.resolve(&target).await?;
                 self.reject_direct_transfer_record_mutation(&uid).await?;
                 self.check_delete_permission(&uid, actor.as_deref()).await?;
+                if store::karma::frequencies::get_handle(&self.store.pool, &uid).await?.is_some() {
+                    store::frequency::delete(&self.store.pool, &uid).await.map_err(|error| EngineError::Conflict {
+                        code: "frequency_in_use", message: error.to_string(),
+                    })?;
+                    return Ok(outcome);
+                }
                 let old_slug = store::records::get(&self.store.pool, &uid)
                     .await?
                     .and_then(|r| r.slug);
@@ -2706,6 +2609,9 @@ impl Engine {
                     ));
                 }
                 let uid = self.resolve(&target).await?;
+                if namespace == "lince.fiote" {
+                    return Err(EngineError::Consequence("Use configure-fiote to change prompt ancestry and assignment behavior.".into()));
+                }
                 if namespace == "work" {
                     return self
                         .change_record(
@@ -3583,6 +3489,19 @@ impl Engine {
                     "quota_bytes": quota_bytes,
                 }));
             }
+            Action::SetFileSyncEnabled { enabled } => {
+                if actor.is_some() {
+                    return Err(EngineError::Forbidden("Only the local owner can configure directory sync".into()));
+                }
+                let organ = store::organs::local(&self.store.pool).await?
+                    .ok_or_else(|| EngineError::Consequence("Local Organ is unavailable".into()))?;
+                let mut config = store::records::get_extension(&self.store.pool, &organ.uid, "lince.file_sync").await?
+                    .filter(serde_json::Value::is_object)
+                    .unwrap_or_else(|| serde_json::json!({"format":"lingua"}));
+                config["enabled"] = enabled.into();
+                store::records::set_extension(&self.store.pool, &organ.uid, "lince.file_sync", &config).await?;
+                outcome.facts = self.annotate(organ.uid, actor, serde_json::json!({"extension":"lince.file_sync"}), now).await?;
+            }
             Action::ConfigureFileSync {
                 protein,
                 path,
@@ -3609,9 +3528,13 @@ impl Engine {
                             "The sync path must be a directory".into(),
                         ));
                     }
-                    let uid = self.resolve(&protein).await?;
-                    self.file_sync_protein(&uid).await?;
-                    serde_json::json!({"enabled": true, "path": path, "format": format, "protein": uid})
+                    let mut config = serde_json::json!({"enabled": true, "path": path, "format": format});
+                    if !protein.trim().is_empty() {
+                        let uid = self.resolve(&protein).await?;
+                        self.file_sync_protein(&uid).await?;
+                        config["protein"] = uid.into();
+                    }
+                    config
                 } else {
                     let mut config = store::records::get_extension(
                         &self.store.pool,
@@ -4151,6 +4074,11 @@ impl Engine {
                     outcome.created = Some(uid);
                 }
             }
+            Action::ConfigureFiote { target, prompt_parent, run_assigned } => {
+                let uid = self.resolve(&target).await?;
+                self.configure_fiote(&uid, prompt_parent.as_deref(), run_assigned, actor.as_deref()).await?;
+                outcome.facts = self.annotate(uid, actor, serde_json::json!({"fiote_configured":true}), now).await?;
+            }
             Action::CreateAgent { head, operated_by } => {
                 let head = head.trim();
                 if head.is_empty() {
@@ -4390,6 +4318,7 @@ impl Engine {
                     .await?;
             }
             Action::CreateThread { target, head } => {
+                let _thread_guard = self.thread_creation_lock.lock().await;
                 let target_uid = self.resolve(&target).await?;
                 if store::transfers::get(&self.store.pool, &target_uid)
                     .await?
@@ -4398,12 +4327,14 @@ impl Engine {
                     self.require_transfer_thread_writer(&target_uid, actor.as_deref(), now)
                         .await?;
                 }
-                let title = head.trim();
-                if title.is_empty() {
-                    return Err(EngineError::Consequence(
-                        "thread title cannot be empty".into(),
-                    ));
-                }
+                let generated;
+                let title = if head.trim().is_empty() {
+                    let predicate = store::concepts::ensure(&self.store.pool, "thread-of").await?;
+                    let threads = store::assertions::subjects_pointing_to(&self.store.pool, &predicate, &target_uid).await?;
+                    let number = (1..).find(|number| !threads.iter().any(|thread| thread.head == format!("Thread {number}"))).unwrap();
+                    generated = format!("Thread {number}");
+                    generated.as_str()
+                } else { head.trim() };
                 let replica_root = store::replica::root_of(&self.store.pool, &target_uid).await?;
                 let thread = store::records::create_in_root(
                     &self.store.pool,
@@ -8268,6 +8199,10 @@ impl Engine {
                 source,
                 schedule,
             } => {
+                self.require_permission(actor.as_deref(), "organ:update").await?;
+                if source_kind != "command" || nucleus::parse_duration(&schedule).is_none_or(|seconds| seconds <= 0) {
+                    return Err(EngineError::Consequence("Signal needs a command and a positive sampling period".into()));
+                }
                 outcome.created = Some(
                     store::misc::create_signal(
                         &self.store.pool,
@@ -8281,6 +8216,8 @@ impl Engine {
                     )
                     .await?,
                 );
+                store::sqlx::query("UPDATE signal SET actor_uid = ? WHERE record_uid = ?")
+                    .bind(actor.as_deref()).bind(outcome.created.as_deref()).execute(&self.store.pool).await?;
             }
             Action::CreateMatchRule {
                 slug,
@@ -10856,6 +10793,7 @@ impl Engine {
     fn generic_write_permission(action: &Action) -> Option<&'static str> {
         Some(match action {
             Action::CreateRecord { .. }
+            | Action::CreateRecordDraft { .. }
             | Action::CreateRecordWithTags { .. }
             | Action::CreateAgent { .. }
             | Action::CreateMessageDraft { .. }
@@ -10884,6 +10822,7 @@ impl Engine {
             | Action::RetractAssertion { .. }
             | Action::RefineAssertion { .. }
             | Action::RetractRecord { .. }
+            | Action::ConfigureFiote { .. }
             | Action::SetIdentity { .. }
             | Action::SetAssertionOrder { .. }
             | Action::SetPlace { .. }
@@ -11005,7 +10944,8 @@ impl Engine {
             | Action::PauseKarmaFrequency { .. } => "karma:update",
             Action::RevokeKarmaGrant { .. } => "karma:delete",
 
-            Action::ConfigureFileSync { .. }
+            Action::SetFileSyncEnabled { .. }
+            | Action::ConfigureFileSync { .. }
             | Action::DeleteRecord { .. }
             | Action::DeleteMessageDraft { .. }
             | Action::CreateTransfer { .. }
@@ -11101,19 +11041,17 @@ impl Engine {
         })
     }
 
-    async fn evaluate_rule_condition(
+    pub(crate) async fn evaluate_rule_condition(
         &self,
-        rule: &store::recurrence::Recurrence,
         condition: &store::recurrence::RuleCondition,
         at: DateTime<Utc>,
         now: DateTime<Utc>,
     ) -> Result<Option<nucleus::DecimalValue>, EngineError> {
-        self.ask_condition(rule, condition, at, now, 0).await
+        self.ask_condition(condition, at, now, 0).await
     }
 
     async fn ask_condition(
         &self,
-        rule: &store::recurrence::Recurrence,
         condition: &store::recurrence::RuleCondition,
         at: DateTime<Utc>,
         now: DateTime<Utc>,
@@ -11126,8 +11064,6 @@ impl Engine {
             }
         })?;
 
-        let since = self.rule_reading_since(rule, at)?;
-
         let mut values = std::collections::HashMap::new();
         for token in parsed.reads() {
             let value = self
@@ -11135,7 +11071,6 @@ impl Engine {
                     &token.func,
                     &token.slug,
                     token.dur_secs,
-                    since,
                     at,
                     now,
                     depth,
@@ -11158,7 +11093,6 @@ impl Engine {
         func: &str,
         slug: &str,
         window_secs: Option<i64>,
-        since: DateTime<Utc>,
         at: DateTime<Utc>,
         now: DateTime<Utc>,
         depth: usize,
@@ -11185,30 +11119,12 @@ impl Engine {
                 Ok(total)
             }
             "freq" => {
-                if let Some(frequency) = store::frequency::resolve(&self.store.pool, slug).await? {
-                    let anchor = frequency.anchor()?;
-                    let tick = chrono::Duration::milliseconds(1);
-                    let (Some(from), Some(to)) =
-                        (since.checked_add_signed(tick), at.checked_add_signed(tick))
-                    else {
-                        return Ok(zero);
-                    };
-                    let beats = frequency
-                        .cadence()
-                        .between(anchor, from, to)
-                        .map_err(|error| EngineError::Conflict {
-                            code: "frequency_cadence_invalid",
-                            message: error.to_string(),
-                        })?;
-                    return nucleus::DecimalValue::from_mantissa(0, beats.len() as i128).map_err(
-                        |_| EngineError::Conflict {
-                            code: "rule_condition_unreadable",
-                            message: format!("freq(@{slug}) counted more beats than fit"),
-                        },
-                    );
-                }
-                let uid = self.resolve(slug).await?;
-                self.rhythm_count(&uid, since, at).await
+                let uid = self.resolve_frequency_uid(slug).await?;
+                Ok(if crate::rule_runtime::frequency_pulse(&uid) {
+                    nucleus::DecimalValue::from_mantissa(0, 1).expect("scale zero is valid")
+                } else {
+                    zero
+                })
             }
             "value" => {
                 let uid = self.resolve(slug).await?;
@@ -11291,7 +11207,7 @@ impl Engine {
         }
     }
 
-    async fn commit_outward_consequence(
+    pub(crate) async fn commit_outward_consequence(
         &self,
         rule: &store::recurrence::Recurrence,
         consequence: &nucleus::karma::Consequence,
@@ -11414,9 +11330,11 @@ impl Engine {
         &self,
         rule: &store::recurrence::Recurrence,
         kind: &str,
-        payload: serde_json::Value,
+        mut payload: serde_json::Value,
     ) -> Result<(), EngineError> {
+        payload["actor"] = serde_json::json!(rule.actor_uid);
         store::misc::queue_effect(&self.store.pool, kind, &payload, Some(&rule.uid)).await?;
+        self.effects_changed.send_modify(|revision| *revision = revision.wrapping_add(1));
         Ok(())
     }
 
@@ -11447,7 +11365,7 @@ impl Engine {
             gate: nucleus::karma::Gate::Always,
             carry: nucleus::karma::Carry::Value,
         };
-        self.ask_condition(&rule, &asked, at, now, depth + 1)
+        self.ask_condition(&asked, at, now, depth + 1)
             .await?
             .ok_or_else(|| EngineError::Conflict {
                 code: "rule_condition_unreadable",
@@ -11455,54 +11373,7 @@ impl Engine {
             })
     }
 
-    fn rule_reading_since(
-        &self,
-        rule: &store::recurrence::Recurrence,
-        at: DateTime<Utc>,
-    ) -> Result<DateTime<Utc>, EngineError> {
-        let anchor = parse_instant_field(&rule.anchor_at)?;
-        let previous =
-            rule.cadence
-                .preceding(anchor, at)
-                .map_err(|error| EngineError::Conflict {
-                    code: "recurrence_cadence_invalid",
-                    message: error.to_string(),
-                })?;
-        Ok(previous.unwrap_or(anchor))
-    }
 
-    async fn rhythm_count(
-        &self,
-        record_uid: &str,
-        since: DateTime<Utc>,
-        at: DateTime<Utc>,
-    ) -> Result<nucleus::DecimalValue, EngineError> {
-        let tick = chrono::Duration::milliseconds(1);
-        let mut total: i128 = 0;
-        for rule in store::recurrence::for_record(&self.store.pool, record_uid).await? {
-            if rule.is_paused() {
-                continue;
-            }
-            let anchor = parse_instant_field(&rule.anchor_at)?;
-            let (Some(from), Some(to)) =
-                (since.checked_add_signed(tick), at.checked_add_signed(tick))
-            else {
-                continue;
-            };
-            let derived =
-                rule.cadence
-                    .between(anchor, from, to)
-                    .map_err(|error| EngineError::Conflict {
-                        code: "recurrence_cadence_invalid",
-                        message: error.to_string(),
-                    })?;
-            total = total.saturating_add(derived.len() as i128);
-        }
-        nucleus::DecimalValue::from_mantissa(0, total).map_err(|_| EngineError::Conflict {
-            code: "rule_condition_unreadable",
-            message: "that rhythm produced more dates than a number can hold".into(),
-        })
-    }
 
     async fn resolve_concept(&self, token: &str) -> Result<String, EngineError> {
         store::concepts::resolve(&self.store.pool, token.trim())

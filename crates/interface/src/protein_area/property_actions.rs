@@ -54,6 +54,7 @@ fn input(
         },
         Tooltip(hint.into()),
         crate::token_style::border(crate::tokens::Token::Accent),
+        crate::sand::Unsaved(false),
         ChildOf(parent),
     ));
     super::history::attach_text(world, entity);
@@ -292,6 +293,19 @@ pub(super) fn refresh(world: &mut World, entity: Entity, data: &Value) -> bool {
         rebuild(world, entity, &form, data, form.index);
     }
     true
+}
+
+pub(super) fn save_indicators(
+    forms: Query<&Form>,
+    mut fields: Query<(&EditableText, &mut crate::sand::Unsaved)>,
+) {
+    for form in &forms {
+        for (entity, confirmed) in &form.fields {
+            if let Ok((text, mut unsaved)) = fields.get_mut(*entity) {
+                unsaved.set_if_neq(crate::sand::Unsaved(text.value().to_string() != *confirmed));
+            }
+        }
+    }
 }
 
 pub(super) fn finished(world: &mut World, entity: Entity, error: Option<String>) {

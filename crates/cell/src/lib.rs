@@ -18,9 +18,15 @@ pub use admin_bootstrap::{AdminBootstrap, ensure_admin};
 pub use store::config::InterfaceStorage;
 pub use transport::{ClientMessage, LaneEvent, LaneHub, ServerMessage, Session, SyncEvents};
 pub use transport::protocol::CollabCursor;
+pub use transport::native::Context as FioteContext;
+pub use ::fiote::adapters::{Descriptor as FioteProvider, AuthKind as FioteAuthKind, AuthMethod as FioteAuthMethod};
+pub use ::fiote::tools::Registry as FioteTools;
+pub use ::fiote::acp::Config as FioteAgentConfig;
+pub use ::fiote::adapters::register_bundled as register_provider_adapter;
+pub use ::fiote::provider_adapter::serve as serve_provider_adapter;
 pub use ::fiote::config::{
-    ProviderKind as FioteProvider, Request as FioteRequest, Secret as FioteSecret,
-    Settings as FioteSettings, Status as FioteStatus,
+    Request as FioteRequest, Secret as FioteSecret,
+    Settings as FioteSettings, Status as FioteStatus, ToolConnection as FioteToolConnection,
 };
 pub use transport::live_client;
 pub use utils::diagnostics::{
@@ -177,8 +183,11 @@ impl Cell {
 
         supervisors.push(engine::file_sync::spawn_supervisor(engine.clone()));
         supervisors.push(engine.clone().run(HEARTBEAT_PERIOD_SECS));
+        supervisors.push(engine.clone().start_effect_worker());
+        if let Some(fiote) = &runtime.fiote { tasks.push(fiote.spawn_assignments()); }
         tasks.push(transfer::spawn_worker(runtime.clone()));
         tasks.push(sync_runner::spawn_runner(runtime.clone()));
+        tasks.push(sync_runner::spawn_presence(runtime.clone()));
         tasks.push(wire_supervisor::spawn(runtime.clone(), key_dir));
 
         Ok(Cell {

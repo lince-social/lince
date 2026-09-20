@@ -489,7 +489,6 @@ pub(crate) fn edit_connection(
         EditAction::Store => "Sand Store Clicked Show",
         EditAction::Canvas => "Canvas Settings Clicked Show",
         EditAction::Customization => "Global Customization Panel Toggle",
-        EditAction::Notifications => "Notifications Clicked Show",
         EditAction::Information => "Information Clicked Show",
         EditAction::Shortcuts => "Cheat Sheet Clicked Show",
         EditAction::Areas => "Areas of Influence Clicked Show",

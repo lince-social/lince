@@ -20,10 +20,11 @@ engine = { workspace = true }
 nucleus = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
+sha2 = { workspace = true }
 store = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt-multi-thread", "sync", "time"] }
 tracing = { workspace = true }
-transport = { workspace = true }
+transport = { workspace = true, features = ["mcp"] }
 utils = { workspace = true, features = ["update-net"] }
 
 [lints]

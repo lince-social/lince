@@ -49,6 +49,24 @@ pub(super) struct PropertyEditor {
     attempted: Option<String>,
 }
 
+pub(super) fn save_indicators(
+    mut fields: Query<(
+        &PropertyEditor,
+        &EditableText,
+        Option<&crate::record_binding::TextBinding>,
+        &mut crate::sand::Unsaved,
+    )>,
+) {
+    for (editor, text, binding, mut unsaved) in &mut fields {
+        let value = text.value().to_string();
+        let dirty = binding.map_or_else(
+            || editor.pending.is_some() || value != editor.observed,
+            |binding| binding.unsaved(&value),
+        );
+        unsaved.set_if_neq(crate::sand::Unsaved(dirty));
+    }
+}
+
 pub(super) fn display(value: &Value) -> String {
     match value {
         Value::Null => String::new(),
@@ -112,6 +130,12 @@ pub(super) fn content(
     data: &Value,
     binding: Option<RecordBinding>,
 ) {
+    if config.fiote {
+        if let Some(binding) = binding {
+            crate::fiote::session::populate(world, row, binding);
+        }
+        return;
+    }
     let sections = config
         .record_cards
         .then(|| super::record_layout::create(world, row));
@@ -185,6 +209,7 @@ pub(super) fn content(
         let text = display(&data[&property.property]);
         let editable = property.editable && binding.is_some();
         if config.show_labels
+            && !(config.record_cards && matches!(property.property.as_str(), "head" | "body"))
             && !matches!(
                 property.property.as_str(),
                 "threads" | "assertions" | "work_logs"
@@ -254,21 +279,21 @@ pub(super) fn content(
                     attempted: None,
                 },
                 binding.clone().unwrap(),
-                Tooltip(
-                    "Edit this Record property. Changes save automatically. Ctrl-Z undoes edits."
-                        .into(),
-                ),
             ));
+            if config.record_cards {
+                world.entity_mut(entity).insert(crate::sand::Unsaved(false));
+            }
             if matches!(property.property.as_str(), "head" | "body")
                 && crate::record_binding::enabled(world)
             {
-                let status = crate::edit_mode::label(world, container, "Opening Record…", 12.0);
+                let status = (!config.record_cards)
+                    .then(|| crate::edit_mode::label(world, container, "Opening Record…", 12.0));
                 crate::record_binding::attach(
                     world,
                     entity,
                     binding.clone().unwrap(),
                     &property.property,
-                    Some(status),
+                    status,
                 );
             }
             if !matches!(property.property.as_str(), "head" | "body")
@@ -324,7 +349,7 @@ pub(super) fn content(
                 measuring: false,
             });
         }
-        if property.property == "body" && editable {
+        if property.property == "body" && editable && !config.record_cards {
             crate::description::attach_editor(
                 world,
                 container,
@@ -503,7 +528,7 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
                         world.despawn(child);
                     }
                 }
-                if config.viewport_height.is_some() {
+                if config.viewport_height.is_some() || config.max_height.is_some() {
                     crate::scroll_sand::attach(world, entity);
                 }
                 content(world, entity, &config, &data, Some(binding));
@@ -869,7 +894,10 @@ pub(super) fn layout(world: &mut World) {
             .sum::<f32>()
             + 24.0
             + (count.saturating_sub(1) as f32 * 8.0);
-        let height = config.viewport_height.unwrap_or(height);
+        let height = config
+            .viewport_height
+            .unwrap_or(height)
+            .min(config.max_height.unwrap_or(f32::MAX));
         if let Some(cell) = world.get::<grouping::Cell>(*entity).copied() {
             grouped
                 .entry(*area)
@@ -898,16 +926,21 @@ pub(super) fn layout(world: &mut World) {
         let y = (0..group)
             .map(|index| heights.get(&(area, index)).copied().unwrap_or(0.0) + config.gap)
             .sum::<f32>();
+        let inset = if config.group_with_source { 0.0 } else { 12.0 };
         let position = origin
             + DVec2::new(
                 f64::from(
-                    12.0 + (index % config.columns) as f32 * (config.width + config.gap)
+                    inset
+                        + (index % config.columns) as f32 * (config.width + config.gap)
                         + config.width / 2.0,
                 ),
-                f64::from(12.0 + y + height / 2.0),
+                f64::from(inset + y + height / 2.0),
             );
         let size = Vec2::new(config.width, height);
         place(world, entity, position, size);
+        if config.group_with_source && index == 0 {
+            crate::full_record::fit_source(world, area, entity);
+        }
     }
 }
 

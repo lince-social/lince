@@ -10,6 +10,10 @@ use utils::logging::{init, set_quiet};
 
 fn main() -> Result<(), Error> {
     let args = env::args().collect::<Vec<String>>();
+    if has_arg(&args, "--fiote-provider") {
+        return cell::serve_provider_adapter();
+    }
+    cell::register_provider_adapter(env::current_exe()?);
     if args.iter().any(|arg| arg == "--help" || arg == "-h") {
         print_help();
         return Ok(());

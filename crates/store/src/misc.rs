@@ -232,7 +232,7 @@ pub struct EffectRow {
 
 pub async fn due_effects(pool: &SqlitePool) -> Result<Vec<EffectRow>, StoreError> {
     Ok(
-        sqlx::query("SELECT * FROM effect_queue WHERE status = 'queued' ORDER BY rowid")
+        sqlx::query("SELECT * FROM effect_queue WHERE status = 'queued' ORDER BY rowid LIMIT 64")
             .fetch_all(pool)
             .await?
             .into_iter()
@@ -303,6 +303,7 @@ pub async fn create_signal(pool: &SqlitePool, new: NewSignal<'_>) -> Result<Stri
 #[derive(Debug, Clone)]
 pub struct SignalRow {
     pub record_uid: String,
+    pub actor_uid: Option<String>,
     pub source_kind: String,
     pub source: String,
     pub schedule: String,
@@ -312,8 +313,8 @@ pub struct SignalRow {
 
 pub async fn list_signals(pool: &SqlitePool) -> Result<Vec<SignalRow>, StoreError> {
     sqlx::query(
-        "SELECT s.record_uid, s.source_kind, s.source, s.schedule, s.last_sampled_at, r.quantity_mantissa, r.quantity_scale
-         FROM signal s JOIN record r ON r.uid = s.record_uid",
+        "SELECT s.record_uid, s.actor_uid, s.source_kind, s.source, s.schedule, s.last_sampled_at, r.quantity_mantissa, r.quantity_scale
+         FROM signal s JOIN record r ON r.uid = s.record_uid WHERE r.deleted_at IS NULL",
     )
     .fetch_all(pool)
     .await?
@@ -321,6 +322,7 @@ pub async fn list_signals(pool: &SqlitePool) -> Result<Vec<SignalRow>, StoreErro
     .map(|r| {
         Ok(SignalRow {
             record_uid: r.get("record_uid"),
+            actor_uid: r.get("actor_uid"),
             source_kind: r.get("source_kind"),
             source: r.get("source"),
             schedule: r.get("schedule"),

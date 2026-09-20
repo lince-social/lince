@@ -75,6 +75,72 @@ mod tests {
         (world, engine, uid, first, second)
     }
 
+    #[tokio::test]
+    async fn fiote_native_edits_merge_with_typing_and_appear_in_both_views() {
+        let (mut world, engine, uid, first, second) = fixture().await;
+        let agent = engine
+            .act(
+                engine::actions::Action::CreateAgent {
+                    head: "Fiote".into(),
+                    operated_by: None,
+                },
+                None,
+            )
+            .await
+            .unwrap()
+            .created
+            .unwrap();
+        let mut tools = cell::FioteTools::default();
+        cell::Session::local(
+            engine.clone(),
+            std::sync::Arc::new(cell::LaneHub::new()),
+            "fiote-view-test",
+        )
+        .into_native_tools(cell::FioteContext {
+            agent,
+            record: uid.clone(),
+            thread: uid.clone(),
+        })
+        .register(&mut tools);
+        let read = tools
+            .run("lince_read_record", serde_json::json!({"record_uid":uid}))
+            .await;
+        assert_eq!(read["ok"], true, "{read}");
+        world
+            .get_mut::<EditableText>(first)
+            .unwrap()
+            .editor
+            .set_text("Olá 👩‍💻 עולם! My edit.");
+        update(&mut world);
+        let result = tools
+            .run(
+                "lince_edit_text",
+                serde_json::json!({
+                    "read_id":read["result"]["read_id"], "request_id":"fiote-edit",
+                    "edits":[{"field":"body","before":"Olá","after":"Fiote says olá"}]
+                }),
+            )
+            .await;
+        assert_eq!(result["ok"], true, "{result}");
+        let expected = "Fiote says olá 👩‍💻 עולם! My edit.";
+        pump(&mut world, |world| {
+            [first, second].iter().all(|entity| {
+                world
+                    .get::<EditableText>(*entity)
+                    .unwrap()
+                    .value()
+                    .to_string()
+                    == expected
+            }) && world
+                .resource::<Bindings>()
+                .documents
+                .values()
+                .all(|doc| doc.pending.is_empty() && !doc.saving)
+        })
+        .await;
+        assert_eq!(engine.doc_text(&uid).await.unwrap().1, expected);
+    }
+
     async fn pump(world: &mut World, done: impl Fn(&World) -> bool) {
         for _ in 0..500 {
             let mut messages = Vec::new();
@@ -99,6 +165,12 @@ mod tests {
     #[tokio::test]
     async fn two_views_share_unicode_edits_and_persist_before_transmission() {
         let (mut world, engine, uid, first, second) = fixture().await;
+        assert!(
+            !world
+                .get::<TextBinding>(first)
+                .unwrap()
+                .unsaved("Olá 👩‍💻 עולם")
+        );
         world
             .get_mut::<EditableText>(first)
             .unwrap()
@@ -121,6 +193,14 @@ mod tests {
             .unwrap();
         assert!(document.inflight.is_none());
         assert_eq!(document.pending.len(), 1);
+        for entity in [first, second] {
+            assert!(
+                world
+                    .get::<TextBinding>(entity)
+                    .unwrap()
+                    .unsaved("Olá 👩‍💻 שלום עולם!")
+            );
+        }
         pump(&mut world, |world| {
             world
                 .resource::<Bindings>()
@@ -130,6 +210,14 @@ mod tests {
         })
         .await;
         assert_eq!(engine.doc_text(&uid).await.unwrap().1, "Olá 👩‍💻 שלום עולם!");
+        for entity in [first, second] {
+            assert!(
+                !world
+                    .get::<TextBinding>(entity)
+                    .unwrap()
+                    .unsaved("Olá 👩‍💻 שלום עולם!")
+            );
+        }
         assert!(
             engine
                 .load_record_edit_draft(&serde_json::to_string(&Source::Local).unwrap(), &uid)
@@ -137,6 +225,28 @@ mod tests {
                 .unwrap()
                 .is_none()
         );
+    }
+
+    #[tokio::test]
+    async fn unsaved_indicator_survives_failure_without_marking_unchanged_fields() {
+        let (mut world, _, _, first, _) = fixture().await;
+        let record = world.get::<TextBinding>(first).unwrap().record.clone();
+        let title = world.spawn(EditableText::new("Title")).id();
+        attach(&mut world, title, record.clone(), "head", None);
+        world
+            .get_mut::<EditableText>(first)
+            .unwrap()
+            .editor
+            .set_text("Draft");
+        update(&mut world);
+        let mut bindings = world.resource_mut::<Bindings>();
+        fail(
+            bindings.documents.get_mut(&key(&record)).unwrap(),
+            "Storage unavailable",
+        );
+        update(&mut world);
+        assert!(world.get::<TextBinding>(first).unwrap().unsaved("Draft"));
+        assert!(!world.get::<TextBinding>(title).unwrap().unsaved("Title"));
     }
 
     #[tokio::test]
@@ -366,6 +476,13 @@ pub struct TextBinding {
     pub property: String,
     pub status: Option<Entity>,
     observed: String,
+    confirmed: String,
+}
+
+impl TextBinding {
+    pub(crate) fn unsaved(&self, value: &str) -> bool {
+        value != self.confirmed
+    }
 }
 
 #[derive(Component)]
@@ -531,6 +648,9 @@ impl Default for Bindings {
 
 pub struct RecordBindingPlugin;
 
+#[derive(SystemSet, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub(crate) struct SyncBindings;
+
 impl Plugin for RecordBindingPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Bindings>()
@@ -544,6 +664,7 @@ impl Plugin for RecordBindingPlugin {
             .add_systems(
                 PostUpdate,
                 update
+                    .in_set(SyncBindings)
                     .after(bevy::text::EditableTextSystems)
                     .before(crate::actions::ApplyActions)
                     .run_if(crate::laboratory::normal),
@@ -616,6 +737,7 @@ pub fn attach(
             record,
             property: property.into(),
             status,
+            confirmed: observed.clone(),
             observed,
         },
         crate::sand_store::SandCredits(crate::credits::ATTRIBUTIONS),
@@ -1240,7 +1362,12 @@ fn update(world: &mut World) {
                     set_text(world, *entity, &value, positions);
                 }
                 if world.get::<TextBinding>(*entity).unwrap().observed != value {
-                    world.get_mut::<TextBinding>(*entity).unwrap().observed = value;
+                    world.get_mut::<TextBinding>(*entity).unwrap().observed = value.clone();
+                }
+                if document.pending.is_empty()
+                    && world.get::<TextBinding>(*entity).unwrap().confirmed != value
+                {
+                    world.get_mut::<TextBinding>(*entity).unwrap().confirmed = value;
                 }
             }
             if let Some(status) = binding.status {
@@ -1377,6 +1504,7 @@ fn paint_cursors(world: &mut World) {
                     cursor
                         .person
                         .clone()
+                        .or_else(|| cursor.organ.clone())
                         .unwrap_or_else(|| "Local editor".into()),
                     cursor.session.clone(),
                 ));

@@ -63,3 +63,10 @@ fn ordinary_text_is_not_a_vault_and_is_told_apart_from_a_bad_password() {
         Err(VaultError::NotAVault)
     );
 }
+
+#[test]
+fn untrusted_vault_parameters_cannot_request_excessive_password_work() {
+    let locked = vault::lock(RECORD, "password", "secret").unwrap();
+    let oversized = locked.replace("m=19456,t=2,p=1", "m=4294967295,t=4294967295,p=1");
+    assert_eq!(vault::unlock(RECORD, "password", &oversized), Err(VaultError::Unopenable));
+}

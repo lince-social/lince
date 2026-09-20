@@ -238,6 +238,7 @@ pub enum KarmaCandidateProposalSchema {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "action", rename_all = "kebab-case")]
+#[derive(schemars::JsonSchema)]
 pub enum CandidateReviewAction {
     Accept,
     Dismiss,

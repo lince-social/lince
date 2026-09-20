@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use engine::Engine;
 use nucleus::karma::{Cadence, Consequence};
 use nucleus::{CauseKind, RecordKind};
@@ -24,10 +24,6 @@ async fn plain(e: &Engine, slug: &str, quantity: f64) -> String {
     .await
     .expect("record")
     .uid
-}
-
-fn at(s: &str) -> DateTime<Utc> {
-    DateTime::parse_from_rfc3339(s).unwrap().with_timezone(&Utc)
 }
 
 #[tokio::test]
@@ -133,7 +129,7 @@ async fn concept_dag_widens_matching() {
 async fn signals_sample_the_world_and_cascade() {
     let e = engine().await;
     let alert = plain(&e, "alerts.many-books", 0.0).await;
-    store::misc::create_signal(
+    let signal = store::misc::create_signal(
         &e.store.pool,
         store::misc::NewSignal {
             slug: "signals.books-count",
@@ -159,8 +155,15 @@ async fn signals_sample_the_world_and_cascade() {
     )
     .await;
 
-    let now = at("2026-07-05T10:00:00Z");
-    let facts = e.sample_due_signals(now).await.unwrap();
+    let now = Utc::now();
+    e.advance_karma_time(now).await.unwrap();
+    e.advance_karma_time(now + chrono::TimeDelta::seconds(60))
+        .await
+        .unwrap();
+    e.run_due_effects().await.unwrap();
+    let facts = store::facts::for_record(&e.store.pool, &signal, 10)
+        .await
+        .unwrap();
     assert!(facts.iter().any(|f| f.cause.kind == CauseKind::Signal));
     assert_eq!(
         store::records::quantity(&e.store.pool, &alert)
@@ -170,18 +173,23 @@ async fn signals_sample_the_world_and_cascade() {
         Some(1.0)
     );
 
-    let facts = e
-        .sample_due_signals(at("2026-07-05T10:00:30Z"))
+    e.advance_karma_time(now + chrono::TimeDelta::seconds(90))
         .await
         .unwrap();
-    assert!(facts.is_empty());
-    let facts = e
-        .sample_due_signals(at("2026-07-05T10:02:00Z"))
+    assert!(e.run_due_effects().await.unwrap().is_empty());
+    e.advance_karma_time(now + chrono::TimeDelta::seconds(120))
         .await
         .unwrap();
-    assert!(
-        facts.is_empty(),
-        "same sampled value: no fact, no cascade, no noise"
+    e.run_due_effects().await.unwrap();
+    let facts = store::facts::for_record(&e.store.pool, &signal, 10)
+        .await
+        .unwrap();
+    assert_eq!(
+        facts
+            .iter()
+            .filter(|fact| fact.cause.kind == CauseKind::Signal)
+            .count(),
+        2
     );
 }
 

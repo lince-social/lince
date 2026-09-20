@@ -1186,3 +1186,34 @@ async fn one_peer_cannot_hold_unlimited_connections() {
     drop(held);
     serving.abort();
 }
+
+#[tokio::test]
+async fn cursor_presence_crosses_authenticated_wire_and_clears_on_departure() {
+    let (a, ao) = cell("http://presence-a").await;
+    let (b, bo) = cell("http://presence-b").await;
+    let aw = Wire::bind(a.clone(), SecretKey::generate(), Reach::Local).await.unwrap();
+    let bw = Wire::bind(b.clone(), SecretKey::generate(), Reach::Local).await.unwrap();
+    know(&a, &bo, &bw.node_id().to_string()).await;
+    know(&b, &ao, &aw.node_id().to_string()).await;
+    store::organs::set_sync_policy(&a.store.pool, &bo, true, true).await.unwrap();
+    store::organs::set_sync_policy(&b.store.pool, &ao, true, true).await.unwrap();
+    let record = store::records::create(&a.store.pool, NewRecord { slug: None, kind: RecordKind::Plain, head: "Shared", body: "Text", quantity: store::exact::zero() }).await.unwrap();
+    let (ops, _) = a.ops_after(0, 500).await.unwrap();
+    b.import_op_batch(&OpBatch { from_organ: ao.clone(), ops }).await.unwrap();
+    aw.remember_addr(loopback(&bw));
+    bw.remember_addr(loopback(&aw));
+    let serving = { let bw = bw.clone(); tokio::spawn(async move { bw.serve().await }) };
+    a.presence.join(&record.uid, "writer");
+    b.presence.join(&record.uid, "reader");
+    a.presence.cursor(&record.uid, engine::presence::Cursor { session: "writer".into(), person: None, organ: None, property: "body".into(), anchor: "a".into(), focus: "b".into() });
+    tokio::time::timeout(std::time::Duration::from_secs(10), aw.sync_presence()).await.unwrap().unwrap();
+    let cursors = b.presence.cursors(&record.uid);
+    assert_eq!(cursors.len(), 1);
+    assert_eq!(cursors[0].organ.as_deref(), Some(ao.as_str()));
+    a.presence.leave_cursor(None, "writer");
+    aw.sync_presence().await.unwrap();
+    assert!(b.presence.cursors(&record.uid).is_empty());
+    serving.abort();
+    aw.shutdown().await;
+    bw.shutdown().await;
+}

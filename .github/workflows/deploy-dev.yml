@@ -8,42 +8,78 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: deploy-dev-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  RUSTFLAGS: "-D warnings -C link-arg=-fuse-ld=mold"
+  CARGO_INCREMENTAL: "0"
+  CARGO_TERM_COLOR: always
+
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
 
     steps:
       - uses: actions/checkout@v4
 
+      - name: Read pinned Rust version
+        id: toolchain
+        run: python3 -c 'import tomllib; print("version=" + tomllib.load(open("rust-toolchain.toml", "rb"))["toolchain"]["channel"])' >> "$GITHUB_OUTPUT"
+
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+        id: rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ steps.toolchain.outputs.version }}
 
       - name: Install Linux system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
-            libxcb1-dev \
-            libxkbcommon-dev \
-            libxkbcommon-x11-dev
+          sudo apt-get install -y --no-install-recommends \
+            mold \
+            pkg-config \
+            libssl-dev \
+            libsqlite3-dev
 
-      - name: Cache cargo
-        uses: actions/cache@v4
+      - name: Restore compiled crates
+        id: cache
+        uses: actions/cache/restore@v4
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            target
-          key: deploy-dev-ubuntu-${{ hashFiles('**/Cargo.lock') }}
+            target/release
+            target/source-cache.json
+          key: deploy-v2-ubuntu-24.04-${{ steps.rust.outputs.cachekey }}-${{ hashFiles('.cargo/config.toml') }}-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            deploy-v2-ubuntu-24.04-${{ steps.rust.outputs.cachekey }}-${{ hashFiles('.cargo/config.toml') }}-${{ hashFiles('Cargo.lock') }}-
+            deploy-v2-ubuntu-24.04-${{ steps.rust.outputs.cachekey }}-${{ hashFiles('.cargo/config.toml') }}-
+
+      - name: Restore unchanged source timestamps
+        run: python3 scripts/ci/source-cache.py
 
       - name: Build deploy binary
+        env:
+          LINCE_REVISION: ${{ github.sha }}
         shell: bash
         run: |
           set -euo pipefail
-          export RUSTFLAGS="-D warnings"
-          cargo check --locked -p lince
-          cargo build --locked --release --package lince
+          cargo build --locked --release --package lince --no-default-features --timings
           install -Dm755 target/release/lince deploy-artifact/lince
+
+      - name: Save compiled crates
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/release
+            target/source-cache.json
+          key: ${{ steps.cache.outputs.cache-primary-key }}
 
       - name: Upload deploy artifact
         uses: actions/upload-artifact@v4
@@ -52,6 +88,7 @@ jobs:
           path: deploy-artifact/lince
           if-no-files-found: error
           retention-days: 1
+          compression-level: 0
 
   deploy:
     needs: build

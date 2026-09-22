@@ -279,7 +279,7 @@ pub(crate) fn controls(world: &mut World, _root: Entity, panel: Entity, owner: E
         owner,
         Change::Mode(ForceMode::Simple),
         Icon::Forward,
-        "Simple: keep the destination and strength, steering toward that point as the Sand moves, or away when repelling. Distance does not weaken force. Force is zero at the destination; momentum can carry the Sand past it. Limited reach and immunity still apply.",
+        "Simple: steer toward the target or sorted slot. Attraction weakens within half the Area's smallest side and stops on arrival. Record and Area changes update the destination. Repulsion keeps its configured strength. Limited reach and immunity still apply.",
         area.force_mode == ForceMode::Simple,
     );
     button(

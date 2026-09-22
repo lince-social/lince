@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: app-release-${{ github.ref }}
@@ -18,10 +18,13 @@ concurrency:
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
   RUSTFLAGS: "-D warnings"
+  CARGO_INCREMENTAL: "0"
+  CARGO_TERM_COLOR: always
 
 jobs:
   binary:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
 
     strategy:
       fail-fast: false
@@ -40,19 +43,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Read pinned Rust version
+        id: toolchain
+        shell: bash
+        run: python3 -c 'import tomllib; print("version=" + tomllib.load(open("rust-toolchain.toml", "rb"))["toolchain"]["channel"])' >> "$GITHUB_OUTPUT"
+
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+        id: rust
+        uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: ${{ steps.toolchain.outputs.version }}
           targets: ${{ matrix.target }}
 
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y \
+          sudo apt-get install -y --no-install-recommends \
+            mold \
+            pigz \
             pkg-config \
             libssl-dev \
             libsqlite3-dev \
+            libasound2-dev \
             libwayland-dev \
             libxkbcommon-dev \
             libx11-dev \
@@ -62,29 +75,47 @@ jobs:
             libxcursor-dev \
             libgl1-mesa-dev \
             libvulkan-dev
+          printf '%s\n' 'RUSTFLAGS=-D warnings -C link-arg=-fuse-ld=mold' >> "$GITHUB_ENV"
 
-      - name: Cache cargo
-        uses: actions/cache@v4
+      - name: Restore compiled crates
+        id: cache
+        uses: actions/cache/restore@v4
         with:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            target
-          key: binary-${{ runner.os }}-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+            target/release
+            target/${{ matrix.target }}/release
+            target/source-cache.json
+          key: binary-v2-${{ matrix.os }}-${{ matrix.target }}-${{ steps.rust.outputs.cachekey }}-${{ hashFiles('.cargo/config.toml') }}-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+          restore-keys: |
+            binary-v2-${{ matrix.os }}-${{ matrix.target }}-${{ steps.rust.outputs.cachekey }}-${{ hashFiles('.cargo/config.toml') }}-${{ hashFiles('Cargo.lock') }}-
+            binary-v2-${{ matrix.os }}-${{ matrix.target }}-${{ steps.rust.outputs.cachekey }}-${{ hashFiles('.cargo/config.toml') }}-
 
-      - name: Check native Lince
-        env:
-          LINCE_REVISION: ${{ github.sha }}
-          BUILD_TARGET: ${{ matrix.target }}
-        run: cargo check --release --locked --package lince --target "$BUILD_TARGET"
-        shell: bash
+      - name: Restore unchanged source timestamps
+        run: python3 scripts/ci/source-cache.py
+
+      - name: Test release tooling
+        run: python3 -B -m unittest discover -s scripts/ci -p 'test_*.py' -v
 
       - name: Build native Lince
         env:
           LINCE_REVISION: ${{ github.sha }}
           BUILD_TARGET: ${{ matrix.target }}
-        run: cargo build --release --locked --package lince --target "$BUILD_TARGET"
+        run: cargo build --release --locked --package lince --target "$BUILD_TARGET" --timings
         shell: bash
+
+      - name: Save compiled crates
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/release
+            target/${{ matrix.target }}/release
+            target/source-cache.json
+          key: ${{ steps.cache.outputs.cache-primary-key }}
 
       - name: Package binary
         env:
@@ -102,12 +133,16 @@ jobs:
             7z a "binary-artifacts/$asset" ./package/lince
           else
             asset="lince-$BUILD_TARGET.tar.gz"
-            tar -czf "binary-artifacts/$asset" -C package lince
+            if command -v pigz >/dev/null 2>&1; then
+              tar -I pigz -cf "binary-artifacts/$asset" -C package lince
+            else
+              tar -czf "binary-artifacts/$asset" -C package lince
+            fi
           fi
           if command -v sha256sum >/dev/null 2>&1; then
-            sha256sum "binary-artifacts/$asset" > "binary-artifacts/$asset.sha256"
+            (cd binary-artifacts && sha256sum "$asset" > "$asset.sha256")
           else
-            shasum -a 256 "binary-artifacts/$asset" > "binary-artifacts/$asset.sha256"
+            (cd binary-artifacts && shasum -a 256 "$asset" > "$asset.sha256")
           fi
           printf '%s\n' "$BUILD_TARGET" > "binary-artifacts/$asset.target"
 
@@ -118,13 +153,25 @@ jobs:
           path: binary-artifacts/*
           if-no-files-found: error
           retention-days: 7
+          compression-level: 0
+
+      - name: Upload build timings
+        if: always() && !cancelled()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-timings-${{ matrix.target }}
+          path: target/cargo-timings/*.html
+          if-no-files-found: ignore
+          retention-days: 7
 
   publish-rolling:
     if: github.ref == 'refs/heads/main'
     needs: [binary]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     env:
-      ROLLING_TAG: rolling-${{ github.run_number }}
+      ROLLING_TAG: rolling-${{ github.run_number }}-${{ github.run_attempt }}
 
     steps:
       - uses: actions/checkout@v4
@@ -203,28 +250,27 @@ jobs:
 
           gh release upload "$TAG" release-artifacts/* --clobber --repo "$GH_REPO"
 
+      - name: Package prebuilt Nix flake
+        shell: bash
+        run: |
+          python3 scripts/ci/package-nix.py \
+            --repository "$GITHUB_REPOSITORY" \
+            --tag "$ROLLING_TAG" \
+            --revision "$GITHUB_SHA"
 
       - name: Publish main binaries for NixOS
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-        run: |
-          set -euo pipefail
-          if ! gh release view main-binary --repo "$GH_REPO" >/dev/null 2>&1; then
-            gh release create main-binary \
-              --repo "$GH_REPO" \
-              --target "$GITHUB_SHA" \
-              --title "Lince main binaries" \
-              --prerelease \
-              --notes "Native binaries from the latest successful main build."
-          fi
-          gh release upload main-binary release-artifacts/lince-*.tar.gz* release-artifacts/lince-*.zip* \
-            --clobber --repo "$GH_REPO"
+        shell: bash
+        run: bash scripts/ci/publish-main.sh
 
   publish-tag:
     if: startsWith(github.ref, 'refs/tags/')
     needs: [binary]
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - uses: actions/checkout@v4

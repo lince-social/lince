@@ -645,7 +645,7 @@ fn draw(world: &mut World) {
                     marks.push(Mark::Line(rect.center(), position));
                     marks.push(Mark::Label(
                         (rect.center() + position) * 0.5,
-                        "Sand Hovered Show Tooltip".into(),
+                        "Info Icon Hovered Show Tooltip".into(),
                         false,
                     ));
                 }

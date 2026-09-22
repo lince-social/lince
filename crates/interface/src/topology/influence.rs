@@ -175,16 +175,27 @@ pub fn update(world: &mut World) {
                 continue;
             }
             let before = total;
+            let sorting_target = area
+                .sorting
+                .as_ref()
+                .filter(|sort| sort.strength > 0.0)
+                .and_then(|_| {
+                    world
+                        .resource::<crate::area_effects::Influences>()
+                        .topology_target(*id, entity)
+                });
             if let Some(sort) = &area.sorting
-                && let Some(target) = world
-                    .resource::<crate::area_effects::Influences>()
-                    .topology_target(*id, entity)
+                && let Some(target) = sorting_target
             {
                 let target = target - DVec2::from_array(area.center);
                 let delta = DVec3::new(target.x, 0.0, target.y) - relative;
-                if delta.length_squared() > 0.25 {
-                    total += placement.rotation() * delta.clamp_length_max(1.0) * sort.strength;
-                }
+                total += placement.rotation()
+                    * delta.normalize_or_zero()
+                    * crate::area_effects::simple_strength(
+                        delta.length(),
+                        area.size[0].min(area.size[1]) * 0.5,
+                        sort.strength,
+                    );
             }
             if let Some(generated) = world.get::<crate::protein_area::grouping::GeneratedGroup>(*id)
             {
@@ -219,7 +230,20 @@ pub fn update(world: &mut World) {
                 if cached.area != *area || cached.placement != *placement {
                     *cached = create();
                 }
-                (cached.point - point).normalize_or_zero() * cached.strength
+                let target = sorting_target
+                    .filter(|_| area.direction == crate::area::Direction::Attract)
+                    .map_or(cached.point, |target| {
+                        let target = target - DVec2::from_array(area.center);
+                        placement.position(DVec2::from_array(area.center))
+                            + placement.rotation() * DVec3::new(target.x, 0.0, target.y)
+                    });
+                let delta = target - point;
+                delta.normalize_or_zero()
+                    * crate::area_effects::simple_strength(
+                        delta.length(),
+                        area.size[0].min(area.size[1]) * 0.5,
+                        cached.strength,
+                    )
             } else {
                 attraction_force(area, *placement, point)
             };
@@ -408,7 +432,7 @@ mod tests {
             super::super::set_position(&mut world, sand, point(y));
             update(&mut world);
             assert_eq!(
-                world.resource::<Forces>().totals[&sand].length() > 99.0,
+                world.resource::<Forces>().totals[&sand].length() > 0.0,
                 inside
             );
             assert_eq!(
@@ -419,7 +443,7 @@ mod tests {
         super::super::set_position(&mut world, sand, point(-21.0));
         world.get_mut::<InfluenceArea>(owner).unwrap().reach.mode = ReachMode::Unlimited;
         update(&mut world);
-        assert!(world.resource::<Forces>().totals[&sand].length() > 99.0);
+        assert!(world.resource::<Forces>().totals[&sand].length() > 0.0);
         assert!(world.get::<crate::area_effects::AreaScale>(sand).is_none());
         let mut shield = InfluenceArea::new(
             crate::area::AreaShape::Square,
@@ -431,7 +455,7 @@ mod tests {
         let shield = crate::area::spawn_area(&mut world, root, 1, shield).unwrap();
         world.entity_mut(shield).insert(placement);
         update(&mut world);
-        assert!(world.resource::<Forces>().totals[&sand].length() > 99.0);
+        assert!(world.resource::<Forces>().totals[&sand].length() > 0.0);
         world.get_mut::<InfluenceArea>(shield).unwrap().depth = 30.0;
         update(&mut world);
         assert_eq!(world.resource::<Forces>().totals[&sand], DVec3::ZERO);
@@ -447,7 +471,7 @@ mod tests {
         assert_eq!(world.resource::<Forces>().totals[&sand], DVec3::ZERO);
         world.get_mut::<InfluenceArea>(owner).unwrap().depth = 30.0;
         update(&mut world);
-        assert!(world.resource::<Forces>().totals[&sand].length() > 99.0);
+        assert!(world.resource::<Forces>().totals[&sand].length() > 0.0);
         world
             .entity_mut(sand)
             .insert(crate::sand_placement::Pinned {
@@ -599,11 +623,15 @@ pub(crate) fn attraction_force(area: &InfluenceArea, placement: Spatial, point: 
     } else {
         -1.0
     };
-    let falloff = if area.force_mode == crate::area_effects::ForceMode::Newtonian {
+    let strength = if area.force_mode == crate::area_effects::ForceMode::Newtonian {
         let radius = area.size[0].min(area.size[1]) * 0.5;
-        (radius / delta.length().max(radius)).powi(2)
+        area.strength * sign * (radius / delta.length().max(radius)).powi(2)
     } else {
-        1.0
+        crate::area_effects::simple_strength(
+            delta.length(),
+            area.size[0].min(area.size[1]) * 0.5,
+            area.strength * sign,
+        )
     };
-    delta.normalize_or_zero() * area.strength * sign * falloff
+    delta.normalize_or_zero() * strength
 }

@@ -114,7 +114,7 @@ impl PropertyRule {
         self.value.len() <= 4096
             && !self.value.trim().is_empty()
             && (self.property != Property::Quantity
-                || self.value.parse::<f64>().is_ok_and(f64::is_finite))
+                || nucleus::DecimalValue::parse_inferred(&self.value).is_ok())
     }
 
     pub fn matches(&self, record: &RecordProperties) -> bool {
@@ -125,10 +125,14 @@ impl PropertyRule {
             return false;
         };
         if self.property == Property::Quantity {
-            value
-                .as_f64()
-                .zip(self.value.parse::<f64>().ok())
-                .is_some_and(|(actual, expected)| actual.is_finite() && actual == expected)
+            let actual = value
+                .as_str()
+                .map(str::to_owned)
+                .unwrap_or_else(|| value.to_string());
+            nucleus::DecimalValue::parse_inferred(&actual)
+                .ok()
+                .zip(nucleus::DecimalValue::parse_inferred(&self.value).ok())
+                .is_some_and(|(actual, expected)| actual.exact_numeric_cmp(expected).is_eq())
         } else {
             value.as_str() == Some(self.value.as_str())
         }
@@ -163,6 +167,8 @@ pub struct InfluenceArea {
     pub protein: Option<crate::protein_area::Config>,
     #[serde(default)]
     pub filter: Option<crate::protein_area::Config>,
+    #[serde(default)]
+    pub sound: Option<crate::sound_area::SoundArea>,
     pub sorting: Option<crate::area_effects::Sorting>,
     pub immunity: crate::area_effects::Immunity,
     pub scale: f32,
@@ -196,6 +202,7 @@ impl InfluenceArea {
             changes: Default::default(),
             protein: None,
             filter: None,
+            sound: None,
             sorting: None,
             immunity: Default::default(),
             scale: 1.0,
@@ -229,6 +236,10 @@ impl InfluenceArea {
             && (0.0..=100_000.0).contains(&self.reach.radius)
             && self.rules.len() <= MAX_RULES
             && self.rules.iter().all(PropertyRule::validate)
+            && self
+                .sound
+                .as_ref()
+                .is_none_or(crate::sound_area::SoundArea::valid)
             && self.changes.validate()
             && self
                 .change_filter
@@ -283,12 +294,21 @@ impl InfluenceArea {
         }
         let delta = self.target_position() - point;
         let direction = delta.try_normalize().unwrap_or(DVec2::ZERO);
-        direction
-            * self.strength
+        let strength = self.strength
             * if self.direction == Direction::Attract {
                 1.0
             } else {
                 -1.0
+            };
+        direction
+            * if self.force_mode == crate::area_effects::ForceMode::Simple {
+                crate::area_effects::simple_strength(
+                    delta.length(),
+                    self.size[0].min(self.size[1]) * 0.5,
+                    strength,
+                )
+            } else {
+                strength
             }
     }
 
@@ -754,13 +774,13 @@ pub(crate) mod tests {
     }
 
     #[cfg_attr(test, test)]
-    fn properties_and_direction_produce_finite_constant_forces_only_inside() {
+    fn properties_and_direction_produce_finite_forces_only_inside() {
         let record =
             RecordProperties(json!({"uid":"r_test", "head":"Work", "quantity":-3, "slug":null}));
         let mut area = area();
         assert_eq!(
             area.force(DVec2::new(50.0, 0.0), &record),
-            DVec2::new(-100.0, 0.0)
+            DVec2::new(-50.0, 0.0)
         );
         assert_eq!(
             area.force(DVec2::new(100.0, 0.0), &record),
@@ -969,7 +989,7 @@ pub(crate) mod tests {
         app.update();
         let forces = app.world().get::<AreaForces>(sand).unwrap();
         assert_eq!(forces.0.len(), 2);
-        assert_eq!(forces.total(), DVec2::new(-60.0, 0.0));
+        assert_eq!(forces.total(), DVec2::new(-10.0, 0.0));
         assert_eq!(
             app.world().get::<CanvasItem>(sand).unwrap().position,
             position
@@ -1037,7 +1057,7 @@ pub(crate) mod tests {
         new_shapes_have_no_force_or_record_changes_until_configured,
         perimeters_reject_open_crossed_repeated_flat_and_oversized_shapes,
         concave_outline_matches_its_interior_including_edges_at_large_coordinates,
-        properties_and_direction_produce_finite_constant_forces_only_inside,
+        properties_and_direction_produce_finite_forces_only_inside,
         contributions_sum_without_motion_and_clear_on_data_pin_workspace_or_area_changes,
     }
 

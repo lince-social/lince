@@ -29,6 +29,7 @@ pub mod karma_control;
 pub mod karma_grants;
 pub mod karma_runtime;
 pub mod rule_runtime;
+mod karma_editor;
 pub mod karma_timezone;
 pub mod lingua_file;
 pub mod login;

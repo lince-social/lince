@@ -19,6 +19,24 @@ pub mod icons;
 pub mod castle;
 
 #[cfg(feature = "native-runtime")]
+mod castle_feed;
+
+#[cfg(feature = "native-runtime")]
+pub mod assertion_castle;
+
+#[cfg(feature = "native-runtime")]
+mod assertion_editor;
+
+#[cfg(feature = "native-runtime")]
+pub mod shader_castle;
+
+#[cfg(feature = "native-runtime")]
+pub mod karma_castle;
+
+#[cfg(feature = "native-runtime")]
+pub mod frequency_castle;
+
+#[cfg(feature = "native-runtime")]
 pub mod access_control;
 
 #[cfg(feature = "native-runtime")]
@@ -219,3 +237,30 @@ pub mod canvas_selection;
 
 #[cfg(feature = "native-runtime")]
 pub mod laboratory;
+
+#[cfg(feature = "native-runtime")]
+mod sand_panel;
+
+#[cfg(feature = "native-runtime")]
+pub mod freedoom;
+
+#[cfg(feature = "native-runtime")]
+pub mod terminal;
+
+#[cfg(feature = "native-runtime")]
+pub mod configuration;
+
+#[cfg(feature = "native-runtime")]
+pub mod todo;
+
+#[cfg(feature = "native-runtime")]
+pub mod sound;
+
+#[cfg(feature = "native-runtime")]
+pub mod sound_area;
+
+#[cfg(feature = "native-runtime")]
+pub mod recorder_castle;
+
+#[cfg(feature = "native-runtime")]
+pub mod transfer_castle;

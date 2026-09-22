@@ -58,6 +58,7 @@ pub const CREDITS: &[crate::credits::Attribution] = &[
         license: include_str!("../licenses/cap-std-MIT.txt"),
     },
     crate::credits::SYMBOLS,
+    crate::credits::DEJAVU,
     crate::credits::FONTIQUE,
     crate::credits::Attribution {
         name: "Lince logo",

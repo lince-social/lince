@@ -47,7 +47,7 @@ fn simple_forces_reuse_destinations_during_motion_and_invalidate_for_changes() {
     );
     assert_eq!(
         runtime.total(sand, root, 1, DVec2::X, Some(&record), None),
-        -DVec2::X * 100.0
+        -DVec2::X * 2.0
     );
     world.get_mut::<InfluenceArea>(owner).unwrap().strength = 250.0;
     update(&mut world);
@@ -127,7 +127,7 @@ fn newtonian_force_uses_distance_while_simple_reach_still_stops_at_the_boundary(
             .resource_mut::<Influences>()
             .forces(sand, root, 1, DVec2::new(-20.0, 0.0), Some(&record), None)
             .1,
-        DVec2::new(100.0, 0.0)
+        DVec2::new(40.0, 0.0)
     );
 }
 
@@ -320,4 +320,74 @@ crate::laboratory_cases! {
     immunity_scopes_use_centers_and_do_not_cross_workspaces_or_disable_other_shields,
     size_effects_combine_restore_and_leave_authored_sizes_untouched,
     independent_sorting_steers_existing_sands_and_immunity_stops_it,
+}
+
+#[cfg(test)]
+#[test]
+fn simple_attraction_tapers_and_rests_at_sorted_slots_until_sorting_changes() {
+    for spatial in [false, true] {
+        let (mut world, _, owner, sand) = fixture();
+        if spatial {
+            world.init_resource::<crate::topology::physics::Runtime>();
+        }
+        for (distance, expected) in [
+            (100.0, 100.0),
+            (50.0, 100.0),
+            (25.0, 50.0),
+            (1.0, 2.0),
+            (0.5, 0.0),
+            (0.0, 0.0),
+        ] {
+            world.get_mut::<CanvasItem>(sand).unwrap().position = DVec2::X * distance;
+            update(&mut world);
+            assert_eq!(
+                world.get::<AreaForces>(sand).unwrap().total(),
+                -DVec2::X * expected
+            );
+        }
+        let root = world.get::<ChildOf>(sand).unwrap().parent();
+        let other = world
+            .spawn((
+                CanvasItem {
+                    position: DVec2::ZERO,
+                    size: Vec2::splat(20.0),
+                },
+                RecordProperties(json!({"uid":"r_two", "quantity":-3})),
+                ChildOf(root),
+                WorkspaceMember(1),
+            ))
+            .id();
+        world.get_mut::<InfluenceArea>(owner).unwrap().sorting = Some(Sorting::default());
+        update(&mut world);
+        for entity in [sand, other] {
+            let target = world
+                .resource::<Influences>()
+                .topology_target(owner, entity)
+                .unwrap();
+            assert_ne!(target, DVec2::ZERO);
+            world.get_mut::<CanvasItem>(entity).unwrap().position = target;
+        }
+        update(&mut world);
+        for entity in [sand, other] {
+            assert_eq!(
+                world.get::<AreaForces>(entity).unwrap().total(),
+                DVec2::ZERO
+            );
+        }
+        let evaluations = world.resource::<Influences>().evaluations;
+        for _ in 0..100 {
+            update(&mut world);
+        }
+        assert_eq!(world.resource::<Influences>().evaluations, evaluations);
+        world
+            .get_mut::<InfluenceArea>(owner)
+            .unwrap()
+            .sorting
+            .as_mut()
+            .unwrap()
+            .reverse = true;
+        update(&mut world);
+        assert!(world.get::<AreaForces>(sand).unwrap().total().y > 0.0);
+        assert!(world.get::<AreaForces>(other).unwrap().total().y < 0.0);
+    }
 }

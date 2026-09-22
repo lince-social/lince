@@ -54,7 +54,7 @@ fn growing_nested_records_keep_valid_layout_and_expand_column_content() {
     );
 }
 
-pub(super) fn fixture() -> (App, Entity, Entity) {
+pub(crate) fn fixture() -> (App, Entity, Entity) {
     let mut app = App::new();
     crate::laboratory::isolate(app.world_mut());
     app.add_plugins(MinimalPlugins)
@@ -337,7 +337,7 @@ fn property_autosave_keeps_newer_edits_and_does_not_repeat_failed_requests() {
     );
 }
 
-pub(super) async fn until(app: &mut App, predicate: impl Fn(&World) -> bool) {
+pub(crate) async fn until(app: &mut App, predicate: impl Fn(&World) -> bool) {
     tokio::time::timeout(std::time::Duration::from_secs(10), async {
         loop {
             app.update();
@@ -354,11 +354,11 @@ pub(super) async fn until(app: &mut App, predicate: impl Fn(&World) -> bool) {
 #[cfg_attr(test, test)]
 fn templates_validate_and_request_only_bound_properties_even_before_rows_exist() {
     let mut config = Config::default();
-    config.bindings.push(Binding::new("quantity_exact"));
+    config.bindings.push(Binding::new("quantity"));
     let query = config.query().unwrap();
     assert_eq!(
         query.fields.unwrap(),
-        ["body", "head", "kind", "organ", "quantity_exact", "uid"]
+        ["body", "head", "kind", "organ", "quantity", "uid"]
     );
     let saved = serde_json::to_string(&config).unwrap();
     assert_eq!(serde_json::from_str::<Config>(&saved).unwrap(), config);
@@ -912,8 +912,12 @@ async fn relationship_and_work_log_controls_apply_backend_actions() {
         world.resource::<Runtime>().areas[&owner].data[0]["assignees"] == json!([])
     })
     .await;
-    let form = find(app.world_mut(), "assertions");
-    let field = app.world().get::<Form>(form).unwrap().fields[0].0;
+    let form = app
+        .world_mut()
+        .query_filtered::<Entity, With<crate::assertion_editor::Field>>()
+        .single(app.world())
+        .unwrap();
+    let field = crate::assertion_editor::input(app.world(), form).unwrap();
     app.world_mut()
         .get_mut::<bevy::text::EditableText>(field)
         .unwrap()
@@ -1009,7 +1013,7 @@ fn grouping_orders_hidden_properties_sets_dates_and_exact_numbers() {
         ["early", "late", "bob", "unset"]
     );
     config.grouping.vertical = None;
-    config.grouping.horizontal = Some(GroupAxis::new("quantity_exact"));
+    config.grouping.horizontal = Some(GroupAxis::new("quantity"));
     let amounts = [
         "10",
         "2",
@@ -1020,7 +1024,7 @@ fn grouping_orders_hidden_properties_sets_dates_and_exact_numbers() {
     ];
     let data: Vec<_> = amounts
         .iter()
-        .map(|value| json!({"uid":value,"quantity_exact":value}))
+        .map(|value| json!({"uid":value,"quantity":value}))
         .collect();
     let page = grouping::page(&data, &config, 0);
     assert_eq!(
@@ -1175,10 +1179,10 @@ fn grouping_pages_are_bounded_and_direction_changes_keep_query_order() {
         bindings: vec![Binding::new("head")],
         ..default()
     };
-    config.grouping.horizontal = Some(GroupAxis::new("quantity_exact"));
+    config.grouping.horizontal = Some(GroupAxis::new("quantity"));
     let data: Vec<_> = (0..1000)
         .rev()
-        .map(|n| json!({"uid":format!("r-{n}"),"quantity_exact":n.to_string(),"head":"Task"}))
+        .map(|n| json!({"uid":format!("r-{n}"),"quantity":n.to_string(),"head":"Task"}))
         .collect();
     let page = grouping::page(&data, &config, 1);
     assert_eq!(page.len(), 200);

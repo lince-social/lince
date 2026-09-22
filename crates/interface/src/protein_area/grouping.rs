@@ -8,7 +8,7 @@ pub const PROPERTIES: [&str; 10] = [
     "head",
     "slug",
     "kind",
-    "quantity_exact",
+    "quantity",
     "assignees",
     "assertions",
     "start_date",
@@ -191,7 +191,7 @@ fn compare(a: &Category, b: &Category, axis: Option<&GroupAxis>) -> Ordering {
     }
     let order = if matches!(
         axis.property.as_str(),
-        "quantity_exact" | "estimate_min" | "spent_seconds"
+        "quantity" | "estimate_min" | "spent_seconds"
     ) {
         decimal_order(&a.title, &b.title)
     } else {

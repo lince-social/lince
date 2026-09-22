@@ -28,6 +28,17 @@ fn collider(size: Vec2) -> Collider {
     )
 }
 
+pub(crate) fn sleep_threshold(force: DVec3, mass: f64) -> SleepThreshold {
+    SleepThreshold {
+        linear: if force == DVec3::ZERO {
+            0.005
+        } else {
+            (force.length() / (mass * 4000.0)).min(0.005) as f32
+        },
+        angular: 0.005,
+    }
+}
+
 #[derive(Component)]
 struct BodyLink {
     sand: Entity,
@@ -458,7 +469,10 @@ fn apply_forces(
         let next = total.extend(0.0);
         if force.0 != next {
             force.0 = next;
-            commands.entity(entity).remove::<Sleeping>();
+            commands
+                .entity(entity)
+                .insert((SleepTimer(0.0), sleep_threshold(next, 1.0)))
+                .remove::<Sleeping>();
         }
     }
 }
@@ -538,11 +552,26 @@ fn simulate(world: &mut World) {
             ));
         }
     }
-    let active = spatial && crate::topology::physics::awake(world)
+    let mut active = spatial && crate::topology::physics::awake(world)
         || world
             .query::<(&BodyLink, Has<Sleeping>)>()
             .iter(world)
             .any(|(body, sleeping)| !body.held && !sleeping);
+    if !active && (awake || changed) {
+        crate::area_effects::update(world);
+        if spatial {
+            crate::topology::physics::synchronize(world);
+        } else {
+            world
+                .run_system_cached(apply_forces)
+                .expect("refresh settled workspace forces");
+        }
+        active = spatial && crate::topology::physics::awake(world)
+            || world
+                .query::<(&BodyLink, Has<Sleeping>)>()
+                .iter(world)
+                .any(|(body, sleeping)| !body.held && !sleeping);
+    }
     if let Some(wake) = world.get_resource::<crate::wake::WakeSignal>().cloned()
         && active
         && world.resource::<Simulation>().timer.is_none()
@@ -576,7 +605,7 @@ pub(crate) mod tests {
             property: Property::Quantity,
             value: "-3".into(),
         }];
-        area.strength = 400.0;
+        area.strength = 1000.0;
         let area = crate::area::spawn_area(app.world_mut(), root, 1, area).unwrap();
         let sand = app
             .world_mut()
@@ -618,6 +647,127 @@ pub(crate) mod tests {
             app.world().get::<CanvasItem>(sand).unwrap().position,
             before
         );
+    }
+
+    #[cfg(test)]
+    #[test]
+    fn settled_sands_wake_when_quantity_switches_between_loose_areas() {
+        for spatial in [false, true] {
+            for sorted in [false, true] {
+                let (mut app, root, owner, sand) = fixture(DVec2::ZERO);
+                if spatial {
+                    app.init_resource::<crate::topology::physics::Runtime>();
+                }
+                {
+                    let mut area = app.world_mut().get_mut::<InfluenceArea>(owner).unwrap();
+                    area.size = [100.0; 2];
+                    area.strength = 1200.0;
+                    area.reach.mode = crate::area::ReachMode::Unlimited;
+                    area.rules[0].value = "-1".into();
+                    area.sorting = sorted.then(Default::default);
+                }
+                let mut other = app.world().get::<InfluenceArea>(owner).unwrap().clone();
+                other.id = "a".repeat(32);
+                other.center = [200.0, 0.0];
+                other.rules[0].value = "-2".into();
+                crate::area::spawn_area(app.world_mut(), root, 1, other).unwrap();
+                crate::workspace_config::set_physics(app.world_mut(), root, 1, true);
+                for (quantity, x) in [(-1, 0.0), (-2, 200.0), (-1, 0.0), (-2, 200.0)] {
+                    app.world_mut().get_mut::<RecordProperties>(sand).unwrap().0 =
+                        serde_json::json!({"uid":"r_moving", "quantity":quantity});
+                    for _ in 0..1200 {
+                        app.update();
+                        if !app.world().resource::<Simulation>().active {
+                            break;
+                        }
+                    }
+                    let point = app.world().get::<CanvasItem>(sand).unwrap().position;
+                    assert!(
+                        point.distance(DVec2::new(x, 0.0)) < 1.0,
+                        "spatial={spatial} sorted={sorted} quantity={quantity}: {point:?}"
+                    );
+                    assert!(
+                        !app.world().resource::<Simulation>().active,
+                        "Simple attraction must stop its motion timer after arrival"
+                    );
+                    if spatial {
+                        assert_eq!(
+                            app.world()
+                                .resource::<crate::topology::influence::Forces>()
+                                .totals[&sand],
+                            DVec3::ZERO
+                        );
+                    } else {
+                        assert_eq!(
+                            app.world()
+                                .get::<crate::area::AreaForces>(sand)
+                                .unwrap()
+                                .total(),
+                            DVec2::ZERO
+                        );
+                    }
+                    advance(&mut app, 10);
+                    assert_eq!(app.world().get::<CanvasItem>(sand).unwrap().position, point);
+                }
+            }
+        }
+    }
+
+    #[cfg(test)]
+    #[test]
+    fn weak_attraction_reaches_its_target_before_sleeping() {
+        for spatial in [false, true] {
+            let (mut app, root, owner, sand) = fixture(DVec2::ZERO);
+            if spatial {
+                app.init_resource::<crate::topology::physics::Runtime>();
+            }
+            app.world_mut()
+                .get_mut::<CanvasItem>(sand)
+                .unwrap()
+                .position = DVec2::X * 2.0;
+            {
+                let mut area = app.world_mut().get_mut::<InfluenceArea>(owner).unwrap();
+                area.size = [100.0; 2];
+                area.strength = 100.0;
+            }
+            crate::workspace_config::set_physics(app.world_mut(), root, 1, true);
+            for _ in 0..1200 {
+                app.update();
+                if !app.world().resource::<Simulation>().active {
+                    break;
+                }
+            }
+            let point = app.world().get::<CanvasItem>(sand).unwrap().position;
+            assert!(point.length() <= 0.5, "spatial={spatial}: {point:?}");
+            assert!(!app.world().resource::<Simulation>().active);
+        }
+    }
+
+    #[cfg(test)]
+    #[test]
+    fn weak_constant_attraction_keeps_moving_outside_the_area() {
+        for spatial in [false, true] {
+            let (mut app, root, owner, sand) = fixture(DVec2::ZERO);
+            if spatial {
+                app.init_resource::<crate::topology::physics::Runtime>();
+            }
+            {
+                let mut area = app.world_mut().get_mut::<InfluenceArea>(owner).unwrap();
+                area.size = [100.0; 2];
+                area.strength = 1.0;
+                area.reach.mode = crate::area::ReachMode::Unlimited;
+            }
+            crate::workspace_config::set_physics(app.world_mut(), root, 1, true);
+            advance(&mut app, 120);
+            let first = app.world().get::<CanvasItem>(sand).unwrap().position;
+            advance(&mut app, 120);
+            let second = app.world().get::<CanvasItem>(sand).unwrap().position;
+            assert!(
+                second.x < first.x - 0.1,
+                "spatial={spatial}: {first:?} -> {second:?}"
+            );
+            assert!(app.world().resource::<Simulation>().active);
+        }
     }
 
     #[cfg_attr(test, test)]

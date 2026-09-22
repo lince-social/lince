@@ -207,7 +207,7 @@ async fn mcp_reads_writes_assertions_and_crdt_use_live_native_operations() {
     let read = client
         .ok("lince_read_record", json!({"record_uid":uid}))
         .await;
-    assert_eq!(read["record"]["quantity_exact"], "-3");
+    assert_eq!(read["record"]["quantity"], "-3");
     assert!(read["record"]["assertions"].as_array().unwrap().len() >= 2);
     let sync = client.ok("lince_sync_status", json!({})).await;
     assert_eq!(sync["type"], "sync_status");

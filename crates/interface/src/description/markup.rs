@@ -203,7 +203,9 @@ fn slugs(run: Run) -> Vec<Run> {
         }
         let end = run.text[start + 1..]
             .char_indices()
-            .find(|(_, character)| !character.is_alphanumeric() && *character != '-')
+            .find(|(_, character)| {
+                !character.is_alphanumeric() && *character != '-' && *character != '_'
+            })
             .map_or(run.text.len(), |(end, _)| start + 1 + end);
         if end == start + 1 {
             continue;
@@ -230,9 +232,33 @@ fn slugs(run: Run) -> Vec<Run> {
     out
 }
 
-pub(super) fn render(world: &mut World, parent: Entity, source: &str, context: &Context) {
+pub(super) fn render(
+    world: &mut World,
+    parent: Entity,
+    source: &str,
+    context: &Context,
+    shaders: Vec<Entity>,
+) {
     world.init_resource::<Fonts>();
+    let mut shaders = shaders.into_iter();
     for block in parse(source) {
+        if block
+            .code
+            .as_deref()
+            .is_some_and(|language| language.trim().eq_ignore_ascii_case("wgsl"))
+        {
+            shader::spawn(
+                world,
+                parent,
+                &block
+                    .runs
+                    .iter()
+                    .map(|run| run.text.as_str())
+                    .collect::<String>(),
+                shaders.next(),
+            );
+            continue;
+        }
         if let Some(source) = &block.image {
             pictures::spawn(
                 world,
@@ -358,6 +384,9 @@ pub(super) fn render(world: &mut World, parent: Entity, source: &str, context: &
                 .observe(click)
                 .observe(keyboard);
         }
+    }
+    for shader in shaders {
+        world.despawn(shader);
     }
 }
 

@@ -72,7 +72,7 @@ pub(super) fn describe(arguments: Value, context: &Context) -> Result<Value, Str
             "Tool availability does not grant extra permissions or signing keys. Backend refusal is final for that operation; report the reason."
         ],
         "examples":{
-            "search":{"source":"record","where":[{"text_contains":"work"}],"fields":["uid","head","quantity_exact","assertions","assignees"],"limit":20},
+            "search":{"source":"record","where":[{"text_contains":"work"}],"fields":["uid","head","quantity","assertions","assignees"],"limit":20},
             "proteins":{"source":"record","where":[{"kind_eq":"protein"}],"include":{"extension":{"namespace":"lince.protein"}},"limit":20},
             "file_sync":{"source":"record","where":[{"kind_eq":"organ"}],"include":{"extension":{"namespace":"lince.file_sync"}},"limit":20}
         }

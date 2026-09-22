@@ -6,6 +6,9 @@ use crate::{
     time_limit::{TimeLimit, TimeLimitSystems},
     wake::WakeSignal,
 };
+mod info;
+pub use info::TooltipIcon;
+
 use bevy::{
     a11y::AccessibilityNode,
     asset::RenderAssetUsages,
@@ -105,8 +108,13 @@ impl Default for IconStyle {
 }
 
 #[derive(Component, Default, Clone)]
-#[require(HoverEvents, TooltipDuration)]
+#[require(Node, TooltipDuration)]
 pub struct Tooltip(pub String);
+
+#[derive(Resource, Default)]
+pub struct TooltipSettings {
+    pub enabled: bool,
+}
 
 #[derive(Component, Clone, Copy)]
 pub struct TooltipDuration(pub std::time::Duration);
@@ -190,10 +198,18 @@ impl Plugin for IconPlugin {
             .init_resource::<Assets<TextureAtlasLayout>>()
             .init_resource::<IconAtlas>()
             .init_resource::<Hints>()
+            .init_resource::<TooltipSettings>()
             .add_systems(
                 PostUpdate,
                 sync.in_set(SyncIcons)
                     .after(crate::token_style::ApplyTokenStyles)
+                    .before(bevy::ui::UiSystems::Prepare),
+            )
+            .add_systems(
+                PostUpdate,
+                info::sync
+                    .after(SyncIcons)
+                    .after(crate::sand::StyleButtons)
                     .before(bevy::ui::UiSystems::Prepare),
             )
             .add_systems(
@@ -204,7 +220,7 @@ impl Plugin for IconPlugin {
             )
             .add_observer(
                 |event: On<SandHoveredOn>,
-                 labels: Query<(), With<Tooltip>>,
+                 labels: Query<(), With<TooltipIcon>>,
                  mut hints: ResMut<Hints>| {
                     if labels.contains(event.entity) && hints.hovered != Some(event.entity) {
                         hints.hovered = Some(event.entity);
@@ -221,7 +237,7 @@ impl Plugin for IconPlugin {
             })
             .add_observer(
                 |event: On<FocusGained>,
-                 labels: Query<(), With<Tooltip>>,
+                 labels: Query<(), With<TooltipIcon>>,
                  visible: Option<Res<bevy::input_focus::InputFocusVisible>>,
                  mut hints: ResMut<Hints>| {
                     if event.entity != event.original_event_target() {
@@ -319,51 +335,25 @@ fn sync(
     }
 }
 
-fn repeats_button_text(world: &World, entity: Entity, tooltip: &str) -> bool {
-    if world.get::<bevy::ui_widgets::Button>(entity).is_none() {
-        return false;
-    }
-    fn append(world: &World, entity: Entity, text: &mut String) {
-        if world.get::<Visibility>(entity) == Some(&Visibility::Hidden)
-            || world
-                .get::<Node>(entity)
-                .is_some_and(|node| node.display == Display::None)
-        {
-            return;
-        }
-        if let Some(label) = world.get::<Text>(entity) {
-            text.push_str(&label.0);
-        }
-        if let Some(span) = world.get::<TextSpan>(entity) {
-            text.push_str(&span.0);
-        }
-        if let Some(children) = world.get::<Children>(entity) {
-            for child in children {
-                append(world, *child, text);
-            }
-        }
-    }
-    let mut text = String::new();
-    append(world, entity, &mut text);
-    text == tooltip
-}
-
 fn hints(world: &mut World) {
+    if !world.resource::<TooltipSettings>().enabled {
+        let mut state = world.resource_mut::<Hints>();
+        state.hovered = None;
+        state.keyboard = None;
+    }
     let state = world.resource::<Hints>();
     let target = state
         .hovered
-        .filter(|entity| world.get::<Tooltip>(*entity).is_some())
+        .filter(|entity| world.get::<TooltipIcon>(*entity).is_some())
         .or(state.keyboard);
     let previous = state.tip;
     let generation = state.generation;
     let shown = state.shown;
     let content = target.and_then(|target| {
-        let text = world.get::<Tooltip>(target)?.0.clone();
+        let source = world.get::<TooltipIcon>(target)?.source;
+        let text = world.get::<Tooltip>(source)?.0.clone();
         let node = world.get::<ComputedNode>(target)?;
-        if text.is_empty()
-            || node.size().min_element() <= 0.0
-            || repeats_button_text(world, target, &text)
-        {
+        if text.is_empty() || node.size().min_element() <= 0.0 {
             return None;
         }
         let transform = world.get::<UiGlobalTransform>(target)?;
@@ -511,7 +501,8 @@ fn hints(world: &mut World) {
         ring(world);
     } else if world.resource::<Hints>().positioning {
         let duration = world
-            .get::<TooltipDuration>(target)
+            .get::<TooltipIcon>(target)
+            .and_then(|icon| world.get::<TooltipDuration>(icon.source))
             .copied()
             .unwrap_or_default();
         world
@@ -536,8 +527,23 @@ pub(crate) mod tests {
         crate::laboratory::isolate(app.world_mut());
         app.init_resource::<Assets<Font>>()
             .init_resource::<Typography>()
+            .insert_resource(TooltipSettings { enabled: true })
             .add_plugins((crate::effect::EffectPlugin, IconPlugin));
         app
+    }
+
+    fn info(app: &mut App, source: Entity) -> Entity {
+        let icon = app
+            .world_mut()
+            .query::<(Entity, &TooltipIcon)>()
+            .iter(app.world())
+            .find(|(_, icon)| icon.source == source)
+            .unwrap()
+            .0;
+        let node = *app.world().get::<ComputedNode>(source).unwrap();
+        let transform = *app.world().get::<UiGlobalTransform>(source).unwrap();
+        app.world_mut().entity_mut(icon).insert((node, transform));
+        icon
     }
 
     #[cfg_attr(test, test)]
@@ -552,6 +558,11 @@ pub(crate) mod tests {
         app.update();
         assert_eq!(app.world().resource::<Assets<Image>>().len(), 1);
         let glyph = app.world().get::<Children>(first).unwrap()[0];
+        let node = app.world().get::<Node>(first).unwrap();
+        assert_eq!(node.width, node.height);
+        assert_eq!(node.margin.right, px(20));
+        let help = info(&mut app, first);
+        assert_eq!(app.world().get::<Node>(help).unwrap().right, px(-18));
         assert!(app.world().get::<crate::castle::Castle>(first).is_some());
         assert!(app.world().get::<Square>(first).is_some());
         assert!(app.world().get::<crate::sand::ImageSand>(glyph).is_some());
@@ -656,6 +667,15 @@ pub(crate) mod tests {
             .id();
         app.update();
         app.world_mut().trigger(SandHoveredOn { entity: hovered });
+        app.world_mut().trigger(FocusGained {
+            entity: button,
+            cause: FocusCause::Navigated,
+        });
+        app.update();
+        assert!(app.world().resource::<Hints>().tip.is_none());
+        let hovered = info(&mut app, hovered);
+        let button = info(&mut app, button);
+        app.world_mut().trigger(SandHoveredOn { entity: hovered });
         app.update();
         let tip = app.world().resource::<Hints>().tip.unwrap().1;
         assert_eq!(app.world().get::<Text>(tip).unwrap().0, "Another Sand");
@@ -706,7 +726,8 @@ pub(crate) mod tests {
             ))
             .id();
         app.update();
-        app.world_mut().trigger(SandHoveredOn { entity: source });
+        let icon = info(&mut app, source);
+        app.world_mut().trigger(SandHoveredOn { entity: icon });
         app.update();
         let tip = app.world().resource::<Hints>().tip.unwrap().1;
         assert!(app.world().get::<Square>(tip).is_some());
@@ -719,12 +740,12 @@ pub(crate) mod tests {
             app.update();
         }
         assert_eq!(app.world().get::<Node>(tip).unwrap().display, Display::None);
-        app.world_mut().trigger(SandHoveredOff { entity: source });
+        app.world_mut().trigger(SandHoveredOff { entity: icon });
         app.update();
         app.world_mut()
             .entity_mut(source)
             .insert(TooltipDuration::default());
-        app.world_mut().trigger(SandHoveredOn { entity: source });
+        app.world_mut().trigger(SandHoveredOn { entity: icon });
         app.update();
         assert_eq!(app.world().resource::<Hints>().tip.unwrap().1, tip);
         assert_eq!(
@@ -740,7 +761,7 @@ pub(crate) mod tests {
             Visibility::Inherited
         );
         assert_eq!(app.world().get::<Node>(tip).unwrap().display, Display::Flex);
-        app.world_mut().trigger(SandHoveredOff { entity: source });
+        app.world_mut().trigger(SandHoveredOff { entity: icon });
         app.update();
         assert_eq!(
             *app.world().get::<Visibility>(tip).unwrap(),
@@ -749,17 +770,138 @@ pub(crate) mod tests {
         assert_eq!(app.world().get::<Node>(tip).unwrap().display, Display::None);
     }
 
+    #[cfg_attr(test, test)]
+    fn info_icons_reserve_space_once_and_restore_it_when_help_is_removed() {
+        let mut app = app();
+        let source = app
+            .world_mut()
+            .spawn((
+                Tooltip("Details".into()),
+                Node {
+                    width: px(120),
+                    padding: UiRect::all(px(4)),
+                    ..default()
+                },
+            ))
+            .id();
+        app.update();
+        let icon = info(&mut app, source);
+        for _ in 0..30 {
+            app.update();
+        }
+        assert_eq!(app.world().get::<Node>(source).unwrap().width, px(140));
+        assert_eq!(
+            app.world().get::<Node>(source).unwrap().padding.right,
+            px(24)
+        );
+        assert_eq!(
+            app.world_mut()
+                .query::<&TooltipIcon>()
+                .iter(app.world())
+                .count(),
+            1
+        );
+        assert!(app.world().get::<HoverEvents>(source).is_none());
+        app.world_mut().get_mut::<Node>(source).unwrap().width = px(200);
+        app.update();
+        assert_eq!(app.world().get::<Node>(source).unwrap().width, px(220));
+        app.world_mut().despawn(icon);
+        app.update();
+        let replacement = info(&mut app, source);
+        assert_ne!(icon, replacement);
+        assert_eq!(app.world().get::<Node>(source).unwrap().width, px(220));
+        app.world_mut()
+            .get_mut::<Tooltip>(source)
+            .unwrap()
+            .0
+            .clear();
+        app.update();
+        assert!(app.world().get_entity(replacement).is_err());
+        assert_eq!(app.world().get::<Node>(source).unwrap().width, px(200));
+        assert_eq!(
+            app.world().get::<Node>(source).unwrap().padding.right,
+            px(4)
+        );
+        app.world_mut().get_mut::<Tooltip>(source).unwrap().0 = "Restored".into();
+        app.update();
+        let icon = info(&mut app, source);
+        app.world_mut().despawn(source);
+        assert!(app.world().get_entity(icon).is_err());
+    }
+
+    #[cfg_attr(test, test)]
+    fn clicking_info_does_not_press_or_activate_the_parent_button() {
+        use bevy::{
+            camera::RenderTarget,
+            picking::{
+                backend::HitData,
+                pointer::{Location, PointerButton, PointerId},
+            },
+        };
+        #[derive(Resource, Default)]
+        struct Activations(Vec<Entity>);
+        let mut app = app();
+        app.add_plugins(bevy::ui_widgets::ButtonPlugin)
+            .init_resource::<Activations>()
+            .add_observer(
+                |event: On<bevy::ui_widgets::Activate>, mut activations: ResMut<Activations>| {
+                    activations.0.push(event.entity)
+                },
+            );
+        let source = app
+            .world_mut()
+            .spawn((bevy::ui_widgets::Button, Tooltip("Delete Record".into())))
+            .id();
+        let window = app.world_mut().spawn(Window::default()).id();
+        app.update();
+        let icon = info(&mut app, source);
+        let location = Location {
+            target: RenderTarget::Window(bevy::window::WindowRef::Entity(window))
+                .normalize(None)
+                .unwrap(),
+            position: Vec2::ZERO,
+        };
+        let hit = HitData::new(window, 0.0, None, None);
+        app.world_mut().trigger(Pointer::new(
+            PointerId::Mouse,
+            location.clone(),
+            Press {
+                button: PointerButton::Primary,
+                hit: hit.clone(),
+                count: 1,
+            },
+            icon,
+        ));
+        app.world_mut().flush();
+        assert!(app.world().get::<bevy::ui::Pressed>(source).is_none());
+        app.world_mut().trigger(Pointer::new(
+            PointerId::Mouse,
+            location,
+            Click {
+                button: PointerButton::Primary,
+                hit,
+                duration: std::time::Duration::from_millis(50),
+                count: 1,
+            },
+            icon,
+        ));
+        app.world_mut().flush();
+        assert_eq!(app.world().resource::<Activations>().0, [icon]);
+    }
+
     crate::laboratory_cases! {
         icons_share_one_atlas_and_style_changes_reuse_the_glyph,
         atlas_contains_every_icon_and_straight_alpha_for_tinting,
         keyboard_labels_show_and_hide_without_intercepting_pointer_input,
         hover_events_show_a_square_timeout_without_reopening_and_reenter_reuses_it,
-        duplicate_button_labels_are_suppressed_and_dynamic_labels_are_checked,
+        info_icons_preserve_duplicate_labels_and_follow_dynamic_help,
         tooltips_are_centered_above_the_button_at_display_scale,
+        info_icons_reserve_space_once_and_restore_it_when_help_is_removed,
+        clicking_info_does_not_press_or_activate_the_parent_button,
     }
 
     #[cfg_attr(test, test)]
-    fn duplicate_button_labels_are_suppressed_and_dynamic_labels_are_checked() {
+    fn info_icons_preserve_duplicate_labels_and_follow_dynamic_help() {
         let mut app = app();
         let root = app
             .world_mut()
@@ -791,15 +933,22 @@ pub(crate) mod tests {
             .world_mut()
             .spawn((TextSpan::new("changes"), ChildOf(label)))
             .id();
+        app.update();
+        let icon = info(&mut app, button);
         app.world_mut().trigger(SandHoveredOn { entity: button });
         app.update();
         assert!(app.world().resource::<Hints>().tip.is_none());
-        app.world_mut().get_mut::<TextSpan>(span).unwrap().0 = "all".into();
+        app.world_mut().trigger(SandHoveredOn { entity: icon });
         app.update();
         let tip = app.world().resource::<Hints>().tip.unwrap().1;
         assert_eq!(app.world().get::<Text>(tip).unwrap().0, "Save changes");
-        app.world_mut().get_mut::<TextSpan>(span).unwrap().0 = "changes".into();
+        app.world_mut().get_mut::<Tooltip>(button).unwrap().0 = "Save all".into();
+        app.world_mut().get_mut::<TextSpan>(span).unwrap().0 = "all".into();
         app.update();
+        assert_eq!(app.world().get::<Text>(tip).unwrap().0, "Save all");
+        app.world_mut().entity_mut(button).remove::<Tooltip>();
+        app.update();
+        assert!(app.world().get_entity(icon).is_err());
         assert_eq!(app.world().get::<Node>(tip).unwrap().display, Display::None);
     }
 
@@ -836,6 +985,7 @@ pub(crate) mod tests {
             ))
             .id();
         app.update();
+        let button = info(&mut app, button);
         app.world_mut().trigger(SandHoveredOn { entity: button });
         app.update();
         let tip = app.world().resource::<Hints>().tip.unwrap().1;

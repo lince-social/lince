@@ -322,12 +322,30 @@ impl Engine {
             else {
                 break;
             };
-            let activation_hash = match &occurrence.envelope.source {
-                KarmaOccurrenceSource::ScheduleTick { tick, .. } => &tick.activation_hash,
-                KarmaOccurrenceSource::ScheduleCoalesced { batch, .. } => &batch.activation_hash,
-                KarmaOccurrenceSource::CalendarTick { tick, .. } => &tick.activation_hash,
-                KarmaOccurrenceSource::CalendarCoalesced { batch, .. } => &batch.activation_hash,
+            let (activation_hash, schedule_occurrence_hash) = match &occurrence.envelope.source {
+                KarmaOccurrenceSource::ScheduleTick {
+                    tick,
+                    schedule_occurrence_hash,
+                } => (&tick.activation_hash, schedule_occurrence_hash),
+                KarmaOccurrenceSource::ScheduleCoalesced {
+                    batch,
+                    schedule_occurrence_hash,
+                } => (&batch.activation_hash, schedule_occurrence_hash),
+                KarmaOccurrenceSource::CalendarTick {
+                    tick,
+                    schedule_occurrence_hash,
+                } => (&tick.activation_hash, schedule_occurrence_hash),
+                KarmaOccurrenceSource::CalendarCoalesced {
+                    batch,
+                    schedule_occurrence_hash,
+                } => (&batch.activation_hash, schedule_occurrence_hash),
             };
+            let observed_at =
+                store::karma::schedules::get_occurrence(&self.store.pool, schedule_occurrence_hash)
+                    .await?
+                    .ok_or_else(|| invalid("occurrence has no scheduler emission"))?
+                    .occurrence
+                    .observed_at();
             let activation = frequencies::get_activation(&self.store.pool, activation_hash)
                 .await?
                 .ok_or_else(|| invalid("occurrence has no Frequency activation"))?;
@@ -348,7 +366,7 @@ impl Engine {
                 for rule_uid in index.frequencies.get(uid).into_iter().flatten() {
                     let rule = &index.rules[rule_uid];
                     let updated = crate::actions::parse_instant_field(&rule.updated_at)?;
-                    if updated > event.at {
+                    if updated.timestamp_millis() > observed_at.as_millis() {
                         continue;
                     }
                     match Box::pin(self.execute_rule_event(rule, &event, now)).await {

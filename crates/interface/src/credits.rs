@@ -19,6 +19,12 @@ pub const SYMBOLS: Attribution = Attribution {
     license: SYMBOLS_LICENSE,
 };
 
+pub const DEJAVU: Attribution = Attribution {
+    name: "DejaVu Sans",
+    author: "DejaVu contributors, Bitstream, and Tavmjong Bah",
+    license: include_str!("../../../assets/fonts/DejaVuSans/LICENSE"),
+};
+
 pub const FONTIQUE: Attribution = Attribution {
     name: "Fontique",
     author: "The Parley Authors",
@@ -26,8 +32,34 @@ pub const FONTIQUE: Attribution = Attribution {
 };
 
 pub const ATTRIBUTIONS: &[Attribution] = &[
+    Attribution {
+        name: "CPAL",
+        author: "The CPAL contributors",
+        license: include_str!("../licenses/cpal-Apache-2.0.txt"),
+    },
+    Attribution {
+        name: "Hound",
+        author: "Ruud van Asseldonk and contributors",
+        license: include_str!("../licenses/hound-Apache-2.0.txt"),
+    },
     SYMBOLS,
+    DEJAVU,
     FONTIQUE,
+    Attribution {
+        name: "bevy_gaussian_splatting",
+        author: "Mitchell Mosure and contributors; Lince orthographic projection adaptation",
+        license: include_str!("../licenses/bevy-gaussian-splatting-MIT.txt"),
+    },
+    Attribution {
+        name: "FlexBuffers",
+        author: "Google LLC and FlatBuffers contributors",
+        license: include_str!("../licenses/flexbuffers-Apache-2.0.txt"),
+    },
+    Attribution {
+        name: "bevy_interleave",
+        author: "Mitchell Mosure and contributors",
+        license: include_str!("../licenses/bevy-interleave-MIT.txt"),
+    },
     Attribution {
         name: "pulldown-cmark",
         author: "Raph Levien and contributors",
@@ -133,7 +165,11 @@ impl Action for ToggleLicense {
 
 pub(crate) fn render(world: &mut World, panel: Entity) {
     crate::edit_mode::label(world, panel, "Licenses and credits", 22.0);
-    for credit in ATTRIBUTIONS {
+    render_list(world, panel, ATTRIBUTIONS);
+}
+
+pub(crate) fn render_list(world: &mut World, panel: Entity, attributions: &[Attribution]) {
+    for credit in attributions {
         let section = world
             .spawn((
                 Node {

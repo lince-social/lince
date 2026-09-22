@@ -50,7 +50,7 @@ fn exercise(world: &mut World) {
                 .resource::<lince_interface::theme::Typography>()
                 .text(24.0);
             world.spawn((
-                Text::new("▾ ▦ ✓ ○ ☐ ☑"),
+                Text::new("⌄ ⌃ ▾ ▴ ▦ ✓ ○ ☐ ☑ ↑ ↓ ↕"),
                 font,
                 Node {
                     position_type: PositionType::Absolute,

@@ -1,6 +1,7 @@
 mod controls;
 #[cfg(test)]
 mod integration;
+pub(crate) mod mentions;
 pub(crate) mod message_view;
 pub(crate) mod tests;
 pub(crate) mod transcript;
@@ -92,6 +93,17 @@ impl Plugin for ThreadCastlePlugin {
             .add_systems(
                 PostUpdate,
                 composer_keys.before(bevy::text::EditableTextSystems),
+            )
+            .add_systems(
+                PostUpdate,
+                mentions::sync
+                    .after(bevy::text::EditableTextSystems)
+                    .before(submit_keys)
+                    .before(bevy::ui::UiSystems::Layout),
+            )
+            .add_systems(
+                PostUpdate,
+                mentions::paint.after(bevy::ui::UiSystems::PostLayout),
             )
             .add_systems(
                 PostUpdate,
@@ -222,7 +234,7 @@ fn form(world: &mut World, parent: Entity, binding: RecordBinding, thread: Optio
             crate::sand::text_editor("", world.resource::<crate::theme::Typography>(), 0),
             ChildOf(composer),
             crate::sand::Borderless,
-            crate::icons::Tooltip("Message · Enter to send · Shift+Enter for a new line · Mention @slug or @\"Agent name\"".into()),
+            crate::icons::Tooltip("Message · Enter to send · Shift+Enter for a new line · Type @ to link a Record, person or agent".into()),
         ))
         .insert(Node {
             flex_grow: 1.0,
@@ -237,6 +249,7 @@ fn form(world: &mut World, parent: Entity, binding: RecordBinding, thread: Optio
     world.get_mut::<EditableText>(input).unwrap().max_characters = Some(65_536);
     world.get_mut::<EditableText>(input).unwrap().visible_lines = Some(1.0);
     world.get_mut::<TextFont>(input).unwrap().font_size = 16.0.into();
+    mentions::attach(world, input);
     let send = control(world, composer, container, "↑", Send);
     world.entity_mut(send).insert((
         crate::sand::Borderless,
@@ -741,6 +754,9 @@ fn composer_size(
 }
 
 fn composer_keys(world: &mut World) {
+    if mentions::keys(world) {
+        return;
+    }
     let Some(keys) = world.get_resource::<ButtonInput<KeyCode>>() else {
         return;
     };
@@ -835,11 +851,12 @@ impl Action for Send {
         if in_thread && !crate::fiote::session::ready(world, &binding) {
             return;
         }
+        let body = mentions::body(world, input, &value);
         let form = world.get::<ThreadForm>(entity).unwrap();
         let action = if let Some(thread) = &form.thread {
             engine::actions::Action::CreateMessage {
                 thread: thread.clone(),
-                body: value.clone(),
+                body,
                 author: None,
                 state: nucleus::MessageState::Finished,
                 parent: None,

@@ -17,6 +17,7 @@ pub enum TopologyAction {
     Import,
     CancelImports,
     Duplicate,
+    Frame,
 }
 
 impl Action for TopologyAction {
@@ -107,6 +108,10 @@ impl Action for TopologyAction {
         }
         let mut placement = spatial(world, entity);
         match *self {
+            Self::Frame => {
+                super::assets::frame(world, entity);
+                return;
+            }
             Self::Duplicate => {
                 super::assets::duplicate(world, entity);
                 return;
@@ -135,6 +140,12 @@ impl Action for TopologyAction {
                 }
             }
             Self::Pin => {
+                if world
+                    .get::<super::assets::ImportedAsset>(entity)
+                    .is_some_and(super::splats::is_splat)
+                {
+                    return;
+                }
                 placement.world_pinned = !placement.world_pinned;
                 if !placement.world_pinned
                     && let Some(member) = world.get::<crate::workspace::WorkspaceMember>(entity)
@@ -262,8 +273,9 @@ fn button(
                 TopologyAction::SelectionDepth(_) => "The vertical range of a dragged selection in 3D, centered on the creation height. Increase it to include objects farther above or below that height.",
                 TopologyAction::Plane(_) => "The height where new Sands, models, and drawn areas are placed. Y is the vertical direction in 3D.",
                 TopologyAction::ToggleView => "Switch between the flat canvas and the 3D view.",
-                TopologyAction::Import => "Import a local .gltf or .glb model from the file path above.",
+                TopologyAction::Import => "Import a local .gltf, .glb, or .gcloud model from the file path above. Gaussian clouds are visual only.",
                 TopologyAction::CancelImports => "Stop pending model imports. Models already imported stay on the canvas.",
+                TopologyAction::Frame => "Move the view to show the whole imported asset.",
                 _ => name,
             }.into()),
             ActionButton::new(target, crate::actions![action]),
@@ -333,7 +345,9 @@ pub fn update(world: &mut World) {
             } else {
                 "Unpinned"
             },
-            if imported.is_some() {
+            if imported.is_some_and(super::splats::is_splat) {
+                "Visual bounds"
+            } else if imported.is_some() {
                 "Mesh"
             } else if placement.depth.is_some() {
                 "Manual"
@@ -443,6 +457,7 @@ pub fn update(world: &mut World) {
                 button(world, panel, target, "Set depth", TopologyAction::SetDepth);
             }
             if world.get::<super::assets::ImportedAsset>(target).is_some() {
+                button(world, panel, target, "Frame asset", TopologyAction::Frame);
                 button(
                     world,
                     panel,
@@ -481,6 +496,13 @@ pub fn update(world: &mut World) {
                 ),
             ] {
                 let imported = world.get::<super::assets::ImportedAsset>(target).is_some();
+                if matches!(action, TopologyAction::Pin)
+                    && world
+                        .get::<super::assets::ImportedAsset>(target)
+                        .is_some_and(super::splats::is_splat)
+                {
+                    continue;
+                }
                 if imported
                     && matches!(
                         action,
@@ -545,14 +567,14 @@ pub fn store_controls(world: &mut World, root: Entity, panel: Entity) {
         "Creation Y +",
         TopologyAction::Plane(20.0),
     );
-    crate::edit_mode::label(world, panel, "glTF / GLB", 14.0);
+    crate::edit_mode::label(world, panel, "glTF / GLB / Gaussian cloud", 14.0);
     let typography = world.resource::<crate::theme::Typography>();
     let editor = crate::sand::text_editor("", typography, 0);
     world
         .spawn((
             ImportPath(root),
             editor,
-            crate::icons::Tooltip("Full path to a local .gltf or .glb file.".into()),
+            crate::icons::Tooltip("Full path to a local .gltf, .glb, or .gcloud file.".into()),
             ChildOf(panel),
         ))
         .insert(Node {

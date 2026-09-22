@@ -19,6 +19,10 @@ pub(crate) struct Saved {
 }
 
 impl Saved {
+    pub(crate) fn owner(&self) -> &str {
+        &self.owner
+    }
+
     pub fn valid(&self) -> bool {
         self.owner.len() == 32
             && self.owner.bytes().all(|byte| byte.is_ascii_hexdigit())

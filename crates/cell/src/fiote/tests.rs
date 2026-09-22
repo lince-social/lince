@@ -333,7 +333,10 @@ async fn mentioning_a_fiote_replies_in_the_record_with_only_recent_context() {
     wait(&host).await;
     assert_eq!(script.observed.lock().unwrap().len(), 1);
     local(&host)
-        .handle(send(&thread, &format!("@{agent} hello again")))
+        .handle(send(
+            &thread,
+            &format!("[@old-slug](record:{agent}) hello again"),
+        ))
         .await;
     wait(&host).await;
     assert_eq!(script.observed.lock().unwrap().len(), 2);

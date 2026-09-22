@@ -74,6 +74,7 @@ fn exercise(world: &mut World) {
             activate(world, EditAction::Toggle);
         }
         16 => {
+            activate(world, EditAction::General);
             assert!(!lince_interface::workspace_config::enabled(world, root, 1));
             let path = lince_interface::workspace_config::path(world, 1).unwrap();
             assert!(
@@ -111,6 +112,7 @@ fn exercise(world: &mut World) {
                     .position,
                 state.paused
             );
+            activate(world, EditAction::Workspaces);
             activate(world, EditAction::CreateWorkspace);
         }
         124 => {
@@ -127,6 +129,7 @@ fn exercise(world: &mut World) {
             activate(world, EditAction::SwitchWorkspace(1));
         }
         128 => {
+            activate(world, EditAction::General);
             activate(world, EditAction::TogglePhysics);
             world.insert_resource(lince_interface::theme::idle_settings());
         }

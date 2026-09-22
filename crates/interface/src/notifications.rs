@@ -141,6 +141,10 @@ fn recommendation(source: &str, message: &str) -> &'static str {
     let detail = format!("{source} {message}").to_lowercase();
     if detail.contains("no space") || detail.contains("disk full") {
         "Try this: free some disk space, then reopen Lince."
+    } else if message.starts_with("Workspace restored with compatible items.")
+        && message.contains("Saving is enabled.")
+    {
+        "You can keep working. The skipped items remain in the saved original."
     } else if detail.contains("permission denied") || detail.contains("read-only") {
         "Try this: check that your account can write to the folder named above, then reopen Lince."
     } else if detail.contains("tray") {

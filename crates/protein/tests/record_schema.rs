@@ -30,17 +30,25 @@ async fn selected_record_properties_keep_exact_quantity_work_and_visibility() {
         .await
         .unwrap();
     engine.act(Action::SetExtension { target: uid.clone(), namespace: "work".into(), fds: json!({"start":"2026-09-01","due":"2026-09-30","estimate_min":90,"logs":[{"start":"2026-09-01T10:00:00Z","end":"2026-09-01T10:15:00Z"}]}) }, None).await.unwrap();
-    let query: protein::Protein = serde_json::from_value(json!({"source":"record","where":[{"uid_eq":uid}],"fields":["head","body","slug","quantity_exact","assertions","assignees","start_date","due_date","estimate_min","spent_seconds","running_since","work_logs"]})).unwrap();
+    let query: protein::Protein = serde_json::from_value(json!({"source":"record","where":[{"uid_eq":uid}],"fields":["head","body","slug","quantity","assertions","assignees","start_date","due_date","estimate_min","spent_seconds","running_since","work_logs"]})).unwrap();
     let rows = protein::execute(&engine.store, &query).await.unwrap();
     assert_eq!(rows.len(), 1);
-    assert_eq!(rows[0]["quantity_exact"], "9007199254740993.125");
+    assert_eq!(rows[0]["quantity"], "9007199254740993.125");
     assert_eq!(rows[0]["spent_seconds"], 900);
     assert_eq!(rows[0]["estimate_min"], 90);
     assert_eq!(rows[0]["body"], "Description");
     assert_eq!(rows[0]["start_date"], "2026-09-01");
     assert_eq!(rows[0]["due_date"], "2026-09-30");
     assert!(rows[0].get("extension").is_none());
-    assert!(rows[0].get("quantity").is_none());
+    assert_eq!(
+        rows[0]
+            .as_object()
+            .unwrap()
+            .keys()
+            .filter(|key| key.starts_with("quantity"))
+            .count(),
+        1
+    );
     assert_eq!(rows[0]["work_logs"].as_array().unwrap().len(), 1);
     let person = engine
         .act(
@@ -161,4 +169,54 @@ async fn assignees_and_assertions_do_not_reveal_an_unreadable_person() {
         .await
         .unwrap();
     assert_eq!(remote[0]["assignees"][0]["head"], "Assignee");
+}
+
+#[tokio::test]
+async fn quantity_is_the_only_quantity_property_and_orders_without_rounding() {
+    let engine = Engine::open_memory().await.unwrap();
+    for (head, quantity) in [
+        ("First", "9007199254740993.25"),
+        ("Second", "9007199254740993.125"),
+    ] {
+        let uid = engine
+            .act(
+                Action::CreateRecord {
+                    slug: None,
+                    kind: nucleus::RecordKind::Plain,
+                    head: head.into(),
+                    body: String::new(),
+                    quantity: 0.0,
+                },
+                None,
+            )
+            .await
+            .unwrap()
+            .created
+            .unwrap();
+        engine
+            .act(
+                Action::SetQuantityExact {
+                    target: uid,
+                    amount: quantity.into(),
+                },
+                None,
+            )
+            .await
+            .unwrap();
+    }
+    let query = serde_json::from_value(json!({"source":"record", "where":[{"quantity_gt":"9007199254740993"}], "fields":["head","quantity"], "order":[{"asc":"quantity"}], "limit":null})).unwrap();
+    let rows = protein::execute(&engine.store, &query).await.unwrap();
+    assert_eq!(
+        rows.iter()
+            .map(|row| row["quantity"].as_str().unwrap())
+            .collect::<Vec<_>>(),
+        ["9007199254740993.125", "9007199254740993.25"]
+    );
+    assert_eq!(rows[0]["head"], "Second");
+    let quantities: Vec<_> = protein::record_schema::fields()
+        .into_iter()
+        .filter(|field| field.title.contains("Quantity"))
+        .collect();
+    assert_eq!(quantities.len(), 1);
+    assert_eq!(quantities[0].key, "quantity");
 }

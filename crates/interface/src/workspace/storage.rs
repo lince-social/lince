@@ -229,7 +229,9 @@ fn sequence(path: &Path) -> u64 {
 pub(super) fn load(path: &Path) -> io::Result<Option<Document>> {
     let directory = path.with_extension("snapshots");
     match std::fs::symlink_metadata(&directory) {
-        Err(error) if error.kind() == io::ErrorKind::NotFound => return super::read_snapshot(path),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => {
+            return super::recovery::read(path);
+        }
         Err(error) => return Err(error),
         Ok(metadata) if !metadata.is_dir() => {
             return Err(io::Error::other("snapshot path is not a directory"));
@@ -237,13 +239,16 @@ pub(super) fn load(path: &Path) -> io::Result<Option<Document>> {
         Ok(_) => {}
     }
     let files = snapshots(&directory)?;
-    for file in files.iter().rev() {
-        if let Ok(Some(document)) = super::read_snapshot(file) {
+    for (skipped, file) in files.iter().rev().enumerate() {
+        if let Ok(Some(mut document)) = super::recovery::read(file) {
+            if skipped > 0 {
+                document.recovery.skipped_snapshots(skipped);
+            }
             return Ok(Some(document));
         }
     }
     if files.is_empty() {
-        super::read_snapshot(path)
+        super::recovery::read(path)
     } else {
         Err(io::Error::other("no valid workspace snapshot"))
     }
@@ -275,10 +280,17 @@ pub(crate) mod tests {
         let mut workspaces = super::super::Workspaces::default().entries;
         workspaces[0].name = name.into();
         Document {
+            recovery: Default::default(),
+            assertions: Vec::new(),
+            shaders: Vec::new(),
             layouts: Vec::new(),
             imports: Vec::new(),
             areas: Vec::new(),
             proteins: Vec::new(),
+            karma_castles: Vec::new(),
+            frequency_castles: Vec::new(),
+            transfer_castles: Vec::new(),
+            recorders: Vec::new(),
             calendars: Vec::new(),
             kanbans: Vec::new(),
             instincts: Vec::new(),

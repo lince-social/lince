@@ -44,7 +44,7 @@ fn workspace_load_error_is_a_startup_toast_and_keeps_saved_data() {
     std::fs::write(&path, b"broken").unwrap();
     let log = cell::Diagnostics::default();
     let message =
-        "Could not load workspaces: no valid workspace snapshot. Saved data has been kept.";
+        "Could not load workspaces: expected value at line 1 column 1. Saved data has been kept.";
     log.report("interface::workspaces", message);
     let mut app = App::new();
     app.init_resource::<Assets<Font>>()
@@ -93,10 +93,105 @@ fn workspace_load_error_is_a_startup_toast_and_keeps_saved_data() {
 
 #[cfg_attr(test, test)]
 fn recommendations_distinguish_local_connections_storage_and_desktop_problems() {
+    assert_eq!(
+        recommendation(
+            "interface::workspaces",
+            "Workspace restored with compatible items. Sands: 1 skipped (invalid settings). Saving is enabled."
+        ),
+        "You can keep working. The skipped items remain in the saved original."
+    );
     assert!(recommendation("interface::connection", "Connection closed").contains("this Cell"));
     assert!(recommendation("cell", "No space left on device").contains("disk space"));
     assert!(recommendation("cell", "Permission denied").contains("your account"));
     assert!(recommendation("lince_interface::tray", "Unavailable").contains("keep using Lince"));
+}
+
+#[test]
+fn partial_workspace_recovery_shows_a_notice_keeps_notes_and_saves_across_restart() {
+    use bevy::math::DVec2;
+    use serde_json::json;
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("interface.json");
+    let original = serde_json::to_vec(&json!({
+        "active": 1,
+        "workspaces": crate::workspace::Workspaces::default().entries,
+        "sands": [
+            {
+                "kind": "Square", "workspace": 1, "position": [25, 50], "size": [248, 184],
+                "texts": [{"area": crate::sand_text::SandText::new(false), "text": "Surviving note"}]
+            },
+            {"kind": "RemovedSandKind"}
+        ],
+        "records": []
+    })).unwrap();
+    std::fs::write(&path, &original).unwrap();
+    for restart in [false, true] {
+        let log = cell::Diagnostics::default();
+        let mut app = App::new();
+        crate::laboratory::isolate(app.world_mut());
+        app.init_resource::<Assets<Font>>()
+            .init_resource::<crate::theme::Typography>()
+            .insert_resource(Notifications::new(log.clone()))
+            .insert_resource(crate::workspace::WorkspaceFile::new(path.clone()))
+            .add_plugins((
+                crate::workspace::WorkspacePlugin,
+                crate::edit_mode::EditModePlugin,
+                NotificationsPlugin,
+            ));
+        let root = app.world_mut().spawn(crate::container::BoxRoot).id();
+        app.update();
+        assert!(
+            app.world_mut()
+                .query::<&Text>()
+                .iter(app.world())
+                .any(|text| text.0 == "Surviving note")
+        );
+        assert!(
+            app.world()
+                .get::<crate::workspace::Workspaces>(root)
+                .unwrap()
+                .error
+                .is_none()
+        );
+        if restart {
+            assert!(log.snapshot().1.is_empty());
+            assert!(toasts(&mut app).is_empty());
+            assert!(
+                app.world_mut()
+                    .query::<&Text>()
+                    .iter(app.world())
+                    .any(|text| text.0 == "New note")
+            );
+        } else {
+            assert_eq!(toasts(&mut app).len(), 1);
+            let notices = log.snapshot().1;
+            assert!(notices[0].message.contains("Sands: 1 skipped"));
+            assert!(notices[0].message.contains("Saving is enabled."));
+            assert!(
+                notices[0]
+                    .message
+                    .contains("Original snapshot backed up at")
+            );
+            crate::sand_store::spawn_sand(
+                app.world_mut(),
+                root,
+                1,
+                crate::sand_store::SandKind::Text,
+                "New note",
+                DVec2::ZERO,
+            );
+            app.world_mut().write_message(AppExit::Success);
+            app.update();
+            assert_eq!(app.should_exit(), Some(AppExit::Success));
+        }
+    }
+    assert_eq!(std::fs::read(&path).unwrap(), original);
+    let backups: Vec<_> = std::fs::read_dir(path.with_extension("recovery"))
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .collect();
+    assert_eq!(backups.len(), 1);
+    assert_eq!(std::fs::read(&backups[0]).unwrap(), original);
 }
 
 #[cfg_attr(test, test)]

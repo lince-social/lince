@@ -2,6 +2,7 @@
 
 pub mod authority;
 mod decimal_operand;
+mod karma_rules;
 pub mod read_rules;
 pub mod record_query;
 
@@ -95,6 +96,7 @@ pub enum Source {
     TransferBulkCompletionPreview,
     Auth,
     Karma,
+    KarmaRule,
     Timeline,
     Entry,
     Frequency,
@@ -383,8 +385,9 @@ pub async fn execute_for_with_context(
         Source::Fact => execute_facts(store, protein, visible).await?,
         Source::Timeline => execute_timeline(store, protein, visible).await?,
         Source::Entry => execute_entries(store, protein, visible).await?,
-        Source::Frequency => execute_frequency(store).await?,
+        Source::Frequency => execute_frequency(store, visible).await?,
         Source::Recurrence => execute_recurrence(store, protein, visible).await?,
+        Source::KarmaRule => karma_rules::execute(store, protein, visible).await?,
         Source::Concept => execute_concepts(store, protein).await?,
         Source::Lingua => execute_linguas(store, protein).await?,
         Source::Assertion => execute_assertions(store, protein).await?,
@@ -480,7 +483,7 @@ fn read_permission_keys(source: Source) -> Option<&'static [&'static str]> {
         | Source::Transfer
         | Source::TransferSettlementPreview
         | Source::TransferBulkCompletionPreview => Some(&["transfer:read"]),
-        Source::Frequency | Source::Recurrence => Some(&["frequency:read"]),
+        Source::Frequency | Source::Recurrence | Source::KarmaRule => Some(&["frequency:read"]),
         Source::Karma => Some(&["karma:read"]),
         Source::Decision | Source::Concept | Source::Lingua | Source::Nearby | Source::Auth => None,
     }
@@ -1528,7 +1531,7 @@ async fn execute_records(
             "kind": r.kind,
             "head": r.head,
             "body": r.body,
-            "quantity": r.quantity_f64(),
+            "quantity": r.quantity.to_string(),
             "concept": r.identity_predicate_uid,
             "unit": r.unit_uid,
             "organ": r.organ_uid,
@@ -1758,7 +1761,7 @@ fn record_field_cmp(
         "uid" => left.uid.cmp(&right.uid),
         "slug" => optional(left.slug.clone(), right.slug.clone()),
         "kind" => left.kind.cmp(&right.kind),
-        "quantity" => left.quantity_f64().total_cmp(&right.quantity_f64()),
+        "quantity" => left.quantity.exact_numeric_cmp(right.quantity),
         "concept_name" | "concept" => optional(
             left.identity_predicate_uid
                 .as_ref()
@@ -3024,9 +3027,22 @@ async fn execute_entries(
     Ok(out)
 }
 
-async fn execute_frequency(store: &Store) -> Result<Vec<Value>, ProteinError> {
+async fn execute_frequency(store: &Store, visible: Option<&HashSet<String>>) -> Result<Vec<Value>, ProteinError> {
     let mut rows = Vec::new();
+    let cursors = store::karma::schedules::list_cursors(&store.pool).await?;
     for frequency in store::frequency::all(&store.pool).await? {
+        if visible.is_some_and(|visible| !visible.contains(&frequency.uid)) { continue }
+        let handle = store::karma::frequencies::get_handle(&store.pool, &frequency.uid).await?;
+        let definition = match &handle {
+            Some(handle) => store::karma::frequencies::get_revision(&store.pool, &handle.head_revision_hash).await?,
+            None => None,
+        };
+        let last_run = match handle.as_ref().and_then(|handle| handle.latest_activation_hash.as_ref()) {
+            Some(hash) => store::karma::frequencies::get_activation(&store.pool, hash).await?,
+            None => None,
+        };
+        let cursor = cursors.iter().find(|cursor| handle.as_ref().and_then(|handle| handle.active_activation_hash.as_ref()) == Some(&cursor.activation_hash));
+        let next = cursor.filter(|cursor| matches!(cursor.lifecycle, nucleus::karma::ScheduleCursorLifecycle::Armed | nucleus::karma::ScheduleCursorLifecycle::Leased)).and_then(|cursor| cursor.cursor.next_intended_at());
         rows.push(serde_json::json!({
             "kind": "frequency",
             "uid": frequency.uid,
@@ -3035,6 +3051,19 @@ async fn execute_frequency(store: &Store) -> Result<Vec<Value>, ProteinError> {
             "every": frequency.every,
             "anchor_at": frequency.anchor_at,
             "created_at": frequency.created_at,
+            "next_at_ms": next.map(|next| next.as_millis()),
+            "next_local": cursor.filter(|_| next.is_some()).and_then(|cursor| match &cursor.cursor {
+                store::karma::schedules::StoredScheduleCursor::Calendar { cursor } => Some(cursor.next().requested_local.to_string()),
+                _ => None,
+            }),
+            "handle_revision": handle.as_ref().map(|handle| handle.handle_revision),
+            "head_revision_hash": handle.as_ref().map(|handle| &handle.head_revision_hash),
+            "active_revision_hash": handle.as_ref().and_then(|handle| handle.active_revision_hash.as_ref()),
+            "last_run_revision_hash": last_run.as_ref().map(|activation| activation.epoch.definition_revision_hash()),
+            "last_run_parameters": last_run.as_ref().map(|activation| activation.epoch.effective_parameters()),
+            "definition": definition.as_ref().map(|revision| &revision.frequency),
+            "source": definition.as_ref().map(|revision| &revision.canonical_dsl),
+            "status": handle.map(|handle| handle.status),
         }));
     }
     Ok(rows)

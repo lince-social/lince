@@ -23,6 +23,7 @@ struct Form {
     relations: Vec<(Entity, bool, Vec<Entity>)>,
     logs: Vec<(Entity, Entity, Entity)>,
     additions: Entity,
+    assertions: Entity,
     status: Entity,
     pending: Option<String>,
 }
@@ -34,6 +35,9 @@ pub struct RecordCreationPlugin;
 
 impl Plugin for RecordCreationPlugin {
     fn build(&self, app: &mut App) {
+        if !app.is_plugin_added::<crate::assertion_editor::AssertionEditorPlugin>() {
+            app.add_plugins(crate::assertion_editor::AssertionEditorPlugin);
+        }
         app.init_resource::<search::Searches>()
             .init_resource::<bevy::input_focus::InputFocus>()
             .init_resource::<ButtonInput<KeyCode>>()
@@ -216,27 +220,56 @@ pub fn open(world: &mut World, target: Entity) -> Option<Entity> {
     world.get_mut::<Node>(content).unwrap().min_height = px(0);
     crate::scroll_sand::attach(world, content);
     let mut fields = Vec::new();
+    let title = column(world, content);
+    let identity = column(world, content);
+    {
+        let mut node = world.get_mut::<Node>(identity).unwrap();
+        node.flex_direction = FlexDirection::Row;
+        node.flex_wrap = FlexWrap::Wrap;
+        node.column_gap = px(8);
+    }
+    let assertions = column(world, content);
+    let body = column(world, content);
+    let properties = column(world, content);
     for field in protein::record_schema::fields()
         .into_iter()
         .filter(|field| {
             matches!(
                 field.key,
-                "head"
-                    | "body"
-                    | "slug"
-                    | "quantity_exact"
-                    | "start_date"
-                    | "due_date"
-                    | "estimate_min"
+                "head" | "body" | "slug" | "quantity" | "start_date" | "due_date" | "estimate_min"
             )
         })
     {
-        let entity = input(world, content, field.title, "", field.key == "body");
+        let parent = if matches!(field.key, "slug" | "quantity") {
+            let parent = column(world, identity);
+            let mut node = world.get_mut::<Node>(parent).unwrap();
+            node.width = px(0);
+            node.min_width = px(100);
+            node.flex_grow = 1.0;
+            parent
+        } else {
+            match field.key {
+                "head" => title,
+                "body" => body,
+                _ => properties,
+            }
+        };
+        let entity = input(world, parent, field.title, "", field.key == "body");
         fields.push((field.key, entity));
     }
+    crate::assertion_editor::spawn(
+        world,
+        assertions,
+        crate::protein_area::RecordBinding {
+            area,
+            uid: String::new(),
+            source: Source::Local,
+        },
+        &json!({}),
+        true,
+    );
     let additions = column(world, content);
-    button(world, content, form, "Add assertion", AddRelation(false));
-    button(world, content, form, "Add assignee", AddRelation(true));
+    button(world, content, form, "Add assignee", AddAssignee);
     button(world, content, form, "Add work log", AddLog);
     let status = crate::edit_mode::label(
         world,
@@ -256,6 +289,7 @@ pub fn open(world: &mut World, target: Entity) -> Option<Entity> {
         relations: Vec::new(),
         logs: Vec::new(),
         additions,
+        assertions,
         status,
         pending: None,
     });
@@ -280,6 +314,7 @@ fn collect(world: &World, form: &Form) -> Result<Draft, String> {
         .fields
         .iter()
         .map(|(_, entity)| *entity)
+        .chain(crate::assertion_editor::input(world, form.assertions))
         .chain(
             form.relations
                 .iter()
@@ -301,7 +336,7 @@ fn collect(world: &World, form: &Form) -> Result<Draft, String> {
             "head" => draft.head = value,
             "body" => draft.body = value,
             "slug" => draft.slug = optional(value),
-            "quantity_exact" => {
+            "quantity" => {
                 draft.quantity = if value.trim().is_empty() {
                     "0".into()
                 } else {
@@ -329,7 +364,7 @@ fn collect(world: &World, form: &Form) -> Result<Draft, String> {
             _ => {}
         }
     }
-    draft.assertions.clear();
+    draft.assertions = crate::assertion_editor::draft(world, form.assertions)?;
     for (_, assignee, fields) in &form.relations {
         let values: Vec<_> = fields.iter().map(|field| value(world, *field)).collect();
         if values.iter().all(|value| value.trim().is_empty()) {
@@ -369,8 +404,8 @@ fn collect(world: &World, form: &Form) -> Result<Draft, String> {
 }
 
 #[derive(Clone)]
-struct AddRelation(bool);
-impl Action for AddRelation {
+struct AddAssignee;
+impl Action for AddAssignee {
     fn apply(&self, world: &mut World, entity: Entity) {
         let Some(form) = world.get::<Form>(entity) else {
             return;
@@ -381,24 +416,13 @@ impl Action for AddRelation {
         let parent = form.additions;
         let row = column(world, parent);
         let mut fields = Vec::new();
-        for title in if self.0 {
-            vec!["Assignee (slug or identity)"]
-        } else {
-            vec![
-                "Assertion",
-                "Target (optional)",
-                "Quantity (optional)",
-                "Unit (optional)",
-            ]
-        } {
-            fields.push(input(world, row, title, "", false));
-        }
+        fields.push(input(world, row, "Assignee (slug or identity)", "", false));
         button(world, row, entity, "Remove", Remove(row));
         world
             .get_mut::<Form>(entity)
             .unwrap()
             .relations
-            .push((row, self.0, fields));
+            .push((row, true, fields));
     }
 }
 
@@ -461,6 +485,7 @@ fn freeze(world: &mut World, entity: Entity, frozen: bool) {
         .fields
         .iter()
         .map(|(_, entity)| *entity)
+        .chain(crate::assertion_editor::input(world, form.assertions))
         .chain(
             form.relations
                 .iter()
@@ -740,7 +765,7 @@ mod tests {
             .unwrap();
         let uid = app.world().get::<Form>(entity).unwrap().draft.uid.clone();
         let area = app.world().get::<Form>(entity).unwrap().area;
-        let query: protein::Protein = serde_json::from_value(json!({"source":"record", "where":[{"uid_eq":uid}], "fields":["uid", "head", "quantity_exact"]})).unwrap();
+        let query: protein::Protein = serde_json::from_value(json!({"source":"record", "where":[{"uid_eq":uid}], "fields":["uid", "head", "quantity"]})).unwrap();
         assert!(
             protein::execute(&engine.store, &query)
                 .await
@@ -770,7 +795,7 @@ mod tests {
                 .is_empty()
         );
         fill(app.world_mut(), entity, "slug", "prepared-title");
-        fill(app.world_mut(), entity, "quantity_exact", "3.125");
+        fill(app.world_mut(), entity, "quantity", "3.125");
         Submit.apply(app.world_mut(), entity);
         Submit.apply(app.world_mut(), entity);
         for _ in 0..500 {
@@ -784,7 +809,7 @@ mod tests {
         let rows = protein::execute(&engine.store, &query).await.unwrap();
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0]["head"], "Prepared title");
-        assert_eq!(rows[0]["quantity_exact"], "3.125");
+        assert_eq!(rows[0]["quantity"], "3.125");
         assert!(
             app.world()
                 .get::<crate::area::InfluenceArea>(area)

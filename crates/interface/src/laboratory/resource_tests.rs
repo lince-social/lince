@@ -175,13 +175,13 @@ fn failure_priority_sorting_and_paging_keep_every_sand_reachable() {
         reason: "Missing content".into(),
     });
     let first = snapshot.lines(ResourceSort::Entities, 0);
-    assert!(first[3].starts_with("Sand 0 ["));
-    assert!(first[7].starts_with("Sand 9 ["));
+    assert!(first[4].starts_with("Sand 0 ["));
+    assert!(first[8].starts_with("Sand 9 ["));
     let second = snapshot.lines(ResourceSort::Entities, 1);
-    assert!(second[3].starts_with("Sand 2 ["));
-    assert!(second[7].starts_with("Sand 1 ["));
+    assert!(second[4].starts_with("Sand 2 ["));
+    assert!(second[8].starts_with("Sand 1 ["));
     assert_eq!(snapshot.lines(ResourceSort::Entities, 2), first);
-    assert!(snapshot.lines(ResourceSort::Text, 0)[7].starts_with("Sand 1 ["));
+    assert!(snapshot.lines(ResourceSort::Text, 0)[8].starts_with("Sand 1 ["));
     assert_eq!(snapshot.sands.len(), 10);
 }
 

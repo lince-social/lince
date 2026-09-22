@@ -14,7 +14,7 @@ use {
 
 const MAX_INPUT_BYTES: usize = 1024 * 1024;
 
-pub(crate) struct TerminalHost {
+pub struct TerminalHost {
     sessions: HashMap<String, Arc<TerminalHandle>>,
 }
 
@@ -33,13 +33,13 @@ struct SpawnedTerminal {
 }
 
 impl TerminalHost {
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             sessions: HashMap::new(),
         }
     }
 
-    pub(crate) async fn open(
+    pub async fn open(
         &mut self,
         id: String,
         size: PtySize,
@@ -48,6 +48,11 @@ impl TerminalHost {
     ) -> Result<(), String> {
         if self.sessions.contains_key(&id) {
             return Err(format!("terminal session `{id}` is already open"));
+        }
+        if self.sessions.len() >= 16 {
+            return Err(
+                "Close a terminal before opening another (16 sessions per connection)".into(),
+            );
         }
 
         let spawned = tokio::task::spawn_blocking(move || spawn_terminal(size))
@@ -69,7 +74,10 @@ impl TerminalHost {
         Ok(())
     }
 
-    pub(crate) async fn input(&self, id: &str, data_base64: &str) -> Result<(), String> {
+    pub async fn input(&self, id: &str, data_base64: &str) -> Result<(), String> {
+        if data_base64.len() > MAX_INPUT_BYTES.div_ceil(3) * 4 {
+            return Err("Terminal input is too large".into());
+        }
         let bytes = BASE64
             .decode(data_base64)
             .map_err(|error| format!("invalid terminal input base64: {error}"))?;
@@ -93,7 +101,7 @@ impl TerminalHost {
         .map_err(|error| format!("terminal input task failed: {error}"))?
     }
 
-    pub(crate) async fn resize(&self, id: &str, size: PtySize) -> Result<(), String> {
+    pub async fn resize(&self, id: &str, size: PtySize) -> Result<(), String> {
         let handle = self.handle(id)?;
         tokio::task::spawn_blocking(move || {
             handle
@@ -107,7 +115,7 @@ impl TerminalHost {
         .map_err(|error| format!("terminal resize task failed: {error}"))?
     }
 
-    pub(crate) async fn close(&mut self, id: &str) -> Result<(), String> {
+    pub async fn close(&mut self, id: &str) -> Result<(), String> {
         let handle = self
             .sessions
             .remove(id)
@@ -115,14 +123,14 @@ impl TerminalHost {
         terminate(handle).await
     }
 
-    pub(crate) async fn shutdown(&mut self) {
+    pub async fn shutdown(&mut self) {
         let handles = self.sessions.drain().map(|(_, handle)| handle);
         for handle in handles {
             let _ = terminate(handle).await;
         }
     }
 
-    pub(crate) fn forget(&mut self, id: &str) {
+    pub fn forget(&mut self, id: &str) {
         self.sessions.remove(id);
     }
 
@@ -134,7 +142,21 @@ impl TerminalHost {
     }
 }
 
-pub(crate) fn pty_size(cols: u16, rows: u16, pixel_width: u16, pixel_height: u16) -> PtySize {
+impl Default for TerminalHost {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Drop for TerminalHandle {
+    fn drop(&mut self) {
+        if let Ok(killer) = self.killer.get_mut() {
+            let _ = killer.kill();
+        }
+    }
+}
+
+pub fn pty_size(cols: u16, rows: u16, pixel_width: u16, pixel_height: u16) -> PtySize {
     PtySize {
         rows: rows.max(1),
         cols: cols.max(1),

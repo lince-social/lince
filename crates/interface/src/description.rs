@@ -1,7 +1,10 @@
 mod diagram;
 mod markup;
 mod pictures;
+mod shader;
 pub(crate) mod tests;
+
+pub const SHADER_EXAMPLE: &str = shader::BALL;
 
 use crate::{
     actions::{Action, ActionButton},
@@ -11,7 +14,13 @@ use crate::{
 use bevy::{prelude::*, text::EditableText};
 
 pub const CREDITS: &[crate::credits::Attribution] = &[
+    crate::credits::Attribution {
+        name: "Naga",
+        author: "The gfx-rs developers",
+        license: include_str!("../licenses/naga-MIT.txt"),
+    },
     crate::credits::SYMBOLS,
+    crate::credits::DEJAVU,
     crate::credits::FONTIQUE,
     crate::credits::Attribution {
         name: "reqwest",
@@ -67,10 +76,19 @@ pub struct Description {
     context: Context,
 }
 
-#[derive(Component)]
+#[derive(Component, Clone, Copy)]
 struct Editor {
     input: Entity,
     preview: Entity,
+    panes: Entity,
+    editable: bool,
+}
+
+#[derive(Clone, Copy)]
+pub(crate) enum Mode {
+    Raw,
+    Pretty,
+    Split,
 }
 
 #[derive(Component)]
@@ -79,6 +97,7 @@ pub(crate) struct Rendered;
 pub struct DescriptionPlugin;
 impl Plugin for DescriptionPlugin {
     fn build(&self, app: &mut App) {
+        shader::install(app);
         app.add_systems(Update, (sync_editors, diagram::update, pictures::update));
     }
 }
@@ -103,7 +122,7 @@ pub fn spawn(world: &mut World, parent: Entity, source: &str, context: Context) 
             ChildOf(parent),
         ))
         .id();
-    markup::render(world, entity, source, &context);
+    markup::render(world, entity, source, &context, Vec::new());
     entity
 }
 
@@ -115,14 +134,20 @@ pub fn set(world: &mut World, entity: Entity, source: &str) {
         return;
     }
     let context = description.context.clone();
+    let mut shaders = Vec::new();
     if let Some(children) = world.get::<Children>(entity) {
         let children: Vec<_> = children.iter().collect();
         for child in children {
-            world.despawn(child);
+            if world.get::<shader::Preview>(child).is_some() {
+                world.entity_mut(child).remove::<ChildOf>();
+                shaders.push(child);
+            } else {
+                world.despawn(child);
+            }
         }
     }
     world.get_mut::<Description>(entity).unwrap().source = source.into();
-    markup::render(world, entity, source, &context);
+    markup::render(world, entity, source, &context, shaders);
 }
 
 pub(crate) fn protects(world: &World, mut entity: Entity) -> bool {
@@ -143,13 +168,111 @@ pub(crate) fn attach_editor(world: &mut World, parent: Entity, input: Entity, co
         .unwrap()
         .value()
         .to_string();
-    let preview = spawn(world, parent, &source, context);
-    world.entity_mut(parent).insert(Editor { input, preview });
-    world.get_mut::<Node>(input).unwrap().display = Display::Flex;
+    attach(world, parent, input, &source, context, true);
+}
+
+pub(crate) fn readonly(world: &mut World, parent: Entity, source: &str, context: Context) {
+    let input = crate::edit_mode::label(world, parent, source, 14.0);
+    attach(world, parent, input, source, context, false);
+    set_mode(world, parent, Mode::Pretty);
+}
+
+fn attach(
+    world: &mut World,
+    parent: Entity,
+    input: Entity,
+    source: &str,
+    context: Context,
+    editable: bool,
+) {
+    let controls = world
+        .spawn((
+            Node {
+                column_gap: px(6),
+                flex_shrink: 0.0,
+                ..default()
+            },
+            Rendered,
+            ChildOf(parent),
+        ))
+        .id();
+    for (title, mode) in [
+        ("Raw", Mode::Raw),
+        ("Pretty", Mode::Pretty),
+        ("Side by side", Mode::Split),
+    ] {
+        button(world, controls, parent, title, mode);
+    }
+    let panes = world
+        .spawn((
+            Node {
+                width: percent(100),
+                min_width: px(0),
+                align_items: AlignItems::Start,
+                column_gap: px(12),
+                ..default()
+            },
+            ChildOf(parent),
+        ))
+        .id();
+    world.entity_mut(input).insert(ChildOf(panes));
+    let preview = spawn(world, panes, source, context);
+    world.entity_mut(parent).insert(Editor {
+        input,
+        preview,
+        panes,
+        editable,
+    });
+    if !editable {
+        world.entity_mut(input).insert(Rendered);
+    }
+    set_mode(world, parent, Mode::Split);
+}
+
+pub(crate) fn set_mode(world: &mut World, parent: Entity, mode: Mode) {
+    let Some(editor) = world.get::<Editor>(parent).copied() else {
+        return;
+    };
+    for (entity, visible) in [
+        (editor.input, !matches!(mode, Mode::Pretty)),
+        (editor.preview, !matches!(mode, Mode::Raw)),
+    ] {
+        let mut node = world.get_mut::<Node>(entity).unwrap();
+        node.display = if visible {
+            Display::Flex
+        } else {
+            Display::None
+        };
+        node.width = if matches!(mode, Mode::Split) {
+            px(0)
+        } else {
+            percent(100)
+        };
+        node.min_width = px(0);
+        node.flex_grow = 1.0;
+        node.flex_shrink = 1.0;
+    }
+    world.get_mut::<Node>(editor.panes).unwrap().flex_direction = FlexDirection::Row;
+    if matches!(mode, Mode::Pretty)
+        && let Some(mut focus) = world.get_resource_mut::<bevy::input_focus::InputFocus>()
+        && focus.get() == Some(editor.input)
+    {
+        focus.clear();
+    }
+}
+
+impl Action for Mode {
+    fn apply(&self, world: &mut World, owner: Entity) {
+        set_mode(world, owner, *self);
+    }
 }
 
 pub(crate) fn refresh_readonly(world: &mut World, container: Entity, source: &str) {
-    if world.get::<Editor>(container).is_some() {
+    if let Some(editor) = world.get::<Editor>(container).copied() {
+        if !editor.editable {
+            world.get_mut::<Text>(editor.input).unwrap().0 = source.into();
+            set(world, editor.preview, source);
+        }
         return;
     }
     let preview = world
@@ -168,6 +291,9 @@ fn sync_editors(world: &mut World) {
         .query::<&Editor>()
         .iter(world)
         .filter_map(|editor| {
+            if !editor.editable {
+                return None;
+            }
             let source = world.get::<EditableText>(editor.input)?.value().to_string();
             (world.get::<Description>(editor.preview)?.source != source)
                 .then_some((editor.preview, source))
@@ -207,9 +333,9 @@ pub(crate) fn button(
 }
 
 #[derive(Clone)]
-struct Link {
-    reference: String,
-    context: Context,
+pub(crate) struct Link {
+    pub(crate) reference: String,
+    pub(crate) context: Context,
 }
 impl Action for Link {
     fn apply(&self, world: &mut World, _: Entity) {

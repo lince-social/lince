@@ -1219,7 +1219,7 @@ pub async fn for_subjects(
         .collect::<Vec<_>>()
         .join(",");
     let sql = format!(
-        "SELECT a.uid, a.subject_uid, a.object_uid, a.predicate_uid,
+        "SELECT a.uid, a.subject_uid, a.object_uid, a.predicate_uid, a.role,
                 c.canonical_name AS predicate, a.quantity_mantissa,
                 a.quantity_scale, a.unit_uid
            FROM record_assertion a JOIN concept c ON c.uid = a.predicate_uid
@@ -1242,6 +1242,7 @@ pub async fn for_subjects(
             };
             Ok(ProjectedAssertion {
                 uid: row.get("uid"),
+                role: row.get("role"),
                 subject_uid: row.get("subject_uid"),
                 predicate_uid: row.get("predicate_uid"),
                 predicate: row.get("predicate"),
@@ -1256,6 +1257,7 @@ pub async fn for_subjects(
 #[derive(Debug, Clone, PartialEq)]
 pub struct ProjectedAssertion {
     pub uid: String,
+    pub role: String,
     pub subject_uid: String,
     pub predicate_uid: String,
     pub predicate: String,

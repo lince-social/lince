@@ -2,6 +2,7 @@
 
 pub mod admin_bootstrap;
 pub mod discovery;
+pub mod configuration;
 pub mod fiote;
 pub mod information;
 pub mod sync_runner;
@@ -29,6 +30,7 @@ pub use ::fiote::config::{
     Settings as FioteSettings, Status as FioteStatus, ToolConnection as FioteToolConnection,
 };
 pub use transport::live_client;
+pub use transport::terminal;
 pub use utils::diagnostics::{
     Diagnostics, Journal as DiagnosticJournal, Notice, Subscription as DiagnosticSubscription,
 };

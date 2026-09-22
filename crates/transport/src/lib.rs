@@ -10,8 +10,8 @@ pub mod live_client;
 pub mod protocol;
 pub mod session;
 pub mod sync_events;
-#[cfg(feature = "axum")]
-mod terminal;
+#[cfg(feature = "terminal")]
+pub mod terminal;
 #[cfg(feature = "axum")]
 pub mod ws;
 

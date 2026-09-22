@@ -134,8 +134,11 @@ pub fn synchronize(world: &mut World) {
                 &crate::workspace::WorkspaceMember,
             )>()
             .iter(world)
-            .any(|(entity, _, parent, member)| {
-                parent.parent() == root && member.0 == active && !ready.contains(&entity)
+            .any(|(entity, asset, parent, member)| {
+                parent.parent() == root
+                    && member.0 == active
+                    && !super::splats::is_splat(asset)
+                    && !ready.contains(&entity)
             });
         if loading {
             view.position = before.to_array();

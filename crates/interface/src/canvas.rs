@@ -86,7 +86,7 @@ impl Plugin for CanvasPlugin {
     }
 }
 
-fn project_canvas(
+pub(crate) fn project_canvas(
     views: Query<(
         &CanvasView,
         &ComputedUiRenderTargetInfo,
@@ -106,11 +106,15 @@ fn project_canvas(
     )>,
     parents: Query<&ChildOf>,
     layouts: Query<&crate::layout::LayoutRuntime>,
+    local_views: Query<(), With<crate::castle_feed::Viewport>>,
     mut focus: ResMut<InputFocus>,
 ) {
     for (entity, parent, item, mut node, mut transform, member, pinned, scale, surface, imported) in
         &mut items
     {
+        if local_views.contains(parent.parent()) {
+            continue;
+        }
         if imported.is_some() {
             if node.display != Display::None {
                 node.display = Display::None;
@@ -306,6 +310,7 @@ pub(crate) mod tests {
             camera, image: Handle::default(), visual: item, body: item, face: item,
             size: Vec2::splat(100.0), pixels: UVec2::splat(100), density: 1.0,
             material: Handle::default(), uv: Rect::from_corners(Vec2::ZERO, Vec2::ONE),
+            visible: true,
         });
         app.update();
         let before = app.world().entity(item).get_ref::<Node>().unwrap().last_changed();

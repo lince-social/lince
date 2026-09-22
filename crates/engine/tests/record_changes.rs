@@ -436,6 +436,296 @@ fn request(uid: &str, mutation: Mutation) -> Request {
     }
 }
 
+#[tokio::test]
+async fn numbered_assertions_update_in_place_and_sync_without_changing_other_values() {
+    let (a, ao) = cell().await;
+    let (b, bo) = cell().await;
+    pair(&a, &ao, &b, &bo).await;
+    let uid = record(&a, "Numbered").await;
+    let predicate = store::concepts::ensure(&a.store.pool, "my-number")
+        .await
+        .unwrap();
+    let other = store::concepts::ensure(&a.store.pool, "keep-this")
+        .await
+        .unwrap();
+    let mut assertion_uid = String::new();
+    for predicate in [&predicate, &other] {
+        let result = a
+            .change_record(
+                request(
+                    &uid,
+                    Mutation::Assertion {
+                        predicate: predicate.clone(),
+                        object: None,
+                        quantity: Some("10".into()),
+                        unit: None,
+                    },
+                ),
+                None,
+            )
+            .await
+            .unwrap();
+        if assertion_uid.is_empty() {
+            assertion_uid = result.created.unwrap();
+        }
+    }
+    sync(&a, &b, &bo).await;
+    let change = request(
+        &uid,
+        Mutation::NumberAssertion {
+            predicate: predicate.clone(),
+            position: 1,
+        },
+    );
+    let result = a.change_record(change.clone(), None).await.unwrap();
+    assert_eq!(result.created.as_deref(), Some(assertion_uid.as_str()));
+    assert!(!result.facts.is_empty());
+    assert!(
+        a.change_record(change, None)
+            .await
+            .unwrap()
+            .facts
+            .is_empty()
+    );
+    sync(&a, &b, &bo).await;
+    for engine in [&a, &b] {
+        let assertions = store::assertions::for_subjects(&engine.store.pool, &[uid.clone()])
+            .await
+            .unwrap();
+        assert_eq!(assertions.len(), 2);
+        let numbered = assertions
+            .iter()
+            .find(|assertion| assertion.predicate_uid == predicate)
+            .unwrap();
+        assert_eq!(numbered.uid, assertion_uid);
+        assert_eq!(numbered.quantity.unwrap().to_string(), "1");
+        assert_eq!(
+            assertions
+                .iter()
+                .find(|assertion| assertion.predicate_uid == other)
+                .unwrap()
+                .quantity
+                .unwrap()
+                .to_string(),
+            "10"
+        );
+        assert_eq!(quantity(engine, &uid).await, "5");
+    }
+    let missing = record(&a, "Missing assertion").await;
+    a.change_record(
+        request(
+            &missing,
+            Mutation::NumberAssertion {
+                predicate: predicate.clone(),
+                position: 2,
+            },
+        ),
+        None,
+    )
+    .await
+    .unwrap();
+    assert_eq!(
+        store::assertions::for_subjects(&a.store.pool, &[missing])
+            .await
+            .unwrap()[0]
+            .quantity
+            .unwrap()
+            .to_string(),
+        "2"
+    );
+    assert!(
+        a.change_record(
+            request(
+                &uid,
+                Mutation::NumberAssertion {
+                    predicate,
+                    position: 0
+                }
+            ),
+            None
+        )
+        .await
+        .is_err()
+    );
+}
+
+#[tokio::test]
+async fn numbering_preserves_units_and_identity_assertions() {
+    let (engine, _) = cell().await;
+    let uid = record(&engine, "Units").await;
+    let predicate = store::concepts::ensure(&engine.store.pool, "rank-with-unit")
+        .await
+        .unwrap();
+    let unit = store::concepts::ensure(&engine.store.pool, "hours")
+        .await
+        .unwrap();
+    engine
+        .change_record(
+            request(
+                &uid,
+                Mutation::Assertion {
+                    predicate: predicate.clone(),
+                    object: None,
+                    quantity: Some("10".into()),
+                    unit: Some(unit.clone()),
+                },
+            ),
+            None,
+        )
+        .await
+        .unwrap();
+    assert!(
+        engine
+            .change_record(
+                request(
+                    &uid,
+                    Mutation::NumberAssertion {
+                        predicate: predicate.clone(),
+                        position: 1
+                    }
+                ),
+                None
+            )
+            .await
+            .is_err()
+    );
+    let rows = store::assertions::for_subjects(&engine.store.pool, &[uid.clone()])
+        .await
+        .unwrap();
+    assert_eq!(rows[0].quantity.unwrap().to_string(), "10");
+    assert_eq!(rows[0].unit_uid.as_deref(), Some(unit.as_str()));
+    let identity = store::concepts::ensure(&engine.store.pool, "identity-rank")
+        .await
+        .unwrap();
+    engine
+        .act(
+            Action::SetIdentity {
+                subject: uid.clone(),
+                predicate: Some(identity.clone()),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    assert!(
+        engine
+            .change_record(
+                request(
+                    &uid,
+                    Mutation::NumberAssertion {
+                        predicate: identity.clone(),
+                        position: 1
+                    }
+                ),
+                None
+            )
+            .await
+            .is_err()
+    );
+    let assertions = store::assertions::list_active(&engine.store.pool)
+        .await
+        .unwrap();
+    assert!(assertions.iter().any(|row| row.subject_uid == uid
+        && row.predicate_uid == identity
+        && row.role == "identity"
+        && row.quantity.is_none()));
+    assert!(!assertions.iter().any(|row| row.subject_uid == uid
+        && row.predicate_uid == identity
+        && row.role == "ordinary"));
+}
+
+#[tokio::test]
+async fn numbering_requires_permission_for_the_selected_assertion_and_quantity() {
+    use protein::authority::{
+        AssertionGrant, AssertionProperty, AssertionRole, AssertionTarget, MutationGrant,
+        Operation, Property, RolePolicy,
+    };
+    use std::collections::BTreeSet;
+    let (engine, _) = cell().await;
+    let uid = record(&engine, "Protected rank").await;
+    let person = store::records::create(
+        &engine.store.pool,
+        store::records::NewRecord {
+            slug: None,
+            kind: RecordKind::Person,
+            head: "Editor",
+            body: "",
+            quantity: store::exact::zero(),
+        },
+    )
+    .await
+    .unwrap()
+    .uid;
+    let role = store::auth::ensure_role(&engine.store.pool, "rank-editor")
+        .await
+        .unwrap();
+    store::auth::compare_and_set_role(&engine.store.pool, &person, Some(role), 0)
+        .await
+        .unwrap();
+    for action in ["read", "update"] {
+        let permission = store::auth::ensure_permission(&engine.store.pool, "record", action)
+            .await
+            .unwrap();
+        store::auth::grant(&engine.store.pool, role, permission)
+            .await
+            .unwrap();
+    }
+    let predicate = store::concepts::ensure(&engine.store.pool, "protected-rank")
+        .await
+        .unwrap();
+    let assertion = AssertionGrant {
+        predicate_uid: predicate.clone(),
+        target: AssertionTarget::Unary,
+        role: AssertionRole::Ordinary,
+        properties: BTreeSet::from([AssertionProperty::Quantity]),
+    };
+    let mut policy = RolePolicy {
+        read: protein::Predicate::All(vec![]),
+        grants: vec![MutationGrant {
+            operation: Operation::Update,
+            selector: protein::Predicate::All(vec![]),
+            properties: BTreeSet::from([Property::Head, Property::Body]),
+            assertions_add: vec![assertion.clone()],
+            assertions_remove: vec![assertion],
+        }],
+    };
+    for (revision, allowed) in [false, true, false].into_iter().enumerate() {
+        if allowed {
+            policy.grants[0].assertions_add[0]
+                .properties
+                .insert(AssertionProperty::Quantity);
+        } else {
+            policy.grants[0].assertions_add[0].properties.clear();
+        }
+        store::role_policies::set(
+            &engine.store.pool,
+            role,
+            &serde_json::to_value(&policy).unwrap(),
+            revision as i64,
+        )
+        .await
+        .unwrap();
+        let result = engine
+            .change_record(
+                request(
+                    &uid,
+                    Mutation::NumberAssertion {
+                        predicate: predicate.clone(),
+                        position: (revision + 1) as u32,
+                    },
+                ),
+                Some(&person),
+            )
+            .await;
+        assert_eq!(result.is_ok(), allowed, "{result:?}");
+    }
+    let rows = store::assertions::for_subjects(&engine.store.pool, &[uid])
+        .await
+        .unwrap();
+    assert_eq!(rows.len(), 1);
+    assert_eq!(rows[0].quantity.unwrap().to_string(), "2");
+}
+
 async fn quantity(engine: &Engine, uid: &str) -> String {
     store::records::quantity(&engine.store.pool, uid)
         .await

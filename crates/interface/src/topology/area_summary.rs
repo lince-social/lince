@@ -149,6 +149,14 @@ fn lines(area: &InfluenceArea) -> Vec<String> {
             rows.push(format!("Size × {} · {filter}", area.scale));
         }
     }
+    if let Some(sound) = &area.sound {
+        if !sound.enter.is_empty() {
+            rows.push(format!("Sound on enter · {}", sound.enter));
+        }
+        if !sound.leave.is_empty() {
+            rows.push(format!("Sound on leave · {}", sound.leave));
+        }
+    }
     if rows.is_empty() {
         rows.push("No behaviors".into());
     }

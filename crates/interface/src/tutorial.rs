@@ -331,7 +331,7 @@ fn verify(world: &mut World, root: Entity) -> Result<String, String> {
         if config.source != crate::protein_area::Source::Local {
             return Err("Choose the local Organ for the practice Records.".into());
         }
-        if !["head", "body", "quantity_exact"].iter().all(|key| {
+        if !["head", "body", "quantity"].iter().all(|key| {
             config
                 .bindings
                 .iter()
@@ -427,7 +427,11 @@ fn verify(world: &mut World, root: Entity) -> Result<String, String> {
         || !sands.iter().any(|(_, uid, position, value)| {
             uid == &world.get::<Session>(root).unwrap().records[0]
                 && area.contains(*position) == (step == 3)
-                && value["quantity"].as_f64() == Some(expected)
+                && value["quantity"]
+                    .as_str()
+                    .and_then(|value| value.parse::<f64>().ok())
+                    .or_else(|| value["quantity"].as_f64())
+                    == Some(expected)
         })
     {
         let status = world

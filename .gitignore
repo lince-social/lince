@@ -10,3 +10,8 @@ trash/
 .claude
 .agents/*
 !.agents/skills/
+*.gcloud
+*.glb
+*.glTF
+*.gltf
+assets/3DGS/*

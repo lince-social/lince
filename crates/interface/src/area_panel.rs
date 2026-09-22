@@ -787,7 +787,6 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
         world.entity_mut(root).insert(AreaEditor::default());
     }
     label(world, panel, "Areas", 22.0);
-    crate::workspace_config::controls(world, root, panel);
     label(world, panel, "Add", 14.0);
     let add = row(world, panel);
     for (action, title) in [
@@ -910,6 +909,7 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
     crate::protein_area::controls(world, root, panel, entity);
     crate::protein_area::filter::controls(world, panel, entity);
     crate::area_effects::controls(world, root, panel, entity);
+    crate::sound_area::controls(world, root, panel, entity);
     force_controls(world, root, panel, entity);
     reach_controls(world, root, panel, entity, &area);
     label(world, panel, "Target", 18.0);

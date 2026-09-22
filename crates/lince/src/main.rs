@@ -9,6 +9,7 @@ use utils::desktop_setup::{read_staged_setup, remove_staged_setup};
 use utils::logging::{init, set_quiet};
 
 fn main() -> Result<(), Error> {
+    utils::build_info::set_revision(option_env!("LINCE_REVISION").unwrap_or("unknown"));
     let args = env::args().collect::<Vec<String>>();
     if has_arg(&args, "--fiote-provider") {
         return cell::serve_provider_adapter();

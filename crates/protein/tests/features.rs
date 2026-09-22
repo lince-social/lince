@@ -97,7 +97,7 @@ async fn availability_reflects_active_outgoing_promises() {
     );
     p.include.availability = true;
     let rows = protein::execute(&e.store, &p).await.unwrap();
-    assert_eq!(rows[0]["quantity"], 10.0);
+    assert_eq!(rows[0]["quantity"], "10");
     assert_eq!(rows[0]["available"], 7.0, "10 - 3 reserved");
     assert_eq!(rows[0]["planned"], 7.0, "10 + (-3) agreed/active");
 }

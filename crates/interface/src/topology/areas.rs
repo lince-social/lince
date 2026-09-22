@@ -72,7 +72,7 @@ fn selection(world: &mut World) {
         .insert((Visibility::Visible, transform));
 }
 
-fn mesh(area: &crate::area::InfluenceArea) -> Mesh {
+pub(super) fn mesh(area: &crate::area::InfluenceArea) -> Mesh {
     let outline = area.outline();
     let origin = bevy::math::DVec2::from_array(area.center);
     let mut points = Vec::new();
@@ -93,7 +93,7 @@ fn mesh(area: &crate::area::InfluenceArea) -> Mesh {
         .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, normals)
 }
 
-fn fill_mesh(area: &crate::area::InfluenceArea) -> Mesh {
+pub(super) fn fill_mesh(area: &crate::area::InfluenceArea) -> Mesh {
     let origin = bevy::math::DVec2::from_array(area.center);
     let outline: Vec<_> = area.outline().into_iter().map(|p| p - origin).collect();
     let mut levels: Vec<_> = outline.iter().map(|p| p.y).collect();
@@ -135,9 +135,37 @@ fn fill_color(area: &crate::area::InfluenceArea) -> Color {
     crate::canvas_background::color(area.color).with_alpha(area.opacity)
 }
 
+fn workspace_area(world: &World, entity: Entity) -> bool {
+    world.get::<crate::area::InfluenceArea>(entity).is_some()
+        && world.get::<crate::canvas::CanvasItem>(entity).is_some()
+        && world.get::<ChildOf>(entity).is_some_and(|parent| {
+            world
+                .get::<crate::workspace::Workspaces>(parent.parent())
+                .is_some()
+        })
+}
+
 pub fn update(world: &mut World) {
     if !super::presentation::ready(world) {
         return;
+    }
+    let stale: Vec<_> = world
+        .query::<(Entity, &Volume)>()
+        .iter(world)
+        .filter(|(entity, volume)| {
+            !workspace_area(world, *entity)
+                || world.get_entity(volume.entity).is_err()
+                || world.get_entity(volume.fill).is_err()
+        })
+        .map(|(entity, volume)| (entity, volume.entity, volume.fill))
+        .collect();
+    for (entity, outline, fill) in stale {
+        world.entity_mut(entity).remove::<Volume>();
+        for visual in [outline, fill] {
+            if let Ok(visual) = world.get_entity_mut(visual) {
+                visual.despawn();
+            }
+        }
     }
     selection(world);
     let areas: Vec<_> = world
@@ -148,6 +176,7 @@ pub fn update(world: &mut World) {
             &crate::workspace::WorkspaceMember,
         )>()
         .iter(world)
+        .filter(|(entity, _, _, _)| workspace_area(world, *entity))
         .map(|(e, a, p, m)| (e, a.clone(), p.parent(), m.0))
         .collect();
     for (entity, area, root, workspace) in areas {
@@ -268,6 +297,46 @@ mod tests {
     use bevy::{math::DVec2, mesh::VertexAttributeValues};
 
     #[test]
+    fn shader_castle_feed_does_not_create_workspace_volumes() {
+        let mut world = World::new();
+        world.init_resource::<Assets<Mesh>>();
+        world.init_resource::<Assets<StandardMaterial>>();
+        world.init_resource::<Assets<Image>>();
+        world.init_resource::<Assets<Font>>();
+        world.init_resource::<crate::theme::Typography>();
+        world.spawn(Window::default());
+        let root = world
+            .spawn((
+                crate::workspace::Workspaces::default(),
+                crate::canvas::CanvasView::default(),
+            ))
+            .id();
+        let castle = crate::shader_castle::spawn(&mut world, root, 1, DVec2::ZERO, "");
+        let feed = world.get::<crate::castle_feed::Frame>(castle).unwrap().area;
+        for _ in 0..3 {
+            super::super::presentation::synchronize(&mut world);
+            update(&mut world);
+        }
+        assert!(world.get::<Volume>(feed).is_none());
+        assert!(
+            !world
+                .query::<&super::super::presentation::VisualOwner>()
+                .iter(&world)
+                .any(|owner| owner.0 == feed)
+        );
+        world.despawn(castle);
+        super::super::presentation::synchronize(&mut world);
+        update(&mut world);
+        assert_eq!(
+            world
+                .query::<&super::super::presentation::VisualOwner>()
+                .iter(&world)
+                .count(),
+            0
+        );
+    }
+
+    #[test]
     fn fills_concave_shapes_without_covering_the_notch() {
         let area = InfluenceArea::drawn(&[
             DVec2::new(0.0, 0.0),
@@ -303,6 +372,44 @@ mod tests {
     }
 
     #[test]
+    fn removed_visuals_rebuild_and_nested_areas_release_their_volumes() {
+        let mut world = World::new();
+        world.init_resource::<Assets<Mesh>>();
+        world.init_resource::<Assets<StandardMaterial>>();
+        let root = world.spawn(crate::workspace::Workspaces::default()).id();
+        let entity = world
+            .spawn((
+                InfluenceArea::new(AreaShape::Square, DVec2::ZERO, DVec2::splat(100.0)),
+                crate::canvas::CanvasItem {
+                    position: DVec2::ZERO,
+                    size: Vec2::splat(100.0),
+                },
+                ChildOf(root),
+                crate::workspace::WorkspaceMember(1),
+            ))
+            .id();
+        update(&mut world);
+        let volume = world.get::<Volume>(entity).unwrap();
+        let (outline, fill) = (volume.entity, volume.fill);
+        world.despawn(fill);
+        update(&mut world);
+        assert!(world.get_entity(outline).is_err());
+        let volume = world.get::<Volume>(entity).unwrap();
+        let (outline, fill) = (volume.entity, volume.fill);
+        assert!(world.get_entity(outline).is_ok());
+        assert!(world.get_entity(fill).is_ok());
+        let container = world.spawn(Node::default()).id();
+        world.entity_mut(entity).insert(ChildOf(container));
+        update(&mut world);
+        assert!(world.get::<Volume>(entity).is_none());
+        assert!(world.get_entity(outline).is_err());
+        assert!(world.get_entity(fill).is_err());
+        world.entity_mut(entity).insert(ChildOf(root));
+        update(&mut world);
+        assert!(world.get::<Volume>(entity).is_some());
+    }
+
+    #[test]
     fn fills_remain_visible_in_normal_mode_and_follow_workspace_and_color() {
         let mut world = World::new();
         world.init_resource::<Assets<Mesh>>();
@@ -316,6 +423,10 @@ mod tests {
         let entity = world
             .spawn((
                 area,
+                crate::canvas::CanvasItem {
+                    position: DVec2::ZERO,
+                    size: Vec2::splat(100.0),
+                },
                 ChildOf(root),
                 crate::workspace::WorkspaceMember(workspace),
             ))

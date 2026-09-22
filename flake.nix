@@ -53,6 +53,7 @@
           interfaceLinuxBuildInputs =
             with pkgs;
             lib.optionals stdenv.isLinux [
+              alsa-lib
               libGL
               libdrm
               libgbm

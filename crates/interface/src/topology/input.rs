@@ -6,7 +6,7 @@ use bevy::{
     math::DVec3,
     picking::{
         backend::{HitData, PointerHits},
-        pointer::{Location, PointerAction, PointerId, PointerInput},
+        pointer::{Location, PointerAction, PointerId, PointerInput, PointerLocation},
     },
     prelude::*,
     window::{PrimaryWindow, WindowEvent},
@@ -85,20 +85,38 @@ pub fn pointer(
         &ChildOf,
         &crate::workspace::WorkspaceMember,
     )>,
-    excluded: Query<(), With<crate::inspection::InspectionExcluded>>,
-    hover: Res<bevy::picking::hover::HoverMap>,
+    splats: Query<
+        (
+            Entity,
+            &super::assets::Bounds,
+            &GlobalTransform,
+            &ChildOf,
+            &crate::workspace::WorkspaceMember,
+        ),
+        (With<super::splats::SplatHandle>, With<super::assets::Ready>),
+    >,
+    (excluded, hover): (
+        Query<(), With<crate::inspection::InspectionExcluded>>,
+        Res<bevy::picking::hover::HoverMap>,
+    ),
     mut raycast: MeshRayCast,
     mut state: ResMut<PointerState>,
-    mut inputs: MessageWriter<PointerInput>,
+    (mut inputs, mut pointers): (
+        MessageWriter<PointerInput>,
+        Query<(&PointerId, &mut PointerLocation)>,
+    ),
     mut hits: MessageWriter<PointerHits>,
 ) {
     let Some(camera_id) = camera.map(|c| c.0) else {
+        cancel_cursor(&mut state, &mut inputs, &mut pointers);
         return;
     };
     let Ok((camera, camera_transform)) = cameras.get(camera_id) else {
+        cancel_cursor(&mut state, &mut inputs, &mut pointers);
         return;
     };
     let Ok((_, window)) = windows.single() else {
+        cancel_cursor(&mut state, &mut inputs, &mut pointers);
         return;
     };
     let Some(position) = window.cursor_position() else {
@@ -108,20 +126,16 @@ pub fn pointer(
         state.pending_drag = None;
         state.pan = None;
         state.zoom = None;
-        if let Some(location) = state.cursor.take() {
-            inputs.write(PointerInput::new(
-                CONTENT_POINTER,
-                location,
-                PointerAction::Cancel,
-            ));
-        }
+        cancel_cursor(&mut state, &mut inputs, &mut pointers);
         events.clear();
         return;
     };
     let Some((root, mode, canvas, spaces)) = roots.iter().next() else {
+        cancel_cursor(&mut state, &mut inputs, &mut pointers);
         return;
     };
     let Ok(ray) = camera.viewport_to_world(camera_transform, position) else {
+        cancel_cursor(&mut state, &mut inputs, &mut pointers);
         return;
     };
     let overlay = hover
@@ -148,6 +162,23 @@ pub fn pointer(
     if !overlay {
         let render_origin = DVec3::new(canvas.center.x, 0.0, canvas.center.y);
         let mut nearest = f64::MAX;
+        if mode.enabled {
+            for (entity, bounds, transform, parent, member) in &splats {
+                if parent.parent() != root || member.0 != spaces.active {
+                    continue;
+                }
+                let inverse = transform.affine().inverse();
+                if let Some(distance) = super::splats::ray_distance(
+                    bounds,
+                    inverse.transform_point3(ray.origin),
+                    inverse.transform_vector3(*ray.direction),
+                ) && f64::from(distance) < nearest
+                {
+                    nearest = f64::from(distance);
+                    hit_owner = Some((entity, ray.get_point(distance)));
+                }
+            }
+        }
         for (entity, shape, item, placement, parent, member) in &assets {
             if parent.parent() != root || member.0 != spaces.active {
                 continue;
@@ -252,12 +283,8 @@ pub fn pointer(
         ));
         state.last = location.position;
         state.cursor = Some(location);
-    } else if let Some(location) = state.cursor.take() {
-        inputs.write(PointerInput::new(
-            CONTENT_POINTER,
-            location,
-            PointerAction::Cancel,
-        ));
+    } else {
+        cancel_cursor(&mut state, &mut inputs, &mut pointers);
     }
     for event in events.read() {
         if matches!(event, WindowEvent::MouseButtonInput(_))
@@ -294,6 +321,25 @@ pub fn pointer(
                 ButtonState::Released => PointerAction::Release(button),
             };
             inputs.write(PointerInput::new(CONTENT_POINTER, location.clone(), action));
+        }
+    }
+}
+
+fn cancel_cursor(
+    state: &mut PointerState,
+    inputs: &mut MessageWriter<PointerInput>,
+    pointers: &mut Query<(&PointerId, &mut PointerLocation)>,
+) {
+    if let Some(location) = state.cursor.take() {
+        inputs.write(PointerInput::new(
+            CONTENT_POINTER,
+            location,
+            PointerAction::Cancel,
+        ));
+    }
+    for (id, mut pointer) in pointers {
+        if *id == CONTENT_POINTER && pointer.location.is_some() {
+            pointer.location = None;
         }
     }
 }
@@ -585,6 +631,58 @@ fn editing_text(world: &World) -> bool {
 pub(crate) mod tests {
     use super::*;
     use crate::canvas::CanvasView;
+
+    #[test]
+    fn cancelling_the_content_pointer_releases_its_last_surface_image() {
+        let mut app = App::new();
+        app.init_resource::<PointerState>()
+            .init_resource::<Assets<Image>>()
+            .add_message::<PointerInput>()
+            .add_systems(
+                Update,
+                |mut state: ResMut<PointerState>,
+                 mut inputs: MessageWriter<PointerInput>,
+                 mut pointers: Query<(&PointerId, &mut PointerLocation)>| {
+                    cancel_cursor(&mut state, &mut inputs, &mut pointers);
+                },
+            );
+        let image = app
+            .world_mut()
+            .resource_mut::<Assets<Image>>()
+            .add(Image::default());
+        let Handle::Strong(handle) = &image else {
+            unreachable!()
+        };
+        let retained = std::sync::Arc::downgrade(handle);
+        let location = Location {
+            target: bevy::camera::NormalizedRenderTarget::Image(image.into()),
+            position: Vec2::ZERO,
+        };
+        app.world_mut().resource_mut::<PointerState>().cursor = Some(location.clone());
+        let pointer = app
+            .world_mut()
+            .spawn((CONTENT_POINTER, PointerLocation::new(location)))
+            .id();
+        app.update();
+        assert!(app.world().resource::<PointerState>().cursor.is_none());
+        assert!(
+            app.world()
+                .get::<PointerLocation>(pointer)
+                .unwrap()
+                .location
+                .is_none()
+        );
+        let events = app.world().resource::<Messages<PointerInput>>();
+        assert!(
+            events
+                .iter_current_update_messages()
+                .any(|event| matches!(event.action, PointerAction::Cancel))
+        );
+        app.world_mut()
+            .resource_mut::<Messages<PointerInput>>()
+            .clear();
+        assert!(retained.upgrade().is_none());
+    }
 
     #[test]
     fn right_drag_moves_sands_and_areas_in_normal_edit_and_spatial_views() {

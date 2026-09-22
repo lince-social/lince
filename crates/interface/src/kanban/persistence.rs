@@ -11,6 +11,10 @@ pub(crate) struct SavedKanban {
 }
 
 impl SavedKanban {
+    pub(crate) fn areas(&self) -> impl Iterator<Item = &String> {
+        self.board.ids()
+    }
+
     pub(crate) fn valid(&self) -> bool {
         self.board.valid()
             && DVec2::from_array(self.position).is_finite()

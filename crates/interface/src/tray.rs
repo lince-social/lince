@@ -303,7 +303,6 @@ fn start_platform(world: &mut World, sender: TraySender) {
         let icon =
             tray_icon::Icon::from_rgba(icon.clone().into_raw(), icon.width(), icon.height())?;
         let tray = tray_icon::TrayIconBuilder::new()
-            .with_tooltip("Lince")
             .with_icon(icon)
             .with_menu(Box::new(menu.clone()))
             .build()?;

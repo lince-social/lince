@@ -114,7 +114,9 @@ impl Plugin for KanbanPlugin {
             .add_message::<CellMessage>()
             .add_systems(
                 Update,
-                update.after(crate::protein_area::UpdateProteinAreas),
+                update
+                    .after(crate::protein_area::UpdateProteinAreas)
+                    .before(crate::physics::SimulateWorkspaces),
             )
             .add_systems(PostUpdate, receive.after(crate::cell_bridge::ReceiveCell));
     }
@@ -806,21 +808,31 @@ fn maintain(world: &mut World, owner: Entity, board: &Kanban) {
             world.entity_mut(entity).remove::<HeldMembership>();
         }
         let uid = properties["uid"].as_str().unwrap_or_default();
-        let matching: Vec<_> = orders
+        let matching: Vec<_> = columns
             .iter()
             .enumerate()
-            .filter(|(index, ids)| {
-                ids.as_ref()
-                    .is_some_and(|ids| ids.iter().any(|id| id == uid))
-                    && columns[*index]
-                        .and_then(|column| world.get::<InfluenceArea>(column))
-                        .is_some_and(|area| state_matches(&properties, &area.changes.enter))
+            .filter(|(_, column)| {
+                column.is_some_and(|column| {
+                    let area = world.get::<InfluenceArea>(column).unwrap();
+                    let record = world.get::<RecordProperties>(entity).unwrap();
+                    area.enabled
+                        && area.attraction_enabled
+                        && if area.filter.is_some() {
+                            world
+                                .get::<crate::protein_area::filter::Matches>(column)
+                                .is_some_and(|matches| {
+                                    matches.allows(record, world.get::<RecordBinding>(entity))
+                                })
+                        } else {
+                            area.matches(record)
+                        }
+                })
             })
             .map(|(index, _)| index)
             .collect();
         let index = (matching.len() == 1).then(|| matching[0]);
         let column = index.and_then(|i| columns[i]);
-        let quantity = properties["quantity_exact"].to_string();
+        let quantity = properties["quantity"].to_string();
         let old = world.get::<Card>(entity);
         let returned = released
             && column.is_some_and(|column| {
@@ -869,37 +881,9 @@ pub fn status(world: &World, owner: Entity) -> &str {
         })
 }
 
-fn state_matches(
-    data: &serde_json::Value,
-    changes: &engine::area_transition::RecordChanges,
-) -> bool {
-    let has = |name: &String| {
-        data["assertions"].as_array().is_some_and(|assertions| {
-            assertions.iter().any(|assertion| {
-                assertion["object"].is_null()
-                    && (assertion["predicate"].as_str() == Some(name.as_str())
-                        || assertion["predicate_uid"].as_str() == Some(name.as_str()))
-            })
-        })
-    };
-    let quantity = changes
-        .quantity
-        .as_ref()
-        .and_then(|value| engine::area_transition::QuantityOperation::parse(value));
-    changes.assert.iter().all(has)
-        && !changes.retract.iter().any(has)
-        && quantity.is_none_or(|(operation, expected)| {
-            operation != engine::area_transition::QuantityOperation::Set
-                || data["quantity_exact"]
-                    .as_str()
-                    .and_then(|value| nucleus::DecimalValue::parse_inferred(value).ok())
-                    .is_some_and(|actual| actual.exact_numeric_cmp(expected).is_eq())
-        })
-}
-
 #[cfg(test)]
 fn column_index(data: &serde_json::Value) -> Option<usize> {
-    let quantity = data["quantity_exact"]
+    let quantity = data["quantity"]
         .as_str()
         .and_then(|s| s.parse::<f64>().ok())
         .or_else(|| data["quantity"].as_f64())?;

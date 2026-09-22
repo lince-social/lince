@@ -22,6 +22,7 @@ pub mod reference;
 pub mod replay;
 pub mod schedule;
 pub mod simple_frequency;
+pub mod rule_field;
 pub mod state;
 pub mod time;
 pub mod timezone_artifact;

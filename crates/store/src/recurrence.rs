@@ -204,6 +204,15 @@ pub async fn create(
     input: NewRecurrence<'_>,
     now: DateTime<Utc>,
 ) -> Result<RecurrenceCommit, StoreError> {
+    create_identified(pool, input, None, now).await
+}
+
+pub async fn create_identified(
+    pool: &SqlitePool,
+    input: NewRecurrence<'_>,
+    uid: Option<&str>,
+    now: DateTime<Utc>,
+) -> Result<RecurrenceCommit, StoreError> {
     if input.request_id.trim().is_empty() {
         return Err(protocol("a recurring rule needs a request id"));
     }
@@ -212,10 +221,13 @@ pub async fn create(
         .validate()
         .map_err(|error| protocol(&error.to_string()))?;
     if let Some(existing) = replayed(pool, input.request_id).await? {
+        if uid.is_some_and(|uid| uid != existing.uid) {
+            return Err(protocol("rule import request belongs to another uid"));
+        }
         return Ok(RecurrenceCommit::Replayed(existing));
     }
 
-    let uid = nucleus::new_uid("rec");
+    let uid = uid.map(str::to_owned).unwrap_or_else(|| nucleus::new_uid("rec"));
     let at = instant(now);
     let anchor_at = instant(
         DateTime::from_timestamp_millis(input.anchor_at.timestamp_millis())
@@ -270,6 +282,7 @@ pub async fn create(
         },
     )
     .await?;
+    crate::karma_fields::replace_inline(&mut tx, &uid).await?;
     tx.commit().await?;
 
     get(pool, &uid)
@@ -366,6 +379,7 @@ pub async fn revise(
         },
     )
     .await?;
+    crate::karma_fields::replace_inline(&mut tx, input.recurrence_uid).await?;
     tx.commit().await?;
 
     get(pool, input.recurrence_uid)

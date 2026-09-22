@@ -1,13 +1,20 @@
 use std::env::consts::{ARCH, OS};
 use std::path::PathBuf;
+use std::sync::OnceLock;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
+static REVISION: OnceLock<&'static str> = OnceLock::new();
+
+pub fn set_revision(value: &'static str) {
+    let value = value.trim();
+    if !value.is_empty() {
+        let _ = REVISION.set(value);
+    }
+}
+
 pub fn revision() -> &'static str {
-    option_env!("LINCE_REVISION")
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-        .unwrap_or("unknown")
+    REVISION.get().copied().unwrap_or("unknown")
 }
 
 pub fn revision_is_stamped() -> bool {
@@ -151,10 +158,7 @@ mod tests {
     }
 
     #[test]
-    fn revision_reflects_the_build_env() {
-        match option_env!("LINCE_REVISION") {
-            Some(value) if !value.trim().is_empty() => assert_eq!(revision(), value.trim()),
-            _ => assert_eq!(revision(), "unknown"),
-        }
+    fn revision_defaults_to_unknown() {
+        assert_eq!(revision(), "unknown");
     }
 }

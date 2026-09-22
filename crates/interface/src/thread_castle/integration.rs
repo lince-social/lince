@@ -6,7 +6,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-async fn setup(
+pub(super) async fn setup(
     live: bool,
 ) -> (
     App,
@@ -109,7 +109,7 @@ async fn setup(
     (app, engine, host, root, record)
 }
 
-async fn pump(app: &mut App, ready: impl Fn(&mut World) -> bool) {
+pub(super) async fn pump(app: &mut App, ready: impl Fn(&mut World) -> bool) {
     let deadline = Instant::now() + Duration::from_secs(180);
     loop {
         let world = app.world_mut();
@@ -142,7 +142,7 @@ async fn pump(app: &mut App, ready: impl Fn(&mut World) -> bool) {
     }
 }
 
-fn composer(world: &mut World) -> Option<(Entity, Entity, String)> {
+pub(super) fn composer(world: &mut World) -> Option<(Entity, Entity, String)> {
     let castle = world.query::<&ThreadCastle>().iter(world).next()?;
     let thread = castle.active.clone()?;
     world

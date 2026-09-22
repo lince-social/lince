@@ -11,6 +11,7 @@ pub(crate) use persistence::{SavedInstinct, snapshot};
 
 pub const CREDITS: &[crate::credits::Attribution] = &[
     crate::credits::SYMBOLS,
+    crate::credits::DEJAVU,
     crate::credits::FONTIQUE,
     crate::credits::Attribution {
         name: "pulldown-cmark",

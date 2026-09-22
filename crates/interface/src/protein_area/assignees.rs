@@ -763,7 +763,7 @@ mod tests {
             .find(|(_, _, parent)| {
                 app.world()
                     .get::<rows::PropertyContainer>(parent.parent())
-                    .is_some_and(|property| property.0 == "quantity_exact")
+                    .is_some_and(|property| property.0 == "quantity")
             })
             .map(|(entity, _, _)| entity)
             .unwrap();
@@ -777,7 +777,7 @@ mod tests {
                 .editor
                 .set_text(value);
             super::super::tests::until(&mut app, |world| {
-                world.resource::<Runtime>().areas[&owner].data[0]["quantity_exact"] == value
+                world.resource::<Runtime>().areas[&owner].data[0]["quantity"] == value
             })
             .await;
         }
@@ -793,7 +793,7 @@ mod tests {
                 .resource_mut::<ButtonInput<KeyCode>>()
                 .reset_all();
             super::super::tests::until(&mut app, |world| {
-                world.resource::<Runtime>().areas[&owner].data[0]["quantity_exact"] == expected
+                world.resource::<Runtime>().areas[&owner].data[0]["quantity"] == expected
             })
             .await;
         }

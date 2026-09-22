@@ -17,7 +17,10 @@ impl FromWorld for Typography {
             include_bytes!("../../../assets/fonts/NotoSansSymbols2/NotoSansSymbols2-Regular.ttf")
                 .to_vec(),
         ));
-        world.insert_resource(SymbolFont(symbols));
+        let arrows = world.resource_mut::<Assets<Font>>().add(Font::from_bytes(
+            include_bytes!("../../../assets/fonts/DejaVuSans/DejaVuSans.ttf").to_vec(),
+        ));
+        world.insert_resource(SymbolFont([symbols, arrows]));
         Self(world.resource_mut::<Assets<Font>>().add(Font::from_bytes(
             include_bytes!("../../../assets/fonts/Lato/Lato-Regular.ttf").to_vec(),
         )))
@@ -35,14 +38,14 @@ impl Typography {
 }
 
 #[derive(Resource)]
-struct SymbolFont(Handle<Font>);
+struct SymbolFont([Handle<Font>; 2]);
 
 fn symbol_fallbacks(
     mut fonts: Option<ResMut<bevy::text::FontCx>>,
     symbols: Res<SymbolFont>,
     assets: Res<Assets<Font>>,
 ) {
-    if assets.get(&symbols.0).is_none() {
+    if symbols.0.iter().any(|font| assets.get(font).is_none()) {
         return;
     }
     let Some(fonts) = fonts.as_mut() else { return };
@@ -50,17 +53,19 @@ fn symbol_fallbacks(
 }
 
 fn configure_fallbacks(fonts: &mut bevy::text::FontCx) {
-    let Some(id) = fonts.collection.family_id("Noto Sans Symbols2") else {
-        return;
-    };
-    for tag in [*b"Latn", *b"Zyyy", *b"Zinh", *b"Hani"] {
-        let script = fontique::Script::from_bytes(tag);
-        if !fonts
-            .collection
-            .fallback_families(script)
-            .any(|family| family == id)
-        {
-            fonts.collection.append_fallbacks(script, [id].into_iter());
+    for family in ["Noto Sans Symbols2", "DejaVu Sans"] {
+        let Some(id) = fonts.collection.family_id(family) else {
+            continue;
+        };
+        for tag in [*b"Latn", *b"Zyyy", *b"Zinh", *b"Hani"] {
+            let script = fontique::Script::from_bytes(tag);
+            if !fonts
+                .collection
+                .fallback_families(script)
+                .any(|family| family == id)
+            {
+                fonts.collection.append_fallbacks(script, [id].into_iter());
+            }
         }
     }
 }
@@ -101,6 +106,7 @@ mod tests {
             });
             for bytes in [
                 include_bytes!("../../../assets/fonts/Lato/Lato-Regular.ttf").as_slice(),
+                include_bytes!("../../../assets/fonts/DejaVuSans/DejaVuSans.ttf").as_slice(),
                 include_bytes!(
                     "../../../assets/fonts/NotoSansSymbols2/NotoSansSymbols2-Regular.ttf"
                 )
@@ -113,7 +119,9 @@ mod tests {
             configure_fallbacks(&mut fonts);
             configure_fallbacks(&mut fonts);
             let mut layout = bevy::text::LayoutCx::default();
-            for symbol in ["▾", "▦", "✓", "○", "☐", "☑"] {
+            for symbol in [
+                "▾", "▴", "▦", "✓", "○", "☐", "☑", "←", "→", "↑", "↓", "↕", "⌃", "⌄", "│", "─",
+            ] {
                 let mut text = bevy::text::EditableText::new(symbol);
                 let shaped = text.editor.layout(&mut fonts.context, &mut layout.0);
                 let mut count = 0;

@@ -198,7 +198,7 @@ pub(super) fn content(
                 ),
             ))
             .id();
-        if property.square {
+        if property.square && !(config.record_cards && property.property == "head") {
             world
                 .entity_mut(container)
                 .insert((Square, crate::token_style::background(Token::Surface)));
@@ -238,7 +238,11 @@ pub(super) fn content(
             super::assignees::field(world, container, binding.clone().unwrap(), data);
             continue;
         }
-        if editable && matches!(property.property.as_str(), "assertions" | "work_logs") {
+        if editable && property.property == "assertions" {
+            crate::assertion_editor::spawn(world, container, binding.clone().unwrap(), data, false);
+            continue;
+        }
+        if editable && property.property == "work_logs" {
             property_actions::spawn(
                 world,
                 container,
@@ -250,7 +254,7 @@ pub(super) fn content(
             continue;
         }
         if property.property == "body" && !editable {
-            crate::description::spawn(
+            crate::description::readonly(
                 world,
                 container,
                 &text,
@@ -349,7 +353,10 @@ pub(super) fn content(
                 measuring: false,
             });
         }
-        if property.property == "body" && editable && !config.record_cards {
+        if property.property == "body" && editable {
+            world.entity_mut(text_entity).remove::<EditorSize>();
+            let font = world.resource::<crate::theme::Typography>().text(14.0);
+            world.entity_mut(text_entity).insert(font);
             crate::description::attach_editor(
                 world,
                 container,
@@ -359,6 +366,15 @@ pub(super) fn content(
                     source: binding.as_ref().unwrap().source.clone(),
                 },
             );
+            let shader_castle = binding.as_ref().is_some_and(|binding| {
+                world.get::<crate::shader_castle::ShaderFeed>(binding.area).is_some()
+            });
+            if shader_castle {
+                world.get_mut::<Node>(text_entity).unwrap().height = px(480);
+            } else if config.record_cards {
+                crate::description::set_mode(world, container, crate::description::Mode::Pretty);
+                world.get_mut::<Node>(text_entity).unwrap().height = px(280);
+            }
         }
         if editable && !matches!(property.property.as_str(), "head" | "body") {
             if matches!(property.property.as_str(), "start_date" | "due_date") {
@@ -413,7 +429,9 @@ impl Action for Delete {
 }
 
 pub(super) fn reconcile(world: &mut World, owner: Entity) {
-    if world.get::<filter::Subscription>(owner).is_some() {
+    if world.get::<filter::Subscription>(owner).is_some()
+        || world.get::<crate::assertion_castle::AssertionFeed>(owner).is_some()
+    {
         return;
     }
     let Some(mut state) = world.resource_mut::<Runtime>().areas.remove(&owner) else {
@@ -535,14 +553,7 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
             } else {
                 refresh(world, entity, &data);
             }
-            let mut properties = data.clone();
-            if let Some(quantity) = data["quantity_exact"]
-                .as_str()
-                .and_then(|value| value.parse::<f64>().ok())
-                .filter(|value| value.is_finite())
-            {
-                properties["quantity"] = serde_json::json!(quantity);
-            }
+            let properties = data.clone();
             world.entity_mut(entity).insert((
                 Row {
                     area: owner,
@@ -586,6 +597,7 @@ fn refresh(world: &mut World, row: Entity, data: &Value) {
             continue;
         }
         if super::assignees::refresh(world, container, data)
+            || crate::assertion_editor::refresh(world, container, data)
             || property_actions::refresh(world, container, data)
         {
             continue;
@@ -639,6 +651,12 @@ fn refresh(world: &mut World, row: Entity, data: &Value) {
 }
 
 pub(super) fn action_finished(world: &mut World, entity: Entity, error: Option<String>) {
+    if crate::assertion_editor::finished(world, entity, error.clone()) {
+        return;
+    }
+    if crate::assertion_castle::finished(world, entity, error.clone()) {
+        return;
+    }
     if super::assignees::finished(world, entity, error.clone()) {
         return;
     }
@@ -738,7 +756,7 @@ pub(super) fn save_field(world: &mut World, entity: Entity) {
         "slug" => engine::record_change::Mutation::Slug {
             value: (!value.trim().is_empty()).then(|| value.trim().to_owned()),
         },
-        "quantity_exact" => engine::record_change::Mutation::Quantity { value },
+        "quantity" => engine::record_change::Mutation::Quantity { value },
         "start_date" | "due_date" | "estimate_min" => {
             let field = match property.as_str() {
                 "start_date" => engine::record_change::WorkField::Start,
@@ -945,6 +963,9 @@ pub(super) fn layout(world: &mut World) {
 }
 
 pub(super) fn place(world: &mut World, entity: Entity, position: DVec2, size: Vec2) {
+    if crate::castle_feed::place(world, entity, size) {
+        return;
+    }
     if let Some(row) = world.get::<Row>(entity) {
         let owner = row.area;
         let config = row.config.clone();

@@ -22,6 +22,12 @@ pub fn run_native_interface(
     let close_suspends =
         tokio::runtime::Handle::current().block_on(runtime.interface_close_suspends())?;
     let mut app = interface_app_at(data_dir.join("interface-assets"));
+    app.insert_resource(crate::sound::Audio::open(
+        data_dir.to_path_buf(),
+        app.world()
+            .get_resource::<crate::wake::WakeSignal>()
+            .cloned(),
+    ));
     app.insert_resource(CellHandle(runtime)).add_plugins((
         crate::cell_bridge::CellBridgePlugin,
         crate::tray::TrayPlugin,
@@ -73,6 +79,11 @@ fn interface_app_at(directory: std::path::PathBuf) -> App {
             .build()
             .disable::<LogPlugin>()
             .set(RenderPlugin {
+                render_creation: bevy::render::settings::WgpuSettings {
+                    memory_hints: bevy::render::settings::MemoryHints::MemoryUsage,
+                    ..default()
+                }
+                .into(),
                 synchronous_pipeline_compilation: true,
                 ..default()
             })
@@ -87,6 +98,7 @@ fn interface_app_at(directory: std::path::PathBuf) -> App {
                 ..default()
             }),
     )
+    .add_plugins(crate::topology::splats::SplatPlugin)
     .add_plugins((
         TabNavigationPlugin,
         ThemePlugin,
@@ -122,7 +134,22 @@ fn interface_app_at(directory: std::path::PathBuf) -> App {
         crate::thread_castle::ThreadCastlePlugin,
         crate::tutorial::TutorialPlugin,
     ))
+    .add_plugins(crate::karma_castle::KarmaCastlePlugin)
+    .add_plugins(crate::sound::SoundPlugin)
+    .add_plugins(crate::sound_area::SoundAreaPlugin)
+    .add_plugins(crate::recorder_castle::RecorderCastlePlugin)
+    .add_plugins(crate::frequency_castle::FrequencyCastlePlugin)
+    .add_plugins(crate::transfer_castle::TransferCastlePlugin)
+    .add_plugins(crate::castle_feed::FeedPlugin)
+    .add_plugins(crate::assertion_castle::AssertionCastlePlugin)
+    .add_plugins(crate::shader_castle::ShaderCastlePlugin)
     .add_plugins(crate::fiote::session::Plugin)
+    .add_plugins((
+        crate::freedoom::FreedoomPlugin,
+        crate::terminal::TerminalPlugin,
+        crate::configuration::ConfigurationPlugin,
+        crate::todo::TodoPlugin,
+    ))
     .insert_resource(idle_settings())
     .add_systems(Startup, camera);
     let wake = crate::wake::WakeSignal::from_proxy(
@@ -186,10 +213,14 @@ mod tests {
         app.add_message::<crate::cell_bridge::CellMessage>();
         app.update();
         app.world_mut()
-            .write_message(crate::cell_bridge::CellMessage(cell::ServerMessage::Snapshot {
-                id: crate::cell_bridge::RECORDS.into(),
-                rows: vec![serde_json::json!({"uid":"record-a", "head":"Apple", "slug":"apple"})],
-            }));
+            .write_message(crate::cell_bridge::CellMessage(
+                cell::ServerMessage::Snapshot {
+                    id: crate::cell_bridge::RECORDS.into(),
+                    rows: vec![
+                        serde_json::json!({"uid":"record-a", "head":"Apple", "slug":"apple"}),
+                    ],
+                },
+            ));
         app.update();
         assert_eq!(
             app.world_mut()

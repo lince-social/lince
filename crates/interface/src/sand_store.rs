@@ -18,10 +18,14 @@ pub enum SandKind {
     WorkTimer,
     AccessControl,
     Sync,
+    Freedoom,
+    Terminal,
+    Configuration,
+    Todo,
 }
 
 impl SandKind {
-    pub const ALL: [Self; 7] = [
+    pub const ALL: [Self; 11] = [
         Self::Square,
         Self::Text,
         Self::EditableText,
@@ -29,6 +33,10 @@ impl SandKind {
         Self::WorkTimer,
         Self::AccessControl,
         Self::Sync,
+        Self::Freedoom,
+        Self::Terminal,
+        Self::Configuration,
+        Self::Todo,
     ];
     pub fn name(self) -> &'static str {
         match self {
@@ -39,6 +47,10 @@ impl SandKind {
             Self::WorkTimer => "Time Castle",
             Self::AccessControl => "Access Control",
             Self::Sync => "Sync",
+            Self::Freedoom => "Freedoom",
+            Self::Terminal => "Terminal",
+            Self::Configuration => "Configuration",
+            Self::Todo => "Todo",
         }
     }
     pub fn description(self) -> &'static str {
@@ -50,6 +62,10 @@ impl SandKind {
             Self::WorkTimer => "A standalone stopwatch or a Record’s editable work log.",
             Self::AccessControl => "Manage local users, Roles and permissions.",
             Self::Sync => "Sync a Protein to a directory as .lingua or Markdown.",
+            Self::Freedoom => "Play Freedoom locally with keyboard controls.",
+            Self::Terminal => "A local shell powered by libghostty.",
+            Self::Configuration => "Cell identity, discovery, storage, and contacts.",
+            Self::Todo => "A live task queue with completion, undo, and saved Proteins.",
         }
     }
 }
@@ -146,7 +162,11 @@ pub(crate) fn entry(
         | SandKind::Operation
         | SandKind::WorkTimer
         | SandKind::AccessControl
-        | SandKind::Sync => crate::tokens::SandStyleKind::Square,
+        | SandKind::Sync
+        | SandKind::Freedoom
+        | SandKind::Terminal
+        | SandKind::Configuration
+        | SandKind::Todo => crate::tokens::SandStyleKind::Square,
         SandKind::Text => crate::tokens::SandStyleKind::Text,
         SandKind::EditableText => crate::tokens::SandStyleKind::EditableText,
     };
@@ -169,15 +189,23 @@ pub(crate) fn entry(
         .number();
     let size = existing
         .and_then(|(entity, _)| world.get::<CanvasItem>(entity).map(|item| item.size))
-        .unwrap_or(
-            if kind == SandKind::Operation {
-                crate::operation::SIZE
-            } else if matches!(kind, SandKind::AccessControl | SandKind::Sync) {
-                Vec2::new(520.0, 540.0)
-            } else {
-                Vec2::new(width, height)
-            },
-        );
+        .unwrap_or(if kind == SandKind::Operation {
+            crate::operation::SIZE
+        } else if kind == SandKind::Terminal {
+            Vec2::new(820.0, 540.0)
+        } else if matches!(
+            kind,
+            SandKind::AccessControl
+                | SandKind::Sync
+                | SandKind::Freedoom
+                | SandKind::Terminal
+                | SandKind::Configuration
+                | SandKind::Todo
+        ) {
+            Vec2::new(520.0, 540.0)
+        } else {
+            Vec2::new(width, height)
+        });
     let texts = existing
         .map(|(entity, _)| sand_text::snapshot(world, entity))
         .unwrap_or_else(|| {
@@ -439,7 +467,17 @@ pub fn spawn_sand(
                 position,
                 size: if kind == SandKind::Operation {
                     crate::operation::SIZE
-                } else if matches!(kind, SandKind::AccessControl | SandKind::Sync) {
+                } else if kind == SandKind::Terminal {
+                    Vec2::new(820.0, 540.0)
+                } else if matches!(
+                    kind,
+                    SandKind::AccessControl
+                        | SandKind::Sync
+                        | SandKind::Freedoom
+                        | SandKind::Terminal
+                        | SandKind::Configuration
+                        | SandKind::Todo
+                ) {
                     Vec2::new(520.0, 540.0)
                 } else if kind == SandKind::WorkTimer {
                     Vec2::new(360.0, 520.0)
@@ -462,6 +500,10 @@ pub fn spawn_sand(
         SandKind::Operation => Some(crate::operation::populate(world, root, sand)),
         SandKind::AccessControl => Some(crate::access_control::populate(world, root, sand)),
         SandKind::Sync => Some(crate::sync_castle::populate(world, root, sand)),
+        SandKind::Freedoom => Some(crate::freedoom::populate(world, root, sand)),
+        SandKind::Terminal => Some(crate::terminal::populate(world, root, sand)),
+        SandKind::Configuration => Some(crate::configuration::populate(world, root, sand)),
+        SandKind::Todo => Some(crate::todo::populate(world, root, sand)),
         SandKind::Square => None,
         SandKind::Text | SandKind::EditableText | SandKind::WorkTimer => Some(sand_text::spawn(
             world,
@@ -480,6 +522,10 @@ pub fn spawn_sand(
             | SandKind::WorkTimer
             | SandKind::AccessControl
             | SandKind::Sync
+            | SandKind::Freedoom
+            | SandKind::Terminal
+            | SandKind::Configuration
+            | SandKind::Todo
     ) {
         world.entity_mut(sand).remove::<(Square, Outline)>();
     }

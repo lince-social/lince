@@ -51,6 +51,7 @@ impl Plugin for CanvasPanPlugin {
                     .after(bevy::input::InputSystems)
                     .after(generate_hovermap)
                     .after(crate::inspection::InspectInput)
+                    .after(crate::assertion_castle::input::ReorderInput)
                     .before(update_interactions)
                     .before(pointer_events),
             );

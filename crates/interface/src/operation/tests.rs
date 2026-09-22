@@ -104,12 +104,8 @@ fn compact_sand_has_inline_help_and_submits_with_enter() {
         .find(|(_, tooltip)| tooltip.0 == HELP)
         .unwrap()
         .0;
-    assert_eq!(app.world().get::<Text>(help).unwrap().0, "?");
+    assert_eq!(help, input);
     assert_eq!(app.world().get::<ChildOf>(help).unwrap().parent(), sand);
-    assert_eq!(
-        app.world().get::<Node>(help).unwrap().position_type,
-        PositionType::Absolute
-    );
     assert!(
         !app.world_mut()
             .query::<&Text>()
@@ -416,11 +412,11 @@ async fn slug_submission_sets_zero_through_cell_and_preserves_other_records() {
         if let ServerMessage::Update { rows, .. } = &message {
             assert_eq!(
                 rows.iter().find(|row| row["slug"] == "apple").unwrap()["quantity"],
-                0.0
+                "0"
             );
             assert_eq!(
                 rows.iter().find(|row| row["slug"] == "apricot").unwrap()["quantity"],
-                9.0
+                "9"
             );
             updated = true;
         }

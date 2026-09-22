@@ -997,6 +997,10 @@ pub(crate) fn control(
             SandKind::WorkTimer => Icon::Play,
             SandKind::AccessControl => Icon::Person,
             SandKind::Sync => Icon::Reset,
+            SandKind::Freedoom => Icon::Play,
+            SandKind::Terminal => Icon::Forward,
+            SandKind::Configuration => Icon::General,
+            SandKind::Todo => Icon::Check,
         }),
         EditAction::SwitchWorkspace(_) | EditAction::Text(TextAction::Select(_)) => None,
     };
@@ -1113,6 +1117,7 @@ fn render_panel_content(world: &mut World, root: Entity) {
     }
     if general {
         label(world, panel, "General", 22.0);
+        crate::workspace_config::controls(world, root, panel);
         crate::inspection::controls(world, root, panel);
         crate::deletion::controls(world, root, panel);
         return;
@@ -1205,7 +1210,6 @@ fn render_panel_content(world: &mut World, root: Entity) {
                 );
             }
         }
-        crate::workspace_config::controls(world, root, panel);
         if let Some(removed) = confirm {
             if let Some(name) = entries
                 .iter()
@@ -1287,7 +1291,21 @@ fn render_panel_content(world: &mut World, root: Entity) {
         crate::protein_castle::store_entries(world, root, entry);
         castle_entries.push(entry);
         let entry = store_group(world, castles_group);
+        crate::karma_castle::store_entry(world, root, entry);
+        crate::frequency_castle::store_entry(world, root, entry);
+        crate::transfer_castle::store_entry(world, root, entry);
+        castle_entries.push(entry);
+        let entry = store_group(world, castles_group);
         crate::full_record::store_entry(world, root, entry);
+        castle_entries.push(entry);
+        let entry = store_group(world, castles_group);
+        crate::recorder_castle::store_entry(world, root, entry);
+        castle_entries.push(entry);
+        let entry = store_group(world, castles_group);
+        crate::shader_castle::store_entry(world, root, entry);
+        castle_entries.push(entry);
+        let entry = store_group(world, castles_group);
+        crate::assertion_castle::store_entry(world, root, entry);
         castle_entries.push(entry);
         let entry = store_group(world, castles_group);
         crate::calendar::store_entry(world, root, entry);
@@ -1526,6 +1544,12 @@ pub(crate) mod tests {
 
         EditAction::General.apply(app.world_mut(), root);
         assert!(app.world().get::<EditMode>(root).unwrap().general);
+        assert!(
+            app.world_mut()
+                .query::<&EditControl>()
+                .iter(app.world())
+                .any(|control| control.action == EditAction::TogglePhysics)
+        );
         assert!(app.world().get_entity(tabs).is_ok());
         assert!(
             app.world_mut()
@@ -1535,6 +1559,12 @@ pub(crate) mod tests {
         );
         EditAction::Areas.apply(app.world_mut(), root);
         assert!(!app.world().get::<EditMode>(root).unwrap().general);
+        assert!(
+            !app.world_mut()
+                .query::<&EditControl>()
+                .iter(app.world())
+                .any(|control| control.action == EditAction::TogglePhysics)
+        );
         assert!(
             !app.world_mut()
                 .query::<&Text>()

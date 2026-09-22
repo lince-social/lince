@@ -98,23 +98,52 @@ struct Identity {
 struct Destination {
     point: DVec2,
     strength: f64,
+    radius: f64,
+    sorting: Option<(DVec2, f64)>,
 }
 
 impl Destination {
-    fn new(area: &InfluenceArea) -> Self {
+    fn new(area: &InfluenceArea, target: Option<DVec2>, matches: bool) -> Self {
+        let sorting = target.zip(area.sorting.as_ref().map(|sort| sort.strength));
         Self {
-            point: area.target_position(),
-            strength: area.strength
+            point: if area.direction == crate::area::Direction::Attract {
+                sorting
+                    .filter(|(_, strength)| *strength > 0.0)
+                    .map_or_else(|| area.target_position(), |(target, _)| target)
+            } else {
+                area.target_position()
+            },
+            strength: if matches { area.strength } else { 0.0 }
                 * if area.direction == crate::area::Direction::Attract {
                     1.0
                 } else {
                     -1.0
                 },
+            radius: area.size[0].min(area.size[1]) * 0.5,
+            sorting,
         }
     }
 
     fn force(&self, point: DVec2) -> DVec2 {
-        (self.point - point).normalize_or_zero() * self.strength
+        let delta = self.point - point;
+        let mut force =
+            delta.normalize_or_zero() * simple_strength(delta.length(), self.radius, self.strength);
+        if let Some((target, strength)) = self.sorting {
+            let delta = target - point;
+            force +=
+                delta.normalize_or_zero() * simple_strength(delta.length(), self.radius, strength);
+        }
+        force
+    }
+}
+
+pub(crate) fn simple_strength(distance: f64, radius: f64, strength: f64) -> f64 {
+    if strength <= 0.0 {
+        strength
+    } else if distance <= 0.5 {
+        0.0
+    } else {
+        strength * (distance / radius.max(1.0)).min(1.0)
     }
 }
 
@@ -409,7 +438,6 @@ impl Influences {
                 && (f.area.reach.mode == ReachMode::Limited
                     || f.area.force_mode == ForceMode::Newtonian
                     || f.area.immunity != Immunity::None
-                    || f.area.sorting.is_some()
                     || f.group.is_some())
         });
         for field in self
@@ -424,27 +452,34 @@ impl Influences {
             let mut force = DVec2::ZERO;
             if let Some(group) = &field.group {
                 force += group.force(&field.area, sand, point);
+            } else if field.area.force_mode == ForceMode::Simple {
+                let matches = field.matches(record, binding, false);
+                if !matches && !field.targets.contains_key(&sand) {
+                    continue;
+                }
+                force += simple
+                    .entry(field.entity)
+                    .or_insert_with(|| {
+                        Destination::new(&field.area, field.targets.get(&sand).copied(), matches)
+                    })
+                    .force(point);
             } else if field.matches(record, binding, false) {
-                force += match field.area.force_mode {
-                    ForceMode::Simple => simple
-                        .entry(field.entity)
-                        .or_insert_with(|| Destination::new(&field.area))
-                        .force(point),
-                    ForceMode::Newtonian => {
-                        let radius = DVec2::from_array(field.area.size).min_element() * 0.5;
-                        let distance = point.distance(field.area.target_position());
-                        field.area.force_for_match(point, true)
-                            * (radius / distance.max(radius)).powi(2)
-                    }
-                };
+                let radius = DVec2::from_array(field.area.size).min_element() * 0.5;
+                let distance = point.distance(field.area.target_position());
+                force += field.area.force_for_match(point, true)
+                    * (radius / distance.max(radius)).powi(2);
             }
             if let Some(sort) = &field.area.sorting
+                && (field.area.force_mode != ForceMode::Simple || field.group.is_some())
                 && let Some(target) = field.targets.get(&sand)
             {
                 let delta = *target - point;
-                if delta.length_squared() > 0.25 {
-                    force += delta.clamp_length_max(1.0) * sort.strength;
-                }
+                force += delta.normalize_or_zero()
+                    * simple_strength(
+                        delta.length(),
+                        field.area.size[0].min(field.area.size[1]) * 0.5,
+                        sort.strength,
+                    );
             }
             if force.is_finite() && force != DVec2::ZERO {
                 forces.0.push(AreaForce {

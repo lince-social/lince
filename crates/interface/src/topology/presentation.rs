@@ -1,4 +1,8 @@
-use super::spatial;
+use super::{
+    spatial,
+    surface_budget::{self, Request, dimensions},
+    surface_render::{SurfaceCapture, SurfacePass},
+};
 use crate::{
     canvas::{CanvasItem, CanvasView},
     workspace::{WorkspaceMember, Workspaces},
@@ -6,8 +10,10 @@ use crate::{
 use bevy::{
     asset::RenderAssetUsages,
     camera::{ImageRenderTarget, RenderTarget, visibility::RenderLayers},
+    ecs::{entity_disabling::Disabled, query::Allow},
     math::Affine2,
     prelude::*,
+    render::camera::CameraRenderGraph,
     render::render_resource::{Extent3d, TextureDimension, TextureFormat, TextureUsages},
     ui::experimental::GhostNode,
 };
@@ -25,6 +31,7 @@ pub struct Surface {
     pub density: f32,
     pub material: Handle<StandardMaterial>,
     pub uv: Rect,
+    pub visible: bool,
 }
 
 #[derive(Component)]
@@ -61,21 +68,39 @@ pub fn origin(world: &World, root: Entity) -> bevy::math::DVec3 {
         })
 }
 
-fn dimensions(size: Vec2, density: f32) -> (UVec2, f32) {
-    let density = 2.0_f32
-        .powf((density.max(1.0).log2() * 2.0).ceil() * 0.5)
-        .min(4096.0 / size.max_element());
-    ((size * density).ceil().max(Vec2::ONE).as_uvec2(), density)
-}
-
-fn density(
+fn request(
     world: &World,
     root: Entity,
     entity: Entity,
     item: &CanvasItem,
-    physical_height: f32,
+    physical_size: UVec2,
     scale_factor: f32,
-) -> f32 {
+) -> Request {
+    let (offset, clip) = crate::layout::viewport::clip(world, entity);
+    let active = world
+        .get::<Workspaces>(root)
+        .zip(world.get::<WorkspaceMember>(entity))
+        .is_some_and(|(spaces, member)| spaces.active == member.0)
+        && world.get::<Disabled>(root).is_none()
+        && world.get::<Disabled>(entity).is_none()
+        && clip.size().min_element() > 0.0
+        && world
+            .get::<crate::protein_area::placement::Pending>(entity)
+            .is_none();
+    let previous = world
+        .get::<Surface>(entity)
+        .filter(|surface| surface.visible)
+        .map_or(0.0, |surface| surface.density);
+    let mut request = Request {
+        size: item.size,
+        density: 1.0,
+        previous,
+        visible: active,
+    };
+    if !active || !item.size.is_finite() || item.size.min_element() <= 0.0 {
+        request.visible = false;
+        return request;
+    }
     let scale = world
         .get::<crate::area_effects::AreaScale>(entity)
         .map_or(1.0, |scale| scale.0);
@@ -83,44 +108,76 @@ fn density(
         .get::<super::view::View>(root)
         .copied()
         .unwrap_or_default();
-    if !view.spatial {
-        return world
-            .get::<CanvasView>(root)
-            .map_or(1.0, |canvas| canvas.zoom as f32)
-            * scale_factor
-            * scale;
-    }
     let placement = spatial(world, entity);
+    let depth = if world.get::<crate::area::InfluenceArea>(entity).is_some() {
+        0.0
+    } else {
+        placement.depth(item.size) * f64::from(scale)
+    };
+    let points: [bevy::math::DVec3; 8] = std::array::from_fn(|index| {
+        let point = Vec2::new(
+            if index & 1 == 0 {
+                clip.min.x
+            } else {
+                clip.max.x
+            },
+            if index & 2 == 0 {
+                clip.min.y
+            } else {
+                clip.max.y
+            },
+        ) - item.size * 0.5;
+        placement.position(item.position)
+            + placement.rotation()
+                * bevy::math::DVec3::new(
+                    f64::from(point.x * scale - offset.x),
+                    if index & 4 == 0 {
+                        0.01 * f64::from(scale)
+                    } else {
+                        -depth
+                    },
+                    f64::from(point.y * scale - offset.y),
+                )
+    });
+    if !view.spatial {
+        let canvas = world.get::<CanvasView>(root).copied().unwrap_or_default();
+        let half = physical_size.as_vec2().as_dvec2() / f64::from(scale_factor) / canvas.zoom * 0.5;
+        let min = canvas.center - half;
+        let max = canvas.center + half;
+        request.visible = !points.iter().all(|point| point.x < min.x)
+            && !points.iter().all(|point| point.x > max.x)
+            && !points.iter().all(|point| point.z < min.y)
+            && !points.iter().all(|point| point.z > max.y);
+        request.density = canvas.zoom as f32 * scale_factor * scale;
+        return request;
+    }
     let rotation = Quat::from_euler(EulerRot::YXZ, view.yaw, view.pitch, 0.0).as_dquat();
     let camera = bevy::math::DVec3::from_array(view.position);
-    let mut nearest = f64::INFINITY;
-    for x in [-0.5, 0.5] {
-        for z in [-0.5, 0.5] {
-            let point = placement.position(item.position)
-                + placement.rotation()
-                    * bevy::math::DVec3::new(
-                        f64::from(item.size.x * scale * x),
-                        0.0,
-                        f64::from(item.size.y * scale * z),
-                    );
-            nearest = nearest.min(-(rotation.inverse() * (point - camera)).z);
-        }
-    }
-    physical_height * scale
-        / (2.0 * (PerspectiveProjection::default().fov * 0.5).tan() * (nearest as f32).max(0.5))
+    let points = points.map(|point| rotation.inverse() * (point - camera));
+    let tangent = (PerspectiveProjection::default().fov * 0.5).tan();
+    request.visible = surface_budget::perspective_visible(
+        &points,
+        f64::from(physical_size.x) / f64::from(physical_size.y.max(1)),
+        f64::from(tangent),
+    );
+    let nearest = points[..4]
+        .iter()
+        .map(|point| -point.z)
+        .fold(f64::INFINITY, f64::min);
+    request.density = physical_size.y as f32 * scale / (2.0 * tangent * (nearest as f32).max(0.5));
+    request
 }
 
 fn image(size: UVec2) -> Image {
-    let mut image = Image::new_fill(
+    let mut image = Image::new_uninit(
         Extent3d {
             width: size.x,
             height: size.y,
             depth_or_array_layers: 1,
         },
         TextureDimension::D2,
-        &[0, 0, 0, 0],
-        TextureFormat::Bgra8UnormSrgb,
-        RenderAssetUsages::default(),
+        TextureFormat::Rgba8UnormSrgb,
+        RenderAssetUsages::RENDER_WORLD,
     );
     image.texture_descriptor.usage =
         TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST | TextureUsages::RENDER_ATTACHMENT;
@@ -152,11 +209,14 @@ pub fn synchronize(world: &mut World) {
         world.insert_resource(SurfaceAssets { cube, side });
     }
     let roots: Vec<_> = world
-        .query::<(Entity, &Workspaces)>()
+        .query_filtered::<(Entity, &Workspaces), Allow<Disabled>>()
         .iter(world)
         .map(|(e, _)| e)
         .collect();
     for root in &roots {
+        if world.get::<Disabled>(*root).is_some() {
+            continue;
+        }
         if world.get::<SpatialRoot>(*root).is_none() {
             world
                 .entity_mut(*root)
@@ -177,7 +237,11 @@ pub fn synchronize(world: &mut World) {
         }
         let target = world.query_filtered::<&ComputedUiRenderTargetInfo, With<crate::canvas_controls::CanvasToolbar>>().iter(world).next().copied();
         if let Some(target) = target {
-            world.entity_mut(*root).insert(target);
+            if let Some(mut current) = world.get_mut::<ComputedUiRenderTargetInfo>(*root) {
+                current.set_if_neq(target);
+            } else {
+                world.entity_mut(*root).insert(target);
+            }
         }
         if let Some(mut transform) = world.get_mut::<UiGlobalTransform>(*root) {
             transform.set_if_neq(UiGlobalTransform::from(Affine2::from_translation(
@@ -186,7 +250,7 @@ pub fn synchronize(world: &mut World) {
         }
     }
     let entities: Vec<_> = world
-        .query::<(Entity, &CanvasItem, &ChildOf, &WorkspaceMember)>()
+        .query_filtered::<(Entity, &CanvasItem, &ChildOf, &WorkspaceMember), Allow<Disabled>>()
         .iter(world)
         .filter(|(_, _, p, _)| roots.contains(&p.parent()))
         .map(|(e, item, p, member)| (e, *item, p.parent(), member.0))
@@ -203,7 +267,21 @@ pub fn synchronize(world: &mut World) {
             entity.despawn();
         }
     }
-    for (entity, item, root, workspace) in entities {
+    let requests: Vec<_> = entities
+        .iter()
+        .map(|(entity, item, root, _)| {
+            let mut request = request(world, *root, *entity, item, physical_size, scale_factor);
+            request.visible &= world.get::<super::assets::ImportedAsset>(*entity).is_none()
+                && world
+                    .get::<crate::sand_placement::Pinned>(*entity)
+                    .is_none();
+            request
+        })
+        .collect();
+    let resolutions = surface_budget::plan(&requests, surface_budget::PIXEL_BUDGET);
+    for (((entity, item, root, _), request), (pixels, density)) in
+        entities.into_iter().zip(requests).zip(resolutions)
+    {
         if !item.size.is_finite() || item.size.min_element() <= 0.0 {
             continue;
         }
@@ -213,7 +291,7 @@ pub fn synchronize(world: &mut World) {
                 world.despawn(surface.visual);
                 world
                     .entity_mut(entity)
-                    .remove::<UiTargetCamera>()
+                    .remove::<(UiTargetCamera, bevy::ui::LayoutConfig)>()
                     .insert(UiTransform::default());
             }
             continue;
@@ -223,17 +301,7 @@ pub fn synchronize(world: &mut World) {
         {
             continue;
         }
-        let (pixels, density) = dimensions(
-            item.size,
-            density(
-                world,
-                root,
-                entity,
-                &item,
-                physical_size.y as f32,
-                scale_factor,
-            ),
-        );
+        let visible = request.visible;
         if world.get::<Surface>(entity).is_none() {
             let image = world.resource_mut::<Assets<Image>>().add(image(pixels));
             let camera = world
@@ -241,9 +309,13 @@ pub fn synchronize(world: &mut World) {
                     Camera2d,
                     Camera {
                         order: -1,
+                        is_active: visible,
                         clear_color: ClearColorConfig::Custom(Color::NONE),
                         ..default()
                     },
+                    Msaa::Off,
+                    CameraRenderGraph::new(SurfacePass),
+                    SurfaceCapture(image.clone()),
                     RenderTarget::Image(ImageRenderTarget {
                         handle: image.clone(),
                         scale_factor: density,
@@ -251,6 +323,7 @@ pub fn synchronize(world: &mut World) {
                     RenderLayers::layer(31),
                     VisualOwner(entity),
                 ))
+                .remove::<bevy::camera::visibility::VisibleEntities>()
                 .id();
             let material = world
                 .resource_mut::<Assets<StandardMaterial>>()
@@ -279,6 +352,7 @@ pub fn synchronize(world: &mut World) {
                     Pickable::IGNORE,
                     MeshMaterial3d(side_material),
                     Transform::default(),
+                    Visibility::Inherited,
                     ChildOf(visual),
                     VisualOwner(entity),
                 ))
@@ -288,6 +362,7 @@ pub fn synchronize(world: &mut World) {
                     Mesh3d(rectangle),
                     Pickable::IGNORE,
                     MeshMaterial3d(material.clone()),
+                    Visibility::Inherited,
                     Transform::from_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2)),
                     ChildOf(visual),
                     VisualOwner(entity),
@@ -295,6 +370,7 @@ pub fn synchronize(world: &mut World) {
                 .id();
             world.entity_mut(entity).insert((
                 UiTargetCamera(camera),
+                bevy::ui::LayoutConfig { use_rounding: false },
                 Surface {
                     camera,
                     image,
@@ -306,6 +382,7 @@ pub fn synchronize(world: &mut World) {
                     density,
                     material,
                     uv: Rect::from_corners(Vec2::ZERO, Vec2::ONE),
+                    visible,
                 },
             ));
         }
@@ -330,21 +407,38 @@ pub fn synchronize(world: &mut World) {
                 .unwrap()
                 .base_color_texture = Some(image_handle.clone());
         }
-        if world.get::<Surface>(entity).unwrap().density != density {
-            world
-                .entity_mut(camera)
-                .insert(RenderTarget::Image(ImageRenderTarget {
-                    handle: image_handle.clone(),
-                    scale_factor: density,
-                }));
+        let target = if visible {
+            RenderTarget::Image(ImageRenderTarget {
+                handle: image_handle.clone(),
+                scale_factor: density,
+            })
+        } else {
+            RenderTarget::None {
+                size: dimensions(item.size, 1.0).0,
+            }
+        };
+        let target_changed = match (world.get::<RenderTarget>(camera), &target) {
+            (Some(RenderTarget::Image(old)), RenderTarget::Image(new)) => {
+                old.handle != new.handle || old.scale_factor != new.scale_factor
+            }
+            (Some(RenderTarget::None { size: old }), RenderTarget::None { size: new }) => {
+                old != new
+            }
+            _ => true,
+        };
+        if target_changed {
+            world.entity_mut(camera).insert(target);
         }
         let placement = spatial(world, entity);
         let area = world.get::<crate::area::InfluenceArea>(entity).is_some();
-        world.entity_mut(body).insert(if area {
-            Visibility::Hidden
-        } else {
-            Visibility::Inherited
-        });
+        world
+            .get_mut::<Visibility>(body)
+            .unwrap()
+            .set_if_neq(if area {
+                Visibility::Hidden
+            } else {
+                Visibility::Inherited
+            });
         let scale = world
             .get::<crate::area_effects::AreaScale>(entity)
             .map_or(1.0, |s| s.0);
@@ -390,13 +484,6 @@ pub fn synchronize(world: &mut World) {
             .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2))
             .with_scale(Vec3::new(clipped_size.x, clipped_size.y, 1.0)),
         );
-        let visible = world
-            .get::<Workspaces>(root)
-            .is_some_and(|spaces| spaces.active == workspace)
-            && clipped_size.min_element() > 0.0
-            && world
-                .get::<crate::protein_area::placement::Pending>(entity)
-                .is_none();
         world
             .get_mut::<Visibility>(visual)
             .unwrap()
@@ -408,11 +495,20 @@ pub fn synchronize(world: &mut World) {
         if world.get::<Camera>(camera).unwrap().is_active != visible {
             world.get_mut::<Camera>(camera).unwrap().is_active = visible;
         }
-        let mut surface = world.get_mut::<Surface>(entity).unwrap();
-        surface.size = item.size;
-        surface.pixels = pixels;
-        surface.density = density;
-        surface.uv = uv;
+        let surface = world.get::<Surface>(entity).unwrap();
+        if surface.size != item.size
+            || surface.pixels != pixels
+            || surface.density != density
+            || surface.uv != uv
+            || surface.visible != visible
+        {
+            let mut surface = world.get_mut::<Surface>(entity).unwrap();
+            surface.size = item.size;
+            surface.pixels = pixels;
+            surface.density = density;
+            surface.uv = uv;
+            surface.visible = visible;
+        }
     }
 }
 
@@ -492,6 +588,9 @@ fn content_bounds(world: &World, entity: Entity) -> Option<Rect> {
         }
         owner = world.get::<ChildOf>(owner)?.parent();
     };
+    if !surface.visible {
+        return None;
+    }
     let camera = world
         .get_entity(world.get_resource::<SceneCamera>()?.0)
         .ok()?;
@@ -520,6 +619,257 @@ fn content_bounds(world: &World, entity: Entity) -> Option<Rect> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn scene(count: usize) -> (World, Entity, Vec<Entity>) {
+        let mut world = World::new();
+        world.init_resource::<Assets<Image>>();
+        world.init_resource::<Assets<Mesh>>();
+        world.init_resource::<Assets<StandardMaterial>>();
+        world.spawn(Window {
+            resolution: (1920, 1080).into(),
+            ..default()
+        });
+        let root = world
+            .spawn((
+                Workspaces::default(),
+                CanvasView::default(),
+                super::super::view::View::default(),
+            ))
+            .id();
+        let entities = (0..count)
+            .map(|index| {
+                world
+                    .spawn((
+                        CanvasItem {
+                            position: bevy::math::DVec2::new(
+                                (index % 32) as f64 * 360.0,
+                                (index / 32) as f64 * 700.0,
+                            ),
+                            size: if index % 2 == 0 {
+                                Vec2::splat(300.0)
+                            } else {
+                                Vec2::new(340.0, 640.0)
+                            },
+                        },
+                        ChildOf(root),
+                        WorkspaceMember(1),
+                    ))
+                    .id()
+            })
+            .collect();
+        (world, root, entities)
+    }
+
+    fn texture_bytes(world: &mut World) -> u64 {
+        let surfaces: Vec<_> = world
+            .query::<&Surface>()
+            .iter(world)
+            .map(|surface| {
+                (
+                    surface.image.clone(),
+                    surface.pixels,
+                    surface.visible,
+                    surface.camera,
+                )
+            })
+            .collect();
+        let mut bytes = 0;
+        for (handle, pixels, visible, camera) in surfaces {
+            let image = world.resource::<Assets<Image>>().get(&handle).unwrap();
+            assert!(image.data.is_none());
+            assert_eq!(image.size(), pixels);
+            assert_eq!(world.get::<Camera>(camera).unwrap().is_active, visible);
+            if !visible {
+                assert_eq!(pixels, UVec2::ONE);
+                assert!(matches!(
+                    world.get::<RenderTarget>(camera),
+                    Some(RenderTarget::None { .. })
+                ));
+            }
+            bytes += u64::from(pixels.x) * u64::from(pixels.y) * 4;
+        }
+        assert!(bytes <= surface_budget::PIXEL_BUDGET * 4);
+        bytes
+    }
+
+    #[test]
+    fn camera_motion_and_workspace_switches_keep_a_thousand_captures_bounded() {
+        let (mut world, root, entities) = scene(1000);
+        synchronize(&mut world);
+        let planar = texture_bytes(&mut world);
+        assert!(planar > 4000);
+        for step in 0..32 {
+            *world.get_mut::<super::super::view::View>(root).unwrap() = super::super::view::View {
+                spatial: true,
+                position: [500.0, 500.0, 500.0],
+                yaw: step as f32 * std::f32::consts::TAU / 16.0,
+                pitch: -std::f32::consts::FRAC_PI_4,
+                ..default()
+            };
+            synchronize(&mut world);
+            texture_bytes(&mut world);
+            assert_eq!(world.query::<&Surface>().iter(&world).count(), 1000);
+        }
+        world.get_mut::<Workspaces>(root).unwrap().active = 2;
+        synchronize(&mut world);
+        assert_eq!(texture_bytes(&mut world), 4000);
+        for entity in entities {
+            world.despawn(entity);
+        }
+        synchronize(&mut world);
+        assert_eq!(world.query::<&VisualOwner>().iter(&world).count(), 0);
+    }
+
+    #[test]
+    fn suspended_surfaces_release_textures_and_resume_with_the_same_camera() {
+        let (mut world, root, entities) = scene(1);
+        let entity = entities[0];
+        synchronize(&mut world);
+        let camera = world.get::<Surface>(entity).unwrap().camera;
+        assert!(world.get::<Surface>(entity).unwrap().visible);
+        world.entity_mut(root).insert(Disabled);
+        world.entity_mut(entity).insert(Disabled);
+        synchronize(&mut world);
+        assert_eq!(world.get::<Surface>(entity).unwrap().pixels, UVec2::ONE);
+        assert!(
+            world
+                .get::<Camera>(camera)
+                .is_some_and(|camera| !camera.is_active)
+        );
+        world.entity_mut(root).remove::<Disabled>();
+        world.entity_mut(entity).remove::<Disabled>();
+        synchronize(&mut world);
+        assert_eq!(world.get::<Surface>(entity).unwrap().camera, camera);
+        assert!(world.get::<Surface>(entity).unwrap().visible);
+        texture_bytes(&mut world);
+    }
+
+    #[test]
+    fn stationary_surfaces_do_not_invalidate_assets_or_camera_layout() {
+        let (mut world, _, entities) = scene(1);
+        let entity = entities[0];
+        synchronize(&mut world);
+        let camera = world.get::<Surface>(entity).unwrap().camera;
+        let surface_tick = world
+            .entity(entity)
+            .get_ref::<Surface>()
+            .unwrap()
+            .last_changed();
+        let target_tick = world
+            .entity(camera)
+            .get_ref::<RenderTarget>()
+            .unwrap()
+            .last_changed();
+        let images_tick = world
+            .get_resource_ref::<Assets<Image>>()
+            .unwrap()
+            .last_changed();
+        let material_tick = world
+            .get_resource_ref::<Assets<StandardMaterial>>()
+            .unwrap()
+            .last_changed();
+        world.increment_change_tick();
+        synchronize(&mut world);
+        assert_eq!(
+            world
+                .entity(entity)
+                .get_ref::<Surface>()
+                .unwrap()
+                .last_changed(),
+            surface_tick
+        );
+        assert_eq!(
+            world
+                .entity(camera)
+                .get_ref::<RenderTarget>()
+                .unwrap()
+                .last_changed(),
+            target_tick
+        );
+        assert_eq!(
+            world
+                .get_resource_ref::<Assets<Image>>()
+                .unwrap()
+                .last_changed(),
+            images_tick
+        );
+        assert_eq!(
+            world
+                .get_resource_ref::<Assets<StandardMaterial>>()
+                .unwrap()
+                .last_changed(),
+            material_tick
+        );
+    }
+
+    #[test]
+    fn rotated_and_clipped_surfaces_are_culled_in_world_coordinates() {
+        let (mut world, root, entities) = scene(1);
+        let entity = entities[0];
+        world.get_mut::<CanvasItem>(entity).unwrap().position.x = 1200.0;
+        assert!(
+            !request(
+                &world,
+                root,
+                entity,
+                world.get::<CanvasItem>(entity).unwrap(),
+                UVec2::new(1920, 1080),
+                1.0
+            )
+            .visible
+        );
+        world.get_mut::<CanvasItem>(entity).unwrap().position.x = 0.0;
+        world.entity_mut(entity).insert(super::super::Spatial {
+            rotation: bevy::math::DQuat::from_rotation_y(0.7).to_array(),
+            ..default()
+        });
+        assert!(
+            request(
+                &world,
+                root,
+                entity,
+                world.get::<CanvasItem>(entity).unwrap(),
+                UVec2::new(1920, 1080),
+                1.0
+            )
+            .visible
+        );
+        world
+            .get_mut::<super::super::view::View>(root)
+            .unwrap()
+            .spatial = true;
+        world
+            .get_mut::<super::super::view::View>(root)
+            .unwrap()
+            .position = [0.0, 500.0, 500.0];
+        world
+            .get_mut::<super::super::view::View>(root)
+            .unwrap()
+            .pitch = -std::f32::consts::FRAC_PI_4;
+        assert!(
+            request(
+                &world,
+                root,
+                entity,
+                world.get::<CanvasItem>(entity).unwrap(),
+                UVec2::new(1920, 1080),
+                1.0
+            )
+            .visible
+        );
+        world.get_mut::<super::super::view::View>(root).unwrap().yaw = std::f32::consts::PI;
+        assert!(
+            !request(
+                &world,
+                root,
+                entity,
+                world.get::<CanvasItem>(entity).unwrap(),
+                UVec2::new(1920, 1080),
+                1.0
+            )
+            .visible
+        );
+    }
 
     #[test]
     fn surfaces_rerasterize_at_zoom_and_display_density() {

@@ -347,11 +347,13 @@ async fn tutorial_checks_real_protein_and_confirmed_entry_exit_changes() {
     app.world_mut().flush();
     click(app.world_mut(), root, "Attract");
     click(app.world_mut(), root, "Unlimited");
+    click(app.world_mut(), root, "General");
     click(
         app.world_mut(),
         root,
         "Toggle physics in the open workspace. Turning it off keeps every Sand in place.",
     );
+    click(app.world_mut(), root, "Areas of influence");
     assert!(verify(app.world_mut(), root).is_err());
     crate::area::forces(app.world_mut());
     assert!(verify(app.world_mut(), root).is_ok());
@@ -362,11 +364,13 @@ async fn tutorial_checks_real_protein_and_confirmed_entry_exit_changes() {
     crate::area::forces(app.world_mut());
     assert!(verify(app.world_mut(), root).is_ok());
     Command::Next.apply(app.world_mut(), root);
+    click(app.world_mut(), root, "General");
     click(
         app.world_mut(),
         root,
         "Toggle physics in the open workspace. Turning it off keeps every Sand in place.",
     );
+    click(app.world_mut(), root, "Areas of influence");
     click(app.world_mut(), root, "Add square");
     let change = selected(app.world(), root);
     input(app.world_mut(), "Position X", 0, "500");

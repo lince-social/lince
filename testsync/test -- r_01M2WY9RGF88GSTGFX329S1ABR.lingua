@@ -1,0 +1,38 @@
+test (0, #done, #task: 6) { r_01M2WY9RGF88GSTGFX329S1ABR
+
+	Helooouurrrrr
+
+Hello, world
+
+  ```wgsl
+  fn shade(uv: vec2<f32>, inputs: ShaderInputs) -> vec4<f32> {
+      let aspect = inputs.size.x / max(inputs.size.y, 1.0);
+      let p = (uv - 0.5) * vec2<f32>(aspect, 1.0) * 3.0;
+      let r = length(p);
+      let angle = atan2(p.y, p.x);
+      let t = inputs.time;
+
+      let pulse = 0.9 + 0.1 * sin(t * 2.0);
+      let sphere = sqrt(max(0.0, 1.0 - r * r * 4.0));
+      let strands = pow(
+          0.5 + 0.5 * sin(angle * 7.0 + r * 10000a.0 - t * 3.0
+              + sin(angle * 3.0 + t)),
+          5.0
+      );
+
+      let core = exp(-r * r * 28.0) * pulse;
+      let rim = exp(-abs(r - 0.44) * 55.0) * pulse;
+      let halo = exp(-r * 5.0) * 0.6;
+
+      let blue = vec3<f32>(0.04, 0.3, 1.0);
+      let violet = vec3<f32>(0.5, 0.1, 1.0);
+      let energy = mix(blue, violet, 0.5 + 0.5 * sin(angle + t));
+      let color = energy * (halo + sphere * strands * 0.8 + rim)
+          + vec3<f32>(0.6, 0.9, 1.0) * core;
+
+      return vec4<f32>(color, 1.0);
+  }
+  ```
+
+  Testing123
+} r_01M2WY9RGF88GSTGFX329S1ABR

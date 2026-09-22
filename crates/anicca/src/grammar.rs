@@ -9,7 +9,7 @@ pub mod grammar {
 
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub struct Name(
-        #[rust_sitter::leaf(pattern = r"[A-Za-z][A-Za-z0-9.-]*", transform = |v| v.to_string())]
+        #[rust_sitter::leaf(pattern = r"[A-Za-z][A-Za-z0-9._-]*", transform = |v| v.to_string())]
         pub String,
     );
     #[derive(Debug, Clone, PartialEq, Eq)]
@@ -49,6 +49,9 @@ pub mod grammar {
             #[rust_sitter::leaf(text = "consequences", transform = |v| v.to_string())] String,
         ),
         Note(#[rust_sitter::leaf(text = "note", transform = |v| v.to_string())] String),
+        Definition(#[rust_sitter::leaf(text = "definition", transform = |v| v.to_string())] String),
+        Cadence(#[rust_sitter::leaf(text = "cadence", transform = |v| v.to_string())] String),
+        AnchorAt(#[rust_sitter::leaf(text = "anchor_at", transform = |v| v.to_string())] String),
         Is(#[rust_sitter::leaf(text = "is", transform = |v| v.to_string())] String),
         Ordinary(
             #[rust_sitter::word]
@@ -76,6 +79,9 @@ pub mod grammar {
                 | Self::Carry(value)
                 | Self::Consequences(value)
                 | Self::Note(value)
+                | Self::Definition(value)
+                | Self::Cadence(value)
+                | Self::AnchorAt(value)
                 | Self::Is(value)
                 | Self::Ordinary(value) => value,
             }
@@ -83,7 +89,7 @@ pub mod grammar {
     }
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub struct Uid(
-        #[rust_sitter::leaf(pattern = r"\^(?:r|freq|rule)_[0-9A-HJKMNP-TV-Z]{26}", transform = |v| v.strip_prefix('^').expect("uid marker").to_string())]
+        #[rust_sitter::leaf(pattern = r"\^(?:r|freq|rule|rec)_[0-9A-HJKMNP-TV-Z]{26}", transform = |v| v.strip_prefix('^').expect("uid marker").to_string())]
         pub String,
     );
     impl Uid {
@@ -458,6 +464,13 @@ pub mod grammar {
         Every(EveryField),
         Timezone(TimezoneField),
         NextAt(NextAtField),
+        Definition(DefinitionField),
+    }
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct DefinitionField {
+        #[rust_sitter::leaf(text = "definition")]
+        _keyword: (),
+        pub value: Text,
     }
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub struct TitleField {
@@ -536,6 +549,8 @@ pub mod grammar {
         Carry(CarryField),
         Consequences(ConsequencesField),
         Note(NoteField),
+        Cadence(CadenceField),
+        AnchorAt(AnchorAtField),
     }
     impl RuleField {
         pub fn quantity(value: i64) -> Self {
@@ -566,13 +581,13 @@ pub mod grammar {
         pub fn gate(value: String) -> Self {
             Self::Gate(GateField {
                 _keyword: (),
-                value: Name(value),
+                value: ControlValue(value),
             })
         }
         pub fn carry(value: String) -> Self {
             Self::Carry(CarryField {
                 _keyword: (),
-                value: Name(value),
+                value: ControlValue(value),
             })
         }
         pub fn consequences(value: String) -> Self {
@@ -610,13 +625,30 @@ pub mod grammar {
     pub struct GateField {
         #[rust_sitter::leaf(text = "gate")]
         _keyword: (),
-        pub value: Name,
+        pub value: ControlValue,
     }
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub struct CarryField {
         #[rust_sitter::leaf(text = "carry")]
         _keyword: (),
-        pub value: Name,
+        pub value: ControlValue,
+    }
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct ControlValue(
+        #[rust_sitter::leaf(pattern = r"[A-Za-z][A-Za-z0-9.:-]*|[!<>=]+-?[0-9]+(?:\.[0-9]+)?", transform = |v| v.to_string())]
+        pub String,
+    );
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct CadenceField {
+        #[rust_sitter::leaf(text = "cadence")]
+        _keyword: (),
+        pub value: Text,
+    }
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    pub struct AnchorAtField {
+        #[rust_sitter::leaf(text = "anchor_at")]
+        _keyword: (),
+        pub value: Instant,
     }
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub struct ConsequencesField {

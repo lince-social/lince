@@ -17,7 +17,7 @@ pub fn fields() -> Vec<Field> {
         ("head", "Title", "text", true),
         ("body", "Description", "text", true),
         ("slug", "Slug", "text", true),
-        ("quantity_exact", "Quantity", "decimal", true),
+        ("quantity", "Quantity", "decimal", true),
         ("assertions", "Assertions", "assertions", true),
         ("kind", "Kind", "text", false),
         ("assignees", "Assignees", "records", true),
@@ -69,9 +69,6 @@ pub(crate) async fn attach(
     let mut out = HashMap::new();
     for record in records {
         let mut value = json!({});
-        if wants("quantity_exact") {
-            value["quantity_exact"] = json!(record.quantity.to_string());
-        }
         let metadata = work.get(&record.uid);
         if wants("estimate_min") {
             value["estimate_min"] = metadata
@@ -169,7 +166,7 @@ pub(crate) async fn attach(
                     }
                 }
                 if wants("assertions") {
-                    row["assertions"].as_array_mut().unwrap().push(json!({"uid":assertion.uid,"predicate":assertion.predicate,"predicate_uid":assertion.predicate_uid,"object":assertion.object_uid,"quantity":assertion.quantity.map(|q| q.to_string()),"unit":assertion.unit_uid}));
+                    row["assertions"].as_array_mut().unwrap().push(json!({"uid":assertion.uid,"role":assertion.role,"predicate":assertion.predicate,"predicate_uid":assertion.predicate_uid,"object":assertion.object_uid,"quantity":assertion.quantity.map(|q| q.to_string()),"unit":assertion.unit_uid}));
                 }
             }
         }

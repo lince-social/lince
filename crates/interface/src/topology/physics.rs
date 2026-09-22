@@ -220,7 +220,12 @@ pub fn synchronize(world: &mut World) -> bool {
         let solid: Vec<_> = members
             .iter()
             .copied()
-            .filter(|e| world.get::<crate::area::InfluenceArea>(*e).is_none())
+            .filter(|e| {
+                world.get::<crate::area::InfluenceArea>(*e).is_none()
+                    && !world
+                        .get::<super::assets::ImportedAsset>(*e)
+                        .is_some_and(super::splats::is_splat)
+            })
             .collect();
         if solid.is_empty() {
             continue;
@@ -397,9 +402,13 @@ pub fn synchronize(world: &mut World) -> bool {
                 .sum()
         };
         if world.get::<ConstantForce>(body).unwrap().0 != force {
+            let threshold = crate::physics::sleep_threshold(
+                force,
+                f64::from(world.get::<Mass>(body).unwrap().0),
+            );
             world
                 .entity_mut(body)
-                .insert(ConstantForce(force))
+                .insert((ConstantForce(force), SleepTimer(0.0), threshold))
                 .remove::<Sleeping>();
             changed = true;
         }

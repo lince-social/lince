@@ -34,6 +34,16 @@ fn exercise(world: &mut World) {
         let mut view = world.get_mut::<CanvasView>(root).unwrap();
         view.zoom = 0.58;
         view.center.y = -60.0;
+        if std::env::var_os("LINCE_KANBAN_3D").is_some() {
+            world
+                .entity_mut(root)
+                .insert(lince_interface::topology::view::View {
+                    spatial: true,
+                    position: [0.0, 2200.0, 2200.0],
+                    pitch: -0.8,
+                    ..default()
+                });
+        }
         world.insert_resource(Trial {
             started: std::time::Instant::now(),
             scrolled: None,
@@ -192,14 +202,23 @@ fn exercise(world: &mut World) {
 
 fn click_label(world: &mut World, row: Entity, label: &str) {
     let button = world
-        .query::<(&Text, &ChildOf)>()
+        .query::<(
+            Entity,
+            Option<&Text>,
+            Option<&lince_interface::icons::Tooltip>,
+            &ChildOf,
+        )>()
         .iter(world)
-        .find_map(|(text, parent)| {
-            if !text.0.contains(label) {
+        .find_map(|(entity, text, tooltip, parent)| {
+            let entity = if text.is_some_and(|text| text.0.contains(label)) {
+                parent.parent()
+            } else if tooltip.is_some_and(|tooltip| tooltip.0.contains(label)) {
+                entity
+            } else {
                 return None;
-            }
-            let button = world.get::<lince_interface::actions::ActionButton>(parent.parent())?;
-            let mut cursor = parent.parent();
+            };
+            let button = world.get::<lince_interface::actions::ActionButton>(entity)?;
+            let mut cursor = entity;
             loop {
                 if cursor == row {
                     return Some(button.clone());

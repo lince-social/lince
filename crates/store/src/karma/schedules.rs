@@ -83,7 +83,7 @@ impl StoredScheduleCursor {
         }
     }
 
-    fn next_intended_at(&self) -> Option<TimestampMs> {
+    pub fn next_intended_at(&self) -> Option<TimestampMs> {
         match self {
             Self::Elapsed { cursor } => Some(cursor.next_intended_at()),
             Self::Calendar { cursor } => Some(cursor.next().intended_at),
@@ -161,7 +161,7 @@ impl ScheduleOccurrencePayload {
         }
     }
 
-    fn observed_at(&self) -> TimestampMs {
+    pub fn observed_at(&self) -> TimestampMs {
         match self {
             Self::Elapsed { occurrence } => occurrence.observed_at,
             Self::Calendar { occurrence } => occurrence.observed_at,
@@ -279,8 +279,40 @@ pub(crate) async fn install_admitted_activation_cursor_tx(
     grant: &DispatcherResourceGrant,
     at: &str,
 ) -> Result<(), StoreError> {
-    let prepared =
-        prepare_activation_cursor(activation_hash, epoch, calendar_provider, demand_policy)?;
+    install_admitted_activation_cursor_from_tx(
+        tx,
+        activation_hash,
+        epoch,
+        calendar_provider,
+        demand_policy,
+        demand_capacity,
+        host,
+        grant,
+        at,
+        None,
+    )
+    .await
+}
+
+pub(crate) async fn install_admitted_activation_cursor_from_tx(
+    tx: &mut Transaction<'_, Sqlite>,
+    activation_hash: &CanonicalHash,
+    epoch: &FrequencyActivationEpoch,
+    calendar_provider: Option<&dyn TimeZoneProvider>,
+    demand_policy: ScheduleDemandPolicy,
+    demand_capacity: ScheduleDemandCapacity,
+    host: &HostTimerCapabilities,
+    grant: &DispatcherResourceGrant,
+    at: &str,
+    starting_cursor: Option<StoredScheduleCursor>,
+) -> Result<(), StoreError> {
+    let prepared = prepare_activation_cursor(
+        activation_hash,
+        epoch,
+        calendar_provider,
+        demand_policy,
+        starting_cursor,
+    )?;
     let mut lifecycle = prepared.lifecycle;
     let mut last_error_json = None;
     let mut admitted_resolution_ms = None;
@@ -406,12 +438,19 @@ fn prepare_activation_cursor(
     epoch: &FrequencyActivationEpoch,
     calendar_provider: Option<&dyn TimeZoneProvider>,
     demand_policy: ScheduleDemandPolicy,
+    starting_cursor: Option<StoredScheduleCursor>,
 ) -> Result<PreparedActivationCursor, StoreError> {
     match &epoch.compiled().schedule {
         CompiledSchedule::Elapsed { schedule } => {
-            let cursor = schedule
-                .initial_cursor(epoch.activated_at())
-                .map_err(boundary)?;
+            let cursor = match starting_cursor {
+                Some(StoredScheduleCursor::Elapsed { cursor }) => schedule
+                    .cursor(cursor.last_intended_at(), cursor.next_intended_at())
+                    .map_err(boundary)?,
+                None => schedule
+                    .initial_cursor(epoch.activated_at())
+                    .map_err(boundary)?,
+                _ => return Err(protocol("Frequency cursor does not match elapsed schedule")),
+            };
             let deadline = DeadlineEntry::new(
                 activation_hash.clone(),
                 1,
@@ -444,7 +483,21 @@ fn prepare_activation_cursor(
             let provider = calendar_provider.ok_or_else(|| {
                 protocol("calendar Frequency activation requires its pinned timezone provider")
             })?;
-            let resolution = resolve_calendar_cursor(schedule, provider, None).map_err(boundary)?;
+            let resolution = match starting_cursor {
+                Some(StoredScheduleCursor::Calendar { cursor }) => {
+                    cursor.validate_for(schedule, provider).map_err(boundary)?;
+                    CalendarCursorResolution::Armed(cursor)
+                }
+                Some(StoredScheduleCursor::CalendarPaused { previous, .. }) => {
+                    resolve_calendar_cursor(schedule, provider, previous).map_err(boundary)?
+                }
+                None => resolve_calendar_cursor(schedule, provider, None).map_err(boundary)?,
+                _ => {
+                    return Err(protocol(
+                        "Frequency cursor does not match calendar schedule",
+                    ));
+                }
+            };
             let demand = ScheduleDemand::for_calendar(
                 schedule,
                 provider,
@@ -1683,7 +1736,7 @@ async fn insert_occurrence(
     Ok(())
 }
 
-async fn get_cursor_tx(
+pub(crate) async fn get_cursor_tx(
     tx: &mut Transaction<'_, Sqlite>,
     activation_hash: &CanonicalHash,
 ) -> Result<Option<ScheduleCursorRow>, StoreError> {

@@ -48,6 +48,17 @@ fn rich_text_preserves_code_and_resolves_record_link_targets() {
             .iter()
             .any(|run| run.strike && run.text == "old")
     );
+    let blocks = markup::parse(
+        "Hi [@old-slug](record:r_example), [@Jane \\[work\\]](record:r_person) and @record_slug.",
+    );
+    let links: Vec<_> = blocks[0]
+        .runs
+        .iter()
+        .filter_map(|run| run.link.as_ref())
+        .collect();
+    assert!(links.iter().any(|link| link.as_str() == "record:r_example"));
+    assert!(links.iter().any(|link| link.as_str() == "record:r_person"));
+    assert!(links.iter().any(|link| link.as_str() == "record_slug"));
 }
 
 #[cfg_attr(test, test)]
@@ -118,12 +129,60 @@ fn preview_keeps_the_same_editor_and_follows_its_changes() {
     assert_eq!(world.get::<Editor>(parent).unwrap().input, input);
     assert!(protects(&world, preview));
     assert!(!protects(&world, input));
+    set_mode(&mut world, parent, Mode::Pretty);
+    assert_eq!(world.get::<Node>(input).unwrap().display, Display::None);
+    assert_eq!(world.get::<Node>(preview).unwrap().display, Display::Flex);
+    set_mode(&mut world, parent, Mode::Raw);
+    assert_eq!(world.get::<Node>(input).unwrap().display, Display::Flex);
+    assert_eq!(world.get::<Node>(preview).unwrap().display, Display::None);
+    assert_eq!(
+        world
+            .get::<EditableText>(input)
+            .unwrap()
+            .value()
+            .to_string(),
+        "## Changed"
+    );
+}
+
+#[cfg_attr(test, test)]
+fn shader_blocks_stay_between_text_and_keep_their_preview_while_editing() {
+    let mut world = World::new();
+    world.init_resource::<Assets<Font>>();
+    world.init_resource::<crate::theme::Typography>();
+    let parent = world.spawn(Node::default()).id();
+    let source = format!("Hello, world\n\n```wgsl\n{SHADER_EXAMPLE}```\n\nTesting123");
+    let description = spawn(
+        &mut world,
+        parent,
+        &source,
+        Context {
+            owner: parent,
+            source: Source::Local,
+        },
+    );
+    let children: Vec<_> = world.get::<Children>(description).unwrap().iter().collect();
+    assert_eq!(children.len(), 3);
+    assert!(world.get::<shader::Preview>(children[1]).is_some());
+    let first_text = world.get::<Children>(children[0]).unwrap()[0];
+    assert_eq!(world.get::<TextSpan>(first_text).unwrap().0, "Hello, world");
+    let last_text = world.get::<Children>(children[2]).unwrap()[0];
+    assert_eq!(world.get::<TextSpan>(last_text).unwrap().0, "Testing123");
+    set(
+        &mut world,
+        description,
+        "Hello\n\n```wgsl\nfn shade(\n```\n\nAfter",
+    );
+    assert_eq!(world.get::<Children>(description).unwrap()[1], children[1]);
+    set(&mut world, description, "Only text");
+    assert!(world.get_entity(children[1]).is_err());
 }
 
 crate::laboratory_cases! {
     rich_text_preserves_code_and_resolves_record_link_targets,
     mermaid_renders_pixels_and_reports_invalid_diagrams,
     preview_keeps_the_same_editor_and_follows_its_changes,
+    shader_blocks_stay_between_text_and_keep_their_preview_while_editing,
     record_links_keep_their_source_and_navigate_embedded_records,
 }
 

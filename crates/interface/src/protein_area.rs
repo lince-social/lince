@@ -64,6 +64,13 @@ pub(crate) fn calendar_status(world: &World, owner: Entity) -> &str {
         .map_or("Stopped", |s| s.status.as_str())
 }
 
+pub(crate) fn feed_ready(world: &World, owner: Entity) -> bool {
+    world
+        .get_resource::<Runtime>()
+        .and_then(|runtime| runtime.areas.get(&owner))
+        .is_some_and(|state| state.ready && state.subscription.is_some())
+}
+
 pub(crate) fn thread_load_error(world: &World, owner: Entity) -> Option<&str> {
     let state = world.get_resource::<Runtime>()?.areas.get(&owner)?;
     state.thread_error.as_deref()
@@ -202,6 +209,9 @@ pub struct ProteinAreaPlugin;
 pub struct UpdateProteinAreas;
 impl Plugin for ProteinAreaPlugin {
     fn build(&self, app: &mut App) {
+        if !app.is_plugin_added::<crate::assertion_editor::AssertionEditorPlugin>() {
+            app.add_plugins(crate::assertion_editor::AssertionEditorPlugin);
+        }
         app.init_resource::<Runtime>()
             .add_message::<CellMessage>()
             .add_systems(
@@ -409,6 +419,7 @@ fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
     let snapshot = matches!(&message, ServerMessage::Snapshot { .. });
     crate::work_timer::receive(world, &message);
     crate::thread_castle::transcript::receive_message(world, &message);
+    crate::thread_castle::mentions::receive_message(world, &message);
     if let Some(Source::Organ(organ)) = world
         .resource::<Runtime>()
         .areas
@@ -416,6 +427,7 @@ fn receive(world: &mut World, owner: Entity, message: ServerMessage) {
         .and_then(|state| state.applied.as_ref())
         .map(|config| config.source.clone())
     {
+        crate::assertion_editor::receive(world, &message);
         crate::record_binding::receive(world, Source::Organ(organ), message.clone());
     }
     let mut runtime = world.resource_mut::<Runtime>();
@@ -824,7 +836,9 @@ pub fn execute(
         _ => id(world),
     };
     let durable = if let engine::actions::Action::ChangeRecord { request } = &action {
-        if crate::record_binding::enabled(world) {
+        if crate::record_binding::enabled(world)
+            && !matches!(request.mutation, engine::record_change::Mutation::NumberAssertion { .. })
+        {
             crate::record_binding::submit(world, binding, request.clone())?;
             true
         } else {
@@ -989,7 +1003,22 @@ fn query(world: &World, entity: Entity, config: &Config) -> Result<protein::Prot
     if world.get::<filter::Subscription>(entity).is_some() {
         filter::query(config)
     } else {
-        config.query()
+        let mut query = config.query()?;
+        if world
+            .get::<crate::assertion_castle::AssertionFeed>(entity)
+            .is_some()
+        {
+            let fields = query.fields.get_or_insert_default();
+            for field in ["head", "assertions"] {
+                if !fields.iter().any(|existing| existing == field) {
+                    fields.push(field.into());
+                }
+            }
+        }
+        if world.get::<crate::shader_castle::ShaderFeed>(entity).is_some() {
+            query.limit = Some(1);
+        }
+        Ok(query)
     }
 }
 

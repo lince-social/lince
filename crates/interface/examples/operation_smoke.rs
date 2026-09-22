@@ -137,13 +137,13 @@ fn exercise(world: &mut World) {
         }
         50 => {
             assert_eq!(world.query::<&OperationSand>().iter(world).count(), 1);
+            let input = world.resource::<InputFocus>().get().unwrap();
             let help = world
-                .query::<(Entity, &Text)>()
+                .query::<(Entity, &lince_interface::icons::TooltipIcon)>()
                 .iter(world)
-                .find(|(_, text)| text.0 == "?")
+                .find(|(_, icon)| icon.source == input)
                 .unwrap()
                 .0;
-            let input = world.resource::<InputFocus>().get().unwrap();
             let input_node = world.get::<ComputedNode>(input).unwrap();
             let bounds = Rect::from_center_size(
                 world.get::<UiGlobalTransform>(input).unwrap().translation,
@@ -188,6 +188,7 @@ fn exercise(world: &mut World) {
 #[tokio::main]
 async fn main() {
     interface_app()
+        .insert_resource(lince_interface::icons::TooltipSettings { enabled: true })
         .insert_resource(Capture(
             std::env::args().nth(1).expect("provide screenshot path"),
         ))

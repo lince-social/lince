@@ -44,6 +44,15 @@ fn pointer(world: &mut World, position: Vec2) {
     }));
 }
 
+fn info(world: &mut World, source: Entity) -> Entity {
+    world
+        .query::<(Entity, &lince_interface::icons::TooltipIcon)>()
+        .iter(world)
+        .find(|(_, icon)| icon.source == source)
+        .unwrap()
+        .0
+}
+
 fn tooltip(world: &mut World) -> Entity {
     world
         .query::<(Entity, &GlobalZIndex, &Text)>()
@@ -112,10 +121,12 @@ fn exercise(world: &mut World) {
                 *world.get::<Visibility>(bar).unwrap(),
                 Visibility::Inherited
             );
-            pointer(world, rect(world, zoom).center());
+            let icon = info(world, zoom);
+            pointer(world, rect(world, icon).center());
         }
         40 => {
-            check_tip(world, rect(world, zoom));
+            let icon = info(world, zoom);
+            check_tip(world, rect(world, icon));
             capture(world, "toolbar");
         }
         50 => pointer(world, Vec2::splat(100.0)),
@@ -156,20 +167,22 @@ fn exercise(world: &mut World) {
                 .query_filtered::<Entity, With<Probe>>()
                 .single(world)
                 .unwrap();
-            pointer(world, bounds(world, probe).unwrap().center());
+            let icon = info(world, probe);
+            pointer(world, bounds(world, icon).unwrap().center());
         }
         105 => {
             let probe = world
                 .query_filtered::<Entity, With<Probe>>()
                 .single(world)
                 .unwrap();
-            check_tip(world, bounds(world, probe).unwrap());
+            let icon = info(world, probe);
+            check_tip(world, bounds(world, icon).unwrap());
             capture(world, "sand");
             world.spawn((Text::new("Inspect this Sand"), ChildOf(probe)));
         }
         115 => {
             let tip = tooltip(world);
-            assert_eq!(*world.get::<Visibility>(tip).unwrap(), Visibility::Hidden);
+            assert_ne!(*world.get::<Visibility>(tip).unwrap(), Visibility::Hidden);
             let probe = world
                 .query_filtered::<Entity, With<Probe>>()
                 .single(world)
@@ -188,19 +201,21 @@ fn exercise(world: &mut World) {
                 .query_filtered::<Entity, With<Probe>>()
                 .single(world)
                 .unwrap();
-            pointer(world, bounds(world, probe).unwrap().center());
+            let icon = info(world, probe);
+            pointer(world, bounds(world, icon).unwrap().center());
         }
         150 => {
             let probe = world
                 .query_filtered::<Entity, With<Probe>>()
                 .single(world)
                 .unwrap();
-            check_tip(world, bounds(world, probe).unwrap());
+            let icon = info(world, probe);
+            check_tip(world, bounds(world, icon).unwrap());
             capture(world, "spatial");
         }
         165 => {
             println!(
-                "Controls passed: corner hover and focus, toolbar hiding, duplicate labels, screen and Sand tooltip placement in 2D and 3D."
+                "Controls passed: corner hover and focus, toolbar hiding, info icons with duplicate labels, screen and Sand tooltip placement in 2D and 3D."
             );
             world.write_message(AppExit::Success);
         }
@@ -211,6 +226,7 @@ fn exercise(world: &mut World) {
 #[tokio::main]
 async fn main() {
     interface_app()
+        .insert_resource(lince_interface::icons::TooltipSettings { enabled: true })
         .insert_resource(WinitSettings::continuous())
         .add_systems(
             Startup,

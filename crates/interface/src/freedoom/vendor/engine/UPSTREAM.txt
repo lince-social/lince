@@ -1,0 +1,6 @@
+Doomgeneric
+https://github.com/ozkl/doomgeneric
+Commit: dcb7a8dbc7a16ce3dda29382ac9aae9d77d21284
+Authors: id Software, Simon Howard, Ozk, and Doomgeneric contributors
+Native framebuffer and keyboard adapter: Lince contributors
+Local change: p_maputl.c casts the emulated 32-bit pointer value through intptr_t for a warning-free 64-bit build.

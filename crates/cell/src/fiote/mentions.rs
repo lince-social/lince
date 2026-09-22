@@ -1,18 +1,55 @@
 use super::*;
 use std::collections::BTreeSet;
 
+fn linked_reference(text: &str) -> Option<(&str, usize)> {
+    if !text.starts_with('@') {
+        return None;
+    }
+    let mut chars = text.char_indices();
+    while let Some((index, ch)) = chars.next() {
+        match ch {
+            '\\' => {
+                chars.next()?;
+            }
+            '[' | '\n' | '\r' => return None,
+            ']' => {
+                let target = text[index + 1..].strip_prefix("(record:")?;
+                let end = target.find(')')?;
+                let uid = &target[..end];
+                if uid.is_empty()
+                    || !uid
+                        .chars()
+                        .all(|ch| ch.is_ascii_alphanumeric() || ch == '_' || ch == '-')
+                {
+                    return None;
+                }
+                return Some((uid, index + 1 + "(record:".len() + end + 1));
+            }
+            _ => {}
+        }
+    }
+    None
+}
+
 fn references(body: &str) -> BTreeSet<String> {
     let mut references = BTreeSet::new();
     let mut code = 0;
-    let mut chars = body.chars().peekable();
+    let mut rest = body;
     let mut previous = None;
-    while let Some(ch) = chars.next() {
+    while let Some(ch) = rest.chars().next() {
+        rest = &rest[ch.len_utf8()..];
+        if ch == '['
+            && code == 0
+            && let Some((uid, length)) = linked_reference(rest)
+        {
+            references.insert(uid.into());
+            rest = &rest[length..];
+            previous = Some(')');
+            continue;
+        }
         if ch == '`' {
-            let mut count = 1;
-            while chars.peek() == Some(&'`') {
-                chars.next();
-                count += 1;
-            }
+            let count = 1 + rest.chars().take_while(|ch| *ch == '`').count();
+            rest = &rest[count - 1..];
             if code == 0 {
                 code = count;
             } else if code == count {
@@ -22,34 +59,22 @@ fn references(body: &str) -> BTreeSet<String> {
             && code == 0
             && previous.is_none_or(|ch: char| ch.is_whitespace() || "([{".contains(ch))
         {
-            let mut reference = String::new();
-            if chars.peek() == Some(&'"') {
-                chars.next();
-                let mut closed = false;
-                for ch in chars.by_ref() {
-                    if ch == '"' {
-                        closed = true;
-                        break;
-                    }
-                    if ch == '\n' {
-                        break;
-                    }
-                    reference.push(ch);
+            if let Some(quoted) = rest.strip_prefix('"') {
+                let end = quoted.find(['"', '\n']).unwrap_or(quoted.len());
+                if quoted[end..].starts_with('"') && end > 0 {
+                    references.insert(quoted[..end].into());
                 }
-                if !closed {
-                    reference.clear();
-                }
+                rest = &quoted[(end + usize::from(end < quoted.len()))..];
             } else {
-                while let Some(ch) = chars.peek().copied() {
-                    if !ch.is_alphanumeric() && ch != '-' && ch != '_' {
-                        break;
-                    }
-                    reference.push(ch);
-                    chars.next();
+                let end = rest
+                    .chars()
+                    .take_while(|ch| ch.is_alphanumeric() || *ch == '-' || *ch == '_')
+                    .map(char::len_utf8)
+                    .sum::<usize>();
+                if end > 0 {
+                    references.insert(rest[..end].into());
                 }
-            }
-            if !reference.is_empty() {
-                references.insert(reference);
+                rest = &rest[end..];
             }
         }
         previous = Some(ch);
@@ -153,5 +178,18 @@ mod tests {
             BTreeSet::from(["dev".into(), "Development Fiote".into(), "r_123".into()])
         );
         assert!(references("@\"unfinished\nhello @").is_empty());
+    }
+
+    #[test]
+    fn selected_mentions_resolve_the_record_instead_of_the_label() {
+        assert_eq!(
+            references("Hi [@old-slug](record:r_123), [@person](record:r_456) and @dev"),
+            BTreeSet::from(["r_123".into(), "r_456".into(), "dev".into()])
+        );
+        assert!(references("`[@dev](record:r_123)`\n```\n[@dev](record:r_456)\n```").is_empty());
+        assert_eq!(
+            references("[@Jane \\[work\\]](record:r_789) [@Fiote helper](record:r_123)"),
+            BTreeSet::from(["r_789".into(), "r_123".into()])
+        );
     }
 }

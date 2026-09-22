@@ -265,7 +265,7 @@ async fn native_state_and_assignment_changes_reject_stale_properties_but_allow_l
     )
     .await;
     let current = read(&tools, &uid).await;
-    assert_eq!(current["record"]["quantity_exact"], "-3");
+    assert_eq!(current["record"]["quantity"], "-3");
     assert_eq!(current["record"]["body"], "Human is typing.");
     assert!(
         current["record"]["assertions"]
@@ -306,7 +306,7 @@ async fn unsafe_text_replacement_bad_reads_and_ambiguous_edits_are_refused_witho
         engine.doc_text(&uid).await.unwrap().1,
         "Hello world.\nKeep this paragraph."
     );
-    assert_eq!(read(&tools, &uid).await["record"]["quantity_exact"], "0");
+    assert_eq!(read(&tools, &uid).await["record"]["quantity"], "0");
 }
 
 #[tokio::test]

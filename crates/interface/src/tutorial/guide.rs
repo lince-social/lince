@@ -67,7 +67,10 @@ fn navigation(target: &Target) -> bool {
         target,
         Target::Control(_)
             | Target::Edit(
-                EditAction::Open | EditAction::Areas | EditAction::Area(AreaAction::Select(_))
+                EditAction::Open
+                    | EditAction::General
+                    | EditAction::Areas
+                    | EditAction::Area(AreaAction::Select(_))
             )
     )
 }
@@ -127,6 +130,32 @@ pub(super) fn instructions(world: &mut World, root: Entity, verified: bool) -> V
         editing,
         Target::Edit(EditAction::Open),
     );
+    if matches!(step, 1..=3) {
+        let enabled = crate::workspace_config::enabled(world, root, workspace);
+        let ready = enabled == (step < 3);
+        add(
+            &mut list,
+            "Open General to change workspace physics.",
+            ready
+                || !super::highlight::targets(
+                    world,
+                    root,
+                    &Target::Edit(EditAction::TogglePhysics),
+                )
+                .is_empty(),
+            Target::Edit(EditAction::General),
+        );
+        add(
+            &mut list,
+            if step < 3 {
+                "Turn Physics on."
+            } else {
+                "Turn Physics off so the cards stay where you drag them."
+            },
+            ready,
+            Target::Edit(EditAction::TogglePhysics),
+        );
+    }
     add(
         &mut list,
         "Open Areas of influence.",
@@ -139,14 +168,6 @@ pub(super) fn instructions(world: &mut World, root: Entity, verified: bool) -> V
         _ => change,
     };
     let area = owned(world, root, area_entity).cloned();
-    if step == 3 {
-        add(
-            &mut list,
-            "Turn Physics off so the cards stay where you drag them.",
-            !crate::workspace_config::enabled(world, root, workspace),
-            Target::Edit(EditAction::TogglePhysics),
-        );
-    }
     add(
         &mut list,
         if step == 0 {
@@ -240,7 +261,7 @@ pub(super) fn instructions(world: &mut World, root: Entity, verified: bool) -> V
         for (property, title) in [
             ("head", "Title"),
             ("body", "Description"),
-            ("quantity_exact", "Quantity"),
+            ("quantity", "Quantity"),
         ] {
             add(
                 &mut list,
@@ -335,12 +356,6 @@ pub(super) fn instructions(world: &mut World, root: Entity, verified: bool) -> V
                 area.as_ref()
                     .is_some_and(|area| area.reach.mode == ReachMode::Unlimited),
                 Target::Edit(EditAction::Area(AreaAction::Reach(ReachMode::Unlimited))),
-            );
-            add(
-                &mut list,
-                "Turn Physics on.",
-                crate::workspace_config::enabled(world, root, workspace),
-                Target::Edit(EditAction::TogglePhysics),
             );
         } else {
             add(

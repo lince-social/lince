@@ -4,15 +4,20 @@ use bevy::{
 };
 use serde::{Deserialize, Serialize};
 
+mod area_reach;
 mod area_summary;
 pub mod areas;
 pub mod assets;
+mod font_cache;
 pub mod groups;
 pub mod influence;
 pub mod input;
 pub mod physics;
 pub mod presentation;
 mod resizing;
+pub mod splats;
+mod surface_budget;
+mod surface_render;
 pub mod ui;
 pub mod view;
 
@@ -20,9 +25,11 @@ pub struct TopologyPlugin;
 
 impl Plugin for TopologyPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<assets::Imports>()
+        app.add_plugins(surface_render::SurfaceRenderPlugin)
+            .init_resource::<assets::Imports>()
             .init_resource::<physics::Runtime>()
             .init_resource::<input::PointerState>()
+            .add_systems(Last, font_cache::trim)
             .add_systems(Startup, |mut commands: Commands| {
                 commands.spawn(input::CONTENT_POINTER);
             })
@@ -42,6 +49,7 @@ impl Plugin for TopologyPlugin {
                     area_summary::update,
                     presentation::synchronize,
                     areas::update,
+                    area_reach::update,
                     ui::update,
                 )
                     .chain()

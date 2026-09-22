@@ -13,6 +13,7 @@ use std::{
     path::PathBuf,
 };
 
+mod recovery;
 pub(crate) mod storage;
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -87,10 +88,18 @@ struct SavedSand {
     size: [f32; 2],
     #[serde(default)]
     timer: Option<crate::work_timer::LocalTimer>,
+    #[serde(default)]
+    todo: Option<crate::todo::SavedTodo>,
 }
 
 #[derive(Serialize, Deserialize)]
 struct Document {
+    #[serde(skip)]
+    recovery: recovery::Report,
+    #[serde(default)]
+    assertions: Vec<crate::assertion_castle::SavedAssertion>,
+    #[serde(default)]
+    shaders: Vec<crate::shader_castle::SavedShader>,
     #[serde(default)]
     layouts: Vec<crate::layout::records::Saved>,
     #[serde(default)]
@@ -106,6 +115,14 @@ struct Document {
     #[serde(default)]
     proteins: Vec<crate::protein_castle::SavedProteinCastle>,
     #[serde(default)]
+    karma_castles: Vec<crate::karma_castle::SavedKarmaCastle>,
+    #[serde(default)]
+    frequency_castles: Vec<crate::frequency_castle::SavedFrequencyCastle>,
+    #[serde(default)]
+    transfer_castles: Vec<crate::transfer_castle::SavedTransferCastle>,
+    #[serde(default)]
+    recorders: Vec<crate::recorder_castle::SavedRecorder>,
+    #[serde(default)]
     calendars: Vec<crate::calendar::SavedCalendar>,
     #[serde(default)]
     kanbans: Vec<crate::kanban::SavedKanban>,
@@ -118,6 +135,30 @@ impl Document {
         let ids: HashSet<_> = self.workspaces.iter().map(|space| space.id).collect();
         let area_ids: HashSet<_> = self.areas.iter().map(|saved| &saved.area.id).collect();
         self.theme.validate()
+            && self
+                .assertions
+                .iter()
+                .all(|saved| ids.contains(&saved.frame.workspace) && saved.valid())
+            && self
+                .shaders
+                .iter()
+                .all(|saved| ids.contains(&saved.0.workspace) && saved.valid())
+            && self
+                .karma_castles
+                .iter()
+                .all(|saved| ids.contains(&saved.workspace) && saved.valid())
+            && self
+                .recorders
+                .iter()
+                .all(|saved| ids.contains(&saved.workspace) && saved.valid())
+            && self
+                .frequency_castles
+                .iter()
+                .all(|saved| ids.contains(&saved.workspace) && saved.valid())
+            && self
+                .transfer_castles
+                .iter()
+                .all(|saved| ids.contains(&saved.workspace) && saved.valid())
             && self
                 .instincts
                 .iter()
@@ -152,31 +193,49 @@ impl Document {
             && !ids.is_empty()
             && ids.len() == self.workspaces.len()
             && ids.contains(&self.active)
-            && self.workspaces.iter().all(|space| {
-                space.topology.valid()
-                    && !space.name.trim().is_empty()
-                    && space.name.chars().count() <= 80
-                    && DVec2::from_array(space.center).is_finite()
-                    && (CanvasView::MIN_ZOOM..=CanvasView::MAX_ZOOM).contains(&space.zoom)
-            })
-            && self.sands.iter().all(|sand| {
-                sand.tokens.validate()
-                    && sand.placement.valid()
-                    && ids.contains(&sand.workspace)
-                    && valid_geometry(sand.position, sand.size)
-                    && sand.texts.len() <= 128
-                    && sand.texts.iter().all(SavedText::validate)
-                    && sand
-                        .timer
-                        .as_ref()
-                        .is_none_or(|timer| sand.kind == SandKind::WorkTimer && timer.valid())
-            })
-            && self.records.iter().all(|record| {
-                record.tokens.validate()
-                    && record.placement.valid()
-                    && ids.contains(&record.workspace)
-                    && valid_geometry(record.position, record.size)
-            })
+            && self.workspaces.iter().all(Workspace::valid)
+            && self
+                .sands
+                .iter()
+                .all(|sand| ids.contains(&sand.workspace) && sand.valid())
+            && self
+                .records
+                .iter()
+                .all(|record| ids.contains(&record.workspace) && record.valid())
+    }
+}
+
+impl Workspace {
+    fn valid(&self) -> bool {
+        self.topology.valid()
+            && !self.name.trim().is_empty()
+            && self.name.chars().count() <= 80
+            && DVec2::from_array(self.center).is_finite()
+            && (CanvasView::MIN_ZOOM..=CanvasView::MAX_ZOOM).contains(&self.zoom)
+    }
+}
+
+impl SavedSand {
+    fn valid(&self) -> bool {
+        self.tokens.validate()
+            && self.placement.valid()
+            && valid_geometry(self.position, self.size)
+            && self.texts.len() <= 128
+            && self.texts.iter().all(SavedText::validate)
+            && self
+                .timer
+                .as_ref()
+                .is_none_or(|timer| self.kind == SandKind::WorkTimer && timer.valid())
+            && self
+                .todo
+                .as_ref()
+                .is_none_or(|todo| self.kind == SandKind::Todo && todo.valid())
+    }
+}
+
+impl SavedRecord {
+    fn valid(&self) -> bool {
+        self.tokens.validate() && self.placement.valid() && valid_geometry(self.position, self.size)
     }
 }
 
@@ -247,13 +306,31 @@ fn initialize(world: &mut World) {
         let mut restored = false;
         match document {
             Some(Ok(Some(document))) => {
-                if storage::snapshots(
-                    &world
-                        .resource::<WorkspaceFile>()
-                        .path
-                        .with_extension("snapshots"),
-                )
-                .is_ok_and(|files| !files.is_empty())
+                let recovered = document.recovery.changed();
+                if recovered {
+                    let path = world.resource::<WorkspaceFile>().path.clone();
+                    let message = match document.recovery.preserve(&path) {
+                        Ok(backup) => document.recovery.message(backup.as_deref()),
+                        Err(error) => {
+                            world.resource_mut::<WorkspaceFile>().blocked = true;
+                            let message = format!(
+                                "{}. Saving is paused because the original snapshot could not be backed up: {error}",
+                                document.recovery.summary()
+                            );
+                            spaces.error = Some(message.clone());
+                            message
+                        }
+                    };
+                    crate::notifications::report(world, "interface::workspaces", &message);
+                }
+                if !recovered
+                    && storage::snapshots(
+                        &world
+                            .resource::<WorkspaceFile>()
+                            .path
+                            .with_extension("snapshots"),
+                    )
+                    .is_ok_and(|files| !files.is_empty())
                 {
                     world.resource_mut::<WorkspaceFile>().last =
                         Some(serde_json::to_vec_pretty(&document).unwrap());
@@ -278,6 +355,24 @@ fn initialize(world: &mut World) {
                     }
                 }
                 for saved in document.proteins {
+                    saved.restore(world, root);
+                }
+                for saved in document.shaders {
+                    saved.restore(world, root);
+                }
+                for saved in document.assertions {
+                    saved.restore(world, root);
+                }
+                for saved in document.karma_castles {
+                    saved.restore(world, root);
+                }
+                for saved in document.recorders {
+                    saved.restore(world, root);
+                }
+                for saved in document.transfer_castles {
+                    saved.restore(world, root);
+                }
+                for saved in document.frequency_castles {
                     saved.restore(world, root);
                 }
                 for saved in document.calendars {
@@ -322,6 +417,21 @@ fn initialize(world: &mut World) {
                     if sand.kind == SandKind::Sync {
                         content = Some(crate::sync_castle::populate(world, root, entity));
                     }
+                    if sand.kind == SandKind::Freedoom {
+                        content = Some(crate::freedoom::populate(world, root, entity));
+                    }
+                    if sand.kind == SandKind::Terminal {
+                        content = Some(crate::terminal::populate(world, root, entity));
+                    }
+                    if sand.kind == SandKind::Configuration {
+                        content = Some(crate::configuration::populate(world, root, entity));
+                    }
+                    if sand.kind == SandKind::Todo {
+                        content = Some(crate::todo::populate(world, root, entity));
+                        if let Some(todo) = sand.todo {
+                            crate::todo::restore(world, entity, todo);
+                        }
+                    }
                     for text in sand.texts {
                         let block = sand_text::spawn(world, entity, text);
                         content.get_or_insert(block);
@@ -344,9 +454,8 @@ fn initialize(world: &mut World) {
                 }
             }
             Some(Err(error)) => {
-                let message = format!(
-                    "Could not load workspaces: {error}. Saved data has been kept."
-                );
+                let message =
+                    format!("Could not load workspaces: {error}. Saved data has been kept.");
                 crate::notifications::report(world, "interface::workspaces", &message);
                 spaces.error = Some(message);
                 world.resource_mut::<WorkspaceFile>().blocked = true;
@@ -616,6 +725,7 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
                 kind: sand.kind,
                 texts: sand_text::snapshot(world, entity),
                 timer: world.get::<crate::work_timer::LocalTimer>(entity).cloned(),
+                todo: crate::todo::snapshot(world, entity),
                 workspace: member.0,
                 position: item.position.to_array(),
                 size: item.size.to_array(),
@@ -641,6 +751,7 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
         .collect();
     areas.sort_by(|a, b| a.area.id.cmp(&b.area.id));
     Document {
+        recovery: Default::default(),
         layouts: crate::layout::records::snapshot(world, root),
         imports: crate::topology::assets::snapshot(world, root),
         theme: world.resource::<crate::tokens::ThemeSettings>().clone(),
@@ -650,6 +761,12 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
         records,
         areas,
         proteins: crate::protein_castle::snapshot(world, root),
+        shaders: crate::shader_castle::snapshot(world, root),
+        assertions: crate::assertion_castle::snapshot(world, root),
+        karma_castles: crate::karma_castle::snapshot(world, root),
+        frequency_castles: crate::frequency_castle::snapshot(world, root),
+        transfer_castles: crate::transfer_castle::snapshot(world, root),
+        recorders: crate::recorder_castle::snapshot(world, root),
         calendars: crate::calendar::snapshot(world, root),
         kanbans: crate::kanban::snapshot(world, root),
         instincts: crate::instinct::snapshot(world, root),
@@ -872,7 +989,14 @@ pub(crate) mod tests {
         let directory = tempfile::tempdir().unwrap();
         let path = directory.path().join("interface.json");
         let (mut app, root) = fixture(Some(path.clone()));
-        let sand = crate::sand_store::spawn_sand(app.world_mut(), root, 1, SandKind::WorkTimer, "", DVec2::ZERO);
+        let sand = crate::sand_store::spawn_sand(
+            app.world_mut(),
+            root,
+            1,
+            SandKind::WorkTimer,
+            "",
+            DVec2::ZERO,
+        );
         let timer: crate::work_timer::LocalTimer = serde_json::from_value(serde_json::json!({"logs":[
             {"id":"work.log:first", "start":"2026-09-19T10:00:00Z", "end":"2026-09-19T10:05:00Z"},
             {"id":"work.log:running", "start":"2026-09-19T11:00:00Z", "end":null}
@@ -881,9 +1005,85 @@ pub(crate) mod tests {
         flush(&mut app);
         drop(app);
         let (mut app, _) = fixture(Some(path));
-        let restored = app.world_mut().query::<&crate::work_timer::LocalTimer>().single(app.world()).unwrap();
+        let restored = app
+            .world_mut()
+            .query::<&crate::work_timer::LocalTimer>()
+            .single(app.world())
+            .unwrap();
         assert_eq!(restored, &timer);
         assert!(restored.valid());
+    }
+
+    #[test]
+    fn migrated_sands_and_todo_preferences_survive_workspace_restart() {
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("interface.json");
+        let (mut app, root) = fixture(Some(path.clone()));
+        for (index, kind) in [
+            SandKind::Freedoom,
+            SandKind::Terminal,
+            SandKind::Configuration,
+            SandKind::Todo,
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            let sand = crate::sand_store::spawn_sand(
+                app.world_mut(),
+                root,
+                1,
+                kind,
+                "",
+                DVec2::new(index as f64 * 600.0, 40.0),
+            );
+            if kind == SandKind::Todo {
+                let saved = serde_json::from_value(serde_json::json!({"protein":"weekend", "show_ids":true, "draft":"Unfinished task"})).unwrap();
+                crate::todo::restore(app.world_mut(), sand, saved);
+            }
+        }
+        flush(&mut app);
+        drop(app);
+        let (mut app, _) = fixture(Some(path));
+        let sands: Vec<_> = app
+            .world_mut()
+            .query::<(Entity, &StoredSand)>()
+            .iter(app.world())
+            .map(|(entity, sand)| (entity, sand.kind))
+            .collect();
+        assert_eq!(sands.len(), 4);
+        for kind in [
+            SandKind::Freedoom,
+            SandKind::Terminal,
+            SandKind::Configuration,
+            SandKind::Todo,
+        ] {
+            let owner = sands.iter().find(|(_, found)| *found == kind).unwrap().0;
+            let populated = match kind {
+                SandKind::Freedoom => app
+                    .world()
+                    .get::<crate::freedoom::FreedoomSand>(owner)
+                    .is_some(),
+                SandKind::Terminal => app
+                    .world()
+                    .get::<crate::terminal::TerminalSand>(owner)
+                    .is_some(),
+                SandKind::Configuration => app
+                    .world()
+                    .get::<crate::configuration::ConfigurationSand>(owner)
+                    .is_some(),
+                SandKind::Todo => app.world().get::<crate::todo::TodoSand>(owner).is_some(),
+                _ => unreachable!(),
+            };
+            assert!(populated);
+            assert!(app.world().get::<CanvasItem>(owner).unwrap().size.x >= 500.0);
+            if kind == SandKind::Todo {
+                let saved = crate::todo::snapshot(app.world(), owner).unwrap();
+                assert_eq!(
+                    serde_json::to_value(saved).unwrap(),
+                    serde_json::json!({"protein":"weekend", "show_ids":true, "draft":"Unfinished task"})
+                );
+            }
+        }
     }
 
     #[test]

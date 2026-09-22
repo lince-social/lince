@@ -52,7 +52,7 @@ pub(super) fn start(world: &mut World, form: Entity, root: Entity) {
     world.resource_mut::<Searches>().outgoing.push_back(cell::ClientMessage::Subscribe {
         id: id.clone(),
         protein: serde_json::from_value(json!({
-            "source":"record", "fields":["uid","head","body","slug","quantity_exact","start_date","due_date","estimate_min","assertions","assignees","work_logs"],
+            "source":"record", "fields":["uid","head","body","slug","quantity","start_date","due_date","estimate_min","assertions","assignees","work_logs"],
             "order":[{"asc":"head"}], "limit":null
         })).unwrap(),
     });
@@ -193,6 +193,22 @@ impl Filter {
                         fields.iter().map(|entity| read(*entity)).collect(),
                     )
                 })
+                .chain(
+                    crate::assertion_editor::draft(world, form.assertions)
+                        .unwrap_or_default()
+                        .into_iter()
+                        .map(|assertion| {
+                            (
+                                false,
+                                vec![
+                                    assertion.predicate.to_lowercase(),
+                                    assertion.object.unwrap_or_default().to_lowercase(),
+                                    assertion.quantity.unwrap_or_default(),
+                                    assertion.unit.unwrap_or_default().to_lowercase(),
+                                ],
+                            )
+                        }),
+                )
                 .collect(),
             logs: form
                 .logs
@@ -556,7 +572,7 @@ mod tests {
 
     #[test]
     fn every_search_field_combines_with_relations_and_logs() {
-        let row = json!({"head":"Test","slug":"alpha","quantity_exact":"3.125","assertions":[{"predicate":"needs", "object":"r_target", "quantity":"12.5", "unit":"r_unit"}], "assignees":[{"uid":"r_person", "head":"Ana"}], "work_logs":[{"start":"2026-09-20T12:00:00Z","end":"2026-09-20T13:00:00Z"}]});
+        let row = json!({"head":"Test","slug":"alpha","quantity":"3.125","assertions":[{"predicate":"needs", "object":"r_target", "quantity":"12.5", "unit":"r_unit"}], "assignees":[{"uid":"r_person", "head":"Ana"}], "work_logs":[{"start":"2026-09-20T12:00:00Z","end":"2026-09-20T13:00:00Z"}]});
         let references = HashMap::from([
             ("r_target", "some target".into()),
             ("r_unit", "hours".into()),
@@ -565,7 +581,7 @@ mod tests {
             fields: vec![
                 ("head", "t".into()),
                 ("slug", "a".into()),
-                ("quantity_exact", ".125".into()),
+                ("quantity", ".125".into()),
             ],
             relations: vec![
                 (

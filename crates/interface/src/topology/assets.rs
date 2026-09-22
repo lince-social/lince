@@ -31,7 +31,10 @@ impl ImportedAsset {
     pub fn valid(&self) -> bool {
         self.id.len() == 32
             && self.id.bytes().all(|b| b.is_ascii_hexdigit())
-            && matches!(self.file.as_str(), "source.gltf" | "source.glb")
+            && matches!(
+                self.file.as_str(),
+                "source.gltf" | "source.glb" | "source.gcloud"
+            )
             && self.name.len() <= 512
             && self.scale.is_finite()
             && self.scale > 0.0
@@ -213,6 +216,85 @@ pub fn copy_import(source: &Path, directory: &Path) -> io::Result<ImportedAsset>
     copy_package(source, directory, &AtomicBool::new(false))
 }
 
+fn copy_cloud(
+    source: &Path,
+    directory: &Path,
+    cancelled: &AtomicBool,
+) -> io::Result<ImportedAsset> {
+    let source = source.canonicalize()?;
+    let parent = source
+        .parent()
+        .ok_or_else(|| problem("Missing source directory"))?;
+    std::fs::create_dir_all(directory)?;
+    let staging = tempfile::Builder::new()
+        .prefix("import-")
+        .tempdir_in(directory)?;
+    let mut inputs = vec![(
+        source.clone(),
+        "source.gcloud".to_owned(),
+        super::splats::codec::MAX_FILE_BYTES,
+    )];
+    for name in [
+        "LICENSE",
+        "LICENSE.txt",
+        "LICENSE.md",
+        "license.txt",
+        "COPYING",
+        "CREDITS",
+        "CREDITS.txt",
+        "credits.txt",
+    ] {
+        let path = parent.join(name);
+        if path.is_file() {
+            let path = path.canonicalize()?;
+            if !path.starts_with(parent) {
+                return Err(problem("Credits leave the import directory"));
+            }
+            inputs.push((path, name.to_owned(), 1024 * 1024));
+        }
+    }
+    for (input, name, limit) in inputs {
+        let mut input = std::fs::File::open(input)?;
+        if !input.metadata()?.is_file() || input.metadata()?.len() > limit {
+            return Err(problem(
+                "Gaussian asset exceeds 1 GiB or its credits exceed 1 MiB",
+            ));
+        }
+        let mut output = std::fs::File::create(staging.path().join(name))?;
+        let mut total = 0;
+        let mut buffer = [0; 65536];
+        loop {
+            check_cancelled(cancelled)?;
+            let count = input.read(&mut buffer)?;
+            if count == 0 {
+                break;
+            }
+            total += count as u64;
+            if total > limit {
+                return Err(problem("Gaussian import exceeds its size limit"));
+            }
+            output.write_all(&buffer[..count])?;
+        }
+    }
+    let mut random = [0; 16];
+    getrandom::fill(&mut random).map_err(io::Error::other)?;
+    let id: String = random.iter().map(|b| format!("{b:02x}")).collect();
+    check_cancelled(cancelled)?;
+    std::fs::rename(staging.path(), directory.join(&id))?;
+    Ok(ImportedAsset {
+        id,
+        name: source
+            .file_name()
+            .unwrap()
+            .to_string_lossy()
+            .chars()
+            .take(120)
+            .collect(),
+        file: "source.gcloud".into(),
+        scale: 100.0,
+    })
+}
+
 fn check_cancelled(cancelled: &AtomicBool) -> io::Result<()> {
     if cancelled.load(Ordering::Acquire) {
         Err(problem("Import cancelled"))
@@ -232,8 +314,13 @@ fn copy_package(
         .and_then(|e| e.to_str())
         .unwrap_or("")
         .to_ascii_lowercase();
+    if extension == "gcloud" {
+        return copy_cloud(source, directory, cancelled);
+    }
     if !matches!(extension.as_str(), "gltf" | "glb") {
-        return Err(problem("Choose a .gltf or .glb file"));
+        return Err(problem(
+            "Choose a .gltf, .glb, or .gcloud file. Convert Gaussian PLY before importing.",
+        ));
     }
     if std::fs::metadata(source)?.len() > MAX_FILE {
         return Err(problem("Import file exceeds 128 MiB"));
@@ -412,6 +499,14 @@ pub fn spawn(
         ))
         .id();
     if let Some(server) = world.get_resource::<AssetServer>() {
+        if super::splats::is_splat(&asset) {
+            super::splats::load(
+                world,
+                entity,
+                format!("topology://{}/{}", asset.id, asset.file),
+            );
+            return entity;
+        }
         let handle = server
             .load_builder()
             .with_settings(|settings: &mut bevy::gltf::GltfLoaderSettings| {
@@ -426,6 +521,7 @@ pub fn spawn(
 }
 
 pub fn update(world: &mut World) {
+    super::splats::update(world);
     if world.contains_resource::<Imports>() {
         let mut imports = world.remove_resource::<Imports>().unwrap();
         imports.0.retain(|pending| {
@@ -445,6 +541,12 @@ pub fn update(world: &mut World) {
                             asset,
                         );
                         world.get_mut::<Spatial>(entity).unwrap().elevation = pending.elevation;
+                        if world
+                            .get::<ImportedAsset>(entity)
+                            .is_some_and(super::splats::is_splat)
+                        {
+                            world.entity_mut(entity).insert(super::splats::FrameOnReady);
+                        }
                     } else if let Some(directory) = world.get_resource::<AssetDirectory>() {
                         let _ = std::fs::remove_dir_all(directory.0.join(asset.id));
                     }
@@ -574,17 +676,20 @@ pub fn update(world: &mut World) {
             }
         }
         let effective = effective_scale(world, entity, world.get::<ImportedAsset>(entity).unwrap());
-        match super::physics::imported_shape(world, entity, effective) {
-            Ok(Some(_)) => {
-                if world.get::<Ready>(entity).is_none() {
-                    world.entity_mut(entity).insert(Ready);
+        let visual_only = super::splats::is_splat(world.get::<ImportedAsset>(entity).unwrap());
+        if !visual_only {
+            match super::physics::imported_shape(world, entity, effective) {
+                Ok(Some(_)) => {
+                    if world.get::<Ready>(entity).is_none() {
+                        world.entity_mut(entity).insert(Ready);
+                    }
                 }
-            }
-            Ok(None) => {}
-            Err(error) => {
-                crate::notifications::report(world, "Topology", error);
-                discard(world, entity);
-                continue;
+                Ok(None) => {}
+                Err(error) => {
+                    crate::notifications::report(world, "Topology", error);
+                    discard(world, entity);
+                    continue;
+                }
             }
         }
         let spatial = super::spatial(world, entity);
@@ -637,6 +742,50 @@ pub fn discard(world: &mut World, entity: Entity) {
                 let _ = std::fs::remove_dir_all(directory.0.join(asset.id));
             }
         }
+    }
+}
+
+pub fn frame(world: &mut World, entity: Entity) {
+    let Some(bounds) = world.get::<Bounds>(entity).copied() else {
+        return;
+    };
+    let Some(asset) = world.get::<ImportedAsset>(entity) else {
+        return;
+    };
+    let scale = effective_scale(world, entity, asset);
+    let Some(root) = world.get::<ChildOf>(entity).map(ChildOf::parent) else {
+        return;
+    };
+    if world.get::<WorkspaceMember>(entity).is_some_and(|member| {
+        world
+            .get::<crate::workspace::Workspaces>(root)
+            .is_some_and(|spaces| spaces.active != member.0)
+    }) {
+        return;
+    }
+    let Some(item) = world.get::<CanvasItem>(entity) else {
+        return;
+    };
+    let placement = super::spatial(world, entity);
+    let center = placement.position(item.position)
+        + placement.rotation() * ((bounds.min + bounds.max) * (scale * 0.5)).as_dvec3();
+    let radius = f64::from((bounds.max - bounds.min).length() * scale * 0.5).max(1.0);
+    let viewport = world
+        .get_resource::<super::presentation::SceneCamera>()
+        .and_then(|c| world.get::<Camera>(c.0))
+        .and_then(Camera::logical_viewport_size)
+        .unwrap_or(Vec2::new(800.0, 640.0));
+    if let Some(mut view) = world.get_mut::<super::view::View>(root) {
+        let rotation = Quat::from_euler(EulerRot::YXZ, view.yaw, view.pitch, 0.0);
+        let half_fov =
+            ((std::f32::consts::PI / 8.0).tan() * (viewport.x / viewport.y).min(1.0)).atan();
+        view.position = (center
+            + (rotation * Vec3::Z).as_dvec3() * (radius / f64::from(half_fov.sin()) * 1.1))
+            .to_array();
+    }
+    if let Some(mut canvas) = world.get_mut::<crate::canvas::CanvasView>(root) {
+        canvas.center = bevy::math::DVec2::new(center.x, center.z);
+        canvas.set_zoom(f64::from(viewport.min_element()) / (radius * 2.2));
     }
 }
 

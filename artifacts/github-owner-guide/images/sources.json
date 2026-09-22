@@ -1,0 +1,85 @@
+{
+  "revision": "add0a52d76879dff93304a5aa96895f9d68d5dac",
+  "files": [
+    {
+      "name": "repo-actions-settings.png",
+      "path": "assets/images/help/repository/repo-actions-settings.png",
+      "url": "https://raw.githubusercontent.com/github/docs/add0a52d76879dff93304a5aa96895f9d68d5dac/assets/images/help/repository/repo-actions-settings.png",
+      "dimensions": [
+        2196,
+        216
+      ],
+      "bytes": 28260
+    },
+    {
+      "name": "manage-access-overview.png",
+      "path": "assets/images/help/repository/manage-access-overview.png",
+      "url": "https://raw.githubusercontent.com/github/docs/add0a52d76879dff93304a5aa96895f9d68d5dac/assets/images/help/repository/manage-access-overview.png",
+      "dimensions": [
+        1604,
+        1154
+      ],
+      "bytes": 101719
+    },
+    {
+      "name": "create-branch-text.png",
+      "path": "assets/images/help/branches/create-branch-text.png",
+      "url": "https://raw.githubusercontent.com/github/docs/add0a52d76879dff93304a5aa96895f9d68d5dac/assets/images/help/branches/create-branch-text.png",
+      "dimensions": [
+        618,
+        516
+      ],
+      "bytes": 28640
+    },
+    {
+      "name": "review-changes-button.png",
+      "path": "assets/images/help/pull_requests/review-changes-button.png",
+      "url": "https://raw.githubusercontent.com/github/docs/add0a52d76879dff93304a5aa96895f9d68d5dac/assets/images/help/pull_requests/review-changes-button.png",
+      "dimensions": [
+        2114,
+        416
+      ],
+      "bytes": 53614
+    },
+    {
+      "name": "merge-pull-request-options.png",
+      "path": "assets/images/help/pull_requests/merge-pull-request-options.png",
+      "url": "https://raw.githubusercontent.com/github/docs/add0a52d76879dff93304a5aa96895f9d68d5dac/assets/images/help/pull_requests/merge-pull-request-options.png",
+      "dimensions": [
+        934,
+        576
+      ],
+      "bytes": 165497
+    },
+    {
+      "name": "restore-button.png",
+      "path": "assets/images/help/settings/restore-button.png",
+      "url": "https://raw.githubusercontent.com/github/docs/add0a52d76879dff93304a5aa96895f9d68d5dac/assets/images/help/settings/restore-button.png",
+      "dimensions": [
+        1576,
+        136
+      ],
+      "bytes": 9678
+    },
+    {
+      "name": "flutter-test-production-apps.png",
+      "url": "https://docs.flutter.dev/assets/images/docs/flavors/flavors-android-app-names-1.png",
+      "source_page": "https://docs.flutter.dev/deployment/flavors",
+      "author": "Flutter / Google e colaboradores",
+      "license": "CC BY 4.0",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "dimensions": [
+        1080,
+        1241
+      ],
+      "bytes": 135289,
+      "retrieved": "2026-09-21",
+      "changes": "Imagem original; apenas redimensionada na diagramação."
+    }
+  ],
+  "author": "GitHub, Inc. e colaboradores de github/docs",
+  "license": "CC BY 4.0",
+  "license_url": "https://creativecommons.org/licenses/by/4.0/",
+  "retrieved": "2026-09-21",
+  "changes": "Arquivos originais sem alteração; redimensionados apenas na diagramação do PDF."
+}

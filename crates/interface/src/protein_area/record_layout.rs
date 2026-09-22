@@ -4,6 +4,8 @@ use crate::actions::{Action, ActionButton};
 #[derive(Component, Clone)]
 pub(super) struct Sections {
     title: Entity,
+    identity: Entity,
+    assertions: Entity,
     filled: Entity,
     toggle: Entity,
     arrow: Entity,
@@ -38,6 +40,14 @@ pub(super) fn create(world: &mut World, row: Entity) -> Sections {
         .and_then(|area| area.protein.as_ref())
         .is_some_and(|config| config.fiote);
     let title = section(world, row);
+    let identity = section(world, row);
+    {
+        let mut node = world.get_mut::<Node>(identity).unwrap();
+        node.flex_direction = FlexDirection::Row;
+        node.flex_wrap = FlexWrap::Wrap;
+        node.column_gap = px(8);
+    }
+    let assertions = section(world, row);
     let filled = section(world, row);
     let toggle = world
         .spawn((
@@ -70,6 +80,8 @@ pub(super) fn create(world: &mut World, row: Entity) -> Sections {
         .insert(ActionButton::new(row, crate::actions![Toggle]));
     let sections = Sections {
         title,
+        identity,
+        assertions,
         filled,
         toggle,
         arrow,
@@ -105,7 +117,7 @@ fn empty(property: &str, data: &Value) -> bool {
                 && empty("date", &serde_json::json!({"date":data["due_date"]}))
         }
         "work_timer" => data["work_logs"].as_array().is_none_or(Vec::is_empty),
-        "quantity_exact" | "spent_seconds" => {
+        "quantity" | "spent_seconds" => {
             value.is_null() || value.as_str() == Some("0") || value.as_f64() == Some(0.0)
         }
         _ => {
@@ -120,6 +132,8 @@ impl Sections {
     pub(super) fn parent(&self, property: &str, data: &Value) -> Entity {
         match property {
             "head" => self.title,
+            "quantity" | "slug" => self.identity,
+            "assertions" => self.assertions,
             "body" => self.body,
             "threads" => self.threads,
             "start_date" | "due_date" => self.dates,
@@ -182,7 +196,10 @@ pub(super) fn arrange(world: &mut World, row: Entity, sections: &Sections, data:
         if world.get::<ChildOf>(entity).map(ChildOf::parent) != Some(parent) {
             world.entity_mut(entity).insert(ChildOf(parent));
         }
-        if matches!(property.as_str(), "start_date" | "due_date") {
+        if matches!(
+            property.as_str(),
+            "start_date" | "due_date" | "quantity" | "slug"
+        ) {
             let mut node = world.get_mut::<Node>(entity).unwrap();
             node.width = px(0);
             node.flex_grow = 1.0;
@@ -190,7 +207,10 @@ pub(super) fn arrange(world: &mut World, row: Entity, sections: &Sections, data:
         }
         if property == "threads" {
             unfilled |= empty("threads", data);
-        } else if !matches!(property.as_str(), "head" | "body") {
+        } else if !matches!(
+            property.as_str(),
+            "head" | "body" | "quantity" | "slug" | "assertions"
+        ) {
             if sections.fiote || empty(&property, data) {
                 unfilled = true;
             } else {
@@ -279,7 +299,7 @@ mod tests {
             owner,
             State {
                 applied: Some(Config::records()),
-                data: vec![json!({"uid":"record", "head":"Test", "body":"A **description**", "quantity_exact":"0"})],
+                data: vec![json!({"uid":"record", "head":"Test", "body":"A **description**", "quantity":"0"})],
                 ready: true,
                 dirty: true,
                 ..default()
@@ -303,7 +323,7 @@ mod tests {
                 .query::<&crate::description::Description>()
                 .iter(app.world())
                 .count(),
-            0
+            1
         );
         assert!(
             app.world_mut()
@@ -332,11 +352,30 @@ mod tests {
             .iter(app.world())
             .map(|(entity, property)| (property.0.clone(), entity))
             .collect();
+        assert!(
+            app.world()
+                .get::<crate::sand::Square>(fields["head"])
+                .is_none()
+        );
+        assert_eq!(
+            app.world()
+                .get::<Node>(sections.identity)
+                .unwrap()
+                .flex_direction,
+            FlexDirection::Row
+        );
+        assert!(
+            app.world()
+                .get::<crate::assertion_editor::Field>(fields["assertions"])
+                .is_some()
+        );
         for (property, entity) in &fields {
             assert_eq!(
                 app.world().get::<ChildOf>(*entity).unwrap().parent(),
                 match property.as_str() {
                     "head" => sections.title,
+                    "quantity" | "slug" => sections.identity,
+                    "assertions" => sections.assertions,
                     "body" => sections.body,
                     "threads" => sections.threads,
                     "start_date" | "due_date" => sections.dates,
@@ -349,6 +388,8 @@ mod tests {
             children,
             [
                 sections.title,
+                sections.identity,
+                sections.assertions,
                 sections.filled,
                 sections.toggle,
                 sections.empty,

@@ -137,19 +137,50 @@ pub async fn create<F>(
 where
     F: Fn(&str) -> Option<String> + Send + Sync,
 {
+    create_with_schedule(pool, input, None, now, sign).await
+}
+
+pub async fn create_with_schedule<F>(
+    pool: &SqlitePool,
+    input: CreateFrequencyInput,
+    admission: Option<FrequencyRuntimeAdmission<'_>>,
+    now: DateTime<Utc>,
+    sign: F,
+) -> Result<FrequencyMutationCommit, StoreError>
+where
+    F: Fn(&str) -> Option<String> + Send + Sync,
+{
+    create_identified(pool, input, None, admission, now, sign).await
+}
+
+pub async fn create_identified<F>(
+    pool: &SqlitePool,
+    input: CreateFrequencyInput,
+    uid: Option<&str>,
+    admission: Option<FrequencyRuntimeAdmission<'_>>,
+    now: DateTime<Utc>,
+    sign: F,
+) -> Result<FrequencyMutationCommit, StoreError>
+where
+    F: Fn(&str) -> Option<String> + Send + Sync,
+{
+    if let Some(uid) = uid {
+        TypedUid::new(ReferenceKind::Frequency, uid).map_err(boundary)?;
+    }
     validate_request_id(&input.request_id)?;
     validate_person(input.owner_person_uid.as_deref(), "owner")?;
     validate_person(input.actor_person_uid.as_deref(), "actor")?;
     let prepared = PreparedRevision::new(&input.frequency)?;
     let fingerprint = request_hash(&RequestFingerprint {
         action: FrequencyMutationAction::Create,
-        frequency_uid: None,
+        frequency_uid: uid,
         expected_handle_revision: None,
         revision_hash: Some(&prepared.revision_hash),
         parameter_overrides: None,
         owner_person_uid: input.owner_person_uid.as_deref(),
         actor_person_uid: input.actor_person_uid.as_deref(),
     })?;
+    let fingerprint = save_fingerprint(fingerprint, admission.map(|_| true))?;
     let now = canonical_time(now)?;
     let at = now.to_rfc3339();
     let mut tx = crate::write_tx(pool).await?;
@@ -158,7 +189,7 @@ where
         return Ok(commit);
     }
 
-    let frequency_uid = nucleus::new_uid("r");
+    let frequency_uid = uid.map(str::to_owned).unwrap_or_else(|| nucleus::new_uid("r"));
     let origin_organ_uid: Option<String> = sqlx::query_scalar(
         "SELECT uid FROM record WHERE slug = ? AND kind = ? AND deleted_at IS NULL LIMIT 1",
     )
@@ -197,7 +228,7 @@ where
     .execute(&mut *tx)
     .await?;
 
-    let evidence = FrequencyMutationEvidence {
+    let mut evidence = FrequencyMutationEvidence {
         schema: FrequencyMutationEvidenceSchema::V1,
         action: FrequencyMutationAction::Create,
         request_id: input.request_id.clone(),
@@ -216,6 +247,22 @@ where
         activated_at: None,
         status: DefinitionStatus::Proven,
     };
+    if let Some(admission) = admission {
+        sqlx::query("UPDATE karma_frequency SET handle_revision = 2 WHERE record_uid = ?")
+            .bind(&frequency_uid)
+            .execute(&mut *tx)
+            .await?;
+        evidence.handle_revision = 2;
+        activate_saved_tx(
+            &mut tx,
+            &input.frequency,
+            &mut evidence,
+            admission,
+            true,
+            now,
+        )
+        .await?;
+    }
     let fact = append_evidence_fact(
         &mut tx,
         &frequency_uid,
@@ -237,10 +284,10 @@ where
         &fingerprint,
         &frequency_uid,
         None,
-        1,
+        handle.handle_revision,
         &handle,
         Some(&prepared.revision_hash),
-        None,
+        current_activation(&handle),
         &fact.uid,
         &at,
     )
@@ -252,6 +299,20 @@ where
 pub async fn revise<F>(
     pool: &SqlitePool,
     input: ReviseFrequencyInput,
+    now: DateTime<Utc>,
+    sign: F,
+) -> Result<FrequencyMutationCommit, StoreError>
+where
+    F: Fn(&str) -> Option<String> + Send + Sync,
+{
+    revise_with_schedule(pool, input, None, false, now, sign).await
+}
+
+pub async fn revise_with_schedule<F>(
+    pool: &SqlitePool,
+    input: ReviseFrequencyInput,
+    admission: Option<FrequencyRuntimeAdmission<'_>>,
+    restart: bool,
     now: DateTime<Utc>,
     sign: F,
 ) -> Result<FrequencyMutationCommit, StoreError>
@@ -271,6 +332,7 @@ where
         owner_person_uid: None,
         actor_person_uid: input.actor_person_uid.as_deref(),
     })?;
+    let fingerprint = save_fingerprint(fingerprint, admission.map(|_| restart))?;
     let now = canonical_time(now)?;
     let at = now.to_rfc3339();
     let mut tx = crate::write_tx(pool).await?;
@@ -290,7 +352,12 @@ where
     if current.status == DefinitionStatus::Retired {
         return Err(protocol("retired Karma Frequencies cannot be revised"));
     }
-    if current.head_revision_hash == prepared.revision_hash {
+    if admission.is_some() && current.slug != input.frequency.slug.as_str() {
+        return Err(protocol(
+            "Keep the existing slug so linked Karma rules continue to find it",
+        ));
+    }
+    if admission.is_none() && current.head_revision_hash == prepared.revision_hash {
         return Err(protocol(
             "Karma Frequency revision does not change canonical content",
         ));
@@ -333,7 +400,7 @@ where
         .await?;
     let previous_parameter_hash =
         active_parameter_hash_tx(&mut tx, current.active_activation_hash.as_ref()).await?;
-    let evidence = FrequencyMutationEvidence {
+    let mut evidence = FrequencyMutationEvidence {
         schema: FrequencyMutationEvidenceSchema::V1,
         action: FrequencyMutationAction::Revise,
         request_id: input.request_id.clone(),
@@ -352,6 +419,17 @@ where
         activated_at: None,
         status,
     };
+    if let Some(admission) = admission {
+        activate_saved_tx(
+            &mut tx,
+            &input.frequency,
+            &mut evidence,
+            admission,
+            restart,
+            now,
+        )
+        .await?;
+    }
     let fact = append_evidence_fact(
         &mut tx,
         &input.frequency_uid,
@@ -383,6 +461,91 @@ where
     .await?;
     tx.commit().await?;
     Ok(FrequencyMutationCommit::Committed { handle, fact })
+}
+
+fn save_fingerprint(
+    fingerprint: CanonicalHash,
+    restart: Option<bool>,
+) -> Result<CanonicalHash, StoreError> {
+    if let Some(restart) = restart {
+        canonical_hash(
+            REQUEST_HASH_DOMAIN,
+            &("save-and-schedule", restart, fingerprint),
+        )
+        .map_err(boundary)
+    } else {
+        Ok(fingerprint)
+    }
+}
+
+async fn activate_saved_tx(
+    tx: &mut Transaction<'_, Sqlite>,
+    frequency: &FrequencyAst,
+    evidence: &mut FrequencyMutationEvidence,
+    admission: FrequencyRuntimeAdmission<'_>,
+    restart: bool,
+    now: DateTime<Utc>,
+) -> Result<(), StoreError> {
+    let current = get_handle_tx(tx, &evidence.frequency_uid)
+        .await?
+        .ok_or(sqlx::Error::RowNotFound)?;
+    let compiled = frequency
+        .compile(&BTreeMap::new())
+        .map_err(|error| protocol(error.to_string()))?;
+    let mut starting_cursor = None;
+    if !restart && let Some(hash) = &current.active_activation_hash {
+        let previous = get_activation_tx(tx, hash)
+            .await?
+            .ok_or(sqlx::Error::RowNotFound)?;
+        if previous.epoch.compiled().schedule == compiled.schedule {
+            starting_cursor = schedules::get_cursor_tx(tx, hash)
+                .await?
+                .map(|row| row.cursor);
+        }
+    }
+    if starting_cursor.is_none() {
+        if let nucleus::karma::CompiledSchedule::Elapsed { schedule } = &compiled.schedule {
+            starting_cursor = Some(schedules::StoredScheduleCursor::Elapsed {
+                cursor: schedule.cursor(None, schedule.anchor()).map_err(boundary)?,
+            });
+        }
+    }
+    let activated_at = TimestampMs::from_millis(now.timestamp_millis()).map_err(boundary)?;
+    let epoch = FrequencyActivationEpoch::new(
+        current.record_uid.clone(),
+        current.handle_revision,
+        evidence.head_revision_hash.clone(),
+        compiled,
+        current.latest_activation_hash,
+        FrequencyActivationCause::ActivateRevision,
+        activated_at,
+    )
+    .map_err(boundary)?;
+    let activation_hash = epoch.activation_hash().map_err(boundary)?;
+    insert_activation(tx, &activation_hash, &epoch).await?;
+    let at = now.to_rfc3339();
+    sqlx::query("UPDATE karma_frequency SET status = 'active', active_revision_hash = head_revision_hash, active_activation_hash = ?, latest_activation_hash = ? WHERE record_uid = ?")
+        .bind(activation_hash.as_str()).bind(activation_hash.as_str()).bind(&current.record_uid)
+        .execute(&mut **tx).await?;
+    schedules::install_admitted_activation_cursor_from_tx(
+        tx,
+        &activation_hash,
+        &epoch,
+        admission.calendar_provider,
+        admission.demand_policy,
+        admission.demand_capacity,
+        admission.host,
+        admission.grant,
+        &at,
+        starting_cursor,
+    )
+    .await?;
+    evidence.active_revision_hash = Some(evidence.head_revision_hash.clone());
+    evidence.activation_hash = Some(activation_hash);
+    evidence.effective_parameter_hash = Some(epoch.effective_parameter_hash().clone());
+    evidence.activated_at = Some(activated_at);
+    evidence.status = DefinitionStatus::Active;
+    Ok(())
 }
 
 pub async fn activate<F>(

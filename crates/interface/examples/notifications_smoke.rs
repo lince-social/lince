@@ -68,6 +68,12 @@ fn exercise(world: &mut World) {
                 .find(|(_, icon)| icon.label == "Notifications (2)")
                 .unwrap()
                 .0;
+            let bell = world
+                .query::<(Entity, &lince_interface::icons::TooltipIcon)>()
+                .iter(world)
+                .find(|(_, icon)| icon.source == bell)
+                .unwrap()
+                .0;
             world
                 .resource_mut::<bevy::input_focus::InputFocus>()
                 .set(bell, bevy::input_focus::FocusCause::Navigated);
@@ -207,6 +213,7 @@ fn main() {
     let log = cell::Diagnostics::default();
     let journal = cell::DiagnosticJournal::open(history.clone(), log.clone()).unwrap();
     interface_app()
+        .insert_resource(lince_interface::icons::TooltipSettings { enabled: true })
         .insert_resource(Notifications::new(log))
         .insert_resource(Capture {
             path: directory.join("notifications.png").display().to_string(),

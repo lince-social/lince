@@ -15,6 +15,7 @@ pub const DATE_SELECTED: &str = "Date selected";
 
 pub const CREDITS: &[crate::credits::Attribution] = &[
     crate::credits::SYMBOLS,
+    crate::credits::DEJAVU,
     crate::credits::FONTIQUE,
     crate::credits::Attribution {
         name: "Chrono",

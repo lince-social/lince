@@ -58,6 +58,7 @@ pub struct ProjectedFrequency {
     pub every: (u32, String),
     pub timezone: String,
     pub next_at: String,
+    pub definition: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -73,6 +74,8 @@ pub struct ProjectedRule {
     pub gate: Option<String>,
     pub carry: Option<String>,
     pub consequences_json: String,
+    pub cadence: Option<String>,
+    pub anchor_at: Option<String>,
     pub note: Option<String>,
 }
 
@@ -197,7 +200,7 @@ pub fn ensure_uids(source: &str) -> Result<(String, Vec<MintedUid>), Diagnostic>
                 missing.push(identity);
             }
             Declaration::Frequency(frequency) if frequency.uid.is_none() => {
-                let identity = minted(source, "Frequency", "freq", &frequency.opening.0, ordinal);
+                let identity = minted(source, "Frequency", "r", &frequency.opening.0, ordinal);
                 ordinal += 1;
                 frequency.uid = Some(ast::Uid::new(identity.uid.clone()));
                 missing.push(identity);
@@ -205,7 +208,7 @@ pub fn ensure_uids(source: &str) -> Result<(String, Vec<MintedUid>), Diagnostic>
             Declaration::Karma(karma) => {
                 for rule in &mut karma.rules.rules {
                     if rule.uid.is_none() {
-                        let identity = minted(source, "Rule", "rule", &rule.name.0, ordinal);
+                        let identity = minted(source, "Rule", "rec", &rule.name.0, ordinal);
                         ordinal += 1;
                         rule.uid = Some(ast::Uid::new(identity.uid.clone()));
                         missing.push(identity);
@@ -305,17 +308,19 @@ pub fn resolve_project_references(
         }
     }
     for rule in &mut project.rules {
-        rule.frequency_uid = Some(
-            identities
-                .get(&rule.frequency_slug)
-                .ok_or_else(|| {
-                    diagnostic(format!(
-                        "reference slug `{}` does not resolve",
-                        rule.frequency_slug
-                    ))
-                })?
-                .clone(),
-        );
+        if !rule.frequency_slug.is_empty() {
+            rule.frequency_uid = Some(
+                identities
+                    .get(&rule.frequency_slug)
+                    .ok_or_else(|| {
+                        diagnostic(format!(
+                            "reference slug `{}` does not resolve",
+                            rule.frequency_slug
+                        ))
+                    })?
+                    .clone(),
+            );
+        }
         rule.record_uid = Some(
             identities
                 .get(&rule.record_slug)
@@ -448,6 +453,7 @@ pub fn project(document: &Document) -> Result<ProjectedDocument, Diagnostic> {
                 let mut every = None;
                 let mut timezone = None;
                 let mut next_at = None;
+                let mut definition = None;
                 for field in &frequency.fields {
                     match field {
                         FrequencyField::Title(value) => head = Some(value.value.0.clone()),
@@ -472,6 +478,9 @@ pub fn project(document: &Document) -> Result<ProjectedDocument, Diagnostic> {
                         }
                         FrequencyField::Timezone(value) => timezone = Some(value.value.0.clone()),
                         FrequencyField::NextAt(value) => next_at = Some(value.value.0.clone()),
+                        FrequencyField::Definition(value) => {
+                            definition = Some(value.value.0.clone())
+                        }
                     }
                 }
                 let slug = checked_slug(frequency.opening.0.clone(), &frequency.opening.0)?;
@@ -488,9 +497,22 @@ pub fn project(document: &Document) -> Result<ProjectedDocument, Diagnostic> {
                     head: head.unwrap_or_else(|| slug.clone()),
                     slug,
                     quantity,
-                    every: required(every, &frequency.opening.0, "every")?,
-                    timezone: required(timezone, &frequency.opening.0, "timezone")?,
-                    next_at: required(next_at, &frequency.opening.0, "next_at")?,
+                    every: if definition.is_some() {
+                        every.unwrap_or_default()
+                    } else {
+                        required(every, &frequency.opening.0, "every")?
+                    },
+                    timezone: if definition.is_some() {
+                        timezone.unwrap_or_default()
+                    } else {
+                        required(timezone, &frequency.opening.0, "timezone")?
+                    },
+                    next_at: if definition.is_some() {
+                        next_at.unwrap_or_default()
+                    } else {
+                        required(next_at, &frequency.opening.0, "next_at")?
+                    },
+                    definition,
                 });
             }
             Declaration::Karma(karma) => {
@@ -505,6 +527,8 @@ pub fn project(document: &Document) -> Result<ProjectedDocument, Diagnostic> {
                     let mut carry = None;
                     let mut consequences = None;
                     let mut note = None;
+                    let mut cadence = None;
+                    let mut anchor_at = None;
                     for field in &rule.fields {
                         match field {
                             RuleField::Quantity(value) => {
@@ -530,6 +554,8 @@ pub fn project(document: &Document) -> Result<ProjectedDocument, Diagnostic> {
                                 consequences = Some(value.value.0.clone())
                             }
                             RuleField::Note(value) => note = Some(value.value.0.clone()),
+                            RuleField::Cadence(value) => cadence = Some(value.value.0.clone()),
+                            RuleField::AnchorAt(value) => anchor_at = Some(value.value.0.clone()),
                         }
                     }
                     output.rules.push(ProjectedRule {
@@ -540,7 +566,7 @@ pub fn project(document: &Document) -> Result<ProjectedDocument, Diagnostic> {
                         )?,
                         slug: checked_slug(rule.name.0.clone(), &rule.name.0)?,
                         quantity,
-                        frequency_slug: required(frequency_slug, &rule.name.0, "frequency")?,
+                        frequency_slug: frequency_slug.unwrap_or_default(),
                         frequency_uid,
                         record_slug: required(record_slug, &rule.name.0, "record")?,
                         record_uid,
@@ -549,6 +575,8 @@ pub fn project(document: &Document) -> Result<ProjectedDocument, Diagnostic> {
                         carry,
                         consequences_json: required(consequences, &rule.name.0, "consequences")?,
                         note,
+                        cadence,
+                        anchor_at,
                     });
                 }
             }
@@ -563,6 +591,11 @@ fn required<T>(value: Option<T>, declaration: &str, field: &str) -> Result<T, Di
 
 fn typed_uid(value: String, prefix: &str, declaration: &str) -> Result<String, Diagnostic> {
     const ALPHABET: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+    let prefix = match prefix {
+        "freq" if value.starts_with("r_") => "r",
+        "rule" if value.starts_with("rec_") => "rec",
+        prefix => prefix,
+    };
     let valid = value
         .strip_prefix(prefix)
         .and_then(|rest| rest.strip_prefix('_'))
@@ -674,6 +707,7 @@ pub fn set_frequency_runtime(
                     value.unit.0 = every.1.to_string();
                 }
                 FrequencyField::Timezone(value) => value.value.0 = timezone.to_string(),
+                FrequencyField::Definition(_) => {}
             }
         }
         if !found_quantity || !found_next {
@@ -709,11 +743,14 @@ pub fn set_rule_runtime(
             if rule.uid.as_ref().map(ast::Uid::value).as_deref() != Some(uid) {
                 continue;
             }
-            rule.fields.clear();
+            rule.fields
+                .retain(|field| matches!(field, RuleField::Cadence(_) | RuleField::AnchorAt(_)));
             rule.fields.push(RuleField::quantity(quantity));
             let _ = (frequency_uid, record_uid);
-            rule.fields
-                .push(RuleField::frequency(frequency_slug.to_string()));
+            if !frequency_slug.is_empty() {
+                rule.fields
+                    .push(RuleField::frequency(frequency_slug.to_string()));
+            }
             rule.fields.push(RuleField::record(record_slug.to_string()));
             if let Some((source, gate, carry)) = condition {
                 rule.fields.push(RuleField::condition(source.to_string()));
@@ -834,7 +871,7 @@ pub fn check_project(root: &Path) -> Result<Vec<PathBuf>, Vec<Diagnostic>> {
         );
     }
     for (slug, path) in references {
-        if !slugs.contains_key(&slug) {
+        if !slugs.contains_key(&slug) && !uids.contains_key(&slug) {
             errors.push(Diagnostic {
                 path: Some(path.to_path_buf()),
                 message: format!("reference slug `{slug}` does not resolve"),
@@ -983,6 +1020,7 @@ fn validate_document<'a>(
                         FrequencyField::Every(_) => "every",
                         FrequencyField::Timezone(_) => "timezone",
                         FrequencyField::NextAt(_) => "next_at",
+                        FrequencyField::Definition(_) => "definition",
                     };
                     duplicate_field(path, &frequency.opening.0, key, &mut seen, errors);
                 }
@@ -990,7 +1028,11 @@ fn validate_document<'a>(
                     path,
                     &frequency.opening.0,
                     &seen,
-                    &["quantity", "every", "timezone", "next_at"],
+                    if seen.contains("definition") {
+                        &["quantity", "definition"]
+                    } else {
+                        &["quantity", "every", "timezone", "next_at"]
+                    },
                     errors,
                 );
             }
@@ -1027,6 +1069,8 @@ fn validate_document<'a>(
                             RuleField::Carry(_) => "carry",
                             RuleField::Consequences(_) => "consequences",
                             RuleField::Note(_) => "note",
+                            RuleField::Cadence(_) => "cadence",
+                            RuleField::AnchorAt(_) => "anchor_at",
                         };
                         duplicate_field(path, &rule.name.0, key, &mut seen, errors);
                     }
@@ -1034,7 +1078,7 @@ fn validate_document<'a>(
                         path,
                         &rule.name.0,
                         &seen,
-                        &["quantity", "frequency", "record", "consequences"],
+                        &["quantity", "record", "consequences"],
                         errors,
                     );
                 }
@@ -1248,6 +1292,7 @@ fn format_frequency(output: &mut String, frequency: &ast::Frequency) {
             Every(v) => writeln!(output, "    every {} {}", v.count.0, v.unit.0),
             Timezone(v) => writeln!(output, "    timezone {}", quoted(&v.value.0)),
             NextAt(v) => writeln!(output, "    next_at {}", v.value.0),
+            Definition(v) => writeln!(output, "    definition {}", quoted(&v.value.0)),
         }
         .unwrap();
     }
@@ -1275,6 +1320,8 @@ fn format_karma(output: &mut String, karma: &ast::Karma) {
                     writeln!(output, "            consequences {}", body(&v.value.0))
                 }
                 Note(v) => writeln!(output, "            note {}", quoted(&v.value.0)),
+                Cadence(v) => writeln!(output, "            cadence {}", quoted(&v.value.0)),
+                AnchorAt(v) => writeln!(output, "            anchor_at {}", v.value.0),
             }
             .unwrap();
         }
@@ -1501,6 +1548,9 @@ Karma demo {
         assert_eq!(project.records.len(), 2);
         assert_eq!(project.records[0].slug, None);
         assert_eq!(project.records[1].slug.as_deref(), Some("rule-note"));
+        for title in ["definition", "cadence", "anchor_at"] {
+            assert!(parse(&format!("{title} (0) {{\n}}\n")).is_ok());
+        }
     }
 
     #[test]

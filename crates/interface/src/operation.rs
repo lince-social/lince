@@ -200,6 +200,7 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
             bundle,
             OperationInput(sand),
             AccessibilityNode::default(),
+            crate::icons::Tooltip(HELP.into()),
             ChildOf(sand),
         ))
         .id();
@@ -212,27 +213,8 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
         let mut node = world.get_mut::<Node>(input).unwrap();
         node.height = percent(100);
         node.min_height = px(SIZE.y);
-        node.padding.right = px(36);
         node.flex_shrink = 0.0;
     }
-    let mut accessibility = AccessibilityNode::from(accesskit::Node::new(accesskit::Role::Label));
-    accessibility.set_label(HELP);
-    let font = world.resource::<Typography>().text(18.0);
-    world.spawn((
-        Text::new("?"),
-        font,
-        crate::token_style::text(crate::tokens::Token::Ink),
-        crate::icons::Tooltip(HELP.into()),
-        bevy::input_focus::tab_navigation::TabIndex(0),
-        accessibility,
-        Node {
-            position_type: PositionType::Absolute,
-            right: px(12),
-            top: px(8),
-            ..default()
-        },
-        ChildOf(sand),
-    ));
     world
         .get_mut::<AccessibilityNode>(input)
         .unwrap()

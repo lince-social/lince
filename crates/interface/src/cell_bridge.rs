@@ -85,7 +85,8 @@ pub fn connect(runtime: cell::CellRuntime, wake: WakeSignal) -> CellBridge {
                 (sender.max_capacity() - sender.capacity()) as u64
             }),
         });
-    let mut sync_events = cell::SyncEvents::new(&runtime.engine).with_presence(session.presence_changes());
+    let mut sync_events =
+        cell::SyncEvents::new(&runtime.engine).with_presence(session.presence_changes());
     let closed = Arc::new(AtomicBool::new(false));
     let ended = ConnectionEnded {
         closed: closed.clone(),
@@ -95,11 +96,39 @@ pub fn connect(runtime: cell::CellRuntime, wake: WakeSignal) -> CellBridge {
         let _ended = ended;
         let mut lanes = HashMap::<String, tokio::task::AbortHandle>::new();
         let mut lane_tasks = tokio::task::JoinSet::new();
+        let mut terminals = cell::terminal::TerminalHost::new();
+        let (terminal_output, mut terminal_messages) = mpsc::channel(64);
+        let (terminal_done, mut terminal_exits) = mpsc::channel(16);
         loop {
             let messages = tokio::select! {
                 request = requests.recv() => {
                     let Some(request) = request else { break };
                     match &request {
+                        ClientMessage::TerminalOpen { id, cols, rows, pixel_width, pixel_height } => {
+                            let result = terminals.open(id.clone(), cell::terminal::pty_size(*cols, *rows, *pixel_width, *pixel_height), terminal_output.clone(), terminal_done.clone()).await;
+                            if let Err(message) = result {
+                                if !deliver(&responses, &wake, vec![ServerMessage::Error { id: id.clone(), message, code: Some("terminal".into()) }]).await { break; }
+                            }
+                            continue;
+                        }
+                        ClientMessage::TerminalInput { id, data_base64 } => {
+                            let result = terminals.input(id, data_base64).await;
+                            if let Err(message) = result {
+                                if !deliver(&responses, &wake, vec![ServerMessage::Error { id: id.clone(), message, code: Some("terminal".into()) }]).await { break; }
+                            }
+                            continue;
+                        }
+                        ClientMessage::TerminalResize { id, cols, rows, pixel_width, pixel_height } => {
+                            let result = terminals.resize(id, cell::terminal::pty_size(*cols, *rows, *pixel_width, *pixel_height)).await;
+                            if let Err(message) = result {
+                                if !deliver(&responses, &wake, vec![ServerMessage::Error { id: id.clone(), message, code: Some("terminal".into()) }]).await { break; }
+                            }
+                            continue;
+                        }
+                        ClientMessage::TerminalClose { id } => {
+                            let _ = terminals.close(id).await;
+                            continue;
+                        }
                         ClientMessage::LaneJoin { room } if !lanes.contains_key(room) => {
                             let mut events = runtime.lanes.join(room);
                             let responses = responses.clone();
@@ -136,6 +165,8 @@ pub fn connect(runtime: cell::CellRuntime, wake: WakeSignal) -> CellBridge {
                     let Some(event) = event else { break };
                     session.on_sync_event(event).await
                 },
+                Some(message) = terminal_messages.recv() => vec![message],
+                Some(id) = terminal_exits.recv() => { terminals.forget(&id); Vec::new() },
                 finished = lane_tasks.join_next(), if !lane_tasks.is_empty() => {
                     lanes.retain(|_, task| !task.is_finished());
                     match finished {
@@ -328,7 +359,7 @@ pub(crate) mod tests {
             panic!("expected initial records, got {message:?}");
         };
         let properties = rows.iter().find(|row| row["uid"] == uid).unwrap();
-        assert!(properties["quantity"].is_number());
+        assert_eq!(properties["quantity"], "0");
         assert!(properties["kind"].is_string());
         assert!(properties.get("slug").is_some());
         assert_eq!(

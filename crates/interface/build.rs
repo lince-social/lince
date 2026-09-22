@@ -1,8 +1,11 @@
+mod build_freedoom;
+
 fn main() {
     sensei::teach(std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"));
     if std::env::var_os("CARGO_FEATURE_NATIVE_RUNTIME").is_none() {
         return;
     }
+    build_freedoom::compile();
     let names = [
         "minus",
         "plus",

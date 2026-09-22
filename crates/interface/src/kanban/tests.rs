@@ -215,7 +215,7 @@ async fn setup_creation_transfer_and_exit_preserve_card_identity() {
     assert_eq!(app.world().get::<CanvasItem>(card).unwrap().size.x, width);
     assert_eq!(app.world().get::<Card>(card).unwrap().column, Some(backlog));
     assert_eq!(
-        app.world().get::<RecordProperties>(card).unwrap().0["quantity_exact"],
+        app.world().get::<RecordProperties>(card).unwrap().0["quantity"],
         "0"
     );
     app.world_mut()
@@ -229,7 +229,7 @@ async fn setup_creation_transfer_and_exit_preserve_card_identity() {
     .await;
     assert!(crate::area_mutation::armed(app.world(), todo));
     let properties = &app.world().get::<RecordProperties>(card).unwrap().0;
-    assert_eq!(properties["quantity_exact"], "-1");
+    assert_eq!(properties["quantity"], "-1");
     assert_eq!(column_index(properties), Some(1));
     assert!(
         !properties["assertions"]
@@ -243,7 +243,7 @@ async fn setup_creation_transfer_and_exit_preserve_card_identity() {
     until(&mut app, |world| {
         world
             .get::<RecordProperties>(card)
-            .is_some_and(|r| r.0["quantity_exact"] == "0" && column_index(&r.0).is_none())
+            .is_some_and(|r| r.0["quantity"] == "0" && column_index(&r.0).is_none())
     })
     .await;
     assert!(app.world().get::<RecordBinding>(card).is_some());
@@ -383,4 +383,118 @@ fn columns_touch_after_resize_and_source_unlock_preserves_its_connection() {
             .get::<crate::canvas_selection::SandGroup>(restored_source)
             .is_none()
     );
+}
+
+#[tokio::test]
+async fn quantity_only_filters_move_cards_between_columns_after_external_edits() {
+    let (mut app, root, owner) = fixture();
+    let engine = std::sync::Arc::new(engine::Engine::open_memory().await.unwrap());
+    let board = app.world().get::<Kanban>(owner).unwrap().clone();
+    let columns: Vec<_> = board
+        .columns
+        .iter()
+        .map(|c| area(app.world(), owner, &c.area).unwrap())
+        .collect();
+    for (index, column) in columns.iter().enumerate() {
+        let mut area = app.world_mut().get_mut::<InfluenceArea>(*column).unwrap();
+        area.changes_enabled = false;
+        area.filter.as_mut().unwrap().draft.query["where"] =
+            json!([{"quantity_eq": COLUMNS[index].2.to_string()}]);
+    }
+    app.insert_resource(crate::app::CellHandle(cell::CellRuntime {
+        engine: engine.clone(),
+        store: engine.store.clone(),
+        lanes: std::sync::Arc::new(cell::LaneHub::new()),
+        wire: Default::default(),
+        fiote: None,
+        information: None,
+    }))
+    .insert_resource(crate::wake::WakeSignal::new(|| {}))
+    .add_plugins((
+        crate::cell_bridge::CellBridgePlugin,
+        crate::physics::WorkspacePhysicsPlugin,
+    ))
+    .init_resource::<crate::topology::physics::Runtime>();
+    crate::workspace_config::set_physics(app.world_mut(), root, 1, true);
+    app.finish();
+    until(&mut app, |world| {
+        world
+            .get::<View>(owner)
+            .is_some_and(|view| view.status == "Ready")
+    })
+    .await;
+    let uid = engine
+        .act(
+            engine::actions::Action::CreateRecordWithTags {
+                head: "Moving task".into(),
+                body: String::new(),
+                quantity: -1.0,
+                tags: vec!["task".into(), "todo".into()],
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    let source = area(app.world(), owner, &board.source).unwrap();
+    until(&mut app, |world| {
+        world.get::<Children>(root).unwrap().iter().any(|entity| {
+            world
+                .get::<RecordBinding>(entity)
+                .is_some_and(|binding| binding.area == source && binding.uid == uid)
+                && world
+                    .get::<Card>(entity)
+                    .is_some_and(|card| card.column == Some(columns[1]))
+        })
+    })
+    .await;
+    let card = app
+        .world_mut()
+        .query::<(Entity, &RecordBinding)>()
+        .iter(app.world())
+        .find(|(entity, binding)| binding.uid == uid && app.world().get::<Card>(*entity).is_some())
+        .unwrap()
+        .0;
+    for protein_filter in [true, false] {
+        if !protein_filter {
+            for (index, column) in columns.iter().enumerate() {
+                let mut area = app.world_mut().get_mut::<InfluenceArea>(*column).unwrap();
+                area.filter = None;
+                area.rules = vec![crate::area::PropertyRule {
+                    property: crate::area::Property::Quantity,
+                    value: COLUMNS[index].2.to_string(),
+                }];
+            }
+        }
+        for index in [2, 1, 2, 1] {
+            engine
+                .act(
+                    engine::actions::Action::SetQuantity {
+                        target: uid.clone(),
+                        value: f64::from(COLUMNS[index].2),
+                    },
+                    None,
+                )
+                .await
+                .unwrap();
+            until(&mut app, |world| {
+                world
+                    .get::<Card>(card)
+                    .is_some_and(|card| card.column == Some(columns[index]))
+                    && world
+                        .get::<LayoutRuntime>(card)
+                        .is_some_and(|layout| layout.parent == Some(columns[index]))
+                    && world.get::<RecordProperties>(card).is_some_and(|record| {
+                        record.0["quantity"] == COLUMNS[index].2.to_string()
+                    })
+            })
+            .await;
+            assert_eq!(
+                app.world().get::<RecordProperties>(card).unwrap().0["quantity"],
+                COLUMNS[index].2.to_string()
+            );
+            assert_eq!(app.world().get::<RecordBinding>(card).unwrap().uid, uid);
+        }
+    }
 }

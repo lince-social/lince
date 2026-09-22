@@ -108,7 +108,7 @@ fn setup(world: &mut World) {
     config.draft.query["where"] = serde_json::json!([{"all":[{"kind_eq":"plain"}]}]);
     config.bindings[0].overflow = OverflowMode::GrowDown;
     config.bindings[1].overflow = OverflowMode::GrowDown;
-    config.bindings.push(Binding::new("quantity_exact"));
+    config.bindings.push(Binding::new("quantity"));
     if world.resource::<Capture>().groups {
         config.width = 260.0;
         config.columns = 1;

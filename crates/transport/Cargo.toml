@@ -12,7 +12,8 @@ default = []
 mcp = ["dep:axum", "dep:rmcp", "dep:tokio-util", "dep:getrandom"]
 # The reference websocket driver over axum. Off by default so pure consumers
 # (and tests) don't pull axum.
-axum = ["dep:axum", "dep:dirs", "dep:futures", "dep:portable-pty"]
+axum = ["dep:axum", "dep:futures", "terminal"]
+terminal = ["dep:dirs", "dep:portable-pty"]
 
 [dependencies]
 sha2 = { workspace = true }

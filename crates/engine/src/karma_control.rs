@@ -16,6 +16,73 @@ use crate::karma_runtime::KarmaDeadlineDirectorConfig;
 use crate::{Engine, EngineError};
 
 impl Engine {
+    pub(crate) async fn save_karma_frequency(
+        &self,
+        request_id: String,
+        frequency_uid: Option<String>,
+        expected_handle_revision: Option<u64>,
+        frequency: nucleus::karma::FrequencyAst,
+        restart: bool,
+        actor: Option<String>,
+        now: DateTime<Utc>,
+    ) -> Result<FrequencyMutationCommit, EngineError> {
+        if frequency_uid.is_some() != expected_handle_revision.is_some() {
+            return Err(EngineError::Conflict {
+                code: "frequency_revision_required",
+                message: "Editing a frequency requires its current revision".into(),
+            });
+        }
+        if let Some(uid) = &frequency_uid {
+            self.refuse_unreadable(actor.as_deref(), std::slice::from_ref(uid))
+                .await?;
+        }
+        let runtime = self.configured_karma_runtime()?;
+        let compiled =
+            frequency
+                .compile(&BTreeMap::new())
+                .map_err(|error| EngineError::Conflict {
+                    code: "karma_frequency_compile",
+                    message: error.to_string(),
+                })?;
+        let admission = self.compiled_frequency_admission(&compiled, &runtime)?;
+        let signer = self.signer.lock().await.clone();
+        let commit = match (frequency_uid, expected_handle_revision) {
+            (Some(frequency_uid), Some(expected_handle_revision)) => {
+                store::karma::frequencies::revise_with_schedule(
+                    &self.store.pool,
+                    ReviseFrequencyInput {
+                        request_id,
+                        frequency_uid,
+                        expected_handle_revision,
+                        frequency,
+                        actor_person_uid: actor,
+                    },
+                    Some(admission),
+                    restart,
+                    now,
+                    |hash| signer.as_ref().map(|value| value.sign_hash(hash)),
+                )
+                .await?
+            }
+            _ => {
+                store::karma::frequencies::create_with_schedule(
+                    &self.store.pool,
+                    CreateFrequencyInput {
+                        request_id,
+                        frequency,
+                        owner_person_uid: actor.clone(),
+                        actor_person_uid: actor,
+                    },
+                    Some(admission),
+                    now,
+                    |hash| signer.as_ref().map(|value| value.sign_hash(hash)),
+                )
+                .await?
+            }
+        };
+        self.finish_frequency_mutation(commit, now, true).await
+    }
+
     pub async fn respond_karma_candidate(
         &self,
         input: store::karma::candidates::RespondCandidateInput,
@@ -213,6 +280,14 @@ impl Engine {
                 code: "karma_frequency_compile",
                 message: error.to_string(),
             })?;
+        self.compiled_frequency_admission(&compiled, runtime)
+    }
+
+    fn compiled_frequency_admission<'a>(
+        &self,
+        compiled: &nucleus::karma::CompiledFrequency,
+        runtime: &'a KarmaDeadlineDirectorConfig,
+    ) -> Result<FrequencyRuntimeAdmission<'a>, EngineError> {
         let calendar_provider = match &compiled.schedule {
             CompiledSchedule::Elapsed { .. } => None,
             CompiledSchedule::Calendar { schedule } => Some(
@@ -240,7 +315,7 @@ impl Engine {
         })
     }
 
-    async fn finish_frequency_mutation(
+    pub(crate) async fn finish_frequency_mutation(
         &self,
         commit: FrequencyMutationCommit,
         now: DateTime<Utc>,

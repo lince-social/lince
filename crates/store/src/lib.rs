@@ -37,6 +37,7 @@ pub mod record_move;
 pub mod record_revisions;
 pub mod records;
 pub mod recurrence;
+pub mod karma_fields;
 pub mod replica;
 pub mod role_permissions;
 pub mod role_policies;

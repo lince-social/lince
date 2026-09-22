@@ -337,7 +337,6 @@ record castle should open without record selected.
   - [ ] Being able to copy it as image or like a portal to the real thing, making an area and opening a portal to a Record's description so i can have a piece of canvas in some location not only to draw but to do anything, a generic portal.
 
 Future Topology Work:
-- [ ] Optimize performance.
 - [ ] Convert .blend into .gltf as a lince util, without needing blender installed. So i can import a .blend from the internet or use Blender locally to build something and import in the canvas.
 - [ ] Would be cool to have a path seeking system in the Area of Influence of attraction, that can make sands attracted to it no-clip others or give them a route to follow, so if i put my area of influence inside a house that has windows closed but open door the sands can be told to turn around and go through the door, not going straight in the direction of the area of influence.
 - [ ] Workspace collaboration: one can share a workspace, in Workspace Sync so many people can live/replica sync and work under a shared topology. Practically, this can be a workspace existing under a Lince Organ that is running --server, that machine doesnt open an interface, but we can still crud it's workspaces so we in our personal computer can use it as a shared point for collaboration on a joint and exact same workspace with our sync features.

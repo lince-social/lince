@@ -95,6 +95,10 @@ pub struct ResourceSnapshot {
     pub sands: Vec<SandResources>,
     pub unique_image_assets: usize,
     pub retained_image_bytes: usize,
+    pub surface_count: usize,
+    pub visible_surfaces: usize,
+    pub surface_texture_bytes: u64,
+    pub font_atlas_bytes: u64,
 }
 
 #[derive(Clone, Copy, Default)]
@@ -157,6 +161,13 @@ impl ResourceSnapshot {
             format!(
                 "Shared images: {} unique · {} retained bytes (shared references counted once here)",
                 self.unique_image_assets, self.retained_image_bytes
+            ),
+            format!(
+                "Canvas captures: {} visible / {} total · {:.1} MiB of GPU textures · font atlases {:.1} MiB on CPU and GPU each",
+                self.visible_surfaces,
+                self.surface_count,
+                self.surface_texture_bytes as f64 / 1_048_576.0,
+                self.font_atlas_bytes as f64 / 1_048_576.0,
             ),
         ];
         for row in rows.into_iter().skip(page % pages * 8).take(8) {
@@ -354,10 +365,29 @@ pub fn capture(world: &mut World) -> ResourceSnapshot {
         sands.push(row);
     }
     sands.sort_by(|a, b| a.entity.cmp(&b.entity));
+    let mut surface_count = 0;
+    let mut visible_surfaces = 0;
+    let mut surface_texture_bytes = 0;
+    for surface in world
+        .query_filtered::<&crate::topology::presentation::Surface, Allow<Disabled>>()
+        .iter(world)
+    {
+        surface_count += 1;
+        visible_surfaces += usize::from(surface.visible);
+        surface_texture_bytes += u64::from(surface.pixels.x) * u64::from(surface.pixels.y) * 4;
+    }
+    let font_atlas_bytes = world
+        .get_resource::<bevy::text::FontAtlasSet>()
+        .zip(world.get_resource::<Assets<Image>>())
+        .map_or(0, |(atlases, images)| atlases.total_bytes(images));
     ResourceSnapshot {
         graphics: GraphicsDevice::read(world),
         sands,
         unique_image_assets: unique_images.len(),
         retained_image_bytes: unique_images.values().sum(),
+        surface_count,
+        visible_surfaces,
+        surface_texture_bytes,
+        font_atlas_bytes,
     }
 }

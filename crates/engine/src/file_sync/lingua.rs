@@ -1,5 +1,8 @@
+mod automation;
+
 use super::*;
 use anicca::{ProjectedAssertion, ProjectedRecord, grammar::grammar as ast};
+use automation::Automation;
 
 #[derive(Debug, Default)]
 pub(super) struct State {
@@ -11,6 +14,7 @@ struct Document {
     source: String,
     identified: String,
     records: Vec<ProjectedRecord>,
+    automation: Automation,
     missing: u32,
 }
 
@@ -63,9 +67,12 @@ impl Engine {
         let original_count = original.declarations.len();
         for (index, declaration) in document.declarations.iter_mut().enumerate() {
             let ast::Declaration::Record(record) = declaration else {
-                return Err(invalid(
-                    "Directory sync currently accepts Record declarations; Frequency, Rule and Extension declarations are not imported",
-                ));
+                if matches!(declaration, ast::Declaration::Extension(_)) {
+                    return Err(invalid(
+                        "Directory sync does not import Extension declarations",
+                    ));
+                }
+                continue;
             };
             let ast::Declaration::Record(original) = &original.declarations[index] else {
                 unreachable!()
@@ -118,7 +125,13 @@ impl Engine {
             }
             .validate()?;
         }
+        let mut automation = Automation {
+            frequencies: projected.frequencies,
+            rules: projected.rules,
+        };
+        automation.normalize()?;
         Ok(Document {
+            automation,
             source: source.into(),
             identified: anicca::format(&document),
             records: projected.records,
@@ -183,6 +196,12 @@ impl Engine {
     }
 
     async fn apply_lingua_record(&self, record: &ProjectedRecord) -> Result<bool, EngineError> {
+        if store::karma::frequencies::get_handle(&self.store.pool, &record.uid)
+            .await?
+            .is_some()
+        {
+            return Ok(false);
+        }
         let previous = self.lingua_record(&record.uid).await?;
         if previous.as_ref() == Some(record) {
             return Ok(false);
@@ -366,23 +385,69 @@ impl Engine {
             .into_iter()
             .filter_map(|r| r.slug.map(|slug| (slug, r.uid)))
             .collect();
+        for row in store::records::list_all(&self.store.pool).await? {
+            identities.insert(row.uid.clone(), row.uid);
+        }
         let mut declared = HashMap::new();
         let mut duplicate = HashSet::new();
+        let mut slugs = HashMap::new();
         for (path, document) in &documents {
-            for record in &document.records {
-                if let Some(other) = declared.insert(record.uid.clone(), path.clone()) {
+            let entries = document
+                .records
+                .iter()
+                .map(|r| (&r.uid, r.slug.as_ref()))
+                .chain(
+                    document
+                        .automation
+                        .frequencies
+                        .iter()
+                        .map(|f| (&f.uid, Some(&f.slug))),
+                )
+                .chain(
+                    document
+                        .automation
+                        .rules
+                        .iter()
+                        .map(|r| (&r.uid, Some(&r.slug))),
+                );
+            for (uid, slug) in entries {
+                if let Some(other) = declared.insert(uid.clone(), path.clone()) {
                     duplicate.insert(other);
                     duplicate.insert(path.clone());
                 }
-                if let Some(slug) = &record.slug {
-                    if identities.get(slug).is_some_and(|uid| uid != &record.uid) {
+                let is_rule = document
+                    .automation
+                    .rules
+                    .iter()
+                    .any(|rule| &rule.uid == uid);
+                if !is_rule {
+                    identities.insert(uid.clone(), uid.clone());
+                }
+                if let Some(slug) = slug {
+                    if let Some(other) = slugs.insert(slug.clone(), path.clone()) {
+                        duplicate.insert(other);
                         duplicate.insert(path.clone());
-                    } else {
-                        identities.insert(slug.clone(), record.uid.clone());
+                    }
+                    if identities.get(slug).is_some_and(|old| old != uid) {
+                        duplicate.insert(path.clone());
+                    } else if !is_rule {
+                        identities.insert(slug.clone(), uid.clone());
                     }
                 }
             }
         }
+        let frequency_uids: HashSet<_> = store::karma::frequencies::list_handles(&self.store.pool)
+            .await?
+            .into_iter()
+            .map(|handle| handle.record_uid)
+            .chain(documents.values().flat_map(|document| {
+                document
+                    .automation
+                    .frequencies
+                    .iter()
+                    .map(|frequency| frequency.uid.clone())
+            }))
+            .collect();
         for path in &paths {
             let Some(document) = documents.get_mut(path) else {
                 continue;
@@ -392,6 +457,44 @@ impl Engine {
                     return Err(invalid(
                         "Duplicate Record uid or slug; the file was kept unchanged",
                     ));
+                }
+                for frequency in &document.automation.frequencies {
+                    if let Some(row) = store::records::get(&self.store.pool, &frequency.uid).await? {
+                        if row.organ_uid.as_deref() != Some(organ) || row.kind != "frequency" {
+                            return Err(invalid("The Frequency belongs to another Organ or has another type"));
+                        }
+                    }
+                }
+                for rule in &mut document.automation.rules {
+                    rule.record_uid = Some(identities.get(&rule.record_slug).cloned().ok_or_else(|| invalid(format!("Unknown Rule target @{}", rule.record_slug)))?);
+                    if !rule.frequency_slug.is_empty() {
+                        rule.frequency_uid = Some(identities.get(&rule.frequency_slug).filter(|uid| frequency_uids.contains(*uid)).cloned().ok_or_else(|| invalid("Unknown Rule frequency"))?);
+                    }
+                    if let Some(target) = store::records::get(&self.store.pool, rule.record_uid.as_ref().unwrap()).await? {
+                        if target.organ_uid.as_deref() != Some(organ) { return Err(invalid("The Rule target belongs to another Organ")); }
+                    }
+                    if let Some(source) = &rule.condition {
+                        for read in nucleus::karma::Condition::parse(source).map_err(invalid)?.reads() {
+                            if read.func != nucleus::expr::ASSERTION {
+                                for slug in read.slug.split('|') {
+                                    if identities.get(slug).is_none_or(|uid| read.func == "freq" && !frequency_uids.contains(uid)) {
+                                        return Err(invalid(format!("Unknown condition reference @{slug}")));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if let Some(current) = store::recurrence::get(&self.store.pool, &rule.uid).await? {
+                        if Some(&current.record_uid) != rule.record_uid.as_ref() { return Err(invalid("The Rule belongs to another Record")); }
+                    }
+                }
+                if let Some(known) = state.files.get(path).filter(|known| known.source != document.source) {
+                    if known.automation.uids().next().is_some() {
+                        let current = self.current_lingua_automation(known).await?;
+                        if current != known.automation && current != document.automation {
+                            return Err(invalid("The file and Karma both changed; resolve the conflict before syncing"));
+                        }
+                    }
                 }
                 for record in &mut document.records {
                     for assertion in &mut record.assertions {
@@ -427,6 +530,25 @@ impl Engine {
                 conflict(&mut report, path, error);
                 documents.remove(path);
             }
+        }
+        let mut failed = Vec::new();
+        for (path, document) in &documents {
+            if state
+                .files
+                .get(path)
+                .is_none_or(|known| known.source != document.source)
+            {
+                if let Err(error) = self
+                    .apply_lingua_frequencies(&document.automation, &mut report)
+                    .await
+                {
+                    conflict(&mut report, path, error);
+                    failed.push(path.clone());
+                }
+            }
+        }
+        for path in failed {
+            documents.remove(&path);
         }
         for (path, document) in &documents {
             if state
@@ -480,6 +602,34 @@ impl Engine {
                             report.updated_from_disk.push(record.uid.clone());
                         }
                     }
+                    self.apply_lingua_rules(&document.automation, &mut report)
+                        .await?;
+                    if let Some(known) = known {
+                        for old in &known.automation.rules {
+                            if !declared.contains_key(&old.uid) {
+                                self.act(
+                                    Action::DeleteRecurrence {
+                                        recurrence: old.uid.clone(),
+                                    },
+                                    None,
+                                )
+                                .await?;
+                                report.deleted.push(old.uid.clone());
+                            }
+                        }
+                        for old in &known.automation.frequencies {
+                            if !declared.contains_key(&old.uid) {
+                                self.act(
+                                    Action::DeleteFrequency {
+                                        frequency: old.uid.clone(),
+                                    },
+                                    None,
+                                )
+                                .await?;
+                                report.deleted.push(old.uid.clone());
+                            }
+                        }
+                    }
                     if let Some(known) = known {
                         for old in &known.records {
                             if !declared.contains_key(&old.uid) {
@@ -494,18 +644,36 @@ impl Engine {
                             }
                         }
                     }
-                } else {
-                    let records: Vec<_> = current.into_iter().flatten().collect();
-                    if records != document.records {
-                        let text = render_document(&document.identified, &records)?;
-                        write_document(path, Some(&document.source), &text)?;
-                        report
-                            .written_to_disk
-                            .extend(records.iter().map(|r| r.uid.clone()));
-                        document.source = text.clone();
-                        document.identified = text;
-                        document.records = records;
+                }
+                let mut automation = self.current_lingua_automation(&document).await?;
+                automation
+                    .rules
+                    .retain(|rule| declared.get(&rule.uid).is_none_or(|owner| owner == path));
+                let mut records = Vec::new();
+                for record in &document.records {
+                    if !automation.frequencies.iter().any(|f| f.uid == record.uid) {
+                        if let Some(record) = self.lingua_record(&record.uid).await? {
+                            records.push(record);
+                        }
                     }
+                }
+                let changed = records != document.records || automation != document.automation;
+                let typed = automation.uids().next().is_some();
+                if changed || (typed && disk_changed) {
+                    let text = render_document(&document.identified, &records, &automation)?;
+                    if text != document.source {
+                        write_document(path, Some(&document.source), &text)?;
+                        report.written_to_disk.extend(
+                            records
+                                .iter()
+                                .map(|r| r.uid.clone())
+                                .chain(automation.uids().cloned()),
+                        );
+                    }
+                    document.source = text.clone();
+                    document.identified = text;
+                    document.records = records;
+                    document.automation = automation;
                 }
                 Ok::<_, EngineError>(())
             }
@@ -523,11 +691,50 @@ impl Engine {
             .filter(|path| !disk.contains_key(*path))
             .cloned()
             .collect();
-        for path in missing {
+        'missing: for path in missing {
             let document = state.files.get_mut(&path).unwrap();
             document.missing += 1;
             if document.missing < MISSING_TICKS_BEFORE_DELETE {
                 continue;
+            }
+            for rule in &document.automation.rules {
+                if !declared.contains_key(&rule.uid)
+                    && store::recurrence::get(&self.store.pool, &rule.uid)
+                        .await?
+                        .is_some()
+                {
+                    self.act(
+                        Action::DeleteRecurrence {
+                            recurrence: rule.uid.clone(),
+                        },
+                        None,
+                    )
+                    .await?;
+                    report.deleted.push(rule.uid.clone());
+                }
+            }
+            for frequency in &document.automation.frequencies {
+                if !declared.contains_key(&frequency.uid)
+                    && store::records::get(&self.store.pool, &frequency.uid)
+                        .await?
+                        .is_some()
+                {
+                    match self
+                        .act(
+                            Action::DeleteFrequency {
+                                frequency: frequency.uid.clone(),
+                            },
+                            None,
+                        )
+                        .await
+                    {
+                        Ok(_) => report.deleted.push(frequency.uid.clone()),
+                        Err(error) => {
+                            conflict(&mut report, &path, error);
+                            continue 'missing;
+                        }
+                    }
+                }
             }
             for record in &document.records {
                 if !declared.contains_key(&record.uid)
@@ -550,7 +757,13 @@ impl Engine {
         let represented: HashSet<_> = state
             .files
             .values()
-            .flat_map(|document| document.records.iter().map(|record| record.uid.clone()))
+            .flat_map(|document| {
+                document
+                    .records
+                    .iter()
+                    .map(|record| record.uid.clone())
+                    .chain(document.automation.uids().cloned())
+            })
             .chain(declared.keys().cloned())
             .collect();
         let selected = self.selected_records(organ, config).await?;
@@ -563,17 +776,30 @@ impl Engine {
                     .lingua_record(&uid)
                     .await?
                     .ok_or_else(|| invalid("Record disappeared during sync"))?;
-                let text = render_document("", std::slice::from_ref(&record))?;
+                let mut document = Document {
+                    source: String::new(),
+                    identified: String::new(),
+                    records: vec![record],
+                    automation: Automation::default(),
+                    missing: 0,
+                };
+                document.automation = self.current_lingua_automation(&document).await?;
+                document
+                    .automation
+                    .rules
+                    .retain(|rule| !represented.contains(&rule.uid));
+                document.records.retain(|r| {
+                    !document
+                        .automation
+                        .frequencies
+                        .iter()
+                        .any(|f| f.uid == r.uid)
+                });
+                let text = render_document("", &document.records, &document.automation)?;
                 write_document(&path, None, &text)?;
-                state.files.insert(
-                    path.clone(),
-                    Document {
-                        source: text.clone(),
-                        identified: text,
-                        records: vec![record],
-                        missing: 0,
-                    },
-                );
+                document.source = text.clone();
+                document.identified = text;
+                state.files.insert(path.clone(), document);
                 report.written_to_disk.push(uid);
                 Ok::<_, EngineError>(())
             }
@@ -590,7 +816,11 @@ impl Engine {
     }
 }
 
-fn render_document(source: &str, records: &[ProjectedRecord]) -> Result<String, EngineError> {
+fn render_document(
+    source: &str,
+    records: &[ProjectedRecord],
+    automation: &Automation,
+) -> Result<String, EngineError> {
     let mut document = anicca::parse(source).map_err(invalid)?;
     document.declarations.retain(|declaration| matches!(declaration, ast::Declaration::Record(record) if records.iter().any(|r| Some(r.uid.as_str()) == record.opening.uid())));
     for record in records {
@@ -631,9 +861,11 @@ fn render_document(source: &str, records: &[ProjectedRecord]) -> Result<String, 
         .map_err(invalid)?;
         document = anicca::parse(&updated).map_err(invalid)?;
     }
-    let text = anicca::format(&document);
+    let mut text = anicca::format(&document);
+    text.push_str(&automation.render()?);
+    let document = anicca::parse(&text).map_err(invalid)?;
     anicca::project(&document).map_err(invalid)?;
-    Ok(text)
+    Ok(anicca::format(&document))
 }
 
 fn write_document(path: &Path, expected: Option<&str>, text: &str) -> Result<(), EngineError> {

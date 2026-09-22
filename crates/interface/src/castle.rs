@@ -36,9 +36,7 @@ impl Plugin for CastlePlugin {
         app.init_resource::<Layouts>()
             .add_systems(
                 PostUpdate,
-                remember_layout
-                    .after(bevy::ui::UiSystems::PostLayout)
-                    .before(crate::actions::ApplyActions),
+                remember_layout.after(bevy::ui::UiSystems::PostLayout),
             )
             .add_systems(Last, present.in_set(PresentCastles));
         if let Some(render) = app.get_sub_app_mut(RenderApp) {

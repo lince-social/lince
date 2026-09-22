@@ -46,6 +46,10 @@ pub enum Mutation {
         quantity: Option<String>,
         unit: Option<String>,
     },
+    NumberAssertion {
+        predicate: String,
+        position: u32,
+    },
     RetractAssertion {
         assertion: String,
     },
@@ -469,6 +473,7 @@ impl Engine {
             Mutation::Text { .. }
             | Mutation::WorkMetadata { .. }
             | Mutation::Assertion { .. }
+            | Mutation::NumberAssertion { .. }
             | Mutation::RetractAssertion { .. } => None,
             Mutation::Quantity { .. } => Some(Property::Quantity),
             Mutation::Slug { .. } => Some(Property::Slug),
@@ -534,7 +539,9 @@ impl Engine {
         }
         if matches!(
             request.mutation,
-            Mutation::Assertion { .. } | Mutation::RetractAssertion { .. }
+            Mutation::Assertion { .. }
+                | Mutation::NumberAssertion { .. }
+                | Mutation::RetractAssertion { .. }
         ) {
             return self.change_assertion(&request, actor, &payload).await;
         }
@@ -663,6 +670,7 @@ impl Engine {
             }
             Mutation::Text { .. }
             | Mutation::Assertion { .. }
+            | Mutation::NumberAssertion { .. }
             | Mutation::RetractAssertion { .. } => unreachable!(),
         };
         related.push((property, value));
@@ -725,7 +733,37 @@ impl Engine {
         payload: &str,
     ) -> Result<ActionOutcome, EngineError> {
         let uid = &request.record_uid;
+        let numbering = matches!(request.mutation, Mutation::NumberAssertion { .. });
         let (predicate, object, quantity, unit, retract) = match &request.mutation {
+            Mutation::NumberAssertion {
+                predicate,
+                position,
+            } => {
+                if *position == 0 {
+                    return Err(invalid("Assertion numbering starts at 1"));
+                }
+                self.authorize_action(
+                    &crate::actions::Action::AssertRecord {
+                        subject: uid.clone(),
+                        predicate: predicate.clone(),
+                        object: None,
+                        quantity: Some(position.to_string()),
+                        unit: None,
+                    },
+                    actor,
+                )
+                .await?;
+                let predicate = store::concepts::resolve(&self.store.pool, predicate)
+                    .await?
+                    .ok_or_else(|| invalid("Unknown assertion"))?;
+                (
+                    predicate,
+                    None,
+                    Some(decimal(&position.to_string())?),
+                    None,
+                    None,
+                )
+            }
             Mutation::Assertion {
                 predicate,
                 object,
@@ -831,6 +869,15 @@ impl Engine {
                         if grant.operation != Operation::Update {
                             continue;
                         }
+                        if numbering
+                            && !grant.assertions_remove.iter().any(|grant| {
+                                grant.predicate_uid == predicate
+                                    && grant.role == AssertionRole::Ordinary
+                                    && matches!(grant.target, AssertionTarget::Unary)
+                            })
+                        {
+                            continue;
+                        }
                         let assertions = if retract.is_some() {
                             grant.assertions_remove
                         } else {
@@ -911,9 +958,38 @@ impl Engine {
                 store::assertions::retract_tx(&mut tx, assertion, actor).await?,
             )
         } else {
-            let existing: Option<String> = store::sqlx::query_scalar("SELECT uid FROM record_assertion WHERE subject_uid = ? AND predicate_uid = ? AND object_uid IS ? AND retracted_at IS NULL").bind(uid).bind(&predicate).bind(&object).fetch_optional(&mut *tx).await?;
+            let existing: Vec<String> = store::sqlx::query_scalar("SELECT uid FROM record_assertion WHERE subject_uid = ? AND predicate_uid = ? AND object_uid IS ? AND retracted_at IS NULL ORDER BY uid").bind(uid).bind(&predicate).bind(&object).fetch_all(&mut *tx).await?;
+            if numbering && existing.len() > 1 {
+                return Err(invalid("Resolve duplicate assertions before numbering"));
+            }
+            let existing = existing.into_iter().next();
             if let Some(assertion) = existing {
-                (assertion, false)
+                if numbering {
+                    let previous = store::sqlx::query("SELECT role, unit_uid, quantity_mantissa, quantity_scale FROM record_assertion WHERE uid = ?").bind(&assertion).fetch_one(&mut *tx).await?;
+                    if previous.get::<String, _>("role") == "identity" {
+                        return Err(invalid("Identity assertions cannot be numbered"));
+                    }
+                    if previous.get::<Option<String>, _>("unit_uid").is_some() {
+                        return Err(invalid("Choose an assertion without units for numbering"));
+                    }
+                    let old_quantity = previous
+                        .get::<Option<String>, _>("quantity_mantissa")
+                        .map(|_| store::exact::read_decimal(&previous, "quantity"))
+                        .transpose()?;
+                    let changed = old_quantity != quantity;
+                    let row = store::assertions::set_quantity_tx(
+                        &mut tx,
+                        &assertion,
+                        store::assertions::AssertionQuantity {
+                            quantity,
+                            unit_uid: None,
+                        },
+                    )
+                    .await?;
+                    (row.uid, changed)
+                } else {
+                    (assertion, false)
+                }
             } else {
                 let assertion = nucleus::new_uid("a");
                 store::assertions::insert_tx(
@@ -933,7 +1009,7 @@ impl Engine {
                 (assertion, true)
             }
         };
-        let data = json!({"change_id": request.id, "state": "saved", "changed": changed, "assertion": assertion, "operation": if retract.is_some() { "remove" } else { "add" }});
+        let data = json!({"change_id": request.id, "state": "saved", "changed": changed, "assertion": assertion, "operation": if retract.is_some() { "remove" } else if numbering { "quantity" } else { "add" }});
         store::sqlx::query("INSERT INTO record_change_receipt (actor, change_uid, record_uid, payload, result) VALUES (?, ?, ?, ?, ?)").bind(actor.unwrap_or("")).bind(&request.id).bind(uid).bind(payload).bind(data.to_string()).execute(&mut *tx).await?;
         let now = Utc::now();
         let mut facts = Vec::new();

@@ -22,8 +22,6 @@ pub(super) struct Form {
 
 #[derive(Clone)]
 pub(super) enum Command {
-    AddRelation,
-    RemoveRelation(String),
     SaveLog,
     AddLog,
     RemoveLog,
@@ -86,130 +84,60 @@ pub(super) fn spawn(
     index: usize,
 ) {
     let count = data[property].as_array().map_or(0, Vec::len);
-    let index = index.min(if property == "work_logs" {
-        count
-    } else {
-        count.saturating_sub(1) / 16
-    });
+    let index = index.min(count);
     let mut fields = Vec::new();
-    if property == "work_logs" {
-        let logs = data["work_logs"].as_array().cloned().unwrap_or_default();
-        let row = crate::area_panel::row(world, parent);
-        button(
-            world,
-            row,
-            parent,
-            Command::Page(false),
-            Icon::Previous,
-            "Previous work log",
-        );
-        label(
-            world,
-            row,
-            &if index == logs.len() {
-                "New work log".into()
-            } else {
-                format!("{} / {}", index + 1, logs.len())
-            },
-            14.0,
-        );
-        button(
-            world,
-            row,
-            parent,
-            Command::Page(true),
-            Icon::Next,
-            "Next work log",
-        );
-        let log = logs.get(index).cloned().unwrap_or(Value::Null);
-        fields.push(input(
-            world,
-            parent,
-            "Start",
-            log["start"].as_str().unwrap_or_default().into(),
-            "Timestamp with timezone, for example 2026-09-13T09:00:00-03:00",
-        ));
-        fields.push(input(
-            world,
-            parent,
-            "End",
-            log["end"].as_str().unwrap_or_default().into(),
-            "Timestamp with timezone; blank keeps this log running",
-        ));
-        let row = crate::area_panel::row(world, parent);
-        button(
-            world,
-            row,
-            parent,
-            Command::RemoveLog,
-            Icon::Delete,
-            "Remove the selected work log",
-        );
-    } else {
-        let values = data[property].as_array().cloned().unwrap_or_default();
-        for value in values.iter().skip(index * 16).take(16) {
-            let row = crate::area_panel::row(world, parent);
-            label(world, row, &rows::display(&json!([value])), 14.0);
-            let uid = if property == "assignees" {
-                value["assertion"].as_str()
-            } else {
-                value["uid"].as_str()
-            };
-            if let Some(uid) = uid {
-                button(
-                    world,
-                    row,
-                    parent,
-                    Command::RemoveRelation(uid.into()),
-                    Icon::Close,
-                    "Remove this assignment or assertion",
-                );
-            }
-        }
-        if values.len() > 16 {
-            let row = crate::area_panel::row(world, parent);
-            button(
-                world,
-                row,
-                parent,
-                Command::Page(false),
-                Icon::Previous,
-                "Previous assertions",
-            );
-            label(
-                world,
-                row,
-                &format!("{} / {}", index + 1, values.len().div_ceil(16)),
-                14.0,
-            );
-            button(
-                world,
-                row,
-                parent,
-                Command::Page(true),
-                Icon::Next,
-                "Next assertions",
-            );
-        }
-        if property == "assignees" {
-            fields.push(input(
-                world,
-                parent,
-                "Assignee",
-                String::new(),
-                "Person slug or identity",
-            ));
+    let logs = data["work_logs"].as_array().cloned().unwrap_or_default();
+    let row = crate::area_panel::row(world, parent);
+    button(
+        world,
+        row,
+        parent,
+        Command::Page(false),
+        Icon::Previous,
+        "Previous work log",
+    );
+    label(
+        world,
+        row,
+        &if index == logs.len() {
+            "New work log".into()
         } else {
-            for (title, hint) in [
-                ("Assertion", "Assertion name or slug"),
-                ("Target", "Optional related Record slug or identity"),
-                ("Quantity", "Optional exact quantity"),
-                ("Unit", "Optional unit slug or identity"),
-            ] {
-                fields.push(input(world, parent, title, String::new(), hint));
-            }
-        }
-    }
+            format!("{} / {}", index + 1, logs.len())
+        },
+        14.0,
+    );
+    button(
+        world,
+        row,
+        parent,
+        Command::Page(true),
+        Icon::Next,
+        "Next work log",
+    );
+    let log = logs.get(index).cloned().unwrap_or(Value::Null);
+    fields.push(input(
+        world,
+        parent,
+        "Start",
+        log["start"].as_str().unwrap_or_default().into(),
+        "Timestamp with timezone, for example 2026-09-13T09:00:00-03:00",
+    ));
+    fields.push(input(
+        world,
+        parent,
+        "End",
+        log["end"].as_str().unwrap_or_default().into(),
+        "Timestamp with timezone; blank keeps this log running",
+    ));
+    let row = crate::area_panel::row(world, parent);
+    button(
+        world,
+        row,
+        parent,
+        Command::RemoveLog,
+        Icon::Delete,
+        "Remove the selected work log",
+    );
     world.entity_mut(parent).insert(Form {
         binding,
         property: property.into(),
@@ -400,10 +328,8 @@ pub(super) fn commit_edits(world: &mut World, mut previous_focus: Local<Option<E
         world.get_mut::<Form>(entity).unwrap().attempted = Some(values);
         let command = if existing_log {
             Command::SaveLog
-        } else if property == "work_logs" {
-            Command::AddLog
         } else {
-            Command::AddRelation
+            Command::AddLog
         };
         command.apply(world, entity);
     }
@@ -461,45 +387,6 @@ impl Action for Command {
         }
         let values = values(world, &form);
         let action = match self {
-            Self::AddRelation => {
-                let assignee = form.property == "assignees";
-                if values.first().is_none_or(|value| value.trim().is_empty()) {
-                    status(world, form.binding.area, "Enter an assignee or assertion");
-                    return;
-                }
-                let optional = |index: usize| {
-                    values
-                        .get(index)
-                        .map(|value| value.trim())
-                        .filter(|value| !value.is_empty())
-                        .map(str::to_string)
-                };
-                engine::actions::Action::ChangeRecord {
-                    request: engine::record_change::Request {
-                        id: nucleus::new_uid("op"),
-                        record_uid: form.binding.uid.clone(),
-                        mutation: engine::record_change::Mutation::Assertion {
-                            predicate: if assignee {
-                                "assigned-to".into()
-                            } else {
-                                values[0].trim().trim_start_matches('#').into()
-                            },
-                            object: optional(if assignee { 0 } else { 1 }),
-                            quantity: if assignee { None } else { optional(2) },
-                            unit: if assignee { None } else { optional(3) },
-                        },
-                    },
-                }
-            }
-            Self::RemoveRelation(uid) => engine::actions::Action::ChangeRecord {
-                request: engine::record_change::Request {
-                    id: nucleus::new_uid("op"),
-                    record_uid: form.binding.uid.clone(),
-                    mutation: engine::record_change::Mutation::RetractAssertion {
-                        assertion: uid.clone(),
-                    },
-                },
-            },
             Self::SaveLog | Self::AddLog | Self::RemoveLog => {
                 let log_id = if matches!(self, Self::AddLog) {
                     format!("work.log:{}", nucleus::new_uid("op"))

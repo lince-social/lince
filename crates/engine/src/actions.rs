@@ -131,6 +131,21 @@ pub enum Action {
     DeleteFrequency {
         frequency: String,
     },
+    PreviewKarmaReading {
+        source: String,
+    },
+    SaveKarmaRule {
+        rule: Option<String>,
+        expected_revision: Option<i64>,
+        fields: [nucleus::karma::rule_field::RuleFieldInput; 3],
+        request_id: String,
+    },
+    ReviseKarmaField {
+        field: String,
+        expected_revision: i64,
+        source: String,
+        request_id: String,
+    },
     CreateRecurrence {
         target: String,
         consequences: Vec<nucleus::karma::Consequence>,
@@ -940,6 +955,14 @@ pub enum Action {
         frequency: FrequencyAst,
         #[serde(default)]
         owner_person_uid: Option<String>,
+    },
+    SaveKarmaFrequency {
+        request_id: String,
+        frequency_uid: Option<String>,
+        expected_handle_revision: Option<u64>,
+        frequency: FrequencyAst,
+        #[serde(default)]
+        restart: bool,
     },
     ReviseKarmaFrequency {
         request_id: String,
@@ -1813,6 +1836,7 @@ impl Engine {
         verified_authorship: Option<VerifiedActionAuthorship>,
     ) -> Result<ActionOutcome, EngineError> {
         let changes_rules = matches!(&action,
+            Action::SaveKarmaRule { .. } | Action::ReviseKarmaField { .. } |
             Action::CreateFrequency { .. } | Action::DeleteFrequency { .. }
             | Action::CreateRecurrence { .. } | Action::ReviseRecurrence { .. }
             | Action::DeleteRecurrence { .. } | Action::SetRecurrencePaused { .. }
@@ -1820,7 +1844,9 @@ impl Engine {
             | Action::SetSlug { .. } | Action::CreateRecord { .. }
             | Action::SetKarmaExecution { .. } | Action::DesignateKarmaExecutor { .. }
         );
+        let preview = matches!(&action, Action::PreviewKarmaReading { .. });
         let _rule_guard = if matches!(&action,
+            Action::SaveKarmaRule { .. } | Action::ReviseKarmaField { .. } |
             Action::CreateRecurrence { .. } | Action::ReviseRecurrence { .. }
             | Action::DeleteRecurrence { .. } | Action::SetRecurrencePaused { .. }
         ) { Some(self.rule_execution.lock().await) } else { None };
@@ -1840,7 +1866,7 @@ impl Engine {
         if changes_rules {
             self.notify_karma_deadline_change();
         }
-        if outcome.facts.is_empty() {
+        if outcome.facts.is_empty() && !preview {
             self.query_changed
                 .send_modify(|revision| *revision = revision.wrapping_add(1));
         }
@@ -2142,6 +2168,15 @@ impl Engine {
                         code: "frequency_in_use",
                         message: error.to_string(),
                     })?;
+            }
+            Action::PreviewKarmaReading { source } => {
+                outcome.data = Some(Box::pin(self.preview_karma_reading(&source, actor.as_deref(), now)).await?);
+            }
+            Action::SaveKarmaRule { rule, expected_revision, fields, request_id } => {
+                outcome = Box::pin(self.save_karma_rule(rule, expected_revision, fields, request_id, actor.as_deref(), now)).await?;
+            }
+            Action::ReviseKarmaField { field, expected_revision, source, request_id } => {
+                outcome = Box::pin(self.revise_karma_field(field, expected_revision, source, request_id, actor.as_deref(), now)).await?;
             }
             Action::CreateRecurrence {
                 target,
@@ -8008,6 +8043,26 @@ impl Engine {
                 ))
                 .await?;
             }
+            Action::SaveKarmaFrequency {
+                request_id,
+                frequency_uid,
+                expected_handle_revision,
+                frequency,
+                restart,
+            } => {
+                let commit = Box::pin(self.save_karma_frequency(
+                    request_id,
+                    frequency_uid,
+                    expected_handle_revision,
+                    frequency,
+                    restart,
+                    actor,
+                    now,
+                )).await?;
+                apply_frequency_mutation(commit, &mut outcome)?;
+                self.publish_karma_definition(&outcome, KarmaKind::Frequency)
+                    .await?;
+            }
             Action::CreateKarmaFrequency {
                 request_id,
                 frequency,
@@ -10849,7 +10904,9 @@ impl Engine {
             | Action::DeleteLingua { .. }
             | Action::DeleteConversation { .. } => "record:delete",
 
-            Action::CreateFrequency { .. } | Action::CreateRecurrence { .. } => "frequency:create",
+            Action::PreviewKarmaReading { .. } => "record:read",
+            Action::SaveKarmaRule { rule: None, .. } | Action::CreateFrequency { .. } | Action::CreateRecurrence { .. } => "frequency:create",
+            Action::SaveKarmaRule { rule: Some(_), .. } | Action::ReviseKarmaField { .. } => "frequency:update",
             Action::ReviseRecurrence { .. }
             | Action::SetRecurrencePaused { .. }
             | Action::ApplyRecurrenceOccurrence { .. }
@@ -10937,6 +10994,7 @@ impl Engine {
             | Action::NarrowKarmaGrant { .. }
             | Action::ActivateKarmaGrant { .. }
             | Action::CreateKarmaFrequency { .. }
+            | Action::SaveKarmaFrequency { .. }
             | Action::ReviseKarmaFrequency { .. }
             | Action::ActivateKarmaFrequency { .. }
             | Action::SetKarmaFrequencyParameters { .. }
@@ -10981,7 +11039,7 @@ impl Engine {
         })
     }
 
-    async fn canonical_condition(
+    pub(crate) async fn canonical_condition(
         &self,
         condition: Option<String>,
     ) -> Result<Option<String>, EngineError> {
@@ -11005,7 +11063,7 @@ impl Engine {
         Ok(Some(rewritten))
     }
 
-    async fn resolve_consequences(
+    pub(crate) async fn resolve_consequences(
         &self,
         declared: Vec<nucleus::karma::Consequence>,
     ) -> Result<nucleus::karma::Consequences, EngineError> {

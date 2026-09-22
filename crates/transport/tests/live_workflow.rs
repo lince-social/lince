@@ -805,7 +805,7 @@ async fn native_live_client_authenticates_signs_actions_and_obeys_revocation() {
     let client = tokio::spawn(transport::live_client::drive(connection, outgoing, responses, || {}));
     tokio::time::timeout(std::time::Duration::from_secs(30), async {
         assert!(matches!(incoming.recv().await.unwrap(), ServerMessage::SessionAuthenticated { person: actor, .. } if actor == person));
-        requests.send(ClientMessage::Subscribe { id: "native-view".into(), protein: serde_json::from_value(serde_json::json!({"source":"record","fields":["head","quantity_exact"]})).unwrap() }).await.unwrap();
+        requests.send(ClientMessage::Subscribe { id: "native-view".into(), protein: serde_json::from_value(serde_json::json!({"source":"record","fields":["head","quantity"]})).unwrap() }).await.unwrap();
         assert!(matches!(incoming.recv().await.unwrap(), ServerMessage::Snapshot { rows, .. } if rows.is_empty()));
         requests.send(ClientMessage::Act { id: "native-create".into(), action: Action::CreateRecord { slug: Some("native-created".into()), kind: nucleus::RecordKind::Plain, head: "From native".into(), body: String::new(), quantity: 1.0 } }).await.unwrap();
         loop {

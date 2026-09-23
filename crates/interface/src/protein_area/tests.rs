@@ -2,6 +2,168 @@ use super::*;
 use bevy::math::DVec2;
 use serde_json::json;
 
+#[tokio::test]
+async fn relation_protein_spawns_live_assertion_arrows_and_restores_record_positions() {
+    use engine::actions::Action as Backend;
+    let engine = engine::Engine::open_memory().await.unwrap();
+    let mut ids = Vec::new();
+    for head in ["First", "Second"] {
+        ids.push(
+            engine
+                .act(
+                    Backend::CreateRecord {
+                        slug: None,
+                        kind: nucleus::RecordKind::Plain,
+                        head: head.into(),
+                        body: "Filled description".into(),
+                        quantity: 5.0,
+                    },
+                    None,
+                )
+                .await
+                .unwrap()
+                .created
+                .unwrap(),
+        );
+    }
+    engine
+        .act(
+            Backend::CreateConcept {
+                lingua: "g_local".into(),
+                name: "depends-on".into(),
+                parents: vec![],
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let assertion = engine
+        .act(
+            Backend::AssertRecord {
+                subject: ids[0].clone(),
+                predicate: "depends-on".into(),
+                object: Some(ids[1].clone()),
+                quantity: None,
+                unit: None,
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    let (mut app, _, owner) = fixture();
+    let mut config = crate::relation_castle::config();
+    config.draft.query["where"] =
+        json!([{"any":ids.iter().map(|uid| json!({"uid_eq":uid})).collect::<Vec<_>>()}]);
+    let query = config.query().unwrap();
+    let data = protein::execute(&engine.store, &query).await.unwrap();
+    assert_eq!(data.len(), 2);
+    assert!(
+        data.iter()
+            .all(|row| row["links"].as_array().unwrap().len() == 1)
+    );
+    app.world_mut()
+        .get_mut::<InfluenceArea>(owner)
+        .unwrap()
+        .protein = Some(config.clone());
+    app.world_mut().resource_mut::<Runtime>().areas.insert(
+        owner,
+        State {
+            applied: Some(config.clone()),
+            data,
+            ready: true,
+            dirty: true,
+            ..default()
+        },
+    );
+    rows::reconcile(app.world_mut(), owner);
+    let records = app.world().resource::<Runtime>().areas[&owner]
+        .row_entities
+        .clone();
+    let links: Vec<_> = app
+        .world_mut()
+        .query::<(Entity, &crate::arrow_sand::ArrowSand)>()
+        .iter(app.world())
+        .map(|(entity, arrow)| (entity, arrow.clone()))
+        .collect();
+    assert_eq!(links.len(), 1);
+    assert_eq!(links[0].1.from, records[&ids[0]]);
+    assert_eq!(links[0].1.to, records[&ids[1]]);
+    assert_eq!(links[0].1.label, "depends-on");
+    for row in records.values() {
+        rows::place(app.world_mut(), *row, DVec2::ZERO, Vec2::new(320.0, 100.0));
+        assert!(
+            app.world()
+                .get::<crate::canvas_selection::SandGroup>(*row)
+                .is_none()
+        );
+    }
+    let moved = bevy::math::DVec3::new(730.0, 25.0, -440.0);
+    crate::topology::set_position(app.world_mut(), records[&ids[0]], moved);
+    let saved = crate::record_presentation::capture(
+        app.world(),
+        owner,
+        app.world().get::<InfluenceArea>(owner).unwrap().clone(),
+    );
+    let saved: InfluenceArea =
+        serde_json::from_slice(&serde_json::to_vec(&saved).unwrap()).unwrap();
+    assert!(saved.validate());
+    stop(app.world_mut(), owner);
+    crate::arrow_sand::update(app.world_mut());
+    assert!(app.world().get_entity(links[0].0).is_err());
+    app.world_mut().entity_mut(owner).insert(saved);
+    let data = protein::execute(&engine.store, &query).await.unwrap();
+    app.world_mut().resource_mut::<Runtime>().areas.insert(
+        owner,
+        State {
+            applied: Some(config),
+            data,
+            ready: true,
+            dirty: true,
+            ..default()
+        },
+    );
+    rows::reconcile(app.world_mut(), owner);
+    let restored = app.world().resource::<Runtime>().areas[&owner].row_entities[&ids[0]];
+    rows::place(
+        app.world_mut(),
+        restored,
+        DVec2::ZERO,
+        Vec2::new(320.0, 100.0),
+    );
+    assert_eq!(
+        crate::topology::position(app.world(), restored),
+        Some(moved)
+    );
+    engine
+        .act(Backend::RetractAssertion { assertion }, None)
+        .await
+        .unwrap();
+    let data = protein::execute(&engine.store, &query).await.unwrap();
+    let state = app
+        .world_mut()
+        .resource_mut::<Runtime>()
+        .into_inner()
+        .areas
+        .get_mut(&owner)
+        .unwrap();
+    state.data = data;
+    state.dirty = true;
+    rows::reconcile(app.world_mut(), owner);
+    assert_eq!(
+        app.world_mut()
+            .query::<&crate::arrow_sand::ArrowSand>()
+            .iter(app.world())
+            .count(),
+        0
+    );
+    assert_eq!(
+        app.world().resource::<Runtime>().areas[&owner].row_entities[&ids[0]],
+        restored
+    );
+}
+
 #[test]
 fn growing_nested_records_keep_valid_layout_and_expand_column_content() {
     let mut app = App::new();

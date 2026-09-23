@@ -178,10 +178,7 @@ pub fn spawn(world: &mut World, root: Entity, workspace: u64, position: DVec2) -
         area.filter.as_mut().unwrap().draft.query["where"][0]["all"]
             .as_array_mut()
             .unwrap()
-            .extend([
-                json!({"quantity_eq":quantity.to_string()}),
-                json!({"concept_in":slug}),
-            ]);
+            .push(json!({"quantity_eq":quantity.to_string()}));
         area.strength = 100.0;
         area.reach.mode = crate::area::ReachMode::Unlimited;
         area.sorting = Some(Default::default());
@@ -264,8 +261,22 @@ pub(crate) fn restore(
     world
         .entity_mut(owner)
         .insert((board.clone(), View::default()));
-    for column in &board.columns {
+    for (index, column) in board.columns.iter().enumerate() {
         if let Some(column) = area(world, owner, &column.area) {
+            if let Some((_, slug, quantity)) = COLUMNS.get(index) {
+                let mut area = world.get_mut::<InfluenceArea>(column).unwrap();
+                if let Some(filter) = area.filter.as_mut() {
+                    let conditions = &mut filter.draft.query["where"];
+                    if *conditions
+                        == json!([{"all":[
+                            {"kind_eq":"plain"}, {"concept_in":"task"},
+                            {"quantity_eq":quantity.to_string()}, {"concept_in":slug}
+                        ]}])
+                    {
+                        conditions[0]["all"].as_array_mut().unwrap().pop();
+                    }
+                }
+            }
             world.entity_mut(column).insert(Preparing);
         }
     }

@@ -172,6 +172,14 @@ pub mod work_timer;
 
 #[cfg(feature = "native-runtime")]
 pub mod full_record;
+#[cfg(feature = "native-runtime")]
+pub mod record_presentation;
+#[cfg(feature = "native-runtime")]
+pub mod protein_motion;
+#[cfg(feature = "native-runtime")]
+pub mod arrow_sand;
+#[cfg(feature = "native-runtime")]
+pub mod relation_castle;
 
 #[cfg(feature = "native-runtime")]
 pub mod record_creation;

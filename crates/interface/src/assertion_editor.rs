@@ -46,6 +46,8 @@ pub(crate) struct Field {
 
 #[derive(Component)]
 struct Chip {
+    uid: String,
+    text: Entity,
     close: Entity,
 }
 
@@ -113,7 +115,7 @@ pub(crate) fn spawn(
         Node { min_width: px(100), max_width: percent(100), width: px(140),
             min_height: px(28), height: Val::Auto, flex_grow: 1.0, flex_basis: px(140),
             padding: UiRect::all(px(3)), ..default() },
-        TextLayout::linebreak(bevy::text::LineBreak::WordBoundary),
+        TextLayout::linebreak(bevy::text::LineBreak::WordOrCharacter),
         crate::icons::Tooltip("Assertions: #planned, #depends-on @project, #cost: 12.5 @unit. Enter adds; Tab completes.".into()),
         ChildOf(flow),
     ));
@@ -211,9 +213,8 @@ fn draw(world: &mut World, entity: Entity) {
     let flow = field.flow;
     let input = field.input;
     let values = field.values.clone();
-    for chip in std::mem::take(&mut world.get_mut::<Field>(entity).unwrap().chips) {
-        world.despawn(chip);
-    }
+    let mut previous = std::mem::take(&mut world.get_mut::<Field>(entity).unwrap().chips);
+    let mut chips = Vec::new();
     for entry in values {
         let Some(uid) = entry["uid"].as_str() else {
             continue;
@@ -240,6 +241,19 @@ fn draw(world: &mut World, entity: Entity) {
                 *unit = name.into();
             }
         }
+        let label = syntax::format(&assertion);
+        if let Some(index) = previous
+            .iter()
+            .position(|chip| world.get::<Chip>(*chip).is_some_and(|chip| chip.uid == uid))
+        {
+            let chip = previous.remove(index);
+            let text = world.get::<Chip>(chip).unwrap().text;
+            if world.get::<Text>(text).is_some_and(|text| text.0 != label) {
+                world.get_mut::<Text>(text).unwrap().0 = label;
+            }
+            chips.push(chip);
+            continue;
+        }
         let chip = world
             .spawn((
                 crate::sand::Square,
@@ -251,20 +265,24 @@ fn draw(world: &mut World, entity: Entity) {
                     border_radius: BorderRadius::all(px(6)),
                     padding: UiRect::axes(px(5), px(2)),
                     column_gap: px(3),
+                    flex_shrink: 0.0,
                     ..default()
                 },
                 BorderColor::all(Color::NONE),
+                Outline {
+                    width: px(0),
+                    ..default()
+                },
                 ChildOf(flow),
             ))
             .id();
-        let text = crate::edit_mode::label(world, chip, &syntax::format(&assertion), 16.0);
+        let text = crate::edit_mode::label(world, chip, &label, 16.0);
         world.entity_mut(text).insert((
             Node {
-                min_width: px(0),
                 flex_shrink: 1.0,
                 ..default()
             },
-            TextLayout::linebreak(bevy::text::LineBreak::WordBoundary),
+            TextLayout::linebreak(bevy::text::LineBreak::WordOrCharacter),
         ));
         let close = world
             .spawn((
@@ -285,10 +303,24 @@ fn draw(world: &mut World, entity: Entity) {
             ))
             .id();
         crate::edit_mode::label(world, close, "×", 16.0);
-        world.entity_mut(chip).insert(Chip { close });
-        world.get_mut::<Field>(entity).unwrap().chips.push(chip);
+        world.entity_mut(chip).insert(Chip {
+            uid: uid.into(),
+            text,
+            close,
+        });
+        chips.push(chip);
     }
-    world.entity_mut(flow).add_child(input);
+    for chip in previous {
+        world.despawn(chip);
+    }
+    let children: Vec<_> = chips.iter().copied().chain([input]).collect();
+    if world
+        .get::<Children>(flow)
+        .is_none_or(|current| !current.iter().eq(children.iter().copied()))
+    {
+        world.entity_mut(flow).replace_children(&children);
+    }
+    world.get_mut::<Field>(entity).unwrap().chips = chips;
 }
 
 pub(crate) fn refresh(world: &mut World, entity: Entity, data: &Value) -> bool {
@@ -463,18 +495,21 @@ pub(crate) fn receive(world: &mut World, message: &ServerMessage) {
         .collect();
     for entity in fields {
         if let Some(mut field) = world.get_mut::<Field>(entity) {
-            field.signature.clear();
             if let Some(rows) = rows {
-                if id.ends_with("-concepts") {
-                    field.concepts = rows.clone();
+                let current = if id.ends_with("-concepts") {
+                    &mut field.concepts
                 } else {
-                    field.records = rows.clone();
+                    &mut field.records
+                };
+                if current != rows {
+                    *current = rows.clone();
+                    field.signature.clear();
+                    draw(world, entity);
                 }
             }
             if let Some(error) = error {
                 notice(world, entity, error);
             }
-            draw(world, entity);
         }
     }
 }

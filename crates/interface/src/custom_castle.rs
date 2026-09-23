@@ -253,7 +253,11 @@ impl CustomCastle {
             } else if let Some(protein) = world.get::<ProteinCastle>(entity) {
                 Content::Protein(protein.draft.clone())
             } else if let Some(area) = world.get::<InfluenceArea>(entity) {
-                Content::Area(area.clone())
+                Content::Area(crate::record_presentation::capture(
+                    world,
+                    entity,
+                    area.clone(),
+                ))
             } else {
                 return Err("This selection contains a Record or imported object that cannot be saved as a custom Castle. Select its Protein Area or the Sands to reuse.".into());
             };

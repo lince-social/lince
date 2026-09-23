@@ -746,7 +746,7 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
         .map(|(entity, area, member, _)| crate::area::SavedArea {
             placement: crate::sand_placement::Placement::capture(world, entity),
             workspace: member.0,
-            area: area.clone(),
+            area: crate::record_presentation::capture(world, entity, area.clone()),
         })
         .collect();
     areas.sort_by(|a, b| a.area.id.cmp(&b.area.id));

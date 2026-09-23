@@ -14,6 +14,7 @@ pub(super) struct Sections {
     dates: Entity,
     threads: Entity,
     fiote: bool,
+    presentation: crate::record_presentation::RecordPresentation,
     observed: Value,
 }
 
@@ -34,6 +35,10 @@ fn section(world: &mut World, parent: Entity) -> Entity {
 }
 
 pub(super) fn create(world: &mut World, row: Entity) -> Sections {
+    let presentation = world
+        .get::<crate::record_presentation::RecordPresentation>(row)
+        .copied()
+        .unwrap_or_default();
     let fiote = world
         .get::<RecordBinding>(row)
         .and_then(|binding| world.get::<crate::area::InfluenceArea>(binding.area))
@@ -49,23 +54,36 @@ pub(super) fn create(world: &mut World, row: Entity) -> Sections {
     }
     let assertions = section(world, row);
     let filled = section(world, row);
+    let toolbar = section(world, row);
+    world.get_mut::<Node>(toolbar).unwrap().flex_direction = FlexDirection::Row;
     let toggle = world
         .spawn((
             crate::sand::button(0),
             crate::sand::Borderless,
-            crate::icons::Tooltip("Empty properties".into()),
+            crate::icons::Tooltip("Show or hide properties".into()),
             Node {
-                width: percent(100),
+                width: px(0),
+                flex_grow: 1.0,
                 min_height: px(28),
                 flex_shrink: 0.0,
                 align_items: AlignItems::Center,
                 column_gap: px(8),
                 ..default()
             },
-            ChildOf(row),
+            ChildOf(toolbar),
         ))
         .id();
     divider(world, toggle);
+    let compact = world
+        .spawn((
+            crate::sand::button(0),
+            crate::sand::Borderless,
+            crate::icons::Tooltip("Move filled properties into or out of the accordion".into()),
+            ActionButton::new(row, crate::actions![Compact]),
+            ChildOf(toolbar),
+        ))
+        .id();
+    crate::edit_mode::label(world, compact, "⋯", 18.0);
     let arrow = crate::edit_mode::label(world, toggle, "⌄", 18.0);
     divider(world, toggle);
     let empty = section(world, row);
@@ -90,6 +108,7 @@ pub(super) fn create(world: &mut World, row: Entity) -> Sections {
         dates,
         threads,
         fiote,
+        presentation,
         observed: Value::Null,
     };
     world.entity_mut(row).insert(sections.clone());
@@ -130,6 +149,11 @@ fn empty(property: &str, data: &Value) -> bool {
 
 impl Sections {
     pub(super) fn parent(&self, property: &str, data: &Value) -> Entity {
+        if self.presentation.hide_filled
+            && !matches!(property, "head" | "start_date" | "due_date" | "threads")
+        {
+            return self.empty;
+        }
         match property {
             "head" => self.title,
             "quantity" | "slug" => self.identity,
@@ -151,10 +175,32 @@ impl Action for Toggle {
         let Some(sections) = world.get::<Sections>(row).cloned() else {
             return;
         };
-        let opened = world.get::<Node>(sections.empty).unwrap().display == Display::None;
-        world.get_mut::<Node>(sections.empty).unwrap().display =
-            if opened { Display::Flex } else { Display::None };
-        world.get_mut::<Text>(sections.arrow).unwrap().0 = if opened { "⌃" } else { "⌄" }.into();
+        let mut presentation = world
+            .get::<crate::record_presentation::RecordPresentation>(row)
+            .copied()
+            .unwrap_or(sections.presentation);
+        presentation.expanded = !presentation.expanded;
+        world.entity_mut(row).insert(presentation);
+        crate::record_presentation::save(world, row);
+        arrange(world, row, &sections, &sections.observed);
+    }
+}
+
+#[derive(Clone)]
+struct Compact;
+impl Action for Compact {
+    fn apply(&self, world: &mut World, row: Entity) {
+        let Some(mut presentation) =
+            world.get_mut::<crate::record_presentation::RecordPresentation>(row)
+        else {
+            return;
+        };
+        presentation.hide_filled = !presentation.hide_filled;
+        presentation.expanded = false;
+        crate::record_presentation::save(world, row);
+        if let Some(sections) = world.get::<Sections>(row).cloned() {
+            arrange(world, row, &sections, &sections.observed);
+        }
     }
 }
 
@@ -170,7 +216,10 @@ pub(super) fn update(world: &mut World) {
                 .data
                 .iter()
                 .find(|data| data["uid"].as_str() == Some(&binding.uid))?;
-            (data != &sections.observed).then(|| (row, sections.clone(), data.clone()))
+            (data != &sections.observed
+                || world.get::<crate::record_presentation::RecordPresentation>(row)
+                    != Some(&sections.presentation))
+            .then(|| (row, sections.clone(), data.clone()))
         })
         .collect();
     for (row, sections, data) in cards {
@@ -179,6 +228,12 @@ pub(super) fn update(world: &mut World) {
 }
 
 pub(super) fn arrange(world: &mut World, row: Entity, sections: &Sections, data: &Value) {
+    let mut sections = sections.clone();
+    sections.presentation = world
+        .get::<crate::record_presentation::RecordPresentation>(row)
+        .copied()
+        .unwrap_or_default();
+    world.get_mut::<Sections>(row).unwrap().presentation = sections.presentation;
     world.get_mut::<Sections>(row).unwrap().observed = data.clone();
     let mut descendants = vec![row];
     let mut properties = Vec::new();
@@ -201,8 +256,10 @@ pub(super) fn arrange(world: &mut World, row: Entity, sections: &Sections, data:
             "start_date" | "due_date" | "quantity" | "slug"
         ) {
             let mut node = world.get_mut::<Node>(entity).unwrap();
-            node.width = px(0);
-            node.flex_grow = 1.0;
+            let compact = sections.presentation.hide_filled
+                && matches!(property.as_str(), "quantity" | "slug");
+            node.width = if compact { percent(100) } else { px(0) };
+            node.flex_grow = if compact { 0.0 } else { 1.0 };
             node.min_width = px(0);
         }
         if property == "threads" {
@@ -218,7 +275,7 @@ pub(super) fn arrange(world: &mut World, row: Entity, sections: &Sections, data:
             }
         }
     }
-    let parent = if empty("threads", data) {
+    let parent = if sections.presentation.hide_filled || empty("threads", data) {
         sections.empty
     } else {
         row
@@ -226,7 +283,8 @@ pub(super) fn arrange(world: &mut World, row: Entity, sections: &Sections, data:
     if world.get::<ChildOf>(sections.threads).map(ChildOf::parent) != Some(parent) {
         world.entity_mut(sections.threads).insert(ChildOf(parent));
     }
-    let parent = if sections.fiote || empty("start_date", data) {
+    let parent = if sections.presentation.hide_filled || sections.fiote || empty("start_date", data)
+    {
         sections.empty
     } else {
         sections.filled
@@ -234,19 +292,122 @@ pub(super) fn arrange(world: &mut World, row: Entity, sections: &Sections, data:
     if world.get::<ChildOf>(sections.dates).map(ChildOf::parent) != Some(parent) {
         world.entity_mut(sections.dates).insert(ChildOf(parent));
     }
-    world.get_mut::<Node>(sections.filled).unwrap().display =
-        if filled { Display::Flex } else { Display::None };
-    world.get_mut::<Node>(sections.toggle).unwrap().display = if unfilled {
+    for entity in [sections.identity, sections.assertions, sections.body] {
+        world.get_mut::<Node>(entity).unwrap().display = if sections.presentation.hide_filled {
+            Display::None
+        } else {
+            Display::Flex
+        };
+    }
+    world.get_mut::<Node>(sections.empty).unwrap().display = if sections.presentation.expanded {
         Display::Flex
     } else {
         Display::None
     };
+    world.get_mut::<Text>(sections.arrow).unwrap().0 = if sections.presentation.expanded {
+        "⌃"
+    } else {
+        "⌄"
+    }
+    .into();
+    world.get_mut::<Node>(sections.filled).unwrap().display =
+        if filled && !sections.presentation.hide_filled {
+            Display::Flex
+        } else {
+            Display::None
+        };
+    world.get_mut::<Node>(sections.toggle).unwrap().display =
+        if unfilled || sections.presentation.hide_filled {
+            Display::Flex
+        } else {
+            Display::None
+        };
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn relation_records_keep_every_non_title_property_in_a_saved_accordion() {
+        let (mut app, _, owner) = super::super::tests::fixture();
+        let config = crate::relation_castle::config();
+        app.world_mut()
+            .get_mut::<InfluenceArea>(owner)
+            .unwrap()
+            .protein = Some(config.clone());
+        app.world_mut().resource_mut::<Runtime>().areas.insert(owner, State {
+            applied: Some(config),
+            data: vec![json!({"uid":"record", "head":"Visible title", "slug":"filled", "body":"Filled body", "quantity":"7", "start_date":"2026-09-22", "due_date":"2026-09-23", "threads":[]})],
+            ready: true, dirty: true, ..default()
+        });
+        rows::reconcile(app.world_mut(), owner);
+        let row = app.world().resource::<Runtime>().areas[&owner].row_entities["record"];
+        let sections = app.world().get::<Sections>(row).unwrap().clone();
+        assert_eq!(
+            app.world().get::<Node>(sections.empty).unwrap().display,
+            Display::None
+        );
+        let fields: Vec<_> = app
+            .world_mut()
+            .query::<(Entity, &rows::PropertyContainer)>()
+            .iter(app.world())
+            .map(|(entity, field)| (entity, field.0.clone()))
+            .collect();
+        for (entity, property) in &fields {
+            let expected = if property == "head" {
+                sections.title
+            } else {
+                sections.empty
+            };
+            let mut parent = *entity;
+            while parent != expected {
+                parent = app.world().get::<ChildOf>(parent).unwrap().parent();
+            }
+        }
+        Compact.apply(app.world_mut(), row);
+        assert!(
+            !app.world()
+                .get::<crate::record_presentation::RecordPresentation>(row)
+                .unwrap()
+                .hide_filled
+        );
+        assert_eq!(
+            app.world().get::<Node>(sections.body).unwrap().display,
+            Display::Flex
+        );
+        Compact.apply(app.world_mut(), row);
+        Toggle.apply(app.world_mut(), row);
+        assert_eq!(
+            app.world().get::<Node>(sections.empty).unwrap().display,
+            Display::Flex
+        );
+        for (entity, _) in fields {
+            assert!(app.world().get_entity(entity).is_ok());
+        }
+        let encoded = serde_json::to_vec(app.world().get::<InfluenceArea>(owner).unwrap()).unwrap();
+        let restored: InfluenceArea = serde_json::from_slice(&encoded).unwrap();
+        assert!(restored.validate());
+        assert!(restored.records["record"].presentation.hide_filled);
+        assert!(restored.records["record"].presentation.expanded);
+        app.world_mut().despawn(row);
+        app.world_mut().entity_mut(owner).insert(restored);
+        app.world_mut()
+            .resource_mut::<Runtime>()
+            .areas
+            .get_mut(&owner)
+            .unwrap()
+            .dirty = true;
+        rows::reconcile(app.world_mut(), owner);
+        let row = app.world().resource::<Runtime>().areas[&owner].row_entities["record"];
+        let sections = app.world().get::<Sections>(row).unwrap();
+        assert!(sections.presentation.hide_filled && sections.presentation.expanded);
+        assert_eq!(
+            app.world().get::<Node>(sections.empty).unwrap().display,
+            Display::Flex
+        );
+    }
 
     #[test]
     fn fiote_castle_contains_management_without_conversation() {
@@ -391,7 +552,10 @@ mod tests {
                 sections.identity,
                 sections.assertions,
                 sections.filled,
-                sections.toggle,
+                app.world()
+                    .get::<ChildOf>(sections.toggle)
+                    .unwrap()
+                    .parent(),
                 sections.empty,
                 sections.body,
             ]

@@ -194,6 +194,7 @@ pub fn synchronize(world: &mut World) -> bool {
                 .get::<crate::workspace::Workspaces>(root.parent())
                 .is_some_and(|s| s.active == member.0)
                 && world.get::<crate::sand_placement::Pinned>(*e).is_none()
+                && world.get::<crate::arrow_sand::ArrowSand>(*e).is_none()
                 && world
                     .get::<crate::protein_area::placement::Pending>(*e)
                     .is_none()
@@ -222,6 +223,7 @@ pub fn synchronize(world: &mut World) -> bool {
             .copied()
             .filter(|e| {
                 world.get::<crate::area::InfluenceArea>(*e).is_none()
+                    && world.get::<crate::arrow_sand::ArrowSand>(*e).is_none()
                     && !world
                         .get::<super::assets::ImportedAsset>(*e)
                         .is_some_and(super::splats::is_splat)
@@ -397,8 +399,19 @@ pub fn synchronize(world: &mut World) -> bool {
         } else {
             members
                 .iter()
-                .filter_map(|e| world.resource::<super::influence::Forces>().totals.get(e))
-                .copied()
+                .map(|e| {
+                    world
+                        .resource::<super::influence::Forces>()
+                        .totals
+                        .get(e)
+                        .copied()
+                        .unwrap_or_default()
+                        + world
+                            .get_resource::<crate::protein_motion::Motion>()
+                            .and_then(|motion| motion.forces.get(e))
+                            .copied()
+                            .unwrap_or_default()
+                })
                 .sum()
         };
         if world.get::<ConstantForce>(body).unwrap().0 != force {

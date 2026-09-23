@@ -370,7 +370,9 @@ pub fn synchronize(world: &mut World) {
                 .id();
             world.entity_mut(entity).insert((
                 UiTargetCamera(camera),
-                bevy::ui::LayoutConfig { use_rounding: false },
+                bevy::ui::LayoutConfig {
+                    use_rounding: false,
+                },
                 Surface {
                     camera,
                     image,
@@ -431,10 +433,12 @@ pub fn synchronize(world: &mut World) {
         }
         let placement = spatial(world, entity);
         let area = world.get::<crate::area::InfluenceArea>(entity).is_some();
+        let arrow = world.get::<crate::arrow_sand::ArrowSand>(entity).is_some();
+        let flat = area || arrow;
         world
             .get_mut::<Visibility>(body)
             .unwrap()
-            .set_if_neq(if area {
+            .set_if_neq(if flat {
                 Visibility::Hidden
             } else {
                 Visibility::Inherited
@@ -478,7 +482,13 @@ pub fn synchronize(world: &mut World) {
         world.get_mut::<Transform>(face).unwrap().set_if_neq(
             Transform::from_xyz(
                 clipped_center.x,
-                if area { 0.0 } else { 0.01 },
+                if arrow {
+                    -0.05
+                } else if area {
+                    0.0
+                } else {
+                    0.01
+                },
                 clipped_center.y,
             )
             .with_rotation(Quat::from_rotation_x(-std::f32::consts::FRAC_PI_2))

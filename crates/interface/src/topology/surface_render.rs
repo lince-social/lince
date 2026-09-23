@@ -164,7 +164,8 @@ fn rectangle(hash: &mut DefaultHasher, rect: Rect) {
 
 fn fingerprint_captures(
     mut cache: ResMut<CaptureCache>,
-    captures: Query<Entity, With<SurfaceCapture>>,
+    captures: Query<(Entity, Option<&UiCameraView>), With<SurfaceCapture>>,
+    views: Query<&ExtractedView>,
     nodes: Res<ExtractedUiNodes>,
     changed: Res<ExtractedAssets<GpuImage>>,
     images: Res<RenderAssets<GpuImage>>,
@@ -177,8 +178,14 @@ fn fingerprint_captures(
         .get_mut()
         .unwrap()
         .retain(|entity, _| captures.contains(*entity));
-    for entity in &captures {
-        cache.fingerprints.insert(entity, DefaultHasher::new());
+    for (entity, camera) in &captures {
+        let mut hash = DefaultHasher::new();
+        if let Some(view) = camera.and_then(|camera| views.get(camera.0).ok()) {
+            floats(&mut hash, view.clip_from_view.to_cols_array());
+            floats(&mut hash, view.world_from_view.to_matrix().to_cols_array());
+            view.viewport.hash(&mut hash);
+        }
+        cache.fingerprints.insert(entity, hash);
     }
     for node in &nodes.uinodes {
         let entity = node.extracted_camera_entity;
@@ -412,7 +419,7 @@ mod tests {
     };
 
     #[test]
-    fn capture_fingerprint_tracks_text_clipping_and_changed_images() {
+    fn capture_fingerprint_tracks_camera_text_clipping_and_changed_images() {
         let mut app = App::new();
         app.init_resource::<CaptureCache>()
             .init_resource::<ExtractedUiNodes>()
@@ -423,6 +430,22 @@ mod tests {
             .world_mut()
             .spawn(SurfaceCapture(Handle::default()))
             .id();
+        let view = app
+            .world_mut()
+            .spawn(ExtractedView {
+                retained_view_entity: RetainedViewEntity::new(camera.into(), None, 1),
+                clip_from_view: Mat4::IDENTITY,
+                world_from_view: GlobalTransform::IDENTITY,
+                clip_from_world: None,
+                target_format: TextureFormat::Rgba8UnormSrgb,
+                viewport: UVec4::new(0, 0, 320, 100),
+                color_grading: default(),
+                invert_culling: false,
+            })
+            .id();
+        app.world_mut()
+            .entity_mut(camera)
+            .insert(UiCameraView(view));
         let source = app.world_mut().spawn_empty().id();
         let mut nodes = app.world_mut().resource_mut::<ExtractedUiNodes>();
         nodes.glyphs.push(ExtractedGlyph {
@@ -446,13 +469,28 @@ mod tests {
         let first = fingerprint(&app);
         app.update();
         assert_eq!(fingerprint(&app), first);
+        app.world_mut()
+            .get_mut::<ExtractedView>(view)
+            .unwrap()
+            .viewport
+            .w = 800;
+        app.update();
+        let resized = fingerprint(&app);
+        assert_ne!(resized, first);
+        app.world_mut()
+            .get_mut::<ExtractedView>(view)
+            .unwrap()
+            .clip_from_view = Mat4::from_scale(Vec3::new(1.0, 0.125, 1.0));
+        app.update();
+        let projected = fingerprint(&app);
+        assert_ne!(projected, resized);
         app.world_mut().resource_mut::<ExtractedUiNodes>().glyphs[0]
             .rect
             .max
             .x = 12.0;
         app.update();
         let changed_text = fingerprint(&app);
-        assert_ne!(changed_text, first);
+        assert_ne!(changed_text, projected);
         app.world_mut().resource_mut::<ExtractedUiNodes>().uinodes[0].clip =
             Some(Rect::from_corners(Vec2::ZERO, Vec2::splat(8.0)));
         app.update();

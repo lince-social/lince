@@ -212,6 +212,9 @@ impl Plugin for ProteinAreaPlugin {
         if !app.is_plugin_added::<crate::assertion_editor::AssertionEditorPlugin>() {
             app.add_plugins(crate::assertion_editor::AssertionEditorPlugin);
         }
+        if !app.is_plugin_added::<crate::arrow_sand::ArrowSandPlugin>() {
+            app.add_plugins(crate::arrow_sand::ArrowSandPlugin);
+        }
         app.init_resource::<Runtime>()
             .add_message::<CellMessage>()
             .add_systems(
@@ -257,6 +260,7 @@ fn id(world: &mut World) -> String {
 }
 
 fn stop(world: &mut World, owner: Entity) {
+    crate::record_presentation::remember(world, owner);
     if let Some((target, changes)) = world.get::<filter::Subscription>(owner).map(|s| (s.0, s.1)) {
         if world.get_entity(target).is_ok() {
             if changes {
@@ -641,9 +645,11 @@ fn update(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCursor
                     .areas
                     .get_mut(&owner)
                     .unwrap();
+                state.template_dirty = previous
+                    .as_ref()
+                    .is_none_or(|old| !old.same_template(&config));
                 state.applied = Some(config);
                 state.dirty = true;
-                state.template_dirty = true;
             } else {
                 start(world, owner, config);
             }
@@ -837,7 +843,10 @@ pub fn execute(
     };
     let durable = if let engine::actions::Action::ChangeRecord { request } = &action {
         if crate::record_binding::enabled(world)
-            && !matches!(request.mutation, engine::record_change::Mutation::NumberAssertion { .. })
+            && !matches!(
+                request.mutation,
+                engine::record_change::Mutation::NumberAssertion { .. }
+            )
         {
             crate::record_binding::submit(world, binding, request.clone())?;
             true
@@ -1015,7 +1024,10 @@ fn query(world: &World, entity: Entity, config: &Config) -> Result<protein::Prot
                 }
             }
         }
-        if world.get::<crate::shader_castle::ShaderFeed>(entity).is_some() {
+        if world
+            .get::<crate::shader_castle::ShaderFeed>(entity)
+            .is_some()
+        {
             query.limit = Some(1);
         }
         Ok(query)

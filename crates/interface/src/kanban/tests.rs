@@ -386,7 +386,7 @@ fn columns_touch_after_resize_and_source_unlock_preserves_its_connection() {
 }
 
 #[tokio::test]
-async fn quantity_only_filters_move_cards_between_columns_after_external_edits() {
+async fn quantity_changes_move_cards_from_the_source_and_between_columns() {
     let (mut app, root, owner) = fixture();
     let engine = std::sync::Arc::new(engine::Engine::open_memory().await.unwrap());
     let board = app.world().get::<Kanban>(owner).unwrap().clone();
@@ -395,12 +395,6 @@ async fn quantity_only_filters_move_cards_between_columns_after_external_edits()
         .iter()
         .map(|c| area(app.world(), owner, &c.area).unwrap())
         .collect();
-    for (index, column) in columns.iter().enumerate() {
-        let mut area = app.world_mut().get_mut::<InfluenceArea>(*column).unwrap();
-        area.changes_enabled = false;
-        area.filter.as_mut().unwrap().draft.query["where"] =
-            json!([{"quantity_eq": COLUMNS[index].2.to_string()}]);
-    }
     app.insert_resource(crate::app::CellHandle(cell::CellRuntime {
         engine: engine.clone(),
         store: engine.store.clone(),
@@ -428,8 +422,8 @@ async fn quantity_only_filters_move_cards_between_columns_after_external_edits()
             engine::actions::Action::CreateRecordWithTags {
                 head: "Moving task".into(),
                 body: String::new(),
-                quantity: -1.0,
-                tags: vec!["task".into(), "todo".into()],
+                quantity: 99.0,
+                tags: vec!["task".into()],
             },
             None,
         )
@@ -445,7 +439,7 @@ async fn quantity_only_filters_move_cards_between_columns_after_external_edits()
                 .is_some_and(|binding| binding.area == source && binding.uid == uid)
                 && world
                     .get::<Card>(entity)
-                    .is_some_and(|card| card.column == Some(columns[1]))
+                    .is_some_and(|card| card.column.is_none())
         })
     })
     .await;
@@ -456,8 +450,14 @@ async fn quantity_only_filters_move_cards_between_columns_after_external_edits()
         .find(|(entity, binding)| binding.uid == uid && app.world().get::<Card>(*entity).is_some())
         .unwrap()
         .0;
-    for protein_filter in [true, false] {
-        if !protein_filter {
+    for mode in 0..3 {
+        if mode == 1 {
+            for (index, column) in columns.iter().enumerate() {
+                let mut area = app.world_mut().get_mut::<InfluenceArea>(*column).unwrap();
+                area.filter.as_mut().unwrap().draft.query["where"] =
+                    json!([{"quantity_eq": COLUMNS[index].2.to_string()}]);
+            }
+        } else if mode == 2 {
             for (index, column) in columns.iter().enumerate() {
                 let mut area = app.world_mut().get_mut::<InfluenceArea>(*column).unwrap();
                 area.filter = None;
@@ -485,9 +485,9 @@ async fn quantity_only_filters_move_cards_between_columns_after_external_edits()
                     && world
                         .get::<LayoutRuntime>(card)
                         .is_some_and(|layout| layout.parent == Some(columns[index]))
-                    && world.get::<RecordProperties>(card).is_some_and(|record| {
-                        record.0["quantity"] == COLUMNS[index].2.to_string()
-                    })
+                    && world
+                        .get::<RecordProperties>(card)
+                        .is_some_and(|record| record.0["quantity"] == COLUMNS[index].2.to_string())
             })
             .await;
             assert_eq!(
@@ -497,4 +497,59 @@ async fn quantity_only_filters_move_cards_between_columns_after_external_edits()
             assert_eq!(app.world().get::<RecordBinding>(card).unwrap().uid, uid);
         }
     }
+}
+
+#[test]
+fn restoring_a_preset_removes_its_status_requirement_and_keeps_custom_filters() {
+    let (mut app, root, owner) = fixture();
+    let board = app.world().get::<Kanban>(owner).unwrap().clone();
+    let first = area(app.world(), owner, &board.columns[0].area).unwrap();
+    let custom = area(app.world(), owner, &board.columns[1].area).unwrap();
+    app.world_mut()
+        .get_mut::<InfluenceArea>(first)
+        .unwrap()
+        .filter
+        .as_mut()
+        .unwrap()
+        .draft
+        .query["where"][0]["all"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"concept_in":"backlog"}));
+    let conditions = json!([{"concept_in":"special"}, {"quantity_eq":"-1"}]);
+    app.world_mut()
+        .get_mut::<InfluenceArea>(custom)
+        .unwrap()
+        .filter
+        .as_mut()
+        .unwrap()
+        .draft
+        .query["where"] = conditions.clone();
+    app.world_mut().despawn(owner);
+    restore(app.world_mut(), root, 1, DVec2::ZERO, board);
+    assert_eq!(
+        app.world()
+            .get::<InfluenceArea>(first)
+            .unwrap()
+            .filter
+            .as_ref()
+            .unwrap()
+            .draft
+            .query["where"][0]["all"]
+            .as_array()
+            .unwrap()
+            .len(),
+        3
+    );
+    assert_eq!(
+        app.world()
+            .get::<InfluenceArea>(custom)
+            .unwrap()
+            .filter
+            .as_ref()
+            .unwrap()
+            .draft
+            .query["where"],
+        conditions
+    );
 }

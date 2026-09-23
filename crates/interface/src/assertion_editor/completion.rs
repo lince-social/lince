@@ -265,8 +265,11 @@ pub(super) fn update(world: &mut World, entity: Entity) {
     }
     let show =
         visible && !world.get::<Field>(entity).unwrap().options.is_empty() && !submit && !complete;
-    world.get_mut::<Node>(suggestions).unwrap().display =
-        if show { Display::Flex } else { Display::None };
+    let display = if show { Display::Flex } else { Display::None };
+    let mut node = world.get_mut::<Node>(suggestions).unwrap();
+    if node.display != display {
+        node.display = display;
+    }
 }
 
 fn redraw(world: &mut World, entity: Entity) {

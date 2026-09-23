@@ -5,6 +5,93 @@ use crate::protein_area::{
 };
 
 #[test]
+fn live_catalogue_updates_preserve_chips_and_only_change_resolved_names() {
+    let mut app = App::new();
+    app.add_plugins(MinimalPlugins)
+        .insert_resource(crate::theme::Typography(Handle::default()))
+        .add_plugins(AssertionEditorPlugin);
+    let parent = app.world_mut().spawn(Node::default()).id();
+    spawn(
+        app.world_mut(),
+        parent,
+        RecordBinding {
+            area: parent,
+            uid: "r_task".into(),
+            source: Source::Local,
+        },
+        &json!({"assertions":[{"uid":"a_link", "predicate":"depends-on", "object":"r_project"}]}),
+        false,
+    );
+    let (sender, _receiver) = tokio::sync::mpsc::channel(2);
+    app.world_mut()
+        .resource_mut::<Subscriptions>()
+        .0
+        .insert(parent, ("catalogue".into(), sender));
+    let chip = app.world().get::<Field>(parent).unwrap().chips[0];
+    let text = app.world().get::<Chip>(chip).unwrap().text;
+    let children = app.world().get::<Children>(chip).unwrap().to_vec();
+    for (slug, head) in [
+        ("project", "Project"),
+        ("project", "Renamed"),
+        ("renamed", "Renamed"),
+    ] {
+        receive(
+            app.world_mut(),
+            &ServerMessage::Update {
+                id: "catalogue".into(),
+                rows: vec![json!({"uid":"r_project", "slug":slug, "head":head})],
+            },
+        );
+        assert_eq!(app.world().get::<Field>(parent).unwrap().chips, vec![chip]);
+        assert_eq!(
+            app.world().get::<Children>(chip).unwrap().to_vec(),
+            children
+        );
+        assert_eq!(
+            app.world().get::<Text>(text).unwrap().0,
+            format!("#depends-on @{slug}")
+        );
+    }
+    let flow = app.world().get::<Field>(parent).unwrap().flow;
+    let text_tick = app
+        .world()
+        .entity(text)
+        .get_ref::<Text>()
+        .unwrap()
+        .last_changed();
+    let children_tick = app
+        .world()
+        .entity(flow)
+        .get_ref::<Children>()
+        .unwrap()
+        .last_changed();
+    app.world_mut().increment_change_tick();
+    receive(
+        app.world_mut(),
+        &ServerMessage::Update {
+            id: "catalogue".into(),
+            rows: vec![json!({"uid":"r_project", "slug":"renamed", "head":"Renamed"})],
+        },
+    );
+    assert_eq!(
+        app.world()
+            .entity(text)
+            .get_ref::<Text>()
+            .unwrap()
+            .last_changed(),
+        text_tick
+    );
+    assert_eq!(
+        app.world()
+            .entity(flow)
+            .get_ref::<Children>()
+            .unwrap()
+            .last_changed(),
+        children_tick
+    );
+}
+
+#[test]
 fn draft_tokens_wrap_remove_in_place_and_keep_unfinished_text() {
     let mut app = App::new();
     app.add_plugins(MinimalPlugins)

@@ -64,7 +64,10 @@ pub fn pointer(
         ),
         With<SpatialRoot>,
     >,
-    surfaces: Query<&Surface>,
+    (surfaces, arrows): (
+        Query<&Surface>,
+        Query<(), With<crate::arrow_sand::ArrowSand>>,
+    ),
     owners: Query<(&VisualOwner, &GlobalTransform)>,
     parents: Query<&ChildOf>,
     assets: Query<
@@ -197,7 +200,7 @@ pub fn pointer(
         let filter = |entity| {
             owners
                 .get(entity)
-                .is_ok_and(|(owner, _)| !areas.contains(owner.0))
+                .is_ok_and(|(owner, _)| !areas.contains(owner.0) && !arrows.contains(owner.0))
         };
         if let Some((mesh, hit)) = raycast
             .cast_ray(ray, &MeshRayCastSettings::default().with_filter(&filter))

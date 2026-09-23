@@ -224,6 +224,10 @@ name = "kanban_smoke"
 required-features = ["native-runtime"]
 
 [[example]]
+name = "record_refresh_smoke"
+required-features = ["native-runtime"]
+
+[[example]]
 name = "record_collaboration_smoke"
 required-features = ["native-runtime"]
 
@@ -241,4 +245,8 @@ required-features = ["native-runtime"]
 
 [[example]]
 name = "surface_memory_smoke"
+required-features = ["native-runtime"]
+
+[[example]]
+name = "relation_smoke"
 required-features = ["native-runtime"]

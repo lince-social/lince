@@ -136,9 +136,10 @@ pub(super) fn content(
         }
         return;
     }
-    let sections = config
-        .record_cards
-        .then(|| super::record_layout::create(world, row));
+    let sections = config.record_cards.then(|| {
+        crate::record_presentation::restore(world, row, config.hide_filled);
+        super::record_layout::create(world, row)
+    });
     if config.record_cards {
         world.entity_mut(row).insert(crate::full_record::RecordCard);
     }
@@ -367,7 +368,9 @@ pub(super) fn content(
                 },
             );
             let shader_castle = binding.as_ref().is_some_and(|binding| {
-                world.get::<crate::shader_castle::ShaderFeed>(binding.area).is_some()
+                world
+                    .get::<crate::shader_castle::ShaderFeed>(binding.area)
+                    .is_some()
             });
             if shader_castle {
                 world.get_mut::<Node>(text_entity).unwrap().height = px(480);
@@ -430,7 +433,9 @@ impl Action for Delete {
 
 pub(super) fn reconcile(world: &mut World, owner: Entity) {
     if world.get::<filter::Subscription>(owner).is_some()
-        || world.get::<crate::assertion_castle::AssertionFeed>(owner).is_some()
+        || world
+            .get::<crate::assertion_castle::AssertionFeed>(owner)
+            .is_some()
     {
         return;
     }
@@ -441,6 +446,7 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
         world.resource_mut::<Runtime>().areas.insert(owner, state);
         return;
     }
+    crate::record_presentation::remember(world, owner);
     let Some(config) = state.applied.clone() else {
         world.resource_mut::<Runtime>().areas.insert(owner, state);
         return;
@@ -537,7 +543,7 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
         if !same {
             let template_changed = world
                 .get::<Row>(entity)
-                .is_none_or(|row| row.config.as_ref() != &config)
+                .is_none_or(|row| !row.config.same_template(&config))
                 || state.template_dirty;
             if template_changed {
                 if let Some(children) = world.get::<Children>(entity) {
@@ -567,6 +573,7 @@ pub(super) fn reconcile(world: &mut World, owner: Entity) {
     }
     state.dirty = false;
     state.template_dirty = false;
+    crate::relation_castle::reconcile(world, owner, &config, &state.data, &state.row_entities);
     world.resource_mut::<Runtime>().areas.insert(owner, state);
 }
 
@@ -976,12 +983,32 @@ pub(super) fn place(world: &mut World, entity: Entity, position: DVec2, size: Ve
             let offset = position - center;
             let fallback = spatial.position(center)
                 + spatial.rotation() * bevy::math::DVec3::new(offset.x, 0.0, offset.y);
+            let fallback = if config.motion.is_some() {
+                crate::record_presentation::position(world, entity).unwrap_or_else(|| {
+                    let angle = row.index as f64 * 2.399963229728653;
+                    let radius = (row.index as f64 + 1.0).sqrt() * f64::from(config.width);
+                    spatial.position(center)
+                        + spatial.rotation()
+                            * bevy::math::DVec3::new(
+                                angle.cos() * radius,
+                                0.0,
+                                angle.sin() * radius,
+                            )
+                })
+            } else {
+                fallback
+            };
             let Some(point) =
                 super::placement::initial(world, entity, owner, &config, fallback, size)
             else {
                 return;
             };
             super::placement::finish(world, entity, point);
+            if config.motion.is_some() {
+                let mut placement = crate::topology::spatial(world, entity);
+                placement.rotation = spatial.rotation;
+                world.entity_mut(entity).insert(placement);
+            }
             world.entity_mut(entity).insert(LastLayout(fallback));
             if config.group_with_source {
                 let mut placement = crate::topology::spatial(world, entity);
@@ -1001,7 +1028,7 @@ pub(super) fn place(world: &mut World, entity: Entity, position: DVec2, size: Ve
                 crate::topology::groups::attach(world, &members);
             }
         }
-        if config.placement != super::SpawnPlacement::Source
+        if (config.placement != super::SpawnPlacement::Source || config.motion.is_some())
             && world.get::<crate::layout::LayoutBox>(entity).is_none()
         {
             if let Some(mut item) = world.get_mut::<CanvasItem>(entity) {

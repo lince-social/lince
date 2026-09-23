@@ -141,6 +141,8 @@ impl PropertyRule {
 
 #[derive(Component, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct InfluenceArea {
+    #[serde(default)]
+    pub records: std::collections::BTreeMap<String, crate::record_presentation::Saved>,
     pub id: String,
     pub name: String,
     pub enabled: bool,
@@ -180,6 +182,7 @@ impl InfluenceArea {
         let mut bytes = [0; 16];
         getrandom::fill(&mut bytes).expect("area identity");
         Self {
+            records: Default::default(),
             id: bytes.iter().map(|byte| format!("{byte:02x}")).collect(),
             name: "Area of influence".into(),
             enabled: true,
@@ -212,7 +215,12 @@ impl InfluenceArea {
 
     pub fn validate(&self) -> bool {
         let size = DVec2::from_array(self.size);
-        self.id.len() == 32
+        self.records.len() <= 100_000
+            && self
+                .records
+                .iter()
+                .all(|(uid, state)| !uid.is_empty() && uid.len() <= 128 && state.valid())
+            && self.id.len() == 32
             && self.id.bytes().all(|byte| byte.is_ascii_hexdigit())
             && !self.name.trim().is_empty()
             && self.name.chars().count() <= 80

@@ -9,6 +9,9 @@ use bevy::text::EditableText;
 
 #[derive(Clone)]
 enum Command {
+    HideFilled,
+    Relations,
+    Motion,
     Placement(SpawnPlacement),
     SettlingTicks(u16),
     SpawnTarget(String),
@@ -35,6 +38,9 @@ enum Command {
 
 #[derive(Clone, Copy)]
 enum Field {
+    CenterForce,
+    Repulsion,
+    Cooling,
     Organ,
     Width,
     Gap,
@@ -263,6 +269,22 @@ impl Action for Command {
                 _ => {}
             }
             match self {
+                Self::HideFilled => config.hide_filled = !config.hide_filled,
+                Self::Relations => {
+                    config.relations = !config.relations;
+                    if config.relations {
+                        config.record_cards = true;
+                        config.bindings = Config::records().bindings;
+                    }
+                }
+                Self::Motion => {
+                    config.motion = if config.motion.is_some() {
+                        None
+                    } else {
+                        config.grouping = Default::default();
+                        Some(Default::default())
+                    };
+                }
                 Self::ClosestDate => config.closest_end_date = !config.closest_end_date,
                 Self::Records => {
                     config.record_cards = true;
@@ -355,6 +377,16 @@ impl Action for Command {
                 _ => {}
             }
         }
+        if matches!(self, Self::Motion)
+            && configuration
+                .as_ref()
+                .is_some_and(|config| config.motion.is_some())
+            && let Some(workspace) = world
+                .get::<crate::workspace::WorkspaceMember>(owner)
+                .copied()
+        {
+            crate::workspace_config::set_physics(world, root, workspace.0, true);
+        }
         set_configuration(world, owner, configuration);
         crate::edit_mode::render_panel(world, root);
     }
@@ -388,6 +420,16 @@ pub(super) fn inputs(world: &mut World) {
             continue;
         }
         match field {
+            Field::CenterForce | Field::Repulsion | Field::Cooling => {
+                if let (Some(number), Some(motion)) = (number, config.motion.as_mut()) {
+                    match field {
+                        Field::CenterForce => motion.center = f64::from(number),
+                        Field::Repulsion => motion.repulsion = f64::from(number),
+                        Field::Cooling => motion.cooling = f64::from(number),
+                        _ => {}
+                    }
+                }
+            }
             Field::Organ => {
                 config.source = Source::Organ(value.clone());
                 config.enabled = true;
@@ -523,6 +565,75 @@ pub(crate) fn controls(world: &mut World, _: Entity, panel: Entity, owner: Entit
         return;
     };
     if !filtering {
+        if config.record_cards {
+            text_button(
+                world,
+                panel,
+                owner,
+                Command::HideFilled,
+                if config.hide_filled {
+                    "New Records: title only"
+                } else {
+                    "New Records: show filled properties"
+                },
+                "Set the starting accordion layout. Each Record also has its own saved choice.",
+            );
+        }
+        if !config.group_with_source {
+            text_button(
+                world,
+                panel,
+                owner,
+                Command::Relations,
+                if config.relations {
+                    "Assertion arrows: on"
+                } else {
+                    "Assertion arrows: off"
+                },
+                "Connect spawned Records using the query's included links",
+            );
+            text_button(
+                world,
+                panel,
+                owner,
+                Command::Motion,
+                if config.motion.is_some() {
+                    "Center and repulsion: on"
+                } else {
+                    "Center and repulsion: off"
+                },
+                "Pull only this Protein's spawned Sands toward its center and keep them apart. Motion settles until something changes.",
+            );
+            if let Some(motion) = &config.motion {
+                input(
+                    world,
+                    panel,
+                    owner,
+                    Field::CenterForce,
+                    "Center force",
+                    motion.center.to_string(),
+                    "0 to 100",
+                );
+                input(
+                    world,
+                    panel,
+                    owner,
+                    Field::Repulsion,
+                    "Repulsion",
+                    motion.repulsion.to_string(),
+                    "0 to 100000",
+                );
+                input(
+                    world,
+                    panel,
+                    owner,
+                    Field::Cooling,
+                    "Settling speed",
+                    motion.cooling.to_string(),
+                    "0.1 to 10; higher values settle sooner",
+                );
+            }
+        }
         crate::dropdown::spawn(
             world,
             panel,
@@ -723,7 +834,9 @@ pub(crate) fn controls(world: &mut World, _: Entity, panel: Entity, owner: Entit
     if filtering {
         return;
     }
-    grouping_controls(world, panel, owner, &config);
+    if config.motion.is_none() {
+        grouping_controls(world, panel, owner, &config);
+    }
     label(world, panel, "Row template", 18.0);
     text_button(
         world,

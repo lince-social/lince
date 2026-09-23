@@ -78,6 +78,12 @@ pub enum SpawnPlacement {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Config {
     #[serde(default)]
+    pub hide_filled: bool,
+    #[serde(default)]
+    pub relations: bool,
+    #[serde(default)]
+    pub motion: Option<crate::protein_motion::Settings>,
+    #[serde(default)]
     pub fiote: bool,
     pub record_cards: bool,
     #[serde(default)]
@@ -108,6 +114,9 @@ pub struct Config {
 impl Default for Config {
     fn default() -> Self {
         Self {
+            hide_filled: false,
+            relations: false,
+            motion: None,
             fiote: false,
             record_cards: false,
             viewport_height: None,
@@ -133,6 +142,17 @@ impl Default for Config {
 }
 
 impl Config {
+    pub(super) fn same_template(&self, other: &Self) -> bool {
+        self.fiote == other.fiote
+            && self.record_cards == other.record_cards
+            && self.viewport_height == other.viewport_height
+            && self.max_height == other.max_height
+            && self.show_labels == other.show_labels
+            && self.bindings == other.bindings
+            && self.width == other.width
+            && self.delete_button == other.delete_button
+    }
+
     pub fn records() -> Self {
         Self {
             record_cards: true,
@@ -152,8 +172,14 @@ impl Config {
     }
 
     pub fn valid(&self) -> bool {
-        self.viewport_height
-            .is_none_or(|height| height.is_finite() && (80.0..=4000.0).contains(&height))
+        self.motion
+            .as_ref()
+            .is_none_or(crate::protein_motion::Settings::valid)
+            && (!self.relations || self.record_cards)
+            && (self.motion.is_none() || (!self.group_with_source && !self.grouping.active()))
+            && self
+                .viewport_height
+                .is_none_or(|height| height.is_finite() && (80.0..=4000.0).contains(&height))
             && self
                 .max_height
                 .is_none_or(|height| height.is_finite() && (80.0..=4000.0).contains(&height))
@@ -192,6 +218,14 @@ impl Config {
             .map(|binding| binding.property.clone())
             .collect();
         fields.extend(["uid", "kind", "organ"].map(str::to_string));
+        if self.relations {
+            fields.push("links".into());
+            query.include.links.get_or_insert(protein::LinksInclude {
+                kinds: vec!["*".into()],
+                direction: protein::LinkDirection::Both,
+                depth: 1,
+            });
+        }
         if self
             .bindings
             .iter()

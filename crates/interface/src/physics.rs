@@ -223,6 +223,7 @@ fn synchronize(world: &mut World) -> bool {
         .iter(world)
         .filter(|(entity, item, parent, member, pin)| {
             world.get::<crate::area::InfluenceArea>(*entity).is_none()
+                && world.get::<crate::arrow_sand::ArrowSand>(*entity).is_none()
                 && world
                     .get::<crate::protein_area::placement::Pending>(*entity)
                     .is_none()
@@ -441,6 +442,7 @@ fn synchronize_groups(world: &mut World, edited: &HashSet<Entity>) -> bool {
 
 fn apply_forces(
     mut influences: ResMut<crate::area_effects::Influences>,
+    motion: Option<Res<crate::protein_motion::Motion>>,
     records: Query<
         (
             Option<&RecordProperties>,
@@ -466,7 +468,16 @@ fn apply_forces(
         } else {
             DVec2::ZERO
         };
-        let next = total.extend(0.0);
+        let extra = if link.held {
+            DVec3::ZERO
+        } else {
+            motion
+                .as_ref()
+                .and_then(|motion| motion.forces.get(&link.sand))
+                .copied()
+                .unwrap_or_default()
+        };
+        let next = (total + DVec2::new(extra.x, extra.z)).extend(0.0);
         if force.0 != next {
             force.0 = next;
             commands
@@ -478,6 +489,7 @@ fn apply_forces(
 }
 
 fn simulate(world: &mut World) {
+    crate::protein_motion::prepare(world);
     crate::area_effects::update(world);
     let spatial = world.contains_resource::<crate::topology::physics::Runtime>();
     let changed = if spatial {
@@ -586,6 +598,7 @@ fn simulate(world: &mut World) {
         }
         world.resource_mut::<Simulation>().active = active;
     }
+    crate::protein_motion::remember(world);
 }
 
 pub(crate) mod tests {

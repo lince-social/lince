@@ -1297,6 +1297,7 @@ fn render_panel_content(world: &mut World, root: Entity) {
         castle_entries.push(entry);
         let entry = store_group(world, castles_group);
         crate::full_record::store_entry(world, root, entry);
+        crate::relation_castle::store_entry(world, root, entry);
         castle_entries.push(entry);
         let entry = store_group(world, castles_group);
         crate::recorder_castle::store_entry(world, root, entry);

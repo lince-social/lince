@@ -72,7 +72,7 @@ mise run dev -- --directory /tmp/my-lince --port 6200
 ```
 When Nix is installed, `mise dev` enters the interface development shell on NixOS, other Linux systems, and macOS. Otherwise it uses the local Cargo toolchain. No `.env` file is needed.
 
-A headless server needs an admin account on first start. Give it a password file that only the service user can read. The NixOS module is imported as `inputs.lince.nixosModules.default`; set `services.lince.enable = true` and choose `services.lince.initialAdminPasswordFile`. The institute host at `institute/institute.nix` chooses `/var/lib/lince/initial-admin-password` and listens on `127.0.0.1:6174`. Put the password file on that host before expecting the service to start. The host file assumes UEFI boot, an ext4 root filesystem labeled `nixos`, and a FAT boot filesystem labeled `ESP`. The deploy workflow checks those mounts before switching.
+A headless server needs an admin account on first start. Give it a password file that only the service user can read. The NixOS module is imported as `inputs.lince.nixosModules.default`; set `services.lince.enable = true` and choose `services.lince.initialAdminPasswordFile`. The institute host at `institute/configuration.nix` chooses `/var/lib/lince/initial-admin-password` and listens on `127.0.0.1:6174`. Put the password file on that host before expecting the service to start. The host file assumes UEFI boot, an ext4 root filesystem labeled `nixos`, and a FAT boot filesystem labeled `ESP`. The deploy workflow checks those mounts before switching.
 
 For the browser Facade, build with the `facade` feature, then give the public origin and local listen address. The origin can also be set with `LINCE_FACADE_ORIGIN`:
 ```bash

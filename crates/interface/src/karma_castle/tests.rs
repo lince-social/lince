@@ -287,7 +287,8 @@ async fn castle_saves_through_the_cell_and_receives_live_protein_fields() {
         engine,
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
         wire: Default::default(),
-        fiote: None, speech: None,
+        fiote: None,
+        speech: None,
         information: None,
     };
     let mut app = App::new();
@@ -342,29 +343,10 @@ async fn castle_saves_through_the_cell_and_receives_live_protein_fields() {
     assert_eq!(view.rules[0].name, "Double source");
     assert_eq!(view.rules[0].slug, "double-source");
     let uid = view.rules[0].uid.clone();
-    ui::Command::Select(uid.clone()).apply(app.world_mut(), owner);
-    ui::Command::CopySelected.apply(app.world_mut(), owner);
-    assert_eq!(
-        app.world()
-            .get::<KarmaCastle>(owner)
-            .unwrap()
-            .draft
-            .as_ref()
-            .unwrap()
-            .slug,
-        "double-source-copy"
-    );
-    ui::Command::Save.apply(app.world_mut(), owner);
-    until(&mut app, |world| {
-        world.get::<View>(owner).unwrap().rules.len() == 2
-            && world.get::<KarmaCastle>(owner).unwrap().draft.is_none()
-    })
-    .await;
-    ui::Command::SelectAll.apply(app.world_mut(), owner);
-    ui::Command::EditSelected.apply(app.world_mut(), owner);
+    ui::Command::EditCell(uid.clone(), 1).apply(app.world_mut(), owner);
     assert_eq!(
         app.world().get::<KarmaCastle>(owner).unwrap().edits.len(),
-        2
+        1
     );
     {
         let mut castle = app.world_mut().get_mut::<KarmaCastle>(owner).unwrap();
@@ -390,8 +372,8 @@ async fn castle_saves_through_the_cell_and_receives_live_protein_fields() {
         })
     })
     .await;
-    ui::Command::DeleteSelected.apply(app.world_mut(), owner);
-    assert_eq!(app.world().get::<View>(owner).unwrap().deleting.len(), 2);
+    ui::Command::Delete(uid).apply(app.world_mut(), owner);
+    assert_eq!(app.world().get::<View>(owner).unwrap().deleting.len(), 1);
     assert!(app.world().get::<View>(owner).unwrap().pending.is_none());
     ui::Command::ConfirmDelete.apply(app.world_mut(), owner);
     until(&mut app, |world| {
@@ -416,7 +398,7 @@ async fn until(app: &mut App, predicate: impl Fn(&World) -> bool) {
 }
 
 #[test]
-fn table_selection_controls_copy_and_edit_all_and_confirm_deletion() {
+fn cells_edit_individually_and_rows_confirm_deletion() {
     let mut app = App::new();
     crate::laboratory::isolate(app.world_mut());
     app.add_plugins(MinimalPlugins)
@@ -438,35 +420,65 @@ fn table_selection_controls_copy_and_edit_all_and_confirm_deletion() {
         .collect();
     ui::render_list(world, owner);
     let controls = world.get::<View>(owner).unwrap().controls;
-    let disabled = |world: &World, index| {
-        let entity = world.get::<Children>(controls).unwrap()[index];
-        world.get::<bevy::ui::InteractionDisabled>(entity).is_some()
-    };
-    assert!(disabled(world, 1));
-    assert!(disabled(world, 2));
-    assert!(disabled(world, 3));
-    ui::Command::Select("rule-0".into()).apply(world, owner);
-    assert!(!disabled(world, 1));
-    assert!(!disabled(world, 2));
-    assert!(!disabled(world, 3));
-    ui::Command::SelectAll.apply(world, owner);
-    assert!(!disabled(world, 1));
-    assert!(disabled(world, 2));
-    assert!(!disabled(world, 3));
-    ui::Command::CopySelected.apply(world, owner);
-    assert!(world.get::<KarmaCastle>(owner).unwrap().draft.is_none());
-    ui::Command::DeleteSelected.apply(world, owner);
-    assert_eq!(world.get::<View>(owner).unwrap().deleting.len(), 2);
+    assert_eq!(world.get::<Children>(controls).unwrap().len(), 1);
+    let list = world.get::<View>(owner).unwrap().list;
+    let first = world.get::<Children>(list).unwrap()[0];
+    let delete_cell = world.get::<Children>(first).unwrap()[0];
+    let delete = world.get::<Children>(delete_cell).unwrap()[0];
+    assert_eq!(
+        world
+            .get::<bevy::a11y::AccessibilityNode>(delete)
+            .unwrap()
+            .label(),
+        Some("Delete Rule 0")
+    );
+    world
+        .get::<crate::actions::ActionButton>(delete)
+        .unwrap()
+        .clone()
+        .actions
+        .run(world, owner);
+    assert_eq!(world.get::<View>(owner).unwrap().deleting, ["rule-0"]);
     assert!(world.get::<View>(owner).unwrap().pending.is_none());
     ui::Command::CancelDelete.apply(world, owner);
-    assert!(world.get::<View>(owner).unwrap().deleting.is_empty());
-    ui::Command::EditSelected.apply(world, owner);
+    let first = world.get::<Children>(list).unwrap()[0];
+    let condition = world.get::<Children>(first).unwrap()[2];
+    world
+        .get::<crate::actions::ActionButton>(condition)
+        .unwrap()
+        .clone()
+        .actions
+        .run(world, owner);
+    assert_eq!(world.get::<KarmaCastle>(owner).unwrap().edits.len(), 1);
+    assert_eq!(
+        world
+            .query::<&bevy::text::EditableText>()
+            .iter(world)
+            .count(),
+        2
+    );
+    let input = world
+        .resource::<bevy::input_focus::InputFocus>()
+        .get()
+        .unwrap();
+    world
+        .get_mut::<bevy::text::EditableText>(input)
+        .unwrap()
+        .editor
+        .set_text("@other");
+    ui::Command::EditCell("rule-1".into(), 1).apply(world, owner);
     assert_eq!(world.get::<KarmaCastle>(owner).unwrap().edits.len(), 2);
-    let editors = world
-        .query::<&bevy::text::EditableText>()
-        .iter(world)
-        .count();
-    assert_eq!(editors, 11);
+    assert_eq!(
+        world.get::<KarmaCastle>(owner).unwrap().edits[0].fields[0].text,
+        "@other"
+    );
+    assert_eq!(
+        world
+            .query::<&bevy::text::EditableText>()
+            .iter(world)
+            .count(),
+        2
+    );
     ui::Command::Cancel.apply(world, owner);
     let form = world.get::<View>(owner).unwrap().form;
     let scroll = world.get::<ChildOf>(form).unwrap().parent();
@@ -474,7 +486,7 @@ fn table_selection_controls_copy_and_edit_all_and_confirm_deletion() {
     ui::Command::New.apply(world, owner);
     assert_eq!(world.get::<ScrollPosition>(scroll).unwrap().0, Vec2::ZERO);
     let buttons = world.get::<Children>(controls).unwrap();
-    assert_eq!(buttons.len(), 5);
+    assert_eq!(buttons.len(), 2);
     let create = world.get::<Children>(buttons[0]).unwrap()[0];
     assert_eq!(world.get::<Text>(create).unwrap().0, "Create");
     let form = world.get::<View>(owner).unwrap().form;
@@ -507,5 +519,138 @@ fn table_selection_controls_copy_and_edit_all_and_confirm_deletion() {
             && z.0 == 30
     ));
     ui::Command::Cancel.apply(world, owner);
-    assert_eq!(world.get::<Children>(controls).unwrap().len(), 4);
+    assert_eq!(world.get::<Children>(controls).unwrap().len(), 1);
+}
+
+#[test]
+fn table_text_has_visible_glyphs_and_editing_preserves_cell_bounds() {
+    let mut app = App::new();
+    crate::laboratory::isolate(app.world_mut());
+    app.add_plugins((
+        MinimalPlugins,
+        bevy::asset::AssetPlugin::default(),
+        bevy::input::InputPlugin,
+        bevy::picking::DefaultPickingPlugins,
+        bevy::window::WindowPlugin {
+            primary_window: None,
+            ..default()
+        },
+        bevy::image::ImagePlugin::default(),
+        bevy::text::TextPlugin,
+        bevy::transform::TransformPlugin,
+        bevy::input_focus::InputFocusPlugin,
+        bevy::ui::UiPlugin,
+        crate::theme::ThemePlugin,
+        crate::sand::SandPlugin,
+    ))
+    .init_resource::<Assets<TextureAtlasLayout>>();
+    app.world_mut().spawn((
+        Camera2d,
+        Camera {
+            computed: bevy::camera::ComputedCameraValues {
+                target_info: Some(bevy::camera::RenderTargetInfo {
+                    physical_size: UVec2::new(980, 620),
+                    scale_factor: 1.0,
+                }),
+                ..default()
+            },
+            ..default()
+        },
+    ));
+    let root = app
+        .world_mut()
+        .spawn((
+            Node {
+                width: px(980),
+                height: px(620),
+                ..default()
+            },
+            crate::workspace::Workspaces::default(),
+        ))
+        .id();
+    let owner = spawn(
+        app.world_mut(),
+        root,
+        1,
+        DVec2::ZERO,
+        KarmaCastle::default(),
+    );
+    {
+        let mut node = app.world_mut().get_mut::<Node>(owner).unwrap();
+        node.width = px(980);
+        node.height = px(620);
+    }
+    app.world_mut().get_mut::<View>(owner).unwrap().rules = vec![Rule {
+        uid: "rule".into(),
+        name: "Balance".into(),
+        slug: "balance-rule".into(),
+        fields: vec![
+            field(),
+            SharedField {
+                uid: "threshold".into(),
+                kind: RuleFieldKind::Threshold,
+                source: ">0".into(),
+                revision: 1,
+            },
+        ],
+        revision: 1,
+        state: "active".into(),
+    }];
+    ui::render_list(app.world_mut(), owner);
+    for scheme in [
+        crate::tokens::ColorScheme::Dark,
+        crate::tokens::ColorScheme::Light,
+    ] {
+        app.world_mut()
+            .resource_mut::<crate::tokens::ThemeSettings>()
+            .scheme = scheme;
+        for _ in 0..5 {
+            app.update();
+        }
+        let background = crate::tokens::Token::Surface.default_value(scheme).color();
+        let labels: Vec<_> = app
+            .world_mut()
+            .query::<(
+                &Text,
+                &ComputedNode,
+                &bevy::text::TextLayoutInfo,
+                &TextColor,
+            )>()
+            .iter(app.world())
+            .filter(|(text, _, _, _)| !text.0.trim().is_empty())
+            .map(|(text, node, layout, color)| {
+                (text.0.clone(), node.size(), layout.glyphs.len(), color.0)
+            })
+            .collect();
+        assert!(labels.iter().any(|(text, _, _, _)| text == "Condition"));
+        for (text, size, glyphs, color) in labels {
+            assert!(
+                size.min_element() > 0.0 && glyphs > 0,
+                "Invisible {text:?}: {size:?}, {glyphs} glyphs"
+            );
+            assert!(
+                !color.is_fully_transparent() && color != background,
+                "Invisible color for {text:?}"
+            );
+        }
+    }
+    let list = app.world().get::<View>(owner).unwrap().list;
+    let row = app.world().get::<Children>(list).unwrap()[0];
+    let before = app.world().get::<ComputedNode>(row).unwrap().size();
+    ui::Command::EditCell("rule".into(), 0).apply(app.world_mut(), owner);
+    for _ in 0..5 {
+        app.update();
+    }
+    let row = app.world().get::<Children>(list).unwrap()[0];
+    assert_eq!(app.world().get::<ComputedNode>(row).unwrap().size(), before);
+    let focus = app
+        .world()
+        .resource::<bevy::input_focus::InputFocus>()
+        .get()
+        .unwrap();
+    let layout = app
+        .world()
+        .get::<bevy::text::TextLayoutInfo>(focus)
+        .unwrap();
+    assert!(!layout.glyphs.is_empty());
 }

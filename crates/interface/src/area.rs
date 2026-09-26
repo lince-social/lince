@@ -191,7 +191,7 @@ impl InfluenceArea {
             changes_enabled: true,
             change_filter: None,
             color: [128, 102, 217],
-            opacity: 0.18,
+            opacity: 0.5,
             center: center.to_array(),
             size: size.to_array(),
             depth: size.min_element(),

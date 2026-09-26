@@ -433,6 +433,19 @@ pub fn synchronize(world: &mut World) {
         }
         let placement = spatial(world, entity);
         let area = world.get::<crate::area::InfluenceArea>(entity).is_some();
+        let opacity = if area {
+            super::areas::opacity(world, entity)
+        } else {
+            1.0
+        };
+        let mut materials = world.resource_mut::<Assets<StandardMaterial>>();
+        if materials.get(&material).unwrap().base_color.alpha() != opacity {
+            materials
+                .get_mut(&material)
+                .unwrap()
+                .base_color
+                .set_alpha(opacity);
+        }
         let arrow = world.get::<crate::arrow_sand::ArrowSand>(entity).is_some();
         let flat = area
             || arrow

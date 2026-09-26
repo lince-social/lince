@@ -30,7 +30,7 @@ pub struct KarmaCastle {
 #[derive(Component)]
 struct View {
     controls: Entity,
-    selection: std::collections::HashSet<String>,
+    editing: Option<(String, usize)>,
     deleting: Vec<String>,
     deleting_pending: Option<String>,
     saving: bool,
@@ -133,7 +133,7 @@ pub fn spawn(
     world.get_mut::<Node>(status).unwrap().display = Display::None;
     world.entity_mut(owner).insert(View {
         controls,
-        selection: Default::default(),
+        editing: None,
         deleting: Vec::new(),
         deleting_pending: None,
         saving: false,
@@ -370,9 +370,6 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                                 }
                                 view.ready = true;
                                 view.rules = rules;
-                                let ids: std::collections::HashSet<_> =
-                                    view.rules.iter().map(|rule| rule.uid.clone()).collect();
-                                view.selection.retain(|uid| ids.contains(uid));
                                 ui::capture(world, owner);
                                 ui::render_list(world, owner);
                             }
@@ -431,6 +428,14 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                             castle.draft = None;
                         }
                         castle.edits.retain(|draft| draft != &submitted);
+                        let mut view = world.get_mut::<View>(owner).unwrap();
+                        if view
+                            .editing
+                            .as_ref()
+                            .is_some_and(|(uid, _)| submitted.rule.as_ref() == Some(uid))
+                        {
+                            view.editing = None;
+                        }
                     }
                     let deleted = world
                         .get_mut::<View>(owner)
@@ -438,8 +443,19 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                         .deleting_pending
                         .take();
                     if let Some(deleted) = deleted {
+                        world
+                            .get_mut::<KarmaCastle>(owner)
+                            .unwrap()
+                            .edits
+                            .retain(|draft| draft.rule.as_ref() != Some(&deleted));
                         let mut view = world.get_mut::<View>(owner).unwrap();
-                        view.selection.remove(&deleted);
+                        if view
+                            .editing
+                            .as_ref()
+                            .is_some_and(|(uid, _)| uid == &deleted)
+                        {
+                            view.editing = None;
+                        }
                         view.deleting.retain(|uid| uid != &deleted);
                         view.rules.retain(|rule| rule.uid != deleted);
                         delete_next(world, owner);

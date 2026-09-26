@@ -40,11 +40,8 @@ pub(super) enum Command {
     New,
     Cancel,
     Save,
-    Select(String),
-    SelectAll,
-    EditSelected,
-    CopySelected,
-    DeleteSelected,
+    EditCell(String, usize),
+    Delete(String),
     ConfirmDelete,
     CancelDelete,
     Link(usize, usize, SharedField),
@@ -101,97 +98,49 @@ impl Action for Command {
                 let mut castle = world.get_mut::<KarmaCastle>(owner).unwrap();
                 castle.draft = None;
                 castle.edits.clear();
+                world.get_mut::<View>(owner).unwrap().editing = None;
                 status(world, owner, "");
             }
             Self::Save => {
                 save(world, owner);
                 return;
             }
-            Self::Select(uid) => {
-                if !world.get::<KarmaCastle>(owner).unwrap().edits.is_empty() {
+            Self::EditCell(uid, index) => {
+                if *index > 3 || world.get::<KarmaCastle>(owner).unwrap().draft.is_some() {
                     return;
                 }
-                let mut view = world.get_mut::<View>(owner).unwrap();
-                if !view.selection.remove(uid) {
-                    view.selection.insert(uid.clone());
-                }
-                view.deleting.clear();
-            }
-            Self::SelectAll => {
-                if !world.get::<KarmaCastle>(owner).unwrap().edits.is_empty() {
-                    return;
-                }
-                let ids = visible_rules(world, owner)
-                    .into_iter()
-                    .map(|rule| rule.uid)
-                    .collect::<Vec<_>>();
-                let mut view = world.get_mut::<View>(owner).unwrap();
-                let all = ids.iter().all(|uid| view.selection.contains(uid));
-                for uid in ids {
-                    if all {
-                        view.selection.remove(&uid);
-                    } else {
-                        view.selection.insert(uid);
-                    }
-                }
-                view.deleting.clear();
-            }
-            Self::EditSelected => {
-                let castle = world.get::<KarmaCastle>(owner).unwrap();
-                if castle.draft.is_some() || !castle.edits.is_empty() {
-                    return;
-                }
-                let view = world.get::<View>(owner).unwrap();
-                let edits = view
+                let Some(rule) = world
+                    .get::<View>(owner)
+                    .unwrap()
                     .rules
                     .iter()
-                    .filter(|rule| view.selection.contains(&rule.uid))
-                    .map(Draft::from_rule)
-                    .collect();
-                world.get_mut::<KarmaCastle>(owner).unwrap().edits = edits;
-            }
-            Self::CopySelected => {
-                let view = world.get::<View>(owner).unwrap();
-                let castle = world.get::<KarmaCastle>(owner).unwrap();
-                if view.selection.len() != 1 || castle.draft.is_some() || !castle.edits.is_empty() {
-                    return;
-                }
-                let Some(rule) = view
-                    .rules
-                    .iter()
-                    .find(|rule| view.selection.contains(&rule.uid))
+                    .find(|rule| &rule.uid == uid)
+                    .cloned()
                 else {
                     return;
                 };
-                let mut copied = Draft::from_rule(rule);
-                copied.rule = None;
-                copied.revision = None;
-                copied.name = format!("{} copy", copied.name);
-                copied.name = copied.name.chars().take(128).collect();
-                let base: String = copied.slug.chars().take(200).collect();
-                copied.slug = format!("{base}-copy");
-                let mut suffix = 2;
-                while view.rules.iter().any(|rule| rule.slug == copied.slug) {
-                    copied.slug = format!("{base}-copy-{suffix}");
-                    suffix += 1;
-                }
-                for field in &mut copied.fields {
-                    field.linked = None;
-                }
-                world.get_mut::<KarmaCastle>(owner).unwrap().draft = Some(copied);
-            }
-            Self::DeleteSelected => {
-                let castle = world.get::<KarmaCastle>(owner).unwrap();
-                if castle.draft.is_some() || !castle.edits.is_empty() {
-                    return;
+                let mut castle = world.get_mut::<KarmaCastle>(owner).unwrap();
+                if !castle
+                    .edits
+                    .iter()
+                    .any(|draft| draft.rule.as_ref() == Some(uid))
+                {
+                    castle.edits.push(Draft::from_rule(&rule));
                 }
                 let mut view = world.get_mut::<View>(owner).unwrap();
-                view.deleting = view
+                view.editing = Some((uid.clone(), *index));
+                view.deleting.clear();
+            }
+            Self::Delete(uid) => {
+                if world
+                    .get::<View>(owner)
+                    .unwrap()
                     .rules
                     .iter()
-                    .filter(|rule| view.selection.contains(&rule.uid))
-                    .map(|rule| rule.uid.clone())
-                    .collect();
+                    .any(|rule| &rule.uid == uid)
+                {
+                    world.get_mut::<View>(owner).unwrap().deleting = vec![uid.clone()];
+                }
             }
             Self::ConfirmDelete => {
                 delete_next(world, owner);
@@ -267,16 +216,35 @@ impl Action for Command {
                 }
             }
         }
-        if matches!(self, Self::New | Self::EditSelected | Self::CopySelected) {
+        if matches!(self, Self::New) {
             world.get_mut::<View>(owner).unwrap().deleting.clear();
-        }
-        if matches!(self, Self::New | Self::CopySelected) {
             let form = world.get::<View>(owner).unwrap().form;
             let scroll = world.get::<ChildOf>(form).unwrap().parent();
             world.get_mut::<ScrollPosition>(scroll).unwrap().0 = Vec2::ZERO;
         }
         render_form(world, owner);
         render_list(world, owner);
+        if let Self::EditCell(uid, index) = self {
+            let row = world
+                .get::<KarmaCastle>(owner)
+                .unwrap()
+                .edits
+                .iter()
+                .position(|draft| draft.rule.as_ref() == Some(uid))
+                .map(|row| row + 1);
+            let input = world
+                .query::<(Entity, &Input)>()
+                .iter(world)
+                .find(|(_, input)| {
+                    input.owner == owner && Some(input.row) == row && input.index == *index
+                })
+                .map(|(entity, _)| entity);
+            if let Some(input) = input {
+                world
+                    .resource_mut::<InputFocus>()
+                    .set(input, bevy::input_focus::FocusCause::Navigated);
+            }
+        }
     }
 }
 
@@ -321,7 +289,7 @@ fn grid(world: &mut World, parent: Entity) -> Entity {
                 min_width: px(0),
                 flex_shrink: 0.0,
                 grid_template_columns: vec![
-                    GridTrack::px(28.0),
+                    GridTrack::px(30.0),
                     GridTrack::flex(2.0),
                     GridTrack::flex(3.0),
                     GridTrack::flex(1.5),
@@ -374,7 +342,6 @@ fn icon_button(
     let entity = world
         .spawn((
             crate::sand::button(0),
-            crate::sand::Square,
             crate::sand::Borderless,
             ActionButton::new(owner, crate::actions![command]),
             Tooltip(hint.into()),
@@ -417,7 +384,6 @@ fn button(
     let entity = world
         .spawn((
             crate::sand::button(0),
-            crate::sand::Square,
             crate::sand::Borderless,
             ActionButton::new(owner, crate::actions![command]),
             Node {
@@ -433,55 +399,9 @@ fn button(
         bevy::text::LineBreak::WordOrCharacter,
     ));
     let mut node = world.get_mut::<Node>(label).unwrap();
-    node.min_width = px(0);
+    node.min_width = Val::Auto;
     node.flex_shrink = 1.0;
     entity
-}
-
-fn checkbox(
-    world: &mut World,
-    parent: Entity,
-    owner: Entity,
-    checked: bool,
-    command: Command,
-    label: &str,
-    enabled: bool,
-) {
-    let entity = world
-        .spawn((
-            crate::sand::button(0),
-            crate::sand::Square,
-            crate::sand::Borderless,
-            ActionButton::new(owner, crate::actions![command]),
-            Node {
-                width: px(16),
-                height: px(16),
-                margin: UiRect::all(px(6)),
-                border: UiRect::all(px(1)),
-                flex_shrink: 0.0,
-                ..default()
-            },
-            crate::token_style::border(crate::tokens::Token::Ink),
-            ChildOf(parent),
-        ))
-        .id();
-    accessible(world, entity, accesskit::Role::CheckBox, label);
-    let mut accessible = world
-        .get_mut::<bevy::a11y::AccessibilityNode>(entity)
-        .unwrap();
-    accessible.set_toggled(if checked {
-        accesskit::Toggled::True
-    } else {
-        accesskit::Toggled::False
-    });
-    if checked {
-        glyph(world, entity, Icon::Check, 14.0);
-    }
-    if !enabled {
-        world
-            .entity_mut(entity)
-            .insert(bevy::ui::InteractionDisabled);
-    }
 }
 
 fn accessible(world: &mut World, entity: Entity, role: accesskit::Role, label: &str) {
@@ -536,13 +456,9 @@ pub(super) fn search(world: &mut World, parent: Entity, owner: Entity) {
     accessible(world, entity, accesskit::Role::TextInput, "Filter rules");
 }
 
-#[derive(Component)]
-struct SelectionHeading;
-
 pub(super) fn headings(world: &mut World, parent: Entity) {
     let heading = grid(world, parent);
-    let selector = stack(world, heading);
-    world.entity_mut(selector).insert(SelectionHeading);
+    stack(world, heading);
     for (index, title) in ["Name / Slug", "Condition", "Threshold", "Consequence"]
         .into_iter()
         .enumerate()
@@ -554,7 +470,7 @@ pub(super) fn headings(world: &mut World, parent: Entity) {
             bevy::text::LineBreak::WordOrCharacter,
         ));
         let mut node = world.get_mut::<Node>(label).unwrap();
-        node.min_width = px(0);
+        node.min_width = Val::Auto;
         node.flex_shrink = 1.0;
         if index > 0 {
             let explanation = [
@@ -618,7 +534,7 @@ fn visible_rules(world: &World, owner: Entity) -> Vec<Rule> {
 
 pub(super) fn render_controls(world: &mut World, owner: Entity) {
     let view = world.get::<View>(owner).unwrap();
-    let (controls, selected, busy) = (view.controls, view.selection.len(), view.pending.is_some());
+    let (controls, busy) = (view.controls, view.pending.is_some());
     let castle = world.get::<KarmaCastle>(owner).unwrap();
     let creating = castle.draft.is_some();
     let editing = !castle.edits.is_empty();
@@ -646,119 +562,123 @@ pub(super) fn render_controls(world: &mut World, owner: Entity) {
             !busy,
         );
     }
-    let enabled = !busy && !creating && !editing;
-    icon_button(
-        world,
-        controls,
-        owner,
-        Icon::Pencil,
-        "Edit selected rules",
-        Command::EditSelected,
-        enabled && selected > 0,
-    );
-    icon_button(
-        world,
-        controls,
-        owner,
-        Icon::Copy,
-        "Copy selected rule",
-        Command::CopySelected,
-        enabled && selected == 1,
-    );
-    icon_button(
-        world,
-        controls,
-        owner,
-        Icon::Close,
-        "Delete selected rules",
-        Command::DeleteSelected,
-        enabled && selected > 0,
-    );
-    let selector = world
-        .query_filtered::<Entity, With<SelectionHeading>>()
-        .iter(world)
-        .find(|entity| descendant(world, Some(*entity), owner));
-    if let Some(selector) = selector {
-        clear(world, selector);
-        let rules = visible_rules(world, owner);
-        let checked = !rules.is_empty()
-            && rules.iter().all(|rule| {
-                world
-                    .get::<View>(owner)
-                    .unwrap()
-                    .selection
-                    .contains(&rule.uid)
-            });
-        checkbox(
-            world,
-            selector,
-            owner,
-            checked,
-            Command::SelectAll,
-            "Select all visible rules",
-            !busy && !editing && !rules.is_empty(),
-        );
-    }
 }
 
 pub(super) fn render_list(world: &mut World, owner: Entity) {
     let view = world.get::<View>(owner).unwrap();
-    let (list, selected, busy) = (view.list, view.selection.clone(), view.pending.is_some());
+    let (list, busy, editing) = (view.list, view.pending.is_some(), view.editing.clone());
     let rules = visible_rules(world, owner);
-    let edits = world.get::<KarmaCastle>(owner).unwrap().edits.clone();
+    let castle = world.get::<KarmaCastle>(owner).unwrap();
+    let edits = castle.edits.clone();
+    let creating = castle.draft.is_some();
     clear(world, list);
     for rule in rules {
         let cells = grid(world, list);
-        checkbox(
+        let delete_cell = cell(world, cells);
+        let delete = icon_button(
             world,
-            cells,
+            delete_cell,
             owner,
-            selected.contains(&rule.uid),
-            Command::Select(rule.uid.clone()),
-            &format!("Select {}", rule.name),
-            !busy && edits.is_empty(),
+            Icon::Close,
+            &format!("Delete {}", rule.name),
+            Command::Delete(rule.uid.clone()),
+            !busy,
         );
-        if let Some(index) = edits
+        size_icon(world, delete, 16.0);
+        let edited = edits
             .iter()
-            .position(|draft| draft.rule.as_ref() == Some(&rule.uid))
-        {
-            editor_cells(world, cells, owner, index + 1, &edits[index]);
-        } else {
-            let identity = cell(world, cells);
-            let line = row(world, identity);
-            for text in [rule.name.as_str(), &format!("@{}", rule.slug)] {
-                let label = crate::edit_mode::label(world, line, text, 16.0);
-                world.entity_mut(label).insert(TextLayout::linebreak(
-                    bevy::text::LineBreak::WordOrCharacter,
-                ));
-                let mut node = world.get_mut::<Node>(label).unwrap();
-                node.min_width = px(0);
-                node.flex_shrink = 1.0;
-            }
-            let paused = rule.state == "paused";
-            let toggle = icon_button(
-                world,
-                line,
-                owner,
-                if paused { Icon::Play } else { Icon::Stop },
-                if paused { "Resume rule" } else { "Pause rule" },
-                Command::Pause(rule.uid.clone(), rule.revision, !paused),
-                !busy,
-            );
-            world.get_mut::<Node>(toggle).unwrap().width = px(16);
-            world.get_mut::<Node>(toggle).unwrap().height = px(16);
-            let glyph = world.get::<Children>(toggle).unwrap()[0];
-            world.get_mut::<Node>(glyph).unwrap().width = px(16);
-            world.get_mut::<Node>(glyph).unwrap().height = px(16);
-            for kind in RuleFieldKind::ALL {
-                let cell = cell(world, cells);
-                if let Some(field) = rule.fields.iter().find(|field| field.kind == kind) {
-                    rich_text(world, cell, owner, &field.source);
+            .position(|draft| draft.rule.as_ref() == Some(&rule.uid));
+        let value = edited
+            .map(|index| edits[index].clone())
+            .unwrap_or_else(|| Draft::from_rule(&rule));
+        for index in [3, 0, 1, 2] {
+            let cell = cell(world, cells);
+            let active = editing.as_ref() == Some(&(rule.uid.clone(), index));
+            let content = if index == 3 {
+                let line = row(world, cell);
+                for text in [value.name.as_str(), &format!("@{}", value.slug)] {
+                    let label = crate::edit_mode::label(world, line, text, 16.0);
+                    world.entity_mut(label).insert(TextLayout::linebreak(
+                        bevy::text::LineBreak::WordOrCharacter,
+                    ));
+                    let mut node = world.get_mut::<Node>(label).unwrap();
+                    node.min_width = Val::Auto;
+                    node.flex_shrink = 1.0;
                 }
+                let paused = rule.state == "paused";
+                let toggle = icon_button(
+                    world,
+                    line,
+                    owner,
+                    if paused { Icon::Play } else { Icon::Stop },
+                    if paused { "Resume rule" } else { "Pause rule" },
+                    Command::Pause(rule.uid.clone(), rule.revision, !paused),
+                    !busy,
+                );
+                size_icon(world, toggle, 16.0);
+                line
+            } else {
+                rich_text(world, cell, owner, &value.fields[index].text)
+            };
+            if active && let Some(edited) = edited {
+                world.entity_mut(content).insert(Visibility::Hidden);
+                let overlay = row(world, cell);
+                *world.get_mut::<Node>(overlay).unwrap() = Node {
+                    position_type: PositionType::Absolute,
+                    left: px(6),
+                    right: px(6),
+                    top: px(6),
+                    bottom: px(6),
+                    min_width: px(0),
+                    column_gap: px(8),
+                    ..default()
+                };
+                if index == 3 {
+                    editor(world, overlay, owner, edited + 1, 3, &value.name);
+                    editor(world, overlay, owner, edited + 1, 4, &value.slug);
+                } else {
+                    editor(
+                        world,
+                        overlay,
+                        owner,
+                        edited + 1,
+                        index,
+                        &value.fields[index].text,
+                    );
+                }
+            } else if !busy && !creating {
+                world.entity_mut(cell).insert((
+                    crate::sand::button(0),
+                    crate::sand::Borderless,
+                    ActionButton::new(
+                        owner,
+                        crate::actions![Command::EditCell(rule.uid.clone(), index)],
+                    ),
+                ));
+                accessible(
+                    world,
+                    cell,
+                    accesskit::Role::Button,
+                    &format!(
+                        "Edit {} for {}",
+                        ["condition", "threshold", "consequence", "name and slug"][index],
+                        rule.name
+                    ),
+                );
             }
         }
     }
     render_controls(world, owner);
+}
+
+fn size_icon(world: &mut World, entity: Entity, size: f32) {
+    let mut node = world.get_mut::<Node>(entity).unwrap();
+    node.width = px(size);
+    node.height = px(size);
+    let glyph = world.get::<Children>(entity).unwrap()[0];
+    let mut node = world.get_mut::<Node>(glyph).unwrap();
+    node.width = px(size);
+    node.height = px(size);
 }
 
 pub(super) fn render_form(world: &mut World, owner: Entity) {
@@ -770,15 +690,15 @@ pub(super) fn render_form(world: &mut World, owner: Entity) {
         cell(world, cells);
         editor_cells(world, cells, owner, 0, &draft);
     }
-    let deleting = world.get::<View>(owner).unwrap().deleting.len();
-    if deleting > 0 {
+    let view = world.get::<View>(owner).unwrap();
+    let deleting = view
+        .deleting
+        .first()
+        .and_then(|uid| view.rules.iter().find(|rule| &rule.uid == uid))
+        .map(|rule| rule.name.clone());
+    if let Some(name) = deleting {
         let line = row(world, form);
-        crate::edit_mode::label(
-            world,
-            line,
-            &format!("Delete {deleting} selected rule(s)?"),
-            14.0,
-        );
+        crate::edit_mode::label(world, line, &format!("Delete {name}?"), 14.0);
         button(world, line, owner, Command::ConfirmDelete, "Delete");
         button(world, line, owner, Command::CancelDelete, "Cancel");
     }
@@ -799,6 +719,9 @@ fn editor_cells(world: &mut World, cells: Entity, owner: Entity, row: usize, dra
 fn editor(world: &mut World, parent: Entity, owner: Entity, row: usize, index: usize, value: &str) {
     let host = stack(world, parent);
     world.get_mut::<Node>(host).unwrap().flex_shrink = 1.0;
+    if row > 0 {
+        world.get_mut::<Node>(host).unwrap().height = percent(100);
+    }
     let entity = world
         .spawn(crate::sand::text_editor(
             value,
@@ -817,15 +740,18 @@ fn editor(world: &mut World, parent: Entity, owner: Entity, row: usize, index: u
         Node {
             width: percent(100),
             min_width: px(0),
-            min_height: px(36),
+            height: if row == 0 { Val::Auto } else { percent(100) },
+            min_height: if row == 0 { px(20) } else { Val::Auto },
+            overflow: Overflow::clip(),
             ..default()
         },
         ChildOf(host),
+        crate::sand::Borderless,
     ));
     let mut editor = world.get_mut::<EditableText>(entity).unwrap();
     editor.allow_newlines = false;
     editor.max_characters = Some(if index < 3 { 16_384 } else { 256 });
-    editor.visible_lines = Some(2.0);
+    editor.visible_lines = Some(1.0);
     accessible(
         world,
         entity,
@@ -1000,7 +926,7 @@ pub(super) fn refresh_links(world: &mut World, owner: Entity) {
     }
 }
 
-fn rich_text(world: &mut World, parent: Entity, owner: Entity, source: &str) {
+fn rich_text(world: &mut World, parent: Entity, owner: Entity, source: &str) -> Entity {
     let line = row(world, parent);
     let mut node = world.get_mut::<Node>(line).unwrap();
     node.flex_wrap = FlexWrap::Wrap;
@@ -1013,7 +939,7 @@ fn rich_text(world: &mut World, parent: Entity, owner: Entity, source: &str) {
         ));
         let mut node = world.get_mut::<Node>(part).unwrap();
         node.flex_shrink = 1.0;
-        node.min_width = px(0);
+        node.min_width = Val::Auto;
         node.max_width = percent(100);
         if let Some(slug) = slug {
             world.entity_mut(part).insert((
@@ -1032,6 +958,7 @@ fn rich_text(world: &mut World, parent: Entity, owner: Entity, source: &str) {
         }
         offset += text.len();
     }
+    line
 }
 
 pub(super) fn tick(world: &mut World, mut wake_at: Local<Option<std::time::Instant>>) {

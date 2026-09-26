@@ -702,7 +702,10 @@
               ++ lib.optional (!ui) "--no-default-features";
 
               nativeBuildInputs =
-                (with pkgs; [ pkg-config makeWrapper ])
+                (with pkgs; [
+                  pkg-config
+                  makeWrapper
+                ])
                 ++ lib.optionals ui (
                   [
                     pkgs.clang
@@ -719,10 +722,22 @@
                 ++ lib.optionals ui interfaceLinuxBuildInputs;
 
               postFixup = lib.optionalString (pkgs.stdenv.isLinux && (ui || system == "x86_64-linux")) ''
-                wrapProgram "$out/bin/lince" ${lib.escapeShellArgs (
-                  lib.optionals ui [ "--prefix" "LD_LIBRARY_PATH" ":" (lib.makeLibraryPath interfaceLinuxBuildInputs) ]
-                  ++ lib.optionals (system == "x86_64-linux") [ "--prefix" "PATH" ":" (lib.makeBinPath [ self.packages.${system}.goose ]) ]
-                )}
+                wrapProgram "$out/bin/lince" ${
+                  lib.escapeShellArgs (
+                    lib.optionals ui [
+                      "--prefix"
+                      "LD_LIBRARY_PATH"
+                      ":"
+                      (lib.makeLibraryPath interfaceLinuxBuildInputs)
+                    ]
+                    ++ lib.optionals (system == "x86_64-linux") [
+                      "--prefix"
+                      "PATH"
+                      ":"
+                      (lib.makeBinPath [ self.packages.${system}.goose ])
+                    ]
+                  )
+                }
               '';
 
               meta = {
@@ -846,17 +861,29 @@
           };
 
           apps = {
-            default = (flake-utils.lib.mkApp {
-              drv = lince-ui;
-            }) // { meta.description = "Lince desktop"; };
+            default =
+              (flake-utils.lib.mkApp {
+                drv = lince-ui;
+              })
+              // {
+                meta.description = "Lince desktop";
+              };
 
-            lince = (flake-utils.lib.mkApp {
-              drv = lince-ui;
-            }) // { meta.description = "Lince desktop"; };
+            lince =
+              (flake-utils.lib.mkApp {
+                drv = lince-ui;
+              })
+              // {
+                meta.description = "Lince desktop";
+              };
 
-            lince-headless = (flake-utils.lib.mkApp {
-              drv = lince;
-            }) // { meta.description = "Lince headless"; };
+            lince-headless =
+              (flake-utils.lib.mkApp {
+                drv = lince;
+              })
+              // {
+                meta.description = "Lince headless";
+              };
           };
 
           formatter = pkgs.nixfmt;
@@ -1114,7 +1141,7 @@
         system = "x86_64-linux";
         specialArgs = { inherit self; };
         modules = [
-          ./institute/institute.nix
+          ./institute/configuration.nix
         ];
       };
     };

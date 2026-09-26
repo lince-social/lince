@@ -1,7 +1,0 @@
-Frequency faivu {
-    title "faivu"
-    quantity 1
-    every 5 second
-    timezone "UTC"
-    next_at 2026-09-21T01:29:48.946+00:00
-} ^r_01M33BR39J81H81K1TN4F2YSK6

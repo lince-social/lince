@@ -205,7 +205,9 @@ fn records_from(sources: &[(&str, &str)]) -> Vec<BundledRecord> {
                     let object = assertion.object_slug.as_ref().map(|slug| {
                         let uid = identities
                             .get(slug)
-                            .unwrap_or_else(|| panic!("@{slug} does not resolve in anicca/"))
+                            .unwrap_or_else(|| {
+                                panic!("@{slug} does not resolve in institute/anicca/")
+                            })
                             .clone();
                         Link {
                             title: titles.get(&uid).cloned().unwrap_or_default(),
@@ -263,12 +265,13 @@ fn records_from(sources: &[(&str, &str)]) -> Vec<BundledRecord> {
 }
 
 fn project_source(name: &str, source: &str) -> Vec<anicca::ProjectedRecord> {
-    let (identified, _) = anicca::ensure_uids(source)
-        .unwrap_or_else(|error| panic!("anicca/{name} cannot receive identities: {error}"));
+    let (identified, _) = anicca::ensure_uids(source).unwrap_or_else(|error| {
+        panic!("institute/anicca/{name} cannot receive identities: {error}")
+    });
     let document = anicca::parse(&identified)
-        .unwrap_or_else(|error| panic!("anicca/{name} is malformed: {error}"));
+        .unwrap_or_else(|error| panic!("institute/anicca/{name} is malformed: {error}"));
     anicca::project(&document)
-        .unwrap_or_else(|error| panic!("anicca/{name} cannot be projected: {error}"))
+        .unwrap_or_else(|error| panic!("institute/anicca/{name} cannot be projected: {error}"))
         .records
 }
 

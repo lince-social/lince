@@ -18,7 +18,7 @@ fn run() -> Result<(), String> {
             let root = arguments
                 .next()
                 .map(PathBuf::from)
-                .unwrap_or_else(|| PathBuf::from("anicca"));
+                .unwrap_or_else(|| PathBuf::from("institute/anicca"));
             no_more(arguments)?;
             match anicca::check_project(&root) {
                 Ok(paths) => {
@@ -67,7 +67,7 @@ fn run() -> Result<(), String> {
                     return Err(usage());
                 }
             }
-            let target = target.unwrap_or_else(|| PathBuf::from("anicca"));
+            let target = target.unwrap_or_else(|| PathBuf::from("institute/anicca"));
             format_target(&target, write)
         }
         _ => Err(usage()),

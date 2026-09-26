@@ -1,7 +1,0 @@
-Frequency mday {
-    title "mday"
-    quantity 1
-    every 5 second
-    timezone "UTC"
-    next_at 2026-09-21T01:40:05.342+00:00
-} ^r_01M30TB1WP84G9D4F9H2F3F5CA

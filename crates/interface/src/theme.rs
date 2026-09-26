@@ -14,15 +14,15 @@ pub struct Typography(pub Handle<Font>);
 impl FromWorld for Typography {
     fn from_world(world: &mut World) -> Self {
         let symbols = world.resource_mut::<Assets<Font>>().add(Font::from_bytes(
-            include_bytes!("../../../assets/fonts/NotoSansSymbols2/NotoSansSymbols2-Regular.ttf")
+            include_bytes!("../../../institute/assets/fonts/NotoSansSymbols2/NotoSansSymbols2-Regular.ttf")
                 .to_vec(),
         ));
         let arrows = world.resource_mut::<Assets<Font>>().add(Font::from_bytes(
-            include_bytes!("../../../assets/fonts/DejaVuSans/DejaVuSans.ttf").to_vec(),
+            include_bytes!("../../../institute/assets/fonts/DejaVuSans/DejaVuSans.ttf").to_vec(),
         ));
         world.insert_resource(SymbolFont([symbols, arrows]));
         Self(world.resource_mut::<Assets<Font>>().add(Font::from_bytes(
-            include_bytes!("../../../assets/fonts/Lato/Lato-Regular.ttf").to_vec(),
+            include_bytes!("../../../institute/assets/fonts/Lato/Lato-Regular.ttf").to_vec(),
         )))
     }
 }
@@ -105,10 +105,10 @@ mod tests {
                 system_fonts: false,
             });
             for bytes in [
-                include_bytes!("../../../assets/fonts/Lato/Lato-Regular.ttf").as_slice(),
-                include_bytes!("../../../assets/fonts/DejaVuSans/DejaVuSans.ttf").as_slice(),
+                include_bytes!("../../../institute/assets/fonts/Lato/Lato-Regular.ttf").as_slice(),
+                include_bytes!("../../../institute/assets/fonts/DejaVuSans/DejaVuSans.ttf").as_slice(),
                 include_bytes!(
-                    "../../../assets/fonts/NotoSansSymbols2/NotoSansSymbols2-Regular.ttf"
+                    "../../../institute/assets/fonts/NotoSansSymbols2/NotoSansSymbols2-Regular.ttf"
                 )
                 .as_slice(),
             ] {

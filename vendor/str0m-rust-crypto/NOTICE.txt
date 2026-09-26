@@ -1,3 +1,0 @@
-str0m-rust-crypto 0.6.0 by Martin Algesten and contributors.
-https://github.com/algesten/str0m
-Modified for Lince: RustCrypto X.509 certificate generation replaces the rcgen/AWS-LC dependency. The DTLS provider is selected explicitly.

@@ -1,7 +1,7 @@
 pub const BEVY_LICENSE: &str = include_str!("../licenses/bevy-MIT.txt");
-pub const SYMBOLS_LICENSE: &str = include_str!("../../../assets/fonts/NotoSansSymbols2/OFL.txt");
-pub const LATO_LICENSE: &str = include_str!("../../../assets/fonts/Lato/OFL.txt");
-pub const LUCIDE_LICENSE: &str = include_str!("../../../assets/icons/lucide/LICENSE");
+pub const SYMBOLS_LICENSE: &str =
+    include_str!("../../../institute/assets/fonts/NotoSansSymbols2/OFL.txt");
+pub const LATO_LICENSE: &str = include_str!("../../../institute/assets/fonts/Lato/OFL.txt");
 pub const AVIAN_LICENSE: &str = include_str!("../licenses/avian-MIT.txt");
 pub const CHRONO_LICENSE: &str = include_str!("../licenses/chrono.txt");
 pub const LORO_LICENSE: &str = include_str!("../licenses/loro-MIT.txt");
@@ -22,7 +22,7 @@ pub const SYMBOLS: Attribution = Attribution {
 pub const DEJAVU: Attribution = Attribution {
     name: "DejaVu Sans",
     author: "DejaVu contributors, Bitstream, and Tavmjong Bah",
-    license: include_str!("../../../assets/fonts/DejaVuSans/LICENSE"),
+    license: include_str!("../../../institute/assets/fonts/DejaVuSans/LICENSE"),
 };
 
 pub const FONTIQUE: Attribution = Attribution {
@@ -94,11 +94,6 @@ pub const ATTRIBUTIONS: &[Attribution] = &[
         name: "Avian physics",
         author: "Jondolf and Avian contributors",
         license: AVIAN_LICENSE,
-    },
-    Attribution {
-        name: "Lucide icons",
-        author: "Lucide and Feather contributors",
-        license: LUCIDE_LICENSE,
     },
     Attribution {
         name: "Bevy",
@@ -204,15 +199,10 @@ pub(crate) fn render_list(world: &mut World, panel: Entity, attributions: &[Attr
             .id();
         crate::edit_mode::label(world, button, credit.name, 16.0);
         let indicator = crate::edit_mode::label(world, button, "+", 16.0);
-        let extra = if credit.name == "Lucide icons" {
-            include_str!("../../../assets/icons/lucide/CREDITS.txt")
-        } else {
-            ""
-        };
         let body = crate::edit_mode::label(
             world,
             section,
-            &format!("{}\n\n{}{}", credit.author, extra, credit.license),
+            &format!("{}\n\n{}", credit.author, credit.license),
             14.0,
         );
         world.entity_mut(body).insert(Node {

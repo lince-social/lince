@@ -47,7 +47,7 @@ pub(super) fn rasterize(source: &str) -> Pixels {
     options.image_href_resolver.resolve_data = Box::new(|_, _, _| None);
     options
         .fontdb_mut()
-        .load_font_data(include_bytes!("../../../../assets/fonts/Lato/Lato-Regular.ttf").to_vec());
+        .load_font_data(include_bytes!("../../../../institute/assets/fonts/Lato/Lato-Regular.ttf").to_vec());
     options.fontdb_mut().set_sans_serif_family("Lato");
     options.fontdb_mut().set_serif_family("Lato");
     options.fontdb_mut().set_monospace_family("Lato");

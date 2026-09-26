@@ -5,7 +5,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use turn_client_proto::{api::TurnConfig, tcp::TurnClientTcp, udp::TurnClientUdp};
-use turn_client_rustls::{TurnClientRustls, rustls};
+use turn_client_rustls::TurnClientRustls;
 
 use super::error;
 use crate::{MediaError, Result as MediaResult};
@@ -62,7 +62,7 @@ impl Socket {
                 Client::Tcp(TurnClientTcp::allocate(self.address, self.remote, config))
             }
             (Stream::Tcp(_), Some(host)) => {
-                let provider = rustls_rustcrypto::provider();
+                let provider = rustls::crypto::aws_lc_rs::default_provider();
                 let roots = rustls::RootCertStore {
                     roots: webpki_roots::TLS_SERVER_ROOTS.to_vec(),
                 };

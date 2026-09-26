@@ -2,7 +2,6 @@ target/
 /logs
 mprocs.log
 .env
-!.env.example
 .config/lince/
 .rustup/
 .codex
@@ -14,4 +13,4 @@ trash/
 *.glb
 *.glTF
 *.gltf
-assets/3DGS/*
+institute/assets/3DGS/*

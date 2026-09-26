@@ -91,13 +91,13 @@ impl Epub {
         let source = super::resources::markup(&self.book, &base, source.as_bytes(), 0)?;
         let assets = Arc::new(Assets::default());
         let mut fonts = blitz_dom::build_single_font_ctx(include_bytes!(
-            "../../../assets/fonts/DejaVuSans/DejaVuSans.ttf"
+            "../../../institute/assets/fonts/DejaVuSans/DejaVuSans.ttf"
         ));
         for data in [
-            include_bytes!("../../../assets/fonts/Lato/Lato-Regular.ttf").as_slice(),
-            include_bytes!("../../../assets/fonts/Lato/Lato-Bold.ttf").as_slice(),
-            include_bytes!("../../../assets/fonts/Lato/Lato-Italic.ttf").as_slice(),
-            include_bytes!("../../../assets/fonts/Lato/Lato-BoldItalic.ttf").as_slice(),
+            include_bytes!("../../../institute/assets/fonts/Lato/Lato-Regular.ttf").as_slice(),
+            include_bytes!("../../../institute/assets/fonts/Lato/Lato-Bold.ttf").as_slice(),
+            include_bytes!("../../../institute/assets/fonts/Lato/Lato-Italic.ttf").as_slice(),
+            include_bytes!("../../../institute/assets/fonts/Lato/Lato-BoldItalic.ttf").as_slice(),
         ] {
             fonts.collection.register_fonts(data.to_vec().into(), None);
         }

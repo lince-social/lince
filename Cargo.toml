@@ -16,6 +16,7 @@ members = [
     "crates/cell",
     "crates/facade",
     "crates/media",
+    "crates/xtask",
 ]
 exclude = ["examples"]
 
@@ -153,12 +154,6 @@ opt-level = 0        # Fastest compile
 debug = "line-tables-only"
 incremental = true   # Fast incremental builds
 codegen-units = 256  # Max parallelism
-
-[patch.crates-io]
-str0m-rust-crypto = { path = "vendor/str0m-rust-crypto" }
-# Keep the mDNS implementation vendored while LAN discovery is stabilised, so
-# any socket-level fixes can be audited and shipped with Lince.
-swarm-discovery = { path = "vendor/swarm-discovery" }
 
 [profile.dev.package.opus-rs]
 opt-level = 2

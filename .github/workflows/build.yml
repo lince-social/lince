@@ -1,9 +1,10 @@
-name: app-release
+name: lince-build-release-deploy
 
 on:
   push:
     branches:
       - main
+      - dev
     tags:
       - 'v*'
   workflow_dispatch:
@@ -12,7 +13,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: app-release-${{ github.ref }}
+  group: lince-build-release-deploy-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -66,6 +67,7 @@ jobs:
             clang \
             libclang-dev \
             libpipewire-0.3-dev \
+            libdbus-1-dev \
             libglib2.0-dev \
             libpulse-dev \
             libva-dev \
@@ -92,38 +94,21 @@ jobs:
             ~/.cargo/git
             target/release
             target/${{ matrix.target }}/release
-            target/source-cache.json
           key: binary-v2-${{ matrix.os }}-${{ matrix.target }}-${{ steps.rust.outputs.cachekey }}-${{ hashFiles('.cargo/config.toml') }}-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
           restore-keys: |
             binary-v2-${{ matrix.os }}-${{ matrix.target }}-${{ steps.rust.outputs.cachekey }}-${{ hashFiles('.cargo/config.toml') }}-${{ hashFiles('Cargo.lock') }}-
             binary-v2-${{ matrix.os }}-${{ matrix.target }}-${{ steps.rust.outputs.cachekey }}-${{ hashFiles('.cargo/config.toml') }}-
 
-      - name: Restore unchanged source timestamps
-        run: python3 scripts/ci/source-cache.py
-
-      - name: Test release tooling
-        run: python3 -B -m unittest discover -s scripts/ci -p 'test_*.py' -v
-
       - name: Build native Lince
+        if: github.ref != 'refs/heads/dev'
         env:
           LINCE_REVISION: ${{ github.sha }}
           BUILD_TARGET: ${{ matrix.target }}
         run: cargo build --release --locked --package lince --target "$BUILD_TARGET" --timings
         shell: bash
 
-      - name: Save compiled crates
-        if: steps.cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target/release
-            target/${{ matrix.target }}/release
-            target/source-cache.json
-          key: ${{ steps.cache.outputs.cache-primary-key }}
-
       - name: Package binary
+        if: github.ref != 'refs/heads/dev'
         env:
           BUILD_TARGET: ${{ matrix.target }}
           BINARY_EXTENSION: ${{ matrix.extension }}
@@ -153,6 +138,7 @@ jobs:
           printf '%s\n' "$BUILD_TARGET" > "binary-artifacts/$asset.target"
 
       - name: Upload binaries
+        if: github.ref != 'refs/heads/dev'
         uses: actions/upload-artifact@v4
         with:
           name: lince-binary-artifacts-${{ matrix.target }}
@@ -160,6 +146,45 @@ jobs:
           if-no-files-found: error
           retention-days: 7
           compression-level: 0
+
+      - name: Build headless Lince for NixOS server
+        if: runner.os == 'Linux' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+        env:
+          LINCE_REVISION: ${{ github.sha }}
+          BUILD_TARGET: ${{ matrix.target }}
+        shell: bash
+        run: cargo build --release --locked --package lince --no-default-features --target "$BUILD_TARGET" --timings
+
+      - name: Package headless binary
+        if: runner.os == 'Linux' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+        env:
+          BUILD_TARGET: ${{ matrix.target }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          install -Dm755 "target/$BUILD_TARGET/release/lince" server-artifacts/lince
+          printf '%s\n' "$GITHUB_SHA" > server-artifacts/revision
+
+      - name: Upload headless binary
+        if: runner.os == 'Linux' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+        uses: actions/upload-artifact@v4
+        with:
+          name: lince-server-artifacts-${{ matrix.target }}
+          path: server-artifacts/*
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
+      - name: Save compiled crates
+        if: steps.cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/release
+            target/${{ matrix.target }}/release
+          key: ${{ steps.cache.outputs.cache-primary-key }}
 
       - name: Upload build timings
         if: always() && !cancelled()
@@ -256,20 +281,99 @@ jobs:
 
           gh release upload "$TAG" release-artifacts/* --clobber --repo "$GH_REPO"
 
+  publish-main:
+    if: github.ref == 'refs/heads/main'
+    needs: [binary]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download binary artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: lince-binary-artifacts-*
+          path: release-artifacts
+          merge-multiple: true
+
       - name: Package prebuilt Nix flake
         shell: bash
         run: |
-          python3 scripts/ci/package-nix.py \
-            --repository "$GITHUB_REPOSITORY" \
-            --tag "$ROLLING_TAG" \
-            --revision "$GITHUB_SHA"
+          python3 - <<'PY'
+          import base64
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          import tarfile
+          import tempfile
+          import tomllib
+
+          artifacts = Path('release-artifacts')
+          asset = artifacts / 'lince-x86_64-unknown-linux-gnu.tar.gz'
+          checksum = hashlib.sha256(asset.read_bytes()).digest()
+          version = tomllib.loads(Path('Cargo.toml').read_text())['workspace']['package']['version']
+          release = {
+              'version': version,
+              'revision': os.environ['GITHUB_SHA'],
+              'url': f"https://github.com/{os.environ['GITHUB_REPOSITORY']}/releases/download/main-binary/{asset.name}",
+              'hash': 'sha256-' + base64.b64encode(checksum).decode(),
+          }
+          with tempfile.TemporaryDirectory() as temporary:
+              root = Path(temporary) / 'lince'
+              root.mkdir()
+              for name in ('flake.nix', 'flake.lock', 'Cargo.toml'):
+                  (root / name).write_bytes(Path(name).read_bytes())
+              (root / 'institute').mkdir()
+              (root / 'institute' / 'institute.nix').write_bytes(Path('institute/institute.nix').read_bytes())
+              (root / 'binary.json').write_text(json.dumps(release, indent=2) + '\n')
+              destination = artifacts / 'lince-flake.tar.gz'
+              with tarfile.open(destination, 'w:gz') as archive:
+                  archive.add(root, arcname='lince')
+          digest = hashlib.sha256(destination.read_bytes()).hexdigest()
+          (artifacts / 'lince-flake.tar.gz.sha256').write_text(f'{digest}  {destination.name}\n')
+          PY
 
       - name: Publish main binaries for NixOS
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
         shell: bash
-        run: bash scripts/ci/publish-main.sh
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          archives=(release-artifacts/lince-*.tar.gz release-artifacts/lince-*.zip)
+          if [ "${#archives[@]}" -eq 0 ]; then
+            echo "No binary archives found" >&2
+            exit 1
+          fi
+          assets=()
+          for archive in "${archives[@]}"; do
+            if [ "$archive" = release-artifacts/lince-flake.tar.gz ]; then continue; fi
+            assets+=("$archive")
+            for sidecar in "$archive.sha256" "$archive.target"; do
+              if [ -f "$sidecar" ]; then assets+=("$sidecar"); fi
+            done
+          done
+          if [ "${#assets[@]}" -eq 0 ]; then
+            echo "No native binary archives found" >&2
+            exit 1
+          fi
+          if ! gh release view main-binary --repo "$GH_REPO" >/dev/null 2>&1; then
+            gh release create main-binary \
+              --repo "$GH_REPO" \
+              --target "$GITHUB_SHA" \
+              --title "Lince main binaries" \
+              --prerelease \
+              --notes "Native binaries and a prebuilt Nix flake from the latest successful main build."
+          fi
+          gh release upload main-binary "${assets[@]}" --clobber --repo "$GH_REPO"
+          gh release upload main-binary \
+            release-artifacts/lince-flake.tar.gz \
+            release-artifacts/lince-flake.tar.gz.sha256 \
+            --clobber --repo "$GH_REPO"
 
   publish-tag:
     if: startsWith(github.ref, 'refs/tags/')
@@ -352,3 +456,55 @@ jobs:
         with:
           body_path: RELEASE_NOTES.md
           files: release-artifacts/*
+
+  deploy-nixos:
+    needs: [binary, publish-main, publish-rolling]
+    if: ${{ always() && needs.binary.result == 'success' && ((github.ref == 'refs/heads/main' && needs.publish-main.result == 'success') || github.ref == 'refs/heads/dev') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    continue-on-error: true
+
+    steps:
+      - name: Rebuild NixOS server and restart Lince
+        uses: appleboy/ssh-action@v1.2.0
+        env:
+          LINCE_REVISION: ${{ github.sha }}
+          LINCE_BRANCH: ${{ github.ref_name }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: LINCE_REVISION,LINCE_BRANCH
+          command_timeout: 25m
+          script: |
+            bash <<'BASH'
+            set -euo pipefail
+            if [ ! -d /sys/firmware/efi ] || [ "$(findmnt -no FSTYPE /)" != ext4 ] \
+              || [ "$(findmnt -no FSTYPE /boot)" != vfat ] \
+              || [ "$(readlink -f /dev/disk/by-label/nixos)" != "$(readlink -f "$(findmnt -no SOURCE /)")" ] \
+              || [ "$(readlink -f /dev/disk/by-label/ESP)" != "$(readlink -f "$(findmnt -no SOURCE /boot)")" ]; then
+              echo "Server boot mode or disk mounts do not match institute/institute.nix" >&2
+              exit 1
+            fi
+            if ! sudo test -s /var/lib/lince/initial-admin-password; then
+              echo "Missing /var/lib/lince/initial-admin-password" >&2
+              exit 1
+            fi
+            if [ "$LINCE_BRANCH" = main ]; then
+              deploy_dir=$(mktemp -d)
+              trap 'rm -rf "$deploy_dir"' EXIT
+              curl -fL https://github.com/lince-social/lince/releases/download/main-binary/lince-flake.tar.gz \
+                -o "$deploy_dir/lince-flake.tar.gz"
+              tar -xzf "$deploy_dir/lince-flake.tar.gz" -C "$deploy_dir"
+              if ! grep -Fq "\"revision\": \"$LINCE_REVISION\"" "$deploy_dir/lince/binary.json"; then
+                echo "Published binary does not match this commit" >&2
+                exit 1
+              fi
+              flake_ref="$deploy_dir/lince#manas-organ"
+            else
+              flake_ref="github:lince-social/lince/$LINCE_REVISION#manas-organ"
+            fi
+            sudo nixos-rebuild switch --flake "$flake_ref" --refresh
+            sudo systemctl restart lince.service
+            sudo systemctl status lince.service --no-pager -l
+            BASH

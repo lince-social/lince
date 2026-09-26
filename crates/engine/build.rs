@@ -4,11 +4,11 @@ fn main() {
     sensei::teach(std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"));
 
     let dir = Path::new(&std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"))
-        .join("../../anicca");
+        .join("../../institute/anicca");
     println!("cargo:rerun-if-changed={}", dir.display());
 
     let mut files: Vec<_> = std::fs::read_dir(&dir)
-        .unwrap_or_else(|error| panic!("anicca/ must exist ({}): {error}", dir.display()))
+        .unwrap_or_else(|error| panic!("institute/anicca/ must exist ({}): {error}", dir.display()))
         .filter_map(|entry| entry.ok().map(|entry| entry.path()))
         .filter(|path| path.extension().and_then(|extension| extension.to_str()) == Some("lingua"))
         .collect();

@@ -13,7 +13,7 @@ impl Rule for NoComments {
     }
 
     fn remedy(&self) -> &'static str {
-        "The reasoning belongs in a Record under anicca/, which is versioned, linked and searchable. Delete them and this crate compiles. A comment is spared only when it is attribution a dependency requires: SPDX-License-Identifier, Copyright, Licensed under, License:, Licence:, Credits:, Vendored from, Upstream:, @generated."
+        "The reasoning belongs in a Record under institute/anicca/, which is versioned, linked and searchable. Delete them and this crate compiles. A comment is spared only when it is attribution a dependency requires: SPDX-License-Identifier, Copyright, Licensed under, License:, Licence:, Credits:, Vendored from, Upstream:, @generated."
     }
 
     fn inspect(&self, source: &str) -> Vec<Finding> {

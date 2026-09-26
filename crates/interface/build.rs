@@ -1,4 +1,5 @@
 mod build_freedoom;
+mod icon_art;
 
 fn main() {
     sensei::teach(std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR"));
@@ -18,63 +19,11 @@ fn main() {
         return;
     }
     build_freedoom::compile();
-    let names = [
-        "minus",
-        "plus",
-        "rotate-ccw",
-        "crosshair",
-        "bring-to-front",
-        "paintbrush",
-        "x",
-        "check",
-        "layers",
-        "palette",
-        "store",
-        "save",
-        "pencil",
-        "type",
-        "text-cursor-input",
-        "arrow-down-to-line",
-        "move-vertical",
-        "circle",
-        "square",
-        "info",
-        "bell",
-        "pin",
-        "forward",
-        "backward",
-        "back",
-        "delete",
-        "general",
-        "group",
-        "ungroup",
-        "attract",
-        "repel",
-        "play",
-        "stop",
-        "previous",
-        "next",
-        "person",
-        "engine",
-        "credits",
-    ];
-    let height = names.len().div_ceil(5) as u32 * 128;
-    let mut sources = Vec::new();
-    for (index, name) in names.iter().enumerate() {
-        let directory = if index < 21 { "lucide" } else { "lince" };
-        let path = format!("../../assets/icons/{directory}/{name}.svg");
-        println!("cargo:rerun-if-changed={path}");
-        sources.push(std::fs::read_to_string(path).expect("read icon"));
-    }
+    println!("cargo:rerun-if-changed=icon_art.rs");
+    let height = icon_art::COUNT.div_ceil(5) as u32 * 128;
     let output = std::path::PathBuf::from(std::env::var_os("OUT_DIR").unwrap());
     let atlas_path = output.join("icons.rgba");
-    println!("cargo:rerun-if-changed={}", atlas_path.display());
-    let inputs = [
-        include_str!("build.rs"),
-        include_str!("../../Cargo.lock"),
-        &sources.join("\0"),
-    ]
-    .join("\0");
+    let inputs = [include_str!("build.rs"), include_str!("icon_art.rs")].join("\0");
     let stamp = output.join("icons.inputs");
     if std::fs::read_to_string(&stamp).ok().as_deref() == Some(&inputs)
         && std::fs::metadata(&atlas_path)
@@ -86,8 +35,8 @@ fn main() {
         std::fs::remove_file(&stamp).expect("invalidate icon inputs");
     }
     let mut atlas = resvg::tiny_skia::Pixmap::new(640, height).unwrap();
-    for (index, source) in sources.iter().enumerate() {
-        let source = source.replace("currentColor", "white");
+    for index in 0..icon_art::COUNT {
+        let source = icon_art::source(index).replace("currentColor", "white");
         let tree = resvg::usvg::Tree::from_data(source.as_bytes(), &Default::default())
             .expect("parse icon");
         let transform = resvg::tiny_skia::Transform::from_scale(128.0 / 24.0, 128.0 / 24.0)

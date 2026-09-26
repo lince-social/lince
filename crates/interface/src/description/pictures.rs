@@ -240,7 +240,7 @@ mod tests {
         assert!(decode(vec![0; MAX_BYTES + 1]).is_err());
         assert!(decode(b"not an image".to_vec()).is_err());
         let (width, height, pixels) =
-            decode(include_bytes!("../../../../assets/logo/black_in_white.png").to_vec()).unwrap();
+            decode(include_bytes!("../../../../institute/assets/logo/black_in_white.png").to_vec()).unwrap();
         assert_eq!(pixels.len(), (width * height * 4) as usize);
     }
 
@@ -258,7 +258,7 @@ mod tests {
         let source = format!(
             "data:image/png;base64,{}",
             base64::engine::general_purpose::STANDARD
-                .encode(include_bytes!("../../../../assets/logo/black_in_white.png"))
+                .encode(include_bytes!("../../../../institute/assets/logo/black_in_white.png"))
         );
         let runtime = tokio::runtime::Builder::new_current_thread()
             .enable_all()

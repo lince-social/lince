@@ -1,7 +1,0 @@
-Frequency daily {
-    title "Daily"
-    quantity 0
-    every 1 day
-    timezone "UTC"
-    next_at 2026-09-20T00:22:09.987+00:00
-} ^r_01M30NGKS68QZAW5N258FB80Y5

@@ -378,10 +378,10 @@ impl FromWorld for Fonts {
         let mut assets = world.resource_mut::<Assets<Font>>();
         Self {
             bold: assets.add(Font::from_bytes(
-                include_bytes!("../../../assets/fonts/Lato/Lato-Bold.ttf").to_vec(),
+                include_bytes!("../../../institute/assets/fonts/Lato/Lato-Bold.ttf").to_vec(),
             )),
             italic: assets.add(Font::from_bytes(
-                include_bytes!("../../../assets/fonts/Lato/Lato-Italic.ttf").to_vec(),
+                include_bytes!("../../../institute/assets/fonts/Lato/Lato-Italic.ttf").to_vec(),
             )),
         }
     }

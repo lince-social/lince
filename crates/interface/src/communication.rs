@@ -52,9 +52,14 @@ pub const CREDITS: &[crate::credits::Attribution] = &[
         license: include_str!("communication/vendor/rustls-LICENSE.txt"),
     },
     crate::credits::Attribution {
-        name: "RustCrypto TLS provider",
-        author: "The RustCrypto contributors",
-        license: include_str!("communication/vendor/rustls-rustcrypto-LICENSE.txt"),
+        name: "AWS-LC Rust bindings",
+        author: "AWS Cryptography and contributors",
+        license: include_str!("communication/vendor/aws-lc-rs-LICENSE.txt"),
+    },
+    crate::credits::Attribution {
+        name: "AWS-LC cryptography",
+        author: "AWS Cryptography, BoringSSL, OpenSSL, and contributors",
+        license: include_str!("communication/vendor/aws-lc-LICENSE.txt"),
     },
     crate::credits::Attribution {
         name: "X11RB screen capture",

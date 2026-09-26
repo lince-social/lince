@@ -1,6 +1,0 @@
-{ ... }:
-{
-  imports = [
-    ./manas-organ.nix
-  ];
-}

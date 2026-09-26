@@ -93,7 +93,7 @@ struct StoreFont(Handle<Font>);
 impl FromWorld for StoreFont {
     fn from_world(world: &mut World) -> Self {
         Self(world.resource_mut::<Assets<Font>>().add(Font::from_bytes(
-            include_bytes!("../../../assets/fonts/Lato/Lato-Bold.ttf").to_vec(),
+            include_bytes!("../../../institute/assets/fonts/Lato/Lato-Bold.ttf").to_vec(),
         )))
     }
 }

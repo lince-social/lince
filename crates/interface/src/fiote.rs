@@ -94,7 +94,7 @@ pub fn spawn(world: &mut World, parent: Entity) -> Entity {
     if !world.contains_resource::<Logo>() {
         world.init_resource::<Assets<Image>>();
         let image =
-            image::load_from_memory(include_bytes!("../../../assets/logo/black_in_white.png"))
+            image::load_from_memory(include_bytes!("../../../institute/assets/logo/black_in_white.png"))
                 .expect("Lince logo")
                 .to_rgba8();
         let handle = world.resource_mut::<Assets<Image>>().add(Image::new(

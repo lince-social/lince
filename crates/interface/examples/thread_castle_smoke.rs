@@ -26,7 +26,7 @@ fn main() {
         .unwrap();
     let (cell, record) = runtime.block_on(async {
         let mut png = std::io::Cursor::new(Vec::new());
-        image::load_from_memory(include_bytes!("../../../assets/logo/black_in_white.png")).unwrap().thumbnail(64, 64).write_to(&mut png, image::ImageFormat::Png).unwrap();
+        image::load_from_memory(include_bytes!("../../../institute/assets/logo/black_in_white.png")).unwrap().thumbnail(64, 64).write_to(&mut png, image::ImageFormat::Png).unwrap();
         let embedded_logo = base64::engine::general_purpose::STANDARD.encode(png.into_inner());
         let engine = Arc::new(engine::Engine::open_memory().await.unwrap());
         let record = engine.act(engine::actions::Action::CreateRecord { slug: Some("thread-smoke".into()), kind: nucleus::RecordKind::Plain, head: "Thread test".into(), body: String::new(), quantity: 1.0 }, None).await.unwrap().created.unwrap();

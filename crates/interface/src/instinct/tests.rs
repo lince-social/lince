@@ -26,6 +26,23 @@ fn click(world: &mut World, owner: Entity, tip: &str) {
 }
 
 #[cfg_attr(test, test)]
+fn load_errors_are_shown_without_panicking() {
+    let (mut app, root) = fixture();
+    let world = app.world_mut();
+    let error = "institute/anicca/Broken.lingua: malformed Record";
+    world.insert_resource(Book(Arc::from([]), Arc::from([]), Some(error.into())));
+    spawn(world, root, 1, DVec2::ZERO, Instinct::default());
+    world.flush();
+    let text: Vec<_> = world
+        .query::<&Text>()
+        .iter(world)
+        .map(|text| text.0.as_str())
+        .collect();
+    assert!(text.contains(&"Instinct could not be loaded."));
+    assert!(text.contains(&error));
+}
+
+#[cfg_attr(test, test)]
 fn pages_embed_records_and_navigation_is_independent_and_bounded() {
     let (mut app, root) = fixture();
     let world = app.world_mut();
@@ -35,7 +52,7 @@ fn pages_embed_records_and_navigation_is_independent_and_bounded() {
     let book = world.resource::<Book>().0.clone();
     assert_eq!(book[0].id, "philosophy");
     assert_eq!(book[1].id, "tool");
-    let records = engine::instinct::records();
+    let records = engine::instinct::records().unwrap();
     let record = records
         .iter()
         .find(|record| record.slug.as_deref() == Some("record"))
@@ -127,6 +144,7 @@ fn saved_reader_restores_geometry_and_selection_without_copying_the_book() {
 }
 
 crate::laboratory_cases! {
+    load_errors_are_shown_without_panicking,
     child_records_are_ordered_indented_and_restore_their_section,
     pages_embed_records_and_navigation_is_independent_and_bounded,
     saved_reader_restores_geometry_and_selection_without_copying_the_book,
@@ -138,7 +156,7 @@ fn child_records_are_ordered_indented_and_restore_their_section() {
     let world = app.world_mut();
     let reader = spawn(world, root, 1, DVec2::ZERO, Instinct::default());
     let entries = world.resource::<Book>().1.clone();
-    let records = engine::instinct::records();
+    let records = engine::instinct::records().unwrap();
     assert_eq!(
         entries.iter().map(|entry| &entry.uid).collect::<Vec<_>>(),
         records

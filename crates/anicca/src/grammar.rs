@@ -112,7 +112,7 @@ pub mod grammar {
     );
     #[derive(Debug, Clone, PartialEq, Eq)]
     pub struct Description(
-        #[rust_sitter::leaf(pattern = r#"\n(?:[^}\n][^\n]*|}[ \t]+\"[^\n]*)?(?:\n(?:[^}\n][^\n]*|}[ \t]+\"[^\n]*)?)*"#, transform = |v| v.strip_prefix('\n').unwrap_or(v).to_string())]
+        #[rust_sitter::leaf(pattern = r#"\n(?:[ \t]*[^}`~ \t\n][^\n]*|[ \t]+}[^\n]*|[ \t]+|[ \t]*`{1,2}(?:[^`\n][^\n]*)?|[ \t]*~{1,2}(?:[^~\n][^\n]*)?|}[ \t]+\"[^\n]*|[ \t]*```[^`\n]*\n(?:[^`]|`[^`]|``[^`])*```[^\n]*|[ \t]*~~~[^~\n]*\n(?:[^~]|~[^~]|~~[^~])*~~~[^\n]*)?(?:\n(?:[ \t]*[^}`~ \t\n][^\n]*|[ \t]+}[^\n]*|[ \t]+|[ \t]*`{1,2}(?:[^`\n][^\n]*)?|[ \t]*~{1,2}(?:[^~\n][^\n]*)?|}[ \t]+\"[^\n]*|[ \t]*```[^`\n]*\n(?:[^`]|`[^`]|``[^`])*```[^\n]*|[ \t]*~~~[^~\n]*\n(?:[^~]|~[^~]|~~[^~])*~~~[^\n]*)?)*"#, transform = |v| v.strip_prefix('\n').unwrap_or(v).to_string())]
         pub String,
     );
     #[derive(Debug, Clone, PartialEq, Eq)]

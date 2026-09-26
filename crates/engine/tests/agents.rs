@@ -158,7 +158,7 @@ async fn importing_instinct_puts_the_documentation_in_the_store() {
     let outcome = e.act(Action::ImportInstinct, None).await.unwrap();
     assert!(outcome.created.is_some(), "something was made");
 
-    let bundle = engine::instinct::records();
+    let bundle = engine::instinct::records().unwrap();
     for record in &bundle {
         let uid = record.projection.uid.trim();
         let row = store::records::get(&e.store.pool, uid)
@@ -221,7 +221,7 @@ async fn importing_instinct_puts_the_documentation_in_the_store() {
 async fn a_second_import_leaves_your_edits_alone() {
     let e = cell().await;
     e.act(Action::ImportInstinct, None).await.unwrap();
-    let uid = engine::instinct::records()[0]
+    let uid = engine::instinct::records().unwrap()[0]
         .projection
         .uid
         .trim()

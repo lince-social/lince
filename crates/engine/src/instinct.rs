@@ -165,14 +165,14 @@ impl BundledRecord {
     }
 }
 
-pub fn records() -> Vec<BundledRecord> {
+pub fn records() -> Result<Vec<BundledRecord>, anicca::Diagnostic> {
     records_from(BUNDLE)
 }
 
-fn records_from(sources: &[(&str, &str)]) -> Vec<BundledRecord> {
+fn records_from(sources: &[(&str, &str)]) -> Result<Vec<BundledRecord>, anicca::Diagnostic> {
     let mut projected = Vec::new();
     for (name, source) in sources {
-        projected.extend(project_source(name, source));
+        projected.extend(project_source(name, source)?);
     }
     projected.retain(|record| {
         record
@@ -202,28 +202,33 @@ fn records_from(sources: &[(&str, &str)]) -> Vec<BundledRecord> {
                 .assertions
                 .into_iter()
                 .map(|assertion| {
-                    let object = assertion.object_slug.as_ref().map(|slug| {
-                        let uid = identities
-                            .get(slug)
-                            .unwrap_or_else(|| {
-                                panic!("@{slug} does not resolve in institute/anicca/")
+                    let object = assertion
+                        .object_slug
+                        .as_ref()
+                        .map(|slug| {
+                            let uid = identities
+                                .get(slug)
+                                .ok_or_else(|| anicca::Diagnostic {
+                                    path: Some("institute/anicca".into()),
+                                    message: format!("@{slug} does not resolve"),
+                                })?
+                                .clone();
+                            Ok(Link {
+                                title: titles.get(&uid).cloned().unwrap_or_default(),
+                                uid,
                             })
-                            .clone();
-                        Link {
-                            title: titles.get(&uid).cloned().unwrap_or_default(),
-                            uid,
-                        }
-                    });
-                    Line {
+                        })
+                        .transpose()?;
+                    Ok(Line {
                         predicate: assertion.predicate,
                         identity: assertion.identity,
                         object,
                         quantity: assertion.quantity,
                         unit: assertion.unit,
-                    }
+                    })
                 })
-                .collect();
-            BundledRecord {
+                .collect::<Result<_, anicca::Diagnostic>>()?;
+            Ok(BundledRecord {
                 slug: record.slug,
                 head: record.head,
                 projection: Projection {
@@ -232,9 +237,9 @@ fn records_from(sources: &[(&str, &str)]) -> Vec<BundledRecord> {
                     quantity: record.quantity,
                 },
                 body: record.body,
-            }
+            })
         })
-        .collect();
+        .collect::<Result<_, anicca::Diagnostic>>()?;
 
     let snapshot = output.clone();
     let paths: HashMap<_, _> = snapshot
@@ -261,23 +266,58 @@ fn records_from(sources: &[(&str, &str)]) -> Vec<BundledRecord> {
             })
             .unwrap_or_else(|| left_path.len().cmp(&right_path.len()))
     });
-    output
+    Ok(output)
 }
 
-fn project_source(name: &str, source: &str) -> Vec<anicca::ProjectedRecord> {
-    let (identified, _) = anicca::ensure_uids(source).unwrap_or_else(|error| {
-        panic!("institute/anicca/{name} cannot receive identities: {error}")
-    });
-    let document = anicca::parse(&identified)
-        .unwrap_or_else(|error| panic!("institute/anicca/{name} is malformed: {error}"));
-    anicca::project(&document)
-        .unwrap_or_else(|error| panic!("institute/anicca/{name} cannot be projected: {error}"))
-        .records
+fn project_source(
+    name: &str,
+    source: &str,
+) -> Result<Vec<anicca::ProjectedRecord>, anicca::Diagnostic> {
+    let with_path = |mut error: anicca::Diagnostic| {
+        error.path = Some(std::path::Path::new("institute/anicca").join(name));
+        error
+    };
+    let (identified, _) = anicca::ensure_uids(source).map_err(with_path)?;
+    let document = anicca::parse(&identified).map_err(with_path)?;
+    Ok(anicca::project(&document).map_err(with_path)?.records)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn malformed_sources_return_their_path_without_partial_records() {
+        let error = records_from(&[
+            ("Valid.lingua", "Valid (@valid: 0, #instinct) {\nText.\n}\n"),
+            ("Broken.lingua", "Broken (@broken: 0) {\nText.\n"),
+        ])
+        .unwrap_err();
+        assert_eq!(
+            error.path.as_deref(),
+            Some(std::path::Path::new("institute/anicca/Broken.lingua"))
+        );
+    }
+
+    #[test]
+    fn unresolved_links_return_an_error() {
+        let error = records_from(&[(
+            "Missing.lingua",
+            "Child (@child: 0, #instinct, #part-of @missing) {\nText.\n}\n",
+        )])
+        .unwrap_err();
+        assert!(error.to_string().contains("@missing does not resolve"));
+    }
+
+    #[test]
+    fn invalid_projection_returns_an_error() {
+        let error = records_from(&[(
+            "Ambiguous.lingua",
+            "Ambiguous (0, #instinct, is #task, is #chapter) {\nText.\n}\n",
+        )])
+        .unwrap_err();
+        assert!(error.to_string().contains("more than one identity"));
+    }
 
     #[test]
     fn instinct_and_part_of_amounts_order_pages_and_their_contents() {
@@ -303,7 +343,8 @@ Not included (@excluded: 0) {
 Hidden.
 }
 "#,
-        )]);
+        )])
+        .unwrap();
         let slugs: Vec<_> = records
             .iter()
             .map(|record| record.slug.as_deref().unwrap())
@@ -332,7 +373,8 @@ Z child (@a-child: 0, is #chapter, #instinct, #part-of @a: 2) {
 A child.
 }
 "#,
-        )]);
+        )])
+        .unwrap();
         assert_eq!(
             records
                 .iter()
@@ -344,7 +386,7 @@ A child.
 
     #[test]
     fn philosophy_and_tool_are_the_first_bundled_pages() {
-        let records = records();
+        let records = records().unwrap();
         let pages: Vec<_> = records.iter().filter(|record| record.is_entry()).collect();
         assert_eq!(pages[0].slug.as_deref(), Some("philosophy"));
         assert_eq!(pages[1].slug.as_deref(), Some("tool"));
@@ -355,7 +397,8 @@ A child.
         let records = project_source(
             "Example.lingua",
             "Example (@example: 1, #instinct) {\nText.\n}\n",
-        );
+        )
+        .unwrap();
 
         assert_eq!(records.len(), 1);
         assert_eq!(records[0].slug.as_deref(), Some("example"));
@@ -364,7 +407,7 @@ A child.
 
     #[test]
     fn bundle_is_the_valid_root_anicca_tree() {
-        let records = records();
+        let records = records().unwrap();
         assert!(!records.is_empty());
         let roots: Vec<&str> = records
             .iter()
@@ -377,7 +420,7 @@ A child.
 
     #[test]
     fn every_parent_precedes_its_children() {
-        let records = records();
+        let records = records().unwrap();
         for (index, record) in records.iter().enumerate() {
             let Some(parent) = record.parent_uid() else {
                 continue;

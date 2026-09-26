@@ -98,11 +98,17 @@ impl Plugin for InstinctPlugin {
 }
 
 #[derive(Resource)]
-struct Book(Arc<[Page]>, Arc<[Entry]>);
+struct Book(Arc<[Page]>, Arc<[Entry]>, Option<String>);
 
 impl Default for Book {
     fn default() -> Self {
-        let records = engine::instinct::records();
+        let records = match engine::instinct::records() {
+            Ok(records) => records,
+            Err(error) => {
+                warn!(%error, "could not load Instinct");
+                return Self(Arc::from([]), Arc::from([]), Some(error.to_string()));
+            }
+        };
         Self(
             records
                 .iter()
@@ -147,6 +153,7 @@ impl Default for Book {
                     }
                 })
                 .collect(),
+            None,
         )
     }
 }

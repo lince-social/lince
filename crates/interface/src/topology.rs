@@ -47,6 +47,7 @@ impl Plugin for TopologyPlugin {
                     view::synchronize,
                     assets::update,
                     area_summary::update,
+                    area_summary::hover,
                     presentation::synchronize,
                     areas::update,
                     area_reach::update,

@@ -242,7 +242,7 @@ pub fn pointer(
         }
     }
     if let Some((owner, hit)) = hit_owner {
-        if !mode.enabled
+        if (!mode.enabled || areas.contains(owner))
             && let Ok(surface) = surfaces.get(owner)
             && let Ok((_, transform)) = owners.get(surface.face)
         {
@@ -428,6 +428,9 @@ pub fn gestures(world: &mut World, mut cursor: Local<MessageCursor<PointerInput>
         }
         match event.action {
             PointerAction::Press(PointerButton::Primary) => {
+                if super::area_summary::over_behavior(world) {
+                    continue;
+                }
                 let Some((entity, _)) = hit else {
                     world.resource_mut::<PointerState>().pan = Some(event.location.position);
                     continue;
@@ -636,7 +639,7 @@ pub(crate) mod tests {
     use crate::canvas::CanvasView;
 
     #[test]
-    fn area_controls_receive_pointer_input_in_normal_mode() {
+    fn area_controls_receive_pointer_input_in_both_modes() {
         use bevy::{camera::CameraProjection, math::DVec2};
         for editing in [false, true] {
             let (mut app, root) = crate::edit_mode::tests::fixture();
@@ -721,7 +724,7 @@ pub(crate) mod tests {
             app.update();
             let state = app.world().resource::<PointerState>();
             assert_eq!(state.hit.map(|(entity, _)| entity), Some(owner));
-            assert_eq!(state.cursor.is_some(), !editing);
+            assert!(state.cursor.is_some());
             if let Some(location) = &state.cursor {
                 assert!(location.position.abs_diff_eq(Vec2::splat(100.0), 0.001));
             }
@@ -733,7 +736,7 @@ pub(crate) mod tests {
                         event.pointer_id == CONTENT_POINTER
                             && matches!(event.action, PointerAction::Press(PointerButton::Primary))
                     }),
-                !editing
+                true
             );
         }
     }

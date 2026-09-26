@@ -150,6 +150,11 @@ pub(super) fn render(world: &mut World, owner: Entity) {
         .id();
     world.get_mut::<View>(owner).unwrap().body = Some(body);
     label(world, body, "Instinct", 18.0);
+    if let Some(error) = world.resource::<Book>().2.clone() {
+        label(world, body, "Instinct could not be loaded.", 16.0);
+        label(world, body, &error, 14.0);
+        return;
+    }
     let Some(page) = pages.get(index) else {
         label(world, body, "No Instinct Records are embedded.", 16.0);
         return;

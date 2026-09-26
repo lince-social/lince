@@ -24,22 +24,20 @@ env:
 
 jobs:
   binary:
+    if: github.ref != 'refs/heads/dev'
+    name: binary (${{ matrix.variant }}, ${{ matrix.os }}, ${{ matrix.target }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
+    timeout-minutes: 120
 
     strategy:
       fail-fast: false
       matrix:
+        os: [ubuntu-24.04]
+        target: [x86_64-unknown-linux-gnu]
+        variant: [native]
         include:
           - os: ubuntu-24.04
-            target: x86_64-unknown-linux-gnu
             extension: ""
-          # - os: macos-latest
-          #   target: aarch64-apple-darwin
-          #   extension: ""
-          # - os: windows-latest
-          #   target: x86_64-pc-windows-msvc
-          #   extension: ".exe"
 
     steps:
       - uses: actions/checkout@v4
@@ -94,21 +92,44 @@ jobs:
             ~/.cargo/git
             target/release
             target/${{ matrix.target }}/release
-          key: binary-v2-${{ matrix.os }}-${{ matrix.target }}-${{ steps.rust.outputs.cachekey }}-${{ hashFiles('.cargo/config.toml') }}-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}
+          key: binary-v2-${{ matrix.os }}-${{ matrix.target }}-${{ steps.rust.outputs.cachekey }}-${{ matrix.variant }}-${{ hashFiles('.cargo/config.toml') }}-${{ hashFiles('Cargo.lock') }}-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
           restore-keys: |
-            binary-v2-${{ matrix.os }}-${{ matrix.target }}-${{ steps.rust.outputs.cachekey }}-${{ hashFiles('.cargo/config.toml') }}-${{ hashFiles('Cargo.lock') }}-
-            binary-v2-${{ matrix.os }}-${{ matrix.target }}-${{ steps.rust.outputs.cachekey }}-${{ hashFiles('.cargo/config.toml') }}-
+            binary-v2-${{ matrix.os }}-${{ matrix.target }}-${{ steps.rust.outputs.cachekey }}-${{ matrix.variant }}-${{ hashFiles('.cargo/config.toml') }}-${{ hashFiles('Cargo.lock') }}-
+            binary-v2-${{ matrix.os }}-${{ matrix.target }}-${{ steps.rust.outputs.cachekey }}-${{ matrix.variant }}-${{ hashFiles('.cargo/config.toml') }}-
+            binary-v2-${{ matrix.os }}-${{ matrix.target }}-${{ steps.rust.outputs.cachekey }}-${{ matrix.variant }}-
+            binary-v2-${{ matrix.os }}-${{ matrix.target }}-${{ steps.rust.outputs.cachekey }}-
 
       - name: Build native Lince
-        if: github.ref != 'refs/heads/dev'
+        if: matrix.variant == 'native'
+        timeout-minutes: 105
         env:
           LINCE_REVISION: ${{ github.sha }}
           BUILD_TARGET: ${{ matrix.target }}
         run: cargo build --release --locked --package lince --target "$BUILD_TARGET" --timings
         shell: bash
 
+      - name: Build headless Lince for NixOS server
+        if: matrix.variant == 'headless'
+        timeout-minutes: 105
+        env:
+          LINCE_REVISION: ${{ github.sha }}
+          BUILD_TARGET: ${{ matrix.target }}
+        shell: bash
+        run: cargo build --release --locked --package lince --no-default-features --target "$BUILD_TARGET" --timings
+
+      - name: Save compiled crates
+        if: ${{ !cancelled() && steps.cache.outputs.cache-primary-key != '' && steps.cache.outputs.cache-hit != 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target/release
+            target/${{ matrix.target }}/release
+          key: ${{ steps.cache.outputs.cache-primary-key }}
+
       - name: Package binary
-        if: github.ref != 'refs/heads/dev'
+        if: matrix.variant == 'native'
         env:
           BUILD_TARGET: ${{ matrix.target }}
           BINARY_EXTENSION: ${{ matrix.extension }}
@@ -138,7 +159,7 @@ jobs:
           printf '%s\n' "$BUILD_TARGET" > "binary-artifacts/$asset.target"
 
       - name: Upload binaries
-        if: github.ref != 'refs/heads/dev'
+        if: matrix.variant == 'native'
         uses: actions/upload-artifact@v4
         with:
           name: lince-binary-artifacts-${{ matrix.target }}
@@ -147,16 +168,8 @@ jobs:
           retention-days: 7
           compression-level: 0
 
-      - name: Build headless Lince for NixOS server
-        if: runner.os == 'Linux' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-        env:
-          LINCE_REVISION: ${{ github.sha }}
-          BUILD_TARGET: ${{ matrix.target }}
-        shell: bash
-        run: cargo build --release --locked --package lince --no-default-features --target "$BUILD_TARGET" --timings
-
       - name: Package headless binary
-        if: runner.os == 'Linux' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+        if: matrix.variant == 'headless'
         env:
           BUILD_TARGET: ${{ matrix.target }}
         shell: bash
@@ -166,7 +179,7 @@ jobs:
           printf '%s\n' "$GITHUB_SHA" > server-artifacts/revision
 
       - name: Upload headless binary
-        if: runner.os == 'Linux' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+        if: matrix.variant == 'headless'
         uses: actions/upload-artifact@v4
         with:
           name: lince-server-artifacts-${{ matrix.target }}
@@ -175,23 +188,14 @@ jobs:
           retention-days: 7
           compression-level: 0
 
-      - name: Save compiled crates
-        if: steps.cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target/release
-            target/${{ matrix.target }}/release
-          key: ${{ steps.cache.outputs.cache-primary-key }}
-
       - name: Upload build timings
         if: always() && !cancelled()
         uses: actions/upload-artifact@v4
         with:
-          name: build-timings-${{ matrix.target }}
-          path: target/cargo-timings/*.html
+          name: build-timings-${{ matrix.variant }}-${{ matrix.target }}
+          path: |
+            target/cargo-timings/*.html
+            target/${{ matrix.target }}/cargo-timings/*.html
           if-no-files-found: ignore
           retention-days: 7
 

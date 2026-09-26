@@ -4096,10 +4096,11 @@ impl Engine {
                 }
             }
             Action::ImportInstinct => {
+                let bundle = crate::instinct::records()
+                    .map_err(|error| EngineError::Consequence(error.to_string()))?;
                 for name in crate::instinct::VOCABULARY {
                     store::concepts::ensure(&self.store.pool, name).await?;
                 }
-                let bundle = crate::instinct::records();
                 let mut fresh = Vec::new();
                 for record in &bundle {
                     let uid = record.projection.uid.trim();

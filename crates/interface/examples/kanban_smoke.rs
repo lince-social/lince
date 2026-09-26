@@ -297,6 +297,7 @@ async fn main() {
         .add_plugins(lince_interface::cell_bridge::CellBridgePlugin)
         .insert_resource(lince_interface::wake::WakeSignal::new(|| {}))
         .insert_resource(lince_interface::app::CellHandle(cell::CellRuntime {
+            commands: Default::default(),
             engine: engine.clone(),
             store: engine.store.clone(),
             lanes: Arc::new(cell::LaneHub::new()),

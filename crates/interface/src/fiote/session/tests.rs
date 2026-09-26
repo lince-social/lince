@@ -31,6 +31,7 @@ fn external_login_picker_preserves_fields_during_polling_and_uses_arrow_keys() {
             directory: std::env::current_dir().unwrap(),
             environment: Default::default(),
             session_meta: Default::default(),
+            options: Default::default(),
         }),
         agent_info: Some(
             serde_json::json!({"providers":[{"providerId":"a","name":"First"},{"providerId":"b","name":"Second"}],"selectedProvider":{"fields":[{"key":"KEY","label":"Key","secret":true}]}}),
@@ -163,6 +164,7 @@ async fn native_provider_credentials_remain_separate_from_agent_login() {
             .unwrap(),
     );
     let runtime = cell::CellRuntime {
+        commands: Default::default(),
         store: engine.store.clone(),
         engine: engine.clone(),
         lanes: std::sync::Arc::new(cell::LaneHub::new()),

@@ -118,6 +118,49 @@ impl Action for AddCastle {
 #[derive(Clone)]
 struct AddFiote;
 
+#[derive(Clone)]
+struct AddCommand;
+
+impl Action for AddCommand {
+    fn apply(&self, world: &mut World, root: Entity) {
+        if crate::laboratory::active(world) {
+            return;
+        }
+        let Some(entity) = open(world, root, "pending", Source::Local) else {
+            return;
+        };
+        let mut area = world.get_mut::<crate::area::InfluenceArea>(entity).unwrap();
+        area.name = "Command Castle".into();
+        let config = area.protein.as_mut().unwrap();
+        config.enabled = false;
+        config.command = Some(Default::default());
+        config.width = 820.0;
+        let id = nucleus::new_uid("create-command");
+        let result = crate::sand_panel::send(
+            world,
+            cell::ClientMessage::Act {
+                id: id.clone(),
+                action: engine::actions::Action::CreateRecord {
+                    slug: None,
+                    kind: nucleus::RecordKind::Command,
+                    head: "Command".into(),
+                    body: "printf 'Hello\\n'\n".into(),
+                    quantity: 0.0,
+                },
+            },
+        );
+        match result {
+            Ok(()) => {
+                world.entity_mut(entity).insert(Creating(id));
+            }
+            Err(error) => {
+                world.despawn(entity);
+                crate::notifications::report(world, "interface::command", &error);
+            }
+        }
+    }
+}
+
 impl Action for AddFiote {
     fn apply(&self, world: &mut World, root: Entity) {
         create(world, root);
@@ -225,6 +268,15 @@ pub(crate) fn store_entry(world: &mut World, root: Entity, parent: Entity) {
         world,
         root,
         parent,
+        "Command Castle",
+        "Run a Bash Record locally, interact with its terminal and reopen recent runs.",
+        AddCommand,
+        |world, _| preview(world, false),
+    );
+    crate::sand_store::castle_entry(
+        world,
+        root,
+        parent,
         "Fiote Castle",
         "An agent with its prompt in the description and a session in each thread.",
         AddFiote,
@@ -295,6 +347,7 @@ mod tests {
                 .unwrap(),
         );
         let runtime = cell::CellRuntime {
+            commands: Default::default(),
             engine: engine.clone(),
             store: engine.store.clone(),
             lanes: std::sync::Arc::new(cell::LaneHub::new()),

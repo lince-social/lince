@@ -14,6 +14,15 @@ impl WakeSignal {
     pub fn ring(&self) {
         (self.0)();
     }
+    pub(crate) fn after(&self, delay: std::time::Duration) {
+        if let Ok(runtime) = tokio::runtime::Handle::try_current() {
+            let wake = self.clone();
+            runtime.spawn(async move {
+                tokio::time::sleep(delay).await;
+                wake.ring();
+            });
+        }
+    }
     pub fn from_proxy(proxy: &EventLoopProxyWrapper) -> Self {
         let proxy = (**proxy).clone();
         Self::new(move || {

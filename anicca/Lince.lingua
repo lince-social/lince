@@ -60,6 +60,19 @@ A team is being assembled, to fight the battle of killing Lince. Will you join t
 | "Death is only the beginning" - The Mummy.
 } r_YJQ36ETAKE8J7F8Y65DG7V43MB
 
+
+Installation (@installation: 0, #instinct, #part-of @tool) {
+
+You should be able to run Lince with just ./lince, if you have it on your path, just 'lince', if you downloaded the repository, just 'cargo run'.
+	
+To run the web version, focused on project management and access control, pass the domain for CSRF and listen address for port:
+```bash
+  lince --server --facade \
+    --facade-origin https://lince.mycompany.mydomain \
+    --listen-addr 127.0.0.1:6174
+```
+}
+
 Record (@record: 1, #instinct, #part-of @tool) {
 	
 ### Every Need is one Record
@@ -237,3 +250,14 @@ For File Sync, Lingua is the syntax of the files on disk, that gets a bidirectio
 We call a Vocabulary the bundle of Assertions that come from an Organ, as if we create some dialect, some units, and they mean something to us. When people use the same Vocabulary it is expected that they are speaking about the same thing. So if a Lingua file is for talking to the file system with sync, a Lingua Vocabulary is for talking with other people with common ground. Like a dictionary, with the meanings you give it and Records as examples with text, photo, video, links, all that Records have to make the Vocabulary an encyclopedia of knowledge, each thing that is an identity can be consulted to understand from the Vocabulary this identity belongs to what is it's definition, it's meaning. We can have an Organ deemed by us as the official when talking about a subject, we just such and such Vocabulary. Like a standard, ISO.
 }
 
+
+Areas of Influence (@areas-of-influence: 0, #instinct, #part-of @interface) {
+
+Areas of Influence are shapes you put in the canvas. They can have some logic behind them:
+
+- Protein Spawn: your data can be pulled to the interface, with the schema you chose based on filters and aggregation of data manifested into some sand/castle.
+- Attraction/Repulsion: they can attract sands or repel them. Based on a property from db they hold, or just affect general sands.
+- Changing Properties: when Sands/Castles enter or leave the area, they can gain or lose some property in the records that are represented in the sand (through Protein).
+
+And many more. They are one way to add logic and customization to your experience on the interface.
+}

@@ -36,6 +36,7 @@ async fn fixture() -> State {
     let (_, stop) = tokio::sync::watch::channel(false);
     State {
         cell: cell::CellRuntime {
+            commands: Default::default(),
             store: engine.store.clone(),
             engine,
             lanes: Arc::new(cell::LaneHub::new()),

@@ -559,6 +559,7 @@ async fn area_reads_real_records_preserves_entities_edits_and_deletes_through_ac
         .created
         .unwrap();
     let cell = cell::CellRuntime {
+        commands: Default::default(),
         engine: engine.clone(),
         store: engine.store.clone(),
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
@@ -1016,6 +1017,7 @@ async fn relationship_and_work_log_controls_apply_backend_actions() {
             .unwrap();
     }
     let cell = cell::CellRuntime {
+        commands: Default::default(),
         engine: engine.clone(),
         store: engine.store.clone(),
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
@@ -1412,6 +1414,7 @@ async fn grouping_updates_from_live_record_actions_without_displaying_the_group_
         .created
         .unwrap();
     let cell = cell::CellRuntime {
+        commands: Default::default(),
         engine: engine.clone(),
         store: engine.store.clone(),
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
@@ -1591,6 +1594,7 @@ async fn protein_pull_filters_query_real_properties_without_spawning_and_isolate
         .created
         .unwrap();
     let cell = cell::CellRuntime {
+        commands: Default::default(),
         engine: engine.clone(),
         store: engine.store.clone(),
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
@@ -1876,6 +1880,7 @@ async fn independent_sorting_uses_live_protein_order_without_spawning_and_clears
         );
     }
     let cell = cell::CellRuntime {
+        commands: Default::default(),
         engine: engine.clone(),
         store: engine.store.clone(),
         lanes: std::sync::Arc::new(cell::LaneHub::new()),

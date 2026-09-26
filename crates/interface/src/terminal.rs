@@ -1,8 +1,11 @@
 mod input;
+mod run_view;
 #[cfg(test)]
 mod tests;
 mod vt;
 mod worker;
+
+pub(crate) use run_view::attach;
 
 use crate::{actions::Action, sand_panel as panel};
 use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
@@ -12,7 +15,7 @@ use std::collections::{HashMap, VecDeque};
 
 const CELL_WIDTH: f32 = 15.0 * 1233.0 / 2048.0;
 const CELL_HEIGHT: f32 = 18.0;
-const CREDITS: &[crate::credits::Attribution] = &[
+pub(crate) const CREDITS: &[crate::credits::Attribution] = &[
     crate::credits::Attribution {
         name: "libghostty",
         author: include_str!("terminal/vendor/UPSTREAM.txt"),
@@ -32,6 +35,15 @@ const CREDITS: &[crate::credits::Attribution] = &[
 
 #[derive(Resource)]
 struct Mono(Handle<Font>, Handle<Font>);
+
+pub(crate) fn code_font(world: &mut World) -> TextFont {
+    world.init_resource::<Mono>();
+    TextFont {
+        font: world.resource::<Mono>().0.clone().into(),
+        font_size: FontSize::Px(14.0),
+        ..default()
+    }
+}
 impl FromWorld for Mono {
     fn from_world(world: &mut World) -> Self {
         let mut fonts = world.resource_mut::<Assets<Font>>();
@@ -78,6 +90,10 @@ impl Plugin for TerminalPlugin {
 }
 
 pub(crate) fn populate(world: &mut World, _root: Entity, sand: Entity) -> Entity {
+    populate_view(world, sand, false)
+}
+
+fn populate_view(world: &mut World, sand: Entity, embedded: bool) -> Entity {
     world.init_resource::<Sessions>();
     let body = panel::frame(world, sand, "Terminal");
     let controls = panel::row(world, body);
@@ -89,6 +105,9 @@ pub(crate) fn populate(world: &mut World, _root: Entity, sand: Entity) -> Entity
         ("Scroll up", Command::Scroll(-10)),
         ("Scroll down", Command::Scroll(10)),
     ] {
+        if embedded && matches!(command, Command::Open | Command::Close) {
+            continue;
+        }
         panel::button(world, controls, sand, caption, command);
     }
     let screen = world.spawn((ChildOf(body), Screen(sand), bevy::input_focus::tab_navigation::TabIndex(0),
@@ -161,24 +180,7 @@ impl Action for Command {
             }
             Self::Scroll(delta) => command(world, owner, worker::Command::Scroll(Some(*delta))),
             Self::Copy => {
-                let text = terminal
-                    .frame
-                    .as_ref()
-                    .map(|frame| {
-                        frame
-                            .lines
-                            .iter()
-                            .map(|line| {
-                                line.iter()
-                                    .map(|cell| cell.text.as_str())
-                                    .collect::<String>()
-                                    .trim_end()
-                                    .to_string()
-                            })
-                            .collect::<Vec<_>>()
-                            .join("\n")
-                    })
-                    .unwrap_or_default();
+                let text = displayed_text(world, owner);
                 world
                     .get_resource_mut::<bevy::clipboard::Clipboard>()
                     .ok_or("Clipboard is unavailable".into())
@@ -204,7 +206,38 @@ impl Action for Command {
     }
 }
 
+pub(crate) fn displayed_text(world: &World, owner: Entity) -> String {
+    world
+        .get::<TerminalSand>(owner)
+        .and_then(|terminal| terminal.frame.as_ref())
+        .map(|frame| {
+            frame
+                .lines
+                .iter()
+                .map(|line| {
+                    line.iter()
+                        .map(|cell| cell.text.as_str())
+                        .collect::<String>()
+                        .trim_end()
+                        .to_string()
+                })
+                .collect::<Vec<_>>()
+                .join("\n")
+        })
+        .unwrap_or_default()
+}
+
 fn command(world: &World, owner: Entity, command: worker::Command) -> Result<(), String> {
+    if matches!(
+        command,
+        worker::Command::Key { .. } | worker::Command::Paste(_)
+    ) && world.get::<run_view::RunView>(owner).is_some()
+        && world
+            .get::<TerminalSand>(owner)
+            .is_none_or(|terminal| !terminal.opened || terminal.exited)
+    {
+        return Err("This output is read-only".into());
+    }
     world
         .get::<TerminalSand>(owner)
         .and_then(|terminal| terminal.worker.as_ref())
@@ -249,6 +282,7 @@ fn open(world: &mut World, owner: Entity) -> Result<(), String> {
 }
 
 fn close(world: &mut World, owner: Entity) {
+    run_view::detach(world, owner);
     let Some(mut terminal) = world.get_mut::<TerminalSand>(owner) else {
         return;
     };
@@ -292,6 +326,7 @@ fn update(
         .iter(world)
         .collect();
     for owner in owners {
+        run_view::poll(world, owner);
         let terminal = world.get::<TerminalSand>(owner).unwrap();
         let status = terminal.status;
         let geometry = world
@@ -305,7 +340,7 @@ fn update(
                 )
             })
             .unwrap_or(terminal.geometry);
-        if geometry != terminal.geometry {
+        if geometry != terminal.geometry && world.get::<run_view::RunView>(owner).is_none() {
             let result = if terminal.opened {
                 panel::send(
                     world,
@@ -376,9 +411,20 @@ fn update(
             let Some(bytes) = terminal.input.front() else {
                 break;
             };
-            let message = ClientMessage::TerminalInput {
-                id: terminal.session.clone().unwrap(),
-                data_base64: BASE64.encode(bytes),
+            let message = if let Some(run) = world.get::<run_view::RunView>(owner) {
+                ClientMessage::Command {
+                    id: run.run.clone(),
+                    request: cell::command::Request::Input {
+                        command: run.command.clone(),
+                        run: run.run.clone(),
+                        data_base64: BASE64.encode(bytes),
+                    },
+                }
+            } else {
+                ClientMessage::TerminalInput {
+                    id: terminal.session.clone().unwrap(),
+                    data_base64: BASE64.encode(bytes),
+                }
             };
             if let Err(error) = panel::send(world, message) {
                 panel::status(world, status, error);
@@ -394,6 +440,9 @@ fn update(
 }
 
 fn receive(world: &mut World, message: ServerMessage) {
+    if run_view::receive(world, &message) {
+        return;
+    }
     let id = match &message {
         ServerMessage::TerminalOpened { id, .. }
         | ServerMessage::TerminalData { id, .. }

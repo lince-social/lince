@@ -14,6 +14,8 @@ use {
 
 const MAX_INPUT_BYTES: usize = 1024 * 1024;
 
+pub mod commands;
+
 pub struct TerminalHost {
     sessions: HashMap<String, Arc<TerminalHandle>>,
 }
@@ -22,6 +24,7 @@ struct TerminalHandle {
     writer: Mutex<Box<dyn Write + Send>>,
     master: Mutex<Box<dyn MasterPty + Send>>,
     killer: Mutex<Box<dyn ChildKiller + Send + Sync>>,
+    exited: std::sync::atomic::AtomicBool,
 }
 
 struct SpawnedTerminal {
@@ -69,7 +72,13 @@ impl TerminalHost {
             .map_err(|_| "terminal transport closed while opening".to_string())?;
 
         spawn_reader(id.clone(), spawned.reader, out_tx.clone())?;
-        spawn_waiter(id.clone(), spawned.child, out_tx, done_tx)?;
+        spawn_waiter(
+            id.clone(),
+            spawned.child,
+            Arc::downgrade(&spawned.handle),
+            out_tx,
+            done_tx,
+        )?;
         self.sessions.insert(id, spawned.handle);
         Ok(())
     }
@@ -150,7 +159,9 @@ impl Default for TerminalHost {
 
 impl Drop for TerminalHandle {
     fn drop(&mut self) {
-        if let Ok(killer) = self.killer.get_mut() {
+        if !self.exited.load(std::sync::atomic::Ordering::Acquire)
+            && let Ok(killer) = self.killer.get_mut()
+        {
             let _ = killer.kill();
         }
     }
@@ -169,11 +180,19 @@ fn spawn_terminal(size: PtySize) -> Result<SpawnedTerminal, String> {
     let shell = configured_shell();
     let working_directory = terminal_working_directory()?;
     let cwd = working_directory.display().to_string();
+    let command = terminal_command(&shell, &working_directory);
+    spawn_command(size, command, shell, cwd)
+}
+
+fn spawn_command(
+    size: PtySize,
+    command: CommandBuilder,
+    shell: String,
+    cwd: String,
+) -> Result<SpawnedTerminal, String> {
     let pair = native_pty_system()
         .openpty(size)
         .map_err(|error| format!("could not open terminal PTY: {error}"))?;
-
-    let command = terminal_command(&shell, &working_directory);
 
     let child = pair
         .slave
@@ -194,6 +213,7 @@ fn spawn_terminal(size: PtySize) -> Result<SpawnedTerminal, String> {
         writer: Mutex::new(writer),
         master: Mutex::new(pair.master),
         killer: Mutex::new(killer),
+        exited: std::sync::atomic::AtomicBool::new(false),
     });
 
     Ok(SpawnedTerminal {
@@ -280,6 +300,7 @@ fn spawn_reader(
 fn spawn_waiter(
     id: String,
     mut child: Box<dyn portable_pty::Child + Send + Sync>,
+    handle: std::sync::Weak<TerminalHandle>,
     out_tx: mpsc::Sender<ServerMessage>,
     done_tx: mpsc::Sender<String>,
 ) -> Result<(), String> {
@@ -287,6 +308,11 @@ fn spawn_waiter(
         .name(format!("terminal-wait-{id}"))
         .spawn(move || {
             let exit_code = child.wait().ok().map(|status| status.exit_code());
+            if let Some(handle) = handle.upgrade() {
+                handle
+                    .exited
+                    .store(true, std::sync::atomic::Ordering::Release);
+            }
             let _ = out_tx.blocking_send(ServerMessage::TerminalExit {
                 id: id.clone(),
                 exit_code,
@@ -298,6 +324,9 @@ fn spawn_waiter(
 }
 
 async fn terminate(handle: Arc<TerminalHandle>) -> Result<(), String> {
+    if handle.exited.load(std::sync::atomic::Ordering::Acquire) {
+        return Ok(());
+    }
     tokio::task::spawn_blocking(move || {
         handle
             .killer

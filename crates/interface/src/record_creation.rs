@@ -744,6 +744,7 @@ mod tests {
         let engine = Arc::new(engine::Engine::open_memory().await.unwrap());
         store_local(&engine).await;
         let runtime = cell::CellRuntime {
+            commands: Default::default(),
             engine: engine.clone(),
             store: engine.store.clone(),
             lanes: Arc::new(cell::LaneHub::new()),

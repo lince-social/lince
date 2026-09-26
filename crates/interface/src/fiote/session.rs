@@ -1017,6 +1017,7 @@ impl Action for Stop {
 }
 
 fn apply_status(world: &mut World, owner: Entity, saved: FioteStatus) {
+    let refreshed = agent::refresh(world, owner, &saved);
     if world
         .entity_mut(owner)
         .take::<agent::OpenAfterSetup>()
@@ -1085,7 +1086,11 @@ fn apply_status(world: &mut World, owner: Entity, saved: FioteStatus) {
         ..panel.binding.clone()
     };
     panel.saved = Some(saved);
-    if next != step || first || (step == Step::Agent && agent_changed) || step == Step::Manage {
+    if next != step
+        || first
+        || (step == Step::Agent && (agent_changed || refreshed))
+        || step == Step::Manage
+    {
         show(world, owner, next);
     }
     if browser {
@@ -1127,6 +1132,7 @@ fn receive(
                 Ok(status) => apply_status(world, owner, status.clone()),
                 Err(error) => {
                     world.entity_mut(owner).remove::<agent::OpenAfterSetup>();
+                    world.entity_mut(owner).remove::<agent::RefreshDraft>();
                     let mut panel = world.get_mut::<Panel>(owner).unwrap();
                     panel.pending = None;
                     panel.pending_command = None;

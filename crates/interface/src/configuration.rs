@@ -10,6 +10,8 @@ pub struct ConfigurationSand {
     identity: [Entity; 2],
     toggles: [Entity; 4],
     discovery: [bool; 4],
+    discovery_minutes: Entity,
+    relays: Entity,
     budget: Entity,
     usage: Entity,
     contacts: Entity,
@@ -42,7 +44,10 @@ impl Plugin for ConfigurationPlugin {
 const DISCOVERY: [(&str, &str); 4] = [
     ("local", "Find and advertise Cells on this LAN"),
     ("internet", "Internet reachability"),
-    ("direct", "Allow direct internet connections"),
+    (
+        "direct",
+        "Allow direct internet connections (reveals this machine’s address)",
+    ),
     ("accept_unknown", "Accept unknown conversations"),
 ];
 
@@ -103,6 +108,18 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
             Command::Toggle(index),
         )
     });
+    let discovery_minutes = panel::field(
+        world,
+        pages[1],
+        "LAN presence in minutes (0 means no time limit)",
+        "0",
+    );
+    let relays = panel::field(
+        world,
+        pages[1],
+        "Relay URLs, separated by commas (blank uses defaults)",
+        "",
+    );
     panel::button(
         world,
         pages[1],
@@ -152,6 +169,8 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
         identity,
         toggles,
         discovery: [false, true, false, false],
+        discovery_minutes,
+        relays,
         budget,
         usage,
         contacts,
@@ -280,7 +299,35 @@ fn actions(
             for (index, (key, _)) in DISCOVERY.iter().enumerate() {
                 fields.insert((*key).into(), view.discovery[index].into());
             }
+            let minutes = panel::value(world, view.discovery_minutes)?
+                .trim()
+                .parse::<u32>()
+                .map_err(|_| "LAN duration must be a non-negative whole number of minutes")?;
+            if minutes > 525600 {
+                return Err("Choose a LAN duration of at most one year".into());
+            }
             fields.remove("local_until");
+            if view.discovery[0] && minutes > 0 {
+                fields.insert(
+                    "local_until".into(),
+                    (chrono::Utc::now() + chrono::Duration::minutes(i64::from(minutes)))
+                        .to_rfc3339()
+                        .into(),
+                );
+            }
+            let relays = panel::value(world, view.relays)?;
+            let relays: Vec<_> = relays
+                .split(',')
+                .map(str::trim)
+                .filter(|value| !value.is_empty())
+                .collect();
+            for relay in &relays {
+                let url = reqwest::Url::parse(relay).map_err(|_| "Enter complete relay URLs")?;
+                if !matches!(url.scheme(), "https" | "http") || url.host_str().is_none() {
+                    return Err("Relay URLs must use http or https and include a host".into());
+                }
+            }
+            fields.insert("relays".into(), serde_json::json!(relays));
             Ok(vec![Action::SetCellConfig {
                 namespace: "lince.discovery".into(),
                 fds: fields.into(),
@@ -510,6 +557,29 @@ fn loaded(world: &mut World, owner: Entity, snapshot: Configuration) {
     );
     set_text(world, identity[0], &snapshot.name);
     set_text(world, identity[1], &snapshot.address);
+    let view = world.get::<ConfigurationSand>(owner).unwrap();
+    let (minutes_field, relays_field) = (view.discovery_minutes, view.relays);
+    let minutes = snapshot.discovery["local_until"]
+        .as_str()
+        .and_then(|value| chrono::DateTime::parse_from_rfc3339(value).ok())
+        .map(|expiry| {
+            (expiry.with_timezone(&chrono::Utc) - chrono::Utc::now())
+                .num_minutes()
+                .max(0)
+        })
+        .unwrap_or(0);
+    set_text(world, minutes_field, &minutes.to_string());
+    let relays = snapshot.discovery["relays"]
+        .as_array()
+        .map(|values| {
+            values
+                .iter()
+                .filter_map(serde_json::Value::as_str)
+                .collect::<Vec<_>>()
+                .join(", ")
+        })
+        .unwrap_or_default();
+    set_text(world, relays_field, &relays);
     world.get_mut::<ConfigurationSand>(owner).unwrap().discovery = std::array::from_fn(|index| {
         snapshot.discovery[DISCOVERY[index].0]
             .as_bool()
@@ -710,6 +780,29 @@ mod tests {
         assert_eq!(discovery["local"], true);
         assert_eq!(discovery["future_property"], "keep");
         assert!(discovery.get("local_until").is_none());
+        let view = app.world().get::<ConfigurationSand>(owner).unwrap();
+        let (minutes, relays) = (view.discovery_minutes, view.relays);
+        set_text(app.world_mut(), minutes, "30");
+        set_text(app.world_mut(), relays, "https://relay.example.test");
+        let queued = actions(app.world(), owner, &Command::SaveDiscovery).unwrap();
+        let engine::actions::Action::SetCellConfig { fds, .. } = &queued[0] else {
+            panic!("Expected Cell configuration")
+        };
+        assert_eq!(
+            fds["relays"],
+            serde_json::json!(["https://relay.example.test"])
+        );
+        let expiry =
+            chrono::DateTime::parse_from_rfc3339(fds["local_until"].as_str().unwrap()).unwrap();
+        assert!(
+            (29..=30)
+                .contains(&(expiry.with_timezone(&chrono::Utc) - chrono::Utc::now()).num_minutes())
+        );
+        set_text(app.world_mut(), relays, "file:///private");
+        assert!(actions(app.world(), owner, &Command::SaveDiscovery).is_err());
+        set_text(app.world_mut(), relays, "");
+        set_text(app.world_mut(), minutes, "-1");
+        assert!(actions(app.world(), owner, &Command::SaveDiscovery).is_err());
         let budget = app.world().get::<ConfigurationSand>(owner).unwrap().budget;
         set_text(app.world_mut(), budget, "64");
         Command::SaveBudget.apply(app.world_mut(), owner);

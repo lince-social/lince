@@ -631,6 +631,7 @@ mod tests {
             );
         }
         app.insert_resource(crate::app::CellHandle(cell::CellRuntime {
+            commands: Default::default(),
             engine: engine.clone(),
             store: engine.store.clone(),
             lanes: std::sync::Arc::new(cell::LaneHub::new()),

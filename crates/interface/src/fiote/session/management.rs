@@ -50,7 +50,13 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
             crate::record_binding::attach(world, editor, binding.clone(), property, None);
         }
     }
-    crate::description::button(world, content, owner, "Set up connection", Connection);
+    crate::description::button(
+        world,
+        content,
+        owner,
+        "Provider, model and settings",
+        Connection,
+    );
     crate::description::button(
         world,
         content,

@@ -96,14 +96,39 @@ pub fn connect(runtime: cell::CellRuntime, wake: WakeSignal) -> CellBridge {
         let _ended = ended;
         let mut lanes = HashMap::<String, tokio::task::AbortHandle>::new();
         let mut lane_tasks = tokio::task::JoinSet::new();
+        let mut call_tasks = tokio::task::JoinSet::new();
+        let mut call_queue = std::collections::VecDeque::new();
         let mut terminals = cell::terminal::TerminalHost::new();
         let (terminal_output, mut terminal_messages) = mpsc::channel(64);
         let (terminal_done, mut terminal_exits) = mpsc::channel(16);
         loop {
+            if call_tasks.is_empty() {
+                if let Some(request) = call_queue.pop_front() {
+                    let mut call = session.fork_call();
+                    call_tasks.spawn(async move { call.handle(request).await });
+                }
+            }
             let messages = tokio::select! {
                 request = requests.recv() => {
                     let Some(request) = request else { break };
+                    if let ClientMessage::Call { id, .. } | ClientMessage::CallContext { id, .. } = &request {
+                        if call_queue.len() >= 64 {
+                            if !deliver(&responses, &wake, vec![ServerMessage::Error { id: id.clone(), message: "Call controls are busy; try again".into(), code: Some("call_busy".into()) }]).await { break; }
+                        } else {
+                            call_queue.push_back(request);
+                        }
+                        continue;
+                    }
                     match &request {
+                        ClientMessage::Command { id, request } => {
+                            let result = runtime.commands.request(&runtime.engine, request.clone()).await;
+                            let message = match result {
+                                Ok(response) => ServerMessage::Command { id: id.clone(), response },
+                                Err(message) => ServerMessage::Error { id: id.clone(), message, code: Some("command".into()) },
+                            };
+                            if !deliver(&responses, &wake, vec![message]).await { break; }
+                            continue;
+                        }
                         ClientMessage::TerminalOpen { id, cols, rows, pixel_width, pixel_height } => {
                             let result = terminals.open(id.clone(), cell::terminal::pty_size(*cols, *rows, *pixel_width, *pixel_height), terminal_output.clone(), terminal_done.clone()).await;
                             if let Err(message) = result {
@@ -166,6 +191,7 @@ pub fn connect(runtime: cell::CellRuntime, wake: WakeSignal) -> CellBridge {
                     session.on_sync_event(event).await
                 },
                 Some(message) = terminal_messages.recv() => vec![message],
+                Some(result) = call_tasks.join_next(), if !call_tasks.is_empty() => result.unwrap_or_default(),
                 Some(id) = terminal_exits.recv() => { terminals.forget(&id); Vec::new() },
                 finished = lane_tasks.join_next(), if !lane_tasks.is_empty() => {
                     lanes.retain(|_, task| !task.is_finished());
@@ -288,6 +314,7 @@ pub(crate) mod tests {
             .unwrap();
         (
             cell::CellRuntime {
+                commands: Default::default(),
                 store: engine.store.clone(),
                 engine,
                 lanes: Arc::new(cell::LaneHub::new()),

@@ -12,6 +12,7 @@ pub mod session;
 pub mod sync_events;
 #[cfg(feature = "terminal")]
 pub mod terminal;
+pub mod command;
 #[cfg(feature = "axum")]
 pub mod ws;
 

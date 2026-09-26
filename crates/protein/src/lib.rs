@@ -2224,6 +2224,12 @@ async fn threads_for_record(
             }
         }
         let thread_created_at = store::records::created_at(&store.pool, &thread.uid).await?;
+        let mut calls = Vec::new();
+        if let Some(predicate) = store::concepts::resolve(&store.pool, "call-in").await? {
+            for record in store::assertions::subjects_pointing_to(&store.pool, &predicate, &thread.uid).await?.into_iter().filter(|record| record.kind == "call_session").take(50) {
+                if let Ok(summary) = serde_json::from_str::<Value>(&record.body) { calls.push(summary); }
+            }
+        }
         let (thread_created_by, thread_sender) = creator_info(store, &thread.uid).await?;
         let thread_organ_name =
             organ_name_for(store, &mut organ_names, thread.organ_uid.as_deref()).await?;
@@ -2237,6 +2243,7 @@ async fn threads_for_record(
             "sender": thread_sender,
             "organ_name": thread_organ_name,
             "messages": messages,
+            "calls": calls,
             "messages_has_more": has_more,
             "messages_limit": messages_limit,
         }));

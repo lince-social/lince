@@ -226,6 +226,7 @@ async fn real_protein_dates_feed_calendar_and_both_picker_fields_save_through_ce
         .await
         .unwrap();
     let runtime = cell::CellRuntime {
+        commands: Default::default(),
         engine: engine.clone(),
         store: engine.store.clone(),
         lanes: std::sync::Arc::new(cell::LaneHub::new()),

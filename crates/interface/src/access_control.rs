@@ -25,7 +25,7 @@ enum Tab {
 enum Mutation {
     CreateUser,
     SaveUser,
-    DeleteUser,
+    Standing,
     Role,
     RenameRole,
     DeleteRole,
@@ -232,7 +232,7 @@ fn receive_message(world: &mut World, message: ServerMessage) {
                     .get_mut::<AccessControlSand>(owner)
                     .unwrap()
                     .reload_editor = true;
-            } else if matches!(kind, Mutation::DeleteUser | Mutation::DeleteRole) {
+            } else if matches!(kind, Mutation::DeleteRole) {
                 world.get_mut::<AccessControlSand>(owner).unwrap().selected = None;
                 ui::editor(world, owner);
             }

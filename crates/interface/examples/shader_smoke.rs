@@ -168,6 +168,7 @@ fn main() {
     });
     let mut app = lince_interface::app::interface_app();
     app.insert_resource(lince_interface::app::CellHandle(cell::CellRuntime {
+        commands: Default::default(),
         store: engine.store.clone(),
         engine,
         lanes: Arc::new(cell::LaneHub::new()),

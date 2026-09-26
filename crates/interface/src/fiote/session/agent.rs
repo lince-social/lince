@@ -1,6 +1,8 @@
 use super::*;
 use serde_json::json;
 
+mod options;
+
 #[derive(Component, Clone)]
 struct Draft(cell::FioteAgentConfig);
 
@@ -15,6 +17,25 @@ pub(super) struct Open;
 
 #[derive(Component)]
 pub(super) struct OpenAfterSetup;
+
+#[derive(Component)]
+pub(super) struct RefreshDraft;
+
+pub(super) fn refresh(world: &mut World, owner: Entity, saved: &FioteStatus) -> bool {
+    if world
+        .get::<Panel>(owner)
+        .is_some_and(|panel| panel.binding.uid != saved.record)
+    {
+        world.entity_mut(owner).remove::<Draft>();
+    }
+    if world.entity_mut(owner).take::<RefreshDraft>().is_none() {
+        return false;
+    }
+    if let Some(config) = &saved.agent {
+        world.entity_mut(owner).insert(Draft(config.clone()));
+    }
+    true
+}
 impl Action for Open {
     fn apply(&self, world: &mut World, owner: Entity) {
         super::show(world, owner, Step::Agent);
@@ -36,8 +57,10 @@ fn config(world: &World, owner: Entity) -> Result<cell::FioteAgentConfig, String
         environment: serde_json::from_str(&value(world, fields[3])?)
             .map_err(|_| "Environment must be a JSON object of strings.")?,
         session_meta: previous
-            .map(|config| config.session_meta)
+            .as_ref()
+            .map(|config| config.session_meta.clone())
             .unwrap_or_default(),
+        options: previous.map(|config| config.options).unwrap_or_default(),
     })
 }
 
@@ -61,6 +84,7 @@ pub(super) fn show(
             directory: std::env::current_dir().unwrap_or_default(),
             environment: Default::default(),
             session_meta: Default::default(),
+            options: Default::default(),
         });
     crate::edit_mode::label(world, content, "Connection", 20.0);
     let advanced = world
@@ -82,7 +106,7 @@ pub(super) fn show(
             serde_json::to_string(&draft.args).unwrap(),
         ),
         (
-            "Working folder · code tools can edit files here",
+            "Working directory · code tools can edit files here",
             draft.directory.display().to_string(),
         ),
         (
@@ -92,7 +116,7 @@ pub(super) fn show(
     ] {
         let input = field(
             world,
-            if label.starts_with("Working folder") {
+            if label.starts_with("Working directory") {
                 content
             } else {
                 advanced
@@ -108,7 +132,15 @@ pub(super) fn show(
         fields.push(input);
     }
     world.entity_mut(owner).insert(Draft(draft));
-    crate::description::button(world, content, owner, "Choose provider", Discover);
+    crate::description::button(world, content, owner, "Change provider / sign in", Discover);
+    crate::description::button(
+        world,
+        content,
+        owner,
+        "Save working directory",
+        options::SaveDirectory,
+    );
+    options::show(world, owner, content, saved);
 
     let Some(info) = saved.and_then(|saved| saved.agent_info.as_ref()) else {
         return;
@@ -324,12 +356,6 @@ impl Action for ChooseProvider {
             return;
         }
         let record = panel.binding.uid.clone();
-        if let Some(mut draft) = world.get_mut::<Draft>(owner) {
-            draft
-                .0
-                .session_meta
-                .insert("provider".into(), self.0.clone().into());
-        }
         request(
             world,
             owner,
@@ -338,6 +364,9 @@ impl Action for ChooseProvider {
                 provider: self.0.clone(),
             },
         );
+        if world.get::<Panel>(owner).unwrap().pending.is_some() {
+            world.entity_mut(owner).insert(RefreshDraft);
+        }
     }
 }
 #[derive(Clone)]

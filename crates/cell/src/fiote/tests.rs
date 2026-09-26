@@ -4,6 +4,86 @@ use serde_json::json;
 use transport::{ClientMessage, LaneHub, ServerMessage, Session};
 
 #[tokio::test]
+async fn agent_settings_save_directory_and_reject_changes_while_running() {
+    let (host, _, root, record, thread) = fixture(false).await;
+    let mut config: fiote::acp::Config = serde_json::from_value(json!({
+        "command":"uninstalled-test-agent", "args":[], "directory":root.path(),
+        "options":{"model":"chosen-model","thinking":"high","speed":true}
+    }))
+    .unwrap();
+    let status = host
+        .handle(Request::AgentConfigure {
+            record: record.clone(),
+            config: config.clone(),
+        })
+        .await
+        .unwrap();
+    assert_eq!(status.agent.as_ref().unwrap().options, config.options);
+    let new_directory = tempfile::tempdir().unwrap();
+    config.directory = new_directory.path().into();
+    let status = host
+        .handle(Request::AgentConfigure {
+            record: record.clone(),
+            config: config.clone(),
+        })
+        .await
+        .unwrap();
+    assert_eq!(
+        status.agent.unwrap().directory,
+        new_directory.path().canonicalize().unwrap()
+    );
+    let (stop, _) = watch::channel(false);
+    host.running.lock().await.insert(
+        thread.clone(),
+        Running {
+            record: record.clone(),
+            stop,
+        },
+    );
+    config.directory = root.path().into();
+    for request in [
+        Request::AgentConfigure {
+            record: record.clone(),
+            config: config.clone(),
+        },
+        Request::AgentOptions {
+            record: record.clone(),
+            config,
+        },
+        Request::AgentSetOption {
+            record: record.clone(),
+            option: "model".into(),
+            value: "different".into(),
+        },
+    ] {
+        assert!(
+            host.handle(request)
+                .await
+                .unwrap_err()
+                .contains("Stop this Fiote")
+        );
+    }
+    host.running.lock().await.remove(&thread);
+    let saved = host.load(&record).unwrap().unwrap().agent.unwrap();
+    assert_eq!(
+        saved.directory,
+        new_directory.path().canonicalize().unwrap()
+    );
+    assert_eq!(saved.options["model"], "chosen-model");
+    let mut invalid = saved.clone();
+    invalid.directory = "relative".into();
+    assert!(
+        host.handle(Request::AgentConfigure {
+            record: record.clone(),
+            config: invalid
+        })
+        .await
+        .is_err()
+    );
+    assert_eq!(host.load(&record).unwrap().unwrap().agent.unwrap(), saved);
+}
+
+#[tokio::test]
 #[ignore = "Requires an installed, authenticated ACP agent and consumes a live model turn"]
 async fn installed_agent_edits_code_and_record_and_resumes_thread() {
     let (host, _, root, record, thread) = fixture(false).await;

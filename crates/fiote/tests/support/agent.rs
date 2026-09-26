@@ -15,12 +15,22 @@ fn update(text: &str) {
 fn main() {
     let mut input = std::io::stdin().lock().lines();
     let mut directory = std::path::PathBuf::new();
+    let defaults = json!([
+        {"id":"provider","name":"Provider","type":"select","currentValue":"one","options":[{"value":"one","name":"One"},{"value":"two","name":"Two"}]},
+        {"id":"model","name":"Model","category":"model","type":"select","currentValue":"large","options":[{"group":"models","name":"Models","options":[{"value":"large","name":"Large"},{"value":"small","name":"Small"}]}]},
+        {"id":"thinking","name":"Thinking level","category":"thought_level","type":"select","currentValue":"low","options":[{"value":"low","name":"Low"},{"value":"high","name":"High"}]},
+        {"id":"speed","name":"Fast mode","type":"boolean","currentValue":false}
+    ]);
+    let mut options = defaults.clone();
     while let Some(Ok(line)) = input.next() {
         let request: Value = serde_json::from_str(&line).unwrap();
         let id = &request["id"];
         let params = &request["params"];
         let result = match request["method"].as_str().unwrap_or("") {
             "initialize" => {
+                assert!(
+                    params["clientCapabilities"]["session"]["configOptions"]["boolean"].is_object()
+                );
                 json!({"protocolVersion":1,"agentInfo":{"name":"test-agent","version":"1"},"agentCapabilities":{"loadSession":true,"mcpCapabilities":{"http":true}},"authMethods":[{"id":"browser","name":"Browser login"}]})
             }
             "authenticate" => {
@@ -30,23 +40,44 @@ fn main() {
             "session/new" | "session/load" => {
                 directory = params["cwd"].as_str().unwrap().into();
                 assert!(directory.is_absolute());
-                assert_eq!(params["mcpServers"][0]["type"], "http");
-                assert_eq!(
-                    params["mcpServers"][0]["headers"][0]["name"],
-                    "Authorization"
-                );
-                assert_eq!(
-                    params["mcpServers"][0]["headers"][0]["value"],
-                    "Bearer test-token"
-                );
+                options = defaults.clone();
+                if !params["mcpServers"].as_array().unwrap().is_empty() {
+                    assert_eq!(params["mcpServers"][0]["type"], "http");
+                    assert_eq!(
+                        params["mcpServers"][0]["headers"][0]["name"],
+                        "Authorization"
+                    );
+                    assert_eq!(
+                        params["mcpServers"][0]["headers"][0]["value"],
+                        "Bearer test-token"
+                    );
+                }
                 if request["method"] == "session/load" {
                     for _ in 0..1024 {
                         update("old reply");
                     }
-                    json!({})
+                    json!({"configOptions":options})
                 } else {
-                    json!({"sessionId":"test-session"})
+                    json!({"sessionId":"test-session","configOptions":options})
                 }
+            }
+            "session/set_config_option" => {
+                let option = options
+                    .as_array_mut()
+                    .unwrap()
+                    .iter_mut()
+                    .find(|option| option["id"] == params["configId"])
+                    .unwrap();
+                option["currentValue"] = params["value"].clone();
+                if params["configId"] == "speed" {
+                    assert_eq!(params["type"], "boolean");
+                }
+                if params["configId"] == "model" && params["value"] == "small" {
+                    options[2]["currentValue"] = "low".into();
+                    options[2]["options"] = json!([{"value":"low","name":"Low"}]);
+                }
+                std::fs::write(directory.join("options.json"), options.to_string()).unwrap();
+                json!({"configOptions":options})
             }
             "session/prompt" => {
                 if params["prompt"][0]["text"] == "timeline" {

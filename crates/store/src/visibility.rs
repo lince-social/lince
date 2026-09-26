@@ -41,10 +41,25 @@ pub async fn visible_targets(
         "SELECT target_uid AS uid FROM visibility_rule
           WHERE grant_level = 'visible' AND (subject_kind = 'public'
              OR (subject_kind = 'actor' AND subject_uid = ?)
-             OR (subject_kind = 'role' AND subject_uid = CAST((SELECT role_id FROM person_access WHERE person_uid = ?) AS TEXT)))
+             OR (subject_kind = 'role' AND subject_uid = CAST((SELECT role_id FROM person_access WHERE person_uid = ?) AS TEXT))
+             OR (subject_kind = 'organ' AND subject_uid = (SELECT uid FROM record WHERE slug = 'local-organ' AND kind = 'organ' AND deleted_at IS NULL)
+                 AND EXISTS (SELECT 1 FROM person_access a JOIN record p ON p.uid = a.person_uid
+                             WHERE a.person_uid = ? AND a.role_id IS NOT NULL AND p.deleted_at IS NULL)))
          UNION
-         SELECT DISTINCT record_uid AS uid FROM fact WHERE actor_uid = ?",
+         SELECT DISTINCT record_uid AS uid FROM fact WHERE actor_uid = ?
+         UNION
+         SELECT r.uid FROM record r JOIN record_extension e ON e.record_uid = ?
+          WHERE e.namespace = 'lince.call-admission' AND r.deleted_at IS NULL
+            AND json_extract(e.fds, '$.' || r.replica_root) = 1
+            AND NOT EXISTS (SELECT 1 FROM visibility_rule v WHERE v.target_uid = r.uid
+                 AND (v.field IS NOT NULL OR (v.grant_level = 'hidden'
+                      AND (v.subject_kind = 'public' OR (v.subject_kind = 'actor' AND v.subject_uid = ?)
+                           OR (v.subject_kind = 'role' AND v.subject_uid = CAST((SELECT role_id FROM person_access WHERE person_uid = ?) AS TEXT))))))",
     )
+    .bind(subject_uid)
+    .bind(subject_uid)
+    .bind(subject_uid)
+    .bind(subject_uid)
     .bind(subject_uid)
     .bind(subject_uid)
     .bind(subject_uid)
@@ -97,7 +112,11 @@ pub async fn role_targets(
          )
          SELECT r.uid FROM record r
           WHERE r.deleted_at IS NULL AND r.kind != 'message_draft'
-            AND r.replica_root IS NULL AND r.organ_uid IN (SELECT uid FROM local)
+            AND ((r.replica_root IS NULL AND r.organ_uid IN (SELECT uid FROM local))
+                 OR (r.replica_root IS NOT NULL AND EXISTS (
+                     SELECT 1 FROM rules v WHERE v.target_uid = r.uid AND v.grant_level = 'visible' AND v.matches))
+                 OR EXISTS (SELECT 1 FROM record_extension e WHERE e.record_uid = ?
+                     AND e.namespace = 'lince.call-admission' AND json_extract(e.fds, '$.' || r.replica_root) = 1))
             AND NOT EXISTS (SELECT 1 FROM rules v WHERE v.target_uid = r.uid
                             AND (v.field IS NOT NULL OR (v.grant_level = 'hidden' AND v.matches)))
             AND (NOT EXISTS (SELECT 1 FROM rules v WHERE v.target_uid = r.uid AND v.grant_level = 'visible')
@@ -106,6 +125,7 @@ pub async fn role_targets(
     .bind(crate::organs::LOCAL_ORGAN_SLUG)
     .bind(subject_uid)
     .bind(role_id)
+    .bind(subject_uid)
     .fetch_all(pool)
     .await?
     .into_iter()

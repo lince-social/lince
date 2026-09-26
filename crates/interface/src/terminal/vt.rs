@@ -113,7 +113,7 @@ impl Ghostty {
             return Err("Unsupported libghostty layout".into());
         }
         vt.put(0, &[cols.to_le_bytes(), rows.to_le_bytes()].concat())?;
-        vt.put(4, &3000u32.to_le_bytes())?;
+        vt.put(4, &10000u32.to_le_bytes())?;
         vt.ok("ghostty_terminal_new", (0u32, vt.scratch + 16, vt.scratch))?;
         vt.terminal = vt.u32(16)?;
         vt.render = vt.create("ghostty_render_state_new")?;

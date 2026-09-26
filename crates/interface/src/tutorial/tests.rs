@@ -143,6 +143,7 @@ async fn tutorial_checks_real_protein_and_confirmed_entry_exit_changes() {
         .await
         .unwrap();
     let runtime = cell::CellRuntime {
+        commands: Default::default(),
         engine: engine.clone(),
         store: engine.store.clone(),
         lanes: std::sync::Arc::new(cell::LaneHub::new()),

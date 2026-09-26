@@ -63,6 +63,12 @@ jobs:
             mold \
             pigz \
             pkg-config \
+            clang \
+            libclang-dev \
+            libpipewire-0.3-dev \
+            libglib2.0-dev \
+            libpulse-dev \
+            libva-dev \
             libssl-dev \
             libsqlite3-dev \
             libasound2-dev \

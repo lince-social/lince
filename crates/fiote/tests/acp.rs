@@ -57,6 +57,7 @@ async fn fixture() -> (tempfile::TempDir, Config, std::sync::Arc<Connection>) {
         directory: root.path().into(),
         environment: Default::default(),
         session_meta: Default::default(),
+        options: Default::default(),
     };
     config.validate().unwrap();
     let connection = Connection::open(&config).await.unwrap();
@@ -163,4 +164,101 @@ async fn message_boundaries_surround_tool_events_without_merging_thoughts() {
     assert_eq!(activity[1]["sessionUpdate"], "tool_call");
     assert_eq!(activity[2]["messageId"], "final");
     connection.close();
+}
+
+#[tokio::test]
+async fn settings_apply_on_new_and_loaded_sessions_in_the_selected_directory() {
+    let (_root, mut config, connection) = fixture().await;
+    let directory = tempfile::tempdir().unwrap();
+    config.directory = directory.path().into();
+    config.options = [
+        ("provider".into(), Value::from("two")),
+        ("model".into(), Value::from("small")),
+        ("thinking".into(), Value::from("low")),
+        ("speed".into(), Value::from(true)),
+    ]
+    .into();
+    for previous in [None, Some("test-session")] {
+        let session = connection
+            .session(&config, tools(), previous)
+            .await
+            .unwrap();
+        assert_eq!(session, "test-session");
+        let values: Value =
+            serde_json::from_slice(&std::fs::read(directory.path().join("options.json")).unwrap())
+                .unwrap();
+        assert_eq!(values[0]["currentValue"], "two");
+        assert_eq!(values[1]["currentValue"], "small");
+        assert_eq!(values[2]["currentValue"], "low");
+        assert_eq!(values[3]["currentValue"], true);
+    }
+    connection.close();
+}
+
+#[tokio::test]
+async fn settings_reject_unknown_values_and_refresh_dependent_choices() {
+    let (root, config, connection) = fixture().await;
+    let mut options = connection.options(&config).await.unwrap();
+    assert!(
+        connection
+            .set_option(&mut options, "missing", &Value::from("x"))
+            .await
+            .is_err()
+    );
+    assert!(
+        connection
+            .set_option(&mut options, "model", &Value::from("invented"))
+            .await
+            .is_err()
+    );
+    assert!(
+        connection
+            .set_option(&mut options, "speed", &Value::from("true"))
+            .await
+            .is_err()
+    );
+    assert!(!root.path().join("options.json").exists());
+    connection
+        .set_option(&mut options, "thinking", &Value::from("high"))
+        .await
+        .unwrap();
+    connection
+        .set_option(&mut options, "model", &Value::from("small"))
+        .await
+        .unwrap();
+    assert_eq!(options.values()["thinking"], "low");
+    assert!(
+        connection
+            .set_option(&mut options, "thinking", &Value::from("high"))
+            .await
+            .is_err()
+    );
+    let mut obsolete = config.clone();
+    obsolete.options = [
+        ("model".into(), Value::from("small")),
+        ("thinking".into(), Value::from("high")),
+    ]
+    .into();
+    assert!(connection.options(&obsolete).await.is_err());
+    obsolete.options.clear();
+    assert!(connection.options(&obsolete).await.is_ok());
+    connection.close();
+}
+
+#[test]
+fn settings_validate_directory_and_option_values() {
+    let root = tempfile::tempdir().unwrap();
+    let mut config: Config = serde_json::from_value(serde_json::json!({
+        "command":"test-agent", "args":[], "directory":root.path(),
+        "options":{"model":{"secret":"not a choice"}}
+    }))
+    .unwrap();
+    assert!(config.validate().is_err());
+    config.options.clear();
+    config.directory = "relative".into();
+    assert!(config.validate().is_err());
+    config.directory = root.path().join("missing");
+    assert!(config.validate().is_err());
+    config.directory = root.path().into();
+    config.validate().unwrap();
 }

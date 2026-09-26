@@ -807,6 +807,11 @@ async fn native_live_client_authenticates_signs_actions_and_obeys_revocation() {
         assert!(matches!(incoming.recv().await.unwrap(), ServerMessage::SessionAuthenticated { person: actor, .. } if actor == person));
         requests.send(ClientMessage::Subscribe { id: "native-view".into(), protein: serde_json::from_value(serde_json::json!({"source":"record","fields":["head","quantity"]})).unwrap() }).await.unwrap();
         assert!(matches!(incoming.recv().await.unwrap(), ServerMessage::Snapshot { rows, .. } if rows.is_empty()));
+        requests.send(ClientMessage::Subscribe { id: "native-other-view".into(), protein: serde_json::from_value(serde_json::json!({"source":"record","fields":["uid"],"limit":1})).unwrap() }).await.unwrap();
+        assert!(matches!(incoming.recv().await.unwrap(), ServerMessage::Snapshot { id, rows } if id == "native-other-view" && rows.is_empty()));
+        requests.send(ClientMessage::Unsubscribe { id: "native-view".into() }).await.unwrap();
+        requests.send(ClientMessage::Subscribe { id: "native-other-view".into(), protein: serde_json::from_value(serde_json::json!({"source":"record","fields":["uid"],"limit":2})).unwrap() }).await.unwrap();
+        assert!(matches!(incoming.recv().await.unwrap(), ServerMessage::Snapshot { id, rows } if id == "native-other-view" && rows.is_empty()));
         requests.send(ClientMessage::Act { id: "native-create".into(), action: Action::CreateRecord { slug: Some("native-created".into()), kind: nucleus::RecordKind::Plain, head: "From native".into(), body: String::new(), quantity: 1.0 } }).await.unwrap();
         loop {
             match incoming.recv().await.unwrap() {

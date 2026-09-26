@@ -23,6 +23,16 @@ pub struct StartupStatus(pub Vec<crate::laboratory::StartupIssue>);
 #[derive(Resource, Clone, Default)]
 struct PreparedImages(Arc<RwLock<HashSet<AssetId<Image>>>>);
 
+pub(crate) fn image_ready(world: &World, image: AssetId<Image>) -> bool {
+    world.get_resource::<PreparedImages>().is_none_or(|prepared| {
+        prepared
+            .0
+            .read()
+            .unwrap_or_else(|error| error.into_inner())
+            .contains(&image)
+    })
+}
+
 #[derive(Resource, Default)]
 struct Layouts(HashMap<Entity, [u32; 5]>);
 

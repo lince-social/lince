@@ -85,6 +85,8 @@ pub struct Config {
     pub motion: Option<crate::protein_motion::Settings>,
     #[serde(default)]
     pub fiote: bool,
+    #[serde(default)]
+    pub command: Option<crate::command_castle::Settings>,
     pub record_cards: bool,
     #[serde(default)]
     pub viewport_height: Option<f32>,
@@ -118,6 +120,7 @@ impl Default for Config {
             relations: false,
             motion: None,
             fiote: false,
+            command: None,
             record_cards: false,
             viewport_height: None,
             max_height: None,
@@ -144,6 +147,7 @@ impl Default for Config {
 impl Config {
     pub(super) fn same_template(&self, other: &Self) -> bool {
         self.fiote == other.fiote
+            && self.command.is_some() == other.command.is_some()
             && self.record_cards == other.record_cards
             && self.viewport_height == other.viewport_height
             && self.max_height == other.max_height
@@ -172,7 +176,8 @@ impl Config {
     }
 
     pub fn valid(&self) -> bool {
-        self.motion
+        self.command.as_ref().is_none_or(|settings| settings.cwd.len() <= 4096 && !settings.cwd.contains('\0'))
+            && self.motion
             .as_ref()
             .is_none_or(crate::protein_motion::Settings::valid)
             && (!self.relations || self.record_cards)

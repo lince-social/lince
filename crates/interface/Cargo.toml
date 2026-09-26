@@ -10,8 +10,13 @@ description = "Native Interface runtime for Lince."
 
 [features]
 default = ["native-runtime"]
+native-media = ["native-runtime", "dep:lince-media", "lince-media/native"]
 native-runtime = [
+    "dep:lince-document",
+    "dep:rfd",
     "dep:cpal",
+    "dep:qrcode",
+    "dep:nokhwa",
     "dep:hound",
     "dep:naga",
     "dep:wasmi",
@@ -64,6 +69,11 @@ native-runtime = [
 ]
 
 [dependencies]
+lince-document = { path = "../document", optional = true }
+rfd = { workspace = true, optional = true }
+qrcode = { workspace = true, optional = true }
+nokhwa = { version = "=0.10.11", default-features = false, features = ["input-native"], optional = true }
+lince-media = { workspace = true, optional = true }
 cpal = { version = "=0.15.3", optional = true }
 hound = { version = "=3.5.1", optional = true }
 naga = { version = "=29.0.4", features = ["wgsl-in"], optional = true }
@@ -117,6 +127,10 @@ name = "area_ground_smoke"
 required-features = ["native-runtime"]
 
 [[example]]
+name = "media_probe"
+required-features = ["native-media"]
+
+[[example]]
 name = "frontend_smoke"
 required-features = ["native-runtime"]
 
@@ -150,6 +164,10 @@ required-features = ["native-runtime"]
 
 [lints]
 workspace = true
+
+[[example]]
+name = "document_viewer_smoke"
+required-features = ["native-runtime"]
 
 [[example]]
 name = "gaussian_convert"

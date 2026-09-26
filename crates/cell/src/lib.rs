@@ -3,6 +3,7 @@
 pub mod admin_bootstrap;
 pub mod discovery;
 pub mod configuration;
+pub mod organ;
 pub mod fiote;
 pub mod information;
 pub mod sync_runner;
@@ -31,6 +32,7 @@ pub use ::fiote::config::{
 };
 pub use transport::live_client;
 pub use transport::terminal;
+pub use transport::command;
 pub use utils::diagnostics::{
     Diagnostics, Journal as DiagnosticJournal, Notice, Subscription as DiagnosticSubscription,
 };
@@ -40,6 +42,7 @@ const HEARTBEAT_PERIOD_SECS: u64 = 60;
 
 #[derive(Clone)]
 pub struct CellRuntime {
+    pub commands: terminal::commands::CommandHost,
     pub engine: Arc<engine::Engine>,
     pub store: Store,
     pub lanes: Arc<LaneHub>,
@@ -155,6 +158,7 @@ impl Cell {
         let lanes = Arc::new(LaneHub::new());
         let wire = bind_wire(&engine, &store, &local_organ, &key_dir, &lanes, &mut tasks).await;
         let runtime = CellRuntime {
+            commands: Default::default(),
             engine: engine.clone(),
             store: store.clone(),
             lanes,
@@ -200,6 +204,7 @@ impl Cell {
     }
 
     pub async fn shutdown(mut self) {
+        self.runtime.commands.shutdown().await;
         if let Some(fiote) = &self.runtime.fiote {
             fiote.stop_all().await;
         }

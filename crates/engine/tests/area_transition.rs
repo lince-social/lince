@@ -59,6 +59,7 @@ fn change(quantity: &str, add: bool) -> RecordChanges {
         quantity: Some(quantity.into()),
         assert: if add { vec!["working".into()] } else { vec![] },
         retract: if add { vec![] } else { vec!["working".into()] },
+        ..Default::default()
     }
 }
 
@@ -395,4 +396,156 @@ async fn overlap_constraints_resolve_names_before_checking_for_conflicts() {
         .await;
     assert_eq!(result.unwrap_err().code(), Some("area_transition_invalid"));
     assert_eq!(assertions(&engine, &uid).await, 0);
+}
+
+#[tokio::test]
+async fn area_assignments_are_atomic_replay_safe_and_reject_stale_people() {
+    let (engine, uid) = fixture().await;
+    engine
+        .act(
+            Action::CreateConcept {
+                lingua: "g_local".into(),
+                name: "assigned-to".into(),
+                parents: vec![],
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let person = engine
+        .act(
+            Action::CreateRecord {
+                slug: Some("area-person".into()),
+                kind: nucleus::RecordKind::Person,
+                head: "Area person".into(),
+                body: String::new(),
+                quantity: 1.0,
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    let changes = RecordChanges {
+        quantity: Some("+=2".into()),
+        assign: vec!["area-person".into()],
+        ..Default::default()
+    };
+    let entry = preview(&engine, &uid, changes).await;
+    assert_eq!(entry.changes.assign, vec![person.clone()]);
+    assert!(entry.expected.assignees[&person].is_empty());
+    let role = store::auth::ensure_role(&engine.store.pool, "area-assigner")
+        .await
+        .unwrap();
+    let actor =
+        store::auth::create_person_login(&engine.store.pool, "Assigner", "assigner", "hash", role)
+            .await
+            .unwrap();
+    let permission = store::auth::ensure_permission(&engine.store.pool, "record", "update")
+        .await
+        .unwrap();
+    store::auth::grant(&engine.store.pool, role, permission)
+        .await
+        .unwrap();
+    engine
+        .set_read_filter(&actor, Some(&protein::Predicate::KindEq("plain".into())))
+        .await
+        .unwrap();
+    for action in [
+        Action::PreviewAreaTransition {
+            target: uid.clone(),
+            changes: entry.changes.clone(),
+            constraints: Default::default(),
+        },
+        Action::ApplyAreaTransition {
+            request_id: "hidden-person".into(),
+            preview: entry.clone(),
+        },
+    ] {
+        assert!(
+            engine
+                .act(action, Some(actor.clone()))
+                .await
+                .unwrap_err()
+                .to_string()
+                .contains("outside what this login may see")
+        );
+    }
+    let action = Action::ApplyAreaTransition {
+        request_id: "assign-person".into(),
+        preview: entry,
+    };
+    engine.act(action.clone(), None).await.unwrap();
+    engine.act(action, None).await.unwrap();
+    assert_eq!(quantity(&engine, &uid).await, "2");
+    let exit_changes = RecordChanges {
+        unassign: vec![person.clone()],
+        ..Default::default()
+    };
+    let exit = preview(&engine, &uid, exit_changes.clone()).await;
+    assert_eq!(exit.expected.assignees[&person].len(), 1);
+    let stale = exit.clone();
+    engine
+        .act(
+            Action::ApplyAreaTransition {
+                request_id: "unassign-person".into(),
+                preview: exit,
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    assert!(
+        preview(&engine, &uid, exit_changes)
+            .await
+            .expected
+            .assignees[&person]
+            .is_empty()
+    );
+    assert!(
+        engine
+            .act(
+                Action::ApplyAreaTransition {
+                    request_id: "stale-person".into(),
+                    preview: stale
+                },
+                None
+            )
+            .await
+            .is_err()
+    );
+    for changes in [
+        RecordChanges {
+            assign: vec![uid.clone()],
+            ..Default::default()
+        },
+        RecordChanges {
+            assign: vec![person.clone()],
+            unassign: vec!["area-person".into()],
+            ..Default::default()
+        },
+    ] {
+        assert!(
+            engine
+                .act(
+                    Action::PreviewAreaTransition {
+                        target: uid.clone(),
+                        changes,
+                        constraints: Default::default()
+                    },
+                    None
+                )
+                .await
+                .is_err()
+        );
+    }
+    let mut overlap = RecordChanges {
+        assign: vec![person.clone()],
+        ..Default::default()
+    };
+    assert!(!overlap.merge(&RecordChanges {
+        unassign: vec![person],
+        ..Default::default()
+    }));
 }

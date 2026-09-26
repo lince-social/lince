@@ -15,7 +15,10 @@ use std::{
 };
 use tokio::sync::{Mutex, mpsc, oneshot, watch};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+mod options;
+pub use options::SessionOptions;
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Config {
     #[serde(default)]
     pub require_vault: bool,
@@ -26,6 +29,8 @@ pub struct Config {
     pub environment: BTreeMap<String, String>,
     #[serde(default)]
     pub session_meta: serde_json::Map<String, Value>,
+    #[serde(default)]
+    pub options: BTreeMap<String, Value>,
 }
 
 impl Config {
@@ -37,6 +42,16 @@ impl Config {
             return Err(
                 "Choose an agent executable and at most 32 arguments and environment entries."
                     .into(),
+            );
+        }
+        if self.options.len() > 64 {
+            return Err("Save at most 64 agent options.".into());
+        }
+        if self.options.iter().any(|(id, value)| {
+            id.is_empty() || id.len() > 256 || !(value.is_string() || value.is_boolean())
+        }) {
+            return Err(
+                "Agent options must have an identifier and a choice or toggle value.".into(),
             );
         }
         if !self.directory.is_absolute() || !self.directory.is_dir() {
@@ -200,24 +215,36 @@ impl Connection {
                     agent_client_protocol::on_receive_request!(),
                 )
                 .connect_with(agent, move |peer: ConnectionTo<Agent>| async move {
-                    let info = peer
-                        .send_request(
-                            InitializeRequest::new(ProtocolVersion::V1)
-                                .client_capabilities(
-                                    ClientCapabilities::new().meta(
-                                        serde_json::from_value::<serde_json::Map<String, Value>>(
-                                            json!({"goose":{"customNotifications":true}}),
-                                        )
-                                        .unwrap(),
-                                    ),
-                                )
-                                .client_info(Implementation::new(
-                                    "lince",
-                                    env!("CARGO_PKG_VERSION"),
-                                )),
-                        )
-                        .block_task()
-                        .await?;
+                    let info =
+                        peer
+                            .send_request(
+                                InitializeRequest::new(ProtocolVersion::V1)
+                                    .client_capabilities(
+                                        ClientCapabilities::new()
+                                            .session(
+                                                ClientSessionCapabilities::new().config_options(
+                                                    SessionConfigOptionsCapabilities::new()
+                                                        .boolean(
+                                                            BooleanConfigOptionCapabilities::new(),
+                                                        ),
+                                                ),
+                                            )
+                                            .meta(
+                                                serde_json::from_value::<
+                                                    serde_json::Map<String, Value>,
+                                                >(
+                                                    json!({"goose":{"customNotifications":true}})
+                                                )
+                                                .unwrap(),
+                                            ),
+                                    )
+                                    .client_info(Implementation::new(
+                                        "lince",
+                                        env!("CARGO_PKG_VERSION"),
+                                    )),
+                            )
+                            .block_task()
+                            .await?;
                     if let Some(ready) = setup.lock().unwrap().take() {
                         let _ = ready.send(Ok((peer, info)));
                     }
@@ -301,10 +328,11 @@ impl Connection {
                 format!("Bearer {}", server.token.0),
             )]),
         )];
-        let id = if let Some(previous) =
+        let (id, options) = if let Some(previous) =
             previous.filter(|_| self.info.agent_capabilities.load_session)
         {
-            self.peer
+            let response = self
+                .peer
                 .send_request(
                     LoadSessionRequest::new(previous.to_string(), &config.directory)
                         .mcp_servers(mcp),
@@ -312,9 +340,13 @@ impl Connection {
                 .block_task()
                 .await
                 .map_err(failure)?;
-            previous.to_string()
+            (
+                previous.to_string(),
+                response.config_options.unwrap_or_default(),
+            )
         } else {
-            self.peer
+            let response = self
+                .peer
                 .send_request(
                     NewSessionRequest::new(&config.directory)
                         .mcp_servers(mcp)
@@ -322,10 +354,20 @@ impl Connection {
                 )
                 .block_task()
                 .await
-                .map_err(failure)?
-                .session_id
-                .to_string()
+                .map_err(failure)?;
+            (
+                response.session_id.to_string(),
+                response.config_options.unwrap_or_default(),
+            )
         };
+        self.apply_options(
+            &mut SessionOptions {
+                session: id.clone(),
+                options,
+            },
+            &config.options,
+        )
+        .await?;
         let mut events = self.events.lock().await;
         while let Ok(event) = events.try_recv() {
             if let Event::Permission(_, reply) = event {

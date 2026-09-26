@@ -13,7 +13,7 @@ keywords = ["registry", "automation", "self-hosted"]
 default = ["ui"]
 # The native window. Off for a headless server build:
 # `cargo build -p lince --no-default-features`.
-ui = ["dep:lince-interface"]
+ui = ["dep:lince-interface", "lince-interface/native-media"]
 facade = ["dep:lince-facade"]
 
 [dependencies]

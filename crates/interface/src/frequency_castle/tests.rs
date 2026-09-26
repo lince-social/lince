@@ -302,6 +302,7 @@ async fn native_castle_creates_edits_reads_and_confirms_deletion_through_cell() 
         )
         .unwrap();
     let runtime = cell::CellRuntime {
+        commands: Default::default(),
         store: engine.store.clone(),
         engine: engine.clone(),
         lanes: std::sync::Arc::new(cell::LaneHub::new()),

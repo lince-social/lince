@@ -354,6 +354,7 @@ async fn slug_submission_sets_zero_through_cell_and_preserves_other_records() {
             .unwrap();
     }
     let runtime = cell::CellRuntime {
+        commands: Default::default(),
         store: engine.store.clone(),
         engine,
         lanes: std::sync::Arc::new(cell::LaneHub::new()),

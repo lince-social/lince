@@ -49,6 +49,7 @@ impl MessageDraftTiming {
 #[derive(schemars::JsonSchema)]
 pub enum RecordKind {
     Plain,
+    Command,
     Rule,
     Signal,
     Transfer,
@@ -73,6 +74,7 @@ impl RecordKind {
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Plain => "plain",
+            Self::Command => "command",
             Self::Rule => "rule",
             Self::Signal => "signal",
             Self::Transfer => "transfer",
@@ -97,6 +99,7 @@ impl RecordKind {
     pub fn parse(s: &str) -> Option<Self> {
         Some(match s {
             "plain" => Self::Plain,
+            "command" => Self::Command,
             "rule" => Self::Rule,
             "signal" => Self::Signal,
             "transfer" => Self::Transfer,

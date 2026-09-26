@@ -66,6 +66,7 @@ async fn record_log_crud_uses_shared_mutations_and_reference_changes_preserve_lo
         .init_resource::<bevy::input_focus::InputFocus>()
         .insert_resource(crate::wake::WakeSignal::new(|| {}))
         .insert_resource(crate::app::CellHandle(cell::CellRuntime {
+            commands: Default::default(),
             engine: engine.clone(),
             store: engine.store.clone(),
             lanes: std::sync::Arc::new(cell::LaneHub::new()),

@@ -291,6 +291,7 @@ pub(crate) mod tests {
             frequency_castles: Vec::new(),
             transfer_castles: Vec::new(),
             recorders: Vec::new(),
+            documents: Vec::new(),
             calendars: Vec::new(),
             kanbans: Vec::new(),
             instincts: Vec::new(),

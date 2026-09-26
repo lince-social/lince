@@ -138,6 +138,7 @@ fn interface_app_at(directory: std::path::PathBuf) -> App {
     .add_plugins(crate::sound::SoundPlugin)
     .add_plugins(crate::sound_area::SoundAreaPlugin)
     .add_plugins(crate::recorder_castle::RecorderCastlePlugin)
+    .add_plugins(crate::document_viewer::DocumentViewerPlugin)
     .add_plugins(crate::frequency_castle::FrequencyCastlePlugin)
     .add_plugins(crate::transfer_castle::TransferCastlePlugin)
     .add_plugins(crate::castle_feed::FeedPlugin)
@@ -147,8 +148,11 @@ fn interface_app_at(directory: std::path::PathBuf) -> App {
     .add_plugins((
         crate::freedoom::FreedoomPlugin,
         crate::terminal::TerminalPlugin,
+        crate::command_castle::CommandCastlePlugin,
         crate::configuration::ConfigurationPlugin,
+        crate::organ_castle::OrganCastlePlugin,
         crate::todo::TodoPlugin,
+        crate::ontology::OntologyPlugin,
     ))
     .insert_resource(idle_settings())
     .add_systems(Startup, camera);

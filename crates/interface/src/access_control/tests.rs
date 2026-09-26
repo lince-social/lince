@@ -85,10 +85,62 @@ fn user_details_and_role_replacement_are_separate_and_passwords_are_not_saved() 
     assert!(mutation(app.world(), sand, &Command::ConfirmDelete).is_err());
     Command::Delete.apply(app.world_mut(), sand);
     assert!(
-        matches!(mutation(app.world(), sand, &Command::ConfirmDelete).unwrap().0, engine::actions::Action::DeleteUser { user } if user == "person-1")
+        matches!(mutation(app.world(), sand, &Command::ConfirmDelete).unwrap().0,
+            engine::actions::Action::SetPersonStanding { person, active: false, note: None } if person == "person-1")
     );
     Command::Tab(Tab::Roles).apply(app.world_mut(), sand);
     assert!(app.world().get::<EditableText>(password).is_none());
+}
+
+#[test]
+fn soft_delete_requires_confirmation_and_preserves_drafts_during_standing_updates() {
+    let (mut app, _, sand) = fixture();
+    catalog(app.world_mut());
+    Command::Select("person-1".into()).apply(app.world_mut(), sand);
+    assert!(mutation(app.world(), sand, &Command::Restore).is_err());
+    let name = app.world().get::<UserForm>(sand).unwrap().name;
+    set(app.world_mut(), name, "Unsaved name");
+    Command::Delete.apply(app.world_mut(), sand);
+    let note = app.world().get::<StandingEditor>(sand).unwrap().note;
+    set(app.world_mut(), note, "  Moved away  ");
+    assert!(matches!(
+        mutation(app.world(), sand, &Command::ConfirmDelete).unwrap().0,
+        engine::actions::Action::SetPersonStanding { active: false, note: Some(note), .. }
+            if note == "Moved away"
+    ));
+    list(app.world_mut(), sand);
+    assert_eq!(value(app.world(), note).unwrap(), "  Moved away  ");
+    Command::CancelDelete.apply(app.world_mut(), sand);
+    assert!(mutation(app.world(), sand, &Command::ConfirmDelete).is_err());
+    Command::Delete.apply(app.world_mut(), sand);
+    set(app.world_mut(), note, &"é".repeat(600));
+    assert!(mutation(app.world(), sand, &Command::ConfirmDelete).is_err());
+    let row = &mut app.world_mut().resource_mut::<Catalog>().rows[3];
+    row["active"] = json!(false);
+    row["deactivated_at"] = json!("2026-09-23T12:00:00Z");
+    row["standing_note"] = json!("Moved away");
+    assert!(mutation(app.world(), sand, &Command::ConfirmDelete).is_err());
+    list(app.world_mut(), sand);
+    assert_eq!(value(app.world(), name).unwrap(), "Unsaved name");
+    assert!(app.world().get::<EditableText>(note).is_none());
+    let texts: Vec<_> = app
+        .world_mut()
+        .query::<&Text>()
+        .iter(app.world())
+        .map(|text| text.0.clone())
+        .collect();
+    assert!(
+        texts
+            .iter()
+            .any(|text| text == "Soft-deleted on 2026-09-23T12:00:00Z")
+    );
+    assert!(texts.iter().any(|text| text == "Note: Moved away"));
+    assert!(texts.iter().any(|text| text == "Restore user"));
+    assert!(matches!(
+        mutation(app.world(), sand, &Command::Restore).unwrap().0,
+        engine::actions::Action::SetPersonStanding { person, active: true, note: None }
+            if person == "person-1"
+    ));
 }
 
 #[test]
@@ -262,6 +314,7 @@ async fn existing_backend_handles_user_lifecycle_role_replacement_and_permission
     let (mut app, root, sand) = fixture();
     let engine = std::sync::Arc::new(engine::Engine::open_memory().await.unwrap());
     let runtime = cell::CellRuntime {
+        commands: Default::default(),
         store: engine.store.clone(),
         engine: engine.clone(),
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
@@ -405,17 +458,52 @@ async fn existing_backend_handles_user_lifecycle_role_replacement_and_permission
     );
     Command::Tab(Tab::Users).apply(app.world_mut(), sand);
     Command::Select(uid.clone()).apply(app.world_mut(), sand);
+    let session = engine.login_password("alice", login(), None).await.unwrap();
+    assert!(session.require(&engine).await.is_ok());
     Command::Delete.apply(app.world_mut(), sand);
+    let note = app.world().get::<StandingEditor>(sand).unwrap().note;
+    set(app.world_mut(), note, "No longer using this Organ");
     Command::ConfirmDelete.apply(app.world_mut(), sand);
     saved(&mut app, sand).await;
     assert!(
-        !app.world()
+        app.world()
             .resource::<Catalog>()
             .rows
             .iter()
-            .any(|r| r["kind"] == "user" && r["id"] == uid)
+            .any(|row| row["kind"] == "user"
+                && row["id"] == uid
+                && row["person"] == uid
+                && row["active"] == false
+                && row["role"] == "reader"
+                && row["person_head"] == "Alice updated"
+                && row["deactivated_at"].is_string()
+                && row["standing_note"] == "No longer using this Organ")
     );
     assert!(engine.login_password("alice", login(), None).await.is_err());
+    assert!(session.require(&engine).await.is_err());
+    assert_eq!(
+        app.world().get::<UserForm>(sand).unwrap().uid.as_deref(),
+        Some(uid.as_str())
+    );
+    assert_eq!(
+        app.world().get::<StandingEditor>(sand).unwrap().state["active"],
+        false
+    );
+    Command::Restore.apply(app.world_mut(), sand);
+    saved(&mut app, sand).await;
+    assert!(engine.login_password("alice", login(), None).await.is_ok());
+    assert!(session.require(&engine).await.is_err());
+    assert!(app.world().resource::<Catalog>().rows.iter().any(|row| {
+        row["id"] == uid
+            && row["active"] == true
+            && row["role"] == "reader"
+            && row["deactivated_at"].is_null()
+            && row["standing_note"].is_null()
+    }));
+    assert_eq!(
+        app.world().get::<StandingEditor>(sand).unwrap().state["active"],
+        true
+    );
     engine
         .act(
             engine::actions::Action::CreateRole {

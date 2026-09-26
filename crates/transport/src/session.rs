@@ -83,6 +83,18 @@ impl Session {
         &self.connection_id
     }
 
+    pub fn fork_call(&self) -> Self {
+        let mut session = Self::new(
+            self.engine.clone(),
+            self.hub.clone(),
+            format!("call:{}", self.connection_id),
+            self.subject.clone(),
+        );
+        session.login = self.login.clone();
+        session.local_sync = self.local_sync;
+        session
+    }
+
     pub fn into_native_tools(self, context: crate::native::Context) -> crate::native::NativeTools {
         crate::native::NativeTools::new(self.engine.clone(), self, context)
     }
@@ -180,10 +192,55 @@ impl Session {
 
     async fn handle_inner(&mut self, msg: ClientMessage) -> Vec<ServerMessage> {
         match msg {
+            ClientMessage::CallContext { id, thread } => {
+                vec![match self
+                    .engine
+                    .call_context(&thread, self.subject.as_deref())
+                    .await
+                {
+                    Ok(context) => ServerMessage::CallContext { id, context },
+                    Err(error) => ServerMessage::Error {
+                        id,
+                        message: error.to_string(),
+                        code: Some("call".into()),
+                    },
+                }]
+            }
+            ClientMessage::Call {
+                id,
+                thread,
+                person,
+                operation,
+            } => {
+                vec![match self
+                    .engine
+                    .call_for_session(
+                        thread,
+                        person,
+                        self.subject.as_deref(),
+                        &self.connection_id,
+                        operation,
+                    )
+                    .await
+                {
+                    Ok(snapshot) => ServerMessage::Call {
+                        id,
+                        device: self.connection_id.clone(),
+                        snapshot,
+                    },
+                    Err(error) => ServerMessage::Error {
+                        id,
+                        message: error.to_string(),
+                        code: Some("call".into()),
+                    },
+                }]
+            }
             ClientMessage::Fiote { id, request } => {
                 let result = match &self.fiote {
                     Some(service) if self.local_sync => service.handle(request).await,
-                    _ => Err("Fiote settings and execution are available only on the local Cell.".into()),
+                    _ => Err(
+                        "Fiote settings and execution are available only on the local Cell.".into(),
+                    ),
                 };
                 vec![match result {
                     Ok(status) => ServerMessage::Fiote { id, status },
@@ -386,7 +443,8 @@ impl Session {
                 }
             }
             ClientMessage::CollabLeave { record_uid } => {
-                self.engine.presence
+                self.engine
+                    .presence
                     .leave_cursor(Some(&record_uid), &self.connection_id);
                 self.last_cursors.remove(&record_uid);
                 self.collab_records.remove(&record_uid);
@@ -474,7 +532,8 @@ impl Session {
                     }
                 }
             }
-            ClientMessage::TerminalOpen { id, .. }
+            ClientMessage::Command { id, .. }
+            | ClientMessage::TerminalOpen { id, .. }
             | ClientMessage::TerminalInput { id, .. }
             | ClientMessage::TerminalResize { id, .. }
             | ClientMessage::TerminalClose { id } => vec![ServerMessage::Error {
@@ -625,7 +684,9 @@ impl Session {
                 }
             } else {
                 self.collab_records.remove(&record_uid);
-                self.engine.presence.leave_cursor(Some(&record_uid), &self.connection_id);
+                self.engine
+                    .presence
+                    .leave_cursor(Some(&record_uid), &self.connection_id);
                 out.push(ServerMessage::Error {
                     id: record_uid,
                     message: "Record access was removed".into(),
@@ -649,7 +710,9 @@ impl Session {
                 .await
                 .unwrap_or(false)
             {
-                self.engine.presence.leave_cursor(Some(&uid), &self.connection_id);
+                self.engine
+                    .presence
+                    .leave_cursor(Some(&uid), &self.connection_id);
                 self.collab_records.remove(&uid);
                 self.last_cursors.remove(&uid);
                 out.push(ServerMessage::CollabCursors {
@@ -661,7 +724,12 @@ impl Session {
             let mut cursors = Vec::new();
             for cursor in self.engine.presence.cursors(&uid) {
                 if cursor.session != self.connection_id
-                    && (cursor.organ.is_some() || self.engine.may_read_record(cursor.person.as_deref(), &uid).await.unwrap_or(false))
+                    && (cursor.organ.is_some()
+                        || self
+                            .engine
+                            .may_read_record(cursor.person.as_deref(), &uid)
+                            .await
+                            .unwrap_or(false))
                 {
                     cursors.push(cursor);
                 }
@@ -725,25 +793,33 @@ impl Session {
         if self.local_sync
             && let Some(service) = &self.fiote
             && let engine::actions::Action::CreateMessage {
-                thread, body, author: None, state: nucleus::MessageState::Finished,
-                parent: None, references,
+                thread,
+                body,
+                author: None,
+                state: nucleus::MessageState::Finished,
+                parent: None,
+                references,
             } = &action
             && references.is_empty()
         {
             match service.send(thread, body).await {
-                Ok(Some(outcome)) => return ServerMessage::ActionOk {
-                    id,
-                    created: outcome.created,
-                    facts: outcome.facts.len(),
-                    warnings: outcome.warnings,
-                    data: outcome.data,
-                },
-                Ok(None) => {},
-                Err(message) => return ServerMessage::Error {
-                    id,
-                    message,
-                    code: Some("fiote".into()),
-                },
+                Ok(Some(outcome)) => {
+                    return ServerMessage::ActionOk {
+                        id,
+                        created: outcome.created,
+                        facts: outcome.facts.len(),
+                        warnings: outcome.warnings,
+                        data: outcome.data,
+                    };
+                }
+                Ok(None) => {}
+                Err(message) => {
+                    return ServerMessage::Error {
+                        id,
+                        message,
+                        code: Some("fiote".into()),
+                    };
+                }
             }
         }
         match self.engine.act(action, self.subject.clone()).await {

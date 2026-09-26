@@ -460,6 +460,18 @@ impl Service for Host {
                 self.configure_agent(&record, config).await?;
                 record
             }
+            Request::AgentOptions { record, config } => {
+                self.agent_options(&record, config).await?;
+                record
+            }
+            Request::AgentSetOption {
+                record,
+                option,
+                value,
+            } => {
+                self.set_agent_option(&record, &option, &value).await?;
+                record
+            }
             Request::AgentAuthenticate { record, method } => {
                 self.authenticate_agent(&record, &method).await?;
                 record

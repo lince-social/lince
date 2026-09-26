@@ -122,8 +122,11 @@ impl Engine {
         let invite = store::invites::get(&self.store.pool, invite_uid)
             .await?
             .ok_or_else(|| EngineError::Consequence("no such invite".into()))?;
-        self.accept_conversation(&invite.root, &invite.from_organ)
-            .await?;
+        if self.group(&invite.root).await?.is_some() {
+            self.accept_group(&invite.root).await?;
+        } else {
+            self.accept_conversation(&invite.root, &invite.from_organ).await?;
+        }
         store::invites::clear(&self.store.pool, invite_uid).await?;
         self.notify_notifications_changed();
         Ok(invite.root)

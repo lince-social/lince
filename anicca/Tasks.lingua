@@ -1,234 +1,7 @@
-Installation (@installation: 0, #instinct, #part-of @tool) {
-	
-To run the web version, focused on project management and access control, pass the domain for CSRF and listen address for port:
-```bash
-  lince --server --facade \
-    --facade-origin https://lince.mycompany.mydomain \
-    --listen-addr 127.0.0.1:6174
-```
-}
-
-Sync (@sync: 0, #instinct, #part-of @ontology) {
-- [ ] FileSync to disk in General File mode, respecting .gitignore. So record title is file name and description is contents.
-	- [ ] LSP walks the files to generate links between them if they are of a certain language, usage of some resource that comes from another file is a link: struct, trait, function, mod... all links. 
-	- [ ] Send binary files in such a folder to the blob store, since Record bodies are text.
-	- [ ] Keep derived links distinguishable from hand-made ones. A refresh must never wipe a person's manual link and must never add a second copy of one it made before
-- [ ] PeerSync to random binary blobs, so i can send a bunch of files, or only one or a bunch of dirs, or only one. See if iroh supports this.
-}
-
-Blood (@blood: 0, #instinct, #part-of @ontology) {
-If your Lince is a Cell, we call Blood the capability of interacting with other systems. Several protocols exist that allow for really useful apps, we should try to integrate with that: Nostr, irc, Matrix, ActivityPub... And not only protocols but simple file formats, the act of saving something to a simple markdown already allows for so much. Putting the mapped Karma into .ics may be a very simple way of scheduling changes to Records.
-
-This is a good step in interoperability of systems, less isolation and complex APIs and more common formats easy to deal with, allowing for extraction of data in a simple, readable and continuous way.
-}
-
-Ontology (@ontology: 0, is #chapter, #instinct, #done) { r_S8PQ17MQ3WBWM53ZN700K89V9F
-## 3. Organ management, discovery, relay and Facade
-The profile editor lands with the profile work (interface plan). Relay Cells begin with the role; everything else there is shaped by it.
-### Organ Profile — T0 and T1
-
-- [ ] Make T0 carry a structured pair — display name and profile version — in 245 bytes of text. No image ever; T0 lasts forever.
-- [ ] Keep the published organ key off T0. The key arrives after connect, so a nearby row shows no card until then.
-- [ ] Build T1, the card (a few KB, the only tier that gossips): name, description, organ key, coarse area if set, inline 128px webp avatar at 4–8KB, pronouns and language as first-class fields, a reachability hint (direct / relay-only / always-on Cell exists) that never names Cells, and offering/looking-for as OPEN promises.
-- [ ] Make the card degrade to its text half over low-bandwidth radio rather than fail.
-- [ ] Sign the card with the organ key (integrity, not identity); drop a card whose signature fails, silently.
-- [ ] Give the card a version number, a TTL, a cache eviction lifetime separate from the card's, and a last-updated timestamp.
-- [ ] Content-address every image and every Facade.
-- [ ] Take the coarse area as a self-declared country/region/city/neighbourhood; never derive it from IP or GPS.
-- [ ] Make gossiping your card opt-in per tier, with none implying the next.
-- [ ] Default the coarse area to unset, and to its coarsest granularity when set.
-- [ ] Make the seen-set, the per-source budget and the age expiry mandatory, not tunable.
-- [ ] Make publishing into a directory a separate explicit act from gossiping.
-- [ ] Keep the invite door default-closed.
-
-### Multi-hop discovery, gossip and the directory
-
-- [ ] Propagate OPEN promises past direct contacts, hop by hop, with a TTL and a per-hop visibility check. Payload and route exist (`GET /organ/open-promises`); this is propagation, not a new message type.
-- [ ] Build the gossip cache and the delegated ask-around search — asking a contact to ask onward under the same hop and TTL limits, and holding what comes back.
-- [ ] Design world-reach discovery beyond gossip and the directory before building anything for it.
-- [ ] Dedup the flood on content hash with a seen-set.
-- [ ] Forward to a random subset, not to everyone.
-- [ ] Enforce a per-source rate budget.
-- [ ] Expire by age, independently of remaining hops.
-- [ ] Depend on nothing a sender says about hop count; a relay drops past the limit it chose itself. Keep hop count, `nearness` and `proximity` distinct in the UI.
-- [ ] Build a directory Cell: a queryable index an Organ publishes into and others search. (`directory.rs` is not this.)
-- [ ] State the directory's disclosure where someone searches — an index sees every query, who, what, when, from where, and that lands on the searcher.
-- [ ] Make several independent directories the mitigation and bless none of them.
-- [ ] Resolve an area search against the self-declared coarse area and nothing else.
-
-### Relay Cells
-
-- [ ] Build the relay role: a Cell willing to carry other Organs' traffic onward. Distinct from `iroh-relay` rendezvous/fallback — new infrastructure, not a mode switch.
-- [ ] Keep a relay and a townsquare separate in configuration and in the interface.
-- [ ] Make consent to relay explicit per Cell, with a test that a Cell which never opted in forwards nothing.
-- [ ] Make relay mode use `relay_capabilities()`, with a test that a published relay Cell is refused capabilities outside that set.
-- [ ] Give a relayed batch a signed batch envelope — one signature per batch, never per op.
-- [ ] Make relaying a contact's ops per-contact, default to forwarding nothing, with a test.
-- [ ] Add a per-peer connection cap (`services.lince.relay.*` does not exist yet).
-- [ ] Add byte accounting against a configurable ceiling.
-- [ ] Decide the one option namespace for relay and townsquare, alongside the role.
-- [ ] Say in the Discovery panel when a peer is being throttled.
-- [ ] Give long-range low-bandwidth radio (LoRa) its own transport adapter from the start.
-
-### LAST — T2, the Facade
-
-An HTML page fetched on demand by hash, never gossiped.
-
-- [ ] Reconcile T2's no-network wording with the static/dynamic delivery modes in `anicca/interface/interoperability.md` before implementing dynamic Facades.
-- [ ] Close the beacon channels with a CSP and an empty sandbox (`<img src>`, CSS `url()`, `<link>`, webfonts, form actions).
-- [ ] Sanitise on receipt, not on export, and refuse a Facade that fails sanitisation instead of cleaning it.
-- [ ] Render a Facade inside a bounded card that visibly belongs to someone else — never fullscreen, never chrome-shaped, never able to imitate a Lince prompt.
-- [ ] Fetch only on an explicit click.
-- [ ] Draw links inside a Facade as inert visible URL text that does not navigate; click-to-confirm shows the full URL as a per-viewer setting.
-- [ ] Fetch by hash from any holder, never from the origin Organ; render nothing on a cache miss and say so.
-- [ ] Bound Facade storage with a per-Facade size cap shown before the fetch, plus relay-side eviction.
-- [ ] Reduce fetch-side leakage by fetching through the relay you already use.
-
-### LAST — the public face of an Organ
-
-- [ ] Show a published-subset view: what the public Organ actually holds, shown as data.
-- [ ] Generate the Facade from the public Organ, not the internal one.
-
-### LAST — Deployments, as Resenha scenarios
-
-- [ ] `iroh-relay` on the VPS — needs a public IP, a DNS name and TLS.
-- [ ] A Cell on the VPS as a roster member (`mode = "server"`), on a different machine from the relay's user and state.
-- [ ] The blind mailbox actually deployed (`mode = "front-door"`); only the deployment is missing.
-- [ ] "Where this Cell is reachable from" in the Discovery panel.
-
-## 4. Sync, login and sessions
-
-The pending-offers UI (one list, all four handshakes, accept/refuse per row, honest empty state, one delivery state per row, refusal never looking like an unanswered offer) is in `interface/plans/interface.md`, reading `offers::pending`.
-
-- [ ] Build the "did it arrive?" surface, where receipts and checkpoints answer one user question two ways. Keep delivery semantics and domain objects apart.
-- [ ] Give the Facade a secure origin — a name and a certificate — as part of the Facade work.
-- [ ] LAST — Close the off-LAN camera gap when there is a mobile Lince (`getUserMedia` needs a secure context). No second device exists to hit it yet.
-} r_S8PQ17MQ3WBWM53ZN700K89V9F
-
-Trail (@trail: 0, is #chapter, #instinct, #part-of @ontology, #done) { r_Q46Z5FZHZFACPNSNPJP2GEDC1D
-Alexandria was a library inside a temple, well maintained and kept, in a city with a port, many travelers where asked to hand their books and manuscripts and receive a copy instead. While there is the common imagination that it was burned, the details are a little conflicting. What remains from the story is the idea of a great body of knowledge, that worked because it was cared for, and the fact that it can suddenly catch fire and be lost. Great care can be put into maintaining and expanding knowledge. It will most likely provide itself useful for those meeting Needs.
-
-In Lince, the Alexandria vibe means sharing knowledge of what things are, how they work, their consequences, and how to implement them.
-
-That in turn means possibly caring for the building of interfaces and components to access knowledge, learn it and help use it while also helping with the management of knowledge: writing it and sharing it.
-
-We've come a long way, we should record that, the Trail we made should be known by others. We hope people can learn from us. Catch up on latest wisdom and knowledge. Understand how something works, how to build it, reproduce it, make it better, turn it into their own. Trail is how we call the exporting and importing of Lince data.
-
-It should come in as a package, one can put into the db and start using it in a useful way right away. It should be able to come with Records that describe what things are, how they work, what they need to do to make it work. How can they prove it is real/right. What tasks, recurrent or not, need to be made for it to function, what processes of transfer could/should be made for it to be actualized. The steps for something to be achieved, refined over centuries, by billions of people, with normal Lince workflows of collective improvement. People create useful patterns, import information from other systems, all we need to turn every piece of wisdom and knowledge from the world into something we can hold is a button for exporting part of the data you hold, and a button to import what you want.
-
-This isnt a big feature, it is an abstraction, a dream. A small thing to turn data into value, a Trail one can follow, with steps ranging from online personal education to how to build a school, how to organize the learning of the teachers and how do they rotate the student's learning across several subjects for maximum development. A good Lince will allow for this Trail to be edited, agreed upon, by many people, before it is is unwrapped and it's tasks assigned, and the work done by each envolved.
-
-In this document you may see checkboxes, for each of the Trails that want to be built. The first one is Instinct, the tutorial of Lince that comes with every copy, as a Sand with text that can turn into Records, for one to manage the progress of their knowledge of Lince, some may be in -1 quantity, needing to be read and understood, others are 1 quantity, done... There might be various ways to import data into Lince, they may all be called a Trail one can follow, or diverge from. There is a lot of work to build a body of knowledge capable of supporting a society from scratch, that's a prerequisite for Lince to sustain itself, right...? Let's pretend that we do need a highly organized, advanced and functional society for Lince to be actualized, then it is Lince's job to make sure that those that want to build it have the means necessary for doing so, and the knowledge for that, from the chopping of wood, to the iron and up to the end must be well documented. That means an open university style of knowledge accumulation, with ways to embed that into a Lince when building it's code or linking it to be accessed when using Lince. Since we are going to be pretentious we need to deliver, we must make the tool a silver bullet for reaching the philosophy, complete.
-
-Now the question remains, how do we integrate with other systems, how do we make sure we can download wikipedia and other bases of knowledge and Lince's own file system for data storage and put all into one place that gets ingested as one or at least interacted in Lince as if it where all the same thing, turning the many different sources of information into actionable tasks and knowledge?
-
-Trail can be a sand and a system thought. Today if i want to have a certain Trail (bundle of data i want) i need usually either seed it into the db or put in a Sand and load it into the db. Could it be more efficient? Could we the same way we ingest .lingua files for Instinct just dump .lingua files as plaintext in the lince-config-dir/trail/ or something? In the end they will probably be .lingua files, importing them is passing them around and evaluating them? Or having them in the disk and deciding to use them? Like a cardgame, i evoke the 'Computer Science.lingua' Trail, now i have a billion things to study, and/or I point to a public sand that is updated with a lot of knowledge of a kind i want and i pull whatever is tagged as a @trail and @computer-science and other @concepts to make sure it is what i want.
-
-Trails of certain types cannot be maintained by non-technical people of such area probably, one can teach itself, but it should be curated, and updated, as these fields have advancements everyday. A good Lince will be able to remove friction between generating and proving things inside Lince or not, and having them accessible as a Trail, managing data is a Need, we should attend to it.
-
-Trails could be indicated in levels, to make them fun and gameify Lince more, we could put them into 0 to 100 in level of mastery of a certain subject. We may have some systems of socially consenting that someone has reached some level, and with that recognition, they get trust to be able to Contribute to some Needs with assurance of skill. Level 0 is the default to those that have never done anything or graded by anyone. We can have independent AIs review the work someone did and understand what level they are. This level may be lost with time, may have some degrowth factor, because everything is impermanent. If we slip in the easiest part of a trail, we are highly likely to have an accident in the later parts, even if we traveled there before. So is is easy to lose steps and hard to advance we should care a lot about inflation of this, so we have clear and timeless description of the steps/stages and let the communities handle them.
-	Example: Some general field of Engineering might need you to reach level 20 to specialize, and making simple mistakes in current education system might make you pass, even making a hard misake might make you pass, if your other grades make up for it. So the level you have is the least that you have mastered, close to perfection. The trails require such precision, as to not inflate them, its not having 70% score in every level, it is like 100%. That will probably create skill that is true to the title of people. So 0 level might be not knowing how anything in the world works, in regards to physics, mathematics, chemistry and general engineering skills. Level 100 is the complete understanding of all the laws of physics and mathematics and chemistry and the complete capabilities to dabble in what we consider engineering fields, to enter them and quickly discover the knowledge of that field and work in it. While a specialization into Nuclear Engineering will allow you to not necessairily understand all of physics, but you know enough to dedicate yourself to the specialization and have level 20 into engineering and 30-40 into nuclear engineering (100 into nuclear is everything about the field of nuclear engineering, it is complete ability of how the potential perfect application and implementation of nuclear power to any use case, with security for those envolved and maximum performance, we know how to judge someoneo to how close they are to theorical perfection of level 100, probably never reached in any field).
-	In the case of nutrition, being level 100 means understanding every micro/macro (or a better system) of foods, knowing how to combine them for different results in consumption and other uses of any living being. 
-This is a way, removing the barrier of having a tube with your name in it to act in a field. If you have proven you have complete, actually complete mastery of knowledge of some field up to a certain point, you should be able to be trusted to do something. Current system will give you a million ways to pass and fake your knowledge. Trails by default can be a system for giving you resources to develop yourself and the world, and easing colaboration between people due to an evaluation of your mastery over a trail.
-Trails shouldnt be rigid, because everything is connected, we just dont want to speak about everything when we speak about something because it takes too long, forever and is not that useful to mention to a certain situation. We limit a trail to a subset of knowledge, actions, processes, because it is deemed to be useful to our Needs, our workflows. You may probably always find a way to utilize skills from a field in another, that might be a talend you have developed. But the appearances is that such skills are not that related to the new field you are developing yourself in you will be able to master such field much faster if you dont learn the previous one first, doing prior work might always be useful, but not optimal, and that is the reason that fields, their knowledge and requirements should be separated (at first at least, specialization is always possible after you master the basics). If you want to go into computer science, it might help to know about marble sculpting. But if you want to understand computers, how to calculate hexadecimal from binary is best to study in relation to different types of chisels if you just have one night. With that in mind, we separate the fields.
-
-Here are the subjects wanted to create Trails for, from fields of knowledge to simple daily workflows, fabrication of items...:
-- [ ] Basic Economic Transfers - these might really like certain features that have some specific combinations, being useful to make a Castle that is an easy way to enact certain workflows. People can download these Trails for living in cities, as templates on how to use Lince for doing common things like buying seats at an event, cinema, restaurant reservations, or ride sharing, supermarket purchases, all as preset workflows, Trails.
-  - [ ] Ride sharing
-  - [ ] Grocery Shopping
-  - [ ] Reservations and ticket buying in certain places.
-  - [ ] Circular tool sharing.
-- [ ] Advanced Economic Endeavors:
-  - [ ] Ergos - The product of sweat to build and maintain a complex production society.
-    - [ ] From mineration to mechanical machines and computers (needs probably to be intertwined with other parts, there should be instructions from using hands to break trees to building wood pickaxes to creating GPUs).
-    - [ ] STEM:
-      - [ ] Math
-      - [ ] Physics
-      - [ ] Chemistry
-      - [ ] Production Engineering:
-        - [ ] Production Planning Programming and Control.
-      - [ ] Computer Science:
-        - [ ] Data Structures and Algorithms
-        - [ ] Eletronics
-        - [ ] Programming Languages
-        - [ ] Operating Systems
-        - [ ] Software Engineering
-- [ ] Karma Trails so we can do certain workflows like: daily habits, to bureaucracy one has to do if they live in some country, with a lot of resources to understand how to havigate them, or given some demand, how to keep something supplied for a week, so i can plug my records in it and get to work.
-- [ ] Health, can be a big bundle made of optional smaller bundle of Trails, to ingest just one part you want:
-  - [ ] Phisio: A 3D representation of your body that can be overlapped with a textbook representation as to how it should function. Useful for tracking together with health professionals the state of your health. From skin evolution to blood test measurement over your age and conditions, to glucose levels, expected range of motion, normal pain points, allergies, ancestors medical history, all imported and managed with correct interface.
-	- [ ] Some people have slopped that with Astra.
-  - [ ] Demeter Pathway (like in Lord of Mysteries): how to organize the food you eat, according to many different diets. With steps on how to plant/acquire it (scanning possible vendors around you with Transfer proposals if you want it), treat it, and cook it, separating into several portions, reading data from your measurements to determine the amount of your Needs of certain foods and what you must avoid due to alergies (one shoudl use a Medical Lingua Vocabulary, to read your records of alergies and have the exact term of an alergy the Trail can query to cancel the recommendation and alert you of things you should avoid, avoid eating together, avoid eating at all if it even may contain something you can ingest due to a processing error).
-	- [x] Nutrients
-	- [ ] Farming
-	- [ ] Meal Preparation
-	- [ ] Interface for that
-
-  ## Optimizer
-
-  It had also an optimizer for price of the items and to get all the nutrients you needed with least amount of price and restrictions on minimum and maximum amount of grams per item you'd be able to build a set of meals for X days, so it would be a good guide on what groceries to buy. 
-
-  The optimizer minimizes total generic-currency price over food gram variables.
-  It uses a two-phase simplex tableau with these constraints:
-
-  - per-food min, max, and forced grams
-  - total marmita volume from pot count and pot volume
-  - minimum calories from Mifflin-St Jeor estimated expenditure
-  - minimum daily protein
-  - minimum daily fiber
-
-  If the LP is infeasible, the UI reports the violated class of constraint and
-  keeps a generated fallback rather than silently producing a broken plan.
-} r_Q46Z5FZHZFACPNSNPJP2GEDC1D
-
-Transfer (@transfer: 0, is #chapter, #instinct, #done) { r_00ECACY50NWQQ3S0YH37V8KMK6
-
-A Transfer is a well structured process for Contributing to other's Needs and having yours met. It might be a way of exchanging physical resources, buying services, exchanging information, proposing the assignment of tasks... It has a few steps: a proposal, an agreement and an action. It is designed to work best with Record's quantities between different Lince Cells.
-
-I start with information, I say what I can Contribute to or Need, another party confirms that it wants to be part of this Transfer, make it real. We then agree on the specifics and do our part. A Transfer can start out only with the Contribution part, used as a brainstorming mechanism, a way to generate consensus: if we model a Need and all involved agree on one specific Contribution, the following actions and automation are an agreed upon plan. If I post a Need (make a Record public as a Need), anyone that wants to Contribute will give a different solution, suggesting to break it down into other Needs and helping with some of them.
-
-We want to be able to automate the Transfers with built-in mechanisms Karma. To not have to think of a frequent purchase, to commit to it, to show first our Needs and Contributions to a certain Organ/Cells, then if they are not interacted with expand the visibility of them to other parties.
-
-I can create a Transfer for a Record as either a Need or a Contribution, might depend on how you see it, use it: let's say I want to play the Guitar live in front of an audience, that can be a Need to perform, or a Contribution as a service, paid or not. Your framing of it as either in the Need part or in the Contribution part will tell people in advance what is your goal. If nobody believes they Need to hear you play they wouldn't hire you, but if you say that you want to be heard playing they wouldn't mind letting you play at an event of theirs, contributing to your Need.
-
-We might only make a Transfer when we reach a certain state: if Record less than 7 then we buy Apples until we have 14 with a certain specific Lince Cell (known farmer). If we know that our 'Apple' Record's 'quantity' property diminishes by one every day, and we have 8, the day after tomorrow we will have 6, hitting the state to activate a Transfer proposal to buy more Apples. The farmer that wants to buy a new tool to produce more will see that they can't make a Transfer with a tool maker to buy that tool because they dont have the money yet. But because they see only the predictability that the transfer will happen after two days they can plan their business better, knowing that the chain of Transfers will happen 2 days from now.
-
-That can extend to several different Transfers, many people agreeing to many things happening so they all happen. You might need 7 previous Transfers to meet Needs of your customers so they can Contribute to other Needs and buy your Apples. Knowing this you can take part in Contributing to those previous Needs so the flow of Contributions can continue flowing, unclogging the Transfers. You may call it Investing In Your Customers, or Just Helping.
-
-"The feature of Simulation is key for this. We might have a Karma to activate a Transfer proposal of donating all extra apples if we hit 20. So if we have 30 we activate that Transfer proposal and wait for someone to collect it. Until then, we see two numbers, the real number" (30) and the number that exists in our Lince for our own use (20), the extra 10 will be donated so they are like free Contribution Apples, if we eat one, now there are 9 Contributions we can make, because our donations are on the surplus. Or we make a rule that the eating of the Apple will remove a number from our non donation apples, and the donation stays the same with the 10 Apples.
-
-- [ ] Coordination/Collaboration
-	- [ ] Several parties in same Transfer
-	- [ ] Observers
-- [ ] Resources
-	- [ ] I can setup an amount of resources flowing out of my Organ and going into another Organ, which is weird to write. That means a one way Transfer, functioning more like a donation.
-	- [ ] I can compose a two way Transfer, functioning like a Trade.
-	- [ ] I can say how much should go to the other party's resources, how much I am willing to contribute with some Record, and have the amount that is publicly being Contributed by me be different from the one i contabilize internally in my Lince: saying I will pay you 10 might make me internally diminish my 'Money' Record by 5 instead. I still will pay 10, but I control how my resources fluctuate with Transfers internally.
-	- [ ] Surplus can be projected. (Surplus = quantity you have beyond what is already committed to hard reservations — the "safe to give away" figure. Formula: `record.quantity - reserved_quantity`. Distinct from `available_quantity` in that surplus could also account for confirmed incoming deliveries not yet settled.)
-
-- [ ] Be able to combine many possible records to be changed in a transfer internally, but only showing it as one record externally. I break my bike, need to go to work tomorrow. Bike and Transport to Work are internal Needs tomorrow, but i can post a Transfer to the world that says 'Bike broke, need to go to work tomorrow'. I can decide if someone gives me a #bike i can satiate it and the need to go to work.
-	- [ ] If they lend me for 3 days they are both still fullfiled, but i see it in a timeline becoming a need again after a while, i can then post the need now or only when i actually need it.
-	- [ ] Karma Frequency should be the thing that schedules all in Lince, so it would have to do the returning of the bike after 3 days be a proposed contribution from my side. Same thing for the scheduling of my need of a bike for 3 days later.
-- [ ] A party can see only the Transfer fields allowed for it.
-- [ ] A party can see a Transfer item title without seeing the source Record head.
-- [ ] A party can see a Transfer item description without seeing the source Record body.
-- [ ] Visibility can hide source Record identity.
-- [ ] Visibility can hide other parties.
-- [ ] Visibility can hide locations and quantities.
-- [ ] Agreement
-	- [ ] Agreement state can also be derived for a parent Transfer.
-	- [ ] Dependency agreement mode is wired to interaction dependency satisfaction. (Agreement is complete when the depended-on Transfer itself is agreed/settled, not when local parties sign. Requires querying `transfer_interaction` rows with `depends_on` kind and checking the referenced Transfer state.)
-
-# Trust
-
-When interacting with other parties, it is important to know how much you can trust them. If the transfers are public and hard to fake and i can prove this party is the same of those transfers I might filter better my interactions by going to certain Actors. Your public actions start building a portfolio for Trust.
-} r_00ECACY50NWQQ3S0YH37V8KMK6
-
 Interface (@interface: 1, is #chapter, #instinct, #done) { r_99NWECF19VKV94HQQ3G3ASMC4M
 Interfaces should ask for as little attention as possible throughout the user's life. The best interface is Interfaceless. Built-in UI is minimal, not taking screenspace from users and flexible, fitting many Needs. Choices can be done quickly. Full control is always available. Components are flat by default, preffering 2D forces us to convey information only with flat data, not layers and composition, constraining the space forces minimalism. Shadows and hints can be used for subtle differentiation of areas, components and data. Built-in castles shoudld be focused in displaying mainly inputs or buttons, never phrases or paragraphs, to force self-explanatory design. Tooltips and placeholders should contain minimal text. The defaults are flat, quiet and mostly black and white, with the purple palette already in the Record. Common choices should be quick, and the person should be able to inspect and change the details. Sands: the widgets/components that live in the Box. Smaller pieces can be composed into groups, with interactions between them and other sands, receiving data from a Protein stream and executing Protein Actions in certain interactions. We should have the fundamental blocks to construct several types of workflows. Protein supplies authorized reads. Backend Actions remain responsible for writes and permissions. Files, network messages and imported packages are validated where they enter Lince. Lince's visual identity is black and white by default, with purple as the supporting color. Purple Cobalt: #3730A3, Nocturnal Purple: #6366F1, Deep Lead: #121214, Gray: #A7B4C2, Ice White: #F8FAFC.
 
 Being able to put a shader per task, the tasks left to do are dimmed versions of themselves, instead of a glowing spinning ball of energy it is a gray stopped ball, two wgsls, doing the tasks is what makes them glow or vice versa, evil versions of themselves saying you need to do something, and calm when they arent negative. Needs to pass through rust their quantities. So maybe we see the component lying down in 3d with the shaders floating above. Maybe we can do a gaussian splatting of a room, and add a shader to it, passing record quantities. If it needs cleaning it will put on top of the gaussian a lot of black goo or mut on the floors. Your room can be given coordinates, in the canvas (which is the world) and your stuff can have coordinates inside that room, so moving the room around doesnt change anything. The tasks you need to do may appear with some sand and some wgsl outside of the record's description. So you can have ambient effects on your room when you look at it, and inside it some floating stuff to do that is more computer focused so they float around your pc. And you can also have a kanban board on your wall digitally, and then when you take a 3d hologram projector it can take the room of your Lince and project to the real world, so you see the kanban, and if a camera is pointing at you and seeing your gestures you can move the sands on lince and projection, connecting the worlds.
-
-- Calendar bugs:
 
 - Record castle ideas:
 	- [ ] Show recent changes that displaced a local edit, including the previous value so the person can recover it. Explain when this short-lived record of changes expires.
@@ -271,9 +44,6 @@ make shortcuts configurable.
 	- [ ] Tab to go into Roster/Organ management of my Cells.
 
 - [x] Access Control Castle: This should be a way for us to configure the Actors of our system, their Roles (i'd like to be multiple, the things they are allowed to do should be added, so if Role A can do A and C, and not B, and Role B can do B only, someone with Roles A and B can do A, B, C). The old web version had some sand of Access control, it was implemented poorly and ugly, we can understand it and do it better, with more capabilities):
-	- [x] Actors
-	- [x] Permissions
-	- [x] Role
 	- [/] Be able to limit who can read/write what Records based on #assertion.
 
 	, and for there to be seeded one role that can control what is read/written based on that, if that is a permission, it will probably be for people that are admins (abstraction, admins are not hardcoded things, they can have such name in seeded role/permission/user, but that's it). So we can use Protein for limiting that, with complex filters of editing per role, not limited only to #assertion. Maintaining the fact of "if Role A can do A and C, and not B, and Role B can do B only, someone with Roles A and B can do A, B, C" to Record read/write capabilities.
@@ -281,7 +51,6 @@ make shortcuts configurable.
 		- [/] If workspace editing allows one to add things that create areas, these creation of areas will be able to affect records. Or if the workspace has already things that affect the records the user that enters such workspace will be able to access them. We would have to get everyone's permissions and maybe copy  a wanted workspace into one that doesnt have things some user's cant see/do. If someone with permissions decides to add something in the workspace that adds capabilities to someone without that permission then it is their fault. Unprivileged workspace, when⠄you log into an organ you can⢀try and look at some workspaces that are shared⠠by that organ. If you try to enter it, it will check your permissions. If you dont have,⡀it will create one that has yours. Anyone that has⠂enough permissions to enter a workspace can, when⠈you add things in the workspace that do change data in a way (added by someone), the workspace now has some consequences that can happen in it. If one enters it, they can move a sand to a place that changes records inside. So as to not violate the permission system, they cant access such workspace.
 
 - [ ] Stress testing adding many 1mb, 10mb, 100mb, 1gb 3d assets. See how many we can handle.
-- [ ] Fixing the insane amount of memory taken when we go into 3D. There is some witchcraft going on there that spawns goblins to live in RAM when in 3D mode, it's their tax for painting it really fast. This gets worse the more we move.
 -
 - What if when we develop computer vision models, we can see the workflow happening in real time? Start playing with the concept of cameras inside of Lince, the feed can be continuously received to remodel the 3d represetation. The old modeling may change and things might get moved, Fiote could look at the two scenes and fill in the gap: Reposition an area to be on top of an item that changed places, maybe even updating a property of such item like location.If something is gone without me modeling it 
 
@@ -294,8 +63,6 @@ record castle should open without record selected.
 
 - [ ] Explain which forces, sorting rules, pins and immunity affect a Sand. Provide limits and pause controls when rules conflict or keep triggering one another.
 
-- [ ] Explore if there is a way to use some pandoc equivalent in bevy so we can have document showing out of the box.
-	- [ ] In any way, we should have mostly compliant with markdown syntax for record descriptions and provide Raw, Pretty and Pragmatic views of Markdown, with slash commands, images, checkboxes and Record references. Keep the current source block stable until the person leaves it or deliberately changes presentation. Also would be good to write mermaid, typst is cool too.
 - [ ] Complete Ontology and Relations for exploring Concepts, directed Assertions, Trails and progress. Moving the graph's layout must not change its relationships.
 - [ ] Share published Sand packages between connected Organs without requiring a central registry. Preserve their author, identity, origin, permissions and licenses even when a recipient cannot run them yet.
 - [ ] Let the AI composition surface show a proposal for review and apply it through ordinary authorized operations. Explain unavailable providers and unapplied changes.
@@ -330,8 +97,6 @@ record castle should open without record selected.
 - [ ] Using Simulation to see the how things would change if we performed some action, or some rule where enacted, or some transfer completed could all be simulation related visualizations.
 - [ ] When taking data from Protein to show recurring tasks, one record should be able to appear more than one time. If there is a recurring karma rule frequency automation to make a record with -1 Quantity it and i pull using Protein some Simulated data, i should see the Record in the future days changing.
 - [ ] Having a Clock in 2d shows you the next hour, if it is actually a spiral that shows a range of time it will have many 360 degree turns. I can then see something said to take up a point, or ending in a point, or range, in summary, things that have either ocurrence or expected start/end or going to happen in some time will appear as parts of this spiral. So i can see the next hour in 2d or the next 4 hours in the spiral when looking on the side, it's kinda weird, so maybe we can make it in 2d do a full round, and then when it finishes the 59 minutes from now it continues a 2d spiral outwards, and you see that strip slowly ourobouros be moved each minute. If we do that way we can show the past as a strip on a lower dimension acessed when in 3d, as if it continued with the spiral in two directions, simmetrical. Maybe we can show the future as a spiral going a bit upwards, and the past as downwards. both connected at the present clock pointer.
-- [ ] Terminal
-- [ ] Audio/Video/Screenshare calls in a Thread of a Record.
 
 - [ ] Drawing in the canvas and be able to copy it as PNG or WebP asset and put Record description's. Keep image bytes outside the Record text, reference them from somewhere.
   - [ ] Being able to copy it as image or like a portal to the real thing, making an area and opening a portal to a Record's description so i can have a piece of canvas in some location not only to draw but to do anything, a generic portal.
@@ -414,16 +179,6 @@ Use an explicit entry rule for the original workspace, with the adapted view as 
 
 A template can reveal private information through literal text, names, assets, query definitions and history. Permission to discover it is not permission to copy its contents. Publish literal template content to an explicit audience, protect Record bindings separately, and filter private data before delivery. Never share the entire local multi-workspace document as a shortcut.
 
-**Area effects and authority**
-
-Sharing an Area does not delegate its author's authority. If Bob moves a Sand while Alice watches, Alice's client must not execute Bob's effect using Alice's greater permissions. Bind effects to an authenticated initiating action. Remote movement, restored layouts and replayed events must not generate new mutations under another viewer.
-
-Keep copied, imported and restored Areas disarmed. Bind arming and pending effects to the Actor, Organ, workspace and configuration revision. Revoke that binding on login, permission or configuration changes. Preserve the existing preview-and-arm interaction without requiring confirmation on every crossing.
-
-One intended transition needs one request identity reused on retry; only its origin submits it. Multiple viewers can otherwise apply successive increments using separate fresh previews. Client geometry is not proof of authority, and server-wide physics simulation is unnecessary for authorizing the requested change.
-
-Keep pending work attached to its original session. Never fall back to the local owner when remote login expires. Preserve source Organs when copying bindings; exclude credentials, drafts, queued changes and armed state. Defer effects spanning several Organs until partial-failure behavior is defined. Show rejected effects clearly and pause them instead of retrying every frame.
-
 **Read privacy and revocation**
 
 Whole-Record reads and property-level writes do not establish property-level read privacy. Queries, document snapshots, collaboration, exports, history, attachments and presence all need the appropriate filtering. Shared title/body documents require a deliberate storage and sync decision before claiming independent field privacy.
@@ -438,61 +193,7 @@ After revocation, new reads, writes and queued deliveries must use current autho
 - Measure checks with 1,000, 10,000 and 100,000 unrelated Records, then grow relevant relationships separately. Track database work, memory, latency and contention; include databases above the current snapshot limit.
 - Test revoked access between preview and apply, queued delivery after revocation, Bob's movement observed by Alice, duplicate viewers, disarmed copies, preserved source Organs, and direct requests that bypass the UI.
 - Inspect delivered workspace and subscription payloads for private content. Measure entry and idle work while increasing unrelated Actors and Records. Repeated entry must not create extra saved copies.
-	
-}
 
-Areas of Influence (@areas-of-influence: 0, #instinct, #part-of @interface) {
-
-Areas of Influence are shapes you put in the canvas. They can have some logic behind them:
-
-- Protein Spawn: your data can be pulled to the interface, with the schema you chose based on filters and aggregation of data manifested into some sand/castle.
-- Attraction/Repulsion: they can attract sands or repel them. Based on a property from db they hold, or just affect general sands.
-- Changing Properties: when Sands/Castles enter or leave the area, they can gain or lose some property in the records that are represented in the sand (through Protein).
-
-- 
-
-Areas of Influence:
-- [x] Tab in edit panel to add many types of areas, i can add a specific shape or draw it on canvas, must be one complete perimeter, cant be an open line, must be closed.
-	- [x] Simplify panel without phrases, adding buttons and sliders with icons replacing text with tooltip as much as possible.
-	- [x] Set attraction/repulsion force.
-	- [x] Reach of being affected by movement influence should be limited, with a radius (square or follows the shape) or unlimited, affecting all sands.
-	- [x] Making an Area of Influence that is a Protein Area, that gives interface access to real data, it must be given the choice to the user to use local data or make that a live mode protein so I can show data of other Organs i have login and fill them in sands the same way as normal.  That filling is like this: It will give the frontend a schema of the data returned, so in edit mode one can take those properties of each row in schema and decide what sands/castles we want to create with each property. So we can fill a Square sand with a Record's Title, and make each row put it's title in that kind of sand, so if i configure the Protein Area to link the Record Title to a Square sand and the Record Description below that Square i will see for 3 "rows" of data coming from protein 3 Squares with title on top and description on bottom, editing finely the size of that potential square, and how each property is shown when it passes the width/height of the sand or the size that it is given/configured to occupy, growing downwards with scroll, right scroll, right width until reaching outer sand width (if it grows). This is a potential sand that exists when clicking a Protein Area. Here are the types of data we want to be able to show about records for now Proteins should be configurable to send only some of them per row to the interface (do we do that already for Peer Sync to inspire ourselves or just ativate it for interface sync (aka normal protein) if its not already?).
-		- [x] Title
-		- [x] Description
-		- [x] Slug
-		- [x] Quantity
-		- [x] Assertions
-		- [x] Kind
-		- [x] Assignees
-		- [x] All our worklog properties of time spent, dates...
-		Effect:Effects: Events between Sands and internal action in Sand/Castle (like Protein Action). 
-			- [x] Record Clicked (any property of any attatched to the sand sends out event of such record clicked).
-			- [x] Protein Actions. Since a Sand can represent/be-plugged-to a Record property, changing it will fire a Protein Action of changing such property. Same goes for a Castle that shows a Record's title with a button to delete it.
-	- [x] Be able to turn properties from information shown in a sand to areas of influence, sorted by some heuristic. If i have a task title, it's assignee and due date, instead of showing a bundle of sands i can show a task title grouped by assignee in areas of influence going in one direction (downwards and alphabetically along a strip) and another (attracting area of influence + sorting area of influence) leftwards for the due date. I can even combine having them grouped by a property, like assignee, as an area of influence and showing the property redundantly either way in the group of title+assignee.
-	- [x] Add a pull to some Sands according to some property (can be an generic one like #assertion). Does not bring them to area, adds one force that is being applied to the sand. This can have a Protein UI (having a way to configure a filter for affecting sand is different from a Protein Area, that spawns sand), so we can construct complex filters for attracting sand based on many rules of properties of Records. This requires the interface to have a good query system for which sands should be affected. I think Bevy's ECS may end up doing this well, we just need to plug into it? If its not performant or requires a lot of hacks to integrate with we roll out our own.
-	- [x] Set properties the Records associated with the Sand gain when entering and lose by leaving, or lose by entering and gain by leaving.
-	- [x] Area of Influence of Sorting, can be one of the things configured with the Protein UI for configuring an Area of Influence. So i can make a Spawning area and a Sorting Area independently, or one with both.
-	- [x] Area of Influence of Immunity, that cancels all external and/or internal Area of Influences on the sands inside.
-	- [x] Area of Influence to shrink/expand Sands that enter/leave it.
-	- [x] After many areas of influence, a workspace might do a lot of computations per second when user is not interacting, and many when things change. We should have in our physics some inertia. So that when a sand changes, gaining/losing properties, or when areas of influence change/added/removed we calculate what is the resulting force applied to each sand and save that, as a vector in a direction and intensity. So we dont have to constantly calculate what is pulling a sand where, we know it. its one direction with one intensity. That should be a Simple Physics Influence, that no matter the distance to a sand, that area of influence that affect's its position will affect it the same. If in a workspace we have only Simple Physics Influences, whenever we crud the areas of influence related to movemement of sands we calculated the current direction+intensity of pull for the affected ones. In Newtonian Physics Influence the distance matters when an Area of Influence is affecting a sand, so we add more computation to calculate in real time whenever a sand is moving what are the forces of it and move it in next physics beat or something. To cancel this, we must be able to include an area of influence of Immunity, that cancels all external and/or internal area of influences.
-	- [ ] Area to assign people, unassign, add/subtract/divide/multiple quantity of records that pass through it.
-	- [ ] This is similar to karma, when something happens, do x thing, when something passes through, x happens.
-}
-
-Interfaceless (@interfaceless: 0, #part-of @interface, #v2.0.0) {
-- [ ] For funsies, use Ithkuil as one of the languages
-
-We need to model everything, and be able to not interact with Lince to have our needs met. Not necessairly knowing Lince exists, not necessairly continuing the project with the name Lince, quietly disappearing, being absorved by a bigger project, giving it capabilites of Lince. Modeling things in Lince is also a Need. So if i have a Need to model something as big as the observable universe or bigger i should, computers handle scale well, an i128 is enough. Setting a boundary on a part of the universe gives us a sandbox, if we have an Earth globe at our disposal to create these areas we may edit them to escape to fantasy land. I take the place that is my house on the map and put all my Needs and Contributions, relay it as being from my city for privacy. I look at things that are Needed in the areas close to me, or in the other side of the planet, I make transfers with them, of physical resources, information, services... I automate workflows, and I create scenarios on top of visualizations of the real world. I take tools like Gaussian Splatting, photos, videos to see what the world is like in the present, and I overlap it, mesh it together with my assets, the structures I create, using tools like game engines, blender, CAD, Generative World Models to transform the digital representation of the world, taking the real version or the simulated, gamified one and create the Needs and model the Contributions related to it, assign Actors to take care of them. Possibly doing that without interacting with Lince. That's the goal.
-
-For that a system that allows for maximum control of the scenes, is needed, the freedom of Minecraft with real world data and tiny, tiny voxels. That would be the end of the Lince's interface, nothing grater is justified to be built according to the philosophy. It would easily be able to display current web pages, launch other systems and games inside it. You open Lince, it has everything you should Need, and give you freedom to do anything you want in it's digital representation, connected completely with the real world if you want it.
-
-- [ ] Voxel system to go from outer zoom of the observable universe down to atoms (Bevy's Big Space: https://github.com/aevyrie/big_space/tree/bevy-0.19).
-- [ ] With the interface that has virtually limitless scale, we focus on centering the experience on the user's interest, Earth's globe as a 3D space with it's real topography, updateable in real time.
-- [ ] In any scale, one can take what is there as a point in which the components/widgets/sands/visual tools have at their disposal will be in a size it is good to work with, either locking things to the HUD with pinned sands, or putting them geographically in one region of the space: only in their house when they zoom in the map into their room, or the part of the room in space that is their desk, and inside they will see their widgets. In summary going from 3D to 2D, where you feel more productive with the dimensions you want.
-- [ ] Being able to connect the data of parts that are anywhere in the Space.
-- [ ] Being able to generate instantly a representation of something you want in any part of the Space, using Fiote (JEPA model?).
-- [ ] Analyzing with Fiote what some part of the space we are seeing is, and the possible Needs/Contributions we care about. 
-- [ ] View the future simulation of such world based on the possible Automations and Transfers that will happen, as transformations and scenarios of the Space, versions of it, mixed in a same scene, like if 50% transparency, some house that can be built, as if i'm planning a farm in a property and i'm putting down in the simulation where each resource will be, and after setting them, taking the unfinished work, exploding it into each tiny part and Assigning it to contrActors in Lince and doing it myself too.
 }
 
 Karma (@karma: 0, is #chapter, #instinct, #done) { r_K7T3ZG08G5EBWRSTF8NBWMTZYV
@@ -505,6 +206,10 @@ Everything up to here you do by hand. **Karma** is the part of Lince that does t
 It is useful without an LLM. People author exact rules visually, use transparent statistics and deterministic algorithms, and plan over their own goals. A model may be attached as an explicit Signal or author an inert candidate; **model access is optional and grants no special authority.** "Always on" means a supervised runtime keeps draining durable work — never always interrupting, always connected, or always authorized to act.
 
 A rule is one sentence long, and the parts below take that sentence apart: what it watches, when it counts as true, and what it does about it.
+
+} r_K7T3ZG08G5EBWRSTF8NBWMTZYV
+
+Rule (@rule: 0, #instinct, #part-of @karma) {
 
 ## One Rule in One Sentence
 
@@ -736,16 +441,7 @@ With #fruit, a rule keeps catching Records asserted after it was written — you
 - [ ] Instead of Commands immediatelly being the calling of some bash and putting it's value in some Condition we save it as a Signal, only then it is used in the Conditon.
 - [ ] Being able to accept commands over some endpoint, with some form of access control. so /command/slug is not callable by anyone.
 
-
 } r_K7T3ZG08G5EBWRSTF8NBWMTZYV
-
-Communication (@communication: 0, #instinct, #part-of @record) {
-- [ ] A thread can be given access to several users to write in, just like we do with organ discovery to chat with someone, but this can be permanent, only to such thread, or the record of the thread. That way a lot of people can create threads in the record and send messages.
-	- [ ] One can also enter a thread in a live mode of streaming of video/audio/screenshare. Many people can participate in it:
-		- [ ] Audio
-		- [ ] Video
-		- [ ] Screenshare
-}
 
 Fiote (@fiote: 0, #instinct, #part-of @karma) { r_137BM4Q7GV2707HBTRQ3GTJ9E5
 Doing a harness for Lince with Fiote may be a good way of making Lince's development more slopped more faster. While they slop in the dev checkout the nixos flake may get from github main branch.
@@ -953,8 +649,222 @@ A File Sync mode that takes every file in a directory, respects `.gitignore`, ma
 - [ ] Send binary files in such a folder to the blob store, since Record bodies are text.
 - [ ] Keep derived links distinguishable from hand-made ones. A refresh must never wipe a manual link or add a second copy of one it made before. `asserted_by` plus a provenance marker is the shape. Getting this wrong silently eats work.
 
+} 
 
-} r_137BM4Q7GV2707HBTRQ3GTJ9E5
+Sync (@sync: 0, #instinct, #part-of @ontology) {
+- [ ] FileSync to disk in General File mode, respecting .gitignore. So record title is file name and description is contents.
+	- [ ] LSP walks the files to generate links between them if they are of a certain language, usage of some resource that comes from another file is a link: struct, trait, function, mod... all links. 
+	- [ ] Send binary files in such a folder to the blob store, since Record bodies are text.
+	- [ ] Keep derived links distinguishable from hand-made ones. A refresh must never wipe a person's manual link and must never add a second copy of one it made before
+- [ ] PeerSync to random binary blobs, so i can send a bunch of files, or only one or a bunch of dirs, or only one. See if iroh supports this.
+}
+
+Blood (@blood: 0, #instinct, #part-of @ontology) {
+If your Lince is a Cell, we call Blood the capability of interacting with other systems. Several protocols exist that allow for really useful apps, we should try to integrate with that: Nostr, irc, Matrix, ActivityPub... And not only protocols but simple file formats, the act of saving something to a simple markdown already allows for so much. Putting the mapped Karma into .ics may be a very simple way of scheduling changes to Records.
+
+This is a good step in interoperability of systems, less isolation and complex APIs and more common formats easy to deal with, allowing for extraction of data in a simple, readable and continuous way.
+}
+
+Ontology (@ontology: 0, is #chapter, #instinct, #done) { r_S8PQ17MQ3WBWM53ZN700K89V9F
+## 3. Organ management, discovery, relay and Facade
+The profile editor lands with the profile work (interface plan). Relay Cells begin with the role; everything else there is shaped by it.
+### Organ Profile — T0 and T1
+
+- [ ] Make T0 carry a structured pair — display name and profile version — in 245 bytes of text. No image ever; T0 lasts forever.
+- [ ] Keep the published organ key off T0. The key arrives after connect, so a nearby row shows no card until then.
+- [ ] Build T1, the card (a few KB, the only tier that gossips): name, description, organ key, coarse area if set, inline 128px webp avatar at 4–8KB, pronouns and language as first-class fields, a reachability hint (direct / relay-only / always-on Cell exists) that never names Cells, and offering/looking-for as OPEN promises.
+- [ ] Make the card degrade to its text half over low-bandwidth radio rather than fail.
+- [ ] Sign the card with the organ key (integrity, not identity); drop a card whose signature fails, silently.
+- [ ] Give the card a version number, a TTL, a cache eviction lifetime separate from the card's, and a last-updated timestamp.
+- [ ] Content-address every image and every Facade.
+- [ ] Take the coarse area as a self-declared country/region/city/neighbourhood; never derive it from IP or GPS.
+- [ ] Make gossiping your card opt-in per tier, with none implying the next.
+- [ ] Default the coarse area to unset, and to its coarsest granularity when set.
+- [ ] Make the seen-set, the per-source budget and the age expiry mandatory, not tunable.
+- [ ] Make publishing into a directory a separate explicit act from gossiping.
+- [ ] Keep the invite door default-closed.
+
+### Multi-hop discovery, gossip and the directory
+
+- [ ] Propagate OPEN promises past direct contacts, hop by hop, with a TTL and a per-hop visibility check. Payload and route exist (`GET /organ/open-promises`); this is propagation, not a new message type.
+- [ ] Build the gossip cache and the delegated ask-around search — asking a contact to ask onward under the same hop and TTL limits, and holding what comes back.
+- [ ] Design world-reach discovery beyond gossip and the directory before building anything for it.
+- [ ] Dedup the flood on content hash with a seen-set.
+- [ ] Forward to a random subset, not to everyone.
+- [ ] Enforce a per-source rate budget.
+- [ ] Expire by age, independently of remaining hops.
+- [ ] Depend on nothing a sender says about hop count; a relay drops past the limit it chose itself. Keep hop count, `nearness` and `proximity` distinct in the UI.
+- [ ] Build a directory Cell: a queryable index an Organ publishes into and others search. (`directory.rs` is not this.)
+- [ ] State the directory's disclosure where someone searches — an index sees every query, who, what, when, from where, and that lands on the searcher.
+- [ ] Make several independent directories the mitigation and bless none of them.
+- [ ] Resolve an area search against the self-declared coarse area and nothing else.
+
+### Relay Cells
+
+- [ ] Build the relay role: a Cell willing to carry other Organs' traffic onward. Distinct from `iroh-relay` rendezvous/fallback — new infrastructure, not a mode switch.
+- [ ] Keep a relay and a townsquare separate in configuration and in the interface.
+- [ ] Make consent to relay explicit per Cell, with a test that a Cell which never opted in forwards nothing.
+- [ ] Make relay mode use `relay_capabilities()`, with a test that a published relay Cell is refused capabilities outside that set.
+- [ ] Give a relayed batch a signed batch envelope — one signature per batch, never per op.
+- [ ] Make relaying a contact's ops per-contact, default to forwarding nothing, with a test.
+- [ ] Add a per-peer connection cap (`services.lince.relay.*` does not exist yet).
+- [ ] Add byte accounting against a configurable ceiling.
+- [ ] Decide the one option namespace for relay and townsquare, alongside the role.
+- [ ] Say in the Discovery panel when a peer is being throttled.
+- [ ] Give long-range low-bandwidth radio (LoRa) its own transport adapter from the start.
+
+### LAST — T2, the Facade
+
+An HTML page fetched on demand by hash, never gossiped.
+
+- [ ] Reconcile T2's no-network wording with the static/dynamic delivery modes in `anicca/interface/interoperability.md` before implementing dynamic Facades.
+- [ ] Close the beacon channels with a CSP and an empty sandbox (`<img src>`, CSS `url()`, `<link>`, webfonts, form actions).
+- [ ] Sanitise on receipt, not on export, and refuse a Facade that fails sanitisation instead of cleaning it.
+- [ ] Render a Facade inside a bounded card that visibly belongs to someone else — never fullscreen, never chrome-shaped, never able to imitate a Lince prompt.
+- [ ] Fetch only on an explicit click.
+- [ ] Draw links inside a Facade as inert visible URL text that does not navigate; click-to-confirm shows the full URL as a per-viewer setting.
+- [ ] Fetch by hash from any holder, never from the origin Organ; render nothing on a cache miss and say so.
+- [ ] Bound Facade storage with a per-Facade size cap shown before the fetch, plus relay-side eviction.
+- [ ] Reduce fetch-side leakage by fetching through the relay you already use.
+
+### LAST — the public face of an Organ
+
+- [ ] Show a published-subset view: what the public Organ actually holds, shown as data.
+- [ ] Generate the Facade from the public Organ, not the internal one.
+
+### LAST — Deployments, as Resenha scenarios
+
+- [ ] `iroh-relay` on the VPS — needs a public IP, a DNS name and TLS.
+- [ ] A Cell on the VPS as a roster member (`mode = "server"`), on a different machine from the relay's user and state.
+- [ ] The blind mailbox actually deployed (`mode = "front-door"`); only the deployment is missing.
+- [ ] "Where this Cell is reachable from" in the Discovery panel.
+
+## 4. Sync, login and sessions
+
+The pending-offers UI (one list, all four handshakes, accept/refuse per row, honest empty state, one delivery state per row, refusal never looking like an unanswered offer) is in `interface/plans/interface.md`, reading `offers::pending`.
+
+- [ ] Build the "did it arrive?" surface, where receipts and checkpoints answer one user question two ways. Keep delivery semantics and domain objects apart.
+- [ ] Give the Facade a secure origin — a name and a certificate — as part of the Facade work.
+- [ ] LAST — Close the off-LAN camera gap when there is a mobile Lince (`getUserMedia` needs a secure context). No second device exists to hit it yet.
+} r_S8PQ17MQ3WBWM53ZN700K89V9F
+
+Trail (@trail: 0, is #chapter, #instinct, #part-of @ontology, #done) { r_Q46Z5FZHZFACPNSNPJP2GEDC1D
+Alexandria was a library inside a temple, well maintained and kept, in a city with a port, many travelers where asked to hand their books and manuscripts and receive a copy instead. While there is the common imagination that it was burned, the details are a little conflicting. What remains from the story is the idea of a great body of knowledge, that worked because it was cared for, and the fact that it can suddenly catch fire and be lost. Great care can be put into maintaining and expanding knowledge. It will most likely provide itself useful for those meeting Needs.
+
+In Lince, the Alexandria vibe means sharing knowledge of what things are, how they work, their consequences, and how to implement them.
+
+That in turn means possibly caring for the building of interfaces and components to access knowledge, learn it and help use it while also helping with the management of knowledge: writing it and sharing it.
+
+We've come a long way, we should record that, the Trail we made should be known by others. We hope people can learn from us. Catch up on latest wisdom and knowledge. Understand how something works, how to build it, reproduce it, make it better, turn it into their own. Trail is how we call the exporting and importing of Lince data.
+
+It should come in as a package, one can put into the db and start using it in a useful way right away. It should be able to come with Records that describe what things are, how they work, what they need to do to make it work. How can they prove it is real/right. What tasks, recurrent or not, need to be made for it to function, what processes of transfer could/should be made for it to be actualized. The steps for something to be achieved, refined over centuries, by billions of people, with normal Lince workflows of collective improvement. People create useful patterns, import information from other systems, all we need to turn every piece of wisdom and knowledge from the world into something we can hold is a button for exporting part of the data you hold, and a button to import what you want.
+
+This isnt a big feature, it is an abstraction, a dream. A small thing to turn data into value, a Trail one can follow, with steps ranging from online personal education to how to build a school, how to organize the learning of the teachers and how do they rotate the student's learning across several subjects for maximum development. A good Lince will allow for this Trail to be edited, agreed upon, by many people, before it is is unwrapped and it's tasks assigned, and the work done by each envolved.
+
+In this document you may see checkboxes, for each of the Trails that want to be built. The first one is Instinct, the tutorial of Lince that comes with every copy, as a Sand with text that can turn into Records, for one to manage the progress of their knowledge of Lince, some may be in -1 quantity, needing to be read and understood, others are 1 quantity, done... There might be various ways to import data into Lince, they may all be called a Trail one can follow, or diverge from. There is a lot of work to build a body of knowledge capable of supporting a society from scratch, that's a prerequisite for Lince to sustain itself, right...? Let's pretend that we do need a highly organized, advanced and functional society for Lince to be actualized, then it is Lince's job to make sure that those that want to build it have the means necessary for doing so, and the knowledge for that, from the chopping of wood, to the iron and up to the end must be well documented. That means an open university style of knowledge accumulation, with ways to embed that into a Lince when building it's code or linking it to be accessed when using Lince. Since we are going to be pretentious we need to deliver, we must make the tool a silver bullet for reaching the philosophy, complete.
+
+Now the question remains, how do we integrate with other systems, how do we make sure we can download wikipedia and other bases of knowledge and Lince's own file system for data storage and put all into one place that gets ingested as one or at least interacted in Lince as if it where all the same thing, turning the many different sources of information into actionable tasks and knowledge?
+
+Trail can be a sand and a system thought. Today if i want to have a certain Trail (bundle of data i want) i need usually either seed it into the db or put in a Sand and load it into the db. Could it be more efficient? Could we the same way we ingest .lingua files for Instinct just dump .lingua files as plaintext in the lince-config-dir/trail/ or something? In the end they will probably be .lingua files, importing them is passing them around and evaluating them? Or having them in the disk and deciding to use them? Like a cardgame, i evoke the 'Computer Science.lingua' Trail, now i have a billion things to study, and/or I point to a public sand that is updated with a lot of knowledge of a kind i want and i pull whatever is tagged as a @trail and @computer-science and other @concepts to make sure it is what i want.
+
+Trails of certain types cannot be maintained by non-technical people of such area probably, one can teach itself, but it should be curated, and updated, as these fields have advancements everyday. A good Lince will be able to remove friction between generating and proving things inside Lince or not, and having them accessible as a Trail, managing data is a Need, we should attend to it.
+
+Trails could be indicated in levels, to make them fun and gameify Lince more, we could put them into 0 to 100 in level of mastery of a certain subject. We may have some systems of socially consenting that someone has reached some level, and with that recognition, they get trust to be able to Contribute to some Needs with assurance of skill. Level 0 is the default to those that have never done anything or graded by anyone. We can have independent AIs review the work someone did and understand what level they are. This level may be lost with time, may have some degrowth factor, because everything is impermanent. If we slip in the easiest part of a trail, we are highly likely to have an accident in the later parts, even if we traveled there before. So is is easy to lose steps and hard to advance we should care a lot about inflation of this, so we have clear and timeless description of the steps/stages and let the communities handle them.
+	Example: Some general field of Engineering might need you to reach level 20 to specialize, and making simple mistakes in current education system might make you pass, even making a hard misake might make you pass, if your other grades make up for it. So the level you have is the least that you have mastered, close to perfection. The trails require such precision, as to not inflate them, its not having 70% score in every level, it is like 100%. That will probably create skill that is true to the title of people. So 0 level might be not knowing how anything in the world works, in regards to physics, mathematics, chemistry and general engineering skills. Level 100 is the complete understanding of all the laws of physics and mathematics and chemistry and the complete capabilities to dabble in what we consider engineering fields, to enter them and quickly discover the knowledge of that field and work in it. While a specialization into Nuclear Engineering will allow you to not necessairily understand all of physics, but you know enough to dedicate yourself to the specialization and have level 20 into engineering and 30-40 into nuclear engineering (100 into nuclear is everything about the field of nuclear engineering, it is complete ability of how the potential perfect application and implementation of nuclear power to any use case, with security for those envolved and maximum performance, we know how to judge someoneo to how close they are to theorical perfection of level 100, probably never reached in any field).
+	In the case of nutrition, being level 100 means understanding every micro/macro (or a better system) of foods, knowing how to combine them for different results in consumption and other uses of any living being. 
+This is a way, removing the barrier of having a tube with your name in it to act in a field. If you have proven you have complete, actually complete mastery of knowledge of some field up to a certain point, you should be able to be trusted to do something. Current system will give you a million ways to pass and fake your knowledge. Trails by default can be a system for giving you resources to develop yourself and the world, and easing colaboration between people due to an evaluation of your mastery over a trail.
+Trails shouldnt be rigid, because everything is connected, we just dont want to speak about everything when we speak about something because it takes too long, forever and is not that useful to mention to a certain situation. We limit a trail to a subset of knowledge, actions, processes, because it is deemed to be useful to our Needs, our workflows. You may probably always find a way to utilize skills from a field in another, that might be a talend you have developed. But the appearances is that such skills are not that related to the new field you are developing yourself in you will be able to master such field much faster if you dont learn the previous one first, doing prior work might always be useful, but not optimal, and that is the reason that fields, their knowledge and requirements should be separated (at first at least, specialization is always possible after you master the basics). If you want to go into computer science, it might help to know about marble sculpting. But if you want to understand computers, how to calculate hexadecimal from binary is best to study in relation to different types of chisels if you just have one night. With that in mind, we separate the fields.
+
+Here are the subjects wanted to create Trails for, from fields of knowledge to simple daily workflows, fabrication of items...:
+- [ ] Basic Economic Transfers - these might really like certain features that have some specific combinations, being useful to make a Castle that is an easy way to enact certain workflows. People can download these Trails for living in cities, as templates on how to use Lince for doing common things like buying seats at an event, cinema, restaurant reservations, or ride sharing, supermarket purchases, all as preset workflows, Trails.
+  - [ ] Ride sharing
+  - [ ] Grocery Shopping
+  - [ ] Reservations and ticket buying in certain places.
+  - [ ] Circular tool sharing.
+- [ ] Advanced Economic Endeavors:
+  - [ ] Ergos - The product of sweat to build and maintain a complex production society.
+    - [ ] From mineration to mechanical machines and computers (needs probably to be intertwined with other parts, there should be instructions from using hands to break trees to building wood pickaxes to creating GPUs).
+    - [ ] STEM:
+      - [ ] Math
+      - [ ] Physics
+      - [ ] Chemistry
+      - [ ] Production Engineering:
+        - [ ] Production Planning Programming and Control.
+      - [ ] Computer Science:
+        - [ ] Data Structures and Algorithms
+        - [ ] Eletronics
+        - [ ] Programming Languages
+        - [ ] Operating Systems
+        - [ ] Software Engineering
+- [ ] Karma Trails so we can do certain workflows like: daily habits, to bureaucracy one has to do if they live in some country, with a lot of resources to understand how to havigate them, or given some demand, how to keep something supplied for a week, so i can plug my records in it and get to work.
+- [ ] Health, can be a big bundle made of optional smaller bundle of Trails, to ingest just one part you want:
+  - [ ] Phisio: A 3D representation of your body that can be overlapped with a textbook representation as to how it should function. Useful for tracking together with health professionals the state of your health. From skin evolution to blood test measurement over your age and conditions, to glucose levels, expected range of motion, normal pain points, allergies, ancestors medical history, all imported and managed with correct interface.
+	- [ ] Some people have slopped that with Astra.
+  - [ ] Demeter Pathway (like in Lord of Mysteries): how to organize the food you eat, according to many different diets. With steps on how to plant/acquire it (scanning possible vendors around you with Transfer proposals if you want it), treat it, and cook it, separating into several portions, reading data from your measurements to determine the amount of your Needs of certain foods and what you must avoid due to alergies (one shoudl use a Medical Lingua Vocabulary, to read your records of alergies and have the exact term of an alergy the Trail can query to cancel the recommendation and alert you of things you should avoid, avoid eating together, avoid eating at all if it even may contain something you can ingest due to a processing error).
+	- [x] Nutrients
+	- [ ] Farming
+	- [ ] Meal Preparation
+	- [ ] Interface for that
+
+  ## Optimizer
+
+  It had also an optimizer for price of the items and to get all the nutrients you needed with least amount of price and restrictions on minimum and maximum amount of grams per item you'd be able to build a set of meals for X days, so it would be a good guide on what groceries to buy. 
+
+  The optimizer minimizes total generic-currency price over food gram variables.
+  It uses a two-phase simplex tableau with these constraints:
+
+  - per-food min, max, and forced grams
+  - total marmita volume from pot count and pot volume
+  - minimum calories from Mifflin-St Jeor estimated expenditure
+  - minimum daily protein
+  - minimum daily fiber
+
+  If the LP is infeasible, the UI reports the violated class of constraint and
+  keeps a generated fallback rather than silently producing a broken plan.
+} r_Q46Z5FZHZFACPNSNPJP2GEDC1D
+
+Transfer (@transfer: 0, is #chapter, #instinct, #done) { r_00ECACY50NWQQ3S0YH37V8KMK6
+
+A Transfer is a well structured process for Contributing to other's Needs and having yours met. It might be a way of exchanging physical resources, buying services, exchanging information, proposing the assignment of tasks... It has a few steps: a proposal, an agreement and an action. It is designed to work best with Record's quantities between different Lince Cells.
+
+I start with information, I say what I can Contribute to or Need, another party confirms that it wants to be part of this Transfer, make it real. We then agree on the specifics and do our part. A Transfer can start out only with the Contribution part, used as a brainstorming mechanism, a way to generate consensus: if we model a Need and all involved agree on one specific Contribution, the following actions and automation are an agreed upon plan. If I post a Need (make a Record public as a Need), anyone that wants to Contribute will give a different solution, suggesting to break it down into other Needs and helping with some of them.
+
+We want to be able to automate the Transfers with built-in mechanisms Karma. To not have to think of a frequent purchase, to commit to it, to show first our Needs and Contributions to a certain Organ/Cells, then if they are not interacted with expand the visibility of them to other parties.
+
+I can create a Transfer for a Record as either a Need or a Contribution, might depend on how you see it, use it: let's say I want to play the Guitar live in front of an audience, that can be a Need to perform, or a Contribution as a service, paid or not. Your framing of it as either in the Need part or in the Contribution part will tell people in advance what is your goal. If nobody believes they Need to hear you play they wouldn't hire you, but if you say that you want to be heard playing they wouldn't mind letting you play at an event of theirs, contributing to your Need.
+
+We might only make a Transfer when we reach a certain state: if Record less than 7 then we buy Apples until we have 14 with a certain specific Lince Cell (known farmer). If we know that our 'Apple' Record's 'quantity' property diminishes by one every day, and we have 8, the day after tomorrow we will have 6, hitting the state to activate a Transfer proposal to buy more Apples. The farmer that wants to buy a new tool to produce more will see that they can't make a Transfer with a tool maker to buy that tool because they dont have the money yet. But because they see only the predictability that the transfer will happen after two days they can plan their business better, knowing that the chain of Transfers will happen 2 days from now.
+
+That can extend to several different Transfers, many people agreeing to many things happening so they all happen. You might need 7 previous Transfers to meet Needs of your customers so they can Contribute to other Needs and buy your Apples. Knowing this you can take part in Contributing to those previous Needs so the flow of Contributions can continue flowing, unclogging the Transfers. You may call it Investing In Your Customers, or Just Helping.
+
+"The feature of Simulation is key for this. We might have a Karma to activate a Transfer proposal of donating all extra apples if we hit 20. So if we have 30 we activate that Transfer proposal and wait for someone to collect it. Until then, we see two numbers, the real number" (30) and the number that exists in our Lince for our own use (20), the extra 10 will be donated so they are like free Contribution Apples, if we eat one, now there are 9 Contributions we can make, because our donations are on the surplus. Or we make a rule that the eating of the Apple will remove a number from our non donation apples, and the donation stays the same with the 10 Apples.
+
+- [ ] Coordination/Collaboration
+	- [ ] Several parties in same Transfer
+	- [ ] Observers
+- [ ] Resources
+	- [ ] I can setup an amount of resources flowing out of my Organ and going into another Organ, which is weird to write. That means a one way Transfer, functioning more like a donation.
+	- [ ] I can compose a two way Transfer, functioning like a Trade.
+	- [ ] I can say how much should go to the other party's resources, how much I am willing to contribute with some Record, and have the amount that is publicly being Contributed by me be different from the one i contabilize internally in my Lince: saying I will pay you 10 might make me internally diminish my 'Money' Record by 5 instead. I still will pay 10, but I control how my resources fluctuate with Transfers internally.
+	- [ ] Surplus can be projected. (Surplus = quantity you have beyond what is already committed to hard reservations — the "safe to give away" figure. Formula: `record.quantity - reserved_quantity`. Distinct from `available_quantity` in that surplus could also account for confirmed incoming deliveries not yet settled.)
+
+- [ ] Be able to combine many possible records to be changed in a transfer internally, but only showing it as one record externally. I break my bike, need to go to work tomorrow. Bike and Transport to Work are internal Needs tomorrow, but i can post a Transfer to the world that says 'Bike broke, need to go to work tomorrow'. I can decide if someone gives me a #bike i can satiate it and the need to go to work.
+	- [ ] If they lend me for 3 days they are both still fullfiled, but i see it in a timeline becoming a need again after a while, i can then post the need now or only when i actually need it.
+	- [ ] Karma Frequency should be the thing that schedules all in Lince, so it would have to do the returning of the bike after 3 days be a proposed contribution from my side. Same thing for the scheduling of my need of a bike for 3 days later.
+- [ ] A party can see only the Transfer fields allowed for it.
+- [ ] A party can see a Transfer item title without seeing the source Record head.
+- [ ] A party can see a Transfer item description without seeing the source Record body.
+- [ ] Visibility can hide source Record identity.
+- [ ] Visibility can hide other parties.
+- [ ] Visibility can hide locations and quantities.
+- [ ] Agreement
+	- [ ] Agreement state can also be derived for a parent Transfer.
+	- [ ] Dependency agreement mode is wired to interaction dependency satisfaction. (Agreement is complete when the depended-on Transfer itself is agreed/settled, not when local parties sign. Requires querying `transfer_interaction` rows with `depends_on` kind and checking the referenced Transfer state.)
+
+# Trust
+
+When interacting with other parties, it is important to know how much you can trust them. If the transfers are public and hard to fake and i can prove this party is the same of those transfers I might filter better my interactions by going to certain Actors. Your public actions start building a portfolio for Trust.
+} r_00ECACY50NWQQ3S0YH37V8KMK6
 
 Resenha (@resenha: -1, #instinct, #part-of @ontology, is #task, #todo) { r_NPSFP32HZJK064WP93XH0HKJZJ
 
@@ -1370,5 +1280,20 @@ question becomes answerable with evidence rather than by survey.
 - BRL-CAD: https://brl-cad.github.io/docs/index.html · https://brlcad.org/~maths22/books/en/HACKING_BRL-CAD.html
 - openNURBS: https://www.rhino3d.com/features/developer/opennurbs/
 - Parasolid / the rented-kernel tier: https://en.wikipedia.org/wiki/Parasolid
+}
 
+Interfaceless (@interfaceless: 0, #part-of @interface, #v2.0.0) {
+- [ ] For funsies, use Ithkuil as one of the languages
+
+We need to model everything, and be able to not interact with Lince to have our needs met. Not necessairly knowing Lince exists, not necessairly continuing the project with the name Lince, quietly disappearing, being absorved by a bigger project, giving it capabilites of Lince. Modeling things in Lince is also a Need. So if i have a Need to model something as big as the observable universe or bigger i should, computers handle scale well, an i128 is enough. Setting a boundary on a part of the universe gives us a sandbox, if we have an Earth globe at our disposal to create these areas we may edit them to escape to fantasy land. I take the place that is my house on the map and put all my Needs and Contributions, relay it as being from my city for privacy. I look at things that are Needed in the areas close to me, or in the other side of the planet, I make transfers with them, of physical resources, information, services... I automate workflows, and I create scenarios on top of visualizations of the real world. I take tools like Gaussian Splatting, photos, videos to see what the world is like in the present, and I overlap it, mesh it together with my assets, the structures I create, using tools like game engines, blender, CAD, Generative World Models to transform the digital representation of the world, taking the real version or the simulated, gamified one and create the Needs and model the Contributions related to it, assign Actors to take care of them. Possibly doing that without interacting with Lince. That's the goal.
+
+For that a system that allows for maximum control of the scenes, is needed, the freedom of Minecraft with real world data and tiny, tiny voxels. That would be the end of the Lince's interface, nothing grater is justified to be built according to the philosophy. It would easily be able to display current web pages, launch other systems and games inside it. You open Lince, it has everything you should Need, and give you freedom to do anything you want in it's digital representation, connected completely with the real world if you want it.
+
+- [ ] Voxel system to go from outer zoom of the observable universe down to atoms (Bevy's Big Space: https://github.com/aevyrie/big_space/tree/bevy-0.19).
+- [ ] With the interface that has virtually limitless scale, we focus on centering the experience on the user's interest, Earth's globe as a 3D space with it's real topography, updateable in real time.
+- [ ] In any scale, one can take what is there as a point in which the components/widgets/sands/visual tools have at their disposal will be in a size it is good to work with, either locking things to the HUD with pinned sands, or putting them geographically in one region of the space: only in their house when they zoom in the map into their room, or the part of the room in space that is their desk, and inside they will see their widgets. In summary going from 3D to 2D, where you feel more productive with the dimensions you want.
+- [ ] Being able to connect the data of parts that are anywhere in the Space.
+- [ ] Being able to generate instantly a representation of something you want in any part of the Space, using Fiote (JEPA model?).
+- [ ] Analyzing with Fiote what some part of the space we are seeing is, and the possible Needs/Contributions we care about. 
+- [ ] View the future simulation of such world based on the possible Automations and Transfers that will happen, as transformations and scenarios of the Space, versions of it, mixed in a same scene, like if 50% transparency, some house that can be built, as if i'm planning a farm in a property and i'm putting down in the simulation where each resource will be, and after setting them, taking the unfinished work, exploding it into each tiny part and Assigning it to contrActors in Lince and doing it myself too.
 }

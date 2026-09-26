@@ -30,7 +30,6 @@ enum Command {
     Overflow(usize),
     DeleteButton,
     Page(bool),
-    Login,
     GroupProperty(bool, Option<String>),
     GroupOrder(bool),
     GroupDirection(bool),
@@ -47,8 +46,6 @@ enum Field {
     Columns,
     FieldWidth(usize),
     Height(usize),
-    Username,
-    Password,
     GroupStrength,
 }
 #[derive(Component)]
@@ -59,8 +56,6 @@ struct Input {
 }
 #[derive(Component)]
 struct Status(Entity);
-#[derive(Component)]
-struct PasswordMask(Entity);
 
 fn button(
     world: &mut World,
@@ -134,27 +129,6 @@ fn input(
         Tooltip(tooltip.into()),
         ChildOf(parent),
     ));
-    if matches!(field, Field::Password) {
-        world
-            .entity_mut(entity)
-            .remove::<crate::token_style::TextToken>()
-            .insert(TextColor(Color::NONE));
-        let font = world.resource::<crate::theme::Typography>().text(22.0);
-        world.spawn((
-            Text::new(""),
-            font,
-            crate::token_style::text(crate::tokens::Token::Ink),
-            Node {
-                position_type: PositionType::Absolute,
-                left: px(0),
-                top: px(0),
-                ..default()
-            },
-            Pickable::IGNORE,
-            PasswordMask(entity),
-            ChildOf(entity),
-        ));
-    }
 }
 
 impl Action for Command {
@@ -207,46 +181,6 @@ impl Action for Command {
                     state.page.saturating_sub(1)
                 };
                 state.dirty = true;
-            }
-            return;
-        }
-        if matches!(self, Self::Login) {
-            let mut username = String::new();
-            let mut password = String::new();
-            let mut erase = Vec::new();
-            for (entity, field, text) in
-                world.query::<(Entity, &Input, &EditableText)>().iter(world)
-            {
-                if field.area == owner {
-                    match field.field {
-                        Field::Username => username = text.value().to_string(),
-                        Field::Password => {
-                            password = text.value().to_string();
-                            erase.push(entity);
-                        }
-                        _ => {}
-                    }
-                }
-            }
-            for entity in erase {
-                world
-                    .get_mut::<EditableText>(entity)
-                    .unwrap()
-                    .editor
-                    .set_text("");
-            }
-            let result = world
-                .resource::<Runtime>()
-                .areas
-                .get(&owner)
-                .and_then(|state| state.remote.as_ref())
-                .map(|remote| {
-                    remote
-                        .outgoing
-                        .try_send(ClientMessage::LiveLogin { username, password })
-                });
-            if !matches!(result, Some(Ok(()))) {
-                status(world, owner, "Start the live connection before logging in");
             }
             return;
         }
@@ -397,8 +331,7 @@ pub(super) fn inputs(world: &mut World) {
         .query::<(Entity, &Input, &EditableText)>()
         .iter(world)
         .filter(|(_, input, text)| {
-            !matches!(input.field, Field::Username | Field::Password)
-                && !text.is_composing()
+            !text.is_composing()
                 && text.pending_paste.is_none()
                 && text.value().to_string() != input.observed
         })
@@ -464,7 +397,6 @@ pub(super) fn inputs(world: &mut World) {
                     binding.height = number;
                 }
             }
-            _ => {}
         }
         if config.valid() {
             set_configuration(world, owner, Some(config));
@@ -476,26 +408,6 @@ pub(super) fn inputs(world: &mut World) {
 }
 
 pub(super) fn statuses(world: &mut World) {
-    let masks: Vec<_> = world
-        .query::<(Entity, &PasswordMask)>()
-        .iter(world)
-        .map(|(entity, mask)| {
-            (
-                entity,
-                world
-                    .get::<EditableText>(mask.0)
-                    .map_or(0, |text| text.value().chars().count()),
-            )
-        })
-        .collect();
-    for (entity, count) in masks {
-        if let Some(mut text) = world.get_mut::<Text>(entity) {
-            let value = "•".repeat(count.min(32));
-            if text.0 != value {
-                text.0 = value;
-            }
-        }
-    }
     let updates: Vec<_> = world
         .query::<(Entity, &Status)>()
         .iter(world)
@@ -787,32 +699,7 @@ pub(crate) fn controls(world: &mut World, _: Entity, panel: Entity, owner: Entit
                 &uid,
             );
         }
-        input(
-            world,
-            panel,
-            owner,
-            Field::Username,
-            "Username",
-            String::new(),
-            "Only needed when the remote Organ asks for a password login",
-        );
-        input(
-            world,
-            panel,
-            owner,
-            Field::Password,
-            "Password",
-            String::new(),
-            "Used once for this connection and never saved in the workspace",
-        );
-        button(
-            world,
-            panel,
-            owner,
-            Command::Login,
-            Icon::Check,
-            "Log in to the selected Organ",
-        );
+        login::form(world, panel, owner, organ, false);
     }
     label(world, panel, "End date order", 14.0);
     button(

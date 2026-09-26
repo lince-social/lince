@@ -88,32 +88,45 @@ pub struct RecordChanges {
     pub quantity: Option<String>,
     pub assert: Vec<String>,
     pub retract: Vec<String>,
+    #[serde(default)]
+    pub assign: Vec<String>,
+    #[serde(default)]
+    pub unassign: Vec<String>,
 }
 
 impl RecordChanges {
     pub fn is_empty(&self) -> bool {
-        self.quantity.is_none() && self.assert.is_empty() && self.retract.is_empty()
+        self.quantity.is_none()
+            && self.assert.is_empty()
+            && self.retract.is_empty()
+            && self.assign.is_empty()
+            && self.unassign.is_empty()
     }
 
     pub fn validate(&self) -> bool {
-        self.assert.len() + self.retract.len() <= 16
+        self.assert.len() + self.retract.len() + self.assign.len() + self.unassign.len() <= 16
             && self
                 .assert
                 .iter()
                 .chain(&self.retract)
+                .chain(&self.assign)
+                .chain(&self.unassign)
                 .all(|name| !name.trim().is_empty() && name.len() <= 128 && !name.contains(','))
             && self
                 .quantity
                 .as_ref()
                 .is_none_or(|value| QuantityOperation::parse(value).is_some())
             && !self.assert.iter().any(|name| self.retract.contains(name))
+            && !self.assign.iter().any(|name| self.unassign.contains(name))
     }
 
     pub fn merge(&mut self, other: &Self) -> bool {
         if self.quantity.is_some() && other.quantity.is_some() && self.quantity != other.quantity {
             return false;
         }
-        if self.assert.iter().any(|name| other.retract.contains(name))
+        if self.assign.iter().any(|name| other.unassign.contains(name))
+            || self.unassign.iter().any(|name| other.assign.contains(name))
+            || self.assert.iter().any(|name| other.retract.contains(name))
             || self.retract.iter().any(|name| other.assert.contains(name))
         {
             return false;
@@ -122,6 +135,12 @@ impl RecordChanges {
         if other.quantity.is_some() {
             next.quantity = other.quantity.clone();
         }
+        next.assign.extend(other.assign.clone());
+        next.unassign.extend(other.unassign.clone());
+        next.assign.sort();
+        next.assign.dedup();
+        next.unassign.sort();
+        next.unassign.dedup();
         next.assert.extend(other.assert.clone());
         next.retract.extend(other.retract.clone());
         next.assert.sort();
@@ -141,6 +160,8 @@ impl RecordChanges {
 pub struct RecordState {
     pub quantity: String,
     pub assertions: BTreeMap<String, Vec<String>>,
+    #[serde(default)]
+    pub assignees: BTreeMap<String, Vec<String>>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
@@ -192,9 +213,32 @@ async fn state(
         }
         assertions.insert(predicate.clone(), ids);
     }
+    let mut assignees = BTreeMap::new();
+    if !changes.assign.is_empty() || !changes.unassign.is_empty() {
+        let predicate: String = store::sqlx::query_scalar(
+            "SELECT uid FROM concept WHERE canonical_name = 'assigned-to'",
+        )
+        .fetch_optional(&mut **tx)
+        .await?
+        .ok_or_else(|| invalid("Create the assigned-to concept before configuring assignments"))?;
+        for person in changes.assign.iter().chain(&changes.unassign) {
+            let valid: bool = store::sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM record WHERE uid = ? AND kind = 'person' AND deleted_at IS NULL)")
+                .bind(person).fetch_one(&mut **tx).await?;
+            if !valid {
+                return Err(invalid("Area assignments require an existing Person"));
+            }
+            let ids: Vec<String> = store::sqlx::query_scalar("SELECT uid FROM record_assertion WHERE subject_uid = ? AND predicate_uid = ? AND object_uid = ? AND role = 'ordinary' AND retracted_at IS NULL ORDER BY uid LIMIT 129")
+                .bind(target).bind(&predicate).bind(person).fetch_all(&mut **tx).await?;
+            if ids.len() > 128 {
+                return Err(invalid("Too many assignments to change through an Area"));
+            }
+            assignees.insert(person.clone(), ids);
+        }
+    }
     Ok(RecordState {
         quantity,
         assertions,
+        assignees,
     })
 }
 
@@ -204,7 +248,9 @@ impl Engine {
         mut changes: RecordChanges,
     ) -> Result<RecordChanges, EngineError> {
         if !changes.validate() || changes.is_empty() {
-            return Err(invalid("Choose a valid quantity or Assertion change"));
+            return Err(invalid(
+                "Choose a valid quantity, Assertion, or assignment change",
+            ));
         }
         if let Some(value) = &mut changes.quantity {
             let (operation, operand) = QuantityOperation::parse(value)
@@ -216,13 +262,20 @@ impl Engine {
                 .await?
                 .ok_or_else(|| EngineError::UnknownRecord(name.clone()))?;
         }
+        for person in changes.assign.iter_mut().chain(&mut changes.unassign) {
+            *person = self.resolve(person).await?;
+        }
+        changes.assign.sort();
+        changes.assign.dedup();
+        changes.unassign.sort();
+        changes.unassign.dedup();
         changes.assert.sort();
         changes.assert.dedup();
         changes.retract.sort();
         changes.retract.dedup();
         if !changes.validate() {
             return Err(invalid(
-                "An Area cannot add and remove the same Assertion at once",
+                "An Area cannot add and remove the same Assertion or person at once",
             ));
         }
         Ok(changes)
@@ -326,6 +379,36 @@ impl Engine {
             actor.as_deref(),
         )
         .await?;
+        if !current.assignees.is_empty() {
+            let predicate: String = store::sqlx::query_scalar(
+                "SELECT uid FROM concept WHERE canonical_name = 'assigned-to'",
+            )
+            .fetch_one(&mut *tx)
+            .await?;
+            for person in &changes.unassign {
+                for assertion in &current.assignees[person] {
+                    store::assertions::retract_tx(&mut tx, assertion, actor.as_deref()).await?;
+                }
+            }
+            for person in &changes.assign {
+                if current.assignees[person].is_empty() {
+                    store::assertions::insert_tx(
+                        &mut tx,
+                        &nucleus::new_uid("a"),
+                        store::assertions::NewAssertion {
+                            subject_uid: &preview.target,
+                            predicate_uid: &predicate,
+                            object_uid: Some(person),
+                            role: store::assertions::AssertionRole::Ordinary,
+                            quantity: None,
+                            unit_uid: None,
+                            asserted_by: actor.as_deref(),
+                        },
+                    )
+                    .await?;
+                }
+            }
+        }
         let mut fact = None;
         if let Some(quantity) = &changes.quantity {
             let before = DecimalValue::parse_inferred(&current.quantity)

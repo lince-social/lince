@@ -31,6 +31,7 @@ async fn fixture() -> (App, Arc<engine::Engine>, Entity, Entity, Entity, String)
         .await
         .unwrap();
     let runtime = cell::CellRuntime {
+        commands: Default::default(),
         store: engine.store.clone(),
         engine: engine.clone(),
         lanes: Arc::new(cell::LaneHub::new()),
@@ -58,11 +59,13 @@ async fn fixture() -> (App, Arc<engine::Engine>, Entity, Entity, Entity, String)
         quantity: Some("-3".into()),
         assert: vec!["working".into()],
         retract: vec![],
+        ..Default::default()
     };
     area.changes.leave = RecordChanges {
         quantity: Some("1".into()),
         assert: vec![],
         retract: vec!["working".into()],
+        ..Default::default()
     };
     let area = crate::area::spawn_area(app.world_mut(), root, 1, area).unwrap();
     let sand = app
@@ -459,6 +462,7 @@ async fn entering_a_conflicting_area_later_keeps_the_first_change() {
 }
 
 crate::laboratory_cases! {
+    async crossing_assigns_and_unassigns_people,
     async depth_only_crossings_change_records_in_a_rotated_area,
     async immunity_suppresses_record_transitions_and_cancels_pending_previews,
     async protein_filters_control_crossings_and_exit_restores_after_the_record_stops_matching,
@@ -633,4 +637,66 @@ async fn configured_changes_start_automatically_and_area_switch_stops_writes() {
     pump(&mut app).await;
     assert!(armed(app.world(), area));
     assert_eq!(quantity(&engine, &uid).await, "-3");
+}
+
+#[cfg_attr(test, tokio::test)]
+async fn crossing_assigns_and_unassigns_people() {
+    let (mut app, engine, root, area, sand, uid) = fixture().await;
+    engine
+        .act(
+            Action::CreateConcept {
+                lingua: "g_local".into(),
+                name: "assigned-to".into(),
+                parents: vec![],
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let person = engine
+        .act(
+            Action::CreateRecord {
+                slug: None,
+                kind: nucleus::RecordKind::Person,
+                head: "Area assignee".into(),
+                body: String::new(),
+                quantity: 1.0,
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    {
+        let mut config = app.world_mut().get_mut::<InfluenceArea>(area).unwrap();
+        config.changes.enter.assign = vec![person.clone()];
+        config.changes.leave.unassign = vec![person.clone()];
+    }
+    enable(&mut app, root, area);
+    for (position, expected) in [(0.0, 1), (100.0, 0)] {
+        move_to(&mut app, sand, position);
+        pump(&mut app).await;
+        let state = engine
+            .act(
+                Action::PreviewAreaTransition {
+                    target: uid.clone(),
+                    changes: RecordChanges {
+                        assign: vec![person.clone()],
+                        ..Default::default()
+                    },
+                    constraints: Default::default(),
+                },
+                None,
+            )
+            .await
+            .unwrap()
+            .data
+            .unwrap();
+        let count = state["expected"]["assignees"][&person]
+            .as_array()
+            .unwrap()
+            .len();
+        assert_eq!(count, expected);
+    }
 }

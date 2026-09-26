@@ -3,6 +3,8 @@ use fiote::{acp, config::AgentActivity, provider::TextOutput};
 use serde_json::{Value, json};
 use tokio::sync::oneshot;
 
+mod options;
+
 struct Runtime {
     record: String,
     connection: Arc<acp::Connection>,
@@ -24,6 +26,7 @@ pub(super) struct Agents {
     discovery: Mutex<HashMap<String, (acp::Config, Arc<acp::Connection>)>>,
     permissions: Arc<Mutex<HashMap<String, PendingPermission>>>,
     activity: Arc<Mutex<HashMap<String, (String, String)>>>,
+    options: Mutex<HashMap<String, options::Preview>>,
 }
 
 impl Agents {
@@ -113,6 +116,7 @@ impl Agents {
     }
 
     pub async fn close_record(&self, record: &str) {
+        self.clear_options(record).await;
         let removed: Vec<_> = {
             let mut sessions = self.sessions.lock().await;
             let keys: Vec<_> = sessions
@@ -139,6 +143,18 @@ impl Agents {
     }
 
     pub async fn close_all(&self) {
+        for (_, preview) in self.options.lock().await.drain() {
+            preview.connection.close();
+        }
+        for info in self
+            .info
+            .lock()
+            .await
+            .values_mut()
+            .filter_map(Value::as_object_mut)
+        {
+            info.remove("configOptions");
+        }
         for (_, runtime) in self.sessions.lock().await.drain() {
             runtime.connection.close();
             runtime._server.close().await;
@@ -356,6 +372,7 @@ impl Host {
         config
             .session_meta
             .insert("provider".into(), provider.into());
+        config.options.clear();
         config.require_vault = false;
         if let Some((_, previous)) = self
             .agents
@@ -388,6 +405,7 @@ impl Host {
                 directory: config.directory.clone(),
                 environment: Default::default(),
                 session_meta: Default::default(),
+                options: Default::default(),
             };
             let auth = acp::Connection::open(&auth_config).await?;
             let info = serde_json::to_value(&auth.info).map_err(|error| error.to_string())?;
@@ -499,6 +517,22 @@ impl Host {
         config.require_vault = false;
         let author = record.to_string();
         self.agents.close_record(record).await;
+        let mut discovery = self.agents.discovery.lock().await;
+        if discovery.get(record).is_some_and(|(previous, _)| {
+            previous.command != config.command
+                || previous.args != config.args
+                || previous.directory != config.directory
+                || previous.environment != config.environment
+        }) {
+            if let Some((_, connection)) = discovery.remove(record) {
+                connection.close();
+            }
+            if let Some((_, connection)) = discovery.remove(&format!("login:{record}")) {
+                connection.close();
+            }
+            self.agents.info.lock().await.remove(record);
+        }
+        drop(discovery);
         save(
             &self.path(record)?,
             &Configuration {

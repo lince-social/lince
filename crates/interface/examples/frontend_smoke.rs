@@ -52,6 +52,7 @@ fn main() {
             .unwrap();
         (
             cell::CellRuntime {
+                commands: Default::default(),
                 store: engine.store.clone(),
                 engine,
                 lanes: Arc::new(cell::LaneHub::new()),

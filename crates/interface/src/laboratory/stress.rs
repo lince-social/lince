@@ -205,7 +205,15 @@ impl StressRun {
                 );
                 let size = match self.kind() {
                     SandKind::Square => Vec2::splat(12.0),
-                    SandKind::Operation | SandKind::AccessControl | SandKind::Sync | SandKind::Freedoom | SandKind::Terminal | SandKind::Configuration | SandKind::Todo => Vec2::new(520.0, 540.0),
+                    SandKind::Operation
+                    | SandKind::AccessControl
+                    | SandKind::Sync
+                    | SandKind::Freedoom
+                    | SandKind::Terminal
+                    | SandKind::Organ
+                    | SandKind::Configuration
+                    | SandKind::Ontology
+                    | SandKind::Todo => Vec2::new(520.0, 540.0),
                     SandKind::Text | SandKind::EditableText => Vec2::new(64.0, 32.0),
                     SandKind::WorkTimer => Vec2::new(248.0, 184.0),
                 };

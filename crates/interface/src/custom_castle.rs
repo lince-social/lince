@@ -1,8 +1,10 @@
+mod library;
 mod storage;
 #[cfg(test)]
 mod tests;
 mod ui;
 
+pub(crate) use library::LibraryPlugin;
 pub(crate) use ui::store_entries;
 
 use crate::{

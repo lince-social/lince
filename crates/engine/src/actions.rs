@@ -55,6 +55,10 @@ pub enum Action {
     CreateRecordDraft {
         draft: crate::record_creation::Draft,
     },
+    CreateCustomComponent {
+        head: String,
+        body: String,
+    },
     SetQuantity {
         target: String,
         value: f64,
@@ -289,6 +293,20 @@ pub enum Action {
     StartConversation {
         contact: String,
         title: String,
+    },
+    ProposeGroup {
+        thread: String,
+        title: String,
+        organs: Vec<String>,
+    },
+    SetGroupPerson {
+        root: String,
+        person: String,
+        allowed: bool,
+    },
+    RemoveGroupOrgan {
+        root: String,
+        organ: String,
     },
     OpenThread {
         conversation: String,
@@ -1903,6 +1921,9 @@ impl Engine {
             Action::CreateRecordDraft { draft } => {
                 outcome = self.create_record_draft(draft, actor, now).await?;
             }
+            Action::CreateCustomComponent { head, body } => {
+                outcome = self.create_custom_component(head, body, actor, now).await?;
+            }
             Action::CreateRecord {
                 slug,
                 kind,
@@ -2638,6 +2659,9 @@ impl Engine {
                 namespace,
                 fds,
             } => {
+                if namespace == crate::groups::NAMESPACE || namespace == crate::groups::ADMISSION_NAMESPACE {
+                    return Err(EngineError::Forbidden("Use the group membership controls".into()));
+                }
                 if namespace == "lince.file_sync" && actor.is_some() {
                     return Err(EngineError::Forbidden(
                         "Only the local owner can configure directory sync".into(),
@@ -3040,6 +3064,16 @@ impl Engine {
                     );
                 }
                 outcome.created = Some(organ_uid);
+            }
+            Action::ProposeGroup { thread, title, organs } => {
+                let group = self.propose_group(&thread, &title, &organs, actor.as_deref()).await?;
+                outcome.created = Some(group.membership.root);
+            }
+            Action::SetGroupPerson { root, person, allowed } => {
+                self.set_group_person(&root, &person, allowed, actor.as_deref()).await?;
+            }
+            Action::RemoveGroupOrgan { root, organ } => {
+                self.remove_group_organ(&root, &organ, actor.as_deref()).await?;
             }
             Action::StartConversation { contact, title } => {
                 let contact_uid = self.resolve(&contact).await?;
@@ -3962,7 +3996,22 @@ impl Engine {
                 let concept_uid = store::concepts::resolve(&self.store.pool, &concept)
                     .await?
                     .ok_or_else(|| EngineError::UnknownRecord(concept))?;
-                store::concepts::delete(&self.store.pool, &concept_uid).await?;
+                match store::concepts::delete(&self.store.pool, &concept_uid).await {
+                    Err(error)
+                        if error
+                            .as_database_error()
+                            .is_some_and(|error| error.is_foreign_key_violation()) =>
+                    {
+                        return Err(EngineError::Conflict {
+                            code: "concept_in_use",
+                            message: "This concept is still used by Records, assertion history or other saved data. Remove it from a Lingua instead of deleting it."
+                                .into(),
+                        });
+                    }
+                    result => {
+                        result?;
+                    }
+                }
             }
             Action::AdoptConcept { lingua, concept } => {
                 let lingua_uid = store::linguas::resolve(&self.store.pool, &lingua)
@@ -10848,6 +10897,7 @@ impl Engine {
     fn generic_write_permission(action: &Action) -> Option<&'static str> {
         Some(match action {
             Action::CreateRecord { .. }
+            | Action::CreateCustomComponent { .. }
             | Action::CreateRecordDraft { .. }
             | Action::CreateRecordWithTags { .. }
             | Action::CreateAgent { .. }
@@ -10904,6 +10954,9 @@ impl Engine {
             | Action::DeleteLingua { .. }
             | Action::DeleteConversation { .. } => "record:delete",
 
+            Action::ProposeGroup { .. } => "record:create",
+            Action::SetGroupPerson { .. } => "user:update",
+            Action::RemoveGroupOrgan { .. } => "record:update",
             Action::PreviewKarmaReading { .. } => "record:read",
             Action::SaveKarmaRule { rule: None, .. } | Action::CreateFrequency { .. } | Action::CreateRecurrence { .. } => "frequency:create",
             Action::SaveKarmaRule { rule: Some(_), .. } | Action::ReviseKarmaField { .. } => "frequency:update",

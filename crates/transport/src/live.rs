@@ -191,6 +191,8 @@ async fn drive(
     };
     let mut revoked = login.watch_revocation();
     let mut relays = tokio::task::JoinSet::new();
+    let mut calls = tokio::task::JoinSet::new();
+    let mut call_queue = std::collections::VecDeque::new();
 
     let (out_tx, mut out_rx) = mpsc::channel::<ServerMessage>(32);
     let queued = out_tx.downgrade();
@@ -219,6 +221,12 @@ async fn drive(
     let mut message_count = 0;
 
     loop {
+        if calls.is_empty() {
+            if let Some(message) = call_queue.pop_front() {
+                let mut call = session.fork_call();
+                calls.spawn(async move { call.handle(message).await });
+            }
+        }
         tokio::select! {
             _ = revoked.changed() => break,
             _ = tokio::time::sleep_until(tokio::time::Instant::from_std(login.expires())) => break,
@@ -232,6 +240,14 @@ async fn drive(
                 if !session.subject_may_act().await { break; }
                 match serde_json::from_slice::<ClientMessage>(&bytes) {
                     Ok(message) => {
+                        if let ClientMessage::Call { id, .. } | ClientMessage::CallContext { id, .. } = &message {
+                            if call_queue.len() >= 64 {
+                                write_frame(&mut send, &ServerMessage::Error { id: id.clone(), message: "Call controls are busy; try again".into(), code: Some("call_busy".into()) }).await?;
+                            } else {
+                                call_queue.push_back(message);
+                            }
+                            continue;
+                        }
                         let joined = match &message {
                             ClientMessage::LaneJoin { room } => Some(room.clone()),
                             _ => None,
@@ -275,6 +291,10 @@ async fn drive(
                         && (!session.joined_rooms().contains(room) || !session.may_use_lane().await) { return Ok(()); }
                     write_frame(&mut send, &message).await.map_err(engine::EngineError::Consequence)
                 }).await.map_err(|error| error.to_string())?;
+            }
+            Some(result) = calls.join_next(), if !calls.is_empty() => {
+                if !session.subject_may_act().await { break; }
+                if let Ok(messages) = result { for message in messages { write_frame(&mut send, &message).await?; } }
             }
         }
     }

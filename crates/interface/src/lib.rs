@@ -1,5 +1,8 @@
 #![recursion_limit = "256"]
 
+#[cfg(feature = "native-media")]
+pub mod communication;
+
 #[cfg(feature = "native-runtime")]
 pub mod app;
 
@@ -171,13 +174,13 @@ pub mod record_binding;
 pub mod work_timer;
 
 #[cfg(feature = "native-runtime")]
-pub mod full_record;
+pub mod arrow_sand;
 #[cfg(feature = "native-runtime")]
-pub mod record_presentation;
+pub mod full_record;
 #[cfg(feature = "native-runtime")]
 pub mod protein_motion;
 #[cfg(feature = "native-runtime")]
-pub mod arrow_sand;
+pub mod record_presentation;
 #[cfg(feature = "native-runtime")]
 pub mod relation_castle;
 
@@ -254,12 +257,16 @@ pub mod freedoom;
 
 #[cfg(feature = "native-runtime")]
 pub mod terminal;
+pub mod command_castle;
 
 #[cfg(feature = "native-runtime")]
 pub mod configuration;
 
 #[cfg(feature = "native-runtime")]
 pub mod todo;
+
+#[cfg(feature = "native-runtime")]
+pub mod ontology;
 
 #[cfg(feature = "native-runtime")]
 pub mod sound;
@@ -271,4 +278,10 @@ pub mod sound_area;
 pub mod recorder_castle;
 
 #[cfg(feature = "native-runtime")]
+pub mod document_viewer;
+
+#[cfg(feature = "native-runtime")]
 pub mod transfer_castle;
+
+#[cfg(feature = "native-runtime")]
+pub mod organ_castle;

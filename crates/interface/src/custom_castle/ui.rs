@@ -84,6 +84,7 @@ fn icon(world: &mut World, parent: Entity, root: Entity, icon: Icon, tip: &str, 
 }
 
 pub(crate) fn store_entries(world: &mut World, root: Entity, parent: Entity) {
+    super::library::show(world, root, parent);
     let heading = row(world, parent);
     label(world, heading, "Custom", 18.0);
     let directory = storage::directory(world);
@@ -124,6 +125,7 @@ pub(crate) fn store_entries(world: &mut World, root: Entity, parent: Entity) {
             ..default()
         },
         crate::token_style::border(crate::tokens::Token::Accent),
+        crate::icons::Tooltip("Custom Castle name".into()),
     ));
     let mut editor = world.get_mut::<EditableText>(field).unwrap();
     editor.max_characters = Some(80);

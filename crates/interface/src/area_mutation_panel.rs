@@ -23,6 +23,8 @@ enum Property {
     Quantity,
     Assert,
     Retract,
+    Assign,
+    Unassign,
 }
 
 #[derive(Component)]
@@ -66,6 +68,12 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity, entity: Ent
                 "Remove Assertions",
                 changes.retract.join(", "),
             ),
+            (Property::Assign, "Assign people", changes.assign.join(", ")),
+            (
+                Property::Unassign,
+                "Unassign people",
+                changes.unassign.join(", "),
+            ),
         ] {
             label(world, panel, title, 14.0);
             let input = world
@@ -82,6 +90,8 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity, entity: Ent
             world.entity_mut(input).insert((
                 crate::icons::Tooltip(match property {
                     Property::Quantity => "Set or calculate quantity on this crossing. Blank keeps it unchanged. Division by zero, overflow, and inexact results are rejected.",
+                    Property::Assign => "Assign people by Record slug or UID, separated by commas.",
+                    Property::Unassign => "Unassign people by Record slug or UID, separated by commas.",
                     Property::Assert => "Add Assertion names separated by commas. Remove them on the opposite crossing for a temporary Assertion.",
                     Property::Retract => "Remove Assertion names separated by commas. Add them on the opposite crossing to restore them.",
                 }.into()),
@@ -103,7 +113,7 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity, entity: Ent
                 .unwrap()
                 .set_label(title);
             let status = label(world, panel, "", 12.0);
-            world.entity_mut(status).insert(crate::icons::Tooltip("Not saved. Use a decimal quantity and up to 16 Assertion names. Do not add and remove the same name on one crossing.".into()));
+            world.entity_mut(status).insert(crate::icons::Tooltip("Not saved. Use a decimal quantity and up to 16 Assertion names or people. Do not add and remove the same name on one crossing.".into()));
             world.entity_mut(input).insert(Field {
                 root,
                 area: entity,
@@ -114,7 +124,9 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity, entity: Ent
                 valid: true,
             });
             if matches!(property, Property::Quantity) {
-                world.entity_mut(input).insert(crate::tutorial::TutorialField::Quantity(entity, enter));
+                world
+                    .entity_mut(input)
+                    .insert(crate::tutorial::TutorialField::Quantity(entity, enter));
                 let row = crate::area_panel::row(world, panel);
                 for operation in engine::area_transition::QuantityOperation::ALL {
                     let button = world
@@ -186,6 +198,8 @@ pub(crate) fn autosave(world: &mut World) {
             }
             Property::Assert => changes.assert = names(&value),
             Property::Retract => changes.retract = names(&value),
+            Property::Assign => changes.assign = names(&value),
+            Property::Unassign => changes.unassign = names(&value),
         }
         let valid = area.validate();
         if valid {
@@ -286,7 +300,30 @@ pub(crate) mod tests {
                 app.world().get::<Field>(input).unwrap().observed
             );
         }
+        for (enter, property) in [(true, Property::Assign), (false, Property::Unassign)] {
+            let input = app
+                .world_mut()
+                .query::<(Entity, &Field)>()
+                .iter(app.world())
+                .find(|(_, field)| {
+                    field.enter == enter
+                        && std::mem::discriminant(&field.property)
+                            == std::mem::discriminant(&property)
+                })
+                .unwrap()
+                .0;
+            app.world_mut()
+                .get_mut::<EditableText>(input)
+                .unwrap()
+                .editor
+                .set_text("alice, bob, alice");
+            app.update();
+        }
         let saved = app.world().get::<InfluenceArea>(area).unwrap();
+        assert_eq!(saved.changes.enter.assign, vec!["alice", "bob"]);
+        assert_eq!(saved.changes.leave.unassign, vec!["alice", "bob"]);
+        assert!(saved.changes.enter.unassign.is_empty());
+        assert!(saved.changes.leave.assign.is_empty());
         assert_eq!(saved.changes.enter.quantity.as_deref(), Some("-3.125"));
         assert_eq!(saved.changes.leave.quantity, None);
         let restored: InfluenceArea =

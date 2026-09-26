@@ -15,6 +15,13 @@ pub(super) struct UserForm {
     role: String,
     role_label: Entity,
     chooser: Entity,
+}
+
+#[derive(Component)]
+struct StandingEditor {
+    parent: Entity,
+    state: Value,
+    note: Entity,
     confirm: Entity,
 }
 
@@ -46,6 +53,7 @@ enum Command {
     Delete,
     ConfirmDelete,
     CancelDelete,
+    Restore,
     CreateRole,
     RenameRole,
     DeleteRole,
@@ -114,7 +122,7 @@ impl Action for Command {
                 world.get_mut::<Text>(caption).unwrap().0 = role.clone();
             }
             Self::Delete | Self::CancelDelete => {
-                let Some(form) = world.get::<UserForm>(owner) else {
+                let Some(form) = world.get::<StandingEditor>(owner) else {
                     return;
                 };
                 let confirm = form.confirm;
@@ -172,7 +180,49 @@ fn mutation(
 ) -> Result<(engine::actions::Action, Mutation), String> {
     use engine::actions::Action as Backend;
     match command {
-        Command::SaveUser | Command::Assign | Command::ConfirmDelete => {
+        Command::ConfirmDelete | Command::Restore => {
+            let person = world
+                .get::<UserForm>(owner)
+                .and_then(|form| form.uid.clone())
+                .ok_or("Select an existing user.")?;
+            let form = world
+                .get::<StandingEditor>(owner)
+                .ok_or("Open the user editor again.")?;
+            let entry = world
+                .resource::<Catalog>()
+                .rows
+                .iter()
+                .find(|entry| entry["kind"] == "user" && entry["id"] == person)
+                .ok_or("User no longer exists. Refresh the list.")?;
+            let active = matches!(command, Command::Restore);
+            if active == (entry["active"] != false) {
+                return Err("This user's access already changed. Refresh the list.".into());
+            }
+            let note = if active {
+                None
+            } else {
+                if world
+                    .get::<Node>(form.confirm)
+                    .is_none_or(|node| node.display == Display::None)
+                {
+                    return Err("Confirm soft-deleting this user first.".into());
+                }
+                let note = value(world, form.note)?.trim().to_owned();
+                if note.len() > 1024 {
+                    return Err("Keep the note within 1024 bytes.".into());
+                }
+                (!note.is_empty()).then_some(note)
+            };
+            Ok((
+                Backend::SetPersonStanding {
+                    person,
+                    active,
+                    note,
+                },
+                Mutation::Standing,
+            ))
+        }
+        Command::SaveUser | Command::Assign => {
             let form = world.get::<UserForm>(owner).ok_or("Select a user first.")?;
             match command {
                 Command::Assign => {
@@ -187,16 +237,6 @@ fn mutation(
                         },
                         Mutation::Assign,
                     ))
-                }
-                Command::ConfirmDelete => {
-                    let user = form.uid.clone().ok_or("Select an existing user.")?;
-                    if world
-                        .get::<Node>(form.confirm)
-                        .is_none_or(|node| node.display == Display::None)
-                    {
-                        return Err("Confirm deleting this login first.".into());
-                    }
-                    Ok((Backend::DeleteUser { user }, Mutation::DeleteUser))
                 }
                 _ => {
                     let username = value(world, form.username)?.trim().to_owned();
@@ -512,7 +552,7 @@ pub(super) fn list(world: &mut World, owner: Entity) {
                 entry["username"].as_str().unwrap_or_default(),
                 entry["role"].as_str().unwrap_or("No Role"),
                 if entry["active"] == false {
-                    " · inactive"
+                    " · soft-deleted"
                 } else {
                     ""
                 }
@@ -545,6 +585,7 @@ pub(super) fn list(world: &mut World, owner: Entity) {
     } else if let Some(form) = world.get::<UserForm>(owner) {
         let chooser = form.chooser;
         role_choices(world, owner, chooser);
+        refresh_standing(world, owner);
     }
 }
 
@@ -556,7 +597,7 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
     let selected = view.selected.clone();
     world
         .entity_mut(owner)
-        .remove::<(UserForm, RoleForm, RoleEdit)>();
+        .remove::<(UserForm, StandingEditor, RoleForm, RoleEdit)>();
     world.entity_mut(parent).despawn_children();
     if !world.resource::<Catalog>().ready {
         label(
@@ -689,25 +730,11 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
                 "Replace assigned Role",
                 Command::Assign,
             );
-            button(world, controls, owner, "Delete login…", Command::Delete);
         }
-        let confirm = column(world, parent);
-        world.get_mut::<Node>(confirm).unwrap().display = Display::None;
-        label(
-            world,
-            confirm,
-            "Delete this login? The Person Record stays. This cannot be undone here.",
-            14.0,
-        );
-        let controls = row(world, confirm);
-        button(
-            world,
-            controls,
-            owner,
-            "Delete login",
-            Command::ConfirmDelete,
-        );
-        button(world, controls, owner, "Cancel", Command::CancelDelete);
+        if let Some(entry) = entry {
+            let standing = column(world, parent);
+            standing_editor(world, owner, standing, standing_state(entry));
+        }
         world.entity_mut(owner).insert(UserForm {
             uid: selected,
             username,
@@ -716,7 +743,6 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
             role,
             role_label,
             chooser,
-            confirm,
         });
     } else if let Some(entry) = entry {
         let name = entry["name"].as_str().unwrap_or_default();
@@ -779,6 +805,79 @@ pub(super) fn editor(world: &mut World, owner: Entity) {
             "Create the Role, then select it to set its permissions.",
             14.0,
         );
+    }
+}
+
+fn standing_state(entry: &Value) -> Value {
+    serde_json::json!({
+        "active": entry["active"] != false,
+        "at": entry["deactivated_at"],
+        "note": entry["standing_note"],
+    })
+}
+
+fn standing_editor(world: &mut World, owner: Entity, parent: Entity, state: Value) {
+    world.entity_mut(parent).despawn_children();
+    if state["active"] == false {
+        label(world, parent, "Soft-deleted · access disabled", 14.0);
+        if let Some(at) = state["at"].as_str() {
+            label(world, parent, &format!("Soft-deleted on {at}"), 14.0);
+        }
+        if let Some(note) = state["note"].as_str().filter(|note| !note.is_empty()) {
+            label(world, parent, &format!("Note: {note}"), 14.0);
+        }
+        button(world, parent, owner, "Restore user", Command::Restore);
+    } else {
+        label(world, parent, "Active", 14.0);
+        button(world, parent, owner, "Soft-delete user…", Command::Delete);
+    }
+    let confirm = column(world, parent);
+    world.get_mut::<Node>(confirm).unwrap().display = Display::None;
+    label(
+        world,
+        confirm,
+        "Soft-delete this user? Access stops. Their login, Role, Person and history stay, and you can restore access here.",
+        14.0,
+    );
+    let note = input(world, confirm, "Optional note", "", 1024);
+    let controls = row(world, confirm);
+    button(
+        world,
+        controls,
+        owner,
+        "Soft-delete user",
+        Command::ConfirmDelete,
+    );
+    button(world, controls, owner, "Cancel", Command::CancelDelete);
+    world.entity_mut(owner).insert(StandingEditor {
+        parent,
+        state,
+        note,
+        confirm,
+    });
+}
+
+fn refresh_standing(world: &mut World, owner: Entity) {
+    let Some(person) = world
+        .get::<UserForm>(owner)
+        .and_then(|form| form.uid.as_ref())
+    else {
+        return;
+    };
+    let Some(entry) = world
+        .resource::<Catalog>()
+        .rows
+        .iter()
+        .find(|entry| entry["kind"] == "user" && entry["id"].as_str() == Some(person))
+    else {
+        return;
+    };
+    let state = standing_state(entry);
+    if let Some(form) = world.get::<StandingEditor>(owner)
+        && form.state != state
+    {
+        let parent = form.parent;
+        standing_editor(world, owner, parent, state);
     }
 }
 

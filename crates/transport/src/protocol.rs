@@ -8,6 +8,14 @@ pub use engine::presence::Cursor as CollabCursor;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ClientMessage {
+    Command { id: String, request: crate::command::Request },
+    CallContext { id: String, thread: String },
+    Call {
+        id: String,
+        thread: String,
+        person: Option<String>,
+        operation: engine::calls::Operation,
+    },
     Fiote {
         id: String,
         request: fiote::config::Request,
@@ -119,6 +127,9 @@ pub enum ClientMessage {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ServerMessage {
+    Command { id: String, response: crate::command::Response },
+    CallContext { id: String, context: engine::calls::Context },
+    Call { id: String, device: String, snapshot: engine::calls::Snapshot },
     Fiote {
         id: String,
         status: fiote::config::Status,

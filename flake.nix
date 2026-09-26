@@ -49,11 +49,16 @@
             lib.optionals stdenv.isLinux [
               makeWrapper
               pkg-config
+              rustPlatform.bindgenHook
             ];
           interfaceLinuxBuildInputs =
             with pkgs;
             lib.optionals stdenv.isLinux [
               alsa-lib
+              pipewire
+              glib
+              dbus
+              libpulseaudio
               libGL
               libdrm
               libgbm
@@ -80,11 +85,15 @@
 
               cargoLock = {
                 lockFile = ./Cargo.lock;
+                outputHashes = {
+                  "flexaudio-0.3.0" = "sha256-Cku6qBC22XC3xmtJ2u1oG3oUUEpX+XkP8UpSYk4qUWQ=";
+                };
               };
 
               LINCE_REVISION = self.rev or self.dirtyRev or "unknown";
 
               RUSTFLAGS = "-D warnings";
+              LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
 
               dontUseNinjaBuild = ui;
               dontUseNinjaCheck = ui;
@@ -104,7 +113,7 @@
               nativeBuildInputs =
                 (with pkgs; [ pkg-config ])
                 ++ lib.optionals ui (
-                  [ pkgs.makeWrapper ] ++ lib.remove pkgs.pkg-config interfaceLinuxNativeBuildInputs
+                  [ pkgs.makeWrapper pkgs.clang pkgs.libclang ] ++ lib.remove pkgs.pkg-config interfaceLinuxNativeBuildInputs
                 );
 
               buildInputs =
@@ -298,11 +307,14 @@
           );
 
           devShells.default = pkgs.mkShell {
+            LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
             packages =
               (with pkgs; [
                 openssl
                 pkg-config
                 sqlite
+                clang
+                libclang
               ])
               ++ interfaceLinuxNativeBuildInputs
               ++ interfaceLinuxBuildInputs;
@@ -323,7 +335,19 @@
             '';
           };
 
+          devShells.media = pkgs.mkShell {
+            inputsFrom = [ self.devShells.${system}.interface ];
+            packages = with pkgs; [ clang libclang ] ++ lib.optionals stdenv.isLinux [
+              pipewire
+              glib
+              dbus
+              libpulseaudio
+            ];
+            LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
+          };
+
           devShells.interface = pkgs.mkShell {
+            LIBCLANG_PATH = "${pkgs.libclang.lib}/lib";
             packages =
               (
                 with pkgs;
@@ -332,6 +356,8 @@
                   pkg-config
                   python3
                   sqlite
+                  clang
+                  libclang
                 ]
                 ++ lib.optionals stdenv.isLinux [
                   at-spi2-core

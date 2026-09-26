@@ -204,6 +204,7 @@ async fn saved_assertions_support_links_live_completion_removal_and_failed_draft
             .unwrap();
     }
     app.insert_resource(crate::app::CellHandle(cell::CellRuntime {
+        commands: Default::default(),
         engine: engine.clone(),
         store: engine.store.clone(),
         lanes: std::sync::Arc::new(cell::LaneHub::new()),

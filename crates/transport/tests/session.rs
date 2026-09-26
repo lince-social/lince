@@ -51,6 +51,14 @@ async fn record_cursors_are_ephemeral_identified_and_removed_on_departure() {
         before
     );
     assert!(reader.tick_ephemeral().await.is_empty());
+    let call = writer.fork_call();
+    let next_call = writer.fork_call();
+    assert_ne!(call.connection_id(), writer.connection_id());
+    assert_eq!(call.connection_id(), next_call.connection_id());
+    drop(call);
+    drop(next_call);
+    assert!(reader.tick_ephemeral().await.is_empty());
+    assert_eq!(engine.presence.cursors(&uid).len(), 1);
     drop(writer);
     assert!(
         matches!(reader.tick_ephemeral().await.as_slice(), [ServerMessage::CollabCursors { cursors, .. }] if cursors.is_empty())

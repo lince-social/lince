@@ -130,6 +130,12 @@ pub(super) fn content(
     data: &Value,
     binding: Option<RecordBinding>,
 ) {
+    if config.record_cards && (config.command.is_some() || data["kind"] == "command") {
+        if let Some(binding) = binding {
+            crate::command_castle::populate(world, row, config, data, binding);
+        }
+        return;
+    }
     if config.fiote {
         if let Some(binding) = binding {
             crate::fiote::session::populate(world, row, binding);

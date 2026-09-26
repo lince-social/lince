@@ -1,10 +1,10 @@
-Escovar Dentes (@escovar-dentes: -1, #task, #todo) { r_01M30SPC7W8ACS4TA5NAHTH4N8
+Escovar Dentes (@escovar-dentes: -2, #next, #task) { r_01M30SPC7W8ACS4TA5NAHTH4N8
 } r_01M30SPC7W8ACS4TA5NAHTH4N8
 
 Karma local {
     Rules {
         Rule rule-01m30t73v59b4vw7aprp70q0m2 {
-            quantity 1
+            quantity 0
             record @escovar-dentes
             condition """-1 * freq(@mday)"""
             gate !=0
@@ -23,5 +23,15 @@ Karma local {
             cadence "{\"every\":{\"years\":0,\"months\":0,\"weeks\":0,\"days\":0,\"hours\":0,\"minutes\":0,\"seconds\":0,\"milliseconds\":0},\"invalid_day\":\"clamp\",\"bound\":{\"kind\":\"count\",\"occurrences\":1}}"
             anchor_at 2026-09-22T01:30:49.488+00:00
         } ^rec_01M33BSBRH9WN8K04EV8DNYVS5
+        Rule rule-01m3c71eey90s8qzvvfvpzrjgz {
+            quantity 1
+            record @escovar-dentes
+            condition """-1 * freq(@mday)"""
+            gate !=0
+            carry value
+            consequences """[{"kind":"set-quantity"}]"""
+            cadence "{\"every\":{\"years\":0,\"months\":0,\"weeks\":0,\"days\":0,\"hours\":0,\"minutes\":0,\"seconds\":0,\"milliseconds\":0},\"invalid_day\":\"clamp\",\"bound\":{\"kind\":\"count\",\"occurrences\":1}}"
+            anchor_at 2026-09-25T12:01:01.405+00:00
+        } ^rec_01M3C71EEY90S8QZVVFVPZRJGZ
     }
 }

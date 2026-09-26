@@ -13,7 +13,7 @@ mcp = ["dep:axum", "dep:rmcp", "dep:tokio-util", "dep:getrandom"]
 # The reference websocket driver over axum. Off by default so pure consumers
 # (and tests) don't pull axum.
 axum = ["dep:axum", "dep:futures", "terminal"]
-terminal = ["dep:dirs", "dep:portable-pty"]
+terminal = ["dep:dirs", "dep:portable-pty", "dep:libc"]
 
 [dependencies]
 sha2 = { workspace = true }
@@ -39,6 +39,7 @@ base64 = { workspace = true }
 dirs = { workspace = true, optional = true }
 futures = { workspace = true, optional = true }
 portable-pty = { workspace = true, optional = true }
+libc = { version = "0.2", optional = true }
 
 [dev-dependencies]
 reqwest = { workspace = true }

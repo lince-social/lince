@@ -1,4 +1,5 @@
 mod presence;
+mod groups;
 
 use std::collections::HashMap;
 use std::net::SocketAddr;
@@ -273,6 +274,13 @@ pub enum WireRequest {
         title: String,
         intro: Introduction,
     },
+    GroupOffer {
+        group: crate::groups::SignedMembership,
+    },
+    GroupAccept {
+        root: String,
+    },
+    Call { request: crate::calls::Request },
     AcceptGrant {
         root: String,
     },
@@ -354,6 +362,10 @@ pub struct SuccessionCert {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "ok", rename_all = "snake_case")]
 pub enum WireResponse {
+    Call { snapshot: crate::calls::Snapshot },
+    Group {
+        group: crate::groups::SignedMembership,
+    },
     Presence {
         entries: Vec<crate::presence::Entry>,
     },
@@ -606,6 +618,16 @@ impl Wire {
         }
         let as_trait: Arc<dyn crate::enrolment::CellTransport> = self.clone();
         self.engine.set_enroller(Arc::downgrade(&as_trait));
+        let engine = Arc::downgrade(&self.engine);
+        tokio::spawn(async move {
+            loop {
+                tokio::time::sleep(std::time::Duration::from_secs(2)).await;
+                let Some(engine) = engine.upgrade() else { break };
+                if let Err(error) = engine.sweep_calls().await {
+                    tracing::warn!(%error, "call cleanup failed");
+                }
+            }
+        });
     }
 
     pub fn set_transfer_handler(&self, handler: Arc<dyn TransferPeer>) {
@@ -1495,6 +1517,9 @@ impl Wire {
                                 | WireRequest::Introduce { .. }
                                 | WireRequest::Enrol { .. }
                                 | WireRequest::OfferGrant { .. }
+                                | WireRequest::GroupOffer { .. }
+                                | WireRequest::GroupAccept { .. }
+                                | WireRequest::Call { .. }
                                 | WireRequest::AcceptGrant { .. }
                                 | WireRequest::DeclineGrant { .. }
                                 | WireRequest::PushGrantOps { .. }
@@ -1745,6 +1770,24 @@ impl Wire {
                         code: "enrolment_denied".into(),
                         message: error.to_string(),
                     },
+                }
+            }
+            WireRequest::GroupOffer { group } => {
+                match self.engine.receive_group(authenticated, &group).await {
+                    Ok(()) => WireResponse::Applied { applied: 1 },
+                    Err(error) => WireResponse::Refused { code: "group_denied".into(), message: error.to_string() },
+                }
+            }
+            WireRequest::Call { request } => {
+                match self.engine.coordinate_call(authenticated, request).await {
+                    Ok(snapshot) => WireResponse::Call { snapshot },
+                    Err(error) => WireResponse::Refused { code: "call_denied".into(), message: error.to_string() },
+                }
+            }
+            WireRequest::GroupAccept { root } => {
+                match self.engine.admit_group_organ(authenticated, &root).await {
+                    Ok(group) => WireResponse::Group { group },
+                    Err(error) => WireResponse::Refused { code: "group_denied".into(), message: error.to_string() },
                 }
             }
             WireRequest::OfferGrant {
@@ -2357,6 +2400,10 @@ impl Wire {
     }
 
     pub async fn sync_once(&self) -> Result<usize, EngineError> {
+        self.engine.sweep_calls().await?;
+        if let Err(error) = self.sync_groups().await {
+            tracing::debug!(%error, "group membership was not exchanged this pass");
+        }
         if let Err(error) = self.reconcile_pending().await {
             tracing::debug!(%error, "pending introductions not reconciled this pass");
         }
@@ -3490,6 +3537,23 @@ impl Wire {
 
 #[async_trait::async_trait]
 impl crate::enrolment::CellTransport for Wire {
+    async fn call(&self, node: &str, request: crate::calls::Request) -> Result<crate::calls::Snapshot, EngineError> {
+        let mut target = node.to_owned();
+        for _ in 0..2 {
+            let id = target.parse().map_err(|_| EngineError::Consequence("Invalid call coordinator".into()))?;
+            let response = tokio::time::timeout(std::time::Duration::from_secs(5), self.request(EndpointAddr::new(id), ALPN_THREAD, &WireRequest::Call { request: request.clone() })).await.map_err(|_| EngineError::Consequence("Call coordinator is unreachable".into()))??;
+            match response {
+                WireResponse::Call { snapshot } => match &snapshot.redirect {
+                    Some(node) => target = node.clone(),
+                    None => return Ok(snapshot),
+                },
+                WireResponse::Refused { message, .. } => return Err(EngineError::Consequence(message)),
+                _ => return Err(EngineError::Consequence("Invalid call response".into())),
+            }
+        }
+        Err(EngineError::Consequence("Call coordinator could not be reached".into()))
+    }
+    fn local_node_id(&self) -> Option<String> { Some(self.node_id().to_string()) }
     async fn enrol(&self, invite: &EnrolmentInvite) -> Result<SignedRoster, EngineError> {
         Wire::enrol(self, invite).await
     }

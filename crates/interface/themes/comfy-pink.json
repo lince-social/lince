@@ -1,0 +1,41 @@
+{
+  "name": "Comfy Pink",
+  "scheme": "ComfyPink",
+  "tokens": {
+    "Surface": "#FFF8FB",
+    "Ink": "#603F33",
+    "Accent": "#C12D68",
+    "CanvasBackground": "#F1C7D9",
+    "CanvasGrid": "#DDA6BF",
+    "CanvasPattern": 25,
+    "SandBackground": "#FFF8F1",
+    "SandBorder": "#D884A6",
+    "SandInk": "#603F33",
+    "Connections": "#AA3678",
+    "ConnectionFill": "#DE64992E",
+    "Width": 296,
+    "Height": 224,
+    "Roundness": 24,
+    "BorderWidth": 2,
+    "Spacing": 10,
+    "Padding": 12,
+    "FontSize": 17,
+    "IconSize": 25,
+    "IconPadding": 9,
+    "ControlRoundness": 18,
+    "ControlBorder": 1,
+    "PanelWidth": 408,
+    "CustomizationWidth": 760,
+    "TooltipWidth": 304,
+    "TooltipRoundness": 14,
+    "ControlsCornerColor": "#AF6185",
+    "ControlsCornerTransparency": 0,
+    "GridSpacing": 40,
+    "GridThickness": 1
+  },
+  "kinds": {
+    "Text": { "SandBackground": "#00000000" },
+    "EditableText": { "SandBackground": "#00000000" },
+    "Record": { "Width": 280, "Height": 216 }
+  }
+}

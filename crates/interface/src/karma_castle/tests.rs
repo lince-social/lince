@@ -277,6 +277,7 @@ async fn castle_saves_through_the_cell_and_receives_live_protein_fields() {
             .unwrap();
     }
     let runtime = cell::CellRuntime {
+        commands: Default::default(),
         store: engine.store.clone(),
         engine,
         lanes: std::sync::Arc::new(cell::LaneHub::new()),

@@ -24,6 +24,10 @@ impl Drop for Joining<'_> {
 
 #[async_trait::async_trait]
 pub trait CellTransport: Send + Sync {
+    async fn call(&self, _node: &str, _request: crate::calls::Request) -> Result<crate::calls::Snapshot, EngineError> {
+        Err(EngineError::Consequence("Calls are unavailable on this transport".into()))
+    }
+    fn local_node_id(&self) -> Option<String> { None }
     async fn enrol(&self, invite: &EnrolmentInvite) -> Result<SignedRoster, EngineError>;
     async fn audit_against(
         &self,

@@ -216,6 +216,7 @@ fn highlighted(world: &mut World, title: &str) -> bool {
 async fn main() {
     let engine = std::sync::Arc::new(engine::Engine::open_memory().await.unwrap());
     let runtime = cell::CellRuntime {
+        commands: Default::default(),
         store: engine.store.clone(),
         engine,
         lanes: std::sync::Arc::new(cell::LaneHub::new()),

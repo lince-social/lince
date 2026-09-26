@@ -111,6 +111,7 @@ async fn main() {
         .await
         .unwrap();
     let runtime = cell::CellRuntime {
+        commands: Default::default(),
         store: engine.store.clone(),
         engine,
         lanes: std::sync::Arc::new(cell::LaneHub::new()),

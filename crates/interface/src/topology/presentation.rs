@@ -434,7 +434,11 @@ pub fn synchronize(world: &mut World) {
         let placement = spatial(world, entity);
         let area = world.get::<crate::area::InfluenceArea>(entity).is_some();
         let arrow = world.get::<crate::arrow_sand::ArrowSand>(entity).is_some();
-        let flat = area || arrow;
+        let flat = area
+            || arrow
+            || !world
+                .get::<super::view::View>(root)
+                .is_some_and(|view| view.spatial);
         world
             .get_mut::<Visibility>(body)
             .unwrap()
@@ -700,6 +704,36 @@ mod tests {
         }
         assert!(bytes <= surface_budget::PIXEL_BUDGET * 4);
         bytes
+    }
+
+    #[test]
+    fn planar_sands_keep_transparent_corners_and_restore_bodies_in_spatial_view() {
+        let (mut world, root, entities) = scene(1);
+        let entity = entities[0];
+        world.entity_mut(entity).insert(Node {
+            border_radius: BorderRadius::all(px(24)),
+            ..default()
+        });
+        for spatial in [false, true, false] {
+            world
+                .get_mut::<super::super::view::View>(root)
+                .unwrap()
+                .spatial = spatial;
+            synchronize(&mut world);
+            let surface = world.get::<Surface>(entity).unwrap();
+            assert_eq!(
+                *world.get::<Visibility>(surface.body).unwrap(),
+                if spatial {
+                    Visibility::Inherited
+                } else {
+                    Visibility::Hidden
+                }
+            );
+            assert_eq!(
+                *world.get::<Visibility>(surface.face).unwrap(),
+                Visibility::Inherited
+            );
+        }
     }
 
     #[test]

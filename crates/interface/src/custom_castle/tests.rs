@@ -216,9 +216,9 @@ fn picker_separates_builtins_and_custom_and_saves_through_controls() {
                 && i.label.contains("castles"))
     );
     let field = world
-        .query::<(Entity, &bevy::text::EditableText)>()
+        .query::<(Entity, &bevy::text::EditableText, &crate::icons::Tooltip)>()
         .iter(world)
-        .find(|(_, e)| e.max_characters == Some(80))
+        .find(|(_, _, tip)| tip.0 == "Custom Castle name")
         .unwrap()
         .0;
     world

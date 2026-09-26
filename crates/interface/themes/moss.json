@@ -1,0 +1,41 @@
+{
+  "name": "Moss",
+  "scheme": "Moss",
+  "tokens": {
+    "Surface": "#29251E",
+    "Ink": "#E0E8CE",
+    "Accent": "#95C77D",
+    "CanvasBackground": "#1A1712",
+    "CanvasGrid": "#3A3D2C",
+    "CanvasPattern": 40,
+    "SandBackground": "#24291F",
+    "SandBorder": "#5B7547",
+    "SandInk": "#DFE8CC",
+    "Connections": "#8DD5AC",
+    "ConnectionFill": "#67AF8430",
+    "Width": 264,
+    "Height": 200,
+    "Roundness": 8,
+    "BorderWidth": 1.5,
+    "Spacing": 9,
+    "Padding": 10,
+    "FontSize": 16,
+    "IconSize": 23,
+    "IconPadding": 8,
+    "ControlRoundness": 6,
+    "ControlBorder": 1.5,
+    "PanelWidth": 392,
+    "CustomizationWidth": 736,
+    "TooltipWidth": 288,
+    "TooltipRoundness": 6,
+    "ControlsCornerColor": "#71805B",
+    "ControlsCornerTransparency": 0,
+    "GridSpacing": 36,
+    "GridThickness": 1.25
+  },
+  "kinds": {
+    "Text": { "SandBackground": "#00000000" },
+    "EditableText": { "SandBackground": "#00000000" },
+    "Record": { "Width": 248, "Height": 192 }
+  }
+}

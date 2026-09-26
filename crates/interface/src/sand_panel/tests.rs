@@ -11,6 +11,7 @@ pub(crate) fn app() -> App {
 
 pub(crate) fn connect(app: &mut App, engine: std::sync::Arc<engine::Engine>) -> cell::CellRuntime {
     let runtime = cell::CellRuntime {
+        commands: Default::default(),
         store: engine.store.clone(),
         engine,
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
@@ -53,6 +54,7 @@ fn migrated_sand_previews_render_without_live_sands_or_input_controls() {
         SandKind::Terminal,
         SandKind::Configuration,
         SandKind::Todo,
+        SandKind::Ontology,
     ] {
         crate::sand_store::entry(world, root, parent, kind, None);
     }
@@ -60,7 +62,7 @@ fn migrated_sand_previews_render_without_live_sands_or_input_controls() {
         .query_filtered::<Entity, With<SandPreview>>()
         .iter(world)
         .collect();
-    assert_eq!(previews.len(), 4);
+    assert_eq!(previews.len(), 5);
     let mut labels = Vec::new();
     for preview in previews {
         let mut pending = vec![preview];
@@ -75,6 +77,7 @@ fn migrated_sand_previews_render_without_live_sands_or_input_controls() {
                     .is_none()
             );
             assert!(world.get::<crate::todo::TodoSand>(entity).is_none());
+            assert!(world.get::<crate::ontology::OntologySand>(entity).is_none());
             if let Some(text) = world.get::<Text>(entity) {
                 labels.push(text.0.as_str());
             }

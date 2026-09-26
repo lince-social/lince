@@ -257,6 +257,11 @@ fn decode(bytes: &[u8]) -> io::Result<Document> {
         "Recorder Castles",
         crate::recorder_castle::SavedRecorder
     );
+    let documents = castles!(
+        "documents",
+        "Document Viewer Castles",
+        crate::document_viewer::SavedDocumentViewer
+    );
     let transfer_castles = castles!(
         "transfer_castles",
         "Transfer Castles",
@@ -303,6 +308,7 @@ fn decode(bytes: &[u8]) -> io::Result<Document> {
         frequency_castles,
         transfer_castles,
         recorders,
+        documents,
         calendars,
         instincts,
         assertions,

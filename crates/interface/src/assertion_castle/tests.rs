@@ -153,6 +153,7 @@ async fn protein_selection_renumbers_in_visible_order_and_persists() {
         .init_resource::<bevy::picking::hover::HoverMap>()
         .insert_resource(crate::wake::WakeSignal::new(|| {}))
         .insert_resource(crate::app::CellHandle(cell::CellRuntime {
+            commands: Default::default(),
             engine: engine.clone(),
             store: engine.store.clone(),
             lanes: Arc::new(cell::LaneHub::new()),

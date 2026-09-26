@@ -211,27 +211,6 @@ pub fn pointer(
             hit_owner = Some((owner.0, hit.point));
         }
     }
-    if let Some((owner, hit)) = hit_owner {
-        if !mode.enabled
-            && let Ok(surface) = surfaces.get(owner)
-            && let Ok((_, transform)) = owners.get(surface.face)
-        {
-            let point = transform.affine().inverse().transform_point3(hit);
-            if point.z.abs() <= 0.1 && point.x.abs() <= 0.501 && point.y.abs() <= 0.501 {
-                let uv = Vec2::new(point.x + 0.5, 0.5 - point.y).clamp(Vec2::ZERO, Vec2::ONE);
-                let uv = surface.uv.min + uv * surface.uv.size();
-                location = Some(Location {
-                    target: bevy::camera::NormalizedRenderTarget::Image(
-                        bevy::camera::ImageRenderTarget {
-                            handle: surface.image.clone(),
-                            scale_factor: surface.density,
-                        },
-                    ),
-                    position: uv * surface.pixels.as_vec2() / surface.density,
-                });
-            }
-        }
-    }
     if !overlay {
         let render_origin = DVec3::new(canvas.center.x, 0.0, canvas.center.y);
         for (entity, area, placement, parent, member) in &areas {
@@ -259,6 +238,27 @@ pub fn pointer(
                     + bevy::math::DVec2::new(local.x, local.z),
             ) {
                 hit_owner = Some((entity, point.as_vec3()));
+            }
+        }
+    }
+    if let Some((owner, hit)) = hit_owner {
+        if !mode.enabled
+            && let Ok(surface) = surfaces.get(owner)
+            && let Ok((_, transform)) = owners.get(surface.face)
+        {
+            let point = transform.affine().inverse().transform_point3(hit);
+            if point.z.abs() <= 0.1 && point.x.abs() <= 0.501 && point.y.abs() <= 0.501 {
+                let uv = Vec2::new(point.x + 0.5, 0.5 - point.y).clamp(Vec2::ZERO, Vec2::ONE);
+                let uv = surface.uv.min + uv * surface.uv.size();
+                location = Some(Location {
+                    target: bevy::camera::NormalizedRenderTarget::Image(
+                        bevy::camera::ImageRenderTarget {
+                            handle: surface.image.clone(),
+                            scale_factor: surface.density,
+                        },
+                    ),
+                    position: uv * surface.pixels.as_vec2() / surface.density,
+                });
             }
         }
     }
@@ -634,6 +634,109 @@ fn editing_text(world: &World) -> bool {
 pub(crate) mod tests {
     use super::*;
     use crate::canvas::CanvasView;
+
+    #[test]
+    fn area_controls_receive_pointer_input_in_normal_mode() {
+        use bevy::{camera::CameraProjection, math::DVec2};
+        for editing in [false, true] {
+            let (mut app, root) = crate::edit_mode::tests::fixture();
+            app.add_plugins(MinimalPlugins)
+                .init_resource::<Assets<Mesh>>()
+                .init_resource::<PointerState>()
+                .init_resource::<bevy::picking::hover::HoverMap>()
+                .add_message::<WindowEvent>()
+                .add_message::<PointerInput>()
+                .add_message::<PointerHits>()
+                .add_systems(Update, pointer);
+            app.world_mut().entity_mut(root).insert(SpatialRoot);
+            app.world_mut()
+                .get_mut::<crate::edit_mode::EditMode>(root)
+                .unwrap()
+                .enabled = editing;
+            let mut window = Window::default();
+            window.resolution.set(800.0, 600.0);
+            window.set_cursor_position(Some(Vec2::new(400.0, 300.0)));
+            let window = app.world_mut().spawn((window, PrimaryWindow)).id();
+            let mut projection = OrthographicProjection::default_3d();
+            projection.update(800.0, 600.0);
+            let mut camera = Camera::default();
+            camera.computed.target_info = Some(bevy::camera::RenderTargetInfo {
+                physical_size: UVec2::new(800, 600),
+                scale_factor: 1.0,
+            });
+            camera.computed.clip_from_view = projection.get_clip_from_view();
+            let camera = app
+                .world_mut()
+                .spawn((
+                    camera,
+                    GlobalTransform::from(
+                        Transform::from_xyz(0.0, 1000.0, 0.0).looking_at(Vec3::ZERO, Vec3::NEG_Z),
+                    ),
+                ))
+                .id();
+            app.insert_resource(SceneCamera(camera));
+            let owner = crate::area::spawn_area(
+                app.world_mut(),
+                root,
+                1,
+                crate::area::InfluenceArea::new(
+                    crate::area::AreaShape::Square,
+                    DVec2::ZERO,
+                    DVec2::splat(200.0),
+                ),
+            )
+            .unwrap();
+            let face = app
+                .world_mut()
+                .spawn((
+                    VisualOwner(owner),
+                    GlobalTransform::from(
+                        Transform::from_rotation(Quat::from_rotation_x(
+                            -std::f32::consts::FRAC_PI_2,
+                        ))
+                        .with_scale(Vec3::new(200.0, 200.0, 1.0)),
+                    ),
+                ))
+                .id();
+            app.world_mut().entity_mut(owner).insert(Surface {
+                camera,
+                image: Handle::default(),
+                visual: face,
+                body: face,
+                face,
+                size: Vec2::splat(200.0),
+                pixels: UVec2::splat(400),
+                density: 2.0,
+                material: Handle::default(),
+                uv: Rect::from_corners(Vec2::ZERO, Vec2::ONE),
+                visible: true,
+            });
+            app.world_mut().write_message(WindowEvent::MouseButtonInput(
+                bevy::input::mouse::MouseButtonInput {
+                    button: MouseButton::Left,
+                    state: ButtonState::Pressed,
+                    window,
+                },
+            ));
+            app.update();
+            let state = app.world().resource::<PointerState>();
+            assert_eq!(state.hit.map(|(entity, _)| entity), Some(owner));
+            assert_eq!(state.cursor.is_some(), !editing);
+            if let Some(location) = &state.cursor {
+                assert!(location.position.abs_diff_eq(Vec2::splat(100.0), 0.001));
+            }
+            assert_eq!(
+                app.world()
+                    .resource::<Messages<PointerInput>>()
+                    .iter_current_update_messages()
+                    .any(|event| {
+                        event.pointer_id == CONTENT_POINTER
+                            && matches!(event.action, PointerAction::Press(PointerButton::Primary))
+                    }),
+                !editing
+            );
+        }
+    }
 
     #[test]
     fn cancelling_the_content_pointer_releases_its_last_surface_image() {

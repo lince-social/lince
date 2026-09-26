@@ -123,6 +123,8 @@ struct Document {
     #[serde(default)]
     recorders: Vec<crate::recorder_castle::SavedRecorder>,
     #[serde(default)]
+    documents: Vec<crate::document_viewer::SavedDocumentViewer>,
+    #[serde(default)]
     calendars: Vec<crate::calendar::SavedCalendar>,
     #[serde(default)]
     kanbans: Vec<crate::kanban::SavedKanban>,
@@ -149,6 +151,10 @@ impl Document {
                 .all(|saved| ids.contains(&saved.workspace) && saved.valid())
             && self
                 .recorders
+                .iter()
+                .all(|saved| ids.contains(&saved.workspace) && saved.valid())
+            && self
+                .documents
                 .iter()
                 .all(|saved| ids.contains(&saved.workspace) && saved.valid())
             && self
@@ -369,6 +375,9 @@ fn initialize(world: &mut World) {
                 for saved in document.recorders {
                     saved.restore(world, root);
                 }
+                for saved in document.documents {
+                    saved.restore(world, root);
+                }
                 for saved in document.transfer_castles {
                     saved.restore(world, root);
                 }
@@ -423,8 +432,14 @@ fn initialize(world: &mut World) {
                     if sand.kind == SandKind::Terminal {
                         content = Some(crate::terminal::populate(world, root, entity));
                     }
+                    if sand.kind == SandKind::Organ {
+                        content = Some(crate::organ_castle::populate(world, root, entity));
+                    }
                     if sand.kind == SandKind::Configuration {
                         content = Some(crate::configuration::populate(world, root, entity));
+                    }
+                    if sand.kind == SandKind::Ontology {
+                        content = Some(crate::ontology::populate(world, root, entity));
                     }
                     if sand.kind == SandKind::Todo {
                         content = Some(crate::todo::populate(world, root, entity));
@@ -767,6 +782,7 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
         frequency_castles: crate::frequency_castle::snapshot(world, root),
         transfer_castles: crate::transfer_castle::snapshot(world, root),
         recorders: crate::recorder_castle::snapshot(world, root),
+        documents: crate::document_viewer::snapshot(world, root),
         calendars: crate::calendar::snapshot(world, root),
         kanbans: crate::kanban::snapshot(world, root),
         instincts: crate::instinct::snapshot(world, root),
@@ -919,6 +935,55 @@ pub(crate) mod tests {
     }
 
     #[cfg_attr(test, test)]
+    fn document_viewers_restore_progress_from_disk_after_restart() {
+        use crate::document_viewer::{DocumentViewer, spawn};
+        use lince_document::{Mode, Position};
+        let directory = tempfile::tempdir().unwrap();
+        let path = directory.path().join("interface.json");
+        let (mut app, root) = fixture(Some(path.clone()));
+        for (file, mode, section, fraction) in [
+            ("/books/test.pdf", Mode::Pages, 9, 0.0),
+            ("/books/test.epub", Mode::Scroll, 3, 0.625),
+        ] {
+            let mut state = DocumentViewer::with_path(file);
+            state.positions.insert(
+                file.into(),
+                Position {
+                    section,
+                    fraction,
+                    mode,
+                },
+            );
+            spawn(app.world_mut(), root, 1, DVec2::new(10.0, 20.0), state);
+        }
+        flush(&mut app);
+        drop(app);
+        let (mut app, _) = fixture(Some(path));
+        let states: Vec<_> = app
+            .world_mut()
+            .query::<&DocumentViewer>()
+            .iter(app.world())
+            .cloned()
+            .collect();
+        assert_eq!(states.len(), 2);
+        let pdf = states
+            .iter()
+            .find(|state| state.path.ends_with(".pdf"))
+            .unwrap()
+            .position();
+        assert_eq!((pdf.section, pdf.mode), (9, Mode::Pages));
+        let epub = states
+            .iter()
+            .find(|state| state.path.ends_with(".epub"))
+            .unwrap()
+            .position();
+        assert_eq!(
+            (epub.section, epub.mode, epub.fraction),
+            (3, Mode::Scroll, 0.625)
+        );
+    }
+
+    #[cfg_attr(test, test)]
     fn instinct_seeds_once_and_saved_or_deleted_readers_stay_that_way() {
         fn seeded(path: PathBuf) -> (App, Entity) {
             let mut app = App::new();
@@ -1023,6 +1088,8 @@ pub(crate) mod tests {
             SandKind::Freedoom,
             SandKind::Terminal,
             SandKind::Configuration,
+            SandKind::Organ,
+            SandKind::Ontology,
             SandKind::Todo,
         ]
         .into_iter()
@@ -1050,11 +1117,13 @@ pub(crate) mod tests {
             .iter(app.world())
             .map(|(entity, sand)| (entity, sand.kind))
             .collect();
-        assert_eq!(sands.len(), 4);
+        assert_eq!(sands.len(), 6);
         for kind in [
             SandKind::Freedoom,
             SandKind::Terminal,
             SandKind::Configuration,
+            SandKind::Organ,
+            SandKind::Ontology,
             SandKind::Todo,
         ] {
             let owner = sands.iter().find(|(_, found)| *found == kind).unwrap().0;
@@ -1070,6 +1139,14 @@ pub(crate) mod tests {
                 SandKind::Configuration => app
                     .world()
                     .get::<crate::configuration::ConfigurationSand>(owner)
+                    .is_some(),
+                SandKind::Organ => app
+                    .world()
+                    .get::<crate::organ_castle::OrganCastle>(owner)
+                    .is_some(),
+                SandKind::Ontology => app
+                    .world()
+                    .get::<crate::ontology::OntologySand>(owner)
                     .is_some(),
                 SandKind::Todo => app.world().get::<crate::todo::TodoSand>(owner).is_some(),
                 _ => unreachable!(),
@@ -1804,6 +1881,7 @@ pub(crate) mod tests {
     }
 
     crate::laboratory_cases! {
+        document_viewers_restore_progress_from_disk_after_restart,
         instinct_seeds_once_and_saved_or_deleted_readers_stay_that_way,
         protein_group_settings_are_saved_without_generated_areas,
         sand_groups_survive_workspace_restart_and_saved_record_regrouping,

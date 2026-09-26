@@ -11,6 +11,7 @@ pub mod body_links;
 pub mod checkpoint;
 pub mod collab;
 pub mod collab_guard;
+pub mod custom_component;
 pub mod presence;
 pub mod record_change;
 pub mod record_creation;
@@ -55,6 +56,8 @@ pub mod sync;
 pub mod sync_service;
 mod tagged_record;
 pub mod threads;
+pub mod groups;
+pub mod calls;
 pub mod transfer;
 pub mod transfer_delivery;
 pub mod trust;
@@ -93,6 +96,7 @@ pub struct Engine {
     access_gate: tokio::sync::RwLock<()>,
     fiote_config_lock: Mutex<()>,
     thread_creation_lock: Mutex<()>,
+    calls: Mutex<calls::Calls>,
     login_attempts: tokio::sync::Mutex<login::LoginAttempts>,
     pub sync_service: sync_service::SyncService,
     pub presence: presence::Presence,
@@ -151,6 +155,7 @@ impl Engine {
                 .map_err(|error| EngineError::Consequence(error.to_string()))?,
             fiote_config_lock: Mutex::new(()),
             thread_creation_lock: Mutex::new(()),
+            calls: Mutex::new(calls::Calls::default()),
             access_gate: tokio::sync::RwLock::new(()),
             login_attempts: tokio::sync::Mutex::new(login::LoginAttempts::default()),
             sync_service: sync_service::SyncService::default(),

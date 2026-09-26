@@ -9,6 +9,7 @@ use std::{
 };
 
 pub(super) enum Command {
+    Journal(Vec<cell::command::Event>, bool),
     Feed(Vec<u8>),
     Resize(u16, u16),
     Key {
@@ -119,6 +120,26 @@ fn run(
                 return Ok(());
             }
             let input = match current {
+                Command::Journal(events, live) => {
+                    use base64::Engine as _;
+                    let mut replies = Vec::new();
+                    for event in events {
+                        match event {
+                            cell::command::Event::Output { data_base64 } => {
+                                let bytes = base64::engine::general_purpose::STANDARD
+                                    .decode(data_base64)
+                                    .map_err(|error| error.to_string())?;
+                                let input = vt.feed(&bytes)?;
+                                if live {
+                                    replies.extend(input);
+                                }
+                            }
+                            cell::command::Event::Resize { cols, rows } => vt.resize(cols, rows)?,
+                            _ => {}
+                        }
+                    }
+                    replies
+                }
                 Command::Feed(bytes) => vt.feed(&bytes)?,
                 Command::Resize(cols, rows) => {
                     vt.resize(cols, rows)?;

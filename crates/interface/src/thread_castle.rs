@@ -78,6 +78,8 @@ pub struct ThreadCastlePlugin;
 
 impl Plugin for ThreadCastlePlugin {
     fn build(&self, app: &mut App) {
+        #[cfg(feature = "native-media")]
+        app.add_plugins(crate::communication::calls::CallsPlugin);
         app.add_plugins(crate::record_creation::RecordCreationPlugin);
         app.add_systems(
             Update,
@@ -357,6 +359,8 @@ fn page(
         title.max_characters = Some(256);
     }
     let status = message_view::status(world, entity);
+    #[cfg(feature = "native-media")]
+    crate::communication::calls::populate(world, entity, binding, uid);
     let older = control(world, entity, entity, "Older messages", LoadOlder);
     let viewport = world
         .spawn((
@@ -438,6 +442,8 @@ pub fn refresh(world: &mut World, parent: Entity, data: &Value) -> bool {
             castle.prefer_first = false;
         }
         let mut page = world.entity_mut(entity).take::<Page>().unwrap();
+        #[cfg(feature = "native-media")]
+        crate::communication::calls::summaries(world, entity, thread);
         let limit = thread["messages_limit"]
             .as_u64()
             .unwrap_or(PAGE_SIZE as u64) as usize;

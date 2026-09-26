@@ -9,6 +9,8 @@ use crate::{
 };
 use bevy::{a11y::AccessibilityNode, prelude::*, text::EditableText};
 
+mod export;
+
 #[derive(Component, Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum Scope {
     #[default]
@@ -30,6 +32,8 @@ pub enum CustomizationAction {
     ClearOverrides,
     Reset(Token),
     ResetPattern,
+    ExportTheme,
+    CopyTheme,
 }
 
 impl Action for CustomizationAction {
@@ -70,6 +74,14 @@ impl Action for CustomizationAction {
             }
             Self::ResetPattern => {
                 edit(world, Scope::All, Token::CanvasPattern, None);
+            }
+            Self::ExportTheme => {
+                export::save(world, root);
+                return;
+            }
+            Self::CopyTheme => {
+                export::copy(world, root);
+                return;
             }
         }
         crate::edit_mode::render_panel(world, root);
@@ -177,7 +189,9 @@ fn overwrites(world: &World, root: Entity, scope: Scope, token: Token) -> String
     }
     if scope != Scope::All {
         let (current, source) = value(world, scope, token);
-        if matches!(source, "Default" | "Parent Sand") {
+        if matches!(source, "Default" | "Parent Sand")
+            || (source == "Theme" && current != token.default_value(settings.scheme))
+        {
             layers.push(format!("{source}: {}", current.display()));
         }
     }
@@ -423,7 +437,7 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
         world,
         panel,
         root,
-        "Colorscheme",
+        "Theme",
         scheme.name(),
         ColorScheme::ALL
             .into_iter()
@@ -435,6 +449,7 @@ pub(crate) fn render(world: &mut World, root: Entity, panel: Entity) {
             })
             .collect(),
     );
+    export::controls(world, root, panel);
     let mut choices = vec![(
         "All Sands".into(),
         crate::actions![CustomizationAction::Scope(Scope::All)],
@@ -657,6 +672,7 @@ fn preview_value(world: &mut World, entity: Entity, token: Token, value: TokenVa
 }
 
 pub(crate) fn autosave(world: &mut World) {
+    export::poll(world);
     let edits: Vec<_> = world
         .query::<(Entity, &EditableText, &TokenField)>()
         .iter(world)
@@ -768,6 +784,108 @@ pub(crate) mod tests {
     };
     use bevy::math::DVec2;
 
+    #[test]
+    fn theme_choices_apply_colors_geometry_and_export_controls() {
+        let mut app = App::new();
+        crate::laboratory::isolate(app.world_mut());
+        app.init_resource::<Assets<Font>>().add_plugins((
+            ThemePlugin,
+            WorkspacePlugin,
+            EditModePlugin,
+            crate::sand::SandPlugin,
+        ));
+        let root = app.world_mut().spawn(BoxRoot).id();
+        app.update();
+        let sand = spawn_sand(app.world_mut(), root, 1, SandKind::Square, "", DVec2::ZERO);
+        let sample = app
+            .world_mut()
+            .spawn((
+                Node {
+                    padding: UiRect::all(px(8)),
+                    column_gap: px(8),
+                    ..default()
+                },
+                Text::new("Theme sample"),
+                TextFont {
+                    font_size: FontSize::Px(16.0),
+                    ..default()
+                },
+                ChildOf(sand),
+            ))
+            .id();
+        app.world_mut()
+            .trigger(GlobalCustomizationPanelToggle { entity: root });
+        app.update();
+        for scheme in [ColorScheme::ComfyPink, ColorScheme::Moss, ColorScheme::Dark] {
+            let choice = app
+                .world_mut()
+                .query::<(Entity, &AccessibilityNode)>()
+                .iter(app.world())
+                .find(|(_, node)| node.label() == Some(scheme.name()))
+                .unwrap()
+                .0;
+            app.world_mut()
+                .trigger(bevy::ui_widgets::Activate { entity: choice });
+            for _ in 0..3 {
+                app.update();
+            }
+            assert_eq!(app.world().resource::<ThemeSettings>().scheme, scheme);
+            let node = app.world().get::<Node>(sand).unwrap();
+            assert_eq!(
+                node.border_radius,
+                BorderRadius::all(px(Token::Roundness.default_value(scheme).number()))
+            );
+            assert_eq!(
+                node.border,
+                UiRect::all(px(Token::BorderWidth.default_value(scheme).number()))
+            );
+            assert_eq!(
+                app.world()
+                    .get::<crate::canvas::CanvasItem>(sand)
+                    .unwrap()
+                    .size,
+                Vec2::new(
+                    Token::Width.default_value(scheme).number(),
+                    Token::Height.default_value(scheme).number()
+                )
+            );
+            assert_eq!(
+                app.world().get::<BackgroundColor>(sand).unwrap().0,
+                Token::SandBackground.default_value(scheme).color()
+            );
+            let node = app.world().get::<Node>(sample).unwrap();
+            assert_eq!(
+                node.padding,
+                UiRect::all(px(Token::Padding.default_value(scheme).number()))
+            );
+            assert_eq!(
+                node.column_gap,
+                px(Token::Spacing.default_value(scheme).number())
+            );
+            assert_eq!(
+                app.world().get::<TextFont>(sample).unwrap().font_size,
+                FontSize::Px(Token::FontSize.default_value(scheme).number())
+            );
+            for title in ["Export theme…", "Copy theme"] {
+                let (button, _) = app
+                    .world_mut()
+                    .query::<(Entity, &AccessibilityNode)>()
+                    .iter(app.world())
+                    .find(|(_, node)| node.label() == Some(title))
+                    .unwrap();
+                let node = app.world().get::<Node>(button).unwrap();
+                assert_eq!(
+                    node.border_radius,
+                    BorderRadius::all(px(Token::ControlRoundness.default_value(scheme).number()))
+                );
+                assert_eq!(
+                    node.border,
+                    UiRect::all(px(Token::ControlBorder.default_value(scheme).number()))
+                );
+            }
+        }
+    }
+
     #[cfg_attr(test, test)]
     fn panel_lists_compiled_tokens_saves_valid_edits_and_resets_each_scope() {
         let mut app = App::new();
@@ -793,7 +911,7 @@ pub(crate) mod tests {
             .world_mut()
             .query::<(Entity, &crate::dropdown::Dropdown, &AccessibilityNode)>()
             .iter(app.world())
-            .find(|(_, _, node)| node.label() == Some("Colorscheme"))
+            .find(|(_, _, node)| node.label() == Some("Theme"))
             .map(|(entity, dropdown, _)| (entity, dropdown.menu))
             .unwrap();
         assert_eq!(
@@ -948,6 +1066,9 @@ pub(crate) mod tests {
                 .color()
         );
         EditAction::Customization.apply(app.world_mut(), root);
+        app.update();
+        assert!(app.world().get::<EditMode>(root).unwrap().enabled);
+        EditAction::Close.apply(app.world_mut(), root);
         app.update();
         assert!(!app.world().get::<EditMode>(root).unwrap().enabled);
     }

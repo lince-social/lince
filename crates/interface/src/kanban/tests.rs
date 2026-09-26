@@ -115,6 +115,7 @@ async fn setup_creation_transfer_and_exit_preserve_card_identity() {
     let (mut app, _, owner) = fixture();
     let engine = std::sync::Arc::new(engine::Engine::open_memory().await.unwrap());
     app.insert_resource(crate::app::CellHandle(cell::CellRuntime {
+        commands: Default::default(),
         engine: engine.clone(),
         store: engine.store.clone(),
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
@@ -396,6 +397,7 @@ async fn quantity_changes_move_cards_from_the_source_and_between_columns() {
         .map(|c| area(app.world(), owner, &c.area).unwrap())
         .collect();
     app.insert_resource(crate::app::CellHandle(cell::CellRuntime {
+        commands: Default::default(),
         engine: engine.clone(),
         store: engine.store.clone(),
         lanes: std::sync::Arc::new(cell::LaneHub::new()),

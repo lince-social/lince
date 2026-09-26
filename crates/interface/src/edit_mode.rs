@@ -110,6 +110,7 @@ struct StoreFilterGroup {
 pub struct EditModePlugin;
 impl Plugin for EditModePlugin {
     fn build(&self, app: &mut App) {
+        app.add_plugins(crate::custom_castle::LibraryPlugin);
         if !app.is_plugin_added::<ActionsPlugin>() {
             app.add_plugins(ActionsPlugin);
         }
@@ -999,7 +1000,7 @@ pub(crate) fn control(
             SandKind::Sync => Icon::Reset,
             SandKind::Freedoom => Icon::Play,
             SandKind::Terminal => Icon::Forward,
-            SandKind::Configuration => Icon::General,
+            SandKind::Configuration | SandKind::Organ | SandKind::Ontology => Icon::General,
             SandKind::Todo => Icon::Check,
         }),
         EditAction::SwitchWorkspace(_) | EditAction::Text(TextAction::Select(_)) => None,
@@ -1020,12 +1021,15 @@ pub(crate) fn control(
 pub(crate) fn render_panel(world: &mut World, root: Entity) {
     render_panel_content(world, root);
     let panel = world.get::<EditMode>(root).unwrap().panel;
-    world.spawn((ChildOf(panel), Node {
-        height: px(16),
-        min_height: px(16),
-        flex_shrink: 0.0,
-        ..default()
-    }));
+    world.spawn((
+        ChildOf(panel),
+        Node {
+            height: px(16),
+            min_height: px(16),
+            flex_shrink: 0.0,
+            ..default()
+        },
+    ));
 }
 
 fn render_panel_content(world: &mut World, root: Entity) {
@@ -1303,6 +1307,9 @@ fn render_panel_content(world: &mut World, root: Entity) {
         crate::recorder_castle::store_entry(world, root, entry);
         castle_entries.push(entry);
         let entry = store_group(world, castles_group);
+        crate::document_viewer::store_entry(world, root, entry);
+        castle_entries.push(entry);
+        let entry = store_group(world, castles_group);
         crate::shader_castle::store_entry(world, root, entry);
         castle_entries.push(entry);
         let entry = store_group(world, castles_group);
@@ -1425,29 +1432,67 @@ pub(crate) mod tests {
         EditAction::Open.apply(app.world_mut(), root);
         EditAction::Store.apply(app.world_mut(), root);
         let world = app.world_mut();
-        let previews: Vec<_> = world.query_filtered::<Entity, With<crate::sand_store::SandPreview>>().iter(world).collect();
+        let previews: Vec<_> = world
+            .query_filtered::<Entity, With<crate::sand_store::SandPreview>>()
+            .iter(world)
+            .collect();
         assert!(previews.len() >= 13);
         for preview in previews {
             let card = world.get::<ChildOf>(preview).unwrap().parent();
             assert!(world.get::<ActionButton>(card).is_some());
-            assert_eq!(world.get::<Node>(card).unwrap().padding, UiRect::all(px(10)));
+            assert_eq!(
+                world.get::<Node>(card).unwrap().padding,
+                UiRect::all(px(10))
+            );
             let mut pending = vec![preview];
             while let Some(entity) = pending.pop() {
                 assert!(world.get::<ActionButton>(entity).is_none());
                 assert!(world.get::<EditableText>(entity).is_none());
                 assert!(world.get::<crate::canvas::CanvasItem>(entity).is_none());
-                assert!(world.get::<bevy::input_focus::tab_navigation::TabIndex>(entity).is_none());
+                assert!(
+                    world
+                        .get::<bevy::input_focus::tab_navigation::TabIndex>(entity)
+                        .is_none()
+                );
                 if let Some(children) = world.get::<Children>(entity) {
                     pending.extend(children.iter());
                 }
             }
         }
-        for expected in ["Run", "00:00:00", "Record Castle", "Fiote Castle", "Protein Castle"] {
-            assert!(world.query::<&Text>().iter(world).any(|text| text.0 == expected), "Missing {expected}");
+        for expected in [
+            "Run",
+            "00:00:00",
+            "Record Castle",
+            "Fiote Castle",
+            "Protein Castle",
+        ] {
+            assert!(
+                world
+                    .query::<&Text>()
+                    .iter(world)
+                    .any(|text| text.0 == expected),
+                "Missing {expected}"
+            );
         }
-        assert!(!world.query::<&Text>().iter(world).any(|text| text.0 == "+" || text.0.contains("text area")));
-        assert!(!world.query::<&crate::icons::Tooltip>().iter(world).any(|tip| tip.0 == "Record slug or identity"));
-        for action in [EditAction::General, EditAction::Areas, EditAction::Store, EditAction::Workspaces, EditAction::Credits] {
+        assert!(
+            !world
+                .query::<&Text>()
+                .iter(world)
+                .any(|text| text.0 == "+" || text.0.contains("text area"))
+        );
+        assert!(
+            !world
+                .query::<&crate::icons::Tooltip>()
+                .iter(world)
+                .any(|tip| tip.0 == "Record slug or identity")
+        );
+        for action in [
+            EditAction::General,
+            EditAction::Areas,
+            EditAction::Store,
+            EditAction::Workspaces,
+            EditAction::Credits,
+        ] {
             action.apply(world, root);
             let panel = world.get::<EditMode>(root).unwrap().panel;
             let content = *world.get::<Children>(panel).unwrap().last().unwrap();
@@ -1488,7 +1533,11 @@ pub(crate) mod tests {
                 "{action:?}"
             );
             assert_eq!(
-                world.get::<Children>(panel).unwrap().iter().collect::<Vec<_>>(),
+                world
+                    .get::<Children>(panel)
+                    .unwrap()
+                    .iter()
+                    .collect::<Vec<_>>(),
                 children,
                 "{action:?}"
             );

@@ -2,21 +2,43 @@ use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
+pub mod document;
+
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ColorScheme {
     #[default]
     Dark,
     Light,
+    ComfyPink,
+    Moss,
 }
 
 impl ColorScheme {
-    pub const ALL: [Self; 2] = [Self::Dark, Self::Light];
+    pub const ALL: [Self; 4] = [Self::Dark, Self::Light, Self::ComfyPink, Self::Moss];
 
     pub fn name(self) -> &'static str {
         match self {
             Self::Dark => "Lince Dark",
             Self::Light => "Lince Light",
+            Self::ComfyPink => "Comfy Pink",
+            Self::Moss => "Moss",
         }
+    }
+
+    fn preset(self) -> Option<&'static ThemeSettings> {
+        use std::sync::OnceLock;
+        static PINK: OnceLock<ThemeSettings> = OnceLock::new();
+        static MOSS: OnceLock<ThemeSettings> = OnceLock::new();
+        let (preset, source) = match self {
+            Self::Dark | Self::Light => return None,
+            Self::ComfyPink => (&PINK, include_str!("../themes/comfy-pink.json")),
+            Self::Moss => (&MOSS, include_str!("../themes/moss.json")),
+        };
+        Some(preset.get_or_init(|| {
+            let preset = document::ThemeDocument::parse(source).expect("valid bundled theme");
+            assert_eq!(preset.scheme, self);
+            preset
+        }))
     }
 }
 
@@ -113,6 +135,7 @@ impl Token {
         match scheme {
             ColorScheme::Dark => definition.dark,
             ColorScheme::Light => definition.light,
+            ColorScheme::ComfyPink | ColorScheme::Moss => scheme.preset().unwrap().global.0[&self],
         }
     }
 
@@ -224,6 +247,12 @@ impl ThemeSettings {
         if let Some(value) = self.global.0.get(&token) {
             return (*value, "All Sands");
         }
+        if let Some(preset) = self.scheme.preset() {
+            return (
+                preset.resolve(token, kind, &TokenOverrides::default()).0,
+                "Theme",
+            );
+        }
         if token == Token::SandBackground
             && matches!(
                 kind,
@@ -239,7 +268,7 @@ impl ThemeSettings {
                 _ => {}
             }
         }
-        (token.default_value(self.scheme), "Colorscheme")
+        (token.default_value(self.scheme), "Theme")
     }
 }
 
@@ -252,7 +281,8 @@ pub(crate) mod tests {
         for definition in TOKENS {
             assert!(names.insert(definition.name));
             assert!(std::ptr::eq(definition, definition.token.definition()));
-            for value in [definition.dark, definition.light] {
+            for scheme in ColorScheme::ALL {
+                let value = definition.token.default_value(scheme);
                 assert!(definition.token.accepts(value));
                 assert_eq!(definition.token.parse(&value.display()), Some(value));
             }

@@ -88,6 +88,10 @@ impl Engine {
         let named: Vec<&String> = match action {
             Action::ChangeRecord { request } => vec![&request.record_uid],
             Action::CreateMessage { thread, .. } => vec![thread],
+            Action::ProposeGroup { thread, .. } => vec![thread],
+            Action::SetGroupPerson { root, .. } | Action::RemoveGroupOrgan { root, .. } => {
+                vec![root]
+            }
             Action::CreateMessageDraft {
                 conversation,
                 thread,
@@ -104,7 +108,6 @@ impl Engine {
             | Action::SetPlace { target, .. }
             | Action::GrantVisibility { target, .. }
             | Action::CreateThread { target, .. }
-            | Action::PreviewAreaTransition { target, .. }
             | Action::SetQuantityExact { target, .. }
             | Action::EditRecordText { target, .. }
             | Action::ReviseMessage {
@@ -116,7 +119,33 @@ impl Engine {
             | Action::DeleteRecord { target }
             | Action::MoveRecordTo { record: target, .. }
             | Action::CancelRecordMove { record: target } => vec![target],
-            Action::ApplyAreaTransition { preview, .. } => vec![&preview.target],
+            Action::PreviewAreaTransition {
+                target,
+                changes,
+                constraints,
+            } => {
+                let mut targets = vec![target];
+                targets.extend(
+                    changes
+                        .assign
+                        .iter()
+                        .chain(&changes.unassign)
+                        .chain(&constraints.assign)
+                        .chain(&constraints.unassign),
+                );
+                targets
+            }
+            Action::ApplyAreaTransition { preview, .. } => {
+                let mut targets = vec![&preview.target];
+                targets.extend(
+                    preview
+                        .changes
+                        .assign
+                        .iter()
+                        .chain(&preview.changes.unassign),
+                );
+                targets
+            }
             Action::TransitionRecord { subject, .. }
             | Action::SetIdentity { subject, .. }
             | Action::RetractRecord { subject, .. } => vec![subject],

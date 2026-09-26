@@ -31,6 +31,7 @@ async fn connected() -> (App, Entity, Entity, std::sync::Arc<engine::Engine>) {
     let (mut app, root, castle) = fixture();
     let engine = std::sync::Arc::new(engine::Engine::open_memory().await.unwrap());
     let runtime = cell::CellRuntime {
+        commands: Default::default(),
         store: engine.store.clone(),
         engine: engine.clone(),
         lanes: std::sync::Arc::new(cell::LaneHub::new()),

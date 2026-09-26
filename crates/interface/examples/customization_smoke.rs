@@ -302,7 +302,7 @@ fn exercise(world: &mut World) {
             let dropdown = world
                 .query::<(Entity, &AccessibilityNode)>()
                 .iter(world)
-                .find(|(_, node)| node.label() == Some("Colorscheme"))
+                .find(|(_, node)| node.label() == Some("Theme"))
                 .unwrap()
                 .0;
             world.trigger(bevy::ui_widgets::Activate { entity: dropdown });
@@ -315,7 +315,7 @@ fn exercise(world: &mut World) {
             let options = world
                 .query::<(&lince_interface::dropdown::Dropdown, &AccessibilityNode)>()
                 .iter(world)
-                .find(|(_, node)| node.label() == Some("Colorscheme"))
+                .find(|(_, node)| node.label() == Some("Theme"))
                 .unwrap()
                 .0
                 .menu;

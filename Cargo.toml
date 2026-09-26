@@ -11,9 +11,11 @@ members = [
     "crates/anicca",
     "crates/sensei",
     "crates/interface",
+    "crates/document",
     "crates/fiote",
     "crates/cell",
     "crates/facade",
+    "crates/media",
 ]
 exclude = ["examples"]
 
@@ -36,6 +38,7 @@ lince = { version = "=0.7.0", path = "crates/lince" }
 utils = { version = "=0.7.0", path = "crates/utils", package = "lince-utils" }
 cell = { version = "=0.7.0", path = "crates/cell", package = "lince-cell" }
 lince-interface = { version = "=0.7.0", path = "crates/interface" }
+lince-media = { version = "=0.7.0", path = "crates/media" }
 lince-facade = { version = "=0.7.0", path = "crates/facade" }
 anicca = { version = "=0.7.0", path = "crates/anicca" }
 nucleus = { version = "=0.7.0", path = "crates/nucleus" }
@@ -152,6 +155,19 @@ incremental = true   # Fast incremental builds
 codegen-units = 256  # Max parallelism
 
 [patch.crates-io]
+str0m-rust-crypto = { path = "vendor/str0m-rust-crypto" }
 # Keep the mDNS implementation vendored while LAN discovery is stabilised, so
 # any socket-level fixes can be audited and shipped with Lince.
 swarm-discovery = { path = "vendor/swarm-discovery" }
+
+[profile.dev.package.opus-rs]
+opt-level = 2
+
+[profile.dev.package.rav1e]
+opt-level = 2
+
+[profile.dev.package.rav1d]
+opt-level = 2
+
+[profile.dev.package.sonora-aec3]
+opt-level = 2

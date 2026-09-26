@@ -99,6 +99,15 @@ pub enum Request {
         record: String,
         config: crate::acp::Config,
     },
+    AgentOptions {
+        record: String,
+        config: crate::acp::Config,
+    },
+    AgentSetOption {
+        record: String,
+        option: String,
+        value: serde_json::Value,
+    },
     AgentDiscover {
         record: String,
         config: crate::acp::Config,

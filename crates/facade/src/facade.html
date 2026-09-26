@@ -4,8 +4,713 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Facade</title>
-  <style>{{FACADE_CSS}}</style>
-  <script type="module">{{FACADE_JS}}</script>
+  <style>:root { color-scheme: dark; --bg: #000; --fg: #fff; font-family: system-ui, sans-serif; color: var(--fg); background: var(--bg); font-size: 15px; }
+:root.light { color-scheme: light; --bg: #fff; --fg: #000; }
+* { box-sizing: border-box; }
+body { margin: 0; padding-left: 4rem; }
+.sidebar { position: fixed; inset: 0 auto 0 0; width: 4rem; z-index: 5; background: var(--bg); border-right: 1px solid; padding: .6rem; display: flex; flex-direction: column; gap: .6rem; transition: width .15s; overflow: hidden; }
+.sidebar:hover, .sidebar:has(:focus-visible) { width: 12rem; }
+.sidebar button { display: flex; gap: 1rem; align-items: center; min-height: 3rem; white-space: nowrap; border: 0; }
+.sidebar button > span:first-child { width: 1.3rem; flex-shrink: 0; font-size: 1.4rem; }
+.nav-label { visibility: hidden; }
+.sidebar:hover .nav-label, .sidebar:has(:focus-visible) .nav-label { visibility: visible; }
+.sidebar-bottom { margin-top: auto; display: grid; gap: .6rem; }
+.general-settings { max-width: 36rem; }
+.general-settings fieldset { display: grid; gap: 1rem; }
+main, footer { padding: 1.5rem 3vw; }
+a { color: inherit; text-underline-offset: .2em; }
+.brand { display: inline-block; margin-bottom: 1.5rem; font-size: 1.25rem; font-weight: 700; text-decoration: none; }
+.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+h1 { font-size: 2rem; line-height: 1.2; font-weight: 600; overflow-wrap: anywhere; }
+h2 { font-size: 1.25rem; }
+button, input, textarea, select { font: inherit; color: var(--fg); background: var(--bg); border: 1px solid; border-radius: 0; padding: .65rem .8rem; }
+button, summary { cursor: pointer; }
+button:hover, .primary { color: var(--bg); background: var(--fg); }
+button:disabled { cursor: default; opacity: .45; }
+:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+label { display: grid; gap: .4rem; }
+input, textarea, select { width: 100%; min-width: 0; }
+textarea { resize: vertical; }
+form { display: grid; gap: 1rem; margin: 1rem 0; }
+form button { justify-self: start; }
+fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.login { max-width: 24rem; margin: 9vh auto; }
+.search { min-width: 15rem; }
+.board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(220px, 1fr); gap: 1rem; overflow-x: auto; padding: 1.5rem 0; }
+.column { min-height: 15rem; border-top: 2px solid; }
+.column h2 { display: flex; justify-content: space-between; font-size: .95rem; }
+.card { display: block; border: 1px solid; padding: 1rem; margin: .75rem 0; text-decoration: none; overflow-wrap: anywhere; }
+.card:hover { color: var(--bg); background: var(--fg); }
+.column-row { display: grid; grid-template-columns: 1fr 7rem auto; gap: .5rem; margin: .5rem 0; }
+.user { border-top: 1px solid; margin-top: 1rem; padding-top: 1rem; }
+.permission-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .5rem; }
+.permission-list label { display: flex; align-items: center; }
+.permission-list input { width: auto; }
+.card span { display: block; font-size: .8rem; margin-top: .5rem; }
+.card-item { position: relative; }
+.card-item:has(.card-delete) .card { padding-right: 2.5rem; }
+.card-delete { position: absolute; right: .3rem; top: .3rem; padding: .15rem .5rem; border: 0; }
+#detail { max-width: 56rem; margin: 0 auto; }
+.description { white-space: pre-wrap; line-height: 1.6; overflow-wrap: anywhere; }
+.eyebrow, dt { font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; }
+.properties, .edit-properties { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem 2rem; }
+dd { margin: .4rem 0 1rem; overflow-wrap: anywhere; }
+details, .comments { border-top: 1px solid; margin-top: 2rem; padding-top: 1.25rem; }
+summary { font-weight: 600; }
+.message { border-left: 2px solid; padding: .25rem 1rem; margin: 1rem 0; }
+.message p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.message time { font-size: .8rem; }
+#error, .notice { border: 1px solid; padding: 1rem; margin: 1rem 3vw; }
+footer { margin-top: 3rem; font-size: .8rem; }
+@media (max-width: 600px) { header { align-items: flex-start; } .account { font-size: .8rem; gap: .5rem; } .properties, .edit-properties { grid-template-columns: 1fr; } main { padding-top: .5rem; } }
+.column-heading { display: flex; align-items: center; gap: .6rem; min-height: 3rem; }
+.column-heading h2 { flex: 1; gap: .5rem; }
+.column-add { border: 0; padding: .3rem .7rem; font-size: 1.4rem; }
+.column.drag-over { outline: 2px solid; outline-offset: 3px; }
+.card-move { font-size: .8rem; margin-bottom: .6rem; }
+#create-record fieldset { display: grid; gap: 1rem; }
+
+.filter-group { border: 1px solid; padding: .75rem; margin: .75rem 0; }
+.filter-group > button { margin: .5rem .5rem 0 0; }
+.filter-row { display: flex; align-items: end; gap: .5rem; flex-wrap: wrap; margin: .75rem 0; }
+.filter-row > .filter-group { flex: 1; min-width: 12rem; }
+.filter-row label { flex: 1; min-width: 10rem; }
+.read-rules { max-width: 52rem; }
+</style>
+  <script type="module">const {t, localize} = await (async () => {const portuguese = {
+  "Tags": "Marcadores",
+  "forbidden: Choose tags that satisfy your role's access rules.": "Escolha marcadores que atendam às regras de acesso do seu papel.",
+  "Create record": "Criar registro",
+  "Create in {name}": "Criar em {name}",
+  "Move {name}": "Mover {name}",
+  "Match": "Corresponder a",
+  "All conditions": "Todas as condições",
+  "Any condition": "Qualquer condição",
+  "Condition": "Condição",
+  "Has tag": "Tem marcador",
+  "Does not have tag": "Não tem marcador",
+  "Tag": "Marcador",
+  "Choose a tag": "Escolha um marcador",
+  "Add condition": "Adicionar condição",
+  "Add group": "Adicionar grupo",
+  "Allow records matching": "Permitir registros que correspondem",
+  "Block records matching": "Bloquear registros que correspondem",
+  "Save access rules": "Salvar regras de acesso",
+  "Access rules saved.": "Regras de acesso salvas.",
+  "Too many filter levels.": "Muitos níveis de filtros.",
+  "This policy uses conditions that this editor cannot change yet.": "Esta política usa condições que este editor ainda não pode alterar.",
+  "A tag in this policy is unavailable.": "Um marcador desta política está indisponível.",
+  "Allow rules share matching local records with this role. Explicit visibility restrictions still apply. Blocks win. Empty “all” matches every record; empty “any” matches none.": "As regras permitem acesso aos registros locais deste papel. Restrições explícitas continuam valendo. Bloqueios prevalecem. “Todas” vazio inclui tudo; “qualquer” vazio não inclui nada.",
+  "Connection lost. Wait for the connection before trying again.": "Conexão perdida. Aguarde a reconexão antes de tentar novamente.",
+
+  "Please log in.": "Entre para continuar.",
+  "Open Facade from its own address.": "Abra o Facade pelo próprio endereço.",
+  "Please try again shortly.": "Tente novamente em instantes.",
+  "Invalid username or password.": "Nome de usuário ou senha inválidos.",
+  "Please try again later.": "Tente novamente mais tarde.",
+  "This change is not available here.": "Esta alteração não está disponível aqui.",
+  "You cannot make this change.": "Você não pode fazer esta alteração.",
+  "Enter a username and valid account details.": "Informe um nome de usuário e dados de conta válidos.",
+  "Main navigation": "Navegação principal",
+  "Users": "Usuários",
+  "Settings": "Configurações",
+  "Log out": "Sair",
+  "Log in": "Entrar",
+  "Switch to light mode": "Mudar para o modo claro",
+  "Switch to dark mode": "Mudar para o modo escuro",
+  "Light": "Claro",
+  "Dark": "Escuro",
+  "Live": "Conectado",
+  "Reconnecting…": "Reconectando…",
+  "Welcome": "Boas-vindas",
+  "Log in to continue.": "Entre para continuar.",
+  "Username": "Nome de usuário",
+  "Password": "Senha",
+  "+ New record": "+ Novo registro",
+  "Customize": "Personalizar",
+  "Search": "Buscar",
+  "Column template": "Modelo de colunas",
+  "Template name": "Nome do modelo",
+  "My columns": "Minhas colunas",
+  "+ Add column": "+ Adicionar coluna",
+  "Save and apply": "Salvar e aplicar",
+  "Save as new template": "Salvar como novo modelo",
+  "Showing the first 500 cards. Search to narrow the board.": "Exibindo os primeiros 500 registros. Use a busca para filtrar o quadro.",
+  "No cards to show.": "Nenhum registro para exibir.",
+  "General settings": "Configurações gerais",
+  "App title": "Nome do aplicativo",
+  "Language": "Idioma",
+  "Save settings": "Salvar configurações",
+  "Copy link": "Copiar link",
+  "Delete card": "Excluir registro",
+  "This item is unavailable or has not been shared with you.": "Este item está indisponível ou não foi compartilhado com você.",
+  "Untitled": "Sem título",
+  "No description.": "Sem descrição.",
+  "Quantity": "Quantidade",
+  "Unit": "Unidade",
+  "Identity": "Identidade",
+  "Edit properties": "Editar propriedades",
+  "This item changed while you were editing. Your draft is kept. Reload it before saving if needed.": "Este item mudou enquanto você editava. Seu rascunho foi mantido. Recarregue antes de salvar, se necessário.",
+  "Reload draft": "Recarregar rascunho",
+  "Title": "Título",
+  "Description": "Descrição",
+  "Save text": "Salvar texto",
+  "Save slug": "Salvar slug",
+  "Save quantity": "Salvar quantidade",
+  "Unit slug or ID": "Slug ou ID da unidade",
+  "Save unit": "Salvar unidade",
+  "Save identity": "Salvar identidade",
+  "Labels and links": "Marcadores e links",
+  "Label": "Marcador",
+  "Related item (optional)": "Item relacionado (opcional)",
+  "Add": "Adicionar",
+  "Remove": "Remover",
+  "Move to column": "Mover para a coluna",
+  "Threads": "Conversas",
+  "Thread": "Conversa",
+  "+ New thread": "+ Nova conversa",
+  "No visible comments yet.": "Nenhum comentário visível ainda.",
+  "Conversation": "Conversa",
+  "New conversation": "Nova conversa",
+  "Comment": "Comentário",
+  "Post comment": "Publicar comentário",
+  "Could not complete this request.": "Não foi possível concluir esta solicitação.",
+  "Connection lost. Wait for Live before trying again.": "Conexão perdida. Aguarde a reconexão antes de tentar novamente.",
+  "No reply received. Check the record before trying again.": "Nenhuma resposta recebida. Verifique o registro antes de tentar novamente.",
+  "Editing needs HTTPS or localhost in this browser.": "A edição exige HTTPS ou localhost neste navegador.",
+  "Editing is not ready. Use HTTPS or localhost and wait for the connection.": "A edição ainda não está pronta. Use HTTPS ou localhost e aguarde a conexão.",
+  "Connection lost. Check the record before trying again.": "Conexão perdida. Verifique o registro antes de tentar novamente.",
+  "Discard your unsaved edits?": "Descartar suas alterações não salvas?",
+  "Column": "Coluna",
+  "Value": "Valor",
+  "Role": "Papel",
+  "New user": "Novo usuário",
+  "Name": "Nome",
+  "Create user": "Criar usuário",
+  "New password (blank keeps current)": "Nova senha (em branco mantém a atual)",
+  "Save user": "Salvar usuário",
+  "Visible items filter (JSON; blank clears)": "Filtro de itens visíveis (JSON; em branco remove)",
+  "Save access filter": "Salvar filtro de acesso",
+  "Assign role": "Atribuir papel",
+  "Delete login": "Excluir login",
+  "New role": "Novo papel",
+  "Role name": "Nome do papel",
+  "Create role": "Criar papel",
+  "Admins have all permissions.": "Administradores têm todas as permissões.",
+  "Changes apply to every user with this role. Create a separate role for individual access.": "As alterações se aplicam a todos os usuários com este papel. Crie um papel separado para acesso individual.",
+  "Record title": "Título do registro",
+  "Delete this card?": "Excluir este registro?",
+  "Settings saved.": "Configurações salvas.",
+  "Use 1–40 named columns with unique numeric values.": "Use de 1 a 40 colunas com nomes e valores numéricos distintos.",
+  "Template saved.": "Modelo salvo.",
+  "Columns saved.": "Colunas salvas.",
+  "Thread title": "Título da conversa",
+  "Link copied.": "Link copiado.",
+  "Text saved.": "Texto salvo.",
+  "Property saved.": "Propriedade salva.",
+  "Identity saved.": "Identidade salva.",
+  "Assertion saved.": "Marcador salvo.",
+  "General": "Geral",
+  "Comment posted.": "Comentário publicado.",
+  "Choose a column": "Escolha uma coluna",
+  "Choose a template": "Escolha um modelo",
+  "All threads": "Todas as conversas",
+  "Delete {name}": "Excluir {name}",
+  "{name} permissions": "Permissões de {name}",
+  "Delete the login for {name}? Their authored content will be kept.": "Excluir o login de {name}? O conteúdo criado será mantido.",
+  "Choose an app title and Portuguese or English.": "Escolha um nome para o aplicativo e português ou inglês.",
+  "Choose a name and 1–40 columns with unique numeric values.": "Escolha um nome e de 1 a 40 colunas com valores numéricos distintos."
+};
+let language = 'pt-BR';
+
+function t(text, values = {}, locale = language) {
+  const translated = locale === 'en' ? text : portuguese[text] ?? text;
+  return translated.replace(/\{(\w+)\}/g, (match, key) => values[key] ?? match);
+}
+
+function localize(value) {
+  language = value === 'en' ? 'en' : 'pt-BR';
+  document.documentElement.lang = language;
+  for (const node of document.querySelectorAll('[data-i18n]')) node.textContent = t(node.dataset.i18n);
+  for (const attribute of ['aria-label', 'title']) {
+    for (const node of document.querySelectorAll(`[data-i18n-${attribute}]`)) node.setAttribute(attribute, t(node.getAttribute(`data-i18n-${attribute}`)));
+  }
+}
+; return {t, localize}; })(); const {readRulesEditor} = await (async (t) => {
+
+const node = (tag, text) => {
+  const value = document.createElement(tag);
+  if (text !== undefined) value.textContent = text;
+  return value;
+};
+const choice = (entries, value) => {
+  const select = node('select');
+  select.replaceChildren(...entries.map(([value,label]) => new Option(label,value)));
+  select.value = value;
+  return select;
+};
+const control = (parent, title, input) => {
+  const label = node('label',t(title)); label.append(input); parent.append(label); return input;
+};
+const button = (parent, title, action) => {
+  const value = node('button',t(title)); value.type = 'button'; value.onclick = action; parent.append(value); return value;
+};
+
+function readRulesEditor(rules, concepts) {
+  const group = (predicate, depth = 0) => {
+    const host = node('fieldset'); host.className = 'filter-group';
+    const isGroup = Object.hasOwn(predicate,'all') || Object.hasOwn(predicate,'any');
+    if (!isGroup) predicate = {all:[predicate]};
+    const mode = Object.hasOwn(predicate,'all') ? 'all' : 'any';
+    const match = control(host,'Match',choice([['all',t('All conditions')],['any',t('Any condition')]],mode));
+    const children = node('div'); host.append(children);
+    const add = predicate => {
+      const row = node('div'); row.className = 'filter-row';
+      let read;
+      if (Object.hasOwn(predicate,'all') || Object.hasOwn(predicate,'any')) {
+        if (depth >= 7) throw new Error(t('Too many filter levels.'));
+        const nested = group(predicate,depth + 1); row.append(nested.host); read = nested.read;
+      } else {
+        const negative = Object.hasOwn(predicate,'not'), leaf = negative ? predicate.not : predicate;
+        if (!Object.hasOwn(leaf,'concept_in')) throw new Error(t('This policy uses conditions that this editor cannot change yet.'));
+        const operation = control(row,'Condition',choice([['is',t('Has tag')],['not',t('Does not have tag')]],negative ? 'not' : 'is'));
+        const tag = control(row,'Tag',choice([['',t('Choose a tag')],...concepts.map(concept => [concept.uid,`#${concept.name}`])],leaf.concept_in));
+        tag.required = true;
+        if (leaf.concept_in && !concepts.some(concept => concept.uid === leaf.concept_in)) throw new Error(t('A tag in this policy is unavailable.'));
+        read = () => operation.value === 'not' ? {not:{concept_in:tag.value}} : {concept_in:tag.value};
+      }
+      row.read = read;
+      button(row,'Remove',() => row.remove()); children.append(row);
+    };
+    for (const child of predicate[mode]) add(child);
+    button(host,'Add condition',() => add({concept_in:''}));
+    if (depth < 7) button(host,'Add group',() => add({all:[]}));
+    return {host, read:() => ({[match.value]:Array.from(children.children,child => child.read())})};
+  };
+  const host = node('div'); host.className = 'read-rules';
+  const allow = group(rules.allow), block = group(rules.block);
+  allow.host.prepend(node('legend',t('Allow records matching')));
+  block.host.prepend(node('legend',t('Block records matching')));
+  host.append(node('p',t('Allow rules share matching local records with this role. Explicit visibility restrictions still apply. Blocks win. Empty “all” matches every record; empty “any” matches none.')),allow.host,block.host);
+  return {host, read:() => ({allow:allow.read(),block:block.read()})};
+}
+; return {readRulesEditor}; })(t); const datastar = await (async () => {// Vendored from Datastar v1.0.3
+var W="datastar-fetch",be="datastar-prop-change",At="datastar-ready",et="datastar-scope-children",re="datastar-signal-patch",p=document,J=HTMLInputElement,R=MutationObserver;var wt="data-nonce",Mt=p.documentElement,tt=Mt.getAttribute(wt),nt=tt!==null,ve;if(nt){if(!tt)throw new Error("Datastar CSP requires a nonempty html data-nonce.");Mt.removeAttribute(wt),ve=window.trustedTypes?.createPolicy("datastar",{createHTML:e=>e,createScript:e=>e})}var Ee=(e,t)=>{nt&&(e.nonce=tt),e.text=ve?ve.createScript(t):t},rt=e=>ve?ve.createHTML(e):e,Rt=new Map,_e=(e,t)=>{if(!nt)return Function(...e,t);let n=`function(${e.join(",")}){${t}
+}`,r=Rt.get(n);if(r)return r;let s=p.createElement("script");Ee(s,`document.currentScript.x=${n}`),p.head.appendChild(s),s.remove();let i=s.x;if(!i)throw new Error("CSP blocked Datastar expression compilation.");return Rt.set(n,i),i};var N=Object.hasOwn??Object.prototype.hasOwnProperty.call;var Y=e=>e!==null&&typeof e=="object"&&(Object.getPrototypeOf(e)===Object.prototype||Object.getPrototypeOf(e)===null),xt=e=>{for(let t in e)if(N(e,t))return!1;return!0},se=(e,t)=>{for(let n in e){let r=e[n];Y(r)||Array.isArray(r)?se(r,t):e[n]=t(r)}},He=e=>{let t={};for(let[n,r]of e){let s=n.split("."),i=s.pop(),o=s.reduce((a,c)=>a[c]??={},t);o[i]=r}return t};var ke=[],st=[],Ge=0,De=0,it=0,Se,K,Ie=0,O=()=>{Ge++},P=()=>{--Ge||(Nt(),X())},F=e=>{Se={t:K,u:Se},K=e},_=()=>{K=Se?.t,Se=Se?.u},Te=e=>yn.bind(0,{g:e,t:e,e:1}),ot=Symbol("computed"),je=e=>{let t=bn.bind(0,{e:17,h:e});return t[ot]=1,t},T=e=>{let t={T:e,e:2};K&&ct(t,K),F(t),O();try{t.T()}finally{P(),_()}return _t.bind(0,t)},Nt=()=>{for(;De<it;){let e=st[De];st[De++]=void 0,Ft(e,e.e&=-65)}De=0,it=0},Lt=e=>"h"in e?Ot(e):Pt(e,e.t),Ot=e=>{F(e),Ht(e);try{let t=e.t;return t!==(e.t=e.h(t))}finally{_(),kt(e)}},Pt=(e,t)=>(e.e=1,e.g!==(e.g=t)),at=e=>{let t=e.e;if(!(t&64)){e.e=t|64;let n=e.r;n?at(n.c):st[it++]=e}},Ft=(e,t)=>{if(t&16||t&32&&Dt(e.s,e)){F(e),Ht(e),O();try{e.T()}finally{P(),_(),kt(e)}return}t&32&&(e.e=t&-33);let n=e.s;for(;n;){let r=n.p,s=r.e;s&64&&Ft(r,r.e=s&-65),n=n.i}},yn=(e,...t)=>{if(t.length){if(e.t!==(e.t=t[0])){e.e=17;let r=e.r;return r&&(vn(r),Ge||Nt()),!0}return!1}let n=e.t;if(e.e&16&&Pt(e,n)){let r=e.r;r&&qe(r)}return K&&ct(e,K),n},bn=e=>{let t=e.e;if(t&16||t&32&&Dt(e.s,e)){if(Ot(e)){let n=e.r;n&&qe(n)}}else t&32&&(e.e=t&-33);return K&&ct(e,K),e.t},_t=e=>{let t=e.s;for(;t;)t=$e(t,e);let n=e.r;n&&$e(n),e.e=0},ct=(e,t)=>{let n=t.l;if(n&&n.p===e)return;let r=n?n.i:t.s;if(r&&r.p===e){r.S=Ie,t.l=r;return}let s=e.A;if(s&&s.S===Ie&&s.c===t)return;let i=t.l=e.A={S:Ie,p:e,c:t,d:n,i:r,y:s};r&&(r.d=i),n?n.i=i:t.s=i,s?s.n=i:e.r=i},$e=(e,t=e.c)=>{let n=e.p,r=e.d,s=e.i,i=e.n,o=e.y;if(s?s.d=r:t.l=r,r?r.i=s:t.s=s,i?i.y=o:n.A=o,o)o.n=i;else if(!(n.r=i))if("h"in n){let a=n.s;if(a){n.e=17;do a=$e(a,n);while(a)}}else"g"in n||_t(n);return s},vn=e=>{let t=e.n,n;e:for(;;){let r=e.c,s=r.e;if(s&60?s&12?s&4?!(s&48)&&En(e,r)?(r.e=s|40,s&=1):s=0:r.e=s&-9|32:s=0:r.e=s|32,s&2&&at(r),s&1){let i=r.r;if(i){let o=(e=i).n;o&&(n={t,u:n},t=o);continue}}if(e=t){t=e.n;continue}for(;n;)if(e=n.t,n=n.u,e){t=e.n;continue e}break}},Ht=e=>{Ie++,e.l=void 0,e.e=e.e&-57|4},kt=e=>{let t=e.l,n=t?t.i:e.s;for(;n;)n=$e(n,e);e.e&=-5},Dt=(e,t)=>{let n,r=0,s=!1;e:for(;;){let i=e.p,o=i.e;if(t.e&16)s=!0;else if((o&17)===17){if(Lt(i)){let a=i.r;a.n&&qe(a),s=!0}}else if((o&33)===33){(e.n||e.y)&&(n={t:e,u:n}),e=i.s,t=i,++r;continue}if(!s){let a=e.i;if(a){e=a;continue}}for(;r--;){let a=t.r,c=a.n;if(c?(e=n.t,n=n.u):e=a,s){if(Lt(t)){c&&qe(a),t=e.c;continue}s=!1}else t.e&=-33;if(t=e.c,e.i){e=e.i;continue e}}return s}},qe=e=>{do{let t=e.c,n=t.e;(n&48)===32&&(t.e=n|16,n&2&&at(t))}while(e=e.n)},En=(e,t)=>{let n=t.l;for(;n;){if(n===e)return!0;n=n.d}return!1},oe=e=>{let t=ie,n=e.split(".");for(let r of n){if(t==null||!N(t,r))return;t=t[r]}return t},Ve=(e,t="")=>{let n=Array.isArray(e);if(n||Y(e)){let r=n?[]:{};for(let i in e)r[i]=Te(Ve(e[i],`${t+i}.`));let s=Te(0);return new Proxy(r,{get(i,o){if(!(o==="toJSON"&&!N(r,o)))return n&&o in Array.prototype?(s(),r[o]):typeof o=="symbol"?r[o]:((!N(r,o)||r[o]()==null)&&(r[o]=Te(""),X(t+o,""),s(s()+1)),r[o]())},set(i,o,a){let c=t+o;if(n&&o==="length"){let l=r[o]-a;if(r[o]=a,l>0){let f={};for(let u=a;u<r[o];u++)f[u]=null;X(t.slice(0,-1),f),s(s()+1)}}else if(N(r,o))if(a==null)delete r[o];else if(N(a,ot))r[o]=a,X(c,"");else{let l=r[o](),f=`${c}.`;if(Y(l)&&Y(a)){for(let u in l)N(a,u)||(delete l[u],X(f+u,null));for(let u in a){let g=a[u];l[u]!==g&&(l[u]=g)}}else r[o](Ve(a,f))&&X(c,a)}else a!=null&&(N(a,ot)?(r[o]=a,X(c,"")):(r[o]=Te(Ve(a,`${c}.`)),X(c,a)),s(s()+1));return!0},deleteProperty(i,o){return delete r[o],s(s()+1),!0},ownKeys(){return s(),Reflect.ownKeys(r)},has(i,o){return s(),o in r}})}return e},X=(e,t)=>{if(e!==void 0&&t!==void 0&&ke.push([e,t]),!Ge&&ke.length){let n=He(ke);ke.length=0,p.dispatchEvent(new CustomEvent(re,{detail:n}))}},I=(e,{ifMissing:t}={})=>{O();for(let n in e)e[n]==null?t||delete ie[n]:It(e[n],n,ie,"",t);P()},S=(e,t)=>I(He(e),t),It=(e,t,n,r,s)=>{if(Y(e)){N(n,t)&&(Y(n[t])||Array.isArray(n[t]))||(n[t]={});for(let i in e)e[i]==null?s||delete n[t][i]:It(e[i],i,n[t],`${r+t}.`,s)}else s&&N(n,t)||(n[t]=e)},Ct=e=>typeof e=="string"?RegExp(e.replace(/^\/|\/$/g,"")):e,G=({include:e=/.*/,exclude:t=/(?!)/}={},n=ie)=>{let r=Ct(e),s=Ct(t),i=[],o=[[n,""]];for(;o.length;){let[a,c]=o.pop();for(let l in a){let f=c+l;Y(a[l])?o.push([a[l],`${f}.`]):r.test(f)&&!s.test(f)&&i.push([f,oe(f)])}}return He(i)},ie=Ve({});var ee=e=>e instanceof HTMLElement||e instanceof SVGElement||e instanceof MathMLElement;var ue=e=>e.replace(/([A-Z]+)([A-Z][a-z])/g,"$1-$2").replace(/([a-z0-9])([A-Z])/g,"$1-$2").replace(/([a-z])([0-9]+)/gi,"$1-$2").replace(/([0-9]+)([a-z])/gi,"$1-$2").replace(/[\s_]+/g,"-").toLowerCase(),$t=e=>ue(e).replace(/-./g,t=>t[1].toUpperCase()),qt=e=>ue(e).replace(/-/g,"_");var Be=e=>typeof e=="string"&&e.trim()==="true",Tn=/^(?:(?:async\s+)?function\b|(?:async\s*)?(?:\([^)]*\)|[A-Za-z_$][\w$]*)\s*=>)/,Vt=e=>_e([],`return (${e})`)(),pe=(e,t={})=>{let{reviveFunctionStrings:n=!1}=t;try{return n?JSON.parse(e,(r,s)=>{if(typeof s!="string")return s;let i=s.trim();if(!Tn.test(i))return s;try{let o=Vt(i);return typeof o=="function"?o:s}catch{return s}}):JSON.parse(e)}catch{return Vt(e)}},Gt={camel:e=>e.replace(/-[a-z]/g,t=>t[1].toUpperCase()),snake:e=>e.replace(/-/g,"_"),pascal:e=>e[0].toUpperCase()+Gt.camel(e.slice(1))},H=(e,t,n="camel")=>{for(let r of t.get("case")||[n])e=Gt[r]?.(e)||e;return e},z=e=>`data-${e}`,lt=e=>e;var Sn="https://data-star.dev/errors",Ae=(e,t,n={})=>{Object.assign(n,e);let r=new Error,s=qt(t),i=new URLSearchParams({metadata:JSON.stringify(n)}).toString(),o=JSON.stringify(n,null,2);return r.message=`${t}
+More info: ${Sn}/${s}?${i}
+Context: ${o}`,r},Re=new Map,ft=new Map,Wt=new Map,Jt=new Proxy({},{get:(e,t)=>Re.get(t)?.apply,has:(e,t)=>Re.has(t),ownKeys:()=>Reflect.ownKeys(Re),set:()=>!1,deleteProperty:()=>!1}),Me=new Map,Ue=[],ut=new Set,we=new Set,jt=!1,m=e=>{Ue.push(e),Ue.length===1&&setTimeout(()=>{for(let n of Ue)ut.add(n.name),ft.set(n.name,n);Ue.length=0;let t=we.size?[...we]:[p.documentElement];for(let n of t)Cn(n,!we.has(n));ut.clear()})},V=e=>{Re.set(e.name,e)};p.addEventListener(W,(e=>{let t=Wt.get(e.detail.type);t&&t.apply({error:Ae.bind(0,{plugin:{type:"watcher",name:t.name},element:{id:e.target.id,tag:e.target.tagName}})},e.detail.argsRaw)}));var xe=e=>{Wt.set(e.name,e)},Bt=e=>{for(let t of e){let n=Me.get(t);if(n&&Me.delete(t))for(let r of n.values())for(let s of r.values())s()}},Kt=z("ignore"),An=`[${Kt}]`,zt=e=>e.hasAttribute(`${Kt}__self`)||!!e.closest(An),We=(e,t)=>{for(let n of e)if(!zt(n)){let r=new Set;for(let s in n.dataset){let i=s.replace(/[A-Z]/g,"-$&").toLowerCase();r.add(i),pt(n,i,n.dataset[s],t)}for(let s of Array.from(n.attributes)){if(!s.name.startsWith("data-"))continue;let i=s.name.slice(5);r.has(i)||pt(n,i,s.value,t)}}},Rn=e=>{for(let{target:t,type:n,attributeName:r,addedNodes:s,removedNodes:i}of e)if(n==="childList"){for(let o of i)ee(o)&&(Bt([o]),Bt(o.querySelectorAll("*")));for(let o of s)ee(o)&&(We([o]),We(o.querySelectorAll("*")))}else if(n==="attributes"&&r.startsWith("data-")&&ee(t)&&!zt(t)){let o=r.slice(5),a=lt(o);if(!a)continue;let c=t.getAttribute(r);if(c===null){let l=Me.get(t);if(l){let f=l.get(a);if(f){for(let u of f.values())u();l.delete(a)}}}else pt(t,o,c)}},wn=new R(Rn),Mn=e=>{let[t,...n]=e.split("__"),[r,s]=t.split(/:(.+)/),i=new Map;for(let o of n){let[a,...c]=o.split(".");i.set(a,new Set(c))}return{pluginName:r,key:s,mods:i}},xn=()=>we.has(p.documentElement),Ln=()=>{jt||!xn()||(jt=!0,p.dispatchEvent(new Event(At)))},Cn=(e=p.documentElement,t=!0)=>{ee(e)&&We([e],!0),We(e.querySelectorAll("*"),!0),t&&(wn.observe(e,{subtree:!0,childList:!0,attributes:!0}),we.add(e),Ln())};var pt=(e,t,n,r)=>{let s=lt(t);if(!s)return;let{pluginName:i,key:o,mods:a}=Mn(s),c=ft.get(i);if((!r||ut.has(i))&&!!c){let f={el:e,rawKey:s,mods:a,error:Ae.bind(0,{plugin:{type:"attribute",name:c.name},element:{id:e.id,tag:e.tagName},expression:{rawKey:s,key:o,value:n}}),key:o,value:n,loadedPluginNames:{actions:new Set(Re.keys()),attributes:new Set(ft.keys())},rx:void 0},u=c.requirement&&(typeof c.requirement=="string"?c.requirement:c.requirement.key)||"allowed",g=c.requirement&&(typeof c.requirement=="string"?c.requirement:c.requirement.value)||"allowed",w=o!=null&&o!=="",y=n!=null&&n!=="";if(w){if(u==="denied")throw f.error("KeyNotAllowed")}else if(u==="must")throw f.error("KeyRequired");if(y){if(g==="denied")throw f.error("ValueNotAllowed")}else if(g==="must")throw f.error("ValueRequired");if(u==="exclusive"||g==="exclusive"){if(w&&y)throw f.error("KeyAndValueProvided");if(!w&&!y)throw f.error("KeyOrValueRequired")}let A=new Map;if(y){let M;f.rx=(...k)=>(M||(M=Nn(n,{R:c.returnsValue,w:c.argNames,M:A})),M(e,...k))}let d=c.apply(f);d&&A.set("attribute",d);let h=Me.get(e);if(h){let M=h.get(s);if(M)for(let k of M.values())k()}else h=new Map,Me.set(e,h);h.set(s,A)}},Ut=e=>e.split(".").reduce((t,n)=>`${t}['${n}']`,"$"),Nn=(e,{R:t=!1,w:n=[],M:r=new Map}={})=>{let s="";if(t){let i=/(?:\/(?:\\\/|[^/])*\/|"(?:\\"|[^"])*"|'(?:\\'|[^'])*'|`(?:\\`|[^`])*`|\(\s*(?:(?:function)\s*\(\s*\)|(?:\(\s*\))\s*=>)\s*(?:\{[\s\S]*?\}|[^;){]*)\s*\)\s*\(\s*\)|[^;])+/gm,o=e.trim().match(i);if(o){let a=o.length-1,c=o[a].trim();c.startsWith("return")||(o[a]=`return (${c});`),s=o.join(`;
+`)}}else s=e.trim();s=s.replace(/(?:"[^"\\]*(?:\\.[^"\\]*)*"|'[^'\\]*(?:\\.[^'\\]*)*'|`[^`\\$]*(?:(?:\\.|\$(?!\{))[^`\\$]*)*`)|\$\{([^{}]*)\}|\$(\w+(?:[.-]\w+)*)/g,(i,o,a)=>o===void 0&&a===void 0?i:o!==void 0?`\${${o.replace(/\$(\w+(?:[.-]\w+)*)/g,(c,l)=>Ut(l))}}`:Ut(a)),s=s.replaceAll(/@([A-Za-z_$][\w$]*)\(/g,'__action("$1",evt,');try{let i=_e(["el","$","__action","evt",...n],s);return(o,...a)=>{let c=(l,f,...u)=>{let g=Ae.bind(0,{plugin:{type:"action",name:l},element:{id:o.id,tag:o.tagName},expression:{fnContent:s,value:e}}),w=Jt[l];if(w)return w({el:o,evt:f,error:g,cleanups:r},...u);throw g("UndefinedAction")};try{return i(o,ie,c,void 0,...a)}catch(l){throw console.error(l),Ae({element:{id:o.id,tag:o.tagName},expression:{fnContent:s,value:e},error:l.message},"ExecuteExpression")}}}catch(i){throw console.error(i),Ae({expression:{fnContent:s,value:e},error:i.message},"GenerateExpression")}};V({name:"peek",apply(e,t){F();try{return t()}finally{_()}}});V({name:"setAll",apply(e,t,n){F();let r=G(n);se(r,()=>t),I(r),_()}});V({name:"toggleAll",apply(e,t){F();let n=G(t);se(n,r=>!r),I(n),_()}});var Qt=new Map,dt=e=>!["GET","DELETE"].includes(e),Le=(e,t,n=!0)=>V({name:e,apply:async({el:r,evt:s,error:i,cleanups:o},a,{selector:c,headers:l,contentType:f="json",filterSignals:{include:u=/.*/,exclude:g=/(^|\.)_/}={},openWhenHidden:w=n,payload:y,requestCancellation:A="auto",retry:d="auto",retryInterval:h=1e3,retryScaler:M=2,retryMaxWait:k=3e4,retryMaxCount:le=10}={})=>{let L=A instanceof AbortController?A:new AbortController,q=`@${e}`;if(A==="auto"||A==="cleanup"){let B=Qt.get(t)??new Map;B.get(a)?.abort(),B.set(a,L),Qt.set(t,B)}A==="cleanup"&&(o.get(q)?.(),o.set(q,async()=>{L.abort(),await Promise.resolve()}));let j=()=>{};try{if(!a?.length)throw i("FetchNoUrlProvided",{action:V});let B={Accept:"text/event-stream, text/html, application/json","Datastar-Request":!0};f==="json"&&dt(t)&&(B["Content-Type"]="application/json"),Object.assign(B,l);let Q={b:"",method:t,headers:B,L:w,v:d,C:h,N:M,O:k,P:le,signal:L.signal,F:async v=>{v.status>=400&&ae(On,r,{status:v.status.toString()})},_:v=>{if(!v.E.startsWith("datastar"))return;let Z=v.E,b={};for(let x of v.m.split(`
+`)){let C=x.indexOf(" "),fe=x.slice(0,C),D=x.slice(C+1);(b[fe]||=[]).push(D)}let E=Object.fromEntries(Object.entries(b).map(([x,C])=>[x,C.join(`
+`)]));ae(Z,r,E)},onerror:v=>{if(Zt(v))throw i("FetchExpectedTextEventStream",{url:a})}},Oe=()=>{let v=new URL(a,p.baseURI),Z=new URLSearchParams(v.search);if(f==="json"){F();let b=y!==void 0?y:G({include:u,exclude:g});_();let E=JSON.stringify(b);dt(t)?Q.body=E:Z.set("datastar",E)}else if(f==="form"){let b=c?p.querySelector(c):r.closest("form");if(!b)throw i("FetchFormNotFound",{action:V,selector:c});if(!b.noValidate&&!b.checkValidity()){b.reportValidity();return}let E=new FormData(b),x=r;if(r===b&&s instanceof SubmitEvent)x=s.submitter;else{let D=he=>he.preventDefault();b.addEventListener("submit",D),j=()=>{b.removeEventListener("submit",D)}}if(x instanceof HTMLButtonElement||x instanceof J&&x.type==="submit"){let D=x.getAttribute("name");D&&E.append(D,x.value)}let C=b.getAttribute("enctype")==="multipart/form-data";C||(B["Content-Type"]="application/x-www-form-urlencoded");let fe=new URLSearchParams(E);if(dt(t))Q.body=C?E:fe;else for(let[D,he]of fe)Z.append(D,he)}else throw i("FetchInvalidContentType",{action:V,contentType:f});return v.search=Z.toString(),Q.b=v.toString(),Q};ae(mt,r,{});try{await Dn(r,Oe)}catch(v){if(!Zt(v))throw i("FetchFailed",{method:t,url:a,error:v.message})}}finally{ae(gt,r,{}),j(),o.delete(q)}}});Le("get","GET",!1);Le("patch","PATCH");Le("post","POST");Le("put","PUT");Le("delete","DELETE");var mt="started",gt="finished",On="error",Pn="retrying",Fn="retries-failed",ae=(e,t,n)=>p.dispatchEvent(new CustomEvent(W,{detail:{type:e,el:t,argsRaw:n}})),Zt=e=>`${e}`.includes("text/event-stream"),_n=async(e,t)=>{let n=e.getReader(),r=await n.read();for(;!r.done;)t(r.value),r=await n.read()},Hn=e=>{let t,n,r,s=!1;return i=>{if(!t)t=i,n=0,r=-1;else{let c=new Uint8Array(t.length+i.length);c.set(t),c.set(i,t.length),t=c}let o=t.length,a=0;for(;n<o;){s&&(t[n]===10&&(a=++n),s=!1);let c=-1;for(;n<o&&c===-1;++n)switch(t[n]){case 58:r===-1&&(r=n-a);break;case 13:s=!0;case 10:c=n;break}if(c===-1)break;e(t.subarray(a,c),r),a=n,r=-1}a===o?t=void 0:a&&(t=t.subarray(a),n-=a)}},kn=(e,t,n)=>{let r=Yt(),s=new TextDecoder;return(i,o)=>{if(!i.length)n?.(r),r=Yt();else if(o>0){let a=s.decode(i.subarray(0,o)),c=o+(i[o+1]===32?2:1),l=s.decode(i.subarray(c));switch(a){case"data":r.m=r.m?`${r.m}
+${l}`:l;break;case"event":r.E=l;break;case"id":e(r.H=l);break;case"retry":{let f=+l;Number.isNaN(f)||t(r.v=f);break}}}}},Yt=()=>({m:"",E:"",H:"",v:void 0}),Dn=(e,t)=>new Promise((n,r)=>{let s=t();if(!s)return;let{b:i,signal:o,headers:a,F:c,_:l,L:f,v:u,C:g,N:w,O:y,P:A,$:d,...h}=s,M={...a},k,le=()=>{let b=t();b&&(i=b.b,h.body=b.body,Z())},L=()=>{k.abort(),p.hidden||le()};f||p.addEventListener("visibilitychange",L);let q,j=()=>{p.removeEventListener("visibilitychange",L),clearTimeout(q),k.abort()};o.addEventListener("abort",()=>{j(),n()});let B=c,Q=0,Oe=g,v=()=>{Q<A?(ae(Pn,e,{}),clearTimeout(q),q=setTimeout(le,g),Q++,g=Math.min(g*w,y)):(ae(Fn,e,{}),j(),r("Max retries reached."))},Z=async()=>{k=new AbortController;let b=k.signal;try{let E=await fetch(i,{...h,headers:M,signal:b});await B(E);let x=async(U,ye,Qe,Pe,...Ze)=>{let St={[Qe]:await ye.text()};for(let Ye of Ze){let Xe=ye.headers.get(`datastar-${ue(Ye)}`);if(Pe){let Fe=Pe[Ye];Fe&&(Xe=typeof Fe=="string"?Fe:JSON.stringify(Fe))}Xe&&(St[Ye]=Xe)}ae(U,e,St),j(),n()},C=E.status,fe=C===204,D=C>=300&&C<400,he=C>=400&&C<600;if(C!==200){if(u!=="never"&&!fe&&!D&&(u==="always"||u==="error"&&he)){v();return}j(),n();return}Q=0,g=Oe;let ze=E.headers.get("Content-Type");if(ze?.includes("text/html"))return await x("datastar-patch-elements",E,"elements",d,"selector","mode","namespace","useViewTransition");if(ze?.includes("application/json"))return await x("datastar-patch-signals",E,"signals",d,"onlyIfMissing");if(ze?.includes("text/javascript")){let U=p.createElement("script"),ye=E.headers.get("datastar-script-attributes");if(ye)for(let[Pe,Ze]of Object.entries(JSON.parse(ye)))U.setAttribute(Pe,Ze);let Qe=await E.text();Ee(U,Qe),p.head.appendChild(U),j();return}if(await _n(E.body,Hn(kn(U=>{U?M["last-event-id"]=U:delete M["last-event-id"]},U=>{Oe=g=U},l))),u==="always"&&!D){v();return}j(),n()}catch{if(!b.aborted)try{v()}catch(E){j(),r(E)}}};Z()});m({name:"attr",requirement:{value:"must"},returnsValue:!0,apply({el:e,key:t,rx:n}){let r=(a,c)=>{c===""||c===!0?e.setAttribute(a,""):c===!1||c==null?e.removeAttribute(a):typeof c=="string"?e.setAttribute(a,c):typeof c=="function"?e.setAttribute(a,c.toString()):e.setAttribute(a,JSON.stringify(c,(l,f)=>typeof f=="function"?f.toString():f))},s=t?()=>{i.disconnect();let a=n();r(t,a),i.observe(e,{attributeFilter:[t]})}:()=>{i.disconnect();let a=n(),c=Object.keys(a);for(let l of c)r(l,a[l]);i.observe(e,{attributeFilter:c})},i=new R(s),o=T(s);return()=>{i.disconnect(),o()}}});var Je=(e,...t)=>({a:n=>n[e],f:(n,r)=>{n[e]=r},o:t}),Xt=(e,...t)=>({a:n=>n.getAttribute(e),f:(n,r)=>{n.setAttribute(e,`${r}`)},o:t}),en=(e=!1,...t)=>({a:(n,r)=>r==="string"||e&&r==="undefined"?n.value:+n.value,f:(n,r)=>{n.value=`${r}`},o:t}),In=()=>{let e=new Set;return{a:(t,n)=>t.multiple?[...t.selectedOptions].map(r=>e.has(r.value)?+r.value:r.value):n==="string"||n==="undefined"?t.value:+t.value,f:(t,n)=>{if(!t.multiple){t.value=`${n}`;return}for(let r of t.options)n.includes(r.value)?(e.delete(r.value),r.selected=!0):n.includes(+r.value)?(e.add(r.value),r.selected=!0):r.selected=!1},o:["change"]}},Vn=/^data:(?<mime>[^;]+);base64,(?<contents>.*)$/,tn=Symbol("empty"),nn=(e,t,n,r,s,i)=>{let o=z(CSS.escape(n)),a=t?`[${o}]`:`[${o}="${CSS.escape(r)}"]`;if(i===void 0&&e instanceof J&&e.type==="radio"){let u=[...p.querySelectorAll(a)].find(g=>g instanceof J&&g.checked);u&&S([[r,u.value]],{ifMissing:!0})}if(!Array.isArray(i)||e instanceof HTMLSelectElement&&e.multiple)return S([[r,s.a(e,typeof i)]],{ifMissing:!0}),r;let c=p.querySelectorAll(a),l=[],f=0;for(let u of c){if(l.push([`${r}.${f}`,s.a(u,typeof(N(i,f)?i[f]:void 0))]),e===u)break;f++}return S(l,{ifMissing:!0}),`${r}.${f}`};m({name:"bind",requirement:"exclusive",apply({el:e,key:t,rawKey:n,mods:r,value:s,error:i}){let o=t!=null?H(t,r):s,a=r.get("prop"),c=r.get("event"),l=null;if(e instanceof J)switch(e.type){case"range":case"number":l=en(!1,"input");break;case"checkbox":l={a:(d,h)=>d.value!=="on"?h==="boolean"?d.checked:d.checked?d.value:"":h==="string"?d.checked?d.value:"":d.checked,f:(d,h)=>{d.checked=typeof h=="string"?h===d.value:h},o:["input"]};break;case"radio":e.getAttribute("name")?.length||e.setAttribute("name",o),l={a:(d,h)=>d.checked?h==="number"?+d.value:d.value:tn,f:(d,h)=>{d.checked=h===(typeof h=="number"?+d.value:d.value)},o:["input"]};break;case"file":{let d=()=>{let h=[...e.files||[]],M=[];Promise.all(h.map(k=>new Promise(le=>{let L=new FileReader;L.onload=()=>{if(typeof L.result!="string")throw i("InvalidFileResultType",{resultType:typeof L.result});let q=L.result.match(Vn);if(!q?.groups)throw i("InvalidDataUri",{result:L.result});M.push({name:k.name,contents:q.groups.contents,mime:q.groups.mime})},L.onloadend=()=>le(),L.readAsDataURL(k)}))).then(()=>{S([[o,M]])})};return e.addEventListener("change",d),()=>{e.removeEventListener("change",d)}}default:l=en(!0,"input")}else e instanceof HTMLSelectElement?l=In():e instanceof HTMLTextAreaElement?l=Je("value","input"):e instanceof HTMLElement&&e.tagName.includes("-")?l="value"in e?Je("value","input","change"):Xt("value","input","change"):e instanceof HTMLElement&&"value"in e?l=Je("value","change"):l=Xt("value","change");if(!l)throw i("InvalidBindAdapter");let f=a&&[...a][0];if(a&&!f)throw i("BindPropNameMissing");if(f){let d=$t(f);l=Je(d,...c?[...c]:l.o)}else c&&(l.o=[...c]);let u=nn(e,t,n,o,l,oe(o)),g=()=>{let d=oe(u);if(d!=null){let h=l.a(e,typeof d);h!==tn&&S([[u,h]])}},w=()=>{l.f(e,oe(u))};for(let d of l.o)e.addEventListener(d,g);e.addEventListener(be,g);let y=T(w),A=e instanceof HTMLSelectElement?new R(()=>{y(),u=nn(e,t,n,o,l,oe(o)),y=T(w)}):null;return A?.observe(e,{attributeFilter:["multiple"]}),()=>{A?.disconnect(),y();for(let d of l.o)e.removeEventListener(d,g);e.removeEventListener(be,g)}}});m({name:"class",requirement:{value:"must"},returnsValue:!0,apply({key:e,el:t,mods:n,rx:r}){e&&=H(e,n,"kebab");let s,i=()=>{o.disconnect(),s=e?{[e]:r()}:r();for(let c in s){let l=c.split(/\s+/).filter(f=>f.length>0);if(s[c])for(let f of l)t.classList.contains(f)||t.classList.add(f);else for(let f of l)t.classList.contains(f)&&t.classList.remove(f)}o.observe(t,{attributeFilter:["class"]})},o=new R(i),a=T(i);return()=>{o.disconnect(),a();for(let c in s){let l=c.split(/\s+/).filter(f=>f.length>0);for(let f of l)t.classList.remove(f)}}}});m({name:"computed",requirement:{value:"must"},returnsValue:!0,apply({key:e,mods:t,rx:n,error:r}){if(e)S([[H(e,t),je(n)]]);else{let s=Object.assign({},n());se(s,i=>{if(typeof i=="function")return je(i);throw r("ComputedExpectedFunction")}),I(s)}}});m({name:"effect",requirement:{key:"denied",value:"must"},apply:({rx:e})=>T(e)});m({name:"indicator",requirement:"exclusive",apply({el:e,key:t,mods:n,value:r}){let s=t!=null?H(t,n):r,i=0;S([[s,!1]]);let o=(a=>{let{type:c,el:l}=a.detail;if(l===e)switch(c){case mt:i++,S([[s,!0]]);break;case gt:i=Math.max(0,i-1),S([[s,i>0]]);break}});return p.addEventListener(W,o),()=>{i=0,S([[s,!1]]),p.removeEventListener(W,o)}}});var te=e=>{for(let t of e)return t.endsWith("ms")?+t.slice(0,-2):t.endsWith("s")?+t.slice(0,-1)*1e3:Number.parseFloat(t);return 0},ce=(e,t)=>e.has(t.toLowerCase()),rn=(e,t="")=>{if(e)for(let n of e)return n;return t};var ht=(e,t)=>(...n)=>{setTimeout(e,t,...n)},sn=(e,t,n=!0,r=!1,s=!1)=>{let i=null,o=0;return(...a)=>{n&&!o?(e(...a),i=null):i=a,(!o||s)&&(o&&clearTimeout(o),o=setTimeout(()=>{r&&i!==null&&e(...i),i=null,o=0},t))}},de=(e,t)=>{let n=t.get("delay");if(n){let i=te(n);e=ht(e,i)}let r=t.get("debounce");if(r){let i=te(r),o=ce(r,"leading"),a=!ce(r,"notrailing");e=sn(e,i,o,a,!0)}let s=t.get("throttle");if(s){let i=te(s),o=!ce(s,"noleading"),a=ce(s,"trailing");e=sn(e,i,o,a)}return e};var yt=e=>"startViewTransition"in e,ne=(e,t)=>{if(t.has("viewtransition")&&yt(p)){let n=e;e=(...r)=>p.startViewTransition(()=>n(...r))}return e};m({name:"init",requirement:{key:"denied",value:"must"},apply({rx:e,mods:t}){let n=()=>{O();try{e()}finally{P()}};n=ne(n,t);let r=0,s=t.get("delay");s&&(r=te(s),r>0&&(n=ht(n,r))),n()}});m({name:"json-signals",requirement:{key:"denied"},apply({el:e,value:t,mods:n}){let r=n.has("terse")?0:2,s={};t&&(s=pe(t));let i=()=>{o.disconnect(),e.textContent=JSON.stringify(G(s),null,r),o.observe(e,{childList:!0,characterData:!0,subtree:!0})},o=new R(i),a=T(i);return()=>{o.disconnect(),a()}}});m({name:"on",requirement:"must",argNames:["evt"],apply({el:e,key:t,mods:n,rx:r}){let s=e;n.has("window")?s=window:n.has("document")&&(s=p);let i=l=>{O();try{r(l)}finally{P()}};i=ne(i,n),i=de(i,n);let o=H(t,n,"kebab"),a={capture:n.has("capture"),passive:n.has("passive"),once:n.has("once")};if(n.has("outside")){s=p;let l=i;i=f=>{e.contains(f?.target)||l(f)}}(o===W||o===re)&&(s=p);let c=l=>{l&&(n.has("prevent")&&l.preventDefault(),n.has("stop")&&l.stopPropagation(),e instanceof HTMLFormElement&&o==="submit"&&l.preventDefault()),i(l)};return s.addEventListener(o,c,a),()=>{s.removeEventListener(o,c,a)}}});var on=(e,t,n)=>Math.max(t,Math.min(n,e));var bt=new WeakSet;m({name:"on-intersect",requirement:{key:"denied",value:"must"},apply({el:e,mods:t,rx:n}){let r=()=>{O();try{n()}finally{P()}};r=ne(r,t),r=de(r,t);let s={threshold:0};if(t.has("full"))s.threshold=1;else if(t.has("half"))s.threshold=.5;else{let a=t.get("threshold");a&&(s.threshold=on(Number(rn(a)),0,100)/100)}let i=t.has("exit"),o=new IntersectionObserver(a=>{for(let c of a)c.isIntersecting!==i&&(r(),o&&bt.has(e)&&o.disconnect())},s);return o.observe(e),t.has("once")&&bt.add(e),()=>{t.has("once")||bt.delete(e),o&&(o.disconnect(),o=null)}}});m({name:"on-interval",requirement:{key:"denied",value:"must"},apply({mods:e,rx:t}){let n=()=>{O();try{t()}finally{P()}};n=ne(n,e);let r=1e3,s=e.get("duration");s&&(r=te(s),ce(s,"leading")&&n());let i=setInterval(n,r);return()=>{clearInterval(i)}}});m({name:"on-signal-patch",requirement:{value:"must"},argNames:["patch"],returnsValue:!0,apply({el:e,key:t,mods:n,rx:r,error:s}){if(t&&t!=="filter")throw s("KeyNotAllowed");let i=z(`${this.name}-filter`),o=e.getAttribute(i),a={};o&&(a=pe(o));let c=!1,l=de(f=>{if(c)return;F();let u=G(a,f.detail);if(_(),!xt(u)){c=!0,O();try{r(u)}finally{P(),c=!1}}},n);return p.addEventListener(re,l),()=>{p.removeEventListener(re,l)}}});m({name:"ref",requirement:"exclusive",apply({el:e,key:t,mods:n,value:r}){let s=t!=null?H(t,n):r;S([[s,e]])}});var an="none",cn="display";m({name:"show",requirement:{key:"denied",value:"must"},returnsValue:!0,apply({el:e,rx:t}){let n=()=>{r.disconnect(),t()?e.style.display===an&&e.style.removeProperty(cn):e.style.setProperty(cn,an),r.observe(e,{attributeFilter:["style"]})},r=new R(n),s=T(n);return()=>{r.disconnect(),s()}}});m({name:"signals",returnsValue:!0,apply({key:e,mods:t,rx:n}){let r=t.has("ifmissing");if(e){e=H(e,t);let s=n?.();S([[e,s]],{ifMissing:r})}else{let s=Object.assign({},n?.());I(s,{ifMissing:r})}}});m({name:"style",requirement:{value:"must"},returnsValue:!0,apply({key:e,el:t,rx:n}){let{style:r}=t,s=new Map,i=(l,f)=>{let u=s.get(l);!f&&f!==0?u!==void 0&&(u?r.setProperty(l,u):r.removeProperty(l)):(u===void 0&&s.set(l,r.getPropertyValue(l)),r.setProperty(l,String(f)))},o=()=>{if(a.disconnect(),e)i(e,n());else{let l=n();for(let[f,u]of s)f in l||(u?r.setProperty(f,u):r.removeProperty(f));for(let f in l)i(ue(f),l[f])}a.observe(t,{attributeFilter:["style"]})},a=new R(o),c=T(o);return()=>{a.disconnect(),c();for(let[l,f]of s)f?r.setProperty(l,f):r.removeProperty(l)}}});m({name:"text",requirement:{key:"denied",value:"must"},returnsValue:!0,apply({el:e,rx:t}){let n=()=>{r.disconnect(),e.textContent=`${t()}`,r.observe(e,{childList:!0,characterData:!0,subtree:!0})},r=new R(n),s=T(n);return()=>{r.disconnect(),s()}}});var $n=["remove","outer","inner","replace","prepend","append","before","after"],qn=["html","svg","mathml"];xe({name:"datastar-patch-elements",apply(e,t){let n=typeof t.selector=="string"?t.selector:"",r=typeof t.mode=="string"?t.mode:"outer",s=typeof t.namespace=="string"?t.namespace:"html",i=Be(t.useViewTransition),o=typeof t.viewTransitionSelector=="string"?t.viewTransitionSelector:"",a=t.elements;if(!$n.includes(r))throw e.error("PatchElementsInvalidMode",{mode:r});if(!n&&r!=="outer"&&r!=="replace")throw e.error("PatchElementsExpectedSelector");if(!qn.includes(s))throw e.error("PatchElementsInvalidNamespace",{namespace:s});let c={k:n,D:r,I:s,V:a};if(i){let l=p;if(o){let f=p.querySelector(o);f&&(l=f)}yt(l)?l.startViewTransition(()=>vt(e,c)):vt(e,c)}else vt(e,c)}});var vt=({error:e},{k:t,D:n,I:r,V:s})=>{let i=p.createDocumentFragment(),o=typeof s!="string"&&!!s;if(typeof s=="string"){let a=s.replace(/<svg(\s[^>]*>|>)([\s\S]*?)<\/svg>/gim,""),c=/<\/html>/.test(a),l=/<\/head>/.test(a),f=/<\/body>/.test(a),u=r==="svg"?"svg":r==="mathml"?"math":"",g=u?`<${u}>${s}</${u}>`:s,w=c||l||f?s:`<body><template>${g}</template></body>`,y=new DOMParser().parseFromString(rt(w),"text/html");if(c)i.appendChild(y.documentElement);else if(l&&f)i.appendChild(y.head),i.appendChild(y.body);else if(l)i.appendChild(y.head);else if(f)i.appendChild(y.body);else if(u){let A=y.querySelector("template").content.querySelector(u);for(let d of A.childNodes)i.appendChild(d)}else i=y.querySelector("template").content}else s&&(s instanceof DocumentFragment?i=s:s instanceof Element&&i.appendChild(s));if(!t&&(n==="outer"||n==="replace")){let a=Array.from(i.children);for(let c of a){let l;if(c instanceof HTMLHtmlElement)l=p.documentElement;else if(c instanceof HTMLBodyElement)l=p.body;else if(c instanceof HTMLHeadElement)l=p.head;else if(l=p.getElementById(c.id),!l){console.warn(e("PatchElementsNoTargetsFound"),{element:{id:c.id}});continue}fn(n,c,[l],!0)}}else{let a=p.querySelectorAll(t);if(!a.length){console.warn(e("PatchElementsNoTargetsFound"),{selector:t});return}let c=o&&n!=="remove"?[a[0]]:a;c.length===1&&(o=!0),fn(n,i,c,o)}},Tt=new WeakSet;for(let e of p.querySelectorAll("script"))Tt.add(e);var mn=e=>{let t=e instanceof HTMLScriptElement?[e]:e.querySelectorAll("script");for(let n of t)if(!Tt.has(n)){let r=p.createElement("script");for(let{name:s,value:i}of n.attributes)r.setAttribute(s,i);Ee(r,n.text),n.replaceWith(r),Tt.add(r)}},ln=(e,t,n,r)=>{let s=!1;for(let i of e){if(r&&s)break;let o=r?t:t.cloneNode(!0);mn(o),i[n](o),s=!0}},fn=(e,t,n,r)=>{switch(e){case"remove":for(let s of n)s.remove();break;case"outer":case"inner":{let s=!1;for(let i of n){if(r&&s)break;let o=r?t:t.cloneNode(!0);jn(i,o,e),mn(i);let a=i.closest("[data-scope-children]");a&&a.dispatchEvent(new CustomEvent(et,{bubbles:!1})),s=!0}}break;case"replace":ln(n,t,"replaceWith",r);break;case"prepend":case"append":case"before":case"after":ln(n,t,e,r)}},$=new Map,ge=new Set,me=new Map,Ce=new Set,Ke=p.createElement("div");Ke.hidden=!0;var Ne=z("ignore-morph"),Gn=`[${Ne}]`,jn=(e,t,n="outer")=>{if(ee(e)&&ee(t)&&e.hasAttribute(Ne)&&t.hasAttribute(Ne)||e.parentElement?.closest(Gn))return;let r=p.createElement("div");r.append(t),p.body.insertAdjacentElement("afterend",Ke);let s=e.querySelectorAll("[id]");for(let{id:a,tagName:c}of s)me.has(a)?Ce.add(a):me.set(a,c);e instanceof Element&&e.id&&(me.has(e.id)?Ce.add(e.id):me.set(e.id,e.tagName)),ge.clear();let i=r.querySelectorAll("[id]");for(let{id:a,tagName:c}of i)ge.has(a)?Ce.add(a):me.get(a)===c&&ge.add(a);for(let a of Ce)ge.delete(a);me.clear(),Ce.clear(),$.clear();let o=n==="outer"?e.parentElement:e;dn(o,s),dn(r,i),gn(o,r,n==="outer"?e:null,e.nextSibling),Ke.remove()},gn=(e,t,n=null,r=null)=>{e instanceof HTMLTemplateElement&&t instanceof HTMLTemplateElement&&(e=e.content,t=t.content),n??=e.firstChild;for(let s of t.childNodes){if(n&&n!==r){let i=Bn(s,n,r);if(i){if(i!==n){let o=n;for(;o&&o!==i;){let a=o;o=o.nextSibling,pn(a)}}Et(i,s),n=i.nextSibling;continue}}if(s instanceof Element&&ge.has(s.id)){let i=p.getElementById(s.id),o=i;for(;o=o.parentNode;){let a=$.get(o);a&&(a.delete(s.id),a.size||$.delete(o))}hn(e,i,n),Et(i,s),n=i.nextSibling;continue}if($.has(s)){let i=s.namespaceURI,o=s.tagName,a=i&&i!=="http://www.w3.org/1999/xhtml"?p.createElementNS(i,o):p.createElement(o);e.insertBefore(a,n),Et(a,s),n=a.nextSibling}else{let i=p.importNode(s,!0);e.insertBefore(i,n),n=i.nextSibling}}for(;n&&n!==r;){let s=n;n=n.nextSibling,pn(s)}},Bn=(e,t,n)=>{let r=null,s=e.nextSibling,i=0,o=0,a=$.get(e)?.size||0,c=t;for(;c&&c!==n;){if(un(c,e)){let l=!1,f=$.get(c),u=$.get(e);if(u&&f){for(let g of f)if(u.has(g)){l=!0;break}}if(l)return c;if(!r&&!$.has(c)){if(!a)return c;r=c}}if(o+=$.get(c)?.size||0,o>a)break;r===null&&s&&un(c,s)&&(i++,s=s.nextSibling,i>=2&&(r=void 0)),c=c.nextSibling}return r||null},un=(e,t)=>e.nodeType===t.nodeType&&e.tagName===t.tagName&&(!e.id||e.id===t.id),pn=e=>{$.has(e)?hn(Ke,e,null):e.parentNode?.removeChild(e)},hn=(e,t,n)=>{if("moveBefore"in e){e.moveBefore(t,n);return}e.insertBefore(t,n)},Un=z("preserve-attr"),Et=(e,t)=>{let n=t.nodeType;if(n===1){let r=e,s=t,i=r.hasAttribute("data-scope-children");if(r.hasAttribute(Ne)&&s.hasAttribute(Ne))return e;let o=(t.getAttribute(Un)??"").split(" "),a=(l,f,u)=>{let g=f.hasAttribute(u);return l.hasAttribute(u)!==g&&!o.includes(u)?(l[u]=g,!0):!1},c=!1;if(r instanceof J&&s instanceof J&&s.type!=="file"){let l=s.getAttribute("value");r.getAttribute("value")!==l&&!o.includes("value")&&(r.value=l??"",c=!0),c=a(r,s,"checked")||c,a(r,s,"disabled")}else if(r instanceof HTMLTextAreaElement&&s instanceof HTMLTextAreaElement){let l=s.value;r.defaultValue!==l&&(r.value=l,c=!0)}else r instanceof HTMLOptionElement&&s instanceof HTMLOptionElement&&(c=a(r,s,"selected")||c);for(let{name:l,value:f}of s.attributes)r.getAttribute(l)!==f&&!o.includes(l)&&r.setAttribute(l,f);for(let{name:l}of Array.from(r.attributes))!s.hasAttribute(l)&&!o.includes(l)&&r.removeAttribute(l);c&&(r instanceof HTMLOptionElement?r.closest("select"):r)?.dispatchEvent(new Event(be,{bubbles:!0})),i&&!r.hasAttribute("data-scope-children")&&r.setAttribute("data-scope-children",""),r instanceof HTMLTemplateElement&&s instanceof HTMLTemplateElement?r.innerHTML=rt(s.innerHTML):r.isEqualNode(s)||gn(r,s),i&&r.dispatchEvent(new CustomEvent(et,{bubbles:!1}))}return(n===8||n===3)&&e.nodeValue!==t.nodeValue&&(e.nodeValue=t.nodeValue),e},dn=(e,t)=>{for(let n of t)if(ge.has(n.id)){let r=n;for(;r&&r!==e;){let s=$.get(r);s||(s=new Set,$.set(r,s)),s.add(n.id),r=r.parentElement}}};xe({name:"datastar-patch-signals",apply({error:e},{signals:t,onlyIfMissing:n}){if(typeof t!="string")throw e("PatchSignalsExpectedSignals");let r=Be(n);I(pe(t),{ifMissing:r})}});; return {mergePatch:I, root:ie, beginBatch:O, endBatch:P}; })();
+
+
+let mergePatch, root, beginBatch, endBatch;
+let socket, challenge, signingKey, sequence = 1, draftUid = '', revision = '', reconnect;
+let signingReady = false, stopped = false, view = location.pathname.startsWith('/records/') ? decodeURIComponent(location.pathname.slice(9)) : '';
+const pending = new Map();
+const encoder = new TextEncoder();
+let lanes = [], activeThread = '';
+const base64 = bytes => btoa(Array.from(new Uint8Array(bytes), byte => String.fromCharCode(byte)).join(''));
+const element = (tag, text, className) => {
+  const node = document.createElement(tag);
+  if (text != null) node.textContent = text;
+  if (className) node.className = className;
+  return node;
+};
+
+function reset() {
+  beginBatch();
+  mergePatch({record: null});
+  mergePatch({ready:false, connected:false, signedin:false,name:'',page:'kanban',settings:false,creating:false,record:{}, records:[], threads:[], messages:[], assertions:[], users:[], roles:[], permissions:[], templates:[], canusers:false, canconfigure:false, canadmin:false, canrules:false, filterconcepts:[], canedit:false, cancomment:false, head:'', body:'', slug:'', quantity:'0', unit:'', identity:'', predicate:'', object:'', comment:'', thread:'', dirty:false, remotechanged:false});
+  endBatch();
+  draftUid = '';
+  signingReady = false;
+}
+
+async function request(path, body) {
+  const response = await fetch(path, {method:body === undefined ? 'GET' : 'POST', headers:{'Content-Type':'application/json'}, body:body === undefined ? undefined : JSON.stringify(body)});
+  if (!response.ok) throw new Error(t(await response.text()));
+  return response.json();
+}
+
+async function work(callback) {
+  if (root.busy) return;
+  mergePatch({busy:true, error:'', notice:''});
+  try { await callback(); }
+  catch (error) { mergePatch({error:error.message || t("Could not complete this request.")}); }
+  finally { mergePatch({busy:false}); }
+}
+
+function transmit(message) {
+  if (socket?.readyState !== WebSocket.OPEN) throw new Error(t("Connection lost. Wait for the connection before trying again."));
+  socket.send(JSON.stringify(message));
+}
+
+function reply(message) {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => { pending.delete(message.id); reject(new Error(t("No reply received. Check the record before trying again."))); }, 20000);
+    pending.set(message.id, {resolve, reject, timer, signed:message.type === 'signed_act'});
+    try { transmit(message); }
+    catch (error) { clearTimeout(timer); pending.delete(message.id); reject(error); }
+  });
+}
+
+async function sign(text) {
+  return base64(await crypto.subtle.sign('Ed25519', signingKey.privateKey, encoder.encode(text)));
+}
+
+async function authenticate(message) {
+  challenge = message;
+  sequence = 1;
+  if (!message.signing_required) { signingReady = true; return; }
+  try {
+    if (!crypto.subtle) throw new Error(t("Editing needs HTTPS or localhost in this browser."));
+    signingKey ||= await crypto.subtle.generateKey('Ed25519', true, ['sign', 'verify']);
+    const publicKey = base64(await crypto.subtle.exportKey('raw', signingKey.publicKey));
+    const keyId = `facade-${base64(await crypto.subtle.digest('SHA-256', encoder.encode(publicKey))).replaceAll('/', '_').replaceAll('+', '-').replaceAll('=', '')}`;
+    const proof = ['lince.action-intent-session.v1', message.session_id, message.challenge, message.person, keyId, publicKey].join('\n');
+    await reply({type:'session_authenticate', id:crypto.randomUUID(), session_id:message.session_id, session_challenge:message.challenge, person_uid:message.person, key_id:keyId, public_key_base64:publicKey, signature:await sign(proof)});
+    signingReady = true;
+  } catch (error) { mergePatch({error:error.message}); }
+}
+
+async function act(action) {
+  if (!signingReady) throw new Error(t("Editing is not ready. Use HTTPS or localhost and wait for the connection."));
+  const id = crypto.randomUUID?.() || `facade-${Date.now()}-${sequence++}`;
+  if (!challenge.signing_required) return reply({type:'act', id, action});
+  const actionBase64 = base64(encoder.encode(JSON.stringify(action)));
+  const number = sequence++;
+  const text = ['lince.action-intent.v1', challenge.session_id, challenge.challenge, number, id, actionBase64].join('\n');
+  return reply({type:'signed_act', id, session_id:challenge.session_id, session_challenge:challenge.challenge, sequence:number, action_base64:actionBase64, signature:await sign(text)});
+}
+
+function connect() {
+  clearTimeout(reconnect);
+  signingReady = false;
+  socket = new WebSocket(`${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/live`);
+  socket.onopen = () => {
+    mergePatch({connected:true, error:''});
+    transmit({type:'select', uid:view});
+    if (root.search) transmit({type:'search', text:root.search});
+  };
+  socket.onmessage = event => {
+    const message = JSON.parse(event.data);
+    if (message.type === 'session_challenge') { void authenticate(message); return; }
+    if (message.type === 'signals') {
+      const record = message.signals.record;
+      beginBatch();
+      mergePatch({record:null});
+      mergePatch(message.signals);
+      if (!root.creating && record.uid && (!root.dirty || draftUid !== record.uid)) loadDraft(record);
+      else if (!root.creating && record.uid && revision !== record.updated_at) mergePatch({remotechanged:true});
+      if (!root.creating && !record.uid) { mergePatch({head:'', body:'', slug:'', quantity:'0', unit:'', identity:'', predicate:'', object:'', comment:'', dirty:false}); draftUid = ''; }
+      endBatch();
+      return;
+    }
+    if (message.type === 'logout') { stopped = true; reset(); socket.close(); return; }
+    const waiting = pending.get(message.id);
+    if (waiting) {
+      clearTimeout(waiting.timer);
+      pending.delete(message.id);
+      if (message.type === 'error') {
+        if (waiting.signed && message.code === 'facade_request_rejected') sequence--;
+        waiting.reject(new Error(t(message.message)));
+      }
+      else waiting.resolve(message);
+    } else if (message.type === 'error') mergePatch({error:t(message.message)});
+  };
+  socket.onclose = () => {
+    mergePatch({connected:false});
+    signingReady = false;
+    for (const item of pending.values()) { clearTimeout(item.timer); item.reject(new Error(t("Connection lost. Check the record before trying again."))); }
+    pending.clear();
+    if (!stopped) reconnect = setTimeout(async () => {
+      try {
+        const session = await request('/session');
+        if (session.ready) connect(); else reset();
+      } catch { connect(); }
+    }, 2000);
+  };
+}
+
+function loadDraft(record) {
+  draftUid = record.uid;
+  revision = record.updated_at;
+  mergePatch({head:record.head || '', body:record.body || '', slug:record.slug || '', quantity:String(record.quantity ?? 0), unit:record.unit || '', identity:record.concept_name || '', dirty:false, remotechanged:false});
+}
+
+function select(uid, push = true) {
+  if (root.dirty && !confirm(t("Discard your unsaved edits?"))) return false;
+  view = uid;
+  activeThread = '';
+  draftUid = '';
+  mergePatch({dirty:false, comment:'', thread:'', error:'', notice:'', selected:uid,page:'kanban',creating:false});
+  if (push) history.pushState(null, '', uid ? `/records/${encodeURIComponent(uid)}` : '/');
+  transmit({type:'select', uid});
+  window.scrollTo(0, 0);
+  return true;
+}
+
+const renderCache = new Map();
+function changed(key, data) {
+  const value = JSON.stringify(data);
+  if (renderCache.get(key) === value) return false;
+  renderCache.set(key, value);
+  return true;
+}
+
+function field(form, title, name, value = '', type = 'text') {
+  const label = element('label', title), input = element('input');
+  input.name = name; input.type = type; input.value = value; input.maxLength = type === 'password' ? 1024 : 500;
+  label.append(input); form.append(label); return input;
+}
+
+function button(parent, title, callback) {
+  const node = element('button', title); node.type = 'button'; node.onclick = callback; parent.append(node); return node;
+}
+
+function columnRow(title = '', quantity = '') {
+  const row = element('div', null, 'column-row');
+  const name = field(row, t("Column"), 'column', title); name.required = true; name.maxLength = 100;
+  const amount = field(row, t("Value"), 'value', quantity, 'number'); amount.required = true; amount.step = 'any';
+  button(row, t("Remove"), () => row.remove());
+  document.getElementById('column-editor').append(row);
+}
+
+function renderUsers(users, roles, permissions) {
+  const host = document.getElementById('user-management'); host.replaceChildren();
+  const roleSelect = (form, selected) => {
+    const label = element('label', t("Role")), select = element('select'); select.name = 'role';
+    select.replaceChildren(...roles.map(role => new Option(role.name, role.name)));
+    select.value = selected || roles.find(role => role.name !== 'admin')?.name || ''; label.append(select); form.append(label); return select;
+  };
+  if (root.canusercreate && root.canassign) {
+    const form = element('form'); form.append(element('h2', t("New user")));
+    field(form, t("Username"), 'username').required = true; field(form, t("Name"), 'name'); field(form, t("Password"), 'password', '', 'password').required = true;
+    roleSelect(form); const submit = element('button', t("Create user")); form.append(submit);
+    form.onsubmit = event => { event.preventDefault(); work(async () => { await act({action:'create-user', ...Object.fromEntries(new FormData(form))}); form.reset(); refresh(); }); }; host.append(form);
+  }
+  for (const user of users) {
+    const section = element('details', null, 'user'); section.append(element('summary', `${user.name || user.username} · ${user.username} · ${user.role}`));
+    if (root.canuserupdate) {
+      const form = element('form'); field(form,t("Username"),'username',user.username).required = true; field(form,t("Name"),'name',user.name); field(form,t("New password (blank keeps current)"),'password','','password');
+      form.append(element('button',t("Save user"))); form.onsubmit = event => { event.preventDefault(); work(async () => { await act({action:'update-user',user:user.uid,...Object.fromEntries(new FormData(form))}); form.reset(); refresh(); }); }; section.append(form);
+
+    }
+    if (root.canassign) { const form = element('form'); const select = roleSelect(form,user.role); form.append(element('button',t("Assign role"))); form.onsubmit = event => { event.preventDefault(); work(async () => { await act({action:'assign-role',user:user.uid,role:select.value}); refresh(); }); }; section.append(form); }
+    if (root.canuserdelete) button(section,t("Delete login"),() => { if (confirm(t('Delete the login for {name}? Their authored content will be kept.', {name:user.username}))) work(async () => { await act({action:'delete-user',user:user.uid}); refresh(); }); });
+    host.append(section);
+  }
+  if (root.canrolecreate) {
+    const form = element('form'); form.append(element('h2',t("New role"))); field(form,t("Role name"),'name').required = true; form.append(element('button',t("Create role")));
+    form.onsubmit = event => { event.preventDefault(); work(async () => { await act({action:'create-role',name:new FormData(form).get('name')}); form.reset(); refresh(); }); }; host.append(form);
+  }
+  for (const role of roles) {
+    const section = element('details'); section.append(element('summary', t('{name} permissions', {name:role.name})));
+    if (role.name === 'admin') section.append(element('p',t("Admins have all permissions.")));
+    else {
+      section.append(element('p',t("Changes apply to every user with this role. Create a separate role for individual access.")));
+      const list = element('div',null,'permission-list');
+      for (const key of permissions) { const label = element('label',key), input = element('input'); input.type = 'checkbox'; input.checked = role.permissions.includes(key); input.disabled = !root.canpermissions;
+        input.onchange = () => { const checked = input.checked; work(async () => { try { await act({action:checked ? 'grant-permission' : 'revoke-permission',role:role.name,permission:key}); refresh(); } catch(error) { input.checked = !checked; throw error; } }); }; label.prepend(input); list.append(label); }
+      section.append(list);
+    }
+    if (root.canrules && role.name !== 'admin') {
+      const form = element('form'); form.className = 'role-rules';
+      try {
+        const editor = readRulesEditor(role.rules || {allow:{all:[]},block:{any:[]}},root.filterconcepts || []);
+        form.append(editor.host,element('button',t('Save access rules')));
+        form.onsubmit = event => { event.preventDefault(); work(async () => { await act({action:'set-role-read-rules',role:role.name,rules:editor.read(),expected_revision:role.revision || 0}); refresh(); mergePatch({notice:t('Access rules saved.')}); }); };
+      } catch (error) { form.append(element('p',error.message)); }
+      section.append(form);
+    }
+    host.append(section);
+  }
+}
+
+function refresh() { transmit({type:'select',uid:view}); }
+
+function applyTheme(light) {
+  document.documentElement.classList.toggle('light', light);
+  const toggle = document.getElementById('theme');
+  toggle.children[0].textContent = light ? '☾' : '☀';
+  toggle.children[1].textContent = t(light ? 'Dark' : 'Light');
+  toggle.setAttribute('aria-label', t(light ? 'Switch to dark mode' : 'Switch to light mode'));
+}
+
+window.facade = {
+  select,
+  updateSignals: mergePatch,
+  t: (text, language) => t(text, {}, language),
+  navigate(page) { if (select('')) mergePatch({page}); },
+  theme() { const light = !document.documentElement.classList.contains('light'); applyTheme(light); try { localStorage.setItem('theme',light ? 'light' : 'dark'); } catch {} },
+  createCard(quantity) {
+    if (!root.cancreate || !select('')) return;
+    mergePatch({creating:true,head:'',body:'',quantity:String(quantity),dirty:false});
+    document.getElementById('create-tags').selectedIndex = -1;
+    document.getElementById('create-title').focus();
+  },
+  submitRecord() { return work(async () => {
+    const tags = Array.from(document.getElementById('create-tags').selectedOptions,option => option.value);
+    const result = await act({action:'create-record-with-tags',head:root.head.trim(),body:root.body,quantity:Number(root.quantity),tags});
+    mergePatch({dirty:false,creating:false});
+    select(result.created);
+  }); },
+  moveCard(uid, quantity) { return work(async () => {
+    await act({action:'set-quantity',target:uid,value:Number(quantity)});
+    refresh();
+  }); },
+  deleteCard(uid = view) { if (confirm(t("Delete this card?"))) return work(async () => { await act({action:'delete-record',target:uid}); if (view === uid) { mergePatch({dirty:false}); select(''); } }); },
+  customize(form) { return work(async () => {
+    const data = new FormData(form), fds = {title:data.get('title').trim(),language:data.get('language')};
+    await act({action:'set-extension',target:root.facadeuid,namespace:'lince.facade',fds});
+    mergePatch({customtitle:fds.title,language:fds.language});
+    mergePatch({notice:t('Settings saved.', {}, fds.language)});
+  }); },
+  addColumn() { columnRow(); },
+  chooseTemplate(uid) { const template = root.templates.find(item => item.uid === uid); if (!template) return; document.getElementById('column-editor').replaceChildren(); for (const column of template.columns) columnRow(column.title,column.quantity); document.getElementById('column-form').elements.name.value = template.name; },
+  saveColumns(form, template = false) { return work(async () => {
+    const data = new FormData(form), values = data.getAll('value');
+    const columns = data.getAll('column').map((title,index) => ({title,quantity:Number(values[index])}));
+    if (!columns.length || columns.length > 40 || new Set(columns.map(c => c.quantity)).size !== columns.length || columns.some(c => !c.title.trim() || !Number.isFinite(c.quantity))) throw new Error(t("Use 1–40 named columns with unique numeric values."));
+    const fds = {name:data.get('name'),columns}; let target = root.facadeuid;
+    if (template) { const created = await act({action:'create-record',kind:'plain',head:fds.name}); target = created.created; select(target); }
+    await act({action:'set-extension',target,namespace:'lince.kanban.columns',fds}); mergePatch({notice:template ? t("Template saved.") : t("Columns saved.")});
+  }); },
+  filterThread(uid) { activeThread = uid; renderCache.delete('messages'); window.facade.render(root.records,root.record,root.messages,root.threads,root.assertions,root.columns,root.templates,root.users,root.roles,root.permissions); },
+  createThread() { const head = prompt(t("Thread title")); if (head?.trim()) return work(async () => { const result = await act({action:'create-thread',target:view,head:head.trim()}); mergePatch({thread:result.created}); }); },
+  search(text) { if (socket?.readyState === WebSocket.OPEN) transmit({type:'search', text}); },
+  login(form) { return work(async () => {
+    const data = new FormData(form);
+    await request('/login', {username:data.get('username'), password:data.get('password')});
+    form.reset(); signingKey = undefined; stopped = false; mergePatch({ready:true}); connect();
+  }); },
+  logout() { return work(async () => {
+    await request('/logout', {}); stopped = true; socket?.close(); signingKey = undefined; reset();
+  }); },
+  reloadDraft() { loadDraft(root.record); },
+  copyLink() { return work(async () => { await navigator.clipboard.writeText(location.href); mergePatch({notice:t("Link copied.")}); }); },
+  saveText() { return work(async () => {
+    await act({action:'edit-record-text', target:view, head:root.head, body:root.body});
+    mergePatch({dirty:false, remotechanged:false, notice:t("Text saved.")});
+  }); },
+  property(action, fields) { return work(async () => {
+    await act({action, target:view, ...fields}); mergePatch({notice:t("Property saved.")});
+  }); },
+  identity(predicate) { return work(async () => {
+    await act({action:'set-identity', subject:view, predicate:predicate || null}); mergePatch({notice:t("Identity saved.")});
+  }); },
+  assertion(remove) { return work(async () => {
+    await act({action:remove ? 'retract-record' : 'assert-record', subject:view, predicate:root.predicate, object:root.object || null});
+    mergePatch({predicate:'', object:'', notice:t("Assertion saved.")});
+  }); },
+  comment() { return work(async () => {
+    const body = root.comment.trim();
+    if (!body) return;
+    let thread = root.thread;
+    if (!thread) {
+      const created = await act({action:'create-thread', target:view, head:t("General")});
+      thread = created.created;
+      mergePatch({thread});
+    }
+    await act({action:'create-message', thread, body});
+    mergePatch({comment:'', notice:t("Comment posted.")});
+  }); },
+  render(records, record, messages, threads, assertions, columns = [], templates = [], users = [], roles = [], permissions = [], language = root?.language || 'pt-BR', title = root?.customtitle || 'Facade', canadmin = root?.canadmin || false) {
+    if (changed('language',language)) {
+      renderCache.clear();
+      renderCache.set('language',JSON.stringify(language));
+      localize(language);
+      applyTheme(document.documentElement.classList.contains('light'));
+    }
+    if (changed('general',[title,language,canadmin])) {
+      const form = document.getElementById('general-form');
+      form.elements.title.value = title;
+      form.elements.language.value = language;
+    }
+    lanes = columns.map(column => [column.title,column.quantity]);
+    if (changed('concepts',root?.filterconcepts || [])) {
+      const select = document.getElementById('create-tags');
+      const chosen = new Set(Array.from(select.selectedOptions,option => option.value));
+      select.replaceChildren(...(root?.filterconcepts || []).map(concept => new Option(`#${concept.name}`,concept.uid,false,chosen.has(concept.uid))));
+    }
+    if (changed('columns',columns)) {
+      document.getElementById('create-column').replaceChildren(...lanes.map(([title,value]) => new Option(title,value)));
+      document.getElementById('create-column').value = root?.quantity || '0';
+      document.getElementById('move-column').replaceChildren(new Option(t("Choose a column"),''),...lanes.map(([title,value]) => new Option(title,value)));
+      if (!document.getElementById('column-editor').contains(document.activeElement)) { document.getElementById('column-editor').replaceChildren(); for (const [title,value] of lanes) columnRow(title,value); }
+    }
+    if (changed('templates',templates)) document.getElementById('templates').replaceChildren(new Option(t("Choose a template"),''),...templates.map(template => new Option(template.name,template.uid)));
+    if (root && changed('users',[users,roles,permissions,root.canusercreate,root.canuserupdate,root.canuserdelete,root.canassign,root.canrolecreate,root.canpermissions,root.canrules,root.filterconcepts])) renderUsers(users,roles,permissions);
+    if (changed('board', [records,columns,root?.cancarddelete,root?.cancreate,root?.canmove,root?.connected,root?.busy])) {
+      const columns = lanes.map(([title, quantity]) => {
+        const section = element('section', null, 'column');
+        const matching = records.filter(row => row.quantity === quantity || (quantity === lanes[0]?.[1] && !lanes.some(lane => lane[1] === row.quantity)));
+        const heading = element('h2', title); heading.append(element('span', matching.length));
+        const bar = element('div',null,'column-heading'); bar.append(heading);
+        if (root?.cancreate) { const add = button(bar,'+',() => window.facade.createCard(quantity)); add.className = 'column-add'; add.setAttribute('aria-label',t('Create in {name}', {name:title})); }
+        section.append(bar);
+        section.ondragover = event => { if (root?.canmove && event.dataTransfer.types.includes('text/x-lince-record')) { event.preventDefault(); section.classList.add('drag-over'); } };
+        section.ondragleave = event => { if (!section.contains(event.relatedTarget)) section.classList.remove('drag-over'); };
+        section.ondrop = event => { event.preventDefault(); section.classList.remove('drag-over'); const uid = event.dataTransfer.getData('text/x-lince-record'); if (root?.canmove && records.some(row => row.uid === uid)) window.facade.moveCard(uid,quantity); };
+        for (const row of matching) {
+          const card = element('a', row.head || t("Untitled"), 'card');
+          card.href = `/records/${encodeURIComponent(row.uid)}`;
+          card.draggable = !!root?.canmove;
+          card.ondragstart = event => { event.dataTransfer.setData('text/x-lince-record',row.uid); event.dataTransfer.effectAllowed = 'move'; };
+          card.ondragend = () => document.querySelectorAll('.drag-over').forEach(node => node.classList.remove('drag-over'));
+          card.onclick = event => { if (!event.ctrlKey && !event.metaKey && !event.shiftKey) { event.preventDefault(); select(row.uid); } };
+          if (row.slug) card.append(element('span', `@${row.slug}`));
+          const item = element('div',null,'card-item'); item.append(card);
+          if (root?.cancarddelete) { const remove = button(item,'×',() => window.facade.deleteCard(row.uid)); remove.className = 'card-delete'; remove.title = t("Delete card"); remove.setAttribute('aria-label',t('Delete {name}', {name:row.head || t('Untitled')})); }
+          if (root?.canmove) {
+            const move = element('select',null,'card-move');
+            move.setAttribute('aria-label',t('Move {name}',{name:row.head || t('Untitled')}));
+            move.replaceChildren(...lanes.map(([title,value]) => new Option(title,value)));
+            move.value = String(quantity); move.disabled = !root.connected || root.busy;
+            move.onchange = () => window.facade.moveCard(row.uid,move.value);
+            item.append(move);
+          }
+          section.append(item);
+        }
+        return section;
+      });
+      document.getElementById('board').replaceChildren(...columns);
+    }
+    if (changed('messages', messages)) {
+      document.getElementById('messages').replaceChildren(...messages.filter(row => !activeThread || row.thread_uid === activeThread).map(row => {
+        const article = element('article', null, 'message');
+        article.append(element('time', row.created_at), element('p', row.body));
+        return article;
+      }));
+    }
+    if (changed('threads', threads)) {
+      const select = document.getElementById('threads');
+      const selected = root?.thread || select.value;
+      select.replaceChildren(new Option(t("New conversation"), ''), ...threads.map(row => new Option(row.head, row.uid)));
+      document.getElementById('thread-view').replaceChildren(new Option(t("All threads"),''),...threads.map(row => new Option(row.head,row.uid)));
+      if (!threads.some(row => row.uid === activeThread)) activeThread = '';
+      document.getElementById('thread-view').value = activeThread;
+      if (threads.some(row => row.uid === selected)) select.value = selected;
+    }
+    if (changed('assertions', assertions)) document.getElementById('assertions').replaceChildren(...assertions.map(row => element('li', `${row.predicate}${row.object ? ` → ${row.object}` : ''}`)));
+    document.title = title ? `${title} ·` : 'Lince';
+  }
+};
+
+({mergePatch, root, beginBatch, endBatch} = datastar);
+try { applyTheme(localStorage.getItem('theme') === 'light'); } catch { applyTheme(false); }
+window.addEventListener('popstate', () => {
+  const uid = location.pathname.startsWith('/records/') ? decodeURIComponent(location.pathname.slice(9)) : '';
+  if (!select(uid, false)) history.pushState(null, '', view ? `/records/${encodeURIComponent(view)}` : '/');
+});
+try {
+  const session = await request('/session');
+  mergePatch({customtitle:session.customtitle || 'Facade',language:session.language || 'pt-BR'});
+  if (session.ready) { mergePatch({ready:true}); connect(); }
+} catch (error) { mergePatch({error:error.message}); }
+</script>
 </head>
 <body data-signals="{ready:false,connected:false,signedin:false,name:'',error:'',notice:'',records:[],record:{},selected:'',threads:[],messages:[],assertions:[],canedit:false,cancomment:false,truncated:false,search:'',head:'',body:'',slug:'',quantity:'0',unit:'',identity:'',predicate:'',object:'',comment:'',thread:'',dirty:false,busy:false,remotechanged:false}"
       data-signals:creating="false"

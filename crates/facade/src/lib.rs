@@ -137,34 +137,7 @@ impl Drop for Facade {
 }
 
 async fn page() -> Html<String> {
-    let i18n = include_str!("i18n.js").replace("export function ", "function ");
-    let read_rules = include_str!("read-rules.js")
-        .replace("import {t} from '/i18n.js';", "")
-        .replace("export function ", "function ");
-    let datastar = include_str!("vendor/datastar.js")
-        .split("export{")
-        .next()
-        .unwrap_or(include_str!("vendor/datastar.js"));
-    let facade = include_str!("facade.js")
-        .replace("import {t, localize} from '/i18n.js';", "")
-        .replace("import {readRulesEditor} from '/read-rules.js';", "")
-        .replace(
-            "({mergePatch, root, beginBatch, endBatch} = await import('/datastar.js'));",
-            "({mergePatch, root, beginBatch, endBatch} = datastar);",
-        );
-    let mut script = String::from("const {t, localize} = await (async () => {");
-    script.push_str(&i18n);
-    script.push_str("; return {t, localize}; })(); const {readRulesEditor} = await (async (t) => {");
-    script.push_str(&read_rules);
-    script.push_str("; return {readRulesEditor}; })(t); const datastar = await (async () => {");
-    script.push_str(datastar);
-    script.push_str("; return {mergePatch:I, root:ie, beginBatch:O, endBatch:P}; })();");
-    script.push_str(&facade);
-    Html(
-        include_str!("facade.html")
-            .replace("{{FACADE_CSS}}", include_str!("facade.css"))
-            .replace("{{FACADE_JS}}", &script),
-    )
+    Html(include_str!("facade.html").to_owned())
 }
 
 async fn security_headers(

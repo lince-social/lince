@@ -32,7 +32,7 @@ fn dispatch() -> Result<()> {
             no_extra(&extra)?;
             release(&root)
         }
-        Some("dev" | "test") => dev(&extra),
+        Some("dev" | "test") => prune::with_cleanup(&root, || dev(&extra)),
         Some("lince") => {
             no_extra(&extra)?;
             checked(Command::new("nix").args([
@@ -75,7 +75,9 @@ fn dispatch() -> Result<()> {
         }
         Some("test-all") => {
             no_extra(&extra)?;
-            checked(Command::new("cargo").args(["test", "--workspace", "--all-targets"]))
+            prune::with_cleanup(&root, || {
+                checked(Command::new("cargo").args(["test", "--workspace", "--all-targets"]))
+            })
         }
         Some("stop") => {
             no_extra(&extra)?;
@@ -92,6 +94,9 @@ fn dispatch() -> Result<()> {
             no_extra(&extra)?;
             println!("cargo xtask <release|dev|test|lince|server|facade|test-all|stop|nix|prune>");
             println!("dev and test pass additional arguments to Lince.");
+            println!(
+                "dev, test and test-all prune superseded incremental snapshots before and after running."
+            );
             println!(
                 "prune [--dry-run] [--target-dir PATH] removes superseded incremental snapshots."
             );

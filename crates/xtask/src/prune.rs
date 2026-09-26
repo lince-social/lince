@@ -10,10 +10,43 @@ struct Report {
     skipped: usize,
 }
 
+fn target_directory(root: &Path) -> PathBuf {
+    root.join(env::var_os("CARGO_TARGET_DIR").unwrap_or_else(|| "target".into()))
+}
+
+pub(crate) fn with_cleanup<T>(
+    root: &Path,
+    operation: impl FnOnce() -> Result<T, String>,
+) -> Result<T, String> {
+    with_cleanup_at(&target_directory(root), operation)
+}
+
+fn with_cleanup_at<T>(
+    target: &Path,
+    operation: impl FnOnce() -> Result<T, String>,
+) -> Result<T, String> {
+    automatic(target);
+    let result = operation();
+    automatic(target);
+    result
+}
+
+fn automatic(target: &Path) {
+    let mut report = Report::default();
+    match visit(target, 3, false, &mut report) {
+        Ok(()) if report.snapshots > 0 => {
+            println!(
+                "Removed {} superseded incremental snapshots.",
+                report.snapshots
+            );
+        }
+        Ok(()) => {}
+        Err(error) => eprintln!("Could not prune incremental snapshots: {error}"),
+    }
+}
+
 pub(crate) fn run(root: &Path, args: &[OsString]) -> Result<(), String> {
-    let mut target = env::var_os("CARGO_TARGET_DIR")
-        .map(PathBuf::from)
-        .unwrap_or_else(|| root.join("target"));
+    let mut target = target_directory(root);
     let mut dry_run = false;
     let mut args = args.iter();
     while let Some(arg) = args.next() {
@@ -186,6 +219,46 @@ mod tests {
         fn drop(&mut self) {
             fs::remove_dir_all(&self.0).unwrap();
         }
+    }
+
+    #[test]
+    fn workflow_prunes_before_and_after_success() {
+        let fixture = Fixture::new();
+        let old = fixture.snapshot("debug", "engine", "s-1-a-b");
+        let current = fixture.snapshot("debug", "engine", "s-2-a-b");
+        let value = with_cleanup_at(&fixture.0, || {
+            assert!(!old.exists());
+            assert!(current.exists());
+            fixture.snapshot("debug", "engine", "s-3-a-b");
+            Ok(42)
+        })
+        .unwrap();
+        assert_eq!(value, 42);
+        assert!(!current.exists());
+        assert!(current.parent().unwrap().join("s-3-a-b").exists());
+    }
+
+    #[test]
+    fn workflow_prunes_after_failure_and_preserves_the_error() {
+        let fixture = Fixture::new();
+        let old = fixture.snapshot("debug", "engine", "s-1-a-b");
+        let result: Result<(), String> = with_cleanup_at(&fixture.0, || {
+            fixture.snapshot("debug", "engine", "s-2-a-b");
+            Err("test command failed".into())
+        });
+        assert_eq!(result, Err("test command failed".into()));
+        assert!(!old.exists());
+    }
+
+    #[test]
+    fn workflow_still_runs_while_a_profile_is_busy() {
+        let fixture = Fixture::new();
+        let old = fixture.snapshot("debug", "engine", "s-1-a-b");
+        fixture.snapshot("debug", "engine", "s-2-a-b");
+        let _profile_lock = lock(&fixture.0.join("debug/.cargo-lock")).unwrap().unwrap();
+        let value = with_cleanup_at(&fixture.0, || Ok(42)).unwrap();
+        assert_eq!(value, 42);
+        assert!(old.exists());
     }
 
     #[test]

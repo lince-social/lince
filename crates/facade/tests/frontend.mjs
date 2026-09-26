@@ -13,10 +13,9 @@ const server = http.createServer(async (request, response) => {
     response.end(JSON.stringify({ready:true, customtitle:'Equipe Azul', language:'pt-BR'}));
     return;
   }
-  const file = {'/':'facade.html', '/facade.css':'facade.css', '/facade.js':'facade.js', '/i18n.js':'i18n.js', '/read-rules.js':'read-rules.js', '/datastar.js':'vendor/datastar.js'}[request.url];
-  if (!file) { response.writeHead(404); response.end(); return; }
-  response.setHeader('Content-Type', file.endsWith('.js') ? 'text/javascript' : file.endsWith('.css') ? 'text/css' : 'text/html');
-  response.end(await readFile(new URL(file, source)));
+  if (request.url !== '/') { response.writeHead(404); response.end(); return; }
+  response.setHeader('Content-Type', 'text/html');
+  response.end(await readFile(new URL('facade.html', source)));
 });
 await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const chrome = spawn(process.env.CHROMIUM || '/run/current-system/sw/bin/chromium', ['--headless','--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--remote-debugging-port=0',`--user-data-dir=${profile}`,'about:blank'], {stdio:'ignore'});
@@ -45,7 +44,7 @@ try {
     assert.equal(result.result.exceptionDetails, undefined, JSON.stringify(result.result.exceptionDetails));
     return result.result.result.value;
   };
-  const patch = fields => evaluate(`import('/datastar.js').then(({mergePatch}) => mergePatch(${JSON.stringify(fields)}))`);
+  const patch = fields => evaluate(`window.facade.updateSignals(${JSON.stringify(fields)})`);
   const click = async selector => {
     const point = await evaluate(`(() => { const r = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect(); return {x:r.x+r.width/2,y:r.y+r.height/2}; })()`);
     await cdp('Input.dispatchMouseEvent', {type:'mouseMoved', ...point});

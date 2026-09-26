@@ -16,7 +16,6 @@ use std::{io, net::SocketAddr, sync::Arc};
 use axum::{
     Router,
     extract::DefaultBodyLimit,
-    http::header,
     response::Html,
     routing::{get, post},
 };
@@ -94,51 +93,6 @@ impl Facade {
             .route("/", get(page))
             .route("/records/{uid}", get(page))
             .route(
-                "/facade.css",
-                get(|| async {
-                    (
-                        [(header::CONTENT_TYPE, "text/css")],
-                        include_str!("facade.css"),
-                    )
-                }),
-            )
-            .route(
-                "/facade.js",
-                get(|| async {
-                    (
-                        [(header::CONTENT_TYPE, "text/javascript")],
-                        include_str!("facade.js"),
-                    )
-                }),
-            )
-            .route(
-                "/read-rules.js",
-                get(|| async {
-                    (
-                        [(header::CONTENT_TYPE, "text/javascript")],
-                        include_str!("read-rules.js"),
-                    )
-                }),
-            )
-            .route(
-                "/i18n.js",
-                get(|| async {
-                    (
-                        [(header::CONTENT_TYPE, "text/javascript")],
-                        include_str!("i18n.js"),
-                    )
-                }),
-            )
-            .route(
-                "/datastar.js",
-                get(|| async {
-                    (
-                        [(header::CONTENT_TYPE, "text/javascript")],
-                        include_str!("vendor/datastar.js"),
-                    )
-                }),
-            )
-            .route(
                 "/licenses/datastar",
                 get(|| async { include_str!("vendor/LICENSE.txt") }),
             )
@@ -182,8 +136,35 @@ impl Drop for Facade {
     }
 }
 
-async fn page() -> Html<&'static str> {
-    Html(include_str!("facade.html"))
+async fn page() -> Html<String> {
+    let i18n = include_str!("i18n.js").replace("export function ", "function ");
+    let read_rules = include_str!("read-rules.js")
+        .replace("import {t} from '/i18n.js';", "")
+        .replace("export function ", "function ");
+    let datastar = include_str!("vendor/datastar.js")
+        .split("export{")
+        .next()
+        .unwrap_or(include_str!("vendor/datastar.js"));
+    let facade = include_str!("facade.js")
+        .replace("import {t, localize} from '/i18n.js';", "")
+        .replace("import {readRulesEditor} from '/read-rules.js';", "")
+        .replace(
+            "({mergePatch, root, beginBatch, endBatch} = await import('/datastar.js'));",
+            "({mergePatch, root, beginBatch, endBatch} = datastar);",
+        );
+    let mut script = String::from("const {t, localize} = await (async () => {");
+    script.push_str(&i18n);
+    script.push_str("; return {t, localize}; })(); const {readRulesEditor} = await (async (t) => {");
+    script.push_str(&read_rules);
+    script.push_str("; return {readRulesEditor}; })(t); const datastar = await (async () => {");
+    script.push_str(datastar);
+    script.push_str("; return {mergePatch:I, root:ie, beginBatch:O, endBatch:P}; })();");
+    script.push_str(&facade);
+    Html(
+        include_str!("facade.html")
+            .replace("{{FACADE_CSS}}", include_str!("facade.css"))
+            .replace("{{FACADE_JS}}", &script),
+    )
 }
 
 async fn security_headers(
@@ -210,7 +191,7 @@ async fn security_headers(
         ),
         (
             "content-security-policy",
-            "default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
+            "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'",
         ),
     ] {
         response.headers_mut().insert(

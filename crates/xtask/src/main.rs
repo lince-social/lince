@@ -4,6 +4,8 @@ use std::io::{self, Write};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
+mod prune;
+
 type Result<T> = std::result::Result<T, String>;
 
 fn main() {
@@ -25,6 +27,7 @@ fn dispatch() -> Result<()> {
     env::set_current_dir(&root).map_err(|error| error.to_string())?;
 
     match task.to_str() {
+        Some("prune") => prune::run(&root, &extra),
         Some("release") => {
             no_extra(&extra)?;
             release(&root)
@@ -87,8 +90,11 @@ fn dispatch() -> Result<()> {
         }
         Some("help") | None | Some("--help") | Some("-h") => {
             no_extra(&extra)?;
-            println!("cargo xtask <release|dev|test|lince|server|facade|test-all|stop|nix>");
+            println!("cargo xtask <release|dev|test|lince|server|facade|test-all|stop|nix|prune>");
             println!("dev and test pass additional arguments to Lince.");
+            println!(
+                "prune [--dry-run] [--target-dir PATH] removes superseded incremental snapshots."
+            );
             Ok(())
         }
         _ => Err(format!("unknown task: {}", task.to_string_lossy())),

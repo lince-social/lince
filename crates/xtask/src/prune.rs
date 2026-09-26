@@ -1,5 +1,4 @@
 use std::env;
-use std::ffi::OsString;
 use std::fs::{self, File, TryLockError};
 use std::io;
 use std::path::{Path, PathBuf};
@@ -43,40 +42,6 @@ fn automatic(target: &Path) {
         Ok(()) => {}
         Err(error) => eprintln!("Could not prune incremental snapshots: {error}"),
     }
-}
-
-pub(crate) fn run(root: &Path, args: &[OsString]) -> Result<(), String> {
-    let mut target = target_directory(root);
-    let mut dry_run = false;
-    let mut args = args.iter();
-    while let Some(arg) = args.next() {
-        match arg.to_str() {
-            Some("--dry-run") => dry_run = true,
-            Some("--target-dir") => {
-                target = PathBuf::from(args.next().ok_or("--target-dir requires a path")?);
-            }
-            Some("--help" | "-h") => {
-                println!("cargo xtask prune [--dry-run] [--target-dir PATH]");
-                println!("Keeps the newest completed incremental snapshot of every build variant.");
-                return Ok(());
-            }
-            _ => return Err(format!("unknown prune argument: {}", arg.to_string_lossy())),
-        }
-    }
-    let target = root.join(target);
-    let mut report = Report::default();
-    visit(&target, 3, dry_run, &mut report).map_err(|error| error.to_string())?;
-    let action = if dry_run { "Would remove" } else { "Removed" };
-    println!(
-        "{action} {} superseded incremental snapshots in {}.",
-        report.snapshots,
-        target.display()
-    );
-    println!("Kept the newest completed snapshot of every variant and all compiled dependencies.");
-    if report.skipped > 0 {
-        println!("Skipped {} busy or unavailable locks.", report.skipped);
-    }
-    Ok(())
 }
 
 fn is_directory(path: &Path) -> bool {

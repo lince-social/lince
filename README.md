@@ -11,7 +11,6 @@ Tool for registry, interconnection and automation of Needs and Contributions wit
 
 The documentation for the Lince tool is inside the app.
 
-
 # Usage
 
 > Hic sunt dracones.
@@ -24,14 +23,14 @@ cargo run
 
 # Disclaimer
 
-Lince is a non-profit project and crowdfunding is the source of development compensation: [Patreon](https://www.patreon.com/lince_social)
+Lince is a non-profit project and crowdfunding is the source of development compensation: [Patreon](https://www.patreon.com/lince_social).
 
 Lince tries to facilitate and automate the connection between people and resources, by transforming needs and contributions into data.
 The gains and losses related to the interaction, such as transportation, production and services themselves, remain the responsibility
 and risk of the parties involved.
 
+Lince embeds required licenses of dependencies, check in the Interface on the License tab in edit mode.
+
 # License
 
 Check the MIT [License](LICENSE)
-
-Lince may embed the licenses of several dependencies that require them. Check in the interface on the License tab in edit mode.

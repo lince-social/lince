@@ -27,24 +27,20 @@ fn dispatch() -> Result<()> {
     env::set_current_dir(&root).map_err(|error| error.to_string())?;
 
     match task.to_str() {
-        Some("prune") => prune::run(&root, &extra),
+        Some("version") => {
+            no_extra(&extra)?;
+            version(&root)
+        }
+        Some("dev") => prune::with_cleanup(&root, || dev(&extra)),
+        Some("test") => {
+            if extra.is_empty() {
+                return Err("usage: cargo xtask test -p <package> <test-name> -- --exact".into());
+            }
+            prune::with_cleanup(&root, || checked(cargo_command().arg("test").args(&extra)))
+        }
         Some("release") => {
             no_extra(&extra)?;
-            release(&root)
-        }
-        Some("dev" | "test") => prune::with_cleanup(&root, || dev(&extra)),
-        Some("lince") => {
-            no_extra(&extra)?;
-            checked(Command::new("nix").args([
-                "develop",
-                ".#interface",
-                "-c",
-                "cargo",
-                "run",
-                "--release",
-                "-p",
-                "lince",
-            ]))
+            checked(cargo_command().args(["run", "--release", "-p", "lince"]))
         }
         Some("server") => {
             no_extra(&extra)?;
@@ -76,29 +72,19 @@ fn dispatch() -> Result<()> {
         Some("test-all") => {
             no_extra(&extra)?;
             prune::with_cleanup(&root, || {
-                checked(Command::new("cargo").args(["test", "--workspace", "--all-targets"]))
+                checked(cargo_command().args(["test", "--workspace", "--all-targets"]))
             })
-        }
-        Some("stop") => {
-            no_extra(&extra)?;
-            let _ = Command::new("systemctl")
-                .args(["--user", "stop", "lince"])
-                .status();
-            checked(Command::new("nix").arg("develop"))
-        }
-        Some("nix") => {
-            no_extra(&extra)?;
-            nix_session()
         }
         Some("help") | None | Some("--help") | Some("-h") => {
             no_extra(&extra)?;
-            println!("cargo xtask <release|dev|test|lince|server|facade|test-all|stop|nix|prune>");
-            println!("dev and test pass additional arguments to Lince.");
+            println!("cargo xtask <dev|test|test-all|release|server|facade|version>");
+            println!("dev passes additional arguments to Lince.");
+            println!(
+                "test forwards arguments to cargo test; test-all runs every workspace target."
+            );
+            println!("One test: cargo xtask test -p <package> <test-name> -- --exact");
             println!(
                 "dev, test and test-all prune superseded incremental snapshots before and after running."
-            );
-            println!(
-                "prune [--dry-run] [--target-dir PATH] removes superseded incremental snapshots."
             );
             Ok(())
         }
@@ -141,19 +127,7 @@ fn dev(extra: &[std::ffi::OsString]) -> Result<()> {
     let port = env::var_os("LINCE_PORT")
         .filter(|value| !value.is_empty())
         .unwrap_or_else(|| "6176".into());
-    let mut command = if Command::new("nix")
-        .arg("--version")
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .is_ok()
-    {
-        let mut command = Command::new("nix");
-        command.args(["develop", ".#interface", "-c", "cargo"]);
-        command
-    } else {
-        Command::new("cargo")
-    };
+    let mut command = cargo_command();
     command.args([
         "run",
         "--release",
@@ -174,22 +148,23 @@ fn dev(extra: &[std::ffi::OsString]) -> Result<()> {
     checked(&mut command)
 }
 
-fn nix_session() -> Result<()> {
-    let shell = env::var_os("SHELL").unwrap_or_else(|| "sh".into());
-    checked(Command::new("mprocs").args([
-        "--names",
-        "hx,claude,codex,git,shell,run,restart",
-        "hx .",
-        "claude",
-        "codex",
-        "lazygit",
-        shell.to_str().ok_or("SHELL is not valid UTF-8")?,
-        "systemctl --user stop lince; nix develop",
-        "systemctl --user restart lince;",
-    ]))
+fn cargo_command() -> Command {
+    if Command::new("nix")
+        .arg("--version")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .is_ok_and(|status| status.success())
+    {
+        let mut command = Command::new("nix");
+        command.args(["develop", ".#interface", "-c", "cargo"]);
+        command
+    } else {
+        Command::new("cargo")
+    }
 }
 
-fn release(root: &PathBuf) -> Result<()> {
+fn version(root: &PathBuf) -> Result<()> {
     let branch = Command::new("git")
         .args(["rev-parse", "--abbrev-ref", "HEAD"])
         .output()

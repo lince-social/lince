@@ -231,7 +231,7 @@ async fn real_protein_dates_feed_calendar_and_both_picker_fields_save_through_ce
         store: engine.store.clone(),
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
         wire: Default::default(),
-        fiote: None,
+        fiote: None, speech: None,
         information: None,
     };
     app.insert_resource(crate::app::CellHandle(runtime))

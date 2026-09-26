@@ -363,10 +363,17 @@ fn closing_focused_toast_restores_focus_and_panel_escape_keeps_history() {
         .0;
     app.world_mut()
         .resource_mut::<InputFocus>()
-        .set(button, FocusCause::Navigated);
+        .set(button, FocusCause::Pressed);
     click(&mut app, "Close notification toast");
     let bell = app.world().get::<NotificationCenter>(root).unwrap().button;
-    assert_eq!(app.world().resource::<InputFocus>().get(), Some(bell));
+    assert_eq!(app.world().resource::<InputFocus>().get(), Some(root));
+    app.init_resource::<Assets<Image>>();
+    crate::canvas_controls::corner::update(app.world_mut());
+    let toolbar = app.world().get::<ChildOf>(bell).unwrap().parent();
+    assert_eq!(
+        *app.world().get::<Visibility>(toolbar).unwrap(),
+        Visibility::Hidden
+    );
     click(&mut app, "Notifications (1)");
     let drawer = app
         .world()

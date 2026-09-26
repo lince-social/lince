@@ -852,6 +852,7 @@ async fn a_reference_read_goes_through_the_visibility_gate() {
     .uid;
     a.act(
         engine::actions::Action::CreateMessage {
+            content: Vec::new(),
             thread: thread.clone(),
             body: "see this".into(),
             author: None,
@@ -970,6 +971,7 @@ async fn a_reference_read_is_narrowed_by_the_contacts_scope() {
     .uid;
     a.act(
         engine::actions::Action::CreateMessage {
+            content: Vec::new(),
             thread: thread.clone(),
             body: "look".into(),
             author: None,
@@ -1199,6 +1201,7 @@ async fn reading_a_reference_leaves_a_receipt_but_a_refusal_does_not() {
     .uid;
     a.act(
         engine::actions::Action::CreateMessage {
+            content: Vec::new(),
             thread: thread.clone(),
             body: "here".into(),
             author: None,

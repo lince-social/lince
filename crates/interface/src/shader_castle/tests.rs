@@ -49,7 +49,7 @@ async fn slug_selection_saves_the_description_and_restores_the_castle() {
             store: engine.store.clone(),
             lanes: Arc::new(cell::LaneHub::new()),
             wire: default(),
-            fiote: None,
+            fiote: None, speech: None,
             information: None,
         }))
         .add_plugins((

@@ -123,6 +123,7 @@ pub(super) fn spawn(
     );
     world.get_mut::<Node>(input).unwrap().display = Display::None;
     transcript::populate(world, entity, binding, data);
+    crate::message_content::view(world, entity, content, binding, data);
     let actions = world
         .spawn((
             Node {
@@ -184,6 +185,7 @@ pub(super) fn spawn(
 }
 
 pub(super) fn refresh(world: &mut World, entity: Entity, data: &Value, previous: Option<&str>) {
+    crate::message_content::refresh(world, entity, data);
     let message = world.get::<Message>(entity).unwrap();
     let (identity, author_name, input, preview) = (
         message.identity,

@@ -23,6 +23,7 @@ pub mod linguas;
 pub mod logins;
 pub mod mail_left;
 pub mod mailbox;
+pub mod message_content;
 pub mod misc;
 pub mod offers;
 pub mod operation_receipts;

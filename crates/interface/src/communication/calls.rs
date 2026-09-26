@@ -78,6 +78,9 @@ struct Controller {
 }
 
 pub struct CallsPlugin;
+pub(crate) fn microphone_active(world: &World) -> bool {
+    world.get_resource::<Runtime>().and_then(|runtime| runtime.controller.as_ref()).is_some_and(|controller| controller.tracks.microphone || controller.preview.is_some())
+}
 impl Plugin for CallsPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Runtime>()

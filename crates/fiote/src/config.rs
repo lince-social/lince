@@ -72,6 +72,12 @@ impl Settings {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Request {
+    SessionReset {
+        thread: String,
+    },
+    AgentLogout {
+        record: String,
+    },
     Directory,
     Delete {
         record: String,
@@ -108,9 +114,28 @@ pub enum Request {
         option: String,
         value: serde_json::Value,
     },
+    SessionOptions {
+        thread: String,
+    },
+    SessionDirectories {
+        thread: String,
+        directories: Vec<PathBuf>,
+    },
+    SessionSetOption {
+        thread: String,
+        option: String,
+        value: serde_json::Value,
+    },
     AgentDiscover {
         record: String,
         config: crate::acp::Config,
+    },
+    AgentCheck {
+        record: String,
+        config: crate::acp::Config,
+    },
+    AgentCancelLogin {
+        record: String,
     },
     AgentAuthenticate {
         record: String,
@@ -124,6 +149,11 @@ pub enum Request {
         record: String,
         fields: Secret,
         password: Option<Secret>,
+    },
+    AgentQuestionAnswer {
+        record: String,
+        request: String,
+        answer: crate::acp::Answer,
     },
     AgentPermission {
         record: String,
@@ -176,6 +206,11 @@ pub enum Request {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Status {
+    #[serde(default)]
+    pub questions: Vec<PrivateQuestion>,
+    #[serde(default)]
+    pub usage: Vec<nucleus::operation::Usage>,
+    pub agent_session: Option<AgentSession>,
     pub session: Option<PromptSession>,
     pub behavior: Behavior,
     pub instructions: Vec<PromptSource>,
@@ -196,6 +231,18 @@ pub struct Status {
     pub providers: Vec<crate::adapters::Descriptor>,
     pub requires_credential: bool,
     pub tool_connections: Vec<ToolConnection>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AgentSession {
+    #[serde(default)]
+    pub prompt_capabilities: serde_json::Value,
+    pub directories: Vec<PathBuf>,
+    pub supports_directories: bool,
+    pub thread: String,
+    pub state: crate::acp::SessionState,
+    pub pending: std::collections::BTreeMap<String, serde_json::Value>,
+    pub connected: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -246,4 +293,10 @@ pub struct PromptSession {
     pub thread: String,
     pub sources: Vec<PromptSource>,
     pub changed: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PrivateQuestion {
+    pub thread: Option<String>,
+    pub request: crate::acp::QuestionRequest,
 }

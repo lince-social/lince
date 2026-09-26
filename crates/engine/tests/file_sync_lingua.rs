@@ -598,6 +598,7 @@ async fn add_automation(engine: &Engine) -> (String, String) {
     let rule = engine
         .act(
             Action::SaveKarmaRule {
+                identity: None,
                 rule: None,
                 expected_revision: None,
                 fields: [

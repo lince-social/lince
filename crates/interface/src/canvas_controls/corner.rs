@@ -12,6 +12,14 @@ use bevy::{
 #[derive(Component)]
 pub(crate) struct ControlsCorner(Entity);
 
+#[derive(Component, Default)]
+struct HideDelay {
+    hovered: bool,
+    until: Option<std::time::Instant>,
+}
+
+const HIDE_DELAY: std::time::Duration = std::time::Duration::from_secs(1);
+
 #[derive(Component)]
 struct CornerGlyph;
 
@@ -50,7 +58,11 @@ fn contains_focus(world: &World, ancestor: Entity) -> bool {
     false
 }
 
-pub(super) fn update(world: &mut World) {
+pub(crate) fn update(world: &mut World) {
+    update_at(world, std::time::Instant::now());
+}
+
+fn update_at(world: &mut World, now: std::time::Instant) {
     let bars: Vec<_> = world
         .query::<(Entity, &CanvasToolbar)>()
         .iter(world)
@@ -71,6 +83,7 @@ pub(super) fn update(world: &mut World) {
             let corner = world
                 .spawn((
                     ControlsCorner(bar),
+                    HideDelay::default(),
                     crate::inspection::InspectionExcluded,
                     bevy::ui_widgets::Button,
                     TabIndex(0),
@@ -111,10 +124,32 @@ pub(super) fn update(world: &mut World) {
             world.entity_mut(view).insert_children(index, &[corner]);
             corner
         });
-        let expanded = [bar, corner].into_iter().any(|entity| {
-            world.get::<Hovered>(entity).is_some_and(|hover| hover.0)
-                || contains_focus(world, entity)
-        });
+        let hovered = [bar, corner]
+            .into_iter()
+            .any(|entity| world.get::<Hovered>(entity).is_some_and(|hover| hover.0));
+        let mut delay = world.get_mut::<HideDelay>(corner).unwrap();
+        let started = delay.hovered && !hovered;
+        if hovered {
+            delay.until = None;
+        } else if started {
+            delay.until = Some(now + HIDE_DELAY);
+        }
+        delay.hovered = hovered;
+        let waiting = delay.until.is_some_and(|until| now < until);
+        if !waiting {
+            delay.until = None;
+        }
+        if started && let Some(wake) = world.get_resource::<crate::wake::WakeSignal>() {
+            wake.after(HIDE_DELAY);
+        }
+        let expanded = hovered
+            || waiting
+            || [bar, corner]
+                .into_iter()
+                .any(|entity| contains_focus(world, entity))
+            || world
+                .get_resource::<super::ControlsSettings>()
+                .is_some_and(|settings| settings.always_show);
         let visibility = if expanded {
             Visibility::Inherited
         } else {
@@ -188,7 +223,14 @@ mod tests {
             Visibility::Inherited
         );
         world.entity_mut(bar).insert(Hovered(false));
-        update(&mut world);
+        let now = std::time::Instant::now();
+        update_at(&mut world, now);
+        update_at(&mut world, now + std::time::Duration::from_millis(999));
+        assert_eq!(
+            *world.get::<Visibility>(bar).unwrap(),
+            Visibility::Inherited
+        );
+        update_at(&mut world, now + HIDE_DELAY);
         assert_eq!(*world.get::<Visibility>(bar).unwrap(), Visibility::Hidden);
         world
             .resource_mut::<InputFocus>()
@@ -210,6 +252,18 @@ mod tests {
         update(&mut world);
         assert_eq!(*world.get::<Visibility>(bar).unwrap(), Visibility::Hidden);
         assert_eq!(world.resource::<Assets<Image>>().len(), 1);
+        world.insert_resource(super::super::ControlsSettings { always_show: true });
+        update(&mut world);
+        assert_eq!(
+            *world.get::<Visibility>(bar).unwrap(),
+            Visibility::Inherited
+        );
+        assert_eq!(*world.get::<Visibility>(glyph).unwrap(), Visibility::Hidden);
+        world
+            .resource_mut::<super::super::ControlsSettings>()
+            .always_show = false;
+        update(&mut world);
+        assert_eq!(*world.get::<Visibility>(bar).unwrap(), Visibility::Hidden);
         assert_eq!(
             world
                 .query_filtered::<Entity, With<ControlsCorner>>()

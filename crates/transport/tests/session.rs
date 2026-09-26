@@ -6,6 +6,46 @@ use nucleus::RecordKind;
 use transport::{ClientMessage, LaneHub, ServerMessage, Session};
 
 #[tokio::test]
+async fn speech_controls_are_local_and_work_without_a_fiote() {
+    struct Speech(std::sync::atomic::AtomicUsize);
+    #[async_trait::async_trait]
+    impl transport::speech::Service for Speech {
+        async fn handle(
+            &self,
+            _: transport::speech::Request,
+        ) -> Result<transport::speech::Status, String> {
+            self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            Ok(transport::speech::Status {
+                settings: Default::default(),
+                providers: Vec::new(),
+                ready: false,
+                detail: "fixture".into(),
+                job: None,
+            })
+        }
+    }
+    let (engine, hub) = setup().await;
+    let service = Arc::new(Speech(std::sync::atomic::AtomicUsize::new(0)));
+    let request = ClientMessage::Speech {
+        id: "speech".into(),
+        request: transport::speech::Request::Inspect { settings: None },
+    };
+    let mut remote = Session::new(engine.clone(), hub.clone(), "remote-speech", None)
+        .with_speech(service.clone());
+    assert!(matches!(
+        remote.handle(request.clone()).await.as_slice(),
+        [ServerMessage::Error { .. }]
+    ));
+    assert_eq!(service.0.load(std::sync::atomic::Ordering::SeqCst), 0);
+    let local = Session::local(engine, hub, "local-speech").with_speech(service.clone());
+    assert!(matches!(
+        local.fork_call().handle(request).await.as_slice(),
+        [ServerMessage::Speech { .. }]
+    ));
+    assert_eq!(service.0.load(std::sync::atomic::Ordering::SeqCst), 1);
+}
+
+#[tokio::test]
 async fn record_cursors_are_ephemeral_identified_and_removed_on_departure() {
     let (engine, hub) = setup().await;
     let uid = engine

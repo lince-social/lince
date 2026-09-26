@@ -27,6 +27,7 @@ mod output;
 #[cfg(test)]
 mod tests;
 mod timeline;
+mod usage;
 mod vault;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -44,6 +45,8 @@ struct Running {
 
 #[derive(Serialize, Deserialize)]
 struct Pending {
+    #[serde(default)]
+    root: Option<String>,
     message: String,
 }
 
@@ -94,11 +97,38 @@ impl Host {
         };
         for entry in std::fs::read_dir(&host.directory).map_err(|e| e.to_string())? {
             let entry = entry.map_err(|e| e.to_string())?;
+            if entry.file_name().to_string_lossy().starts_with("question-") {
+                agents::questions::recover(&host.engine, &entry.path()).await?;
+            }
             if entry.file_name().to_string_lossy().starts_with("turn-") {
                 let pending: Pending = serde_json::from_slice(
                     &std::fs::read(entry.path()).map_err(|e| e.to_string())?,
                 )
                 .map_err(|e| e.to_string())?;
+                if let Some(root) = &pending.root {
+                    if let Some(mut progress) = store::records::get_extension(
+                        &host.engine.store.pool,
+                        root,
+                        "lince.message-progress",
+                    )
+                    .await
+                    .map_err(|error| error.to_string())?
+                    {
+                        progress["state"] = "interrupted".into();
+                        progress["updated_ms"] = nucleus::operation::now_ms().into();
+                        host.engine
+                            .act(
+                                Action::SetExtension {
+                                    target: root.clone(),
+                                    namespace: "lince.message-progress".into(),
+                                    fds: progress,
+                                },
+                                None,
+                            )
+                            .await
+                            .map_err(|error| error.to_string())?;
+                    }
+                }
                 let state = store::records::get_extension(
                     &host.engine.store.pool,
                     &pending.message,
@@ -184,6 +214,9 @@ impl Host {
         });
         let instructions = self.prompt_sources(record).await;
         Ok(Status {
+            questions: self.agents.questions(record).await,
+            usage: Vec::new(),
+            agent_session: None,
             session: None,
             behavior: self.behavior(record).await?,
             instruction_error: instructions.as_ref().err().cloned(),
@@ -331,13 +364,28 @@ impl Host {
             } else {
                 row.body
             };
-            messages.push(if assistant {
+            let content = store::message_content::load(&self.engine.store.pool, &row.uid)
+                .await
+                .map_err(|error| error.to_string())?;
+            messages.push(if assistant && !content.is_empty() {
+                Message::RichAssistant {
+                    text: body,
+                    content,
+                }
+            } else if assistant {
                 Message::Assistant {
                     text: body,
                     calls: Vec::new(),
                 }
             } else {
-                Message::User(body)
+                if content.is_empty() {
+                    Message::User(body)
+                } else {
+                    Message::RichUser {
+                        text: body,
+                        content,
+                    }
+                }
             });
         }
         Ok(messages)
@@ -358,11 +406,20 @@ fn save(path: &Path, value: &impl Serialize) -> Result<(), String> {
 
 #[async_trait::async_trait]
 impl Service for Host {
+    async fn terminal(
+        &self,
+        request: fiote::acp::terminal::TerminalRequest,
+    ) -> Result<fiote::acp::terminal::TerminalFrame, String> {
+        self.login_terminal(request).await
+    }
     async fn handle(&self, request: Request) -> Result<Status, String> {
         let inspected = match &request {
-            Request::InspectThread { thread } | Request::RefreshInstructions { thread, .. } => {
-                Some(thread.clone())
-            }
+            Request::InspectThread { thread }
+            | Request::RefreshInstructions { thread, .. }
+            | Request::SessionOptions { thread }
+            | Request::SessionReset { thread }
+            | Request::SessionSetOption { thread, .. }
+            | Request::SessionDirectories { thread, .. } => Some(thread.clone()),
             _ => None,
         };
         let record = match request {
@@ -452,12 +509,31 @@ impl Service for Host {
                 self.retry_assignment(&record, &thread).await?;
                 record
             }
+            Request::SessionReset { thread } => self.reset_session(&thread).await?,
+            Request::SessionOptions { thread } => self.open_session_options(&thread).await?,
+            Request::SessionDirectories {
+                thread,
+                directories,
+            } => self.set_session_directories(&thread, directories).await?,
+            Request::SessionSetOption {
+                thread,
+                option,
+                value,
+            } => self.set_session_option(&thread, &option, &value).await?,
             Request::AgentDiscover { record, config } => {
                 self.discover_agent(&record, config).await?;
                 record
             }
             Request::AgentConfigure { record, config } => {
                 self.configure_agent(&record, config).await?;
+                record
+            }
+            Request::AgentCheck { record, config } => {
+                self.check_agent(&record, config).await?;
+                record
+            }
+            Request::AgentCancelLogin { record } => {
+                self.cancel_agent_login(&record).await?;
                 record
             }
             Request::AgentOptions { record, config } => {
@@ -470,6 +546,10 @@ impl Service for Host {
                 value,
             } => {
                 self.set_agent_option(&record, &option, &value).await?;
+                record
+            }
+            Request::AgentLogout { record } => {
+                self.logout_agent(&record).await?;
                 record
             }
             Request::AgentAuthenticate { record, method } => {
@@ -486,6 +566,17 @@ impl Service for Host {
                 password,
             } => {
                 self.agent_provider_login(&record, fields, password).await?;
+                record
+            }
+            Request::AgentQuestionAnswer {
+                record,
+                request,
+                answer,
+            } => {
+                self.record(&record).await?;
+                self.agents
+                    .answer_question(&record, &request, answer)
+                    .await?;
                 record
             }
             Request::AgentPermission {
@@ -614,6 +705,8 @@ impl Service for Host {
         };
         let mut status = self.status(&record).await?;
         if let Some(thread) = inspected {
+            status.agent_session = self.agent_session_status(&thread).await?;
+            status.usage = usage::read(&usage::path(&self.directory, &thread))?;
             if let Some(snapshot) = self.instruction_snapshot(&thread)? {
                 let sources: Vec<fiote::config::PromptSource> =
                     serde_json::from_value(snapshot["sources"].clone())
@@ -631,7 +724,22 @@ impl Service for Host {
     async fn send(&self, thread: &str, body: &str) -> Result<Option<ActionOutcome>, String> {
         self.engine
             .access_scope(true, async {
-                self.start_turn(thread, body)
+                Box::pin(self.start_turn(thread, body, &[]))
+                    .await
+                    .map_err(engine::EngineError::Consequence)
+            })
+            .await
+            .map_err(|error| error.to_string())
+    }
+    async fn send_content(
+        &self,
+        thread: &str,
+        body: &str,
+        content: &[nucleus::message::MessagePart],
+    ) -> Result<Option<ActionOutcome>, String> {
+        self.engine
+            .access_scope(true, async {
+                Box::pin(self.start_turn(thread, body, content))
                     .await
                     .map_err(engine::EngineError::Consequence)
             })
@@ -641,7 +749,16 @@ impl Service for Host {
 }
 
 impl Host {
-    async fn start_turn(&self, thread: &str, body: &str) -> Result<Option<ActionOutcome>, String> {
+    async fn start_turn(
+        &self,
+        thread: &str,
+        body: &str,
+        content: &[nucleus::message::MessagePart],
+    ) -> Result<Option<ActionOutcome>, String> {
+        if !nucleus::valid_uid(thread, "r") {
+            return Err("Choose a valid thread identifier.".into());
+        }
+        nucleus::message::validate(content)?;
         if body.len() > 65_536 {
             return Err("Write a message of at most 64 KiB.".into());
         }
@@ -697,7 +814,7 @@ impl Host {
                 "Use the local /login picker; credentials must never be sent as messages.".into(),
             );
         }
-        if body.trim().is_empty() || body.len() > 65_536 {
+        if (body.trim().is_empty() && content.is_empty()) || body.len() > 65_536 {
             return Err("Write a message of at most 64 KiB.".into());
         }
         if running.contains_key(thread) {
@@ -711,22 +828,29 @@ impl Host {
         self.prepare_mentioned_session(&record.uid, thread, is_mention)
             .await?;
         if let Some(agent) = config.agent {
-            return self
-                .start_agent_turn(record, config.author, agent, thread, body, &mut running)
-                .await
-                .map(Some);
+            return Box::pin(self.start_agent_turn(
+                record,
+                config.author,
+                agent,
+                thread,
+                body,
+                content,
+                &mut running,
+            ))
+            .await
+            .map(Some);
         }
         let mut messages = self.history(thread, &config.author).await?;
-        messages.push(Message::User(body.into()));
+        messages.push(if content.is_empty() {
+            Message::User(body.into())
+        } else {
+            Message::RichUser {
+                text: body.into(),
+                content: content.to_vec(),
+            }
+        });
         let system = self.session_instructions(&record.uid, thread).await?;
-        if system.len()
-            + serde_json::to_vec(&messages)
-                .map_err(|e| e.to_string())?
-                .len()
-            > fiote::runtime::MAX_CONTEXT_BYTES
-        {
-            return Err("This thread exceeds the context limit. Start a new thread.".into());
-        }
+        fiote::runtime::validate_context(&system, &messages)?;
         let mut tools = Registry::default();
         if !config.settings.directory.as_os_str().is_empty() {
             tools.register(CreateFile::new(&config.settings.directory)?);
@@ -770,10 +894,18 @@ impl Host {
             (_, Some(provider)) => provider.clone(),
             _ => Arc::new(GenaiProvider::new(&config.settings, &key)?),
         };
+        for message in &messages {
+            if let Message::RichUser { content, .. } | Message::RichAssistant { content, .. } =
+                message
+            {
+                provider.validate_content(content)?;
+            }
+        }
         let mut outcome = self
             .engine
             .act(
                 Action::CreateMessage {
+                    content: content.to_vec(),
                     thread: thread.into(),
                     body: body.into(),
                     author: None,
@@ -789,6 +921,7 @@ impl Host {
             .engine
             .act(
                 Action::CreateMessage {
+                    content: Vec::new(),
                     thread: thread.into(),
                     body: String::new(),
                     author: Some(config.author),
@@ -820,6 +953,7 @@ impl Host {
         if let Err(error) = save(
             &pending,
             &Pending {
+                root: None,
                 message: reply.clone(),
             },
         ) {
@@ -855,9 +989,11 @@ impl Host {
         let vault = self.vault.clone();
         let slot = vault::slot(&config.settings);
         let attached = native.attach_message(&reply).await;
+        let usage_path = usage::path(&self.directory, &thread);
         tokio::spawn(async move {
             let _adapter_turn = adapter_turn;
             let output = output::Output {
+                usage_path: Some(usage_path),
                 tools: &tools,
                 message: &reply,
                 text: Default::default(),

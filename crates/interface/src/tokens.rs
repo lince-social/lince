@@ -98,6 +98,7 @@ tokens! {
     Accent, "Accent and focus", Rgba([99,102,241,255]), Rgba([55,48,163,255]), None;
     CanvasBackground, "Canvas background", Rgba([18,18,20,255]), Rgba([248,250,252,255]), None;
     CanvasGrid, "Canvas grid", Rgba([44,44,49,255]), Rgba([210,214,222,255]), None;
+    TableGrid, "Table grid", Rgba([65,65,72,255]), Rgba([198,204,214,255]), None;
     CanvasPattern, "Pattern", Number(100.0), Number(100.0), Some((0.0,100.0));
     SandBackground, "Sand background", Rgba([18,18,20,255]), Rgba([248,250,252,255]), None;
     SandBorder, "Sand border", Rgba([99,102,241,255]), Rgba([55,48,163,255]), None;

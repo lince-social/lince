@@ -8,6 +8,8 @@ pub use engine::presence::Cursor as CollabCursor;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ClientMessage {
+    Speech { id: String, request: crate::speech::Request },
+    FioteTerminal { id: String, request: fiote::acp::terminal::TerminalRequest },
     Command { id: String, request: crate::command::Request },
     CallContext { id: String, thread: String },
     Call {
@@ -127,6 +129,8 @@ pub enum ClientMessage {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ServerMessage {
+    Speech { id: String, status: crate::speech::Status },
+    FioteTerminal { id: String, frame: fiote::acp::terminal::TerminalFrame },
     Command { id: String, response: crate::command::Response },
     CallContext { id: String, context: engine::calls::Context },
     Call { id: String, device: String, snapshot: engine::calls::Snapshot },

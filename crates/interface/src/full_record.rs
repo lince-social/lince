@@ -347,6 +347,7 @@ mod tests {
                 .unwrap(),
         );
         let runtime = cell::CellRuntime {
+            speech: None,
             commands: Default::default(),
             engine: engine.clone(),
             store: engine.store.clone(),

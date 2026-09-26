@@ -1,4 +1,4 @@
-pub const COUNT: usize = 38;
+pub const COUNT: usize = 40;
 
 pub fn source(index: usize) -> &'static str {
     match index {
@@ -40,6 +40,8 @@ pub fn source(index: usize) -> &'static str {
         35 => person(),
         36 => engine(),
         37 => credits(),
+        38 => search(),
+        39 => copy(),
         _ => panic!("unknown icon index {index}"),
     }
 }
@@ -211,4 +213,12 @@ fn engine() -> &'static str {
 fn credits() -> &'static str {
     r##"<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><circle cx="12" cy="15" r="4"/><path d="M13 13.5a2 2 0 1 0 0 3"/></svg>
 "##
+}
+
+fn search() -> &'static str {
+    r##"<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="10" cy="10" r="6"/><path d="m15 15 6 6"/></svg>"##
+}
+
+fn copy() -> &'static str {
+    r##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="13" rx="1"/><path d="M16 8V3H3v13h5"/></svg>"##
 }

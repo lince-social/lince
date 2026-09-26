@@ -296,6 +296,7 @@ pub(crate) mod tests {
             kanbans: Vec::new(),
             instincts: Vec::new(),
             theme: Default::default(),
+            controls: Default::default(),
             active: 1,
             workspaces,
             sands: Vec::new(),

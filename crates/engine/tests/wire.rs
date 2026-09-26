@@ -520,6 +520,7 @@ async fn unknown_nearby_peers_can_accept_and_sync_one_conversation() {
     let message = a
         .act(
             engine::actions::Action::CreateMessage {
+                content: Vec::new(),
                 thread: thread.clone(),
                 body: "hey, I'm here".into(),
                 author: None,

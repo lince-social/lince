@@ -3,12 +3,19 @@ use fiote::{acp, config::AgentActivity, provider::TextOutput};
 use serde_json::{Value, json};
 use tokio::sync::oneshot;
 
+mod check;
+mod live;
+pub(super) mod login;
 mod options;
+pub(super) mod questions;
 
 struct Runtime {
     record: String,
     connection: Arc<acp::Connection>,
     session: String,
+    config: acp::Config,
+    fresh: std::sync::atomic::AtomicBool,
+    settings: Mutex<()>,
     _server: transport::mcp::Connection,
 }
 
@@ -21,6 +28,7 @@ struct PendingPermission {
 
 #[derive(Default)]
 pub(super) struct Agents {
+    terminals: Mutex<HashMap<String, (String, Arc<acp::terminal::LoginTerminal>)>>,
     sessions: Arc<Mutex<HashMap<String, Arc<Runtime>>>>,
     pub info: Arc<Mutex<HashMap<String, Value>>>,
     discovery: Mutex<HashMap<String, (acp::Config, Arc<acp::Connection>)>>,
@@ -116,6 +124,9 @@ impl Agents {
     }
 
     pub async fn close_record(&self, record: &str) {
+        if let Some((_, terminal)) = self.terminals.lock().await.remove(record) {
+            terminal.close();
+        }
         self.clear_options(record).await;
         let removed: Vec<_> = {
             let mut sessions = self.sessions.lock().await;
@@ -143,6 +154,9 @@ impl Agents {
     }
 
     pub async fn close_all(&self) {
+        for (_, (_, terminal)) in self.terminals.lock().await.drain() {
+            terminal.close();
+        }
         for (_, preview) in self.options.lock().await.drain() {
             preview.connection.close();
         }
@@ -154,6 +168,10 @@ impl Agents {
             .filter_map(Value::as_object_mut)
         {
             info.remove("configOptions");
+            info.remove("connectionCheck");
+            info.remove("loginId");
+            info.remove("terminalLogin");
+            info.insert("loginPending".into(), false.into());
         }
         for (_, runtime) in self.sessions.lock().await.drain() {
             runtime.connection.close();
@@ -184,6 +202,23 @@ impl TextOutput for Output<'_> {
 
 #[async_trait::async_trait]
 impl acp::Output for Output<'_> {
+    async fn question(&self, request: acp::QuestionRequest) -> Result<acp::Answer, String> {
+        questions::ask(self, request).await
+    }
+    async fn content(&self, part: nucleus::message::MessagePart) -> Result<(), String> {
+        let uid = self.timeline.open_content().await?;
+        self.timeline.engine.access_scope(true, async {
+            let mut parts = store::message_content::load(&self.timeline.engine.store.pool, &uid).await?;
+            parts.push(part);
+            store::message_content::save(&self.timeline.engine.store.pool, &uid, &parts).await?;
+            self.timeline.engine.act(Action::SetExtension {
+                target: uid, namespace: "lince.message-content".into(),
+                fds: json!({"parts":nucleus::message::describe(&parts).map_err(engine::EngineError::Consequence)?}),
+            }, None).await
+        }).await.map_err(|error| error.to_string())?;
+        Ok(())
+    }
+
     async fn activity(&self, value: Value) -> Result<(), String> {
         self.timeline.activity(&value).await?;
         if matches!(
@@ -215,7 +250,9 @@ impl acp::Output for Output<'_> {
                 response,
             },
         );
+        self.timeline.progress(None, "waiting for input").await?;
         let answer = received.await.unwrap_or(None);
+        self.timeline.progress(None, "running").await?;
         self.permissions.lock().await.remove(&id);
         Ok(answer)
     }
@@ -281,43 +318,66 @@ impl Host {
             .get(record)
             .map(|(_, connection)| connection.clone())
             .ok_or("Discover the agent first.")?;
+        let oauth = matches!(
+            entry["setupMethod"].as_str(),
+            Some("oauth_browser" | "oauth_device_code" | "host_with_oauth_fallback")
+        );
+        if let Some(info) = self
+            .agents
+            .info
+            .lock()
+            .await
+            .get_mut(record)
+            .and_then(Value::as_object_mut)
+        {
+            info.remove("connectionCheck");
+        }
         if !values.is_empty() {
             let updates: Vec<_> = values
                 .into_iter()
                 .map(|(key, value)| json!({"key":key,"value":value}))
                 .collect();
-            connection
+            let result = connection
                 .extension(
                     "_goose/unstable/providers/config/save",
                     json!({"providerId":provider,"fields":updates}),
                 )
                 .await?;
+            if !oauth && result["status"]["isConfigured"] != true {
+                return Err(
+                    "The provider still needs required settings before it can sign in.".into(),
+                );
+            }
+            if let Some(info) = self.agents.info.lock().await.get_mut(record) {
+                info["loginResult"] =
+                    "Provider settings saved. Check connection without using model tokens.".into();
+                info.as_object_mut().unwrap().remove("connectionCheck");
+            }
         }
-        if matches!(
-            entry["setupMethod"].as_str(),
-            Some("oauth_browser" | "oauth_device_code" | "host_with_oauth_fallback")
-        ) {
+        if oauth {
             let info = self.agents.info.clone();
+            let login_id = login::start(&self.agents, record).await?;
             let record = record.to_string();
             *connection.login_notice.lock().await = None;
-            info.lock()
-                .await
-                .get_mut(&record)
-                .ok_or("Agent discovery expired.")?["loginPending"] = true.into();
             tokio::spawn(async move {
-                let result = connection
-                    .extension_wait(
+                let result = tokio::time::timeout(
+                    std::time::Duration::from_secs(600),
+                    connection.extension_wait(
                         "_goose/unstable/providers/config/authenticate",
                         json!({"providerId":provider}),
-                    )
-                    .await;
-                if let Some(info) = info.lock().await.get_mut(&record) {
-                    info["loginPending"] = false.into();
-                    info["loginResult"] = match result {
-                        Ok(_) => "The agent completed its login flow.".into(),
-                        Err(error) => error.into(),
-                    };
-                }
+                    ),
+                )
+                .await
+                .map_err(|_| "Sign-in timed out. Try again.".to_string())
+                .and_then(|result| result)
+                .and_then(|response| {
+                    if response["status"]["isConfigured"] != true {
+                        Err("The provider did not confirm its sign-in. Try again.".into())
+                    } else {
+                        Ok(())
+                    }
+                });
+                login::finish(info, record, login_id, result).await;
             });
         }
         Ok(())
@@ -400,6 +460,7 @@ impl Host {
                 .ok_or("This provider does not report its companion executable.")?;
             let auth_config = acp::Config {
                 require_vault: false,
+                additional_directories: Vec::new(),
                 command: binary.into(),
                 args: vec![],
                 directory: config.directory.clone(),
@@ -440,7 +501,7 @@ impl Host {
         record: &str,
         mut config: acp::Config,
     ) -> Result<(), String> {
-        self.record(record).await?;
+        self.options_available(record).await?;
         config.validate()?;
         {
             let discovery = self.agents.discovery.lock().await;
@@ -513,8 +574,36 @@ impl Host {
         if running.values().any(|run| run.record == record) {
             return Err("Stop this Fiote before changing its agent.".into());
         }
+        if self
+            .agents
+            .info
+            .lock()
+            .await
+            .get(record)
+            .is_some_and(|info| info["loginPending"] == true)
+        {
+            return Err("Finish or cancel the current sign-in before changing settings.".into());
+        }
+        if !config.additional_directories.is_empty() {
+            let connection = acp::Connection::open(&config).await?;
+            let supported = connection.validate_directories(&config);
+            connection.close();
+            supported?;
+        }
         self.prepare(record).await?;
         config.require_vault = false;
+        if self.load(record)?.and_then(|saved| saved.agent).as_ref() != Some(&config) {
+            if let Some(info) = self
+                .agents
+                .info
+                .lock()
+                .await
+                .get_mut(record)
+                .and_then(Value::as_object_mut)
+            {
+                info.remove("connectionCheck");
+            }
+        }
         let author = record.to_string();
         self.agents.close_record(record).await;
         let mut discovery = self.agents.discovery.lock().await;
@@ -563,10 +652,10 @@ impl Host {
             return Err("Finish the current agent login first.".into());
         }
         let connections = self.agents.discovery.lock().await;
-        let connection = connections
+        let (config, connection) = connections
             .get(&format!("login:{record}"))
             .or_else(|| connections.get(record))
-            .map(|(_, connection)| connection.clone())
+            .map(|(config, connection)| (config.clone(), connection.clone()))
             .ok_or("Discover the agent before signing in.")?;
         drop(connections);
         let method = connection
@@ -575,6 +664,11 @@ impl Host {
             .iter()
             .find(|candidate| candidate.id().to_string() == method)
             .ok_or("Choose one of this agent's authentication methods.")?;
+        if let acp::AuthMethod::Terminal(method) = method {
+            return self
+                .start_terminal_login(record, config, method.clone())
+                .await;
+        }
         if connection
             .info
             .agent_info
@@ -583,25 +677,19 @@ impl Host {
         {
             return Err("Choose a provider from Goose's connections. Goose's generic authenticate method does not perform login.".into());
         }
-        if serde_json::to_value(method).map_err(|error| error.to_string())?["type"] == "terminal" {
-            return Err("This agent requires interactive terminal login. Run its documented login command, then connect again.".into());
-        }
         let method = method.id().to_string();
         let info = self.agents.info.clone();
+        let login_id = login::start(&self.agents, record).await?;
         let record = record.to_string();
-        info.lock()
-            .await
-            .get_mut(&record)
-            .ok_or("Agent discovery expired.")?["loginPending"] = true.into();
         tokio::spawn(async move {
-            let result = connection.authenticate(&method).await;
-            if let Some(info) = info.lock().await.get_mut(&record) {
-                info["loginPending"] = false.into();
-                info["loginResult"] = match result {
-                    Ok(()) => "The agent completed its login flow.".into(),
-                    Err(error) => error.into(),
-                };
-            }
+            let result = tokio::time::timeout(
+                std::time::Duration::from_secs(600),
+                connection.authenticate(&method),
+            )
+            .await
+            .map_err(|_| "Sign-in timed out. Try again.".to_string())
+            .and_then(|result| result);
+            login::finish(info, record, login_id, result).await;
         });
         Ok(())
     }
@@ -613,8 +701,11 @@ impl Host {
         config: acp::Config,
         thread: &str,
         body: &str,
+        content: &[nucleus::message::MessagePart],
         running: &mut HashMap<String, Running>,
     ) -> Result<ActionOutcome, String> {
+        let settings_path = self.directory.join(format!("agent-options-{thread}.json"));
+        let config = live::configured(config, &settings_path)?;
         let evicted = {
             let mut sessions = self.agents.sessions.lock().await;
             if sessions.len() >= 8 && !sessions.contains_key(thread) {
@@ -634,21 +725,47 @@ impl Host {
         }
         let history = self.history(thread, &author).await?;
         let system = self.session_instructions(&record.uid, thread).await?;
-        if serde_json::to_vec(&history)
-            .map_err(|error| error.to_string())?
-            .len()
-            + body.len()
-            + record.body.len()
-            > 500 * 1024
-        {
-            return Err(
-                "This conversation exceeds the agent context limit. Start a new thread.".into(),
-            );
-        }
+        fiote::runtime::validate_context(&format!("{system}{body}"), &history)?;
+        let saved_session = self.directory.join(format!("agent-session-{thread}.json"));
+        let runtime = live::runtime(
+            &self.agents.sessions,
+            &self.engine,
+            &record.uid,
+            &author,
+            thread,
+            &config,
+            &system,
+            &saved_session,
+        )
+        .await?;
+        runtime.connection.content(content)?;
+        let command = if let Some(command) = body.trim().strip_prefix("/agent:") {
+            let name = command
+                .split_whitespace()
+                .next()
+                .ok_or("Choose an agent command.")?;
+            if !content.is_empty() {
+                return Err("Agent commands currently accept text arguments. Remove attached contents before invoking one.".into());
+            }
+            if !runtime
+                .connection
+                .state(&runtime.session)
+                .await
+                .commands
+                .iter()
+                .any(|command| command.name == name)
+            {
+                return Err("This command is no longer offered by the conversation's agent. Reload its command list.".into());
+            }
+            Some(format!("/{command}"))
+        } else {
+            None
+        };
         let mut outcome = self
             .engine
             .act(
                 Action::CreateMessage {
+                    content: content.to_vec(),
                     thread: thread.into(),
                     body: body.into(),
                     author: None,
@@ -664,6 +781,7 @@ impl Host {
             .engine
             .act(
                 Action::CreateMessage {
+                    content: Vec::new(),
                     thread: thread.into(),
                     body: String::new(),
                     author: Some(author.clone()),
@@ -717,10 +835,12 @@ impl Host {
         if let Err(error) = save(
             &pending,
             &Pending {
+                root: Some(reply.clone()),
                 message: reply.clone(),
             },
         ) {
             let output = output::Output {
+                usage_path: None,
                 tools: &tools,
                 message: &reply,
                 text: Default::default(),
@@ -747,6 +867,7 @@ impl Host {
         );
         let thread = thread.to_string();
         let body = body.to_string();
+        let content = content.to_vec();
 
         let engine = self.engine.clone();
         let active = self.running.clone();
@@ -757,6 +878,7 @@ impl Host {
         tokio::spawn(async move {
             let output = Output {
                 timeline: timeline::Timeline {
+                    root: reply.clone(),
                     engine: engine.clone(),
                     tools: &tools,
                     author: author.clone(),
@@ -778,83 +900,67 @@ impl Host {
             };
             let mut cancellation = receiver.clone();
             let operation = async {
-                let existing = sessions
-                    .lock()
-                    .await
-                    .get(&thread)
-                    .filter(|runtime| !runtime.connection.is_closed())
-                    .cloned();
-                let (runtime, fresh) = if let Some(existing) = existing {
-                    (existing, false)
-                } else {
-                    let connection = acp::Connection::open(&config).await?;
-                    let external = transport::Session::local(
-                        engine,
-                        Arc::new(transport::LaneHub::new()),
-                        nucleus::new_uid("agent-tools"),
-                    )
-                    .into_native_tools(transport::native::Context {
-                        agent: author,
-                        record: record.uid.clone(),
-                        thread: thread.clone(),
-                    })
-                    .with_instructions(system.clone());
-                    let server = transport::mcp::Connection::open(external).await?;
-                    let saved: Option<Value> = std::fs::read(&saved_session)
-                        .ok()
-                        .and_then(|bytes| serde_json::from_slice(&bytes).ok());
-                    let configured =
-                        serde_json::to_value(&config).map_err(|error| error.to_string())?;
-                    let previous = saved
-                        .as_ref()
-                        .filter(|saved| saved["config"] == configured)
-                        .and_then(|saved| saved["session"].as_str());
-                    let tool_connection = fiote::config::ToolConnection {
-                        thread: thread.clone(),
-                        url: server.url.clone(),
-                        token: server.token.clone(),
-                    };
-                    let session = tokio::time::timeout(
-                        std::time::Duration::from_secs(90),
-                        connection.session(&config, tool_connection, previous),
-                    )
-                    .await
-                    .map_err(|_| {
-                        "The agent did not open its session within 90 seconds.".to_string()
-                    })??;
-                    let fresh =
-                        previous.is_none() || !connection.info.agent_capabilities.load_session;
-                    save(
-                        &saved_session,
-                        &json!({"config":configured,"session":session}),
-                    )?;
-                    let runtime = Arc::new(Runtime {
-                        record: record.uid.clone(),
-                        connection,
-                        session,
-                        _server: server,
-                    });
-                    let mut sessions = sessions.lock().await;
-                    if *receiver.borrow() {
-                        return Err("Stopped by you.".into());
+                let runtime = live::runtime(
+                    &sessions,
+                    &engine,
+                    &record.uid,
+                    &author,
+                    &thread,
+                    &config,
+                    &system,
+                    &saved_session,
+                )
+                .await?;
+                live::apply_pending(&runtime, &settings_path, &saved_session).await?;
+                if let Some(command) = command {
+                    return runtime
+                        .connection
+                        .prompt(&runtime.session, command, &output, receiver)
+                        .await;
+                }
+                let fresh = runtime
+                    .fresh
+                    .swap(false, std::sync::atomic::Ordering::AcqRel);
+                let mut parts = Vec::new();
+                if fresh {
+                    for message in &history {
+                        match message {
+                            Message::User(text) => {
+                                parts.push(nucleus::message::MessagePart::Text {
+                                    text: format!("Earlier user message:\n{text}"),
+                                })
+                            }
+                            Message::RichUser { text, content } => {
+                                parts.push(nucleus::message::MessagePart::Text {
+                                    text: format!("Earlier user message:\n{text}"),
+                                });
+                                parts.extend(content.clone());
+                            }
+                            Message::RichAssistant { text, content } => {
+                                parts.push(nucleus::message::MessagePart::Text {
+                                    text: format!("Earlier assistant reply:\n{text}"),
+                                });
+                                parts.extend(content.clone());
+                            }
+                            Message::Assistant { text, .. } => {
+                                parts.push(nucleus::message::MessagePart::Text {
+                                    text: format!("Earlier assistant reply:\n{text}"),
+                                })
+                            }
+                            Message::Tool { .. } => {}
+                        }
                     }
-                    sessions.insert(thread.clone(), runtime.clone());
-                    (runtime, fresh)
-                };
-                let context = if fresh && !history.is_empty() {
-                    format!(
-                        "\nSaved conversation:\n{}\n",
-                        serde_json::to_string(&history).map_err(|error| error.to_string())?
-                    )
-                } else {
-                    String::new()
-                };
+                }
+                parts.push(nucleus::message::MessagePart::Text {
+                    text: format!("Current user message:\n{body}"),
+                });
+                parts.extend(content);
                 let prompt = format!(
-                    "Fiote's current instructions from its Record:\n{system}\nUse the Lince MCP tools for Lince data. Your answer is already streamed into this thread; do not create a duplicate reply with lince_message. Use your code tools for the selected working folder.\n{context}\nUser message:\n{body}"
+                    "Fiote's current instructions from its Record:\n{system}\nUse the Lince MCP tools for Lince data. Your answer is already streamed into this thread; do not create a duplicate reply with lince_message. Use your code tools for the selected working folder."
                 );
                 runtime
                     .connection
-                    .prompt(&runtime.session, prompt, &output, receiver)
+                    .prompt_content(&runtime.session, prompt, &parts, &output, receiver)
                     .await
             };
             let result = tokio::select! {
@@ -862,6 +968,33 @@ impl Host {
                 _ = acp::cancelled(&mut cancellation) => Err("Stopped by you. Completed tool operations remain saved.".into()),
                 result = operation => result,
             };
+            if let Some(runtime) = sessions.lock().await.get(&thread) {
+                let state = runtime.connection.state(&runtime.session).await;
+                if let Some(report) = state.usage_report(
+                    &runtime.session,
+                    &format!(
+                        "ACP · {}",
+                        runtime
+                            .connection
+                            .info
+                            .agent_info
+                            .as_ref()
+                            .map(|info| info.name.as_str())
+                            .unwrap_or("agent")
+                    ),
+                ) {
+                    if let Some(directory) = pending.parent() {
+                        let _ = usage::record(&usage::path(directory, &thread), report);
+                    }
+                }
+            }
+            let progress_state = match &result {
+                Ok(_) => "completed",
+                Err(error) if error.starts_with("Stopped by you") => "interrupted",
+                Err(error) if error.contains("connection") => "disconnected",
+                Err(_) => "failed",
+            };
+            let _ = output.timeline.progress(None, progress_state).await;
             if result.is_err() {
                 if let Some(runtime) = sessions.lock().await.remove(&thread) {
                     runtime.connection.close();

@@ -6,51 +6,12 @@ pub struct SessionOptions {
 }
 
 impl SessionOptions {
-    pub fn values(&self) -> BTreeMap<String, Value> {
-        self.options
-            .iter()
-            .filter_map(|option| {
-                let value = match &option.kind {
-                    SessionConfigKind::Select(select) => {
-                        Value::from(select.current_value.to_string())
-                    }
-                    SessionConfigKind::Boolean(toggle) => Value::from(toggle.current_value),
-                    _ => return None,
-                };
-                Some((option.id.to_string(), value))
-            })
-            .collect()
-    }
-}
-
-impl Connection {
-    pub async fn options(&self, config: &Config) -> Result<SessionOptions, String> {
-        let response = tokio::time::timeout(
-            Duration::from_secs(30),
-            self.peer
-                .send_request(
-                    NewSessionRequest::new(&config.directory).meta(config.session_meta.clone()),
-                )
-                .block_task(),
-        )
-        .await
-        .map_err(|_| "The agent settings request timed out.".to_string())?
-        .map_err(failure)?;
-        let mut options = SessionOptions {
-            session: response.session_id.to_string(),
-            options: response.config_options.unwrap_or_default(),
-        };
-        self.apply_options(&mut options, &config.options).await?;
-        Ok(options)
-    }
-
-    pub async fn set_option(
+    pub fn option_value(
         &self,
-        session: &mut SessionOptions,
         id: &str,
         value: &Value,
-    ) -> Result<(), String> {
-        let option = session
+    ) -> Result<SessionConfigOptionValue, String> {
+        let option = self
             .options
             .iter()
             .find(|option| option.id.to_string() == id)
@@ -87,6 +48,72 @@ impl Connection {
             }
             _ => return Err("This agent setting uses an unsupported control.".into()),
         };
+        Ok(value)
+    }
+
+    pub fn values(&self) -> BTreeMap<String, Value> {
+        self.options
+            .iter()
+            .filter_map(|option| {
+                let value = match &option.kind {
+                    SessionConfigKind::Select(select) => {
+                        Value::from(select.current_value.to_string())
+                    }
+                    SessionConfigKind::Boolean(toggle) => Value::from(toggle.current_value),
+                    _ => return None,
+                };
+                Some((option.id.to_string(), value))
+            })
+            .collect()
+    }
+}
+
+impl Connection {
+    pub fn validate_directories(&self, config: &Config) -> Result<(), String> {
+        if !config.additional_directories.is_empty()
+            && self
+                .info
+                .agent_capabilities
+                .session_capabilities
+                .additional_directories
+                .is_none()
+        {
+            return Err("This agent does not advertise additional directory support.".into());
+        }
+        Ok(())
+    }
+
+    pub async fn options(&self, config: &Config) -> Result<SessionOptions, String> {
+        self.validate_directories(config)?;
+        let response = tokio::time::timeout(
+            Duration::from_secs(30),
+            self.peer
+                .send_request(
+                    NewSessionRequest::new(&config.directory)
+                        .additional_directories(config.additional_directories.clone())
+                        .meta(config.session_meta.clone()),
+                )
+                .block_task(),
+        )
+        .await
+        .map_err(|_| "The agent settings request timed out.".to_string())?
+        .map_err(failure)?;
+        let mut options = SessionOptions {
+            session: response.session_id.to_string(),
+            options: response.config_options.unwrap_or_default(),
+        };
+        self.apply_options(&mut options, &config.options).await?;
+        self.remember_options(&options).await;
+        Ok(options)
+    }
+
+    pub async fn set_option(
+        &self,
+        session: &mut SessionOptions,
+        id: &str,
+        value: &Value,
+    ) -> Result<(), String> {
+        let value = session.option_value(id, value)?;
         let response = tokio::time::timeout(
             Duration::from_secs(30),
             self.peer
@@ -101,6 +128,7 @@ impl Connection {
         .map_err(|_| "The agent settings request timed out.".to_string())?
         .map_err(failure)?;
         session.options = response.config_options;
+        self.remember_options(session).await;
         Ok(())
     }
 

@@ -1,6 +1,5 @@
 use super::*;
 use bevy::text::EditableText;
-use model::Unit;
 
 const PAGE_SIZE: usize = 20;
 
@@ -14,6 +13,7 @@ struct Input {
 struct Countdown {
     owner: Entity,
     uid: String,
+    schedule: String,
 }
 
 #[derive(Clone)]
@@ -23,7 +23,7 @@ pub(super) enum Command {
     Save,
     Cancel,
     Edit(String),
-    Unit(Unit),
+    Weekday(nucleus::karma::CivilWeekday),
     Delete(String),
     ConfirmDelete(String),
     CancelDelete,
@@ -80,9 +80,14 @@ impl Action for Command {
             Self::Cancel => {
                 world.get_mut::<FrequencyCastle>(owner).unwrap().draft = None;
             }
-            Self::Unit(unit) => {
+            Self::Weekday(day) => {
                 if let Some(draft) = &mut world.get_mut::<FrequencyCastle>(owner).unwrap().draft {
-                    draft.unit = *unit;
+                    if draft.weekdays.contains(day) {
+                        draft.weekdays.retain(|selected| selected != day);
+                    } else {
+                        draft.weekdays.push(*day);
+                        draft.weekdays.sort();
+                    }
                 }
             }
             Self::Delete(uid) => {
@@ -166,6 +171,59 @@ pub(super) fn button(
     crate::castle_feed::button(world, parent, owner, title, command);
 }
 
+pub(super) fn glyph(world: &mut World, parent: Entity, icon: crate::icons::Icon, size: f32) {
+    let image = crate::icons::image(world, icon).unwrap_or_default();
+    world.spawn((
+        image,
+        crate::token_style::TextToken(crate::tokens::Token::Ink),
+        Node {
+            width: px(size),
+            height: px(size),
+            flex_shrink: 0.0,
+            ..default()
+        },
+        Pickable::IGNORE,
+        ChildOf(parent),
+    ));
+}
+
+pub(super) fn icon_button(
+    world: &mut World,
+    parent: Entity,
+    owner: Entity,
+    icon: crate::icons::Icon,
+    title: &str,
+    command: Command,
+    size: f32,
+) {
+    let entity = world
+        .spawn((
+            crate::sand::button(0),
+            crate::sand::Square,
+            crate::sand::Borderless,
+            Node {
+                width: px(size),
+                height: px(size),
+                flex_shrink: 0.0,
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::Center,
+                ..default()
+            },
+            crate::actions::ActionButton::new(owner, crate::actions![command]),
+            crate::icons::Tooltip(title.into()),
+            ChildOf(parent),
+        ))
+        .id();
+    if let Some(mut node) = world.get_mut::<bevy::a11y::AccessibilityNode>(entity) {
+        node.set_label(title);
+    }
+    world.entity_mut(entity).insert((
+        crate::icons::InlineTooltip,
+        crate::icons::TooltipIcon { source: entity },
+    ));
+    glyph(world, entity, icon, size);
+}
+
 pub(super) fn input(
     world: &mut World,
     parent: Entity,
@@ -187,11 +245,6 @@ pub(super) fn input(
     world.entity_mut(entity).insert((
         Node {
             width: if index == 4 { px(230) } else { percent(100) },
-            margin: if index == 4 {
-                UiRect::left(Val::Auto)
-            } else {
-                UiRect::ZERO
-            },
             min_width: px(0),
             min_height: px(36),
             ..default()
@@ -219,6 +272,27 @@ fn clear(world: &mut World, parent: Entity) {
 }
 
 pub(super) fn render_form(world: &mut World, owner: Entity) {
+    let controls = world.get::<View>(owner).unwrap().controls;
+    clear(world, controls);
+    if let Some(draft) = world.get::<FrequencyCastle>(owner).unwrap().draft.as_ref() {
+        let title = if draft.uid.is_some() {
+            "Save"
+        } else {
+            "Create"
+        };
+        button(world, controls, owner, title, Command::Save);
+        button(world, controls, owner, "Cancel", Command::Cancel);
+    } else {
+        icon_button(
+            world,
+            controls,
+            owner,
+            crate::icons::Icon::Plus,
+            "New frequency",
+            Command::New,
+            22.0,
+        );
+    }
     let form = world.get::<View>(owner).unwrap().form;
     clear(world, form);
     let Some(draft) = world.get::<FrequencyCastle>(owner).unwrap().draft.clone() else {
@@ -234,19 +308,33 @@ pub(super) fn render_form(world: &mut World, owner: Entity) {
         },
         16.0,
     );
-    for (index, title) in [(0, "Slug"), (1, "Name")] {
+    for (index, title) in [(1, "Name"), (0, "Slug")] {
         input(world, form, owner, index, title, &draft.fields[index]);
     }
     if draft.cadence_editable {
-        input(world, form, owner, 2, "Every", &draft.fields[2]);
-        let units = row(world, form);
-        for unit in Unit::ALL {
-            let title = if unit == draft.unit {
-                format!("[{}]", unit.label())
+        input(
+            world,
+            form,
+            owner,
+            2,
+            "Every · e.g. 1 month + 1 day or 1 day + 10s + 100ms",
+            &draft.fields[2],
+        );
+        crate::edit_mode::label(
+            world,
+            form,
+            "Then move forward to · no selection means any weekday",
+            13.0,
+        );
+        let weekdays = row(world, form);
+        for day in super::interval::WEEKDAYS {
+            let label = super::interval::weekday_label(day);
+            let label = if draft.weekdays.contains(&day) {
+                format!("[{label}]")
             } else {
-                unit.label().into()
+                label.into()
             };
-            button(world, units, owner, &title, Command::Unit(unit));
+            button(world, weekdays, owner, &label, Command::Weekday(day));
         }
         let title = match draft.original.as_ref().map(|original| &original.cadence) {
             Some(nucleus::karma::FrequencyCadenceAst::Calendar { timezone, .. }) => {
@@ -263,9 +351,6 @@ pub(super) fn render_form(world: &mut World, owner: Entity) {
             12.0,
         );
     }
-    let controls = row(world, form);
-    button(world, controls, owner, "Save", Command::Save);
-    button(world, controls, owner, "Cancel", Command::Cancel);
 }
 
 pub(super) fn render_list(world: &mut World, owner: Entity) {
@@ -301,51 +386,72 @@ pub(super) fn render_list(world: &mut World, owner: Entity) {
     let now = chrono::Utc::now().timestamp_millis();
     for frequency in rows.iter().skip(page * PAGE_SIZE).take(PAGE_SIZE) {
         let block = stack(world, list);
-        crate::edit_mode::label(
+        let heading = row(world, block);
+        world.get_mut::<Node>(heading).unwrap().flex_wrap = FlexWrap::NoWrap;
+        let active = !frequency.quantity.is_zero();
+        let indicator = world
+            .spawn((
+                Node {
+                    width: px(17),
+                    height: px(17),
+                    flex_shrink: 0.0,
+                    border: UiRect::all(px(1.5)),
+                    border_radius: BorderRadius::all(percent(50)),
+                    ..default()
+                },
+                crate::token_style::border(crate::tokens::Token::Ink),
+                crate::icons::Tooltip(
+                    if active {
+                        "Active"
+                    } else {
+                        "Inactive · quantity 0"
+                    }
+                    .into(),
+                ),
+                ChildOf(heading),
+            ))
+            .id();
+        if active {
+            world
+                .entity_mut(indicator)
+                .insert(crate::token_style::background(crate::tokens::Token::Ink));
+        }
+        let name = crate::edit_mode::label(world, heading, &frequency.definition.purpose, 17.0);
+        let slug = crate::edit_mode::label(world, heading, &format!("@{}", frequency.slug), 17.0);
+        for label in [name, slug] {
+            world
+                .entity_mut(label)
+                .insert(TextLayout::linebreak(bevy::text::LineBreak::NoWrap));
+            let mut node = world.get_mut::<Node>(label).unwrap();
+            node.flex_shrink = 1.0;
+            node.min_width = px(0);
+            node.overflow = Overflow::clip();
+        }
+        icon_button(
             world,
-            block,
-            &format!("@{} · {}", frequency.slug, frequency.definition.purpose),
+            heading,
+            owner,
+            crate::icons::Icon::Pencil,
+            "Edit",
+            Command::Edit(frequency.uid.clone()),
             17.0,
         );
-        let unapplied = frequency
-            .active_revision_hash
-            .as_ref()
-            .is_some_and(|active| active != &frequency.head_revision_hash);
-        crate::edit_mode::label(
+        icon_button(
             world,
-            block,
-            &format!(
-                "{} · Saved: {}{}",
-                frequency.status,
-                model::schedule(frequency),
-                if unapplied {
-                    " · saved changes not yet running"
-                } else {
-                    ""
-                }
-            ),
-            13.0,
+            heading,
+            owner,
+            crate::icons::Icon::Delete,
+            "Delete",
+            Command::Delete(frequency.uid.clone()),
+            17.0,
         );
-        let countdown = crate::edit_mode::label(world, block, &model::next(frequency, now), 13.0);
+        let countdown =
+            crate::edit_mode::label(world, block, &model::details(frequency, now), 13.0);
         world.entity_mut(countdown).insert(Countdown {
             owner,
             uid: frequency.uid.clone(),
+            schedule: model::schedule(frequency),
         });
-        let controls = row(world, block);
-        button(
-            world,
-            controls,
-            owner,
-            "Edit",
-            Command::Edit(frequency.uid.clone()),
-        );
-        button(
-            world,
-            controls,
-            owner,
-            "Delete",
-            Command::Delete(frequency.uid.clone()),
-        );
         if deleting.as_ref() == Some(&frequency.uid) {
             crate::edit_mode::label(
                 world,
@@ -490,7 +596,11 @@ pub(super) fn tick(world: &mut World, mut wake_at: Local<Option<std::time::Insta
                 .find(|row| row.uid == countdown.uid)?;
             Some((
                 entity,
-                model::next(frequency, now),
+                format!(
+                    "{} | Next: {}",
+                    countdown.schedule,
+                    model::next(frequency, now)
+                ),
                 frequency.next_at_ms.is_some(),
             ))
         })

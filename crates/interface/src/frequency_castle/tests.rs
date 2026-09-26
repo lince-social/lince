@@ -1,12 +1,11 @@
 use super::*;
-use model::Unit;
 
 fn draft() -> Draft {
     let mut draft = Draft::default();
     draft.fields[0] = "weekly".into();
     draft.fields[1] = "Weekly allowance".into();
     draft.fields[3] = "2026-09-20T09:00:00-03:00".into();
-    draft.unit = Unit::Weeks;
+    draft.fields[2] = "1 week".into();
     draft
 }
 
@@ -17,6 +16,7 @@ fn frequency(draft: &Draft) -> Frequency {
         uid: "frequency-1".into(),
         slug: definition.slug.to_string(),
         status: "proven".into(),
+        quantity: nucleus::DecimalValue::from_mantissa(0, 0).unwrap(),
         handle_revision: 1,
         head_revision_hash: compiled.revision_hash,
         active_revision_hash: None,
@@ -35,7 +35,7 @@ fn simple_editor_preserves_exact_anchor_policies_and_identity() {
     let mut edit = Draft::edit(&row);
     assert!(edit.cadence_editable);
     assert_eq!(edit.definition().unwrap(), row.definition);
-    edit.fields[2] = "2".into();
+    edit.fields[2] = "2 weeks".into();
     let changed = edit.definition().unwrap();
     assert_eq!(changed.missed, row.definition.missed);
     assert_eq!(changed.slug, row.definition.slug);
@@ -46,7 +46,7 @@ fn simple_editor_preserves_exact_anchor_policies_and_identity() {
 #[test]
 fn calendar_definitions_round_trip_without_flattening() {
     let mut draft = draft();
-    draft.unit = Unit::Months;
+    draft.fields[2] = "1 month".into();
     let row = frequency(&draft);
     let edit = Draft::edit(&row);
     assert!(edit.cadence_editable);
@@ -75,7 +75,18 @@ fn calendar_definitions_round_trip_without_flattening() {
 
 #[test]
 fn malformed_zero_fractional_and_oversized_inputs_do_not_create_schedules() {
-    for value in ["0", "-1", "1.5", "4294967296", "text"] {
+    for value in [
+        "0 days",
+        "-1 day",
+        "1.5 seconds",
+        "4294967296ms",
+        "text",
+        "1 day +",
+        "1 day + 0s",
+        "4294967295ms + 1ms",
+        "1 day + 2",
+        "1 day + 🐈",
+    ] {
         let mut draft = draft();
         draft.fields[2] = value.into();
         assert!(draft.definition().is_err());
@@ -86,6 +97,83 @@ fn malformed_zero_fractional_and_oversized_inputs_do_not_create_schedules() {
     draft.fields[3] = "x".repeat(32_769);
     assert!(!draft.valid());
     assert!(draft.definition().is_err());
+}
+
+#[test]
+fn combined_intervals_round_trip_and_keep_subsecond_precision() {
+    for (text, expected) in [
+        (
+            "1 month + 1 day",
+            nucleus::karma::CadenceStep {
+                months: 1,
+                days: 1,
+                ..default()
+            },
+        ),
+        (
+            "1 second + 100ms",
+            nucleus::karma::CadenceStep {
+                seconds: 1,
+                milliseconds: 100,
+                ..default()
+            },
+        ),
+        (
+            "1 day + 10s + 100ms",
+            nucleus::karma::CadenceStep {
+                days: 1,
+                seconds: 10,
+                milliseconds: 100,
+                ..default()
+            },
+        ),
+    ] {
+        assert_eq!(super::interval::parse(text).unwrap(), expected);
+        let mut draft = draft();
+        draft.fields[2] = text.into();
+        let row = frequency(&draft);
+        let edit = Draft::edit(&row);
+        assert!(edit.cadence_editable);
+        assert_eq!(edit.definition().unwrap(), row.definition);
+        assert_eq!(super::interval::parse(&edit.fields[2]).unwrap(), expected);
+        let restored: Draft = serde_json::from_str(&serde_json::to_string(&edit).unwrap()).unwrap();
+        assert_eq!(restored, edit);
+    }
+}
+
+#[test]
+fn weekdays_apply_after_all_time_components_and_survive_edits() {
+    let mut draft = draft();
+    draft.fields[2] = "1 month + 1 day + 10s + 100ms".into();
+    draft.fields[3] = "2026-01-01T23:59:55Z".into();
+    draft.weekdays = vec![nucleus::karma::CivilWeekday::Monday];
+    let row = frequency(&draft);
+    let compiled = row.definition.compile(&Default::default()).unwrap();
+    let nucleus::karma::CompiledSchedule::Calendar { schedule } = compiled.schedule else {
+        panic!("expected calendar");
+    };
+    let anchor = chrono::DateTime::parse_from_rfc3339(&draft.fields[3])
+        .unwrap()
+        .to_utc();
+    let until = chrono::DateTime::parse_from_rfc3339("2026-02-10T00:00:00Z")
+        .unwrap()
+        .to_utc();
+    let dates = schedule
+        .cadence
+        .between(anchor, anchor, until)
+        .unwrap()
+        .dates;
+    assert_eq!(
+        dates[1].to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
+        "2026-02-09T00:00:05.100Z"
+    );
+    let mut edit = Draft::edit(&row);
+    assert_eq!(edit.weekdays, draft.weekdays);
+    edit.fields[1] = "New name".into();
+    assert_eq!(edit.definition().unwrap().cadence, row.definition.cadence);
+    edit.weekdays.clear();
+    assert_ne!(edit.definition().unwrap().cadence, row.definition.cadence);
+    assert!(model::schedule(&row).contains("then Mon"));
 }
 
 #[test]
@@ -190,6 +278,71 @@ fn header_is_compact_and_live_dates_do_not_overwrite_user_edits() {
         "×",
     ] {
         assert!(!labels.contains(&removed));
+    }
+}
+
+#[test]
+fn rows_keep_indicator_name_slug_and_icons_on_one_line() {
+    let mut app = app();
+    let world = app.world_mut();
+    let root = world.spawn(crate::workspace::Workspaces::default()).id();
+    let owner = spawn(world, root, 1, DVec2::ZERO, FrequencyCastle::default());
+    let header = world.get::<Children>(owner).unwrap()[0];
+    let controls = world.get::<Children>(header).unwrap()[1];
+    let add = world.get::<Children>(controls).unwrap()[0];
+    let add_node = world.get::<Node>(add).unwrap();
+    assert_eq!(add_node.height, px(22));
+    assert_eq!(add_node.justify_content, JustifyContent::Center);
+    let search = world.get::<Children>(header).unwrap()[2];
+    assert_eq!(world.get::<Children>(search).unwrap().len(), 2);
+    let mut row = frequency(&draft());
+    for quantity in [0, 1] {
+        let previous = row.clone();
+        row.quantity = nucleus::DecimalValue::from_mantissa(0, quantity).unwrap();
+        if quantity == 1 {
+            assert!(!previous.same_layout(&row));
+        }
+        world.get_mut::<View>(owner).unwrap().rows = vec![row.clone()];
+        ui::render_list(world, owner);
+        let list = world.get::<View>(owner).unwrap().list;
+        let block = world.get::<Children>(list).unwrap()[0];
+        let lines = world.get::<Children>(block).unwrap();
+        assert_eq!(lines.len(), 2);
+        let heading = lines[0];
+        let details = lines[1];
+        assert_eq!(
+            world.get::<Node>(heading).unwrap().flex_wrap,
+            FlexWrap::NoWrap
+        );
+        let children = world.get::<Children>(heading).unwrap();
+        assert_eq!(children.len(), 5);
+        let indicator = children[0];
+        assert_eq!(world.get::<Node>(indicator).unwrap().height, px(17));
+        assert_eq!(
+            !world
+                .get::<BackgroundColor>(indicator)
+                .unwrap()
+                .0
+                .is_fully_transparent(),
+            quantity != 0
+        );
+        assert_eq!(
+            world.get::<Text>(children[1]).unwrap().0,
+            "Weekly allowance"
+        );
+        assert_eq!(world.get::<Text>(children[2]).unwrap().0, "@weekly");
+        for icon in [children[3], children[4]] {
+            assert_eq!(world.get::<Node>(icon).unwrap().height, px(17));
+            assert!(world.get::<crate::actions::ActionButton>(icon).is_some());
+        }
+        assert!(
+            world
+                .get::<Text>(details)
+                .unwrap()
+                .0
+                .starts_with("Every 1 week | Next: ")
+        );
+        assert!(!world.get::<Text>(details).unwrap().0.contains("Saved:"));
     }
 }
 
@@ -307,7 +460,7 @@ async fn native_castle_creates_edits_reads_and_confirms_deletion_through_cell() 
         engine: engine.clone(),
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
         wire: Default::default(),
-        fiote: None,
+        fiote: None, speech: None,
         information: None,
     };
     let mut app = app();
@@ -327,10 +480,14 @@ async fn native_castle_creates_edits_reads_and_confirms_deletion_through_cell() 
     );
     until(&mut app, |world| world.get::<View>(owner).unwrap().ready).await;
     ui::Command::New.apply(app.world_mut(), owner);
+    let mut combined = draft();
+    combined.fields[2] = "1 month + 1 day + 10s + 100ms".into();
+    combined.weekdays = vec![nucleus::karma::CivilWeekday::Monday];
+    let expected = combined.definition().unwrap();
     app.world_mut()
         .get_mut::<FrequencyCastle>(owner)
         .unwrap()
-        .draft = Some(draft());
+        .draft = Some(combined);
     ui::render_form(app.world_mut(), owner);
     ui::Command::Save.apply(app.world_mut(), owner);
     until(&mut app, |world| {
@@ -338,6 +495,10 @@ async fn native_castle_creates_edits_reads_and_confirms_deletion_through_cell() 
             && world.get::<FrequencyCastle>(owner).unwrap().draft.is_none()
     })
     .await;
+    assert_eq!(
+        app.world().get::<View>(owner).unwrap().rows[0].definition,
+        expected
+    );
     let uid = app.world().get::<View>(owner).unwrap().rows[0].uid.clone();
     ui::Command::Edit(uid.clone()).apply(app.world_mut(), owner);
     app.world_mut()
@@ -383,4 +544,30 @@ async fn until(app: &mut App, predicate: impl Fn(&World) -> bool) {
     })
     .await
     .unwrap();
+}
+
+#[test]
+fn creation_controls_replace_the_plus_only_in_the_header() {
+    let mut app = app();
+    let world = app.world_mut();
+    let root = world.spawn(crate::workspace::Workspaces::default()).id();
+    let owner = spawn(world, root, 1, DVec2::ZERO, FrequencyCastle::default());
+    let controls = world.get::<View>(owner).unwrap().controls;
+    assert_eq!(world.get::<Children>(controls).unwrap().len(), 1);
+    ui::Command::New.apply(world, owner);
+    let buttons = world.get::<Children>(controls).unwrap();
+    assert_eq!(buttons.len(), 2);
+    let create = world.get::<Children>(buttons[0]).unwrap()[0];
+    assert_eq!(world.get::<Text>(create).unwrap().0, "Create");
+    let form = world.get::<View>(owner).unwrap().form;
+    assert!(
+        world
+            .get::<Children>(form)
+            .unwrap()
+            .iter()
+            .all(|child| world.get::<crate::actions::ActionButton>(child).is_none())
+    );
+    ui::Command::Cancel.apply(world, owner);
+    assert!(world.get::<FrequencyCastle>(owner).unwrap().draft.is_none());
+    assert_eq!(world.get::<Children>(controls).unwrap().len(), 1);
 }

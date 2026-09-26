@@ -18,3 +18,5 @@ pub use {
     supervisor::Supervisor,
 };
 pub mod acp;
+
+pub mod speech;

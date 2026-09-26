@@ -77,7 +77,15 @@ pub(crate) async fn execute(
                 field.source = consequence.as_text();
             }
         }
-        rows.push(json!({"uid": rule.uid, "record": rule.record_uid, "fields": fields, "revision": rule.revision, "state": rule.state}));
+        let identity = store::karma_fields::identity(&store.pool, &rule.uid).await?;
+        let name = identity
+            .as_ref()
+            .map_or("Karma rule", |identity| identity.name.as_str());
+        let fallback_slug = rule.uid.to_ascii_lowercase().replace('_', "-");
+        let slug = identity
+            .as_ref()
+            .map_or(fallback_slug.as_str(), |identity| identity.slug.as_str());
+        rows.push(json!({"name": name, "slug": slug, "uid": rule.uid, "record": rule.record_uid, "fields": fields, "revision": rule.revision, "state": rule.state}));
         if query
             .limit
             .is_some_and(|limit| rows.len() >= limit as usize)

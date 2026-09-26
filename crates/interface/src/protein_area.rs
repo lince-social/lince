@@ -772,7 +772,7 @@ pub fn execute(
         return Err("Wait for pending changes".into());
     }
     let target = match &action {
-        engine::actions::Action::DeleteRecord { target } => {
+        engine::actions::Action::DeleteRecord { target } | engine::actions::Action::SetExtension { target, namespace: _, .. } if matches!(&action, engine::actions::Action::DeleteRecord { .. }) || matches!(&action, engine::actions::Action::SetExtension { namespace, .. } if namespace == "lince.message-content") => {
             let attached = state
                 .data
                 .iter()

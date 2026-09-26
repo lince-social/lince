@@ -1,6 +1,5 @@
 use nucleus::karma::{
-    Cadence, CadenceStep, CanonicalHash, DurationBinding, FrequencyAst, FrequencyCadenceAst, Slug,
-    TimestampMs,
+    Cadence, CanonicalHash, DurationBinding, FrequencyAst, FrequencyCadenceAst, Slug, TimestampMs,
 };
 use serde::{Deserialize, Serialize};
 
@@ -9,6 +8,7 @@ pub struct Frequency {
     pub uid: String,
     pub slug: String,
     pub status: String,
+    pub quantity: nucleus::DecimalValue,
     pub handle_revision: u64,
     pub head_revision_hash: CanonicalHash,
     pub active_revision_hash: Option<CanonicalHash>,
@@ -29,6 +29,7 @@ impl Frequency {
         self.uid == other.uid
             && self.slug == other.slug
             && self.status == other.status
+            && self.quantity == other.quantity
             && self.handle_revision == other.handle_revision
             && self.head_revision_hash == other.head_revision_hash
             && self.active_revision_hash == other.active_revision_hash
@@ -51,17 +52,6 @@ pub enum Unit {
 }
 
 impl Unit {
-    pub const ALL: [Self; 8] = [
-        Self::Milliseconds,
-        Self::Seconds,
-        Self::Minutes,
-        Self::Hours,
-        Self::Days,
-        Self::Weeks,
-        Self::Months,
-        Self::Years,
-    ];
-
     pub fn label(self) -> &'static str {
         match self {
             Self::Milliseconds => "ms",
@@ -74,21 +64,6 @@ impl Unit {
             Self::Years => "years",
         }
     }
-
-    fn step(self, count: u32) -> CadenceStep {
-        let mut step = CadenceStep::default();
-        *match self {
-            Self::Milliseconds => &mut step.milliseconds,
-            Self::Seconds => &mut step.seconds,
-            Self::Minutes => &mut step.minutes,
-            Self::Hours => &mut step.hours,
-            Self::Days => &mut step.days,
-            Self::Weeks => &mut step.weeks,
-            Self::Months => &mut step.months,
-            Self::Years => &mut step.years,
-        } = count;
-        step
-    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
@@ -97,10 +72,10 @@ pub struct Draft {
     pub revision: Option<u64>,
     pub original: Option<FrequencyAst>,
     pub fields: [String; 4],
-    pub unit: Unit,
     pub original_fields: Option<[String; 4]>,
-    pub original_unit: Option<Unit>,
     pub cadence_editable: bool,
+    pub weekdays: Vec<nucleus::karma::CivilWeekday>,
+    pub original_weekdays: Vec<nucleus::karma::CivilWeekday>,
 }
 
 impl Default for Draft {
@@ -112,13 +87,13 @@ impl Default for Draft {
             fields: [
                 String::new(),
                 String::new(),
-                "1".into(),
+                "1 minute".into(),
                 chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true),
             ],
-            unit: Unit::Minutes,
             original_fields: None,
-            original_unit: None,
             cadence_editable: true,
+            weekdays: Vec::new(),
+            original_weekdays: Vec::new(),
         }
     }
 }
@@ -139,62 +114,39 @@ impl Draft {
             anchor,
         } = &row.definition.cadence
         {
-            for (unit, divisor) in [
-                (Unit::Weeks, 604_800_000),
-                (Unit::Days, 86_400_000),
-                (Unit::Hours, 3_600_000),
-                (Unit::Minutes, 60_000),
-                (Unit::Seconds, 1000),
-                (Unit::Milliseconds, 1),
-            ] {
-                if value.get() % divisor == 0 && u32::try_from(value.get() / divisor).is_ok() {
-                    draft.unit = unit;
-                    draft.fields[2] = (value.get() / divisor).to_string();
-                    draft.fields[3] = chrono::DateTime::from_timestamp_millis(
-                        row.next_at_ms.unwrap_or(anchor.as_millis()),
-                    )
-                    .unwrap()
-                    .to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
-                    draft.cadence_editable = true;
-                    break;
-                }
-            }
+            draft.fields[2] = super::interval::elapsed(value.get());
+            draft.fields[3] = chrono::DateTime::from_timestamp_millis(
+                row.next_at_ms.unwrap_or(anchor.as_millis()),
+            )
+            .unwrap()
+            .to_rfc3339_opts(chrono::SecondsFormat::Millis, true);
+            draft.cadence_editable = super::interval::parse(&draft.fields[2]).is_ok();
         }
         if let Ok(compiled) = row.definition.compile(&Default::default())
             && let nucleus::karma::CompiledSchedule::Calendar { schedule } = compiled.schedule
         {
             let step = schedule.cadence.every;
-            let components = [
-                (Unit::Years, step.years),
-                (Unit::Months, step.months),
-                (Unit::Weeks, step.weeks),
-                (Unit::Days, step.days),
-                (Unit::Hours, step.hours),
-                (Unit::Minutes, step.minutes),
-                (Unit::Seconds, step.seconds),
-                (Unit::Milliseconds, step.milliseconds),
-            ];
-            let nonzero: Vec<_> = components
-                .into_iter()
-                .filter(|(_, count)| *count > 0)
-                .collect();
-            if let [(unit, count)] = nonzero.as_slice() {
-                draft.unit = *unit;
-                draft.fields[2] = count.to_string();
-                draft.fields[3] = schedule.anchor.to_string();
-                if let Some(next) = &row.next_local {
-                    draft.fields[3] = next.clone();
-                }
-                draft.cadence_editable = true;
-            }
+            draft.fields[2] = super::interval::describe(step);
+            draft.fields[3] = row
+                .next_local
+                .clone()
+                .unwrap_or_else(|| schedule.anchor.to_string());
+            draft.weekdays = schedule
+                .cadence
+                .land_on
+                .as_ref()
+                .map(|days| days.iter().collect())
+                .unwrap_or_default();
+            draft.cadence_editable = row.definition.parameters.is_empty();
         }
         draft.original_fields = Some(draft.fields.clone());
-        draft.original_unit = Some(draft.unit);
+        draft.original_weekdays = draft.weekdays.clone();
         draft
     }
 
     pub fn valid(&self) -> bool {
-        self.fields.iter().all(|field| field.len() <= 32_768)
+        self.weekdays.len() <= 7
+            && self.fields.iter().all(|field| field.len() <= 32_768)
             && self.uid.as_ref().is_none_or(|uid| uid.len() <= 256)
             && self.uid.is_some() == self.revision.is_some()
     }
@@ -206,18 +158,12 @@ impl Draft {
         let frequency = {
             let slug = Slug::new(self.fields[0].trim().trim_start_matches('@'))
                 .map_err(|error| error.to_string())?;
-            let count = self.fields[2]
-                .trim()
-                .parse::<u32>()
-                .ok()
-                .filter(|count| *count > 0)
-                .ok_or("Every must be a positive whole number")?;
             if let Some(original) = &self.original
                 && self
                     .original_fields
                     .as_ref()
                     .is_some_and(|fields| fields[2..] == self.fields[2..])
-                && self.original_unit == Some(self.unit)
+                && self.original_weekdays == self.weekdays
             {
                 let mut edited = original.clone();
                 if slug != original.slug {
@@ -228,6 +174,15 @@ impl Draft {
                 edited.purpose = self.fields[1].trim().into();
                 return Ok(edited);
             }
+            let step = super::interval::parse(&self.fields[2])?;
+            let land_on = if self.weekdays.is_empty() {
+                None
+            } else {
+                Some(
+                    nucleus::karma::WeekdaySet::new(self.weekdays.iter().copied())
+                        .map_err(|error| error.to_string())?,
+                )
+            };
             if let Some(original) = &self.original
                 && let FrequencyCadenceAst::Calendar { cadence, .. } = &original.cadence
             {
@@ -239,7 +194,7 @@ impl Draft {
                 }
                 edited.purpose = self.fields[1].trim().into();
                 let mut cadence = cadence.clone();
-                let step = self.unit.step(count);
+                cadence.land_on = land_on.clone();
                 let binding = |count| {
                     std::num::NonZeroU32::new(count)
                         .map(|value| nucleus::karma::PositiveIntegerBinding::Literal { value })
@@ -276,7 +231,10 @@ impl Draft {
             let fresh = nucleus::karma::simple_frequency::frequency_from_cadence(
                 slug.clone(),
                 self.fields[1].trim().to_string(),
-                &Cadence::every(self.unit.step(count)),
+                &Cadence {
+                    land_on,
+                    ..Cadence::every(step)
+                },
                 anchor,
             )
             .map_err(|error| error.to_string())?;
@@ -308,25 +266,32 @@ pub fn schedule(frequency: &Frequency) -> String {
     match &frequency.definition.cadence {
         FrequencyCadenceAst::Elapsed { interval, .. } => match interval {
             DurationBinding::Literal { value } => {
-                for (unit, divisor) in [
-                    ("weeks", 604_800_000),
-                    ("days", 86_400_000),
-                    ("hours", 3_600_000),
-                    ("minutes", 60_000),
-                    ("seconds", 1000),
-                ] {
-                    if value.get() % divisor == 0 {
-                        return format!("Every {} {unit}", value.get() / divisor);
-                    }
-                }
-                format!("Every {} ms", value.get())
+                format!("Every {}", super::interval::elapsed(value.get()))
             }
             DurationBinding::Parameter { parameter } => format!("Every ${}", parameter.as_str()),
         },
         FrequencyCadenceAst::Calendar { timezone, .. } => {
-            format!("Calendar · {}", timezone.as_str())
+            if let Ok(compiled) = frequency.definition.compile(&Default::default())
+                && let nucleus::karma::CompiledSchedule::Calendar { schedule } = compiled.schedule
+            {
+                let mut label = format!(
+                    "Every {}",
+                    super::interval::describe(schedule.cadence.every)
+                );
+                if let Some(days) = schedule.cadence.land_on {
+                    let days: Vec<_> = days.iter().map(super::interval::weekday_label).collect();
+                    label.push_str(&format!(" · then {}", days.join(", ")));
+                }
+                format!("{label} · {}", timezone.as_str())
+            } else {
+                format!("Calendar · {}", timezone.as_str())
+            }
         }
     }
+}
+
+pub fn details(frequency: &Frequency, now: i64) -> String {
+    format!("{} | Next: {}", schedule(frequency), next(frequency, now))
 }
 
 pub fn next(frequency: &Frequency, now: i64) -> String {

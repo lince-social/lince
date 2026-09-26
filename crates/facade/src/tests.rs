@@ -41,7 +41,7 @@ async fn fixture() -> State {
             engine,
             lanes: Arc::new(cell::LaneHub::new()),
             wire: Arc::new(tokio::sync::RwLock::new(None)),
-            fiote: None,
+            fiote: None, speech: None,
             information: None,
         },
         auth: Arc::new(auth::Auth::default()),
@@ -186,6 +186,7 @@ async fn visibility_and_read_filters_gate_details_comments_and_writes() {
         .engine
         .act(
             Action::CreateMessage {
+                content: Vec::new(),
                 thread,
                 body: "Hidden comment".into(),
                 author: None,
@@ -864,6 +865,7 @@ async fn backend_comment_access_does_not_depend_on_browser_selection() {
         .created
         .unwrap();
     let comment = Action::CreateMessage {
+        content: Vec::new(),
         thread: thread.clone(),
         body: "A comment".into(),
         author: None,
@@ -1275,6 +1277,7 @@ async fn tagged_creation_is_visible_immediately_and_invalid_drafts_leave_no_reco
         .created
         .unwrap();
     let comment = Action::CreateMessage {
+        content: Vec::new(),
         thread,
         body: "Visible comment".into(),
         author: None,

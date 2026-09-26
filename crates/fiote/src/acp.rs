@@ -15,8 +15,18 @@ use std::{
 };
 use tokio::sync::{Mutex, mpsc, oneshot, watch};
 
+mod check;
+mod content;
+mod launch;
 mod options;
+mod questions;
+mod state;
+pub mod terminal;
+pub use agent_client_protocol::schema::v1::{AuthMethod, AuthMethodTerminal};
+pub use check::ConnectionCheck;
 pub use options::SessionOptions;
+pub use questions::{Answer, QuestionRequest};
+pub use state::SessionState;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Config {
@@ -25,6 +35,8 @@ pub struct Config {
     pub command: PathBuf,
     pub args: Vec<String>,
     pub directory: PathBuf,
+    #[serde(default)]
+    pub additional_directories: Vec<PathBuf>,
     #[serde(default)]
     pub environment: BTreeMap<String, String>,
     #[serde(default)]
@@ -61,6 +73,23 @@ impl Config {
             .directory
             .canonicalize()
             .map_err(|error| error.to_string())?;
+        if self.additional_directories.len() > 16 {
+            return Err("Choose at most 16 additional directories.".into());
+        }
+        let mut directories = Vec::new();
+        for path in &self.additional_directories {
+            if !path.is_absolute() || !path.is_dir() {
+                return Err(
+                    "Additional directories must exist on the agent machine and use full paths."
+                        .into(),
+                );
+            }
+            let path = path.canonicalize().map_err(|error| error.to_string())?;
+            if path != self.directory && !directories.contains(&path) {
+                directories.push(path);
+            }
+        }
+        self.additional_directories = directories;
         if serde_json::to_vec(self)
             .map_err(|error| error.to_string())?
             .len()
@@ -88,8 +117,14 @@ pub struct Choice {
 
 #[async_trait::async_trait]
 pub trait Output: crate::provider::TextOutput {
+    async fn question(&self, _question: QuestionRequest) -> Result<Answer, String> {
+        Ok(Answer::Cancel)
+    }
     async fn activity(&self, value: Value) -> Result<(), String>;
     async fn permission(&self, request: Permission) -> Result<Option<String>, String>;
+    async fn content(&self, _part: nucleus::message::MessagePart) -> Result<(), String> {
+        Err("This output does not support rich agent replies.".into())
+    }
 }
 
 #[derive(Default)]
@@ -100,6 +135,7 @@ struct Buffer {
 }
 
 enum Event {
+    Question(QuestionRequest, oneshot::Sender<CreateElicitationResponse>),
     Update(SessionNotification),
     Permission(
         RequestPermissionRequest,
@@ -108,6 +144,7 @@ enum Event {
 }
 
 pub struct Connection {
+    questions: questions::Questions,
     peer: ConnectionTo<Agent>,
     pub info: InitializeResponse,
     events: Mutex<mpsc::Receiver<Event>>,
@@ -115,6 +152,7 @@ pub struct Connection {
     closed: watch::Sender<bool>,
     active: Arc<AtomicBool>,
     pub login_notice: Arc<Mutex<Option<Value>>>,
+    states: Arc<Mutex<BTreeMap<String, SessionState>>>,
 }
 
 struct Task(tokio::task::JoinHandle<()>);
@@ -153,21 +191,47 @@ fn failure(error: impl std::fmt::Display) -> String {
 }
 
 impl Connection {
+    pub async fn logout(&self) -> Result<(), String> {
+        if self.info.agent_capabilities.auth.logout.is_none() {
+            return Err(
+                "This agent does not advertise logout. Use its account settings to sign out."
+                    .into(),
+            );
+        }
+        tokio::time::timeout(
+            Duration::from_secs(30),
+            self.peer.send_request(LogoutRequest::new()).block_task(),
+        )
+        .await
+        .map_err(|_| "Agent logout timed out.".to_string())?
+        .map_err(failure)?;
+        Ok(())
+    }
     pub async fn open(config: &Config) -> Result<Arc<Self>, String> {
+        let mut config = config.clone();
+        config.validate()?;
+        let command = launch::resolve(&config)?;
         let agent = AcpAgent::new(
-            AcpAgentConfig::new(&config.command)
+            AcpAgentConfig::new(command)
                 .args(config.args.clone())
                 .envs(config.environment.clone()),
         );
         let (events, receiver) = mpsc::channel(256);
         let notices = events.clone();
+        let question_events = events.clone();
         let (ready, initialized) = oneshot::channel();
         let (closed, mut closing) = watch::channel(false);
         let active = Arc::new(AtomicBool::new(false));
         let receive_updates = active.clone();
         let receive_permissions = active.clone();
+        let receive_questions = active.clone();
+        let questions = questions::Questions::default();
+        let question_updates = questions.clone();
+        let question_closed = closed.subscribe();
         let login_notice = Arc::new(Mutex::new(None));
         let login_updates = login_notice.clone();
+        let states = Arc::new(Mutex::new(BTreeMap::<String, SessionState>::new()));
+        let state_updates = states.clone();
         let task = Task(tokio::spawn(async move {
             let ready = Arc::new(std::sync::Mutex::new(Some(ready)));
             let setup = ready.clone();
@@ -183,14 +247,25 @@ impl Connection {
                             }
                             return Ok(());
                         }
-                        if message.method() != "session/update"
-                            || !receive_updates.load(Ordering::Acquire)
-                        {
+                        if message.method() != "session/update" {
                             return Ok(());
+                        }
+                        if message.params().to_string().len() > 8 * 1024 * 1024 {
+                            return Err(agent_client_protocol::Error::invalid_params());
                         }
                         let notice: SessionNotification =
                             serde_json::from_value(message.params().clone())
                                 .map_err(|_| agent_client_protocol::Error::invalid_params())?;
+                        {
+                            let mut states = state_updates.lock().await;
+                            let id = notice.session_id.to_string();
+                            if states.len() < 16 || states.contains_key(&id) {
+                                states.entry(id).or_default().update(&notice.update);
+                            }
+                        }
+                        if !receive_updates.load(Ordering::Acquire) {
+                            return Ok(());
+                        }
                         notices
                             .send(Event::Update(notice))
                             .await
@@ -214,6 +289,20 @@ impl Connection {
                     },
                     agent_client_protocol::on_receive_request!(),
                 )
+                .on_receive_request(
+                    async move |request: CreateElicitationRequest, responder, _cx| {
+                        let response = questions::receive(
+                            request,
+                            &question_events,
+                            &receive_questions,
+                            &question_updates,
+                            question_closed.clone(),
+                        )
+                        .await?;
+                        responder.respond(response)
+                    },
+                    agent_client_protocol::on_receive_request!(),
+                )
                 .connect_with(agent, move |peer: ConnectionTo<Agent>| async move {
                     let info =
                         peer
@@ -221,6 +310,12 @@ impl Connection {
                                 InitializeRequest::new(ProtocolVersion::V1)
                                     .client_capabilities(
                                         ClientCapabilities::new()
+                                            .auth(AuthCapabilities::new().terminal(true))
+                                            .elicitation(
+                                                ElicitationCapabilities::new()
+                                                    .form(ElicitationFormCapabilities::new())
+                                                    .url(ElicitationUrlCapabilities::new()),
+                                            )
                                             .session(
                                                 ClientSessionCapabilities::new().config_options(
                                                     SessionConfigOptionsCapabilities::new()
@@ -262,12 +357,14 @@ impl Connection {
         match tokio::time::timeout(Duration::from_secs(30), initialized).await {
             Ok(Ok(Ok((peer, info)))) => Ok(Arc::new(Self {
                 peer,
+                questions,
                 info,
                 events: Mutex::new(receiver),
                 task,
                 closed,
                 active,
                 login_notice,
+                states,
             })),
             result => {
                 task.0.abort();
@@ -317,6 +414,7 @@ impl Connection {
         server: crate::config::ToolConnection,
         previous: Option<&str>,
     ) -> Result<String, String> {
+        self.validate_directories(config)?;
         if !self.info.agent_capabilities.mcp_capabilities.http {
             return Err(
                 "This agent does not advertise HTTP MCP support for Lince's native tools.".into(),
@@ -335,6 +433,7 @@ impl Connection {
                 .peer
                 .send_request(
                     LoadSessionRequest::new(previous.to_string(), &config.directory)
+                        .additional_directories(config.additional_directories.clone())
                         .mcp_servers(mcp),
                 )
                 .block_task()
@@ -349,6 +448,7 @@ impl Connection {
                 .peer
                 .send_request(
                     NewSessionRequest::new(&config.directory)
+                        .additional_directories(config.additional_directories.clone())
                         .mcp_servers(mcp)
                         .meta(config.session_meta.clone()),
                 )
@@ -360,14 +460,13 @@ impl Connection {
                 response.config_options.unwrap_or_default(),
             )
         };
-        self.apply_options(
-            &mut SessionOptions {
-                session: id.clone(),
-                options,
-            },
-            &config.options,
-        )
-        .await?;
+        let mut session_options = SessionOptions {
+            session: id.clone(),
+            options,
+        };
+        self.apply_options(&mut session_options, &config.options)
+            .await?;
+        self.remember_options(&session_options).await;
         let mut events = self.events.lock().await;
         while let Ok(event) = events.try_recv() {
             if let Event::Permission(_, reply) = event {
@@ -391,7 +490,14 @@ impl Connection {
                 "This conversation exceeds the agent context limit. Start a new thread.".into(),
             );
         }
-        let result = self.run_prompt(session, prompt, output, &mut stop).await;
+        let result = self
+            .run_prompt(
+                session,
+                vec![ContentBlock::Text(TextContent::new(prompt))],
+                output,
+                &mut stop,
+            )
+            .await;
         if result.is_err() {
             self.close();
         }
@@ -401,7 +507,7 @@ impl Connection {
     async fn run_prompt(
         &self,
         session: &str,
-        prompt: String,
+        prompt: Vec<ContentBlock>,
         output: &dyn Output,
         stop: &mut watch::Receiver<bool>,
     ) -> Result<String, String> {
@@ -413,10 +519,7 @@ impl Connection {
         let _active = Active(self.active.clone());
         let response = self
             .peer
-            .send_request(PromptRequest::new(
-                session.to_string(),
-                vec![ContentBlock::Text(TextContent::new(prompt))],
-            ))
+            .send_request(PromptRequest::new(session.to_string(), prompt))
             .block_task();
         tokio::pin!(response);
         let mut buffer = Buffer::default();
@@ -490,6 +593,8 @@ impl Connection {
                             }
                             buffer.text.push_str(&chunk.text);
                             buffer.dirty = true;
+                        } else {
+                            output.content(content::from_agent(chunk.content)?).await?;
                         }
                     }
                     update => {
@@ -502,6 +607,21 @@ impl Connection {
                             .await?
                     }
                 }
+            }
+            Event::Question(request, reply) => {
+                if request.session.as_deref() != Some(session) {
+                    let _ = reply.send(CreateElicitationResponse::new(ElicitationAction::Cancel));
+                    return Ok(());
+                }
+                if buffer.dirty {
+                    output.update(&buffer.text).await?;
+                    buffer.dirty = false;
+                }
+                let answer = tokio::select! {
+                    _ = cancelled(stop) => Answer::Cancel,
+                    result = output.question(request.clone()) => result?,
+                };
+                let _ = reply.send(request.response(answer)?);
             }
             Event::Permission(request, reply) => {
                 if request.session_id.to_string() != session {

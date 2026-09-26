@@ -4,6 +4,327 @@ use serde_json::json;
 use transport::{ClientMessage, LaneHub, ServerMessage, Session};
 
 #[tokio::test]
+#[ignore = "Requires LINCE_TEST_AGENT_BIN pointing to lince-acp-test-agent; uses no model"]
+async fn agent_login_check_and_conversation_workflow() {
+    let (host, _, root, record, thread) = fixture(false).await;
+    let log = root.path().join("requests.log");
+    let config = serde_json::from_value(json!({
+        "command":std::env::var("LINCE_TEST_AGENT_BIN").unwrap(),"args":[],"directory":root.path(),
+        "environment":{"TEST_GOOSE":"1","TEST_HOST_WORKFLOW":"1","TEST_LOGIN_STATE":root.path().join("login"),"TEST_REQUEST_LOG":log}
+    })).unwrap();
+    let status = host
+        .handle(Request::AgentDiscover {
+            record: record.clone(),
+            config,
+        })
+        .await
+        .unwrap();
+    assert_eq!(
+        status.agent_info.unwrap()["providers"][0]["providerId"],
+        "one"
+    );
+    host.handle(Request::AgentProvider {
+        record: record.clone(),
+        provider: "one".into(),
+    })
+    .await
+    .unwrap();
+    host.handle(Request::AgentProviderLogin {
+        record: record.clone(),
+        fields: Secret("{}".into()),
+        password: None,
+    })
+    .await
+    .unwrap();
+    tokio::time::timeout(std::time::Duration::from_secs(10), async {
+        while host.agents.info(&record).await.unwrap()["loginPending"] == true {
+            tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+        }
+    })
+    .await
+    .unwrap();
+    assert!(
+        host.agents.info(&record).await.unwrap()["loginResult"]
+            .as_str()
+            .unwrap()
+            .contains("Sign-in completed")
+    );
+    let config = host.load(&record).unwrap().unwrap().agent.unwrap();
+    let status = host
+        .handle(Request::AgentCheck {
+            record: record.clone(),
+            config,
+        })
+        .await
+        .unwrap();
+    assert_eq!(
+        status.agent_info.as_ref().unwrap()["connectionCheck"]["ready"],
+        true,
+        "{:?}",
+        status.agent_info
+    );
+    assert!(
+        !std::fs::read_to_string(&log)
+            .unwrap()
+            .contains("session/prompt")
+    );
+    let status = host
+        .handle(Request::AgentSetOption {
+            record: record.clone(),
+            option: "model".into(),
+            value: "small".into(),
+        })
+        .await
+        .unwrap();
+    assert!(status.agent_info.unwrap()["connectionCheck"].is_null());
+    let status = host
+        .handle(Request::SessionOptions {
+            thread: thread.clone(),
+        })
+        .await
+        .unwrap();
+    assert!(status.agent_session.unwrap().connected);
+    let status = host
+        .handle(Request::SessionSetOption {
+            thread: thread.clone(),
+            option: "model".into(),
+            value: "large".into(),
+        })
+        .await
+        .unwrap();
+    assert_eq!(
+        serde_json::to_value(status.agent_session.unwrap().state).unwrap()["options"][1]["currentValue"],
+        "large"
+    );
+    assert_eq!(
+        host.load(&record).unwrap().unwrap().agent.unwrap().options["model"],
+        "small"
+    );
+    assert!(
+        !std::fs::read_to_string(&log)
+            .unwrap()
+            .contains("session/prompt")
+    );
+    for turn in 0..2 {
+        host.send(&thread, "Exercise the local test agent workflow.")
+            .await
+            .unwrap()
+            .unwrap();
+        if turn == 0 {
+            let status = host
+                .handle(Request::SessionSetOption {
+                    thread: thread.clone(),
+                    option: "speed".into(),
+                    value: true.into(),
+                })
+                .await
+                .unwrap();
+            assert_eq!(status.agent_session.unwrap().pending["speed"], true);
+        }
+        tokio::time::timeout(std::time::Duration::from_secs(10), async {
+            while !host.running.lock().await.is_empty() {
+                for activity in host.agents.activity(&record).await {
+                    if let Some(permission) = activity.permission {
+                        host.agents
+                            .answer(&record, &thread, &permission.id, Some("allow".into()))
+                            .await
+                            .unwrap();
+                    }
+                }
+                tokio::time::sleep(std::time::Duration::from_millis(10)).await;
+            }
+        })
+        .await
+        .unwrap();
+        let messages = rows(&host, &thread).await;
+        if turn == 1 {
+            let status = host
+                .handle(Request::InspectThread {
+                    thread: thread.clone(),
+                })
+                .await
+                .unwrap()
+                .agent_session
+                .unwrap();
+            assert!(status.pending.is_empty());
+            assert_eq!(
+                serde_json::to_value(status.state).unwrap()["options"][3]["currentValue"],
+                true
+            );
+        }
+        assert!(
+            messages
+                .iter()
+                .any(|message| message.body == "Hello from agent"),
+            "{messages:?}"
+        );
+        host.stop_all().await;
+    }
+    assert!(
+        std::fs::read_to_string(log)
+            .unwrap()
+            .contains("session/load")
+    );
+}
+
+#[tokio::test]
+#[ignore = "Requires LINCE_TEST_AGENT_BIN; uses a local protocol fixture and no model"]
+async fn agent_question_answers_stay_on_the_question_and_cancel_when_the_turn_stops() {
+    let (host, _, root, record, thread) = fixture(false).await;
+    store::organs::ensure_local(&host.engine.store.pool, "http://localhost")
+        .await
+        .unwrap();
+    let log = root.path().join("questions.log");
+    let config = serde_json::from_value(json!({"command":std::env::var("LINCE_TEST_AGENT_BIN").unwrap(),"args":[],"directory":root.path(),"environment":{"TEST_QUESTION":"1","TEST_HOST_WORKFLOW":"1","TEST_REQUEST_LOG":log}})).unwrap();
+    host.handle(Request::AgentConfigure {
+        record: record.clone(),
+        config,
+    })
+    .await
+    .unwrap();
+    for cancel in [false, true] {
+        host.send(&thread, "Ask the fixture question")
+            .await
+            .unwrap()
+            .unwrap();
+        let (message, mut content) =
+            tokio::time::timeout(std::time::Duration::from_secs(10), async {
+                loop {
+                    for message in rows(&host, &thread).await {
+                        if let Some(content) = store::records::get_extension(
+                            &host.engine.store.pool,
+                            &message.uid,
+                            "lince.message-content",
+                        )
+                        .await
+                        .unwrap()
+                        {
+                            if content["parts"][0]["question"]["state"] == "pending" {
+                                return (message.uid, content);
+                            }
+                        }
+                    }
+                    tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+                }
+            })
+            .await
+            .unwrap();
+        if cancel {
+            host.stop_all().await;
+        } else {
+            content["parts"][0]["question"]["state"] = "answered".into();
+            content["parts"][0]["question"]["answers"] = json!({"choice":"right"});
+            host.engine
+                .act(
+                    Action::SetExtension {
+                        target: message.clone(),
+                        namespace: "lince.message-content".into(),
+                        fds: content,
+                    },
+                    None,
+                )
+                .await
+                .unwrap();
+        }
+        tokio::time::timeout(std::time::Duration::from_secs(10), async {
+            loop {
+                let content = store::records::get_extension(
+                    &host.engine.store.pool,
+                    &message,
+                    "lince.message-content",
+                )
+                .await
+                .unwrap()
+                .unwrap();
+                if host.running.lock().await.is_empty()
+                    && content["parts"][0]["question"]["state"]
+                        == if cancel { "cancelled" } else { "answered" }
+                {
+                    break;
+                }
+                tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+            }
+        })
+        .await
+        .unwrap();
+    }
+    let requests = std::fs::read_to_string(log).unwrap();
+    assert_eq!(
+        requests
+            .lines()
+            .filter(|line| *line == "session/prompt")
+            .count(),
+        2
+    );
+}
+
+#[tokio::test]
+async fn failed_agent_check_reports_status_without_saving_or_sending_messages() {
+    let (host, provider, root, record, thread) = fixture(false).await;
+    let before = rows(&host, &thread).await;
+    let previous = host.load(&record).unwrap().unwrap();
+    let config = serde_json::from_value(json!({
+        "command":"lince-missing-test-agent", "args":[], "directory":root.path(), "environment":{"PATH":""}
+    })).unwrap();
+    let status = host
+        .handle(Request::AgentCheck {
+            record: record.clone(),
+            config,
+        })
+        .await
+        .unwrap();
+    let check = &status.agent_info.unwrap()["connectionCheck"];
+    assert_eq!(check["ready"], false);
+    assert_eq!(check["agent"], "Could not start");
+    assert!(check["detail"].as_str().unwrap().contains("Agent options"));
+    assert_eq!(rows(&host, &thread).await.len(), before.len());
+    assert!(provider.observed.lock().unwrap().is_empty());
+    let current = host.load(&record).unwrap().unwrap();
+    assert_eq!(
+        serde_json::to_value(current).unwrap(),
+        serde_json::to_value(previous).unwrap()
+    );
+}
+
+#[tokio::test]
+async fn cancelling_agent_login_ignores_stale_results_and_allows_retry() {
+    let (host, _, _, record, _) = fixture(false).await;
+    host.agents
+        .info
+        .lock()
+        .await
+        .insert(record.clone(), json!({"connectionCheck":{"ready":true}}));
+    let first = agents::login::start(&host.agents, &record).await.unwrap();
+    assert!(host.agents.info(&record).await.unwrap()["connectionCheck"].is_null());
+    host.handle(Request::AgentCancelLogin {
+        record: record.clone(),
+    })
+    .await
+    .unwrap();
+    let second = agents::login::start(&host.agents, &record).await.unwrap();
+    agents::login::finish(host.agents.info.clone(), record.clone(), first, Ok(())).await;
+    assert_eq!(
+        host.agents.info(&record).await.unwrap()["loginPending"],
+        true
+    );
+    agents::login::finish(
+        host.agents.info.clone(),
+        record.clone(),
+        second,
+        Err("expired".into()),
+    )
+    .await;
+    let info = host.agents.info(&record).await.unwrap();
+    assert_eq!(info["loginPending"], false);
+    assert!(
+        info["loginResult"]
+            .as_str()
+            .unwrap()
+            .contains("Sign-in failed")
+    );
+}
+
+#[tokio::test]
 async fn agent_settings_save_directory_and_reject_changes_while_running() {
     let (host, _, root, record, thread) = fixture(false).await;
     let mut config: fiote::acp::Config = serde_json::from_value(json!({
@@ -19,6 +340,11 @@ async fn agent_settings_save_directory_and_reject_changes_while_running() {
         .await
         .unwrap();
     assert_eq!(status.agent.as_ref().unwrap().options, config.options);
+    host.agents
+        .info
+        .lock()
+        .await
+        .insert(record.clone(), json!({"connectionCheck":{"ready":true}}));
     let new_directory = tempfile::tempdir().unwrap();
     config.directory = new_directory.path().into();
     let status = host
@@ -32,6 +358,7 @@ async fn agent_settings_save_directory_and_reject_changes_while_running() {
         status.agent.unwrap().directory,
         new_directory.path().canonicalize().unwrap()
     );
+    assert!(status.agent_info.unwrap()["connectionCheck"].is_null());
     let (stop, _) = watch::channel(false);
     host.running.lock().await.insert(
         thread.clone(),
@@ -187,6 +514,7 @@ impl Provider for Script {
         }
         match messages.last().unwrap() {
             Message::User(body) if body == "create a file" => Ok(Reply {
+                usage: None,
                 text: String::new(),
                 calls: vec![ToolCall {
                     id: "call-1".into(),
@@ -198,11 +526,13 @@ impl Provider for Script {
             Message::Tool { result, .. } => {
                 assert_eq!(result["ok"], true);
                 Ok(Reply {
+                    usage: None,
                     text: "Created hello.txt".into(),
                     calls: vec![],
                 })
             }
             _ => Ok(Reply {
+                usage: None,
                 text: "Hello!".into(),
                 calls: vec![],
             }),
@@ -312,6 +642,7 @@ fn send(thread: &str, body: &str) -> ClientMessage {
     ClientMessage::Act {
         id: "send".into(),
         action: Action::CreateMessage {
+            content: Vec::new(),
             thread: thread.into(),
             body: body.into(),
             author: None,
@@ -589,6 +920,7 @@ impl Provider for StreamingScript {
         self.proceed.notified().await;
         output.update("Hello from Fiote").await?;
         Ok(Reply {
+            usage: None,
             text: "Hello from Fiote".into(),
             calls: vec![],
         })
@@ -710,6 +1042,7 @@ impl Provider for NativeScript {
             Message::Tool { result, .. } => {
                 assert_eq!(result["ok"], true, "{result}");
                 return Ok(Reply {
+                    usage: None,
                     text: "Updated the task description and quantity.".into(),
                     calls: vec![],
                 });
@@ -717,6 +1050,7 @@ impl Provider for NativeScript {
             _ => panic!("Unexpected provider input"),
         };
         Ok(Reply {
+            usage: None,
             text: String::new(),
             calls: vec![ToolCall {
                 id: format!("call-{}", messages.len()),
@@ -1071,6 +1405,7 @@ async fn restart_recovers_pending_messages_and_ignores_already_finished_markers(
         .engine
         .act(
             Action::CreateMessage {
+                content: Vec::new(),
                 thread: thread.clone(),
                 body: "Partial reply and human notes".into(),
                 author: Some(record),
@@ -1088,6 +1423,7 @@ async fn restart_recovers_pending_messages_and_ignores_already_finished_markers(
     save(
         &path,
         &Pending {
+            root: None,
             message: reply.clone(),
         },
     )
@@ -1108,7 +1444,14 @@ async fn restart_recovers_pending_messages_and_ignores_already_finished_markers(
             .starts_with("Partial reply and human notes\n\n")
     );
     assert!(!path.exists());
-    save(&path, &Pending { message: reply }).unwrap();
+    save(
+        &path,
+        &Pending {
+            root: None,
+            message: reply,
+        },
+    )
+    .unwrap();
     Host::open(host.engine.clone(), host.directory.clone())
         .await
         .unwrap();
@@ -1872,6 +2215,7 @@ async fn fiote_timeline_keeps_replies_tools_and_removable_transcripts_in_order()
         .engine
         .act(
             Action::CreateMessage {
+                content: Vec::new(),
                 thread: thread.clone(),
                 body: String::new(),
                 author: Some(record.clone()),
@@ -1899,6 +2243,7 @@ async fn fiote_timeline_keeps_replies_tools_and_removable_transcripts_in_order()
     let mut tools = Registry::default();
     native.register(&mut tools);
     let timeline = timeline::Timeline {
+        root: reply.clone(),
         engine: host.engine.clone(),
         tools: &tools,
         author: record.clone(),

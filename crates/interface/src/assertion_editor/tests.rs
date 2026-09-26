@@ -209,7 +209,7 @@ async fn saved_assertions_support_links_live_completion_removal_and_failed_draft
         store: engine.store.clone(),
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
         wire: default(),
-        fiote: None,
+        fiote: None, speech: None,
         information: None,
     }))
     .insert_resource(crate::wake::WakeSignal::new(|| {}))

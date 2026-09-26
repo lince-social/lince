@@ -191,6 +191,23 @@ pub mod record_creation;
 pub mod thread_castle;
 
 #[cfg(feature = "native-runtime")]
+pub mod message_content;
+#[cfg(feature = "native-runtime")]
+pub mod speech;
+#[cfg(feature = "native-runtime")]
+mod directory_list;
+#[cfg(feature = "native-runtime")]
+mod operation_view;
+#[cfg(feature = "native-runtime")]
+mod message_progress;
+#[cfg(feature = "native-runtime")]
+mod message_commands;
+#[cfg(feature = "native-runtime")]
+mod question_form;
+#[cfg(feature = "native-runtime")]
+mod message_questions;
+
+#[cfg(feature = "native-runtime")]
 pub mod protein_area;
 #[cfg(feature = "native-runtime")]
 pub mod protein_castle;

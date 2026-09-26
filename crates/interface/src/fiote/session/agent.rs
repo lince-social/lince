@@ -1,10 +1,13 @@
 use super::*;
 use serde_json::json;
 
-mod options;
+pub(super) mod options;
 
 #[derive(Component, Clone)]
 struct Draft(cell::FioteAgentConfig);
+
+#[derive(Component)]
+struct Directories(Entity);
 
 #[derive(Component)]
 struct Activity {
@@ -50,6 +53,10 @@ fn config(world: &World, owner: Entity) -> Result<cell::FioteAgentConfig, String
     let previous = world.get::<Draft>(owner).map(|draft| draft.0.clone());
     Ok(cell::FioteAgentConfig {
         require_vault: false,
+        additional_directories: world
+            .get::<Directories>(owner)
+            .map(|field| crate::directory_list::paths(world, field.0))
+            .unwrap_or_default(),
         command: value(world, fields[0])?.into(),
         args: serde_json::from_str(&value(world, fields[1])?)
             .map_err(|_| "Arguments must be a JSON array of strings.")?,
@@ -79,6 +86,7 @@ pub(super) fn show(
         .or(configured)
         .unwrap_or_else(|| cell::FioteAgentConfig {
             require_vault: false,
+            additional_directories: Vec::new(),
             command: "goose".into(),
             args: vec!["acp".into()],
             directory: std::env::current_dir().unwrap_or_default(),
@@ -131,18 +139,27 @@ pub(super) fn show(
             .set_text(&text);
         fields.push(input);
     }
-    world.entity_mut(owner).insert(Draft(draft));
+    let directories = crate::directory_list::create(world, content, &draft.additional_directories);
+    world
+        .entity_mut(owner)
+        .insert((Draft(draft), Directories(directories)));
+    crate::description::button(world, content, owner, "Check connection · no tokens", Check);
+    connection_status(world, content, saved);
     crate::description::button(world, content, owner, "Change provider / sign in", Discover);
     crate::description::button(
         world,
         content,
         owner,
-        "Save working directory",
+        "Save directory defaults",
         options::SaveDirectory,
     );
-    options::show(world, owner, content, saved);
-
     let Some(info) = saved.and_then(|saved| saved.agent_info.as_ref()) else {
+        crate::edit_mode::label(
+            world,
+            content,
+            "Start with Change provider / sign in, or check an agent you already configured.",
+            14.0,
+        );
         return;
     };
     if let Some(error) = info["setupError"].as_str() {
@@ -178,7 +195,6 @@ pub(super) fn show(
         }
     }
     let selected = &info["selectedProvider"];
-    crate::description::button(world, content, owner, "Finish · open Record", Connect);
     if let Some(name) = selected["name"].as_str() {
         crate::edit_mode::label(world, content, &format!("Connection: {name}"), 16.0);
         if let Some(description) = selected["description"].as_str() {
@@ -193,7 +209,7 @@ pub(super) fn show(
                 else {
                     continue;
                 };
-                if method["type"] != "terminal" {
+                {
                     crate::description::button(
                         world,
                         content,
@@ -201,8 +217,6 @@ pub(super) fn show(
                         name,
                         Authenticate(id.into()),
                     );
-                } else if let Some(description) = method["description"].as_str() {
-                    crate::edit_mode::label(world, content, description, 14.0);
                 }
             }
         }
@@ -235,11 +249,28 @@ pub(super) fn show(
             crate::description::button(world, content, owner, "Connect provider", ProviderLogin);
         }
     }
-    if info["loginPending"] == true {
+    if info["agentCapabilities"]["auth"]["logout"].is_object()
+        || login["agentCapabilities"]["auth"]["logout"].is_object()
+    {
+        crate::description::button(world, content, owner, "Sign out of agent", Logout);
+    } else {
         crate::edit_mode::label(
             world,
             content,
-            "Finish the agent's login in your browser. Your account stays signed in until it expires or you sign out.",
+            "This agent does not offer logout here. Use its account settings to sign out.",
+            12.0,
+        );
+    }
+    if info["loginPending"] == true {
+        crate::description::button(world, content, owner, "Cancel sign-in", CancelLogin);
+        crate::edit_mode::label(
+            world,
+            content,
+            if info["terminalLogin"].is_string() {
+                "Complete sign-in in the private terminal below. Follow its browser instructions if it provides a link."
+            } else {
+                "Finish the agent's login in your browser. Your account stays signed in until it expires or you sign out."
+            },
             14.0,
         );
         if let (Some(code), Some(url)) = (
@@ -262,6 +293,53 @@ pub(super) fn show(
         world,
         content,
         "Goose or the selected agent stores and refreshes your login.",
+        14.0,
+    );
+    options::show(world, owner, content, saved);
+    crate::description::button(
+        world,
+        content,
+        owner,
+        "Check and open conversation",
+        Connect,
+    );
+}
+
+fn connection_status(world: &mut World, content: Entity, saved: Option<&FioteStatus>) {
+    if let Some(check) = saved
+        .and_then(|saved| saved.agent_info.as_ref())
+        .and_then(|info| info.get("connectionCheck"))
+    {
+        crate::edit_mode::label(
+            world,
+            content,
+            if check["ready"] == true {
+                "Last check: session ready"
+            } else {
+                "Last check: connection needs attention"
+            },
+            16.0,
+        );
+        for (key, label) in [
+            ("agent", "Agent"),
+            ("login", "Login"),
+            ("model", "Model"),
+            ("session", "Session"),
+        ] {
+            if let Some(value) = check[key].as_str() {
+                crate::edit_mode::label(world, content, &format!("{label}: {value}"), 14.0);
+            }
+        }
+        if let Some(detail) = check["detail"].as_str().filter(|detail| !detail.is_empty()) {
+            crate::edit_mode::label(world, content, detail, 14.0);
+        }
+    } else {
+        crate::edit_mode::label(world, content, "Connection not checked", 16.0);
+    }
+    crate::edit_mode::label(
+        world,
+        content,
+        "Checks agent startup, provider setup and session access without sending a message. No model tokens are used. Generation and quota are not tested. Check again after changing settings.",
         14.0,
     );
 }
@@ -296,14 +374,11 @@ fn submit(world: &mut World, owner: Entity, configure: bool) {
                 world,
                 owner,
                 if configure {
-                    FioteRequest::AgentConfigure { record, config }
+                    FioteRequest::AgentCheck { record, config }
                 } else {
                     FioteRequest::AgentDiscover { record, config }
                 },
             );
-            if configure && world.get::<Panel>(owner).unwrap().pending.is_some() {
-                super::show(world, owner, Step::Manage);
-            }
         }
         Err(error) => world.get_mut::<Text>(status).unwrap().0 = error,
     }
@@ -314,6 +389,32 @@ struct Discover;
 impl Action for Discover {
     fn apply(&self, world: &mut World, owner: Entity) {
         submit(world, owner, false);
+    }
+}
+#[derive(Clone)]
+struct Check;
+impl Action for Check {
+    fn apply(&self, world: &mut World, owner: Entity) {
+        submit(world, owner, true);
+    }
+}
+
+#[derive(Clone)]
+struct CancelLogin;
+impl Action for CancelLogin {
+    fn apply(&self, world: &mut World, owner: Entity) {
+        if let Some(panel) = world
+            .get::<Panel>(owner)
+            .filter(|panel| panel.pending.is_none())
+        {
+            request(
+                world,
+                owner,
+                FioteRequest::AgentCancelLogin {
+                    record: panel.binding.uid.clone(),
+                },
+            );
+        }
     }
 }
 #[derive(Clone)]
@@ -385,6 +486,18 @@ impl Action for Authenticate {
                 method: self.0.clone(),
             },
         );
+    }
+}
+
+#[derive(Clone)]
+struct Logout;
+impl Action for Logout {
+    fn apply(&self, world: &mut World, owner: Entity) {
+        let Some(panel) = world.get::<Panel>(owner) else {
+            return;
+        };
+        let record = panel.binding.uid.clone();
+        request(world, owner, FioteRequest::AgentLogout { record });
     }
 }
 #[derive(Clone)]

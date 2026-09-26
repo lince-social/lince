@@ -88,8 +88,9 @@ fn complete(input: Completion) -> Result<Value, String> {
         || input.system.clone(),
         |prefix| format!("{prefix}\n\n{}", input.system),
     );
-    let messages = input.messages.iter().map(|message| match message {
+    let messages = input.messages.iter().map(|message| Ok(match message {
         Message::User(text) => modelbridge::Message::user(text),
+        Message::RichUser { .. } | Message::RichAssistant { .. } => return Err("This subscription adapter does not accept rich messages."),
         Message::Assistant { text, calls } => modelbridge::Message::tool_calls(
             text,
             calls
@@ -109,7 +110,7 @@ fn complete(input: Completion) -> Result<Value, String> {
                 failed: result["ok"] == false,
             }])
         }
-    });
+    })).collect::<Result<Vec<_>, &str>>()?;
     let mut request =
         modelbridge::Request::new(system)
             .messages(messages)
@@ -133,7 +134,10 @@ fn complete(input: Completion) -> Result<Value, String> {
                 arguments: call.args,
                 signatures: None,
             }),
-            modelbridge::Chunk::Done { .. } => finished = true,
+            modelbridge::Chunk::Done { input_tokens, output_tokens } => {
+                finished = true;
+                reply.usage = Some(nucleus::operation::Usage::request(format!("modelbridge · {} · {model}", subscription.id()), Some(input_tokens.into()), Some(output_tokens.into()), Some(u64::from(input_tokens) + u64::from(output_tokens))));
+            },
             modelbridge::Chunk::Failed(_) => failed = true,
         }
         if reply.text.len() > 1_048_576 || reply.calls.len() > crate::runtime::MAX_TOOL_CALLS {

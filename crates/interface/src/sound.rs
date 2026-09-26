@@ -1,4 +1,4 @@
-mod device;
+pub(crate) mod device;
 pub mod dsp;
 pub mod library;
 #[cfg(test)]

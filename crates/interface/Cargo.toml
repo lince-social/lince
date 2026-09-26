@@ -59,6 +59,7 @@ native-runtime = [
     "bevy/wayland",
     "bevy/accesskit_unix",
     "bevy/system_clipboard",
+    "bevy/clipboard_image",
     "bevy/png",
     "bevy/jpeg",
     "bevy/bevy_gltf",

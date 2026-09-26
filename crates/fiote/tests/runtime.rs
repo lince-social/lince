@@ -43,10 +43,12 @@ async fn tools_return_to_the_model_before_the_final_reply() {
     tools.register(CreateFile::new(root.path()).unwrap());
     let provider = Script(Mutex::new(vec![
         Reply {
+            usage: None,
             text: String::new(),
             calls: vec![call("one", "hello.txt")],
         },
         Reply {
+            usage: None,
             text: "Created hello.txt".into(),
             calls: vec![],
         },
@@ -111,6 +113,7 @@ async fn cancellation_and_duplicate_call_ids_do_not_repeat_side_effects() {
     let mut tools = Registry::default();
     tools.register(CreateFile::new(root.path()).unwrap());
     let provider = Script(Mutex::new(vec![Reply {
+            usage: None,
         text: String::new(),
         calls: vec![call("one", "first"), call("one", "second")],
     }]));
@@ -229,6 +232,7 @@ impl Provider for Endless {
     ) -> Result<Reply, String> {
         let count = self.0.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
         Ok(Reply {
+            usage: None,
             text: String::new(),
             calls: vec![ToolCall {
                 id: count.to_string(),

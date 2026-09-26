@@ -35,6 +35,7 @@ pub(super) async fn setup(
             .unwrap(),
     );
     let runtime = cell::CellRuntime {
+            speech: None,
         commands: Default::default(),
         store: engine.store.clone(),
         engine: engine.clone(),

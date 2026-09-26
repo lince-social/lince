@@ -52,6 +52,8 @@ struct Mask(Entity);
 struct Active(Option<Entity>);
 #[derive(Component)]
 struct ThreadControl {
+    usage: Entity,
+    choices: Entity,
     area: Entity,
     view_uid: String,
     record: String,
@@ -90,7 +92,7 @@ impl bevy::prelude::Plugin for Plugin {
     }
 }
 
-fn field(world: &mut World, parent: Entity, title: &str, secret: bool) -> Entity {
+pub(crate) fn field(world: &mut World, parent: Entity, title: &str, secret: bool) -> Entity {
     crate::edit_mode::label(world, parent, title, 14.0);
     let bundle = crate::sand::text_editor("", world.resource::<crate::theme::Typography>(), 0);
     let entity = world.spawn((bundle, ChildOf(parent))).id();
@@ -238,10 +240,15 @@ fn send(world: &World, entity: Entity, request: FioteRequest) -> Result<String, 
 
 fn request(world: &mut World, owner: Entity, message: FioteRequest) {
     let status = world.get::<Panel>(owner).unwrap().status;
+    let progress = if matches!(&message, FioteRequest::AgentCheck { .. }) {
+        "Checking connection without sending a message…"
+    } else {
+        "Connecting…"
+    };
     match send(world, owner, message) {
         Ok(id) => {
             world.get_mut::<Panel>(owner).unwrap().pending = Some(id);
-            world.get_mut::<Text>(status).unwrap().0 = "Connecting…".into();
+            world.get_mut::<Text>(status).unwrap().0 = progress.into();
         }
         Err(error) => world.get_mut::<Text>(status).unwrap().0 = error,
     }
@@ -868,7 +875,10 @@ pub fn thread_controls(world: &mut World, parent: Entity, thread: &str, binding:
     let toggle = crate::description::button(world, details, owner, "Open agent tools", AgentTools);
     let copy = crate::description::button(world, details, owner, "Copy MCP connection", CopyTools);
     world.get_mut::<Node>(copy).unwrap().display = Display::None;
+    let usage = crate::operation_view::create(world, details);
+    let choices = live::create(world, details, owner);
     world.entity_mut(owner).insert(ThreadControl {
+        usage,        choices,
         area: binding.area,
         view_uid: binding.uid.clone(),
         record: binding.uid.clone(),
@@ -1022,6 +1032,10 @@ fn apply_status(world: &mut World, owner: Entity, saved: FioteStatus) {
         .entity_mut(owner)
         .take::<agent::OpenAfterSetup>()
         .is_some()
+        && saved
+            .agent_info
+            .as_ref()
+            .is_some_and(|info| info["connectionCheck"]["ready"] == true)
     {
         let binding = RecordBinding {
             uid: saved.record.clone(),
@@ -1059,7 +1073,19 @@ fn apply_status(world: &mut World, owner: Entity, saved: FioteStatus) {
     };
     let browser = next == Step::Browser && step != Step::Browser;
     world.get_mut::<Text>(label).unwrap().0 = if let Some(agent) = &saved.agent {
-        format!("Agent · {} · /login", agent.command.display())
+        let state = saved
+            .agent_info
+            .as_ref()
+            .and_then(|info| info.get("connectionCheck"))
+            .map(|check| {
+                if check["ready"] == true {
+                    "session ready"
+                } else {
+                    "connection needs attention"
+                }
+            })
+            .unwrap_or("connection not checked");
+        format!("{} · {state} · /login", agent.command.display())
     } else if saved.settings.enabled {
         format!(
             "{} · {} · /login",
@@ -1093,6 +1119,10 @@ fn apply_status(world: &mut World, owner: Entity, saved: FioteStatus) {
     {
         show(world, owner, next);
     }
+    if let Some(saved) = world.get::<Panel>(owner).and_then(|panel| panel.saved.clone()) {
+        questions::sync(world, &saved);
+        crate::terminal::login_view::sync(world, owner, &saved.record, saved.agent_info.as_ref().and_then(|info| info["terminalLogin"].as_str()));
+    }
     if browser {
         OpenBrowser.apply(world, owner);
     }
@@ -1118,6 +1148,7 @@ fn receive(
             cell::ServerMessage::Error { id, message, .. } => (id, Err(message)),
             _ => continue,
         };
+        questions::receive(world, &id, &result);
         let owners: Vec<_> = world
             .query::<(Entity, &Panel)>()
             .iter(world)
@@ -1178,6 +1209,11 @@ fn receive(
             .map(|(entity, _)| entity)
             .collect();
         for owner in controls {
+            if result.is_err() { live::invalidate(world, owner); }
+            if let Ok(saved) = &result {
+                live::update(world, owner, saved);
+                if let Some(control) = world.get::<ThreadControl>(owner) { crate::operation_view::usage(world, control.usage, &saved.usage); }
+            }
             let mut control = world.get_mut::<ThreadControl>(owner).unwrap();
             control.pending = None;
             let label = control.status;
@@ -1331,6 +1367,8 @@ fn protect_keys(mut fields: Query<&mut EditableText, With<SecretField>>) {
 
 mod agent;
 mod management;
+mod live;
+mod questions;
 #[cfg(test)]
 mod tests;
 

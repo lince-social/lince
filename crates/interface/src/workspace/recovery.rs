@@ -292,9 +292,24 @@ fn decode(bytes: &[u8]) -> io::Result<Document> {
             ids.contains(&saved.0.workspace) && saved.valid()
         },
     );
+    let controls = match values.remove("controls") {
+        None => Default::default(),
+        Some(value) => {
+            match serde_json::from_value::<crate::canvas_controls::ControlsSettings>(value) {
+                Ok(settings) => settings,
+                Err(_) => {
+                    report
+                        .notes
+                        .push("Control settings could not be restored; using defaults".into());
+                    Default::default()
+                }
+            }
+        }
+    };
     let document = Document {
         recovery: report,
         theme,
+        controls,
         active,
         workspaces,
         sands,
@@ -399,6 +414,7 @@ mod tests {
         scene["workspaces"].as_array_mut().unwrap().push(second);
         scene["active"] = json!(2);
         scene["theme"] = json!({"scheme": "RemovedScheme"});
+        scene["controls"] = json!({"always_show": true});
         scene["proteins"] = json!("not a list");
         scene["sands"] = json!([sand("Keep")]);
         let recovered = load(&scene);
@@ -406,6 +422,7 @@ mod tests {
         assert_eq!(recovered.workspaces.len(), 1);
         assert_eq!(recovered.sands.len(), 1);
         assert_eq!(recovered.theme, Default::default());
+        assert!(recovered.controls.always_show);
         assert!(recovered.recovery.summary().contains("Theme settings"));
         assert!(
             recovered

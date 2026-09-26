@@ -27,6 +27,7 @@ pub struct Session {
     action_intent_initialized: bool,
     local_sync: bool,
     fiote: Option<Arc<dyn crate::fiote::Service>>,
+    speech: Option<Arc<dyn crate::speech::Service>>,
 }
 
 impl Drop for Session {
@@ -59,6 +60,7 @@ impl Session {
             action_intent_initialized: false,
             local_sync: false,
             fiote: None,
+            speech: None,
         }
     }
 
@@ -90,6 +92,7 @@ impl Session {
             format!("call:{}", self.connection_id),
             self.subject.clone(),
         );
+        session.speech = self.speech.clone();
         session.login = self.login.clone();
         session.local_sync = self.local_sync;
         session
@@ -98,6 +101,8 @@ impl Session {
     pub fn into_native_tools(self, context: crate::native::Context) -> crate::native::NativeTools {
         crate::native::NativeTools::new(self.engine.clone(), self, context)
     }
+
+    pub fn with_speech(mut self, service: Arc<dyn crate::speech::Service>) -> Self { self.speech = Some(service); self }
 
     pub fn with_fiote(mut self, service: Arc<dyn crate::fiote::Service>) -> Self {
         self.fiote = Some(service);
@@ -167,7 +172,7 @@ impl Session {
         if let Some(login) = &self.login {
             login.touch();
         }
-        if self.local_sync && self.login.is_none() && matches!(msg, ClientMessage::Fiote { .. }) {
+        if self.local_sync && self.login.is_none() && matches!(msg, ClientMessage::Fiote { .. } | ClientMessage::FioteTerminal { .. } | ClientMessage::Speech { .. }) {
             return self.handle_inner(msg).await;
         }
         let engine = self.engine.clone();
@@ -179,6 +184,8 @@ impl Session {
                 | ClientMessage::CollabUpdate { .. }
                 | ClientMessage::SessionAuthenticate { .. }
                 | ClientMessage::Fiote { .. }
+                | ClientMessage::FioteTerminal { .. }
+                | ClientMessage::Speech { .. }
         );
         let work = Box::pin(self.handle_inner(msg));
         let operation = async { Ok(work.await) };
@@ -234,6 +241,20 @@ impl Session {
                         code: Some("call".into()),
                     },
                 }]
+            }
+            ClientMessage::Speech { id, request } => {
+                let result = match &self.speech {
+                    Some(service) if self.local_sync => service.handle(request).await,
+                    _ => Err("Speech settings are available only on the local Cell.".into()),
+                };
+                vec![match result { Ok(status) => ServerMessage::Speech { id, status }, Err(message) => ServerMessage::Error { id, message, code: Some("speech".into()) } }]
+            }
+            ClientMessage::FioteTerminal { id, request } => {
+                let result = match &self.fiote {
+                    Some(service) if self.local_sync => service.terminal(request).await,
+                    _ => Err("Terminal login is available only on the local Cell.".into()),
+                };
+                vec![match result { Ok(frame) => ServerMessage::FioteTerminal { id, frame }, Err(message) => ServerMessage::Error { id, message, code: Some("fiote_terminal".into()) } }]
             }
             ClientMessage::Fiote { id, request } => {
                 let result = match &self.fiote {
@@ -793,6 +814,7 @@ impl Session {
         if self.local_sync
             && let Some(service) = &self.fiote
             && let engine::actions::Action::CreateMessage {
+                content,
                 thread,
                 body,
                 author: None,
@@ -802,7 +824,7 @@ impl Session {
             } = &action
             && references.is_empty()
         {
-            match service.send(thread, body).await {
+            match service.send_content(thread, body, content).await {
                 Ok(Some(outcome)) => {
                     return ServerMessage::ActionOk {
                         id,

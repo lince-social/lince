@@ -18,6 +18,9 @@ fn external_login_picker_preserves_fields_during_polling_and_uses_arrow_keys() {
         source: Source::Local,
     };
     let saved = FioteStatus {
+        questions: Vec::new(),
+        usage: Vec::new(),
+        agent_session: None,
         session: None,
         behavior: Default::default(),
         instructions: Vec::new(),
@@ -26,6 +29,7 @@ fn external_login_picker_preserves_fields_during_polling_and_uses_arrow_keys() {
         tasks: Vec::new(),
         agent: Some(cell::FioteAgentConfig {
             require_vault: false,
+            additional_directories: Vec::new(),
             command: "test-agent".into(),
             args: vec![],
             directory: std::env::current_dir().unwrap(),
@@ -85,6 +89,38 @@ fn external_login_picker_preserves_fields_during_polling_and_uses_arrow_keys() {
         "entered-secret"
     );
     assert_eq!(world.get::<Panel>(owner).unwrap().fields.len(), 5);
+    assert!(
+        world
+            .query::<&Text>()
+            .iter(world)
+            .any(|text| text.0 == "Check connection · no tokens")
+    );
+    assert!(
+        world
+            .query::<&Text>()
+            .iter(world)
+            .any(|text| text.0 == "Connection not checked")
+    );
+    let mut failed = saved.clone();
+    failed.agent_info.as_mut().unwrap()["connectionCheck"] = serde_json::json!({
+        "ready":false,"agent":"Could not start","login":"Not checked","model":"Not checked","session":"Not checked","detail":"Install the agent or choose its full path."
+    });
+    world.entity_mut(owner).insert(agent::OpenAfterSetup);
+    apply_status(world, owner, failed);
+    assert!(world.get::<Panel>(owner).unwrap().step == Step::Agent);
+    assert!(world.get::<agent::OpenAfterSetup>(owner).is_none());
+    assert!(
+        world
+            .query::<&Text>()
+            .iter(world)
+            .any(|text| text.0 == "Last check: connection needs attention")
+    );
+    assert!(
+        world
+            .query::<&Text>()
+            .iter(world)
+            .any(|text| text.0.contains("No model tokens are used"))
+    );
     let mut picker = saved.clone();
     picker
         .agent_info
@@ -164,6 +200,7 @@ async fn native_provider_credentials_remain_separate_from_agent_login() {
             .unwrap(),
     );
     let runtime = cell::CellRuntime {
+            speech: None,
         commands: Default::default(),
         store: engine.store.clone(),
         engine: engine.clone(),

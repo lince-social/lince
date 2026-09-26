@@ -441,7 +441,7 @@ With #fruit, a rule keeps catching Records asserted after it was written — you
 - [ ] Instead of Commands immediatelly being the calling of some bash and putting it's value in some Condition we save it as a Signal, only then it is used in the Conditon.
 - [ ] Being able to accept commands over some endpoint, with some form of access control. so /command/slug is not callable by anyone.
 
-} r_K7T3ZG08G5EBWRSTF8NBWMTZYV
+}
 
 Fiote (@fiote: 0, #instinct, #part-of @karma) { r_137BM4Q7GV2707HBTRQ3GTJ9E5
 Doing a harness for Lince with Fiote may be a good way of making Lince's development more slopped more faster. While they slop in the dev checkout the nixos flake may get from github main branch.
@@ -649,7 +649,7 @@ A File Sync mode that takes every file in a directory, respects `.gitignore`, ma
 - [ ] Send binary files in such a folder to the blob store, since Record bodies are text.
 - [ ] Keep derived links distinguishable from hand-made ones. A refresh must never wipe a manual link or add a second copy of one it made before. `asserted_by` plus a provenance marker is the shape. Getting this wrong silently eats work.
 
-} 
+} r_137BM4Q7GV2707HBTRQ3GTJ9E5
 
 Sync (@sync: 0, #instinct, #part-of @ontology) {
 - [ ] FileSync to disk in General File mode, respecting .gitignore. So record title is file name and description is contents.

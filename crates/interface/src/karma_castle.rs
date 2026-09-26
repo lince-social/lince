@@ -22,13 +22,18 @@ pub(crate) use persistence::{SavedKarmaCastle, snapshot};
 pub struct KarmaCastle {
     pub draft: Option<Draft>,
     #[serde(default)]
-    pub suspended: Option<Draft>,
-    #[serde(default)]
     pub search: String,
+    #[serde(default)]
+    pub edits: Vec<Draft>,
 }
 
 #[derive(Component)]
 struct View {
+    controls: Entity,
+    selection: std::collections::HashSet<String>,
+    deleting: Vec<String>,
+    deleting_pending: Option<String>,
+    saving: bool,
     form: Entity,
     list: Entity,
     status: Entity,
@@ -102,20 +107,11 @@ pub fn spawn(
         .id();
     let header = ui::row(world, owner);
     crate::edit_mode::label(world, header, "Karma", 22.0);
-    ui::button(
-        world,
-        header,
-        owner,
-        ui::Command::New,
-        "+",
-        "Create a rule at the top",
-    );
+    world.get_mut::<Node>(header).unwrap().align_items = AlignItems::Center;
+    let controls = ui::row(world, header);
+    world.get_mut::<Node>(controls).unwrap().width = Val::Auto;
     ui::search(world, header, owner);
-    let headings = ui::row(world, owner);
-    for title in ["Condition", "Threshold", "Consequence"] {
-        let column = ui::column(world, headings);
-        crate::edit_mode::label(world, column, title, 15.0);
-    }
+    ui::headings(world, owner);
     let scroll = world
         .spawn((
             Node {
@@ -136,6 +132,11 @@ pub fn spawn(
     let status = crate::edit_mode::label(world, owner, "", 12.0);
     world.get_mut::<Node>(status).unwrap().display = Display::None;
     world.entity_mut(owner).insert(View {
+        controls,
+        selection: Default::default(),
+        deleting: Vec::new(),
+        deleting_pending: None,
+        saving: false,
         form,
         list,
         status,
@@ -197,33 +198,34 @@ fn save(world: &mut World, owner: Entity) {
         return;
     }
     ui::capture(world, owner);
-    let Some(draft) = world
-        .get::<KarmaCastle>(owner)
-        .and_then(|castle| castle.draft.clone())
+    let castle = world.get::<KarmaCastle>(owner).unwrap();
+    let Some(draft) = castle
+        .draft
+        .clone()
+        .or_else(|| castle.edits.first().cloned())
     else {
+        world.get_mut::<View>(owner).unwrap().saving = false;
         return;
     };
+    if draft.name.trim().is_empty() || !nucleus::valid_slug(draft.slug.trim()) || !draft.valid() {
+        world.get_mut::<View>(owner).unwrap().saving = false;
+        status(
+            world,
+            owner,
+            "Enter a name and a lowercase slug using letters, numbers, hyphens or dots",
+        );
+        return;
+    }
     let request_id = nucleus::new_uid("karma-edit");
-    let submitted = draft.clone();
-    let action = match draft.editing {
-        Some(field) => {
-            let index = nucleus::karma::rule_field::RuleFieldKind::ALL
-                .iter()
-                .position(|kind| *kind == field.kind)
-                .unwrap();
-            engine::actions::Action::ReviseKarmaField {
-                field: field.uid,
-                expected_revision: field.revision,
-                source: draft.fields[index].text.clone(),
-                request_id: request_id.clone(),
-            }
-        }
-        None => engine::actions::Action::SaveKarmaRule {
-            rule: draft.rule,
-            expected_revision: draft.revision,
-            fields: draft.fields.map(|field| field.input()),
-            request_id: request_id.clone(),
-        },
+    let action = engine::actions::Action::SaveKarmaRule {
+        identity: Some(nucleus::karma::rule_field::RuleIdentity {
+            name: draft.name.clone(),
+            slug: draft.slug.clone(),
+        }),
+        rule: draft.rule.clone(),
+        expected_revision: draft.revision,
+        fields: draft.fields.clone().map(|field| field.input()),
+        request_id: request_id.clone(),
     };
     match send(
         world,
@@ -235,8 +237,38 @@ fn save(world: &mut World, owner: Entity) {
         Ok(()) => {
             let mut view = world.get_mut::<View>(owner).unwrap();
             view.pending = Some(request_id);
-            view.submitted = Some(submitted);
+            view.submitted = Some(draft);
+            view.saving = true;
             status(world, owner, "Saving…");
+            ui::render_form(world, owner);
+            ui::render_list(world, owner);
+        }
+        Err(error) => {
+            world.get_mut::<View>(owner).unwrap().saving = false;
+            status(world, owner, error);
+        }
+    }
+}
+
+fn delete_next(world: &mut World, owner: Entity) {
+    let Some(uid) = world.get::<View>(owner).unwrap().deleting.first().cloned() else {
+        return;
+    };
+    let id = nucleus::new_uid("karma-delete");
+    match send(
+        world,
+        ClientMessage::Act {
+            id: id.clone(),
+            action: engine::actions::Action::DeleteRecurrence {
+                recurrence: uid.clone(),
+            },
+        },
+    ) {
+        Ok(()) => {
+            let mut view = world.get_mut::<View>(owner).unwrap();
+            view.pending = Some(id);
+            view.deleting_pending = Some(uid);
+            ui::render_controls(world, owner);
         }
         Err(error) => status(world, owner, error),
     }
@@ -338,6 +370,10 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                                 }
                                 view.ready = true;
                                 view.rules = rules;
+                                let ids: std::collections::HashSet<_> =
+                                    view.rules.iter().map(|rule| rule.uid.clone()).collect();
+                                view.selection.retain(|uid| ids.contains(uid));
+                                ui::capture(world, owner);
                                 ui::render_list(world, owner);
                             }
                             Err(error) => {
@@ -389,15 +425,33 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                     ui::capture(world, owner);
                     world.get_mut::<View>(owner).unwrap().pending = None;
                     let submitted = world.get_mut::<View>(owner).unwrap().submitted.take();
-                    if submitted.is_some()
-                        && world.get::<KarmaCastle>(owner).unwrap().draft == submitted
-                    {
+                    if let Some(submitted) = submitted {
                         let mut castle = world.get_mut::<KarmaCastle>(owner).unwrap();
-                        castle.draft = castle.suspended.take();
-                        ui::render_form(world, owner);
-                        ui::refresh_links(world, owner);
+                        if castle.draft.as_ref() == Some(&submitted) {
+                            castle.draft = None;
+                        }
+                        castle.edits.retain(|draft| draft != &submitted);
                     }
-                    status(world, owner, "Saved");
+                    let deleted = world
+                        .get_mut::<View>(owner)
+                        .unwrap()
+                        .deleting_pending
+                        .take();
+                    if let Some(deleted) = deleted {
+                        let mut view = world.get_mut::<View>(owner).unwrap();
+                        view.selection.remove(&deleted);
+                        view.deleting.retain(|uid| uid != &deleted);
+                        view.rules.retain(|rule| rule.uid != deleted);
+                        delete_next(world, owner);
+                    }
+                    ui::render_form(world, owner);
+                    ui::render_list(world, owner);
+                    if world.get::<View>(owner).unwrap().saving {
+                        save(world, owner);
+                    }
+                    if world.get::<View>(owner).unwrap().pending.is_none() {
+                        status(world, owner, "");
+                    }
                 }
             }
             ServerMessage::Error { id, message, .. } => {
@@ -424,6 +478,10 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                     let mut view = world.get_mut::<View>(owner).unwrap();
                     view.pending = None;
                     view.submitted = None;
+                    view.saving = false;
+                    view.deleting_pending = None;
+                    ui::render_form(world, owner);
+                    ui::render_list(world, owner);
                     status(world, owner, &message);
                 }
             }

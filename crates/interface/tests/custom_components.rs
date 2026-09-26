@@ -18,7 +18,7 @@ fn fixture(engine: Arc<engine::Engine>, path: &std::path::Path) -> (App, Entity)
         engine,
         lanes: Arc::new(cell::LaneHub::new()),
         wire: Default::default(),
-        fiote: None,
+        fiote: None, speech: None,
         information: None,
     };
     let mut app = App::new();

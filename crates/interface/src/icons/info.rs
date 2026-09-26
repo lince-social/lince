@@ -46,7 +46,7 @@ pub(super) fn sync(world: &mut World) {
         remove(world, entity, &attachment);
     }
     let sources: Vec<_> = world
-        .query::<(Entity, Ref<Tooltip>, Ref<Node>, Option<&Attachment>)>()
+        .query_filtered::<(Entity, Ref<Tooltip>, Ref<Node>, Option<&Attachment>), Without<InlineTooltip>>()
         .iter(world)
         .filter(|(_, tip, node, attachment)| {
             tip.is_changed()

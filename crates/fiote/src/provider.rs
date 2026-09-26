@@ -19,6 +19,14 @@ pub struct ToolCall {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Message {
     User(String),
+    RichUser {
+        text: String,
+        content: Vec<nucleus::message::MessagePart>,
+    },
+    RichAssistant {
+        text: String,
+        content: Vec<nucleus::message::MessagePart>,
+    },
     Assistant {
         text: String,
         calls: Vec<ToolCall>,
@@ -39,12 +47,17 @@ pub struct ToolDefinition {
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Reply {
+    #[serde(default)]
+    pub usage: Option<nucleus::operation::Usage>,
     pub text: String,
     pub calls: Vec<ToolCall>,
 }
 
 #[async_trait]
 pub trait TextOutput: Send + Sync {
+    async fn usage(&self, _usage: nucleus::operation::Usage) -> Result<(), String> {
+        Ok(())
+    }
     async fn update(&self, text: &str) -> Result<(), String>;
 }
 
@@ -59,6 +72,13 @@ impl TextOutput for DiscardText {
 
 #[async_trait]
 pub trait Provider: Send + Sync {
+    fn validate_content(&self, content: &[nucleus::message::MessagePart]) -> Result<(), String> {
+        if content.is_empty() {
+            Ok(())
+        } else {
+            Err("This provider adapter does not advertise message attachments. Use a capable ACP agent or direct provider.".into())
+        }
+    }
     async fn complete(
         &self,
         system: &str,
@@ -74,6 +94,9 @@ pub trait Provider: Send + Sync {
         output: &dyn TextOutput,
     ) -> Result<Reply, String> {
         let reply = self.complete(system, messages, tools).await?;
+        if let Some(usage) = &reply.usage {
+            output.usage(usage.clone()).await?;
+        }
         output.update(&reply.text).await?;
         Ok(reply)
     }
@@ -108,6 +131,37 @@ impl GenaiProvider {
 fn message(value: &Message) -> ChatMessage {
     match value {
         Message::User(text) => ChatMessage::user(text.clone()),
+        Message::RichUser { text, content } | Message::RichAssistant { text, content } => {
+            let mut parts = vec![ContentPart::Text(text.clone())];
+            for part in content {
+                parts.push(match part {
+                    nucleus::message::MessagePart::Question { question } => {
+                        ContentPart::Text(question.text())
+                    }
+                    nucleus::message::MessagePart::Steps { steps } => {
+                        ContentPart::Text(nucleus::operation::steps_text(steps))
+                    }
+                    nucleus::message::MessagePart::Text { text } => ContentPart::Text(text.clone()),
+                    nucleus::message::MessagePart::Reference { name, uri } => {
+                        ContentPart::Text(format!("Resource reference: {name}\n{uri}"))
+                    }
+                    nucleus::message::MessagePart::Attachment {
+                        name,
+                        mime_type,
+                        data,
+                    } => ContentPart::Binary(genai::chat::Binary::from_base64(
+                        mime_type.clone(),
+                        data.clone(),
+                        Some(name.clone()),
+                    )),
+                });
+            }
+            if matches!(value, Message::RichAssistant { .. }) {
+                ChatMessage::assistant(parts)
+            } else {
+                ChatMessage::user(parts)
+            }
+        }
         Message::Assistant { text, calls } => {
             let mut parts = Vec::new();
             if !text.is_empty() {
@@ -139,12 +193,33 @@ fn message(value: &Message) -> ChatMessage {
 
 #[async_trait]
 impl Provider for GenaiProvider {
+    fn validate_content(&self, content: &[nucleus::message::MessagePart]) -> Result<(), String> {
+        nucleus::message::validate(content)?;
+        for part in content {
+            if let nucleus::message::MessagePart::Attachment { mime_type, .. } = part {
+                let media = mime_type.starts_with("image/") || mime_type == "application/pdf";
+                let audio = mime_type.starts_with("audio/")
+                    && self.target.model.adapter_kind == genai::adapter::AdapterKind::Gemini;
+                if !(media || audio) {
+                    return Err("This direct provider does not support this file type. Use a capable ACP agent or a resource reference.".into());
+                }
+            }
+        }
+        Ok(())
+    }
     async fn complete(
         &self,
         system: &str,
         messages: &[Message],
         tools: &[ToolDefinition],
     ) -> Result<Reply, String> {
+        for value in messages {
+            if let Message::RichUser { content, .. } | Message::RichAssistant { content, .. } =
+                value
+            {
+                self.validate_content(content)?;
+            }
+        }
         let request = ChatRequest::new(messages.iter().map(message).collect())
             .with_system(system)
             .with_tools(
@@ -165,6 +240,14 @@ impl Provider for GenaiProvider {
         ) {
             return Err("The provider stopped before completing its reply. Try a shorter request or another model.".into());
         }
+        let usage = Some(usage_report(&self.target, &response.usage));
+        if response
+            .content
+            .iter()
+            .any(|part| matches!(part, ContentPart::Binary(_)))
+        {
+            return Err("This direct adapter returned media output that it cannot save. Use a capable ACP agent for rich replies.".into());
+        }
         let text = response.content.texts().join("\n");
         let calls = response
             .into_tool_calls()
@@ -176,7 +259,7 @@ impl Provider for GenaiProvider {
                 signatures: call.thought_signatures,
             })
             .collect();
-        Ok(Reply { text, calls })
+        Ok(Reply { text, calls, usage })
     }
 
     async fn stream(
@@ -186,6 +269,13 @@ impl Provider for GenaiProvider {
         tools: &[ToolDefinition],
         output: &dyn TextOutput,
     ) -> Result<Reply, String> {
+        for value in messages {
+            if let Message::RichUser { content, .. } | Message::RichAssistant { content, .. } =
+                value
+            {
+                self.validate_content(content)?;
+            }
+        }
         let request = ChatRequest::new(messages.iter().map(message).collect())
             .with_system(system)
             .with_tools(
@@ -200,6 +290,7 @@ impl Provider for GenaiProvider {
             );
         let options = ChatOptions::default()
             .with_max_tokens(4096)
+            .with_capture_usage(true)
             .with_capture_content(true)
             .with_capture_tool_calls(true);
         let mut stream = self
@@ -237,6 +328,20 @@ impl Provider for GenaiProvider {
                     }
                 }
                 Some(Ok(ChatStreamEvent::End(end))) => {
+                    if end.captured_content.as_ref().is_some_and(|content| {
+                        content
+                            .iter()
+                            .any(|part| matches!(part, ContentPart::Binary(_)))
+                    }) {
+                        return Err("This direct adapter returned media output that it cannot save. Use a capable ACP agent for rich replies.".into());
+                    }
+                    let usage = end
+                        .captured_usage
+                        .as_ref()
+                        .map(|usage| usage_report(&self.target, usage));
+                    if let Some(usage) = &usage {
+                        output.usage(usage.clone()).await?;
+                    }
                     output.update(&text).await?;
                     if !matches!(
                         end.captured_stop_reason,
@@ -259,7 +364,7 @@ impl Provider for GenaiProvider {
                             signatures: call.thought_signatures,
                         })
                         .collect();
-                    return Ok(Reply { text, calls });
+                    return Ok(Reply { text, calls, usage });
                 }
                 Some(Ok(_)) => {}
                 Some(Err(_)) | None => {
@@ -269,4 +374,18 @@ impl Provider for GenaiProvider {
             }
         }
     }
+}
+
+fn usage_report(
+    target: &genai::ServiceTarget,
+    usage: &genai::chat::Usage,
+) -> nucleus::operation::Usage {
+    nucleus::operation::Usage::request(
+        format!("genai · {}", target.model.model_name),
+        usage.prompt_tokens.and_then(|value| value.try_into().ok()),
+        usage
+            .completion_tokens
+            .and_then(|value| value.try_into().ok()),
+        usage.total_tokens.and_then(|value| value.try_into().ok()),
+    )
 }

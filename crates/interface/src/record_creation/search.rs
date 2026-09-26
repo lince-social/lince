@@ -624,7 +624,7 @@ mod tests {
             store: engine.store.clone(),
             lanes: std::sync::Arc::new(cell::LaneHub::new()),
             wire: Default::default(),
-            fiote: None,
+            fiote: None, speech: None,
             information: None,
         };
         let (mut app, root) = app();

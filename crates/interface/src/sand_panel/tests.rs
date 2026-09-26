@@ -16,7 +16,7 @@ pub(crate) fn connect(app: &mut App, engine: std::sync::Arc<engine::Engine>) -> 
         engine,
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
         wire: Default::default(),
-        fiote: None,
+        fiote: None, speech: None,
         information: None,
     };
     app.insert_resource(crate::wake::WakeSignal::new(|| {}))

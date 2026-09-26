@@ -359,7 +359,7 @@ async fn slug_submission_sets_zero_through_cell_and_preserves_other_records() {
         engine,
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
         wire: Default::default(),
-        fiote: None,
+        fiote: None, speech: None,
         information: None,
     };
     let mut bridge = crate::cell_bridge::connect(runtime, crate::wake::WakeSignal::new(|| {}));

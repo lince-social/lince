@@ -13,6 +13,8 @@ pub struct SharedField {
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize)]
 pub struct Rule {
     pub uid: String,
+    pub name: String,
+    pub slug: String,
     pub fields: Vec<SharedField>,
     pub revision: i64,
     pub state: String,
@@ -40,18 +42,20 @@ impl FieldDraft {
 
 #[derive(Clone, Default, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Draft {
+    pub name: String,
+    pub slug: String,
     pub rule: Option<String>,
     pub revision: Option<i64>,
     pub fields: [FieldDraft; 3],
-    pub editing: Option<SharedField>,
 }
 
 impl Draft {
     pub fn from_rule(rule: &Rule) -> Self {
         Self {
+            name: rule.name.clone(),
+            slug: rule.slug.clone(),
             rule: Some(rule.uid.clone()),
             revision: Some(rule.revision),
-            editing: None,
             fields: RuleFieldKind::ALL.map(|kind| {
                 let linked = rule.fields.iter().find(|field| field.kind == kind).cloned();
                 FieldDraft {
@@ -65,17 +69,16 @@ impl Draft {
     }
 
     pub fn valid(&self) -> bool {
-        self.fields.iter().all(|field| {
-            field.text.len() <= 16_384
-                && field
-                    .linked
-                    .as_ref()
-                    .is_none_or(|field| field.source.len() <= 16_384 && field.uid.len() <= 256)
-        }) && self.rule.as_ref().is_none_or(|uid| uid.len() <= 256)
-            && self
-                .editing
-                .as_ref()
-                .is_none_or(|field| field.source.len() <= 16_384 && field.uid.len() <= 256)
+        self.name.len() <= 256
+            && self.slug.len() <= 256
+            && self.fields.iter().all(|field| {
+                field.text.len() <= 16_384
+                    && field
+                        .linked
+                        .as_ref()
+                        .is_none_or(|field| field.source.len() <= 16_384 && field.uid.len() <= 256)
+            })
+            && self.rule.as_ref().is_none_or(|uid| uid.len() <= 256)
     }
 }
 

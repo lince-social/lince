@@ -49,6 +49,7 @@ pub enum EditAction {
     Close,
     CreateWorkspace,
     TogglePhysics,
+    ToggleAlwaysShowControls,
     ReloadWorkspaceSettings,
     SwitchWorkspace(u64),
     RemoveWorkspace(u64),
@@ -640,6 +641,11 @@ fn apply(world: &mut World, root: Entity, action: EditAction) {
     }
     let mode = world.get::<EditMode>(root).unwrap();
     match action {
+        EditAction::ToggleAlwaysShowControls => {
+            world.init_resource::<crate::canvas_controls::ControlsSettings>();
+            let mut settings = world.resource_mut::<crate::canvas_controls::ControlsSettings>();
+            settings.always_show = !settings.always_show;
+        }
         EditAction::TogglePhysics => {
             let active = world.get::<Workspaces>(root).unwrap().active;
             let enabled = crate::workspace_config::enabled(world, root, active);
@@ -972,7 +978,7 @@ pub(crate) fn control(
             }
         }
         EditAction::ReloadWorkspaceSettings => Some(Icon::Reset),
-        EditAction::TogglePhysics => None,
+        EditAction::TogglePhysics | EditAction::ToggleAlwaysShowControls => None,
         EditAction::ResetCanvasColors => Some(Icon::Reset),
         EditAction::CanvasColor(_, rgb) => {
             world.entity_mut(entity).insert(crate::icons::IconStyle {
@@ -1121,6 +1127,20 @@ fn render_panel_content(world: &mut World, root: Entity) {
     }
     if general {
         label(world, panel, "General", 22.0);
+        let always_show = world
+            .get_resource::<crate::canvas_controls::ControlsSettings>()
+            .is_some_and(|settings| settings.always_show);
+        control(
+            world,
+            root,
+            panel,
+            EditAction::ToggleAlwaysShowControls,
+            if always_show {
+                "Always show controls: On"
+            } else {
+                "Always show controls: Off"
+            },
+        );
         crate::workspace_config::controls(world, root, panel);
         crate::inspection::controls(world, root, panel);
         crate::deletion::controls(world, root, panel);
@@ -1594,6 +1614,21 @@ pub(crate) mod tests {
 
         EditAction::General.apply(app.world_mut(), root);
         assert!(app.world().get::<EditMode>(root).unwrap().general);
+        for enabled in [true, false] {
+            assert!(
+                app.world_mut()
+                    .query::<&EditControl>()
+                    .iter(app.world())
+                    .any(|control| { control.action == EditAction::ToggleAlwaysShowControls })
+            );
+            activate(&mut app, root, EditAction::ToggleAlwaysShowControls);
+            assert_eq!(
+                app.world()
+                    .resource::<crate::canvas_controls::ControlsSettings>()
+                    .always_show,
+                enabled
+            );
+        }
         assert!(
             app.world_mut()
                 .query::<&EditControl>()

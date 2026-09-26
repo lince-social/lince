@@ -33,10 +33,11 @@ fn main() {
         for (title, count) in [("Discussion", 55), ("Planning", 1)] {
             let thread = engine.act(engine::actions::Action::CreateThread { target: record.clone(), head: title.into() }, None).await.unwrap().created.unwrap();
             for index in 0..count {
-                engine.act(engine::actions::Action::CreateMessage { thread: thread.clone(), body: if index == count - 1 { format!("## {title}\n\nA **rich** message with _formatting_.\n\n```mermaid\ngraph LR\n A[Record] --> B[Thread]\n```\n\n![Lince logo](data:image/png;base64,{embedded_logo})\n\nMessage {index}") } else { format!("Message {index}") }, author: None, state: nucleus::MessageState::Finished, parent: None, references: Vec::new() }, None).await.unwrap();
+                engine.act(engine::actions::Action::CreateMessage {
+ content: Vec::new(), thread: thread.clone(), body: if index == count - 1 { format!("## {title}\n\nA **rich** message with _formatting_.\n\n```mermaid\ngraph LR\n A[Record] --> B[Thread]\n```\n\n![Lince logo](data:image/png;base64,{embedded_logo})\n\nMessage {index}") } else { format!("Message {index}") }, author: None, state: nucleus::MessageState::Finished, parent: None, references: Vec::new() }, None).await.unwrap();
             }
         }
-        (cell::CellRuntime { commands: Default::default(), store: engine.store.clone(), engine, lanes: Arc::new(cell::LaneHub::new()), wire: Default::default(), fiote: None, information: None }, record)
+        (cell::CellRuntime { commands: Default::default(), store: engine.store.clone(), engine, lanes: Arc::new(cell::LaneHub::new()), wire: Default::default(), fiote: None, speech: None, information: None }, record)
     });
     let _entered = runtime.enter();
     runtime.spawn(async {

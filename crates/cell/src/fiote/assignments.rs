@@ -255,6 +255,7 @@ impl Host {
                     self.engine
                         .act(
                             Action::CreateMessage {
+                                content: Vec::new(),
                                 thread: thread.clone(),
                                 body: format!("Waiting to start: {reason}"),
                                 author: Some(entry.fiote.clone()),
@@ -291,6 +292,7 @@ impl Host {
                 self.engine
                     .act(
                         Action::CreateMessage {
+                            content: Vec::new(),
                             thread,
                             body: format!("Fiote could not start this assignment: {error}"),
                             author: Some(entry.fiote),

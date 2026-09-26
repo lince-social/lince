@@ -454,6 +454,7 @@ async fn threads_include_returns_nested_record_messages() {
     let first = e
         .act(
             Action::CreateMessage {
+                content: Vec::new(),
                 thread: thread.clone(),
                 body: "First message".into(),
                 author: None,
@@ -470,6 +471,7 @@ async fn threads_include_returns_nested_record_messages() {
     let reply = e
         .act(
             Action::CreateMessage {
+                content: Vec::new(),
                 thread,
                 body: "Reply message".into(),
                 author: None,
@@ -569,6 +571,7 @@ async fn threads_include_resolves_sender_name_from_the_actor() {
         .unwrap();
     e.act(
         Action::CreateMessage {
+            content: Vec::new(),
             thread,
             body: "hi from ana".into(),
             author: None,
@@ -1089,7 +1092,8 @@ async fn thread_history_loads_newest_then_older_and_excludes_deleted_messages() 
         let thread = e.act(Action::CreateThread { target: record.clone(), head: title.into() }, None).await.unwrap().created.unwrap();
         let mut ids = Vec::new();
         for index in 0..5 {
-            let uid = e.act(Action::CreateMessage { thread: thread.clone(), body: format!("{title}-{index}"), author: None, state: nucleus::MessageState::Finished, parent: None, references: Vec::new() }, None).await.unwrap().created.unwrap();
+            let uid = e.act(Action::CreateMessage {
+ content: Vec::new(), thread: thread.clone(), body: format!("{title}-{index}"), author: None, state: nucleus::MessageState::Finished, parent: None, references: Vec::new() }, None).await.unwrap().created.unwrap();
             store::sqlx::query("UPDATE record SET created_at = ? WHERE uid = ?").bind(format!("2026-01-01T00:00:0{index}Z")).bind(&uid).execute(&e.store.pool).await.unwrap();
             ids.push(uid);
         }

@@ -139,6 +139,8 @@ pub enum Action {
         source: String,
     },
     SaveKarmaRule {
+        #[serde(default)]
+        identity: Option<nucleus::karma::rule_field::RuleIdentity>,
         rule: Option<String>,
         expected_revision: Option<i64>,
         fields: [nucleus::karma::rule_field::RuleFieldInput; 3],
@@ -542,6 +544,8 @@ pub enum Action {
     CreateMessage {
         thread: String,
         body: String,
+        #[serde(default)]
+        content: Vec<nucleus::message::MessagePart>,
         #[serde(default, skip_serializing_if = "Option::is_none")]
         author: Option<String>,
         #[serde(default, skip_serializing_if = "MessageState::is_finished")]
@@ -2193,8 +2197,8 @@ impl Engine {
             Action::PreviewKarmaReading { source } => {
                 outcome.data = Some(Box::pin(self.preview_karma_reading(&source, actor.as_deref(), now)).await?);
             }
-            Action::SaveKarmaRule { rule, expected_revision, fields, request_id } => {
-                outcome = Box::pin(self.save_karma_rule(rule, expected_revision, fields, request_id, actor.as_deref(), now)).await?;
+            Action::SaveKarmaRule { identity, rule, expected_revision, fields, request_id } => {
+                outcome = Box::pin(self.save_karma_rule(rule, expected_revision, fields, identity, request_id, actor.as_deref(), now)).await?;
             }
             Action::ReviseKarmaField { field, expected_revision, source, request_id } => {
                 outcome = Box::pin(self.revise_karma_field(field, expected_revision, source, request_id, actor.as_deref(), now)).await?;
@@ -2286,11 +2290,11 @@ impl Engine {
                 })?;
             }
             Action::DeleteRecurrence { recurrence } => {
-                let uid = store::recurrence::get(&self.store.pool, &recurrence)
+                let rule = store::recurrence::get(&self.store.pool, &recurrence)
                     .await?
-                    .map(|rule| rule.uid)
                     .ok_or_else(|| EngineError::UnknownRecord(recurrence.clone()))?;
-                store::recurrence::delete(&self.store.pool, &uid).await?;
+                self.refuse_unreadable(actor.as_deref(), &[rule.record_uid]).await?;
+                store::recurrence::delete(&self.store.pool, &rule.uid).await?;
             }
             Action::SetRecurrencePaused {
                 recurrence,
@@ -2668,6 +2672,33 @@ impl Engine {
                     ));
                 }
                 let uid = self.resolve(&target).await?;
+                if namespace == "lince.message" { return Err(EngineError::Forbidden("Use message actions to change authorship or lifecycle.".into())); }
+                let mut expected_content = None;
+                if namespace == "lince.message-content" {
+                    let metadata = store::records::get_extension(&self.store.pool, &uid, "lince.message").await?.ok_or_else(|| EngineError::Consequence("Content must belong to a message.".into()))?;
+                    let (_, operator) = self.message_authorship(None, actor.as_deref()).await?;
+                    if metadata["state"] != "writing" {
+                        let before = store::records::get_extension(&self.store.pool, &uid, &namespace).await?.unwrap_or_default();
+                        let old: Vec<nucleus::message::StoredPart> = serde_json::from_value(before["parts"].clone()).map_err(|error| EngineError::Consequence(error.to_string()))?;
+                        let new: Vec<nucleus::message::StoredPart> = serde_json::from_value(fds["parts"].clone()).map_err(|error| EngineError::Consequence(error.to_string()))?;
+                        if old == new { return Err(EngineError::Consequence("These message contents have already been saved.".into())); }
+                        if old.len() != new.len() { return Err(EngineError::Consequence("Only existing steps and questions can be edited here.".into())); }
+                        for (old, new) in old.iter().zip(&new) {
+                            match (old, new) {
+                                _ if old == new => {},
+                                (nucleus::message::StoredPart::Steps { .. }, nucleus::message::StoredPart::Steps { steps }) => {
+                                    if metadata["operator"] != operator || metadata["author"] != operator { return Err(EngineError::Forbidden("Only the author can edit their step list.".into())); }
+                                    nucleus::operation::validate_steps(steps).map_err(EngineError::Consequence)?;
+                                }
+                                (nucleus::message::StoredPart::Question { question: old }, nucleus::message::StoredPart::Question { question: new }) => old.response(new, &operator, metadata["operator"].as_str().unwrap_or_default(), now.timestamp_millis().max(0) as u64).map_err(EngineError::Forbidden)?,
+                                _ => return Err(EngineError::Consequence("Message attachments cannot be changed through form or step controls.".into())),
+                            }
+                        }
+                        expected_content = Some(before);
+                    } else if metadata["operator"] != operator {
+                        return Err(EngineError::Forbidden("Only the message operator may change its contents.".into()));
+                    }
+                }
                 if namespace == "lince.fiote" {
                     return Err(EngineError::Consequence("Use configure-fiote to change prompt ancestry and assignment behavior.".into()));
                 }
@@ -2685,7 +2716,11 @@ impl Engine {
                         )
                         .await;
                 }
-                store::records::set_extension(&self.store.pool, &uid, &namespace, &fds).await?;
+                if let Some(expected) = expected_content {
+                    store::message_content::replace(&self.store.pool, &uid, &expected, &fds).await?;
+                } else {
+                    store::records::set_extension(&self.store.pool, &uid, &namespace, &fds).await?;
+                }
                 outcome.facts = self
                     .annotate(
                         uid,
@@ -4495,6 +4530,7 @@ impl Engine {
                 outcome.created = Some(thread.uid);
             }
             Action::CreateMessage {
+                content,
                 thread,
                 body,
                 author,
@@ -4502,6 +4538,18 @@ impl Engine {
                 parent,
                 references,
             } => {
+                let mut content = content;
+                for part in &mut content {
+                    if let nucleus::message::MessagePart::Question { question } = part {
+                        if question.state != nucleus::question::State::Pending { return Err(EngineError::Consequence("New questions must wait for an answer.".into())); }
+                        if question.responder == "me" { question.responder = self.message_authorship(None, actor.as_deref()).await?.1; }
+                        let recipient = self.resolve(&question.responder).await?;
+                        let row = store::records::get(&self.store.pool, &recipient).await?.ok_or_else(|| EngineError::UnknownRecord(recipient.clone()))?;
+                        if row.kind != RecordKind::Person.as_str() && row.kind != RecordKind::Organ.as_str() { return Err(EngineError::Consequence("Choose a Person or Organ as the question responder.".into())); }
+                        question.responder = recipient;
+                    }
+                }
+                nucleus::message::validate(&content).map_err(EngineError::Consequence)?;
                 if state == MessageState::Interrupted {
                     return Err(EngineError::Consequence(
                         "a new message may be writing or finished, not interrupted".into(),
@@ -4523,12 +4571,14 @@ impl Engine {
                 }
                 let references = self.resolve_message_references(references).await?;
                 let body = body.trim();
-                if state == MessageState::Finished && body.is_empty() && references.is_empty() {
+                if state == MessageState::Finished && body.is_empty() && references.is_empty() && content.is_empty() {
                     return Err(EngineError::Consequence(
                         "message body and Record references cannot both be empty".into(),
                     ));
                 }
-                let head = if body.is_empty() {
+                let head = if body.is_empty() && !content.is_empty() {
+                    "Shared message contents".into()
+                } else if body.is_empty() {
                     format!(
                         "Shared {} Record{}",
                         references.len(),
@@ -4554,6 +4604,9 @@ impl Engine {
                     replica_root.as_deref(),
                 )
                 .await?;
+                if !content.is_empty() {
+                    store::message_content::save(&self.store.pool, &message.uid, &content).await?;
+                }
                 let message_in = store::concepts::ensure(&self.store.pool, "message-in").await?;
                 store::assertions::assert(
                     &self.store.pool,
@@ -4740,7 +4793,8 @@ impl Engine {
                         .is_empty(),
                         None => false,
                     };
-                    if !has_references {
+                    let has_content = store::records::get_extension(&self.store.pool, &message_uid, "lince.message-content").await?.is_some_and(|value| value["parts"].as_array().is_some_and(|parts| !parts.is_empty()));
+                    if !has_references && !has_content {
                         return Err(EngineError::Consequence(
                             "a finished message body and Record references cannot both be empty"
                                 .into(),
@@ -4904,6 +4958,7 @@ impl Engine {
                     .map(str::to_string);
                 outcome = Box::pin(self.act_at_with_authorship(
                     Action::CreateMessage {
+                        content: Vec::new(),
                         thread,
                         body: draft_row.body,
                         author,
@@ -4967,6 +5022,7 @@ impl Engine {
                 }
                 outcome = Box::pin(self.act_at_with_authorship(
                     Action::CreateMessage {
+                        content: Vec::new(),
                         thread: thread_uid,
                         body,
                         author: None,

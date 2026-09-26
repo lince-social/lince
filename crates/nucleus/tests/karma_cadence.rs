@@ -56,6 +56,24 @@ fn components_sum_rather_than_compete() {
 }
 
 #[test]
+fn weekdays_are_applied_after_calendar_and_subsecond_shifts() {
+    let cadence = Cadence::every(CadenceStep {
+        months: 1,
+        days: 1,
+        seconds: 10,
+        milliseconds: 100,
+        ..Default::default()
+    })
+    .landing_on(WeekdaySet::new([CivilWeekday::Monday]).unwrap());
+    let anchor = at("2026-01-01T23:59:55Z");
+    let out = dates(&cadence, anchor, anchor, at("2026-02-10T00:00:00Z"));
+    assert_eq!(
+        out,
+        vec![at("2026-01-05T23:59:55Z"), at("2026-02-09T00:00:05.100Z")]
+    );
+}
+
+#[test]
 fn milliseconds_survive_into_the_result() {
     let cadence = Cadence::every(CadenceStep {
         milliseconds: 10,

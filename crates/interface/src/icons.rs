@@ -58,6 +58,8 @@ pub enum Icon {
     Person,
     Engine,
     Credits,
+    Search,
+    Copy,
 }
 
 #[derive(Component, Clone)]
@@ -107,6 +109,9 @@ impl Default for IconStyle {
     }
 }
 
+#[derive(Component)]
+pub(crate) struct InlineTooltip;
+
 #[derive(Component, Default, Clone)]
 #[require(Node, TooltipDuration)]
 pub struct Tooltip(pub String);
@@ -150,7 +155,7 @@ pub(crate) fn image(world: &World, icon: Icon) -> Option<ImageNode> {
 
 impl FromWorld for IconAtlas {
     fn from_world(world: &mut World) -> Self {
-        let rows = (Icon::Credits as u32 + 1).div_ceil(5);
+        let rows = (Icon::Copy as u32 + 1).div_ceil(5);
         let image = world.resource_mut::<Assets<Image>>().add(Image::new(
             Extent3d {
                 width: 640,
@@ -336,7 +341,12 @@ fn sync(
 }
 
 fn hints(world: &mut World) {
-    if !world.resource::<TooltipSettings>().enabled {
+    let explicit = world
+        .resource::<Hints>()
+        .hovered
+        .or(world.resource::<Hints>().keyboard)
+        .is_some_and(|entity| world.get::<InlineTooltip>(entity).is_some());
+    if !world.resource::<TooltipSettings>().enabled && !explicit {
         let mut state = world.resource_mut::<Hints>();
         state.hovered = None;
         state.keyboard = None;
@@ -613,7 +623,7 @@ pub(crate) mod tests {
     #[cfg_attr(test, test)]
     fn atlas_contains_every_icon_and_straight_alpha_for_tinting() {
         let pixels = include_bytes!(concat!(env!("OUT_DIR"), "/icons.rgba"));
-        for index in 0..=Icon::Credits as usize {
+        for index in 0..=Icon::Copy as usize {
             let mut ink = false;
             for y in index / 5 * 128..(index / 5 + 1) * 128 {
                 for x in index % 5 * 128..(index % 5 + 1) * 128 {
@@ -998,5 +1008,51 @@ pub(crate) mod tests {
         let node = app.world().get::<Node>(tip).unwrap();
         assert_eq!(node.left, px(560));
         assert_eq!(node.top, px(490));
+    }
+
+    #[test]
+    fn inline_help_keeps_its_size_and_works_without_automatic_help_icons() {
+        let mut app = app();
+        let root = app
+            .world_mut()
+            .spawn((
+                BoxRoot,
+                ComputedNode {
+                    size: Vec2::splat(800.0),
+                    ..default()
+                },
+                UiGlobalTransform::default(),
+            ))
+            .id();
+        let icon = app
+            .world_mut()
+            .spawn((
+                InlineTooltip,
+                Tooltip("A short explanation.".into()),
+                Node {
+                    width: px(22),
+                    height: px(22),
+                    ..default()
+                },
+                ComputedNode {
+                    size: Vec2::splat(22.0),
+                    ..default()
+                },
+                UiGlobalTransform::from(bevy::math::Affine2::from_translation(Vec2::splat(100.0))),
+                ChildOf(root),
+            ))
+            .id();
+        app.world_mut()
+            .entity_mut(icon)
+            .insert(TooltipIcon { source: icon });
+        for enabled in [false, true] {
+            app.world_mut().resource_mut::<TooltipSettings>().enabled = enabled;
+            app.update();
+            app.world_mut().trigger(SandHoveredOn { entity: icon });
+            app.update();
+            assert!(app.world().resource::<Hints>().tip.is_some());
+            assert_eq!(app.world().get::<Node>(icon).unwrap().width, px(22));
+            assert!(app.world().get::<Children>(icon).is_none());
+        }
     }
 }

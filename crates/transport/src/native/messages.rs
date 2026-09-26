@@ -138,6 +138,7 @@ impl State {
                     .handle(ClientMessage::Act {
                         id: args.request_id.clone(),
                         action: Action::CreateMessage {
+                            content: Vec::new(),
                             thread: context.thread.clone(),
                             body: args.text.clone(),
                             author: Some(context.agent.clone()),

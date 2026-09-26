@@ -173,7 +173,7 @@ fn main() {
         engine,
         lanes: Arc::new(cell::LaneHub::new()),
         wire: default(),
-        fiote: None,
+        fiote: None, speech: None,
         information: None,
     }))
     .add_plugins(lince_interface::cell_bridge::CellBridgePlugin)

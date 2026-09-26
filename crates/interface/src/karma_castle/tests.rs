@@ -34,7 +34,8 @@ fn header_filter_hides_unmatched_rules_without_changing_the_draft() {
     );
     let header = app.world().get::<Children>(owner).unwrap()[0];
     assert_eq!(app.world().get::<Children>(header).unwrap().len(), 3);
-    let search = app.world().get::<Children>(header).unwrap()[2];
+    let search_group = app.world().get::<Children>(header).unwrap()[2];
+    let search = app.world().get::<Children>(search_group).unwrap()[1];
     let status = app.world().get::<View>(owner).unwrap().status;
     assert_eq!(
         app.world().get::<Node>(status).unwrap().display,
@@ -42,6 +43,8 @@ fn header_filter_hides_unmatched_rules_without_changing_the_draft() {
     );
     app.world_mut().get_mut::<View>(owner).unwrap().rules = vec![Rule {
         uid: "rule".into(),
+        name: "Balance".into(),
+        slug: "balance-rule".into(),
         fields: vec![field()],
         revision: 1,
         state: "active".into(),
@@ -78,6 +81,8 @@ fn header_filter_hides_unmatched_rules_without_changing_the_draft() {
 fn typing_filters_shared_conditions_and_basic_records_without_copying_identity() {
     let rules = vec![Rule {
         uid: "rule".into(),
+        name: "Balance".into(),
+        slug: "balance-rule".into(),
         fields: vec![field()],
         revision: 1,
         state: "active".into(),
@@ -163,7 +168,7 @@ fn new_form_is_first_and_unlinking_clears_only_the_chosen_field() {
         KarmaCastle::default(),
     );
     ui::Command::New.apply(app.world_mut(), owner);
-    ui::Command::Link(0, field()).apply(app.world_mut(), owner);
+    ui::Command::Link(0, 0, field()).apply(app.world_mut(), owner);
     assert!(
         app.world()
             .get::<KarmaCastle>(owner)
@@ -175,7 +180,7 @@ fn new_form_is_first_and_unlinking_clears_only_the_chosen_field() {
             .linked
             .is_some()
     );
-    ui::Command::Unlink(0).apply(app.world_mut(), owner);
+    ui::Command::Insert(0, 0, "@other".into(), 0..8).apply(app.world_mut(), owner);
     let draft = app
         .world()
         .get::<KarmaCastle>(owner)
@@ -184,7 +189,7 @@ fn new_form_is_first_and_unlinking_clears_only_the_chosen_field() {
         .as_ref()
         .unwrap();
     assert!(draft.fields[0].linked.is_none());
-    assert!(draft.fields[0].text.is_empty());
+    assert!(draft.fields[0].text.contains("@other"));
     let view = app.world().get::<View>(owner).unwrap();
     let parent = app.world().get::<ChildOf>(view.form).unwrap().parent();
     let children = app.world().get::<Children>(parent).unwrap();
@@ -282,7 +287,7 @@ async fn castle_saves_through_the_cell_and_receives_live_protein_fields() {
         engine,
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
         wire: Default::default(),
-        fiote: None,
+        fiote: None, speech: None,
         information: None,
     };
     let mut app = App::new();
@@ -318,6 +323,12 @@ async fn castle_saves_through_the_cell_and_receives_live_protein_fields() {
         text: text.into(),
         linked: None,
     });
+    {
+        let mut castle = app.world_mut().get_mut::<KarmaCastle>(owner).unwrap();
+        let draft = castle.draft.as_mut().unwrap();
+        draft.name = "Double source".into();
+        draft.slug = "double-source".into();
+    }
     ui::render_form(app.world_mut(), owner);
     ui::Command::Save.apply(app.world_mut(), owner);
     until(&mut app, |world| {
@@ -328,34 +339,66 @@ async fn castle_saves_through_the_cell_and_receives_live_protein_fields() {
     let view = app.world().get::<View>(owner).unwrap();
     assert_eq!(view.rules[0].fields.len(), 3);
     assert!(view.record_lookup.contains_key("source"));
-    let condition = view.rules[0]
-        .fields
-        .iter()
-        .find(|field| field.kind == RuleFieldKind::Condition)
-        .unwrap()
-        .clone();
-    ui::Command::New.apply(app.world_mut(), owner);
-    ui::Command::Link(0, condition.clone()).apply(app.world_mut(), owner);
-    ui::Command::Edit(condition).apply(app.world_mut(), owner);
-    assert!(
-        app.world()
-            .get::<KarmaCastle>(owner)
-            .unwrap()
-            .suspended
-            .is_some()
-    );
-    ui::Command::Cancel.apply(app.world_mut(), owner);
-    assert!(
+    assert_eq!(view.rules[0].name, "Double source");
+    assert_eq!(view.rules[0].slug, "double-source");
+    let uid = view.rules[0].uid.clone();
+    ui::Command::Select(uid.clone()).apply(app.world_mut(), owner);
+    ui::Command::CopySelected.apply(app.world_mut(), owner);
+    assert_eq!(
         app.world()
             .get::<KarmaCastle>(owner)
             .unwrap()
             .draft
             .as_ref()
             .unwrap()
-            .fields[0]
-            .linked
-            .is_some()
+            .slug,
+        "double-source-copy"
     );
+    ui::Command::Save.apply(app.world_mut(), owner);
+    until(&mut app, |world| {
+        world.get::<View>(owner).unwrap().rules.len() == 2
+            && world.get::<KarmaCastle>(owner).unwrap().draft.is_none()
+    })
+    .await;
+    ui::Command::SelectAll.apply(app.world_mut(), owner);
+    ui::Command::EditSelected.apply(app.world_mut(), owner);
+    assert_eq!(
+        app.world().get::<KarmaCastle>(owner).unwrap().edits.len(),
+        2
+    );
+    {
+        let mut castle = app.world_mut().get_mut::<KarmaCastle>(owner).unwrap();
+        for draft in &mut castle.edits {
+            draft.fields[1] = FieldDraft {
+                text: ">=10".into(),
+                linked: None,
+            };
+        }
+    }
+    ui::render_list(app.world_mut(), owner);
+    ui::Command::Save.apply(app.world_mut(), owner);
+    until(&mut app, |world| {
+        world.get::<KarmaCastle>(owner).unwrap().edits.is_empty()
+            && world.get::<View>(owner).unwrap().pending.is_none()
+    })
+    .await;
+    until(&mut app, |world| {
+        world.get::<View>(owner).unwrap().rules.iter().all(|rule| {
+            rule.fields
+                .iter()
+                .any(|field| field.kind == RuleFieldKind::Threshold && field.source == ">=10")
+        })
+    })
+    .await;
+    ui::Command::DeleteSelected.apply(app.world_mut(), owner);
+    assert_eq!(app.world().get::<View>(owner).unwrap().deleting.len(), 2);
+    assert!(app.world().get::<View>(owner).unwrap().pending.is_none());
+    ui::Command::ConfirmDelete.apply(app.world_mut(), owner);
+    until(&mut app, |world| {
+        world.get::<View>(owner).unwrap().rules.is_empty()
+            && world.get::<View>(owner).unwrap().pending.is_none()
+    })
+    .await;
 }
 
 async fn until(app: &mut App, predicate: impl Fn(&World) -> bool) {
@@ -370,4 +413,99 @@ async fn until(app: &mut App, predicate: impl Fn(&World) -> bool) {
     })
     .await
     .unwrap();
+}
+
+#[test]
+fn table_selection_controls_copy_and_edit_all_and_confirm_deletion() {
+    let mut app = App::new();
+    crate::laboratory::isolate(app.world_mut());
+    app.add_plugins(MinimalPlugins)
+        .init_resource::<Assets<Font>>()
+        .init_resource::<crate::theme::Typography>()
+        .init_resource::<bevy::input_focus::InputFocus>();
+    let world = app.world_mut();
+    let root = world.spawn(crate::workspace::Workspaces::default()).id();
+    let owner = spawn(world, root, 1, DVec2::ZERO, KarmaCastle::default());
+    world.get_mut::<View>(owner).unwrap().rules = (0..2)
+        .map(|index| Rule {
+            uid: format!("rule-{index}"),
+            name: format!("Rule {index}"),
+            slug: format!("rule-{index}"),
+            fields: vec![field()],
+            revision: 1,
+            state: "active".into(),
+        })
+        .collect();
+    ui::render_list(world, owner);
+    let controls = world.get::<View>(owner).unwrap().controls;
+    let disabled = |world: &World, index| {
+        let entity = world.get::<Children>(controls).unwrap()[index];
+        world.get::<bevy::ui::InteractionDisabled>(entity).is_some()
+    };
+    assert!(disabled(world, 1));
+    assert!(disabled(world, 2));
+    assert!(disabled(world, 3));
+    ui::Command::Select("rule-0".into()).apply(world, owner);
+    assert!(!disabled(world, 1));
+    assert!(!disabled(world, 2));
+    assert!(!disabled(world, 3));
+    ui::Command::SelectAll.apply(world, owner);
+    assert!(!disabled(world, 1));
+    assert!(disabled(world, 2));
+    assert!(!disabled(world, 3));
+    ui::Command::CopySelected.apply(world, owner);
+    assert!(world.get::<KarmaCastle>(owner).unwrap().draft.is_none());
+    ui::Command::DeleteSelected.apply(world, owner);
+    assert_eq!(world.get::<View>(owner).unwrap().deleting.len(), 2);
+    assert!(world.get::<View>(owner).unwrap().pending.is_none());
+    ui::Command::CancelDelete.apply(world, owner);
+    assert!(world.get::<View>(owner).unwrap().deleting.is_empty());
+    ui::Command::EditSelected.apply(world, owner);
+    assert_eq!(world.get::<KarmaCastle>(owner).unwrap().edits.len(), 2);
+    let editors = world
+        .query::<&bevy::text::EditableText>()
+        .iter(world)
+        .count();
+    assert_eq!(editors, 11);
+    ui::Command::Cancel.apply(world, owner);
+    let form = world.get::<View>(owner).unwrap().form;
+    let scroll = world.get::<ChildOf>(form).unwrap().parent();
+    world.get_mut::<ScrollPosition>(scroll).unwrap().0.y = 200.0;
+    ui::Command::New.apply(world, owner);
+    assert_eq!(world.get::<ScrollPosition>(scroll).unwrap().0, Vec2::ZERO);
+    let buttons = world.get::<Children>(controls).unwrap();
+    assert_eq!(buttons.len(), 5);
+    let create = world.get::<Children>(buttons[0]).unwrap()[0];
+    assert_eq!(world.get::<Text>(create).unwrap().0, "Create");
+    let form = world.get::<View>(owner).unwrap().form;
+    assert_eq!(world.get::<Children>(form).unwrap().len(), 1);
+    let tips: Vec<_> = world
+        .query_filtered::<&crate::icons::Tooltip, With<crate::icons::InlineTooltip>>()
+        .iter(world)
+        .collect();
+    assert_eq!(
+        tips.iter().filter(|tip| tip.0.starts_with("The ")).count(),
+        3
+    );
+    assert!(tips.iter().all(|tip| !tip.0.contains('\n')));
+    let input = world
+        .query::<(Entity, &bevy::a11y::AccessibilityNode)>()
+        .iter(world)
+        .find(|(entity, node)| {
+            world.get::<bevy::text::EditableText>(*entity).is_some()
+                && node.label() == Some("Condition")
+        })
+        .map(|(entity, _)| entity)
+        .unwrap();
+    world
+        .resource_mut::<bevy::input_focus::InputFocus>()
+        .set(input, bevy::input_focus::FocusCause::Navigated);
+    ui::inputs(world);
+    assert!(world.query::<(&Node, &GlobalZIndex)>().iter(world).any(
+        |(node, z)| node.position_type == PositionType::Absolute
+            && node.display == Display::Flex
+            && z.0 == 30
+    ));
+    ui::Command::Cancel.apply(world, owner);
+    assert_eq!(world.get::<Children>(controls).unwrap().len(), 4);
 }

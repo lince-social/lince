@@ -78,6 +78,7 @@ pub struct ThreadCastlePlugin;
 
 impl Plugin for ThreadCastlePlugin {
     fn build(&self, app: &mut App) {
+        app.add_plugins(crate::message_content::Plugin);
         #[cfg(feature = "native-media")]
         app.add_plugins(crate::communication::calls::CallsPlugin);
         app.add_plugins(crate::record_creation::RecordCreationPlugin);
@@ -263,6 +264,8 @@ fn form(world: &mut World, parent: Entity, binding: RecordBinding, thread: Optio
     let status = message_view::status(world, container);
 
     if let Some(thread) = &thread {
+        crate::message_content::draft(world, container, input, status, thread, &binding);
+        crate::message_commands::create(world, container, container, thread, input);
         crate::fiote::session::thread_controls(world, container, thread, &binding);
     }
     let mut children: Vec<_> = world
@@ -837,14 +840,23 @@ impl Action for Send {
             return;
         }
         let value = text.value().to_string();
-        if value.trim().is_empty() && form.thread.is_some() {
+        let mut content = match crate::message_content::contents(world, entity) {
+            Ok(content) => content,
+            Err(error) => {
+                let status = form.status;
+                world.get_mut::<Text>(status).unwrap().0 = error;
+                return;
+            }
+        };
+        if value.trim().is_empty() && content.is_empty() && form.thread.is_some() {
             return;
         }
         let binding = form.binding.clone();
         let input = form.input;
         let thread = form.thread.clone();
         let in_thread = thread.is_some();
-        if thread.as_deref().is_some_and(|thread| {
+        let literal = crate::message_commands::literal(world, entity);
+        if !literal && thread.as_deref().is_some_and(|thread| {
             crate::fiote::session::thread_command(world, &binding, thread, &value)
         }) {
             world
@@ -857,10 +869,12 @@ impl Action for Send {
         if in_thread && !crate::fiote::session::ready(world, &binding) {
             return;
         }
-        let body = mentions::body(world, input, &value);
+        let mut body = mentions::body(world, input, &value);
+        if literal && in_thread { content.insert(0, nucleus::message::MessagePart::Text { text: std::mem::take(&mut body) }); }
         let form = world.get::<ThreadForm>(entity).unwrap();
         let action = if let Some(thread) = &form.thread {
             engine::actions::Action::CreateMessage {
+                content,
                 thread: thread.clone(),
                 body,
                 author: None,
@@ -878,6 +892,7 @@ impl Action for Send {
         let status = form.status;
         match crate::protein_area::execute(world, &binding, entity, action) {
             Ok(()) => {
+                if let Some(mut draft) = world.get_mut::<crate::message_content::Draft>(entity) { draft.locked = true; }
                 world.get_mut::<ThreadForm>(entity).unwrap().pending = Some(value);
                 world.get_mut::<Text>(status).unwrap().0 = "Sending…".into();
             }
@@ -925,6 +940,7 @@ pub(crate) fn created(world: &mut World, entity: Entity, created: Option<&str>) 
 }
 
 pub(crate) fn finished(world: &mut World, entity: Entity, error: Option<String>) -> bool {
+    if crate::message_progress::finished(world, entity, error.clone()) || crate::message_questions::finished(world, entity, error.clone()) { return true }
     if controls::finished(world, entity, error.clone()) {
         return true;
     }
@@ -943,6 +959,7 @@ pub(crate) fn finished(world: &mut World, entity: Entity, error: Option<String>)
     let sent = form.pending.take();
     let input = form.input;
     let status = form.status;
+    crate::message_content::sent(world, entity, error.is_none());
     if error.is_none()
         && sent.as_ref().is_some_and(|sent| {
             world

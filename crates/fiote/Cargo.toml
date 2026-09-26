@@ -19,6 +19,10 @@ path = "tests/support/agent.rs"
 required-features = ["test-agent"]
 
 [dependencies]
+nucleus = { workspace = true }
+hound = "=3.5.1"
+base64 = { workspace = true }
+portable-pty = { workspace = true }
 agent-client-protocol = "=2.2.0"
 async-trait = { workspace = true }
 futures = { workspace = true }

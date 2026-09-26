@@ -158,7 +158,7 @@ async fn protein_selection_renumbers_in_visible_order_and_persists() {
             store: engine.store.clone(),
             lanes: Arc::new(cell::LaneHub::new()),
             wire: default(),
-            fiote: None,
+            fiote: None, speech: None,
             information: None,
         }))
         .add_plugins((

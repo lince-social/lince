@@ -702,10 +702,9 @@
               ++ lib.optional (!ui) "--no-default-features";
 
               nativeBuildInputs =
-                (with pkgs; [ pkg-config ])
+                (with pkgs; [ pkg-config makeWrapper ])
                 ++ lib.optionals ui (
                   [
-                    pkgs.makeWrapper
                     pkgs.clang
                     pkgs.libclang
                   ]
@@ -719,9 +718,11 @@
                 ])
                 ++ lib.optionals ui interfaceLinuxBuildInputs;
 
-              postFixup = lib.optionalString (ui && pkgs.stdenv.isLinux) ''
-                wrapProgram "$out/bin/lince" \
-                  --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath interfaceLinuxBuildInputs}"
+              postFixup = lib.optionalString (pkgs.stdenv.isLinux && (ui || system == "x86_64-linux")) ''
+                wrapProgram "$out/bin/lince" ${lib.escapeShellArgs (
+                  lib.optionals ui [ "--prefix" "LD_LIBRARY_PATH" ":" (lib.makeLibraryPath interfaceLinuxBuildInputs) ]
+                  ++ lib.optionals (system == "x86_64-linux") [ "--prefix" "PATH" ":" (lib.makeBinPath [ self.packages.${system}.goose ]) ]
+                )}
               '';
 
               meta = {
@@ -782,7 +783,8 @@
               '';
               postFixup = ''
                 wrapProgram "$out/bin/lince" \
-                  --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath libraries}"
+                  --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath libraries}" \
+                  --prefix PATH : "${lib.makeBinPath [ self.packages.${system}.goose ]}"
               '';
               doInstallCheck = true;
               installCheckPhase = ''
@@ -824,10 +826,10 @@
           // lib.optionalAttrs (system == "x86_64-linux") {
             goose = pkgs.stdenvNoCC.mkDerivation {
               pname = "goose-cli";
-              version = "1.51.0";
+              version = "1.52.0";
               src = pkgs.fetchurl {
-                url = "https://github.com/aaif-goose/goose/releases/download/v1.51.0/goose-x86_64-unknown-linux-musl.tar.gz";
-                hash = "sha256-W/EbJCZHtP7yGC5Lvu65ocEpsyiDS56HTKTqCs7J2TU=";
+                url = "https://github.com/aaif-goose/goose/releases/download/v1.52.0/goose-x86_64-unknown-linux-musl.tar.gz";
+                hash = "sha256-/chmUyhaiffcrW52c2rxaIqyzeRGYbCJMosvxAu3n58=";
               };
               sourceRoot = ".";
               dontStrip = true;
@@ -986,7 +988,8 @@
                 libclang
               ])
               ++ interfaceLinuxNativeBuildInputs
-              ++ interfaceLinuxBuildInputs;
+              ++ interfaceLinuxBuildInputs
+              ++ lib.optionals (system == "x86_64-linux") [ self.packages.${system}.goose ];
 
             shellHook = ''
               export LINCE_MIGRATION_PREFLIGHT=1
@@ -1041,7 +1044,8 @@
                 ]
               )
               ++ interfaceLinuxNativeBuildInputs
-              ++ interfaceLinuxBuildInputs;
+              ++ interfaceLinuxBuildInputs
+              ++ lib.optionals (system == "x86_64-linux") [ self.packages.${system}.goose ];
 
             shellHook = ''
               export LINCE_MIGRATION_PREFLIGHT=1

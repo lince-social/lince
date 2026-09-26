@@ -1,5 +1,6 @@
 mod input;
 mod run_view;
+pub(crate) mod login_view;
 #[cfg(test)]
 mod tests;
 mod vt;
@@ -16,6 +17,7 @@ use std::collections::{HashMap, VecDeque};
 const CELL_WIDTH: f32 = 15.0 * 1233.0 / 2048.0;
 const CELL_HEIGHT: f32 = 18.0;
 pub(crate) const CREDITS: &[crate::credits::Attribution] = &[
+    crate::credits::Attribution { name: "portable-pty", author: "Wez Furlong and contributors", license: include_str!("../licenses/portable-pty.txt") },
     crate::credits::Attribution {
         name: "libghostty",
         author: include_str!("terminal/vendor/UPSTREAM.txt"),
@@ -327,6 +329,7 @@ fn update(
         .collect();
     for owner in owners {
         run_view::poll(world, owner);
+        login_view::poll(world, owner);
         let terminal = world.get::<TerminalSand>(owner).unwrap();
         let status = terminal.status;
         let geometry = world
@@ -340,7 +343,7 @@ fn update(
                 )
             })
             .unwrap_or(terminal.geometry);
-        if geometry != terminal.geometry && world.get::<run_view::RunView>(owner).is_none() {
+        if geometry != terminal.geometry && world.get::<run_view::RunView>(owner).is_none() && world.get::<login_view::LoginView>(owner).is_none() {
             let result = if terminal.opened {
                 panel::send(
                     world,
@@ -404,6 +407,7 @@ fn update(
             }
         }
         loop {
+            if world.get::<login_view::LoginView>(owner).is_some() { break; }
             let terminal = world.get::<TerminalSand>(owner).unwrap();
             if !terminal.opened {
                 break;
@@ -440,7 +444,7 @@ fn update(
 }
 
 fn receive(world: &mut World, message: ServerMessage) {
-    if run_view::receive(world, &message) {
+    if login_view::receive(world, &message) || run_view::receive(world, &message) {
         return;
     }
     let id = match &message {

@@ -3,6 +3,12 @@ use serde::{Deserialize, Serialize};
 use super::{Consequence, Consequences};
 use crate::DecimalValue;
 
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
+pub struct RuleIdentity {
+    pub name: String,
+    pub slug: String,
+}
+
 pub fn check_condition_source(source: &str) -> Result<(), String> {
     if source.len() > 4096 {
         return Err("A condition can contain at most 4096 bytes".into());

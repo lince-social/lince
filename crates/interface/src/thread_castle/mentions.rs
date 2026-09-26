@@ -1028,6 +1028,7 @@ mod tests {
             .query::<&crate::area::InfluenceArea>()
             .iter(app.world())
             .count();
+        paint(app.world_mut());
         let link = app
             .world_mut()
             .query::<(Entity, &InlineLink)>()
@@ -1074,7 +1075,7 @@ mod tests {
                 && world.query::<&Message>().iter(world).any(|message| {
                     world
                         .get::<crate::description::Description>(message.preview)
-                        .is_some_and(|preview| preview.source == encoded)
+                        .is_some_and(|preview| preview.source == encoded.trim())
                 })
         })
         .await;

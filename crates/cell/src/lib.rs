@@ -5,6 +5,7 @@ pub mod discovery;
 pub mod configuration;
 pub mod organ;
 pub mod fiote;
+pub mod speech;
 pub mod information;
 pub mod sync_runner;
 pub mod transfer;
@@ -24,6 +25,7 @@ pub use transport::native::Context as FioteContext;
 pub use ::fiote::adapters::{Descriptor as FioteProvider, AuthKind as FioteAuthKind, AuthMethod as FioteAuthMethod};
 pub use ::fiote::tools::Registry as FioteTools;
 pub use ::fiote::acp::Config as FioteAgentConfig;
+pub use ::fiote::acp::terminal::TerminalRequest as FioteTerminalRequest;
 pub use ::fiote::adapters::register_bundled as register_provider_adapter;
 pub use ::fiote::provider_adapter::serve as serve_provider_adapter;
 pub use ::fiote::config::{
@@ -42,6 +44,7 @@ const HEARTBEAT_PERIOD_SECS: u64 = 60;
 
 #[derive(Clone)]
 pub struct CellRuntime {
+    pub speech: Option<Arc<speech::Host>>,
     pub commands: terminal::commands::CommandHost,
     pub engine: Arc<engine::Engine>,
     pub store: Store,
@@ -86,6 +89,7 @@ impl CellRuntime {
             self.lanes.clone(),
             nucleus::new_uid("local-ui"),
         );
+        let session = match &self.speech { Some(host) => session.with_speech(host.clone()), None => session };
         match &self.fiote {
             Some(host) => session.with_fiote(host.clone()),
             None => session,
@@ -158,6 +162,7 @@ impl Cell {
         let lanes = Arc::new(LaneHub::new());
         let wire = bind_wire(&engine, &store, &local_organ, &key_dir, &lanes, &mut tasks).await;
         let runtime = CellRuntime {
+            speech: Some(Arc::new(speech::Host::open(key_dir.join("speech.json")).map_err(IoError::other)?)),
             commands: Default::default(),
             engine: engine.clone(),
             store: store.clone(),

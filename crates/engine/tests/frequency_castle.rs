@@ -43,6 +43,62 @@ async fn create(engine: &engine::Engine) -> String {
 }
 
 #[tokio::test]
+async fn frequency_query_preserves_combined_cadence_weekdays_and_record_quantity() {
+    let engine = support::engine().await;
+    let cadence = Cadence::every(CadenceStep {
+        months: 1,
+        days: 1,
+        seconds: 10,
+        milliseconds: 100,
+        ..Default::default()
+    })
+    .landing_on(nucleus::karma::WeekdaySet::new([nucleus::karma::CivilWeekday::Monday]).unwrap());
+    let frequency = nucleus::karma::simple_frequency::frequency_from_cadence(
+        Slug::new("combined-frequency").unwrap(),
+        "Combined frequency".into(),
+        &cadence,
+        TimestampMs::parse_canonical("2026-01-01T23:59:55.000Z").unwrap(),
+    )
+    .unwrap();
+    let uid = engine
+        .act(
+            Action::CreateKarmaFrequency {
+                request_id: "combined-frequency-create".into(),
+                frequency: frequency.clone(),
+                owner_person_uid: None,
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    let stored = store::frequency::get(&engine.store.pool, &uid)
+        .await
+        .unwrap()
+        .unwrap();
+    assert_eq!(stored.cadence, cadence);
+    assert_eq!(
+        rows(&engine).await[0]["definition"],
+        serde_json::to_value(frequency).unwrap()
+    );
+    for quantity in [0, 1] {
+        store::sqlx::query(
+            "UPDATE record SET quantity_mantissa = ?, quantity_scale = 0 WHERE uid = ?",
+        )
+        .bind(quantity.to_string())
+        .bind(&uid)
+        .execute(&engine.store.pool)
+        .await
+        .unwrap();
+        let row = rows(&engine).await.remove(0);
+        let actual: nucleus::DecimalValue =
+            serde_json::from_value(row["quantity"].clone()).unwrap();
+        assert_eq!(actual.mantissa(), quantity);
+    }
+}
+
+#[tokio::test]
 async fn protein_tracks_saved_and_running_revisions_across_full_frequency_crud() {
     let engine = support::engine().await;
     engine
@@ -181,6 +237,7 @@ async fn referenced_frequency_delete_is_refused_until_rule_is_removed() {
     let rule = engine
         .act(
             Action::SaveKarmaRule {
+                identity: None,
                 rule: None,
                 expected_revision: None,
                 fields: ["freq(@castle-frequency)", ">0", "@balance += 1"].map(|source| {
@@ -306,6 +363,7 @@ async fn daily_rule(engine: &engine::Engine) -> String {
     engine
         .act(
             Action::SaveKarmaRule {
+                identity: None,
                 rule: None,
                 expected_revision: None,
                 fields: [
@@ -697,6 +755,7 @@ async fn a_rule_edit_does_not_pick_up_an_older_queued_emission() {
     engine
         .act_at(
             Action::SaveKarmaRule {
+                identity: None,
                 rule: Some(rule.uid),
                 expected_revision: Some(rule.revision),
                 fields: [

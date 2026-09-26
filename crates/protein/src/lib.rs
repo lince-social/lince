@@ -2196,6 +2196,8 @@ async fn threads_for_record(
                 "operator": operator,
                 "message_state": message_state,
                 "tool_call": tool_call,
+                "progress": store::records::get_extension(&store.pool, &message.uid, "lince.message-progress").await?,
+                "content": store::records::get_extension(&store.pool, &message.uid, "lince.message-content").await?,
                 "organ_name": organ_name,
                 "references": record_references,
                 "live_references": match &references {
@@ -3039,6 +3041,8 @@ async fn execute_frequency(store: &Store, visible: Option<&HashSet<String>>) -> 
     let cursors = store::karma::schedules::list_cursors(&store.pool).await?;
     for frequency in store::frequency::all(&store.pool).await? {
         if visible.is_some_and(|visible| !visible.contains(&frequency.uid)) { continue }
+        let quantity = store::records::get(&store.pool, &frequency.uid).await?
+            .ok_or_else(|| karma_query_error("protein_frequency_record_missing", &frequency.uid))?.quantity;
         let handle = store::karma::frequencies::get_handle(&store.pool, &frequency.uid).await?;
         let definition = match &handle {
             Some(handle) => store::karma::frequencies::get_revision(&store.pool, &handle.head_revision_hash).await?,
@@ -3055,6 +3059,7 @@ async fn execute_frequency(store: &Store, visible: Option<&HashSet<String>>) -> 
             "uid": frequency.uid,
             "slug": frequency.slug,
             "head": frequency.head,
+            "quantity": quantity,
             "every": frequency.every,
             "anchor_at": frequency.anchor_at,
             "created_at": frequency.created_at,

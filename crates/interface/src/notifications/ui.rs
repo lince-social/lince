@@ -271,7 +271,7 @@ fn preserve_focus(world: &mut World, subtree: Entity) {
         if entity == subtree {
             if let Some(root) = root(world, subtree) {
                 let center = world.get::<NotificationCenter>(root).unwrap();
-                let target = center.panel.unwrap_or(center.button);
+                let target = center.panel.unwrap_or(root);
                 world
                     .resource_mut::<InputFocus>()
                     .set(target, FocusCause::Navigated);

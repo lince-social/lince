@@ -30,7 +30,7 @@ async fn removing_castle_keeps_run_alive_and_reopening_restores_history() {
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
         wire: Default::default(),
         information: None,
-        fiote: None,
+        fiote: None, speech: None,
     };
     let mut app = app();
     app.insert_resource(crate::app::CellHandle(runtime.clone()))

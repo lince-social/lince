@@ -454,6 +454,7 @@ fn balance_is_advisory_and_conversation_uses_generic_threads() {
         engine
             .act(
                 Action::CreateMessage {
+                    content: Vec::new(),
                     thread,
                     body: "can we do saturday?".into(),
                     author: None,

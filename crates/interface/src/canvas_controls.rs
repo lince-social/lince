@@ -13,6 +13,11 @@ use bevy::{
 
 pub(crate) mod corner;
 
+#[derive(Resource, Clone, Copy, Default, serde::Serialize, serde::Deserialize)]
+pub(crate) struct ControlsSettings {
+    pub always_show: bool,
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CanvasAction {
     Recenter,
@@ -115,7 +120,8 @@ impl Plugin for CanvasControlsPlugin {
         if !app.is_plugin_added::<ActionsPlugin>() {
             app.add_plugins(ActionsPlugin);
         }
-        app.init_resource::<InputFocus>()
+        app.init_resource::<ControlsSettings>()
+            .init_resource::<InputFocus>()
             .init_resource::<InputFocusVisible>()
             .init_resource::<Assets<Image>>()
             .init_resource::<crate::tokens::ThemeSettings>()

@@ -117,7 +117,7 @@ async fn main() {
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
         wire: Default::default(),
         information: None,
-        fiote: None,
+        fiote: None, speech: None,
     };
     let mut app = interface_app();
     app.insert_resource(CellHandle(runtime))

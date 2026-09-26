@@ -1,9 +1,9 @@
 use super::*;
 
 pub(super) struct Preview {
-    config: acp::Config,
+    pub(super) config: acp::Config,
     pub connection: Arc<acp::Connection>,
-    session: acp::SessionOptions,
+    pub(super) session: acp::SessionOptions,
 }
 
 impl Agents {
@@ -22,7 +22,7 @@ impl Agents {
         }
     }
 
-    async fn save_options(&self, record: &str, preview: Preview) -> Result<(), String> {
+    pub(super) async fn save_options(&self, record: &str, preview: Preview) -> Result<(), String> {
         let options =
             serde_json::to_value(&preview.session.options).map_err(|error| error.to_string())?;
         self.options.lock().await.insert(record.into(), preview);
@@ -36,7 +36,7 @@ impl Agents {
 }
 
 impl Host {
-    async fn options_available(&self, record: &str) -> Result<(), String> {
+    pub(super) async fn options_available(&self, record: &str) -> Result<(), String> {
         self.record(record).await?;
         if self
             .running

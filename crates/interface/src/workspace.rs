@@ -106,6 +106,8 @@ struct Document {
     imports: Vec<crate::topology::assets::SavedAsset>,
     #[serde(default)]
     theme: crate::tokens::ThemeSettings,
+    #[serde(default)]
+    controls: crate::canvas_controls::ControlsSettings,
     active: u64,
     workspaces: Vec<Workspace>,
     sands: Vec<SavedSand>,
@@ -346,6 +348,7 @@ fn initialize(world: &mut World) {
                     .entity_mut(root)
                     .insert(crate::layout::records::SavedLayouts(document.layouts));
                 world.insert_resource(document.theme);
+                world.insert_resource(document.controls);
                 spaces.active = document.active;
                 spaces.entries = document.workspaces;
                 spaces.saved_records = document
@@ -770,6 +773,10 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
         layouts: crate::layout::records::snapshot(world, root),
         imports: crate::topology::assets::snapshot(world, root),
         theme: world.resource::<crate::tokens::ThemeSettings>().clone(),
+        controls: world
+            .get_resource::<crate::canvas_controls::ControlsSettings>()
+            .copied()
+            .unwrap_or_default(),
         active,
         workspaces,
         sands,
@@ -1510,6 +1517,7 @@ pub(crate) mod tests {
         let world = app.world_mut();
         create(world, root);
         rename(world, root, "Writing");
+        world.insert_resource(crate::canvas_controls::ControlsSettings { always_show: true });
         let colors = crate::canvas_background::CanvasColors {
             background: [16, 32, 48],
             grid: [64, 80, 96],
@@ -1558,6 +1566,11 @@ pub(crate) mod tests {
         let (mut loaded, root) = fixture(Some(path));
         let world = loaded.world_mut();
         assert_eq!(world.get::<Workspaces>(root).unwrap().active, 2);
+        assert!(
+            world
+                .resource::<crate::canvas_controls::ControlsSettings>()
+                .always_show
+        );
         assert_eq!(
             world.get::<Workspaces>(root).unwrap().entries[1].name,
             "Writing"

@@ -36,7 +36,7 @@ async fn fixture() -> (App, Arc<engine::Engine>, Entity, Entity, Entity, String)
         engine: engine.clone(),
         lanes: Arc::new(cell::LaneHub::new()),
         wire: Default::default(),
-        fiote: None,
+        fiote: None, speech: None,
         information: None,
     };
     let mut app = App::new();

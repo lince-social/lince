@@ -291,6 +291,11 @@ fn apply(world: &mut World) {
             if let Some(mut color) = world.get_mut::<TextColor>(entity) {
                 color.set_if_neq(TextColor(value));
             }
+            if let Some(mut image) = world.get_mut::<ImageNode>(entity)
+                && image.color != value
+            {
+                image.color = value;
+            }
         }
         if let Some(binding) = border.filter(|_| !icon) {
             let value = resolve(world, entity, binding.0).0.color();
@@ -541,7 +546,24 @@ pub(crate) mod tests {
         );
     }
 
+    #[cfg_attr(test, test)]
+    fn image_glyphs_follow_ink_when_switching_themes() {
+        let (mut app, root) = fixture();
+        let glyph = app
+            .world_mut()
+            .spawn((ImageNode::default(), TextToken(Token::Ink), ChildOf(root)))
+            .id();
+        for scheme in [ColorScheme::Light, ColorScheme::Dark, ColorScheme::Light] {
+            app.world_mut().resource_mut::<ThemeSettings>().scheme = scheme;
+            app.update();
+            let color = app.world().get::<ImageNode>(glyph).unwrap().color;
+            assert_eq!(color, Token::Ink.default_value(scheme).color());
+            assert_ne!(color, Token::Surface.default_value(scheme).color());
+        }
+    }
+
     crate::laboratory_cases! {
+        image_glyphs_follow_ink_when_switching_themes,
         renders_global_type_and_individual_styles_and_preserves_later_resizing,
         nested_text_inherits_its_parent_and_can_override_it,
         styling_stays_unchanged_while_idle_and_keeps_explicit_icon_colors,

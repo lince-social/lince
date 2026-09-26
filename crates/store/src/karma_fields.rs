@@ -123,6 +123,7 @@ pub async fn save_rule(
     pool: &SqlitePool,
     rule: &Recurrence,
     fields: &[Selection],
+    identity: Option<&nucleus::karma::rule_field::RuleIdentity>,
     request: &str,
     now: DateTime<Utc>,
 ) -> Result<(), StoreError> {
@@ -146,6 +147,16 @@ pub async fn save_rule(
         }
         bind(&mut tx, &rule.uid, &selection.field).await?;
     }
+    if let Some(identity) = identity {
+        sqlx::query("UPDATE recurrence SET name = ?, slug = ? WHERE uid = ?")
+            .bind(&identity.name)
+            .bind(&identity.slug)
+            .bind(&rule.uid)
+            .execute(&mut *tx)
+            .await?;
+    }
+    sqlx::query("UPDATE recurrence_revision SET name = (SELECT name FROM recurrence WHERE uid = ?), slug = (SELECT slug FROM recurrence WHERE uid = ?) WHERE request_id = ?")
+        .bind(&rule.uid).bind(&rule.uid).bind(request).execute(&mut *tx).await?;
     remember(&mut tx, request, &rule.uid).await?;
     tx.commit().await
 }
@@ -232,8 +243,29 @@ async fn write_rule(
             return Err(invalid("This rule changed. Refresh before saving."));
         }
     }
-    sqlx::query("INSERT INTO recurrence_revision(uid, recurrence_uid, revision, kind, consequences_json, condition_src, gate, carry, note, cadence_json, anchor_at, state, request_id, actor_uid, at) SELECT ?, uid, revision, ?, consequences_json, condition_src, gate, carry, note, cadence_json, anchor_at, state, ?, actor_uid, updated_at FROM recurrence WHERE uid = ?")
+    sqlx::query("INSERT INTO recurrence_revision(uid, recurrence_uid, revision, kind, consequences_json, condition_src, gate, carry, note, cadence_json, anchor_at, state, request_id, actor_uid, at, name, slug) SELECT ?, uid, revision, ?, consequences_json, condition_src, gate, carry, note, cadence_json, anchor_at, state, ?, actor_uid, updated_at, name, slug FROM recurrence WHERE uid = ?")
         .bind(nucleus::new_uid("recr")).bind(if rule.revision == 0 { "created" } else { "revised" })
         .bind(request).bind(&rule.uid).execute(&mut **tx).await?;
     Ok(())
+}
+
+pub async fn identity(
+    pool: &SqlitePool,
+    uid: &str,
+) -> Result<Option<nucleus::karma::rule_field::RuleIdentity>, StoreError> {
+    Ok(
+        sqlx::query("SELECT name, slug FROM recurrence WHERE uid = ?")
+            .bind(uid)
+            .fetch_optional(pool)
+            .await?
+            .map(|row| {
+                let slug: Option<String> = row.get("slug");
+                nucleus::karma::rule_field::RuleIdentity {
+                    name: row.get("name"),
+                    slug: slug
+                        .filter(|slug| nucleus::valid_slug(slug))
+                        .unwrap_or_else(|| uid.to_ascii_lowercase().replace('_', "-")),
+                }
+            }),
+    )
 }

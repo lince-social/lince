@@ -8,6 +8,9 @@ homepage.workspace = true
 description = "Lince pure core: primitives, expression engine, graphs, frequency math. No IO, no SQL, DST-testable alone."
 
 [dependencies]
+base64 = { workspace = true }
+regex = { workspace = true }
+url = "2.5.8"
 schemars = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

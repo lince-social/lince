@@ -474,6 +474,7 @@ pub(crate) fn edit_connection(
         EditAction::Toggle => "Edit Panel Clicked Toggle",
         EditAction::CreateWorkspace => "Workspace Clicked Add",
         EditAction::TogglePhysics => "Workspace Physics Clicked Toggle",
+        EditAction::ToggleAlwaysShowControls => "Always Show Controls Clicked Toggle",
         EditAction::ReloadWorkspaceSettings => "Workspace Settings Clicked Reload",
         EditAction::SwitchWorkspace(_) => "Workspace Clicked Switch",
         EditAction::RemoveWorkspace(_) => "Workspace Clicked Confirm Removal",

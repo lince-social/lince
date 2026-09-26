@@ -97,6 +97,7 @@ pub fn connect(runtime: cell::CellRuntime, wake: WakeSignal) -> CellBridge {
         let mut lanes = HashMap::<String, tokio::task::AbortHandle>::new();
         let mut lane_tasks = tokio::task::JoinSet::new();
         let mut call_tasks = tokio::task::JoinSet::new();
+        let mut speech_tasks = tokio::task::JoinSet::new();
         let mut call_queue = std::collections::VecDeque::new();
         let mut terminals = cell::terminal::TerminalHost::new();
         let (terminal_output, mut terminal_messages) = mpsc::channel(64);
@@ -111,6 +112,15 @@ pub fn connect(runtime: cell::CellRuntime, wake: WakeSignal) -> CellBridge {
             let messages = tokio::select! {
                 request = requests.recv() => {
                     let Some(request) = request else { break };
+                    if let ClientMessage::Speech { id, .. } = &request {
+                        if speech_tasks.len() >= 8 {
+                            if !deliver(&responses, &wake, vec![ServerMessage::Error { id: id.clone(), message: "Speech controls are busy; try again".into(), code: Some("speech_busy".into()) }]).await { break; }
+                        } else {
+                            let mut speech = session.fork_call();
+                            speech_tasks.spawn(async move { speech.handle(request).await });
+                        }
+                        continue;
+                    }
                     if let ClientMessage::Call { id, .. } | ClientMessage::CallContext { id, .. } = &request {
                         if call_queue.len() >= 64 {
                             if !deliver(&responses, &wake, vec![ServerMessage::Error { id: id.clone(), message: "Call controls are busy; try again".into(), code: Some("call_busy".into()) }]).await { break; }
@@ -192,6 +202,7 @@ pub fn connect(runtime: cell::CellRuntime, wake: WakeSignal) -> CellBridge {
                 },
                 Some(message) = terminal_messages.recv() => vec![message],
                 Some(result) = call_tasks.join_next(), if !call_tasks.is_empty() => result.unwrap_or_default(),
+                Some(result) = speech_tasks.join_next(), if !speech_tasks.is_empty() => result.unwrap_or_default(),
                 Some(id) = terminal_exits.recv() => { terminals.forget(&id); Vec::new() },
                 finished = lane_tasks.join_next(), if !lane_tasks.is_empty() => {
                     lanes.retain(|_, task| !task.is_finished());
@@ -319,7 +330,7 @@ pub(crate) mod tests {
                 engine,
                 lanes: Arc::new(cell::LaneHub::new()),
                 wire: Default::default(),
-                fiote: None,
+                fiote: None, speech: None,
                 information: None,
             },
             uid,

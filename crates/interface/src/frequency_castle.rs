@@ -1,3 +1,4 @@
+mod interval;
 mod model;
 mod persistence;
 #[cfg(test)]
@@ -25,6 +26,7 @@ pub struct FrequencyCastle {
 
 #[derive(Component)]
 struct View {
+    controls: Entity,
     form: Entity,
     list: Entity,
     status: Entity,
@@ -96,9 +98,18 @@ pub fn spawn(
         .id();
     let header = ui::row(world, owner);
     crate::edit_mode::label(world, header, "Frequency", 22.0);
-    ui::button(world, header, owner, "+", ui::Command::New);
+    let controls = ui::row(world, header);
+    world.get_mut::<Node>(controls).unwrap().width = Val::Auto;
+    let search_row = ui::row(world, header);
+    {
+        let mut node = world.get_mut::<Node>(search_row).unwrap();
+        node.width = Val::Auto;
+        node.margin = UiRect::left(Val::Auto);
+        node.flex_wrap = FlexWrap::NoWrap;
+    }
+    ui::glyph(world, search_row, crate::icons::Icon::Search, 17.0);
     let search = world.get::<FrequencyCastle>(owner).unwrap().search.clone();
-    ui::input(world, header, owner, 4, "Filter frequencies", &search);
+    ui::input(world, search_row, owner, 4, "Filter frequencies", &search);
     let scroll = ui::stack(world, owner);
     {
         let mut node = world.get_mut::<Node>(scroll).unwrap();
@@ -113,6 +124,7 @@ pub fn spawn(
     let status = crate::edit_mode::label(world, owner, "", 12.0);
     world.get_mut::<Node>(status).unwrap().display = Display::None;
     world.entity_mut(owner).insert(View {
+        controls,
         form,
         list,
         status,
@@ -218,7 +230,7 @@ fn save(world: &mut World, owner: Entity) {
             .original_fields
             .as_ref()
             .is_none_or(|fields| fields[2..] != draft.fields[2..])
-            || draft.original_unit != Some(draft.unit),
+            || draft.original_weekdays != draft.weekdays,
     };
     submit(world, owner, action, Some(draft), "");
 }
@@ -342,7 +354,7 @@ fn receive(world: &mut World, mut cursor: Local<bevy::ecs::message::MessageCurso
                             );
                             draft.original = submitted.definition().ok();
                             draft.original_fields = Some(submitted.fields);
-                            draft.original_unit = Some(submitted.unit);
+                            draft.original_weekdays = submitted.weekdays;
                         }
                     }
                     world.get_mut::<View>(owner).unwrap().deleting = None;

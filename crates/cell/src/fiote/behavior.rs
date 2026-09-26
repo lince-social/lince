@@ -45,6 +45,7 @@ impl Host {
     }
 
     pub(super) async fn thread_fiote(&self, thread: &str) -> Result<String, String> {
+        if !nucleus::valid_uid(thread, "r") { return Err("Choose a valid thread identifier.".into()); }
         if let Some(value) =
             store::records::get_extension(&self.engine.store.pool, thread, "lince.fiote-session")
                 .await

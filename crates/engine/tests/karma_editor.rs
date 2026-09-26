@@ -13,6 +13,7 @@ async fn create(engine: &Engine, condition: RuleFieldInput, target: &str) -> Str
     engine
         .act(
             Action::SaveKarmaRule {
+                identity: None,
                 rule: None,
                 expected_revision: None,
                 fields: [condition, text(">0"), text(&format!("@{target}"))],
@@ -131,6 +132,7 @@ async fn threshold_and_consequence_links_are_real_references_and_invalid_edits_a
     let second = engine
         .act(
             Action::SaveKarmaRule {
+                identity: None,
                 rule: None,
                 expected_revision: None,
                 fields: linked,
@@ -198,6 +200,7 @@ async fn replacing_a_link_preserves_other_readers_and_stale_saves_do_not_write()
     )
     .await;
     let action = Action::SaveKarmaRule {
+        identity: None,
         rule: Some(second.clone()),
         expected_revision: Some(1),
         fields: [text("@source * 5"), text(">0"), text("@target = result")],
@@ -215,6 +218,7 @@ async fn replacing_a_link_preserves_other_readers_and_stale_saves_do_not_write()
         engine
             .act(
                 Action::SaveKarmaRule {
+                    identity: None,
                     rule: Some(second.clone()),
                     expected_revision: Some(1),
                     fields: [text("@source"), text("always"), text("@target = 0")],
@@ -279,6 +283,7 @@ async fn unknown_references_and_field_kind_confusion_are_rejected_without_partia
             engine
                 .act(
                     Action::SaveKarmaRule {
+                        identity: None,
                         rule: None,
                         expected_revision: None,
                         fields,
@@ -306,6 +311,7 @@ async fn unknown_references_and_field_kind_confusion_are_rejected_without_partia
         engine
             .act(
                 Action::SaveKarmaRule {
+                    identity: None,
                     rule: None,
                     expected_revision: None,
                     fields: [
@@ -393,6 +399,7 @@ async fn castle_commands_still_require_organ_authority() {
     let result = engine
         .act(
             Action::SaveKarmaRule {
+                identity: None,
                 rule: None,
                 expected_revision: None,
                 fields: [
@@ -486,6 +493,7 @@ async fn brushing_rule(
     let rule = engine
         .act(
             Action::SaveKarmaRule {
+                identity: None,
                 rule: None,
                 expected_revision: None,
                 fields: [
@@ -600,6 +608,7 @@ async fn bare_record_destination_does_not_bypass_record_write_permissions() {
     let error = engine
         .act(
             Action::SaveKarmaRule {
+                identity: None,
                 rule: None,
                 expected_revision: None,
                 fields: [text("@protected - 1"), text("always"), text("@protected")],
@@ -668,5 +677,174 @@ async fn private_dependencies_cannot_be_revealed_through_a_derived_hover() {
             )
             .await
             .is_err()
+    );
+}
+
+#[tokio::test]
+async fn rule_identity_is_atomic_unique_and_removed_with_the_rule() {
+    let engine = support::engine().await;
+    support::plain(&engine, "source", 2.0).await;
+    support::plain(&engine, "target", 0.0).await;
+    let identity = |name: &str, slug: &str| {
+        Some(nucleus::karma::rule_field::RuleIdentity {
+            name: name.into(),
+            slug: slug.into(),
+        })
+    };
+    let make = |name: &str, slug: &str| Action::SaveKarmaRule {
+        identity: identity(name, slug),
+        rule: None,
+        expected_revision: None,
+        fields: [text("@source"), text(">0"), text("@target")],
+        request_id: nucleus::new_uid("identity-test"),
+    };
+    let uid = engine
+        .act(make("Balance rule", "balance-rule"), None)
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    let before: i64 = store::sqlx::query_scalar("SELECT count(*) FROM karma_field")
+        .fetch_one(&engine.store.pool)
+        .await
+        .unwrap();
+    assert!(
+        engine
+            .act(make("Duplicate", "balance-rule"), None)
+            .await
+            .is_err()
+    );
+    let after: i64 = store::sqlx::query_scalar("SELECT count(*) FROM karma_field")
+        .fetch_one(&engine.store.pool)
+        .await
+        .unwrap();
+    assert_eq!(before, after);
+    assert_eq!(
+        store::recurrence::all(&engine.store.pool)
+            .await
+            .unwrap()
+            .len(),
+        1
+    );
+    for (name, slug) in [
+        ("", "valid"),
+        ("Name", "UPPER"),
+        ("Name", "bad slug"),
+        ("Bad\nName", "valid"),
+    ] {
+        assert!(engine.act(make(name, slug), None).await.is_err());
+    }
+    let mut revise = make("Renamed rule", "renamed-rule");
+    if let Action::SaveKarmaRule {
+        rule,
+        expected_revision,
+        ..
+    } = &mut revise
+    {
+        *rule = Some(uid.clone());
+        *expected_revision = Some(1);
+    }
+    engine.act(revise, None).await.unwrap();
+    let query = serde_json::from_value(serde_json::json!({"source":"karma_rule"})).unwrap();
+    let rows = protein::execute(&engine.store, &query).await.unwrap();
+    assert_eq!(rows[0]["name"], "Renamed rule");
+    assert_eq!(rows[0]["slug"], "renamed-rule");
+    let mut stale = make("Stale", "stale");
+    if let Action::SaveKarmaRule {
+        rule,
+        expected_revision,
+        ..
+    } = &mut stale
+    {
+        *rule = Some(uid.clone());
+        *expected_revision = Some(1);
+    }
+    assert!(engine.act(stale, None).await.is_err());
+    assert_eq!(
+        store::karma_fields::identity(&engine.store.pool, &uid)
+            .await
+            .unwrap()
+            .unwrap()
+            .slug,
+        "renamed-rule"
+    );
+    engine
+        .act(
+            Action::DeleteRecurrence {
+                recurrence: uid.clone(),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    assert!(
+        store::karma_fields::identity(&engine.store.pool, &uid)
+            .await
+            .unwrap()
+            .is_none()
+    );
+    assert!(fields(&engine, &uid).await.is_empty());
+    engine
+        .act(make("Reuse slug", "renamed-rule"), None)
+        .await
+        .unwrap();
+}
+
+#[tokio::test]
+async fn rule_deletion_requires_permission_and_a_readable_target() {
+    let engine = support::engine().await;
+    let target = support::plain(&engine, "private-target", 0.0).await;
+    let uid = create(&engine, text("@private-target"), "private-target").await;
+    let person = support::person(&engine, "rule-deleter").await;
+    let role = store::auth::ensure_role(&engine.store.pool, "rule-deleter")
+        .await
+        .unwrap();
+    store::auth::create_credential(
+        &engine.store.pool,
+        &person.uid,
+        "rule-deleter",
+        "hash",
+        role,
+    )
+    .await
+    .unwrap();
+    let action = || Action::DeleteRecurrence {
+        recurrence: uid.clone(),
+    };
+    assert!(
+        engine
+            .act(action(), Some(person.uid.clone()))
+            .await
+            .is_err()
+    );
+    for (subject, action) in [("frequency", "delete"), ("record", "read")] {
+        let permission = store::auth::ensure_permission(&engine.store.pool, subject, action)
+            .await
+            .unwrap();
+        store::auth::grant(&engine.store.pool, role, permission)
+            .await
+            .unwrap();
+    }
+    assert!(
+        engine
+            .act(action(), Some(person.uid.clone()))
+            .await
+            .is_err()
+    );
+    assert!(
+        store::recurrence::get(&engine.store.pool, &uid)
+            .await
+            .unwrap()
+            .is_some()
+    );
+    store::visibility::grant(&engine.store.pool, "actor", Some(&person.uid), &target)
+        .await
+        .unwrap();
+    engine.act(action(), Some(person.uid)).await.unwrap();
+    assert!(
+        store::recurrence::get(&engine.store.pool, &uid)
+            .await
+            .unwrap()
+            .is_none()
     );
 }

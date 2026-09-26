@@ -120,7 +120,7 @@ async fn setup_creation_transfer_and_exit_preserve_card_identity() {
         store: engine.store.clone(),
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
         wire: Default::default(),
-        fiote: None,
+        fiote: None, speech: None,
         information: None,
     }))
     .insert_resource(crate::wake::WakeSignal::new(|| {}))
@@ -402,7 +402,7 @@ async fn quantity_changes_move_cards_from_the_source_and_between_columns() {
         store: engine.store.clone(),
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
         wire: Default::default(),
-        fiote: None,
+        fiote: None, speech: None,
         information: None,
     }))
     .insert_resource(crate::wake::WakeSignal::new(|| {}))

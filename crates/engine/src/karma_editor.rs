@@ -100,6 +100,7 @@ impl Engine {
         rule_uid: Option<String>,
         expected_revision: Option<i64>,
         fields: [RuleFieldInput; 3],
+        identity: Option<nucleus::karma::rule_field::RuleIdentity>,
         request_id: String,
         actor: Option<&str>,
         now: DateTime<Utc>,
@@ -119,6 +120,25 @@ impl Engine {
                 created: Some(uid),
                 ..Default::default()
             });
+        }
+        let identity = identity.map(|identity| nucleus::karma::rule_field::RuleIdentity {
+            name: identity.name.trim().into(),
+            slug: identity.slug.trim().into(),
+        });
+        if let Some(identity) = &identity {
+            if identity.name.is_empty()
+                || identity.name.len() > 256
+                || identity.name.chars().any(char::is_control)
+            {
+                return Err(invalid(
+                    "Use a rule name of 1–256 bytes without control characters",
+                ));
+            }
+            if identity.slug.len() > 256 || !nucleus::valid_slug(&identity.slug) {
+                return Err(invalid(
+                    "Use a lowercase rule slug with letters, numbers, hyphens or dots",
+                ));
+            }
         }
         let mut selections = Vec::new();
         for (kind, input) in RuleFieldKind::ALL.into_iter().zip(fields) {
@@ -179,8 +199,15 @@ impl Engine {
             .prepare_editor_rule(previous, &sources, actor, now)
             .await?;
         rule.actor_uid = actor.map(str::to_owned);
-        store::karma_fields::save_rule(&self.store.pool, &rule, &selections, &request_id, now)
-            .await?;
+        store::karma_fields::save_rule(
+            &self.store.pool,
+            &rule,
+            &selections,
+            identity.as_ref(),
+            &request_id,
+            now,
+        )
+        .await?;
         Ok(ActionOutcome {
             created: Some(rule.uid),
             ..Default::default()

@@ -28,6 +28,47 @@ async fn plain(e: &Engine, slug: &str) -> String {
 }
 
 #[tokio::test]
+async fn message_attachments_preserve_order_use_bounded_chunks_and_detect_missing_data() {
+    use nucleus::message::MessagePart;
+    let e = engine().await;
+    let parent = plain(&e, "attachments").await;
+    let thread = e.act(Action::CreateThread { target: parent.clone(), head: "Files".into() }, None).await.unwrap().created.unwrap();
+    let content = vec![
+        MessagePart::Text { text: "A snapshot".into() },
+        MessagePart::Attachment { name: "snapshot.bin".into(), mime_type: "application/octet-stream".into(), data: "YWJj".repeat(150_000) },
+        MessagePart::Reference { name: "Project".into(), uri: format!("record:{parent}") },
+    ];
+    let message = e.act(Action::CreateMessage { thread, body: String::new(), content: content.clone(), author: None, state: nucleus::MessageState::Finished, parent: None, references: vec![] }, None).await.unwrap().created.unwrap();
+    assert_eq!(store::message_content::load(&e.store.pool, &message).await.unwrap(), content);
+    let metadata = store::records::get_extension(&e.store.pool, &message, "lince.message-content").await.unwrap().unwrap();
+    assert!(metadata.to_string().len() < 1024);
+    assert_eq!(metadata["parts"][1]["chunks"], 3);
+    store::records::set_extension(&e.store.pool, &message, &nucleus::message::chunk_namespace(1, 1), &serde_json::json!({"data":""})).await.unwrap();
+    assert!(store::message_content::load(&e.store.pool, &message).await.unwrap_err().to_string().contains("incomplete"));
+}
+
+#[tokio::test]
+async fn human_steps_can_change_without_replacing_attachments_or_impersonating_the_author() {
+    use nucleus::{message::MessagePart, operation::{Step, StepState, Priority}};
+    let e = engine().await;
+    let parent = plain(&e, "progress").await;
+    let thread = e.act(Action::CreateThread { target: parent, head: "Steps".into() }, None).await.unwrap().created.unwrap();
+    let content = vec![MessagePart::Steps { steps: vec![Step { content: "Review".into(), priority: Priority::High, status: StepState::Pending }] }, MessagePart::Text { text: "Keep this".into() }];
+    let message = e.act(Action::CreateMessage { thread, content, body: String::new(), author: None, state: nucleus::MessageState::Finished, parent: None, references: vec![] }, None).await.unwrap().created.unwrap();
+    let mut metadata = store::records::get_extension(&e.store.pool, &message, "lince.message-content").await.unwrap().unwrap();
+    metadata["parts"][0]["steps"][0]["status"] = "completed".into();
+    e.act(Action::SetExtension { target: message.clone(), namespace: "lince.message-content".into(), fds: metadata.clone() }, None).await.unwrap();
+    let saved = store::message_content::load(&e.store.pool, &message).await.unwrap();
+    assert!(matches!(&saved[0], MessagePart::Steps { steps } if steps[0].status == StepState::Completed));
+    metadata["parts"][1]["text"] = "Changed".into();
+    assert!(e.act(Action::SetExtension { target: message.clone(), namespace: "lince.message-content".into(), fds: metadata.clone() }, None).await.is_err());
+    metadata["parts"][1]["text"] = "Keep this".into();
+    metadata["parts"][0]["steps"][0]["status"] = "pending".into();
+    let stranger = user_with(&e, "Reader", "steps-reader", &["record:read", "record:update"]).await;
+    assert!(e.act(Action::SetExtension { target: message, namespace: "lince.message-content".into(), fds: metadata }, Some(stranger)).await.is_err());
+}
+
+#[tokio::test]
 async fn edit_record_text_sets_fields_and_annotates() {
     let e = engine().await;
     let uid = plain(&e, "note").await;
@@ -53,6 +94,32 @@ async fn edit_record_text_sets_fields_and_annotates() {
     assert_eq!(out.facts.len(), 1);
     assert_eq!(out.facts[0].delta, store::exact::from_f64(0.0));
     assert_eq!(out.facts[0].record_uid, uid);
+}
+
+#[tokio::test]
+async fn questions_accept_one_response_from_the_named_person_and_keep_authorship_fixed() {
+    use nucleus::{message::MessagePart, question::{Question, State}};
+    let e = engine().await;
+    let responder = user_with(&e, "Responder", "question-responder", &["record:read", "record:update"]).await;
+    let stranger = user_with(&e, "Stranger", "question-stranger", &["record:read", "record:update"]).await;
+    let parent = plain(&e, "questions").await;
+    let thread = e.act(Action::CreateThread { target: parent, head: "Questions".into() }, None).await.unwrap().created.unwrap();
+    let question = Question { prompt: "Choose".into(), responder: responder.clone(), schema: serde_json::json!({"type":"object","properties":{"choice":{"type":"string","enum":["yes","no"]}},"required":["choice"]}), state: State::Pending, answers: None, expires_ms: None };
+    let message = e.act(Action::CreateMessage { thread, body: String::new(), content: vec![MessagePart::Question { question }], author: None, state: nucleus::MessageState::Finished, parent: None, references: Vec::new() }, None).await.unwrap().created.unwrap();
+    store::visibility::grant(&e.store.pool, "public", None, &message).await.unwrap();
+    let mut value = store::records::get_extension(&e.store.pool, &message, "lince.message-content").await.unwrap().unwrap();
+    value["parts"][0]["question"]["state"] = "answered".into();
+    value["parts"][0]["question"]["answers"] = serde_json::json!({"choice":"yes"});
+    let action = Action::SetExtension { target: message.clone(), namespace: "lince.message-content".into(), fds: value.clone() };
+    assert!(e.act(action.clone(), Some(stranger.clone())).await.is_err());
+    let mut changed = value.clone(); changed["parts"][0]["question"]["responder"] = stranger.into();
+    assert!(e.act(Action::SetExtension { target: message.clone(), namespace: "lince.message-content".into(), fds: changed }, Some(responder.clone())).await.is_err());
+    let (first, second) = tokio::join!(e.act(action.clone(), Some(responder.clone())), e.act(action, Some(responder.clone())));
+    assert!(first.is_ok() || second.is_ok());
+    let mut different = value;
+    different["parts"][0]["question"]["answers"] = serde_json::json!({"choice":"no"});
+    assert!(e.act(Action::SetExtension { target: message.clone(), namespace: "lince.message-content".into(), fds: different }, Some(responder.clone())).await.is_err());
+    assert!(e.act(Action::SetExtension { target: message, namespace: "lince.message".into(), fds: serde_json::json!({"operator":responder,"state":"writing"}) }, Some(responder)).await.is_err());
 }
 
 #[tokio::test]
@@ -339,6 +406,7 @@ async fn record_threads_and_messages_are_records_plus_links() {
     let first = e
         .act(
             Action::CreateMessage {
+                content: Vec::new(),
                 thread: thread.clone(),
                 body: "First message".into(),
                 author: None,
@@ -355,6 +423,7 @@ async fn record_threads_and_messages_are_records_plus_links() {
     let _reply = e
         .act(
             Action::CreateMessage {
+                content: Vec::new(),
                 thread: thread.clone(),
                 body: "Reply message".into(),
                 author: None,
@@ -383,6 +452,7 @@ async fn record_threads_and_messages_are_records_plus_links() {
     assert!(
         e.act(
             Action::CreateMessage {
+                content: Vec::new(),
                 thread: other_thread,
                 body: "Cross-thread reply".into(),
                 author: None,
@@ -448,6 +518,7 @@ async fn record_threads_and_messages_are_records_plus_links() {
     assert!(
         e.act(
             Action::CreateMessage {
+                content: Vec::new(),
                 thread,
                 body: String::new(),
                 author: None,
@@ -482,6 +553,7 @@ async fn writing_message_lifecycle_persists_and_final_states_are_terminal() {
     let message = e
         .act(
             Action::CreateMessage {
+                content: Vec::new(),
                 thread,
                 body: String::new(),
                 author: None,
@@ -594,6 +666,7 @@ async fn delegated_message_authorship_requires_the_agents_operator() {
     let message = e
         .act(
             Action::CreateMessage {
+                content: Vec::new(),
                 thread: thread.clone(),
                 body: "Authored by an Agent".into(),
                 author: Some(agent.clone()),
@@ -616,6 +689,7 @@ async fn delegated_message_authorship_requires_the_agents_operator() {
     assert!(
         e.act(
             Action::CreateMessage {
+                content: Vec::new(),
                 thread,
                 body: "Impersonation".into(),
                 author: Some(metadata["author"].as_str().unwrap().into()),
@@ -837,6 +911,7 @@ async fn thread_and_message_deletion_use_normal_record_delete_permission() {
     let message = e
         .act(
             Action::CreateMessage {
+                content: Vec::new(),
                 thread: thread.clone(),
                 body: "Protected message".into(),
                 author: None,

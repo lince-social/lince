@@ -2,6 +2,7 @@ use super::*;
 use fiote::provider::TextOutput;
 
 pub(super) struct Output<'a> {
+    pub usage_path: Option<PathBuf>,
     pub tools: &'a Registry,
     pub message: &'a str,
     pub text: Mutex<String>,
@@ -37,6 +38,12 @@ impl Output<'_> {
 
 #[async_trait::async_trait]
 impl TextOutput for Output<'_> {
+    async fn usage(&self, report: nucleus::operation::Usage) -> Result<(), String> {
+        if let Some(path) = &self.usage_path {
+            usage::record(path, report)?;
+        }
+        Ok(())
+    }
     async fn update(&self, text: &str) -> Result<(), String> {
         *self.text.lock().await = text.into();
         self.write("update", text).await

@@ -20,3 +20,5 @@ pub use lane::{LaneEvent, LaneHub};
 pub use protocol::{ClientMessage, ServerMessage};
 pub use session::Session;
 pub use sync_events::{SyncEvent, SyncEvents};
+
+pub mod speech;

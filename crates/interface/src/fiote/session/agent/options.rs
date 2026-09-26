@@ -109,7 +109,7 @@ pub(super) fn show(world: &mut World, owner: Entity, content: Entity, saved: Opt
     }
 }
 
-fn choices(option: &Value) -> Vec<(String, Value)> {
+pub(in crate::fiote::session) fn choices(option: &Value) -> Vec<(String, Value)> {
     if option["type"] == "boolean" {
         return vec![("Off".into(), false.into()), ("On".into(), true.into())];
     }

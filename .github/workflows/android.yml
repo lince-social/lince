@@ -33,6 +33,7 @@ jobs:
     timeout-minutes: 90
     env:
       CARGO_INCREMENTAL: '0'
+      RUSTUP_TOOLCHAIN: '1.96.0'
       RUSTFLAGS: '-D warnings -C link-arg=-Wl,-z,max-page-size=16384'
     steps:
       - uses: actions/checkout@v4

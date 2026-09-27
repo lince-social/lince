@@ -37,7 +37,7 @@ loro = { workspace = true }
 bevy = { version = "=0.19.1", default-features = false, features = ["android-native-activity"] }
 jni = "=0.21.1"
 jni-runtime = { package = "jni", version = "=0.22.4" }
-rustls-platform-verifier = "=0.7.0"
+rustls-platform-verifier = "=0.7.1"
 
 [build-dependencies]
 sensei = { workspace = true }

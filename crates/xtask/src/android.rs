@@ -154,7 +154,7 @@ pub(crate) fn dispatch(root: &Path, args: &[OsString]) -> Result<()> {
     if options.action == "logs" {
         let uid =
             app_uid(&adb, &serial)?.ok_or("Lince debug APK is not installed on this device")?;
-        return checked(&mut logcat(&adb, &serial, uid));
+        return checked(&mut logcat(&adb, &serial, uid, "1"));
     }
     if let Some(apk) = apk {
         println!(
@@ -178,17 +178,19 @@ pub(crate) fn dispatch(root: &Path, args: &[OsString]) -> Result<()> {
         );
         return Ok(());
     };
+    checked(Command::new(&adb).args(["-s", &serial, "shell", "am", "force-stop", PACKAGE]))?;
+    let since = output(Command::new(&adb).args(["-s", &serial, "shell", "date", "+%s.%N"]))?;
     let log = target.join(format!("{}.log", serial.replace(':', "_")));
     let file = File::create(&log).map_err(|e| e.to_string())?;
-    let mut capture = logcat(&adb, &serial, uid)
+    let mut capture = logcat(&adb, &serial, uid, since.trim())
         .stdout(file)
         .stderr(Stdio::inherit())
         .spawn()
         .map_err(|e| e.to_string())?;
     println!("Starting Lince; startup logs: {}", log.display());
-    let launched = output(Command::new(&adb).args([
-        "-s", &serial, "shell", "am", "start", "-S", "-W", "-n", COMPONENT,
-    ]));
+    let launched = output(
+        Command::new(&adb).args(["-s", &serial, "shell", "am", "start", "-W", "-n", COMPONENT]),
+    );
     let launched = launched.map(|report| {
         print!("{report}");
         report
@@ -196,7 +198,14 @@ pub(crate) fn dispatch(root: &Path, args: &[OsString]) -> Result<()> {
     if launched.is_ok() {
         thread::sleep(Duration::from_secs(10));
     }
+    let capture_exit = capture.try_wait().map_err(|e| e.to_string());
     stop(&mut capture);
+    if let Some(status) = capture_exit? {
+        return Err(format!(
+            "startup log capture ended early with {status}; see {}",
+            log.display()
+        ));
+    }
     let report = launched.map_err(|e| format!("{e}; see {}", log.display()))?;
     let captured = fs::read_to_string(&log).map_err(|e| e.to_string())?;
     startup_result(&report, &captured).map_err(|e| format!("{e}; see {}", log.display()))?;
@@ -236,7 +245,7 @@ fn app_uid(adb: &Path, serial: &str) -> Result<Option<u32>> {
     Ok(None)
 }
 
-fn logcat(adb: &Path, serial: &str, uid: u32) -> Command {
+fn logcat(adb: &Path, serial: &str, uid: u32, since: &str) -> Command {
     let mut command = Command::new(adb);
     command
         .args([
@@ -252,7 +261,7 @@ fn logcat(adb: &Path, serial: &str, uid: u32) -> Command {
             "-v",
             "threadtime",
             "-T",
-            "1",
+            since,
             "--uid",
         ])
         .arg(uid.to_string());

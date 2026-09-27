@@ -45,6 +45,24 @@ pub fn render(world: &mut World, parent: Entity, page: Page) {
                 include_str!("../licenses/rustls-platform-verifier-MIT.txt"),
                 14.0,
             );
+            label(
+                world,
+                parent,
+                "Kotlin and annotations · JetBrains and contributors",
+                22.0,
+            );
+            label(
+                world,
+                parent,
+                concat!(
+                    include_str!("../licenses/kotlin-COPYRIGHT.txt"),
+                    "\n",
+                    include_str!("../licenses/kotlin-NOTICE.txt"),
+                    "\n",
+                    include_str!("../licenses/kotlin-Apache-2.0.txt"),
+                ),
+                14.0,
+            );
         }
     }
 }

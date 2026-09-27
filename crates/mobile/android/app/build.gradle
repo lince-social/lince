@@ -11,8 +11,8 @@ def metadata = providers.exec {
 }.standardOutput.asText.get()
 def verifier = new JsonSlurper().parseText(metadata).packages.find { it.name == 'rustls-platform-verifier-android' }
 dependencies {
-    implementation files(new File(new File(verifier.manifest_path).parentFile,
-            "maven/rustls/rustls-platform-verifier/${verifier.version}/rustls-platform-verifier-${verifier.version}.aar"))
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib:2.1.0'
+    implementation "org.rustls:rustls-platform-verifier:${verifier.version}"
 }
 
 android {

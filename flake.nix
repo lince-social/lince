@@ -1034,6 +1034,32 @@
             '';
           };
 
+          devShells.android = pkgs.mkShell {
+            inputsFrom = [ self.devShells.${system}.interface ];
+            packages = [ pkgs.jdk17 ];
+            JAVA_HOME = "${pkgs.jdk17}";
+            RUSTUP_TOOLCHAIN = "1.96.0";
+            shellHook = lib.optionalString pkgs.stdenv.isLinux ''
+              export LD_LIBRARY_PATH="${
+                lib.makeLibraryPath (
+                  with pkgs;
+                  [
+                    zlib
+                    nss
+                    nspr
+                    libpng
+                    expat
+                    libxkbfile
+                    libuuid
+                    libbsd
+                    libsm
+                    libice
+                  ]
+                )
+              }:''${LD_LIBRARY_PATH:-}"
+            '';
+          };
+
           devShells.media = pkgs.mkShell {
             inputsFrom = [ self.devShells.${system}.interface ];
             packages =

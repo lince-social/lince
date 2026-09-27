@@ -168,7 +168,7 @@ impl Plugin for MobilePlugin {
                 (capture, flush_on_suspend, apply, persist, render)
                     .chain()
                     .after(bevy::text::EditableTextSystems)
-                    .before(bevy::ui::UiSystems::Content),
+                    .before(bevy::ui::UiSystems::Layout),
             );
     }
 }

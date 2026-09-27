@@ -4,6 +4,7 @@ use std::io::{self, Write};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
+mod android;
 mod prune;
 
 type Result<T> = std::result::Result<T, String>;
@@ -27,6 +28,32 @@ fn dispatch() -> Result<()> {
     env::set_current_dir(&root).map_err(|error| error.to_string())?;
 
     match task.to_str() {
+        Some("android") => android::dispatch(&root, &extra),
+        Some("mobile-preview") => {
+            if extra.len() > 1 {
+                return Err("usage: cargo xtask mobile-preview [data-directory]".into());
+            }
+            let directory = extra
+                .first()
+                .map(PathBuf::from)
+                .unwrap_or_else(|| root.join("target/mobile-preview-data"));
+            println!("Mobile preview data: {}", directory.display());
+            checked(
+                cargo_command()
+                    .args([
+                        "run",
+                        "--locked",
+                        "-p",
+                        "lince-mobile",
+                        "--features",
+                        "preview",
+                        "--bin",
+                        "lince-mobile-preview",
+                        "--",
+                    ])
+                    .arg(directory),
+            )
+        }
         Some("version") => {
             no_extra(&extra)?;
             version(&root)
@@ -77,7 +104,13 @@ fn dispatch() -> Result<()> {
         }
         Some("help") | None | Some("--help") | Some("-h") => {
             no_extra(&extra)?;
-            println!("cargo xtask <dev|test|test-all|release|server|facade|version>");
+            println!(
+                "cargo xtask <dev|test|test-all|release|server|facade|version|android|mobile-preview>"
+            );
+            println!(
+                "android opens an Android emulator; android help lists setup and APK options."
+            );
+            println!("mobile-preview [data-directory] runs the mobile UI in a desktop window.");
             println!("dev passes additional arguments to Lince.");
             println!(
                 "test forwards arguments to cargo test; test-all runs every workspace target."

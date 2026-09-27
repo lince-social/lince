@@ -1,5 +1,22 @@
 use super::*;
 
+#[test]
+fn mobile_schedule_initializes_with_bevy_ui_and_text_plugins() {
+    let mut app = App::new();
+    app.add_plugins((
+        MinimalPlugins,
+        bevy::asset::AssetPlugin::default(),
+        bevy::image::ImagePlugin::default(),
+        bevy::text::TextPlugin,
+        bevy::ui::UiPlugin,
+        MobilePlugin,
+    ));
+    app.world_mut()
+        .schedule_scope(PostUpdate, |world, schedule| {
+            schedule.initialize(world).unwrap();
+        });
+}
+
 fn fixture() -> World {
     let mut world = World::new();
     world.init_resource::<Assets<Font>>();

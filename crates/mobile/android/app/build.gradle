@@ -1,0 +1,62 @@
+import groovy.json.JsonSlurper
+
+plugins {
+    id 'com.android.application'
+}
+
+def workspace = rootProject.projectDir.toPath().resolve('../../..').normalize().toFile()
+def metadata = providers.exec {
+    workingDir workspace
+    commandLine 'cargo', 'metadata', '--locked', '--format-version', '1', '--filter-platform', 'aarch64-linux-android'
+}.standardOutput.asText.get()
+def verifier = new JsonSlurper().parseText(metadata).packages.find { it.name == 'rustls-platform-verifier-android' }
+dependencies {
+    implementation files(new File(new File(verifier.manifest_path).parentFile,
+            "maven/rustls/rustls-platform-verifier/${verifier.version}/rustls-platform-verifier-${verifier.version}.aar"))
+}
+
+android {
+    namespace 'social.lince.mobile'
+    compileSdk 35
+    ndkVersion '28.2.13676358'
+    defaultConfig {
+        applicationId 'social.lince.mobile'
+        minSdk 28
+        targetSdk 35
+        versionCode 1
+        versionName '0.7.0'
+        ndk { abiFilters 'arm64-v8a' }
+    }
+    buildTypes {
+        debug { applicationIdSuffix '.debug' }
+        release { minifyEnabled false }
+    }
+    packaging { jniLibs { useLegacyPackaging false } }
+    lint { warningsAsErrors true }
+}
+
+def icons = layout.buildDirectory.dir('generated/linceIcons')
+def copyIcon = tasks.register('copyLinceIcon', Sync) {
+    into icons
+    into('drawable-nodpi') {
+        from new File(workspace, 'institute/assets/logo/preto.png')
+        rename { 'lince_mark.png' }
+    }
+}
+android.sourceSets.main.res.srcDir(icons)
+tasks.matching { it.name == 'preBuild' }.configureEach { dependsOn copyIcon }
+
+['Debug', 'Release'].each { variant ->
+    def output = layout.buildDirectory.dir("rust/${variant.toLowerCase()}/jniLibs")
+    android.sourceSets.getByName(variant.toLowerCase()).jniLibs.srcDir(output)
+    def rust = tasks.register("compileRust${variant}", Exec) {
+        workingDir workspace
+        environment 'ANDROID_NDK_HOME', new File(android.sdkDirectory, "ndk/${android.ndkVersion}").absolutePath
+        environment 'CARGO_ENCODED_RUSTFLAGS', '-D\u001fwarnings\u001f-C\u001flink-arg=-Wl,-z,max-page-size=16384'
+        def args = ['cargo', 'ndk', '-t', 'arm64-v8a', '--platform', '28', '-o', output.get().asFile.absolutePath,
+                    'build', '--locked', '-p', 'lince-mobile', '--lib']
+        if (variant == 'Release') { args.add('--release') }
+        commandLine args
+    }
+    tasks.matching { it.name == "pre${variant}Build" }.configureEach { dependsOn rust }
+}

@@ -46,6 +46,15 @@ pub fn decode_version(value: &str) -> Result<VersionVector, EngineError> {
     VersionVector::decode(&B64.decode(value).map_err(refused)?).map_err(refused)
 }
 
+pub fn encode_update(document: &LoroDoc, before: &VersionVector) -> Result<String, String> {
+    let delta = document.export_json_updates_without_peer_compression(before, &document.oplog_vv());
+    let bytes = serde_json::to_vec(&delta).map_err(|error| error.to_string())?;
+    if bytes.len() > limits().delta_bytes {
+        return Err("Edit exceeds the change size limit".into());
+    }
+    Ok(B64.encode(bytes))
+}
+
 impl crate::Engine {
     fn cache_doc(&self, uid: &str, doc: Arc<AcceptedDoc>) {
         let mut registry = self.collab_docs.lock().expect("document registry");

@@ -10,7 +10,9 @@ members = [
     "crates/transport",
     "crates/anicca",
     "crates/sensei",
+    "crates/desktop",
     "crates/interface",
+    "crates/mobile",
     "crates/document",
     "crates/fiote",
     "crates/cell",
@@ -38,7 +40,8 @@ homepage = "https://lince.social"
 lince = { version = "=0.7.0", path = "crates/lince" }
 utils = { version = "=0.7.0", path = "crates/utils", package = "lince-utils" }
 cell = { version = "=0.7.0", path = "crates/cell", package = "lince-cell" }
-lince-interface = { version = "=0.7.0", path = "crates/interface" }
+lince-desktop = { version = "=0.7.0", path = "crates/desktop" }
+lince-interface = { version = "=0.7.0", path = "crates/interface", default-features = false }
 lince-media = { version = "=0.7.0", path = "crates/media" }
 lince-facade = { version = "=0.7.0", path = "crates/facade" }
 anicca = { version = "=0.7.0", path = "crates/anicca" }

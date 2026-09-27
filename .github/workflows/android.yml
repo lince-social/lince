@@ -1,0 +1,76 @@
+name: lince-android
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'crates/**'
+      - 'institute/**'
+      - '.cargo/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/workflows/android.yml'
+  push:
+    branches: [main, dev]
+    paths:
+      - 'crates/**'
+      - 'institute/**'
+      - '.cargo/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/workflows/android.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      CARGO_INCREMENTAL: '0'
+      RUSTFLAGS: '-D warnings -C link-arg=-Wl,-z,max-page-size=16384'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: '1.96.0'
+          targets: aarch64-linux-android
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Install Android tools
+        run: sdkmanager 'platform-tools' 'platforms;android-35' 'build-tools;35.0.0' 'ndk;28.2.13676358'
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: android-arm64-ndk28
+      - name: Install cargo-ndk
+        run: cargo install cargo-ndk --version 4.1.2 --locked
+      - name: Check Android library
+        run: |
+          export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/28.2.13676358"
+          cargo ndk -t arm64-v8a --platform 28 check --locked -p lince-mobile --lib
+      - name: Check app and assemble debug APK
+        run: gradle -p crates/mobile/android --no-daemon lintDebug assembleDebug
+      - name: Verify APK
+        run: |
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify crates/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 -v 4 crates/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          cd crates/mobile/android/app/build/outputs/apk/debug
+          sha256sum app-debug.apk > app-debug.apk.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lince-android-arm64-debug
+          path: |
+            crates/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+            crates/mobile/android/app/build/outputs/apk/debug/app-debug.apk.sha256
+          if-no-files-found: error

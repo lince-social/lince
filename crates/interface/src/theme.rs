@@ -1,8 +1,4 @@
-use bevy::{
-    prelude::*,
-    winit::{UpdateMode, WinitSettings},
-};
-use std::time::Duration;
+use bevy::prelude::*;
 
 pub const PAPER: Color = Color::srgb(18.0 / 255.0, 18.0 / 255.0, 20.0 / 255.0);
 pub const INK: Color = Color::srgb(248.0 / 255.0, 250.0 / 255.0, 252.0 / 255.0);
@@ -14,8 +10,10 @@ pub struct Typography(pub Handle<Font>);
 impl FromWorld for Typography {
     fn from_world(world: &mut World) -> Self {
         let symbols = world.resource_mut::<Assets<Font>>().add(Font::from_bytes(
-            include_bytes!("../../../institute/assets/fonts/NotoSansSymbols2/NotoSansSymbols2-Regular.ttf")
-                .to_vec(),
+            include_bytes!(
+                "../../../institute/assets/fonts/NotoSansSymbols2/NotoSansSymbols2-Regular.ttf"
+            )
+            .to_vec(),
         ));
         let arrows = world.resource_mut::<Assets<Font>>().add(Font::from_bytes(
             include_bytes!("../../../institute/assets/fonts/DejaVuSans/DejaVuSans.ttf").to_vec(),
@@ -70,25 +68,16 @@ fn configure_fallbacks(fonts: &mut bevy::text::FontCx) {
     }
 }
 
-pub struct ThemePlugin;
-impl Plugin for ThemePlugin {
+pub struct TypographyPlugin;
+impl Plugin for TypographyPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<Typography>()
-            .add_systems(
-                PostUpdate,
-                symbol_fallbacks
-                    .after(bevy::text::load_font_assets_into_font_collection)
-                    .before(bevy::text::EditableTextSystems)
-                    .before(bevy::ui::UiSystems::Content),
-            )
-            .add_plugins(crate::token_style::TokenStylePlugin);
-    }
-}
-
-pub fn idle_settings() -> WinitSettings {
-    WinitSettings {
-        focused_mode: UpdateMode::reactive_low_power(Duration::MAX),
-        unfocused_mode: UpdateMode::reactive_low_power(Duration::MAX),
+        app.init_resource::<Typography>().add_systems(
+            PostUpdate,
+            symbol_fallbacks
+                .after(bevy::text::load_font_assets_into_font_collection)
+                .before(bevy::text::EditableTextSystems)
+                .before(bevy::ui::UiSystems::Content),
+        );
     }
 }
 
@@ -106,7 +95,8 @@ mod tests {
             });
             for bytes in [
                 include_bytes!("../../../institute/assets/fonts/Lato/Lato-Regular.ttf").as_slice(),
-                include_bytes!("../../../institute/assets/fonts/DejaVuSans/DejaVuSans.ttf").as_slice(),
+                include_bytes!("../../../institute/assets/fonts/DejaVuSans/DejaVuSans.ttf")
+                    .as_slice(),
                 include_bytes!(
                     "../../../institute/assets/fonts/NotoSansSymbols2/NotoSansSymbols2-Regular.ttf"
                 )

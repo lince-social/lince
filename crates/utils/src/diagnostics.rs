@@ -149,6 +149,7 @@ fn application_target(target: &str) -> bool {
         target.split("::").next(),
         Some(
             "lince"
+                | "lince_desktop"
                 | "lince_interface"
                 | "nucleus"
                 | "anicca"

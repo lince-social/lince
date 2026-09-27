@@ -273,11 +273,12 @@ impl ThemeSettings {
     }
 }
 
-pub(crate) mod tests {
+#[cfg(any(test, feature = "behavior-checks"))]
+pub mod checks {
     use super::*;
 
     #[cfg_attr(test, test)]
-    fn every_compiled_default_has_a_unique_name_and_round_trips() {
+    pub fn every_compiled_default_has_a_unique_name_and_round_trips() {
         let mut names = std::collections::HashSet::new();
         for definition in TOKENS {
             assert!(names.insert(definition.name));
@@ -291,7 +292,7 @@ pub(crate) mod tests {
     }
 
     #[cfg_attr(test, test)]
-    fn schemes_preserve_overrides_at_every_level_and_reset_reveals_inheritance() {
+    pub fn schemes_preserve_overrides_at_every_level_and_reset_reveals_inheritance() {
         let token = Token::SandBackground;
         let global = Rgba([10, 20, 30, 255]);
         let kind_value = Rgba([40, 50, 60, 255]);
@@ -326,7 +327,7 @@ pub(crate) mod tests {
     }
 
     #[cfg_attr(test, test)]
-    fn invalid_colors_numbers_and_saved_types_are_rejected() {
+    pub fn invalid_colors_numbers_and_saved_types_are_rejected() {
         for text in ["#é1234", "#12", "#GGG", "#１２３", "NaN", "infinity"] {
             assert_eq!(Token::SandBackground.parse(text), None);
         }
@@ -351,11 +352,5 @@ pub(crate) mod tests {
         assert!(!values.set(Token::Width, Rgba([0; 4])));
         values.0.insert(Token::Width, Number(f32::NAN));
         assert!(!values.validate());
-    }
-
-    crate::laboratory_cases! {
-        every_compiled_default_has_a_unique_name_and_round_trips,
-        schemes_preserve_overrides_at_every_level_and_reset_reveals_inheritance,
-        invalid_colors_numbers_and_saved_types_are_rejected,
     }
 }

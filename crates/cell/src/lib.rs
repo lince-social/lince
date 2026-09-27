@@ -112,6 +112,14 @@ pub struct Cell {
 
 impl Cell {
     pub async fn open(options: CellOptions) -> Result<Cell, IoError> {
+        Self::open_with_services(options, true).await
+    }
+
+    pub async fn open_mobile(options: CellOptions) -> Result<Cell, IoError> {
+        Self::open_with_services(options, false).await
+    }
+
+    async fn open_with_services(options: CellOptions, services: bool) -> Result<Cell, IoError> {
         if let Some(directory) = options.data_dir.clone() {
             utils::config::set_lince_data_dir_override(directory)?;
         }
@@ -142,9 +150,11 @@ impl Cell {
             .ok_or_else(|| IoError::other("Cannot find the Lince data directory"))?;
 
         let mut supervisors = Vec::new();
-        match start_karma(&engine, &this_cell.uid) {
-            Ok(handle) => supervisors.push(handle),
-            Err(error) => tracing::warn!(%error, "Karma schedules will not fire on this Cell"),
+        if services {
+            match start_karma(&engine, &this_cell.uid) {
+                Ok(handle) => supervisors.push(handle),
+                Err(error) => tracing::warn!(%error, "Karma schedules will not fire on this Cell"),
+            }
         }
 
         let organ_signer = engine::trust::Signer::load_or_create(
@@ -162,18 +172,18 @@ impl Cell {
         let lanes = Arc::new(LaneHub::new());
         let wire = bind_wire(&engine, &store, &local_organ, &key_dir, &lanes, &mut tasks).await;
         let runtime = CellRuntime {
-            speech: Some(Arc::new(speech::Host::open(key_dir.join("speech.json")).map_err(IoError::other)?)),
+            speech: if services { Some(Arc::new(speech::Host::open(key_dir.join("speech.json")).map_err(IoError::other)?)) } else { None },
             commands: Default::default(),
             engine: engine.clone(),
             store: store.clone(),
             lanes,
             wire: Arc::new(tokio::sync::RwLock::new(wire.clone())),
             information: None,
-            fiote: Some(Arc::new(
+            fiote: if services { Some(Arc::new(
                 fiote::Host::open(engine.clone(), key_dir.join("fiote"))
                     .await
                     .map_err(IoError::other)?,
-            )),
+            )) } else { None },
         };
 
         if let Some(wire) = wire.clone()
@@ -192,11 +202,13 @@ impl Cell {
             )));
         }
 
-        supervisors.push(engine::file_sync::spawn_supervisor(engine.clone()));
-        supervisors.push(engine.clone().run(HEARTBEAT_PERIOD_SECS));
-        supervisors.push(engine.clone().start_effect_worker());
+        if services {
+            supervisors.push(engine::file_sync::spawn_supervisor(engine.clone()));
+            supervisors.push(engine.clone().run(HEARTBEAT_PERIOD_SECS));
+            supervisors.push(engine.clone().start_effect_worker());
+        }
         if let Some(fiote) = &runtime.fiote { tasks.push(fiote.spawn_assignments()); }
-        tasks.push(transfer::spawn_worker(runtime.clone()));
+        if services { tasks.push(transfer::spawn_worker(runtime.clone())); }
         tasks.push(sync_runner::spawn_runner(runtime.clone()));
         tasks.push(sync_runner::spawn_presence(runtime.clone()));
         tasks.push(wire_supervisor::spawn(runtime.clone(), key_dir));

@@ -33,11 +33,11 @@ fn main() -> Result<(), Error> {
     }
     #[cfg(feature = "ui")]
     if has_arg(&args, "--laboratory-headless") {
-        let mut config = lince_interface::laboratory::StressConfig::default();
+        let mut config = lince_desktop::laboratory::StressConfig::default();
         if let Some(value) = arg_value(&args, "--laboratory-max-sands") {
             config.max_sands = value.parse().map_err(Error::other)?;
         }
-        let report = lince_interface::laboratory::run_headless(config)?;
+        let report = lince_desktop::laboratory::run_headless(config)?;
         let bytes = serde_json::to_vec_pretty(&report).map_err(Error::other)?;
         if let Some(path) = arg_value(&args, "--laboratory-output") {
             use std::io::Write;
@@ -84,7 +84,7 @@ fn main() -> Result<(), Error> {
     let instance = if !server_mode {
         let data_dir = utils::config::lince_data_dir()
             .ok_or_else(|| Error::other("Cannot find the Lince data directory"))?;
-        match runtime.block_on(lince_interface::instance::claim(&data_dir))? {
+        match runtime.block_on(lince_desktop::instance::claim(&data_dir))? {
             Some(instance) => Some(instance),
             None => return Ok(()),
         }
@@ -216,7 +216,7 @@ fn main() -> Result<(), Error> {
     {
         let cell_runtime = cell.runtime().clone();
         let _guard = runtime.enter();
-        let result = lince_interface::run_native_interface(
+        let result = lince_desktop::run_native_interface(
             cell_runtime,
             instance
                 .as_ref()

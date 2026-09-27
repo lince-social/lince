@@ -1,7 +1,4 @@
-use bevy::{
-    prelude::*,
-    winit::{EventLoopProxyWrapper, WinitUserEvent},
-};
+use bevy::prelude::*;
 use std::sync::Arc;
 
 #[derive(Resource, Clone)]
@@ -14,7 +11,7 @@ impl WakeSignal {
     pub fn ring(&self) {
         (self.0)();
     }
-    pub(crate) fn after(&self, delay: std::time::Duration) {
+    pub fn after(&self, delay: std::time::Duration) {
         if let Ok(runtime) = tokio::runtime::Handle::try_current() {
             let wake = self.clone();
             runtime.spawn(async move {
@@ -22,11 +19,5 @@ impl WakeSignal {
                 wake.ring();
             });
         }
-    }
-    pub fn from_proxy(proxy: &EventLoopProxyWrapper) -> Self {
-        let proxy = (**proxy).clone();
-        Self::new(move || {
-            let _ = proxy.send_event(WinitUserEvent::WakeUp);
-        })
     }
 }

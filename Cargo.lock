@@ -7230,8 +7230,8 @@ version = "0.7.0"
 dependencies = [
  "dirs",
  "lince-cell",
+ "lince-desktop",
  "lince-facade",
- "lince-interface",
  "lince-utils",
  "sensei",
  "serde",
@@ -7261,6 +7261,51 @@ dependencies = [
  "tokio",
  "tracing",
  "transport",
+]
+
+[[package]]
+name = "lince-desktop"
+version = "0.7.0"
+dependencies = [
+ "accesskit",
+ "avian3d",
+ "base64 0.23.1",
+ "bevy",
+ "bevy_gaussian_splatting",
+ "cc",
+ "chrono",
+ "cpal 0.15.3",
+ "engine",
+ "flexbuffers",
+ "getrandom 0.4.3",
+ "hound",
+ "image",
+ "ksni",
+ "lince-cell",
+ "lince-document",
+ "lince-interface",
+ "lince-media",
+ "loro",
+ "mermaid-rs-renderer",
+ "muda",
+ "naga",
+ "nokhwa",
+ "nucleus",
+ "protein",
+ "pulldown-cmark",
+ "qrcode",
+ "reqwest",
+ "resvg",
+ "rfd",
+ "rustix 1.1.4",
+ "sensei",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "tokio",
+ "toml",
+ "tray-icon",
+ "wasmi",
 ]
 
 [[package]]
@@ -7337,45 +7382,15 @@ dependencies = [
 name = "lince-interface"
 version = "0.7.0"
 dependencies = [
- "accesskit",
- "avian3d",
- "base64 0.23.1",
  "bevy",
- "bevy_gaussian_splatting",
- "cc",
  "chrono",
- "cpal 0.15.3",
- "engine",
- "flexbuffers",
  "fontique 0.9.0",
- "getrandom 0.4.3",
- "hound",
- "image",
- "ksni",
- "lince-cell",
- "lince-document",
- "lince-media",
- "loro",
- "mermaid-rs-renderer",
- "muda",
- "naga",
- "nokhwa",
  "nucleus",
  "protein",
- "pulldown-cmark",
- "qrcode",
- "reqwest",
- "resvg",
- "rfd",
- "rustix 1.1.4",
  "sensei",
  "serde",
  "serde_json",
- "tempfile",
  "tokio",
- "toml",
- "tray-icon",
- "wasmi",
 ]
 
 [[package]]
@@ -7400,6 +7415,30 @@ dependencies = [
  "webpki-roots 1.0.9",
  "windows-sys 0.61.2",
  "x11rb",
+]
+
+[[package]]
+name = "lince-mobile"
+version = "0.7.0"
+dependencies = [
+ "base64 0.23.1",
+ "bevy",
+ "engine",
+ "jni 0.21.1",
+ "jni 0.22.4",
+ "lince-cell",
+ "lince-interface",
+ "lince-utils",
+ "loro",
+ "nucleus",
+ "protein",
+ "rustls-platform-verifier",
+ "sensei",
+ "serde",
+ "serde_json",
+ "store",
+ "tempfile",
+ "tokio",
 ]
 
 [[package]]

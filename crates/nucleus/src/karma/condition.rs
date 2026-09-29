@@ -266,6 +266,36 @@ impl Condition {
         self.expr.tokens()
     }
 
+    pub fn map_references(
+        &self,
+        mut resolve: impl FnMut(&str, &str) -> Result<String, ConditionError>,
+    ) -> Result<Self, ConditionError> {
+        fn visit(
+            expr: &mut Expr,
+            reading: &str,
+            resolve: &mut impl FnMut(&str, &str) -> Result<String, ConditionError>,
+        ) -> Result<(), ConditionError> {
+            match expr {
+                Expr::Ref(name) => *name = resolve(reading, name)?,
+                Expr::Fn(name, arguments) => {
+                    for argument in arguments {
+                        visit(argument, name, resolve)?;
+                    }
+                }
+                Expr::Unary(_, value) => visit(value, "quantity", resolve)?,
+                Expr::Bin(_, left, right) => {
+                    visit(left, "quantity", resolve)?;
+                    visit(right, "quantity", resolve)?;
+                }
+                Expr::Num(_) | Expr::Dur(_) => {}
+            }
+            Ok(())
+        }
+        let mut bound = self.clone();
+        visit(&mut bound.expr, "quantity", &mut resolve)?;
+        Ok(bound)
+    }
+
     pub fn evaluate(
         &self,
         resolver: &mut dyn ExactResolver,

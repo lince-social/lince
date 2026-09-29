@@ -112,6 +112,8 @@ fn linked_karma_fields_keep_their_identity_and_revision_when_drafts_are_saved() 
         revision: 7,
     });
     let rule = karma::Rule {
+        bindings: Vec::new(),
+        record: String::new(),
         uid: "rule-a".into(),
         name: "Daily".into(),
         slug: "daily".into(),

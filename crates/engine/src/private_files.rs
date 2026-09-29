@@ -522,7 +522,7 @@ mod linux {
             fn new() -> Self {
                 let path = std::env::temp_dir().canonicalize().unwrap().join(format!(
                     "lince-private-files-fault-{}",
-                    uuid::Uuid::new_v4()
+                    nucleus::execution::uuid()
                 ));
                 DirBuilder::new().mode(0o700).create(&path).unwrap();
                 let directory = PrivateDirectory::open_existing(&path).unwrap();

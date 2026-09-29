@@ -1,6 +1,5 @@
 use std::io::{self, Write};
 
-use chrono::Utc;
 use nucleus::{DecimalValue, RecordKind};
 use serde_json::{Map, Value};
 use sqlx::{Row, Sqlite, SqlitePool, Transaction};
@@ -261,7 +260,7 @@ pub async fn create_with_uid_on(
         }
     }
     validate_creation_origin_on(tx, uid, organ_uid, replica_root).await?;
-    let now = Utc::now().to_rfc3339();
+    let now = nucleus::execution::now().to_rfc3339();
     let created_hlc = nucleus::hlc::next();
     let (mantissa, scale) = decimal_columns(new.quantity);
     sqlx::query(
@@ -391,7 +390,7 @@ pub async fn mark_deleted_on(
     uid: &str,
 ) -> Result<(), StoreError> {
     require_active_on(tx, uid).await?;
-    let now = Utc::now().to_rfc3339();
+    let now = nucleus::execution::now().to_rfc3339();
     let res = sqlx::query(
         "UPDATE record SET deleted_at = ?, slug = NULL, updated_at = ?
          WHERE uid = ? AND deleted_at IS NULL",
@@ -439,7 +438,7 @@ pub async fn restore_on(
           WHERE uid = ? AND deleted_at IS NOT NULL",
     )
     .bind(slug)
-    .bind(Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .bind(uid)
     .execute(&mut **tx)
     .await?;
@@ -793,7 +792,7 @@ pub async fn set_text(
     head: Option<&str>,
     body: Option<&str>,
 ) -> Result<(), StoreError> {
-    let now = Utc::now().to_rfc3339();
+    let now = nucleus::execution::now().to_rfc3339();
     let res = sqlx::query(
         "UPDATE record
            SET head = COALESCE(?, head),
@@ -841,7 +840,7 @@ pub async fn set_authoring_text_on(
     )
     .bind(head)
     .bind(body)
-    .bind(Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .bind(uid)
     .execute(&mut **tx)
     .await?;
@@ -874,7 +873,7 @@ pub async fn set_slug_on(
             return Err(protocol(format!("invalid slug `{slug}`")));
         }
     }
-    let now = Utc::now().to_rfc3339();
+    let now = nucleus::execution::now().to_rfc3339();
     let res = sqlx::query(
         "UPDATE record SET slug = ?, updated_at = ?
           WHERE uid = ? AND deleted_at IS NULL",
@@ -895,7 +894,7 @@ pub async fn set_organ_origin(
     uid: &str,
     organ_uid: Option<&str>,
 ) -> Result<(), StoreError> {
-    let now = Utc::now().to_rfc3339();
+    let now = nucleus::execution::now().to_rfc3339();
     let res = sqlx::query("UPDATE record SET organ_uid = ?, updated_at = ? WHERE uid = ?")
         .bind(organ_uid)
         .bind(&now)
@@ -951,7 +950,7 @@ pub async fn set_unit_on(
     if let Some(unit_uid) = unit_uid {
         validate_reference_on(tx, unit_uid, "c", "concept", "unit").await?;
     }
-    let now = Utc::now().to_rfc3339();
+    let now = nucleus::execution::now().to_rfc3339();
     let res = sqlx::query(
         "UPDATE record SET unit_uid = ?, updated_at = ?
           WHERE uid = ? AND deleted_at IS NULL",
@@ -991,7 +990,7 @@ pub async fn set_place_on(
           WHERE uid = ? AND deleted_at IS NULL",
     )
     .bind(place_uid)
-    .bind(Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .bind(uid)
     .execute(&mut **tx)
     .await?;

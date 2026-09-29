@@ -735,12 +735,14 @@ pub async fn create_credential_on(
         return Err(sqlx::Error::Protocol("Credential already exists".into()));
     }
     sqlx::query(
-        "INSERT INTO person_credential (person_uid, username, password_hash)
-         VALUES (?, ?, ?)",
+        "INSERT INTO person_credential (person_uid, username, password_hash, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?)",
     )
     .bind(person_uid)
     .bind(username)
     .bind(password_hash)
+    .bind(nucleus::execution::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .execute(&mut *connection)
     .await?;
     advanced_credential_generation_on(connection, person_uid, generation).await
@@ -762,11 +764,12 @@ pub async fn replace_credential_on(
     }
     let changed = sqlx::query(
         "UPDATE person_credential
-            SET username = ?, password_hash = ?, updated_at = CURRENT_TIMESTAMP
+            SET username = ?, password_hash = ?, updated_at = ?
           WHERE person_uid = ?",
     )
     .bind(username)
     .bind(password_hash)
+    .bind(nucleus::execution::now().to_rfc3339())
     .bind(person_uid)
     .execute(&mut *connection)
     .await?
@@ -838,16 +841,18 @@ pub async fn create_credential(
             .await?;
     }
     sqlx::query(
-        "INSERT INTO person_credential (person_uid, username, password_hash)
-         VALUES (?, ?, ?)
+        "INSERT INTO person_credential (person_uid, username, password_hash, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?)
          ON CONFLICT(person_uid) DO UPDATE SET
              username = excluded.username,
              password_hash = excluded.password_hash,
-             updated_at = CURRENT_TIMESTAMP",
+             updated_at = excluded.updated_at",
     )
     .bind(person_uid)
     .bind(username)
     .bind(password_hash)
+    .bind(nucleus::execution::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .execute(&mut *tx)
     .await?;
     tx.commit().await?;

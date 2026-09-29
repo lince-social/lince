@@ -60,6 +60,9 @@ pub enum Icon {
     Credits,
     Search,
     Copy,
+    Detach,
+    EventsLocal,
+    EventsShared,
 }
 
 #[derive(Component, Clone)]
@@ -155,7 +158,7 @@ pub(crate) fn image(world: &World, icon: Icon) -> Option<ImageNode> {
 
 impl FromWorld for IconAtlas {
     fn from_world(world: &mut World) -> Self {
-        let rows = (Icon::Copy as u32 + 1).div_ceil(5);
+        let rows = (Icon::EventsShared as u32 + 1).div_ceil(5);
         let image = world.resource_mut::<Assets<Image>>().add(Image::new(
             Extent3d {
                 width: 640,
@@ -623,7 +626,7 @@ pub(crate) mod tests {
     #[cfg_attr(test, test)]
     fn atlas_contains_every_icon_and_straight_alpha_for_tinting() {
         let pixels = include_bytes!(concat!(env!("OUT_DIR"), "/icons.rgba"));
-        for index in 0..=Icon::Copy as usize {
+        for index in 0..=Icon::EventsShared as usize {
             let mut ink = false;
             for y in index / 5 * 128..(index / 5 + 1) * 128 {
                 for x in index % 5 * 128..(index % 5 + 1) * 128 {
@@ -908,6 +911,7 @@ pub(crate) mod tests {
         tooltips_are_centered_above_the_button_at_display_scale,
         info_icons_reserve_space_once_and_restore_it_when_help_is_removed,
         clicking_info_does_not_press_or_activate_the_parent_button,
+        inline_help_keeps_its_size_and_works_without_automatic_help_icons,
     }
 
     #[cfg_attr(test, test)]
@@ -1010,7 +1014,7 @@ pub(crate) mod tests {
         assert_eq!(node.top, px(490));
     }
 
-    #[test]
+    #[cfg_attr(test, test)]
     fn inline_help_keeps_its_size_and_works_without_automatic_help_icons() {
         let mut app = app();
         let root = app
@@ -1028,10 +1032,10 @@ pub(crate) mod tests {
             .world_mut()
             .spawn((
                 InlineTooltip,
-                Tooltip("A short explanation.".into()),
-                Node {
-                    width: px(22),
-                    height: px(22),
+                IconButton::new(Icon::Pin, "Pin to screen"),
+                IconStyle {
+                    size: 10.0,
+                    padding: 5.0,
                     ..default()
                 },
                 ComputedNode {
@@ -1049,10 +1053,36 @@ pub(crate) mod tests {
             app.world_mut().resource_mut::<TooltipSettings>().enabled = enabled;
             app.update();
             app.world_mut().trigger(SandHoveredOn { entity: icon });
-            app.update();
-            assert!(app.world().resource::<Hints>().tip.is_some());
+            for _ in 0..3 {
+                app.update();
+            }
+            let tip = app.world().resource::<Hints>().tip.unwrap().1;
+            assert_eq!(app.world().get::<Text>(tip).unwrap().0, "Pin to screen");
+            assert_eq!(
+                app.world().get::<Visibility>(tip),
+                Some(&Visibility::Inherited)
+            );
             assert_eq!(app.world().get::<Node>(icon).unwrap().width, px(22));
-            assert!(app.world().get::<Children>(icon).is_none());
+            assert_eq!(app.world().get::<Children>(icon).unwrap().len(), 1);
+            app.world_mut().trigger(SandHoveredOff { entity: icon });
+            app.update();
+            assert_eq!(
+                app.world().get::<Visibility>(tip),
+                Some(&Visibility::Hidden)
+            );
+            app.world_mut().trigger(FocusGained {
+                entity: icon,
+                cause: FocusCause::Navigated,
+            });
+            for _ in 0..3 {
+                app.update();
+            }
+            assert_eq!(
+                app.world().get::<Visibility>(tip),
+                Some(&Visibility::Inherited)
+            );
+            app.world_mut().trigger(FocusLost { entity: icon });
+            app.update();
         }
     }
 }

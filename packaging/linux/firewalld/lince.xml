@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<service>
+  <short>Lince</short>
+  <description>Encrypted device connections and local network discovery.</description>
+  <port protocol="udp" port="6175"/>
+  <port protocol="udp" port="5353"/>
+</service>

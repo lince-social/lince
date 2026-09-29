@@ -1,5 +1,3 @@
-use chrono::Utc;
-
 const ALPHABET: &[u8; 32] = b"0123456789ABCDEFGHJKMNPQRSTVWXYZ";
 
 pub fn ulid_from(millis: u64, entropy: u128) -> String {
@@ -13,8 +11,8 @@ pub fn ulid_from(millis: u64, entropy: u128) -> String {
 }
 
 pub fn new_uid(prefix: &str) -> String {
-    let millis = Utc::now().timestamp_millis().max(0) as u64;
-    let entropy = uuid::Uuid::new_v4().as_u128();
+    let millis = crate::execution::now().timestamp_millis().max(0) as u64;
+    let entropy = crate::execution::uuid().as_u128();
     format!("{prefix}_{}", ulid_from(millis, entropy))
 }
 

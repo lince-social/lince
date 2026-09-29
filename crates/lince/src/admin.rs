@@ -11,9 +11,10 @@ pub async fn dispatch(args: &[String]) -> Option<Result<(), Error>> {
     }
 }
 
-const VALUE_FLAGS: [&str; 5] = [
+const VALUE_FLAGS: [&str; 6] = [
     "--directory",
     "--port",
+    "--peer-port",
     "--listen-addr",
     "--initial-admin-password",
     "--initial-admin-password-file",

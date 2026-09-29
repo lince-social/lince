@@ -465,7 +465,7 @@ impl Engine {
                 Active {
                     id: nucleus::new_uid("r"),
                     root: root.clone(),
-                    started_at: chrono::Utc::now().to_rfc3339(),
+                    started_at: nucleus::execution::now().to_rfc3339(),
                     started: Instant::now(),
                     starter,
                     occupants: Vec::new(),

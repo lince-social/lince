@@ -4,7 +4,7 @@ use sha2::{Digest, Sha256};
 
 use crate::karma::DecimalValue;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case")]
 pub enum CauseKind {
     UserEdit,

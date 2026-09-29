@@ -87,7 +87,7 @@ impl SyncService {
                 &store.pool,
                 &activity,
                 &summary,
-                chrono::Utc::now().timestamp(),
+                nucleus::execution::now().timestamp(),
             )
             .await
             {
@@ -107,7 +107,7 @@ impl SyncService {
 
 impl Engine {
     pub async fn sync_overview(&self, before: Option<i64>) -> Result<Overview, EngineError> {
-        let now = chrono::Utc::now().timestamp();
+        let now = nucleus::execution::now().timestamp();
         let retention = store::sync_activity::retention(&self.store.pool).await?;
         let history = store::sync_activity::recent(&self.store.pool, before, now).await?;
         let (mut pending, outgoing, mut held) =

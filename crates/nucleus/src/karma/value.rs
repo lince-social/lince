@@ -342,6 +342,7 @@ impl fmt::Display for DecimalValue {
 }
 
 #[derive(Serialize, Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
 struct DecimalValueWire {
     scale: u8,
     value: String,

@@ -185,6 +185,26 @@ pub fn decode_qr(frame: &[u8]) -> Result<Option<String>, EngineError> {
     let image = image::load_from_memory(frame)
         .map_err(|error| EngineError::Consequence(format!("unreadable image: {error}")))?
         .to_luma8();
+    decode_qr_image(image)
+}
+
+pub fn decode_qr_luma(
+    width: u32,
+    height: u32,
+    pixels: Vec<u8>,
+) -> Result<Option<String>, EngineError> {
+    let length = u64::from(width) * u64::from(height);
+    if length == 0 || length > 4_000_000 || pixels.len() as u64 != length {
+        return Err(EngineError::Consequence(
+            "Invalid camera frame dimensions".into(),
+        ));
+    }
+    let image = image::GrayImage::from_raw(width, height, pixels)
+        .ok_or_else(|| EngineError::Consequence("Invalid camera frame".into()))?;
+    decode_qr_image(image)
+}
+
+fn decode_qr_image(image: image::GrayImage) -> Result<Option<String>, EngineError> {
     let mut prepared = rqrr::PreparedImage::prepare(image);
     for grid in prepared.detect_grids() {
         if let Ok((_meta, text)) = grid.decode() {

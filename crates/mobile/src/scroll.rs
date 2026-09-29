@@ -20,7 +20,12 @@ impl Plugin for ScrollPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Gesture>()
             .add_observer(wheel)
-            .add_systems(Update, touch);
+            .add_systems(
+                PreUpdate,
+                touch
+                    .after(bevy::input::InputSystems)
+                    .before(bevy::picking::PickingSystems::Hover),
+            );
     }
 }
 
@@ -50,6 +55,7 @@ fn touch(
     mut content: Query<(&ComputedNode, &mut ScrollPosition), With<crate::app::Content>>,
     mut buttons: Query<Entity, With<bevy::ui::Pressed>>,
     mut commands: Commands,
+    dragging: Option<Res<crate::kanban::Dragging>>,
 ) {
     for event in events.read() {
         match event.phase {
@@ -65,8 +71,10 @@ fn touch(
                 }
                 if gesture.moved {
                     let delta = gesture.last.y - event.position.y;
-                    for (node, mut scroll) in &mut content {
-                        clamp(node, &mut scroll, delta);
+                    if !dragging.as_ref().is_some_and(|dragging| dragging.0) {
+                        for (node, mut scroll) in &mut content {
+                            clamp(node, &mut scroll, delta);
+                        }
                     }
                     for entity in &mut buttons {
                         commands.entity(entity).remove::<bevy::ui::Pressed>();

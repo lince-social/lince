@@ -249,7 +249,7 @@ impl Engine {
             creator: actor.map(str::to_owned),
             title: title.into(),
             revision: 1,
-            invitation_expires: (chrono::Utc::now() + chrono::Duration::hours(24)).timestamp(),
+            invitation_expires: (nucleus::execution::now() + chrono::Duration::hours(24)).timestamp(),
             members,
             key_id: signer.key_id.clone(),
         };
@@ -407,7 +407,7 @@ impl Engine {
             }
             if own.removed
                 || own.accepted
-                || group.invitation_expires <= chrono::Utc::now().timestamp()
+                || group.invitation_expires <= nucleus::execution::now().timestamp()
             {
                 return Err(refused(
                     "This group invitation has expired or is no longer offered",
@@ -451,7 +451,7 @@ impl Engine {
             .ok_or_else(|| refused("This Organ was not invited"))?;
         if member.removed
             || (!member.accepted
-                && signed.membership.invitation_expires <= chrono::Utc::now().timestamp())
+                && signed.membership.invitation_expires <= nucleus::execution::now().timestamp())
         {
             return Err(refused("This group invitation is no longer valid"));
         }
@@ -491,7 +491,7 @@ impl Engine {
             .ok_or_else(|| refused("This Organ was not invited"))?;
         if member.removed
             || (!member.accepted
-                && signed.membership.invitation_expires <= chrono::Utc::now().timestamp())
+                && signed.membership.invitation_expires <= nucleus::execution::now().timestamp())
         {
             return Err(refused("This group invitation is no longer valid"));
         }

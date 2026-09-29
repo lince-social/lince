@@ -254,6 +254,9 @@ impl Action for Decision {
 
 fn remove(world: &mut World, root: Entity, targets: Vec<Entity>) {
     for entity in targets {
+        if crate::ide::protect(world, Some(entity)) {
+            continue;
+        }
         if !crate::canvas_selection::eligible(world, root, entity) {
             continue;
         }

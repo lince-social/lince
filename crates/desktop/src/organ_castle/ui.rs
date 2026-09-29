@@ -658,6 +658,10 @@ pub(super) fn devices(world: &mut World, owner: Entity) {
         .map(|row| row["extension"].clone())
         .unwrap_or(Value::Null);
     panel::clear(world, parent);
+    if roster.is_null() {
+        label(world, parent, "Create an Organ on this device, or use a device enrolment code to join the Organ on another device.");
+        form(world, owner, parent, "Create my Organ", json!({"action":"roster-create-organ"}), vec![], Some("Create this Organ's identity? Joining another Organ afterward requires a fresh device profile."));
+    }
     label(
         world,
         parent,
@@ -681,6 +685,7 @@ pub(super) fn devices(world: &mut World, owner: Entity) {
         return;
     };
     for cell in cells {
+        form(world, owner, parent, "Save device name", json!({"action":"roster-rename-cell","cell_uid":cell["cell_uid"],"label":cell["label"]}), vec![field("/label", "Device name", &text(cell, "label"))], None);
         label(
             world,
             parent,
@@ -757,11 +762,11 @@ pub(super) fn device_controls(world: &mut World, owner: Entity, parent: Entity) 
         world,
         owner,
         parent,
-        "Join another Organ",
+        "Join my existing Organ",
         json!({"action":"roster-join-organ","code":""}),
         vec![field("/code", "Enrolment code (lincecell1|)", "")],
         Some(
-            "Join that Organ? This device stops being its own identity and becomes one of theirs. Its previous identity is replaced. This cannot be undone.",
+            "Enrol this fresh Cell in that Organ? A Cell with its own published identity or Records cannot be replaced here. Compare the Organ identity with the device showing the code.",
         ),
     );
     qr::scanner(
@@ -854,6 +859,15 @@ pub(super) fn mail(world: &mut World, owner: Entity, parent: Entity) {
 }
 
 pub(super) fn result(world: &mut World, owner: Entity, parent: Entity, value: &Value) {
+    let sync = value.get("sync").unwrap_or(value);
+    if let Some(recovery) = sync["recovery"].as_str() {
+        label(world, parent, recovery);
+    }
+    for cell in sync["cells"].as_array().into_iter().flatten() {
+        if cell.get("delivery").is_some() {
+            label(world, parent, &lince_interface::organ::delivery_label(cell));
+        }
+    }
     if value["has_roster"] == true
         && value["capabilities"]
             .as_array()

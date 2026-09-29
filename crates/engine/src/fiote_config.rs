@@ -33,7 +33,7 @@ impl Engine {
         let mut tx = store::write_tx(&self.store.pool).await?;
         if row.kind == "plain" {
             store::sqlx::query("UPDATE record SET kind = 'person', updated_at = ? WHERE uid = ?")
-                .bind(chrono::Utc::now().to_rfc3339())
+                .bind(nucleus::execution::now().to_rfc3339())
                 .bind(target)
                 .execute(&mut *tx)
                 .await?;

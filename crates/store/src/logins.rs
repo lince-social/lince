@@ -1,4 +1,3 @@
-use chrono::Utc;
 use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;
@@ -25,7 +24,7 @@ pub async fn grant(pool: &SqlitePool, organ_uid: &str, person_uid: &str) -> Resu
     )
     .bind(organ_uid)
     .bind(person_uid)
-    .bind(Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .execute(pool)
     .await?;
     Ok(())

@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime};
 use sqlx::{Row, Sqlite, SqlitePool, Transaction};
 
 use crate::StoreError;
@@ -422,7 +422,7 @@ pub async fn put_qualified_on(
     .bind(record_uid)
     .bind(snapshot)
     .bind(through_seq)
-    .bind(Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .bind(expected_generation)
     .bind(final_revision)
     .execute(&mut **tx)
@@ -476,7 +476,7 @@ pub async fn put_on(
     .bind(record_uid)
     .bind(snapshot)
     .bind(through_seq)
-    .bind(Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .execute(&mut **tx)
     .await?;
     Ok(())

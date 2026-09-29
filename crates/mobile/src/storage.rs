@@ -17,6 +17,12 @@ pub struct Saved {
     pub frequency: Option<lince_interface::frequency::Draft>,
     pub search: String,
     pub sort: usize,
+    #[serde(default)]
+    pub negative_only: bool,
+    #[serde(default)]
+    pub view: Option<lince_interface::queries::ProteinDraft>,
+    #[serde(default)]
+    pub attachments: BTreeMap<String, Vec<nucleus::message::MessagePart>>,
     pub outbox: BTreeMap<String, crate::record::Prepared>,
 }
 
@@ -63,4 +69,29 @@ pub fn write(directory: &Path, state: &Saved) -> Result<(), std::io::Error> {
         let _ = std::fs::remove_file(temporary);
     }
     result
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn oversized_drafts_preserve_the_last_successful_save() {
+        let directory = tempfile::tempdir().unwrap();
+        let mut saved = Saved {
+            organ: "test-organ".into(),
+            ..Default::default()
+        };
+        saved
+            .drafts
+            .insert("r/body".into(), "Saved before storage failed".into());
+        write(directory.path(), &saved).unwrap();
+        saved
+            .drafts
+            .insert("r/body".into(), "x".repeat(MAX_BYTES as usize));
+        assert!(write(directory.path(), &saved).is_err());
+        let recovered = read(directory.path(), "test-organ").unwrap().unwrap();
+        assert_eq!(recovered.drafts["r/body"], "Saved before storage failed");
+        assert_eq!(std::fs::read_dir(directory.path()).unwrap().count(), 1);
+    }
 }

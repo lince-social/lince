@@ -311,7 +311,7 @@ async fn change_inner(
             )
             .bind(organ_uid)
             .bind(person)
-            .bind(chrono::Utc::now().to_rfc3339())
+            .bind(nucleus::execution::now().to_rfc3339())
             .execute(&mut *connection)
             .await?
         }

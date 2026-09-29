@@ -180,7 +180,7 @@ fn large_months_limit_rendered_records_and_keep_every_page_reachable() {
 }
 
 async fn until(app: &mut App, predicate: impl Fn(&World) -> bool) {
-    tokio::time::timeout(std::time::Duration::from_secs(10), async {
+    let result = tokio::time::timeout(std::time::Duration::from_secs(30), async {
         loop {
             app.update();
             if predicate(app.world()) {
@@ -189,8 +189,25 @@ async fn until(app: &mut App, predicate: impl Fn(&World) -> bool) {
             tokio::time::sleep(std::time::Duration::from_millis(5)).await;
         }
     })
-    .await
-    .unwrap();
+    .await;
+    if result.is_err() {
+        let feeds: Vec<_> = app
+            .world_mut()
+            .query::<&projection::Feed>()
+            .iter(app.world())
+            .map(|feed| {
+                (
+                    &feed.status,
+                    feed.rows.len(),
+                    feed.rows
+                        .iter()
+                        .filter(|row| row["origin"]["kind"] == "projection")
+                        .count(),
+                )
+            })
+            .collect();
+        panic!("Calendar did not update: {feeds:?}");
+    }
 }
 
 #[cfg_attr(test, tokio::test)]
@@ -231,7 +248,8 @@ async fn real_protein_dates_feed_calendar_and_both_picker_fields_save_through_ce
         store: engine.store.clone(),
         lanes: std::sync::Arc::new(cell::LaneHub::new()),
         wire: Default::default(),
-        fiote: None, speech: None,
+        fiote: None,
+        speech: None,
         information: None,
     };
     app.insert_resource(crate::app::CellHandle(runtime))
@@ -384,7 +402,184 @@ crate::laboratory_cases! {
     calendar_persists_and_quiet_updates_keep_the_same_nodes,
     large_months_limit_rendered_records_and_keep_every_page_reachable,
     async real_protein_dates_feed_calendar_and_both_picker_fields_save_through_cell,
+    async karma_projections_and_manual_work_render_and_pausing_a_rule_refreshes_the_calendar,
     wheel_navigation_accumulates_trackpad_pixels,
+}
+
+#[cfg_attr(test, tokio::test)]
+async fn karma_projections_and_manual_work_render_and_pausing_a_rule_refreshes_the_calendar() {
+    use crate::protein_area::{Binding, Config};
+    use chrono::Datelike;
+    use engine::actions::Action;
+    let (mut app, root) = fixture();
+    let directory = tempfile::tempdir().unwrap();
+    let seed = engine::Engine::open(&format!(
+        "sqlite://{}",
+        directory.path().join("lince.sqlite").display()
+    ))
+    .await
+    .unwrap();
+    let execution =
+        nucleus::execution::Execution::new([41; 32], chrono::Utc::now().timestamp_millis())
+            .unwrap();
+    let cell = cell::Cell::isolated(seed.store, &execution, [42; 32])
+        .await
+        .unwrap();
+    let runtime = cell.runtime().clone();
+    let engine = runtime.engine.clone();
+    for (slug, quantity) in [("forecast-work", 3.0), ("manual-work", -1.0)] {
+        engine
+            .act(
+                Action::CreateRecord {
+                    slug: Some(slug.into()),
+                    kind: nucleus::RecordKind::Plain,
+                    head: slug.into(),
+                    body: String::new(),
+                    quantity,
+                },
+                None,
+            )
+            .await
+            .unwrap();
+    }
+    let day = chrono::Utc::now().date_naive() + chrono::TimeDelta::days(3);
+    engine
+        .act(
+            Action::SetExtension {
+                target: "manual-work".into(),
+                namespace: "work".into(),
+                fds: json!({"due":day.to_string()}),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    engine
+        .act(
+            Action::CreateFrequency {
+                slug: "calendar-daily".into(),
+                head: None,
+                every: nucleus::karma::CadenceStep {
+                    days: 1,
+                    ..Default::default()
+                },
+                anchor_at: Some(day.and_hms_opt(0, 0, 0).unwrap().and_utc().to_rfc3339()),
+                request_id: Some("calendar-frequency".into()),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    let rule = engine
+        .act(
+            Action::SaveKarmaRule {
+                identity: None,
+                rule: None,
+                expected_revision: None,
+                fields: ["freq(@calendar-daily) * -1", "<0", "@forecast-work"].map(|source| {
+                    nucleus::karma::rule_field::RuleFieldInput::Text {
+                        source: source.into(),
+                    }
+                }),
+                request_id: "calendar-rule".into(),
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    app.insert_resource(crate::app::CellHandle(runtime))
+        .insert_resource(crate::wake::WakeSignal::new(|| {}))
+        .add_plugins(crate::cell_bridge::CellBridgePlugin);
+    let mut influence = InfluenceArea::new(
+        crate::area::AreaShape::Square,
+        DVec2::ZERO,
+        DVec2::splat(800.0),
+    );
+    let mut config = Config {
+        enabled: true,
+        bindings: vec![
+            Binding::new("head"),
+            Binding::new("start_date"),
+            Binding::new("due_date"),
+        ],
+        ..Default::default()
+    };
+    config.draft.query["where"] = json!([{"quantity_lt":"0"}]);
+    config.query().expect("valid Calendar source");
+    influence.protein = Some(config);
+    let id = influence.id.clone();
+    crate::area::spawn_area(app.world_mut(), root, 1, influence).unwrap();
+    let calendar = spawn(
+        app.world_mut(),
+        root,
+        1,
+        DVec2::ZERO,
+        Calendar {
+            year: day.year(),
+            month: day.month(),
+            timezone: "UTC".into(),
+            area: Some(id),
+            ..Default::default()
+        },
+    );
+    until(&mut app, |world| {
+        world
+            .get::<projection::Feed>(calendar)
+            .is_some_and(|feed| feed.status == "Projection ready")
+    })
+    .await;
+    let data = projection::data(app.world(), calendar).unwrap();
+    assert!(
+        data.iter()
+            .any(|row| row["head"] == "forecast-work" && row["origin"]["kind"] == "projection")
+    );
+    assert!(
+        data.iter()
+            .any(|row| row["head"] == "manual-work" && row["origin"]["kind"] == "manual")
+    );
+    let shown = ui::records(
+        &app.world().get::<CalendarSand>(calendar).unwrap().0,
+        data,
+        0,
+    );
+    assert!(
+        shown
+            .days
+            .iter()
+            .flatten()
+            .any(|entry| entry.1.contains("projected"))
+    );
+    let query =
+        serde_json::from_value(json!({"source":"karma_rule","where":[{"uid_eq":rule}]})).unwrap();
+    let rules = protein::execute(&engine.store, &query).await.unwrap();
+    engine
+        .act(
+            Action::SetRecurrencePaused {
+                recurrence: rule,
+                expected_revision: rules[0]["revision"].as_i64().unwrap(),
+                paused: true,
+                request_id: "calendar-pause".into(),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    until(&mut app, |world| {
+        world
+            .get::<projection::Feed>(calendar)
+            .is_some_and(|feed| feed.status == "Projection ready")
+            && projection::data(world, calendar)
+                .is_some_and(|rows| rows.iter().all(|row| row["origin"]["kind"] != "projection"))
+    })
+    .await;
+    assert!(
+        projection::data(app.world(), calendar)
+            .unwrap()
+            .iter()
+            .any(|row| row["head"] == "manual-work")
+    );
 }
 
 #[cfg_attr(test, test)]

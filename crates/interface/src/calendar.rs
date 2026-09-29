@@ -18,6 +18,8 @@ pub struct Calendar {
     pub end: Option<String>,
     pub selecting_end: bool,
     pub area: Option<String>,
+    #[serde(default = "default_timezone")]
+    pub timezone: String,
 }
 
 impl Default for Calendar {
@@ -30,6 +32,7 @@ impl Default for Calendar {
             end: None,
             selecting_end: false,
             area: None,
+            timezone: default_timezone(),
         }
     }
 }
@@ -37,6 +40,7 @@ impl Default for Calendar {
 impl Calendar {
     pub fn valid(&self) -> bool {
         (1..=9999).contains(&self.year)
+            && nucleus::projection::Window::month(self.year, self.month, self.timezone.clone()).is_ok()
             && NaiveDate::from_ymd_opt(self.year, self.month, 1).is_some()
             && self.start.as_deref().is_none_or(|v| parse(v).is_some())
             && self.end.as_deref().is_none_or(|v| parse(v).is_some())
@@ -91,6 +95,8 @@ impl Calendar {
         Ok(())
     }
 }
+
+fn default_timezone() -> String { "UTC".into() }
 
 pub fn span(row: &serde_json::Value) -> Option<(NaiveDate, NaiveDate)> {
     for property in ["start_date", "due_date"] {

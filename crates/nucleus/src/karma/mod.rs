@@ -20,9 +20,9 @@ pub mod occurrence;
 pub mod proof;
 pub mod reference;
 pub mod replay;
+pub mod rule_field;
 pub mod schedule;
 pub mod simple_frequency;
-pub mod rule_field;
 pub mod state;
 pub mod time;
 pub mod timezone_artifact;
@@ -116,7 +116,7 @@ pub use occurrence::{
     SemanticCalendarTickSchema,
 };
 pub use proof::{Proof, ProofIssue, ProofIssueCode, ProofSeverity, ProofStatus, prove_program};
-pub use reference::{LocalId, ReferenceKind, ResolvedReference, Slug, TypedUid};
+pub use reference::{ConditionBinding, LocalId, ReferenceKind, ResolvedReference, Slug, TypedUid};
 pub use replay::{
     EVALUATION_REPLAY_CAPSULE_HASH_DOMAIN, EVALUATION_RESULT_HASH_DOMAIN, EvaluationReplayCapsule,
     EvaluationReplayCapsuleSchema, EvaluatorRevision, PROGRAM_REVISION_HASH_DOMAIN, ReplayError,

@@ -56,6 +56,21 @@ fn normalize(record: &mut ProjectedRecord) -> Result<(), EngineError> {
 }
 
 impl Engine {
+    pub fn import_lingua_directory<'a>(
+        &'a self,
+        directory: &'a Path,
+    ) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = Result<FileSyncReport, EngineError>> + Send + 'a>,
+    > {
+        Box::pin(async move {
+            let organ = store::organs::local(&self.store.pool)
+                .await?
+                .ok_or_else(|| invalid("Lingua import requires a local Organ"))?;
+            self.lingua_sync_pass(directory, &organ.uid, None, &mut State::default())
+                .await
+        })
+    }
+
     async fn read_lingua_document(
         &self,
         source: &str,
@@ -366,7 +381,7 @@ impl Engine {
     ) -> Result<FileSyncReport, EngineError> {
         let mut report = FileSyncReport::default();
         let disk = scan_disk(dir, "lingua")?;
-        let mut documents = HashMap::new();
+        let mut documents = std::collections::BTreeMap::new();
         let mut paths: Vec<_> = disk.keys().cloned().collect();
         paths.sort();
         for path in &paths {

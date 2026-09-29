@@ -413,11 +413,11 @@ impl Keyring {
 }
 
 fn now() -> String {
-    chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
+    nucleus::execution::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
 }
 
 fn days_from_now(days: i64) -> String {
-    (chrono::Utc::now() + chrono::Duration::days(days))
+    (nucleus::execution::now() + chrono::Duration::days(days))
         .to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
 }
 

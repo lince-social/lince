@@ -26,7 +26,7 @@ pub async fn ensure_local(pool: &SqlitePool, base_url: &str) -> Result<OrganReco
             base_url = existing.base_url;
         }
     }
-    let now = Utc::now().to_rfc3339();
+    let now = nucleus::execution::now().to_rfc3339();
     let existing_uid = sqlx::query_scalar::<_, String>("SELECT uid FROM record WHERE slug = ?")
         .bind(LOCAL_ORGAN_SLUG)
         .fetch_optional(pool)
@@ -37,11 +37,12 @@ pub async fn ensure_local(pool: &SqlitePool, base_url: &str) -> Result<OrganReco
                 "UPDATE record
                     SET kind = ?,
                         updated_at = ?
-                  WHERE uid = ?",
+                  WHERE uid = ? AND kind <> ?",
             )
             .bind(RecordKind::Organ.as_str())
             .bind(&now)
             .bind(&uid)
+            .bind(RecordKind::Organ.as_str())
             .execute(pool)
             .await?;
             uid
@@ -122,7 +123,7 @@ pub async fn adopt_identity(
         .bind(&current.uid)
         .execute(&mut *tx)
         .await?;
-    let now = Utc::now().to_rfc3339();
+    let now = nucleus::execution::now().to_rfc3339();
     sqlx::query(
         "INSERT INTO record (uid, slug, kind, head, body, quantity_mantissa, quantity_scale,
                              organ_uid, created_at, updated_at)
@@ -235,7 +236,7 @@ pub async fn add_contact(
     proximity: u32,
 ) -> Result<String, StoreError> {
     let base_url = normalize_base_url(base_url);
-    let now = Utc::now().to_rfc3339();
+    let now = nucleus::execution::now().to_rfc3339();
     if crate::records::get(pool, uid).await?.is_none() {
         let slug_taken = match slug {
             Some(slug) => crate::records::resolve(pool, slug).await?.is_some(),
@@ -400,7 +401,7 @@ pub async fn mark_awaiting_roster(pool: &SqlitePool, organ_uid: &str) -> Result<
         "UPDATE organ_contact SET awaiting_roster_since = ?
           WHERE record_uid = ? AND awaiting_roster_since IS NULL",
     )
-    .bind(Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .bind(organ_uid)
     .execute(pool)
     .await?;
@@ -424,7 +425,7 @@ pub async fn awaiting_roster_longer_than(
     let Ok(since) = chrono::DateTime::parse_from_rfc3339(&since) else {
         return Ok(false);
     };
-    Ok(Utc::now().signed_duration_since(since.with_timezone(&Utc)) > grace)
+    Ok(nucleus::execution::now().signed_duration_since(since.with_timezone(&Utc)) > grace)
 }
 
 pub async fn clear_awaiting_roster(pool: &SqlitePool, organ_uid: &str) -> Result<(), StoreError> {
@@ -443,7 +444,7 @@ pub async fn mark_unreachable(pool: &SqlitePool, organ_uid: &str) -> Result<(), 
         "UPDATE organ_contact SET unreachable_since = ?
           WHERE record_uid = ? AND unreachable_since IS NULL",
     )
-    .bind(Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .bind(organ_uid)
     .execute(pool)
     .await?;
@@ -463,7 +464,7 @@ pub async fn mark_reachable(pool: &SqlitePool, organ_uid: &str) -> Result<(), St
 
 pub async fn mark_mailed(pool: &SqlitePool, organ_uid: &str) -> Result<(), StoreError> {
     sqlx::query("UPDATE organ_contact SET mailed_at = ? WHERE record_uid = ?")
-        .bind(Utc::now().to_rfc3339())
+        .bind(nucleus::execution::now().to_rfc3339())
         .bind(organ_uid)
         .execute(pool)
         .await?;
@@ -555,7 +556,7 @@ pub async fn rename_contact(
 ) -> Result<(), StoreError> {
     sqlx::query("UPDATE record SET head = ?, updated_at = ? WHERE uid = ?")
         .bind(head)
-        .bind(Utc::now().to_rfc3339())
+        .bind(nucleus::execution::now().to_rfc3339())
         .bind(organ_uid)
         .execute(pool)
         .await?;
@@ -724,7 +725,7 @@ pub async fn quarantine(
     .bind(from_organ)
     .bind(reason)
     .bind(payload)
-    .bind(Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .execute(pool)
     .await?;
     sqlx::query(

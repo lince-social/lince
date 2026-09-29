@@ -38,7 +38,7 @@ fn validate_saved_protein_shape(ast: &serde_json::Value) -> Result<(), EngineErr
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
-#[serde(tag = "action", rename_all = "kebab-case")]
+#[serde(tag = "action", rename_all = "kebab-case", deny_unknown_fields)]
 pub enum Action {
     ChangeRecord {
         request: crate::record_change::Request,
@@ -328,10 +328,16 @@ pub enum Action {
         invite: String,
     },
     RosterEnrolToken,
+    RosterCreateOrgan,
+    RosterRenameCell {
+        cell_uid: String,
+        label: String,
+    },
     RosterRevokeCell {
         cell_uid: String,
     },
     RosterStatus,
+    SyncNow,
     MailboxStatus,
     MailboxCarryFor {
         organ_uid: String,
@@ -559,6 +565,10 @@ pub enum Action {
         message: String,
         body: String,
         state: MessageState,
+    },
+    ReadMessageAttachment {
+        message: String,
+        index: usize,
     },
     CreateMessageDraft {
         conversation: String,
@@ -1604,6 +1614,7 @@ fn parse_rule_condition(
         .map_err(|e| EngineError::Consequence(format!("that carry cannot be read: {e}")))?;
     Ok(Some(store::recurrence::RuleCondition {
         source,
+        bindings: Vec::new(),
         gate,
         carry,
     }))
@@ -1793,7 +1804,7 @@ impl Engine {
         action: Action,
         actor: Option<String>,
     ) -> Result<ActionOutcome, EngineError> {
-        self.act_at(action, actor, Utc::now()).await
+        self.act_at(action, actor, nucleus::execution::now()).await
     }
 
     pub async fn expire_due_transfer_invitations(
@@ -2221,7 +2232,10 @@ impl Engine {
                 let uid = self.resolve(&target).await?;
                 let declared = self.resolve_consequences(consequences).await?;
                 let condition = self.canonical_condition(condition).await?;
-                let declared_condition = parse_rule_condition(condition, gate, carry)?;
+                let mut declared_condition = parse_rule_condition(condition, gate, carry)?;
+                if let Some(condition) = &mut declared_condition {
+                    condition.bindings = store::karma_bindings::resolve(&self.store.pool, &condition.source, &[]).await?;
+                }
                 Box::pin(self.validate_automatic_rule(&declared, declared_condition.as_ref(), actor.as_deref())).await?;
                 let anchor = parse_optional_instant(anchor_at.as_deref())?.unwrap_or(now);
                 let commit = store::recurrence::create(
@@ -2262,7 +2276,11 @@ impl Engine {
                     .ok_or_else(|| EngineError::UnknownRecord(recurrence.clone()))?;
                 let declared = self.resolve_consequences(consequences).await?;
                 let condition = self.canonical_condition(condition).await?;
-                let declared_condition = parse_rule_condition(condition, gate, carry)?;
+                let mut declared_condition = parse_rule_condition(condition, gate, carry)?;
+                if let Some(condition) = &mut declared_condition {
+                    condition.bindings = store::karma_bindings::resolve(&self.store.pool, &condition.source,
+                        current.condition.as_ref().map_or(&[], |old| old.bindings.as_slice())).await?;
+                }
                 Box::pin(self.validate_automatic_rule(&declared, declared_condition.as_ref(), actor.as_deref())).await?;
                 let anchor = match parse_optional_instant(anchor_at.as_deref())? {
                     Some(value) => value,
@@ -3213,6 +3231,17 @@ impl Engine {
                 let uid = self.send_message(&thread_uid, &local.head, &invite).await?;
                 outcome.created = Some(uid);
             }
+            Action::RosterCreateOrgan => {
+                let roster = self.create_organ_identity().await?;
+                outcome.data = Some(serde_json::json!({"organ_uid": roster.roster.organ_uid}));
+                outcome.warnings.push("Organ created. You can now enrol your other devices.".into());
+            }
+            Action::RosterRenameCell { cell_uid, label } => {
+                let root = self.root_signer().await?.ok_or_else(|| {
+                    EngineError::Consequence("Manage device names on the Cell holding the Organ root key".into())
+                })?;
+                self.rename_roster_cell(&root, &cell_uid, &label).await?;
+            }
             Action::RosterEnrolToken => {
                 if self.root_signer().await?.is_none() {
                     return Err(EngineError::Consequence(
@@ -3227,7 +3256,7 @@ impl Engine {
                     crate::trust::key_of(&self.store, &organ.uid, crate::roster::ROOT_KEY_ID)
                         .await?
                         .unwrap_or_default();
-                let pairing =
+                let pairing = self.current_pairing_invite().await?.or(
                     store::records::get_extension(&self.store.pool, &organ.uid, "lince.pairing")
                         .await?
                         .and_then(|fields| {
@@ -3236,7 +3265,7 @@ impl Engine {
                                 .and_then(serde_json::Value::as_str)
                                 .map(str::to_string)
                         })
-                        .and_then(|encoded| crate::pairing::PairingInvite::decode(&encoded).ok());
+                        .and_then(|encoded| crate::pairing::PairingInvite::decode(&encoded).ok()));
                 match pairing {
                     Some(pairing) => {
                         let invite = crate::pairing::EnrolmentInvite {
@@ -3681,7 +3710,7 @@ impl Engine {
             Action::MailboxOutbound => {
                 let pool = &self.store.pool;
                 let queued = store::sync_ops::outbox_due(pool).await?;
-                let now = chrono::Utc::now();
+                let now = nucleus::execution::now();
                 let minutes = |stamp: &Option<String>| -> Option<i64> {
                     stamp
                         .as_deref()
@@ -3742,7 +3771,7 @@ impl Engine {
                 {
                     return Err(EngineError::Consequence("no such contact".into()));
                 }
-                let past = (chrono::Utc::now() - crate::wire::Wire::MAIL_AFTER).to_rfc3339();
+                let past = (nucleus::execution::now() - crate::wire::Wire::MAIL_AFTER).to_rfc3339();
                 store::organs::backdate_unreachable(&self.store.pool, organ_uid.as_str(), &past)
                     .await?;
                 store::organs::mark_mailed_clear(&self.store.pool, organ_uid.as_str()).await?;
@@ -3757,6 +3786,38 @@ impl Engine {
                         .unwrap_or(false),
                     "mailed": after.and_then(|c| c.mailed_at).is_some(),
                 }));
+            }
+            Action::ReadMessageAttachment { message, index } => {
+                let uid = self.resolve(&message).await?;
+                if !self.may_read_record(actor.as_deref(), &uid).await? {
+                    return Err(EngineError::Forbidden("This attachment is not available to this Person".into()));
+                }
+                let parts = store::message_content::load(&self.store.pool, &uid).await?;
+                let part = parts.get(index).ok_or_else(|| EngineError::Consequence("Attachment is unavailable".into()))?;
+                if !matches!(part, nucleus::message::MessagePart::Attachment { .. }) {
+                    return Err(EngineError::Consequence("This message part is not an attachment".into()));
+                }
+                outcome.data = Some(serde_json::to_value(part).map_err(EngineError::Json)?);
+            }
+            Action::SyncNow => {
+                let moved = self.sync_now().await?;
+                let status = self.cell_delivery_status().await?;
+                let cells = status["cells"].as_array().map(Vec::as_slice).unwrap_or_default();
+                let failed = cells.iter().filter(|cell| cell["delivery"].is_null() || !cell["delivery"]["error"].is_null()).count();
+                let pending: i64 = cells.iter().filter_map(|cell| cell["delivery"]["pending"].as_i64()).sum();
+                let message = if let Some(recovery) = status["recovery"].as_str() {
+                    recovery.to_owned()
+                } else if failed > 0 {
+                    format!("{failed} device(s) could not confirm delivery. Your changes are saved here. Open device status for the reason.")
+                } else if cells.is_empty() {
+                    format!("{moved} batch(es) exchanged. No other device is enrolled in this Organ.")
+                } else if pending > 0 {
+                    format!("{moved} batch(es) exchanged; {pending} operation confirmations still pending across your devices.")
+                } else {
+                    "Your enrolled devices confirmed all current Organ operations. No pending delivery at this check.".into()
+                };
+                outcome.warnings.push(message);
+                outcome.data = Some(status);
             }
             Action::RosterStatus => {
                 let held = store::door::held(&self.store.pool, 50).await?;
@@ -3802,6 +3863,12 @@ impl Engine {
                     None => None,
                 };
                 let has_roster = held.is_some();
+                let can_manage = self.root_signer().await?.is_some();
+                let enrolment_error = self.may_enrol().await.err().map(|error| error.to_string());
+                let discovery = store::cells::config(&self.store.pool, "lince.discovery").await?;
+                let network = store::cells::config(&self.store.pool, "lince.network").await?;
+                let peer_port = crate::wire::configured_peer_port(network.as_ref())?;
+                let peer_network = self.peer_network_status();
                 let capabilities: Vec<String> = match (&this_cell, held) {
                     (Some(cell), Some(signed)) => signed
                         .roster
@@ -3818,9 +3885,18 @@ impl Engine {
                     "this_cell": this_cell.as_ref().map(|cell| cell.uid.clone()),
                     "capabilities": capabilities,
                     "has_roster": has_roster,
+                    "can_manage": can_manage,
+                    "enrolment_error": enrolment_error,
+                    "discovery": discovery,
+                    "peer_port": peer_port,
+                    "peer_network": peer_network,
+                    "sync": self.cell_delivery_status().await?,
                 }));
             }
             Action::SetCellConfig { namespace, fds } => {
+                if namespace == "lince.network" {
+                    crate::wire::configured_peer_port(Some(&fds))?;
+                }
                 store::cells::set_config(&self.store.pool, &namespace, &fds).await?;
                 self.notify_config_changed();
             }
@@ -11014,7 +11090,7 @@ impl Engine {
             Action::ProposeGroup { .. } => "record:create",
             Action::SetGroupPerson { .. } => "user:update",
             Action::RemoveGroupOrgan { .. } => "record:update",
-            Action::PreviewKarmaReading { .. } => "record:read",
+            Action::PreviewKarmaReading { .. } | Action::ReadMessageAttachment { .. } => "record:read",
             Action::SaveKarmaRule { rule: None, .. } | Action::CreateFrequency { .. } | Action::CreateRecurrence { .. } => "frequency:create",
             Action::SaveKarmaRule { rule: Some(_), .. } | Action::ReviseKarmaField { .. } => "frequency:update",
             Action::ReviseRecurrence { .. }
@@ -11025,6 +11101,7 @@ impl Engine {
             Action::DeleteFrequency { .. } | Action::DeleteRecurrence { .. } => "frequency:delete",
 
             Action::AuditContact { .. }
+            | Action::SyncNow
             | Action::RosterStatus
             | Action::MailboxStatus
             | Action::MailboxPickupPoints
@@ -11052,6 +11129,8 @@ impl Engine {
             | Action::RootKeyDetach { .. }
             | Action::SetContactTrust { .. }
             | Action::SetContactProximity { .. }
+            | Action::RosterCreateOrgan
+            | Action::RosterRenameCell { .. }
             | Action::RosterEnrolToken
             | Action::SetCellConfig { .. }
             | Action::MailboxCarryFor { .. }
@@ -11225,7 +11304,7 @@ impl Engine {
         now: DateTime<Utc>,
         depth: usize,
     ) -> Result<Option<nucleus::DecimalValue>, EngineError> {
-        let parsed = nucleus::karma::Condition::parse(&condition.source).map_err(|e| {
+        let parsed = condition.parsed().map_err(|e| {
             EngineError::Conflict {
                 code: "rule_condition_invalid",
                 message: e.to_string(),
@@ -11530,6 +11609,7 @@ impl Engine {
         let condition = rule.condition.clone().expect("filtered on Some");
         let asked = store::recurrence::RuleCondition {
             source: condition.source,
+            bindings: condition.bindings,
             gate: nucleus::karma::Gate::Always,
             carry: nucleus::karma::Carry::Value,
         };

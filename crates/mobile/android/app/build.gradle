@@ -5,11 +5,22 @@ plugins {
 }
 
 def workspace = rootProject.projectDir.toPath().resolve('../../..').normalize().toFile()
+def abi = providers.gradleProperty('linceAbi').getOrElse('arm64-v8a')
+def targets = ['arm64-v8a': 'aarch64-linux-android', 'x86_64': 'x86_64-linux-android']
+if (!targets.containsKey(abi)) { throw new GradleException('Supported Android ABIs: arm64-v8a, x86_64') }
+def smoke = providers.gradleProperty('linceSmoke').getOrElse('false') == 'true'
+def code = providers.environmentVariable('LINCE_ANDROID_VERSION_CODE').getOrElse('1').toInteger()
+if (code < 1 || code > 2100000000) { throw new GradleException('Invalid Android version code') }
+def signingPurpose = providers.gradleProperty('linceSigning').getOrElse('app')
+if (!(signingPurpose in ['app', 'upload'])) { throw new GradleException('linceSigning must be app or upload') }
+def signingPrefix = signingPurpose == 'upload' ? 'LINCE_ANDROID_UPLOAD' : 'LINCE_ANDROID'
+def signingPath = providers.environmentVariable("${signingPrefix}_KEYSTORE").orNull
 def metadata = providers.exec {
     workingDir workspace
-    commandLine 'cargo', 'metadata', '--locked', '--format-version', '1', '--filter-platform', 'aarch64-linux-android'
+    commandLine 'cargo', 'metadata', '--locked', '--format-version', '1', '--filter-platform', targets[abi]
 }.standardOutput.asText.get()
-def verifier = new JsonSlurper().parseText(metadata).packages.find { it.name == 'rustls-platform-verifier-android' }
+def packages = new JsonSlurper().parseText(metadata).packages
+def verifier = packages.find { it.name == 'rustls-platform-verifier-android' }
 dependencies {
     implementation 'org.jetbrains.kotlin:kotlin-stdlib:2.1.0'
     implementation "org.rustls:rustls-platform-verifier:${verifier.version}"
@@ -19,20 +30,43 @@ android {
     namespace 'social.lince.mobile'
     compileSdk 35
     ndkVersion '28.2.13676358'
+    buildFeatures { buildConfig true }
     defaultConfig {
         applicationId 'social.lince.mobile'
         minSdk 28
         targetSdk 35
-        versionCode 1
-        versionName '0.7.0'
-        ndk { abiFilters 'arm64-v8a' }
+        versionCode code
+        versionName packages.find { it.name == 'lince-mobile' }.version
+        buildConfigField 'boolean', 'LINCE_SMOKE', smoke.toString()
+        resValue 'string', 'lince_app_name', smoke ? 'Lince Test' : 'Lince'
+        ndk { abiFilters abi }
+    }
+    signingConfigs {
+        if (signingPath != null) {
+            distribution {
+                storeFile file(signingPath)
+                storePassword providers.environmentVariable("${signingPrefix}_STORE_PASSWORD").get()
+                keyAlias providers.environmentVariable("${signingPrefix}_KEY_ALIAS").get()
+                keyPassword providers.environmentVariable("${signingPrefix}_KEY_PASSWORD").get()
+            }
+        }
     }
     buildTypes {
-        debug { applicationIdSuffix '.debug' }
-        release { minifyEnabled false }
+        debug { applicationIdSuffix smoke ? '.smoketest' : '.debug' }
+        release {
+            minifyEnabled false
+            ndk { debugSymbolLevel 'FULL' }
+            if (signingPath != null) { signingConfig signingConfigs.distribution }
+        }
     }
     packaging { jniLibs { useLegacyPackaging false } }
     lint { warningsAsErrors true }
+}
+
+gradle.taskGraph.whenReady { graph ->
+    if (signingPurpose == 'upload' && graph.hasTask(':app:assembleRelease')) {
+        throw new GradleException('Use the app signing key for installable release APKs; the upload key is for bundleRelease')
+    }
 }
 
 def icons = layout.buildDirectory.dir('generated/linceIcons')
@@ -53,9 +87,15 @@ tasks.matching { it.name == 'preBuild' }.configureEach { dependsOn copyIcon }
         workingDir workspace
         environment 'ANDROID_NDK_HOME', new File(android.sdkDirectory, "ndk/${android.ndkVersion}").absolutePath
         environment 'CARGO_ENCODED_RUSTFLAGS', '-D\u001fwarnings\u001f-C\u001flink-arg=-Wl,-z,max-page-size=16384'
-        def args = ['cargo', 'ndk', '-t', 'arm64-v8a', '--platform', '28', '-o', output.get().asFile.absolutePath,
-                    'build', '--locked', '-p', 'lince-mobile', '--lib']
+        if (variant == 'Release') { environment 'CARGO_PROFILE_RELEASE_DEBUG', 'line-tables-only' }
+        def args = ['cargo', 'ndk', '-t', abi, '--platform', '28', '-o', output.get().asFile.absolutePath,
+                    'rustc', '--locked', '-p', 'lince-mobile', '--lib']
         if (variant == 'Release') { args.add('--release') }
+        if (smoke) { args.addAll(['--features', 'android-smoke']) }
+        doFirst {
+            if (smoke && variant == 'Release') { throw new GradleException('Smoke controls must never be built into a release APK') }
+            if (variant == 'Release' && signingPath == null) { throw new GradleException("Set ${signingPrefix}_KEYSTORE and signing credentials before building a release") }
+        }
         commandLine args
     }
     tasks.matching { it.name == "pre${variant}Build" }.configureEach { dependsOn rust }

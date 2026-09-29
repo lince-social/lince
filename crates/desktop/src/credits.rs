@@ -1,5 +1,5 @@
 pub use lince_interface::credits::{
-    Attribution, BEVY_LICENSE, CHRONO_LICENSE, DEJAVU, FONTIQUE, LATO_LICENSE, SYMBOLS,
+    Attribution, BEVY_LICENSE, CHRONO_LICENSE, CJK, DEJAVU, FONTIQUE, LATO_LICENSE, SYMBOLS,
     SYMBOLS_LICENSE,
 };
 pub const AVIAN_LICENSE: &str = include_str!("../licenses/avian-MIT.txt");
@@ -19,6 +19,7 @@ pub const ATTRIBUTIONS: &[Attribution] = &[
     },
     SYMBOLS,
     DEJAVU,
+    CJK,
     FONTIQUE,
     Attribution {
         name: "bevy_gaussian_splatting",

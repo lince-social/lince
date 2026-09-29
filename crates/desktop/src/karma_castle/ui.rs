@@ -618,7 +618,14 @@ pub(super) fn render_list(world: &mut World, owner: Entity) {
                 size_icon(world, toggle, 16.0);
                 line
             } else {
-                rich_text(world, cell, owner, &value.fields[index].text)
+                rich_text(
+                    world,
+                    cell,
+                    owner,
+                    &value.fields[index].text,
+                    value.rule.as_deref(),
+                    index,
+                )
             };
             if active && let Some(edited) = edited {
                 world.entity_mut(content).insert(Visibility::Hidden);
@@ -926,7 +933,22 @@ pub(super) fn refresh_links(world: &mut World, owner: Entity) {
     }
 }
 
-fn rich_text(world: &mut World, parent: Entity, owner: Entity, source: &str) -> Entity {
+fn rich_text(
+    world: &mut World,
+    parent: Entity,
+    owner: Entity,
+    source: &str,
+    rule_uid: Option<&str>,
+    index: usize,
+) -> Entity {
+    let rule = world
+        .get::<View>(owner)
+        .and_then(|view| {
+            view.rules
+                .iter()
+                .find(|rule| Some(rule.uid.as_str()) == rule_uid)
+        })
+        .cloned();
     let line = row(world, parent);
     let mut node = world.get_mut::<Node>(line).unwrap();
     node.flex_wrap = FlexWrap::Wrap;
@@ -942,11 +964,35 @@ fn rich_text(world: &mut World, parent: Entity, owner: Entity, source: &str) -> 
         node.min_width = Val::Auto;
         node.max_width = percent(100);
         if let Some(slug) = slug {
+            let reading = model::reading_at(source, offset, offset + text.len());
+            let reading = rule.as_ref().map_or(reading.clone(), |rule| {
+                if index == 2 && !rule.record.is_empty() {
+                    format!("@{}", rule.record)
+                } else {
+                    model::bound_reading(rule, &reading)
+                }
+            });
+            let slug = rule
+                .as_ref()
+                .and_then(|rule| {
+                    if index == 2 {
+                        Some(rule.record.clone()).filter(|uid| !uid.is_empty())
+                    } else {
+                        rule.bindings
+                            .iter()
+                            .find(|binding| {
+                                binding.authored == slug
+                                    && reading.contains(binding.target.as_str())
+                            })
+                            .map(|binding| binding.target.as_str().to_owned())
+                    }
+                })
+                .unwrap_or(slug);
             world.entity_mut(part).insert((
                 Reading {
                     owner,
                     slug,
-                    source: model::reading_at(source, offset, offset + text.len()),
+                    source: reading,
                     hovered: false,
                     requested_at: None,
                     pending: false,

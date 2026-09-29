@@ -16,6 +16,8 @@ pub struct Configuration {
     pub name: String,
     pub address: String,
     pub discovery: Value,
+    pub peer_port: u16,
+    pub peer_network: Value,
     pub contacts: Vec<Contact>,
     pub storage: Storage,
 }
@@ -48,11 +50,22 @@ impl CellRuntime {
                 proximity: contact.proximity,
             })
             .collect();
+        let peer_port = crate::discovery::for_organ(&self.store, &organ.uid)
+            .await?
+            .peer_port;
         Ok(Configuration {
             organ_uid: organ.uid,
             name: organ.head,
             address: organ.body,
             discovery,
+            peer_port,
+            peer_network: self
+                .wire
+                .read()
+                .await
+                .as_ref()
+                .map(|wire| wire.network_status())
+                .unwrap_or(Value::Null),
             contacts,
             storage: self.storage_usage().await?,
         })

@@ -1,4 +1,3 @@
-use chrono::Utc;
 use nucleus::transfer::{OpenPromiseReusePolicy, TransferLocationSnapshot};
 use nucleus::{PromiseState, RecordKind};
 use sqlx::{Row, SqlitePool};
@@ -42,7 +41,7 @@ pub struct NewPromise {
 
 pub async fn insert_promise(pool: &SqlitePool, p: NewPromise) -> Result<String, StoreError> {
     let uid = nucleus::new_uid("p");
-    let now = Utc::now().to_rfc3339();
+    let now = nucleus::execution::now().to_rfc3339();
     let mut reserve_from = p.reserve_from;
     if reserve_from.is_none() {
         if let Some(transfer_uid) = &p.transfer_uid {
@@ -102,7 +101,7 @@ pub async fn expired_promises(
 pub async fn set_promise_delta(pool: &SqlitePool, uid: &str, delta: f64) -> Result<(), StoreError> {
     sqlx::query("UPDATE promise SET delta = ?, updated_at = ? WHERE uid = ?")
         .bind(delta)
-        .bind(Utc::now().to_rfc3339())
+        .bind(nucleus::execution::now().to_rfc3339())
         .bind(uid)
         .execute(pool)
         .await?;
@@ -183,7 +182,7 @@ pub async fn set_promise_state(
 ) -> Result<(), StoreError> {
     sqlx::query("UPDATE promise SET state = ?, updated_at = ? WHERE uid = ?")
         .bind(state.as_str())
-        .bind(Utc::now().to_rfc3339())
+        .bind(nucleus::execution::now().to_rfc3339())
         .bind(uid)
         .execute(pool)
         .await?;
@@ -216,7 +215,7 @@ pub async fn queue_effect(
     .bind(kind)
     .bind(payload.to_string())
     .bind(origin_uid)
-    .bind(Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .execute(pool)
     .await?;
     Ok(uid)
@@ -260,7 +259,7 @@ pub async fn finish_effect(
                 attempts = attempts + 1 WHERE uid = ?",
     )
     .bind(if ok { "done" } else { "failed" })
-    .bind(Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .bind(result)
     .bind(uid)
     .execute(pool)
@@ -494,7 +493,7 @@ pub async fn answer_decision(
 ) -> Result<(), StoreError> {
     sqlx::query("UPDATE decision SET answer = ?, decided_at = ? WHERE record_uid = ?")
         .bind(answer)
-        .bind(Utc::now().to_rfc3339())
+        .bind(nucleus::execution::now().to_rfc3339())
         .bind(record_uid)
         .execute(pool)
         .await?;

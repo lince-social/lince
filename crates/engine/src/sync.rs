@@ -1,4 +1,3 @@
-use chrono::Utc;
 use nucleus::{Cause, CauseKind, Fact, NewFact};
 use serde::{Deserialize, Serialize};
 use store::sync_ops::{self, OpKind, OpRow};
@@ -699,7 +698,7 @@ impl Engine {
                             },
                             payload: Some("{\"sync\":true}".to_string()),
                         },
-                        Utc::now(),
+                        nucleus::execution::now(),
                     )
                     .await;
             }
@@ -840,14 +839,14 @@ impl Engine {
                 .unwrap_or_default()
         });
         let prev = store::facts::last_hash(&mut tx).await?;
-        let mut sealed = nucleus::fact::seal(news, &prev, Utc::now());
+        let mut sealed = nucleus::fact::seal(news, &prev, nucleus::execution::now());
         sealed.signature = fact.signature.clone();
         store::facts::insert(&mut tx, &sealed).await?;
         store::records::bump_quantity(
             &mut tx,
             &sealed.record_uid,
             sealed.delta,
-            &Utc::now().to_rfc3339(),
+            &nucleus::execution::now().to_rfc3339(),
         )
         .await?;
         tx.commit().await?;

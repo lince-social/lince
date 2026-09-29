@@ -1,4 +1,3 @@
-use chrono::Utc;
 use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;
@@ -57,7 +56,7 @@ pub async fn ensure_record_stub(
     if exists {
         return Ok(());
     }
-    let now = Utc::now().to_rfc3339();
+    let now = nucleus::execution::now().to_rfc3339();
     sqlx::query(
         "INSERT INTO record (uid, slug, kind, head, body, quantity_mantissa, quantity_scale,
                              organ_uid, created_at, updated_at, replica_root, created_hlc)
@@ -83,7 +82,7 @@ pub async fn set_record_field(
     undelete: bool,
     stamp: Stamp<'_>,
 ) -> Result<bool, StoreError> {
-    let now = Utc::now().to_rfc3339();
+    let now = nucleus::execution::now().to_rfc3339();
     let text = value.as_str().map(str::to_string);
     let applied = match field {
         "head" | "body" | "kind" => {
@@ -212,7 +211,7 @@ pub async fn undelete_record(
         "UPDATE record SET deleted_at = NULL, updated_at = ? WHERE uid = ?{NOT_SUPERSEDED}"
     );
     bind_stamp(
-        sqlx::query(&sql).bind(Utc::now().to_rfc3339()).bind(uid),
+        sqlx::query(&sql).bind(nucleus::execution::now().to_rfc3339()).bind(uid),
         &stamp,
     )
     .execute(pool)
@@ -239,7 +238,7 @@ pub async fn set_record_text_raw(
     sqlx::query("UPDATE record SET head = ?, body = ?, updated_at = ? WHERE uid = ?")
         .bind(head)
         .bind(body)
-        .bind(Utc::now().to_rfc3339())
+        .bind(nucleus::execution::now().to_rfc3339())
         .bind(uid)
         .execute(pool)
         .await?;
@@ -251,7 +250,7 @@ pub async fn tombstone_record(
     uid: &str,
     stamp: Stamp<'_>,
 ) -> Result<(), StoreError> {
-    let now = Utc::now().to_rfc3339();
+    let now = nucleus::execution::now().to_rfc3339();
     let sql = format!(
         "UPDATE record SET deleted_at = ?, slug = NULL, updated_at = ? WHERE uid = ?{NOT_SUPERSEDED}"
     );
@@ -378,7 +377,7 @@ pub async fn upsert_assertion(
         )
         .bind(&predicate_uid)
         .bind(&predicate_name)
-        .bind(Utc::now().to_rfc3339())
+        .bind(nucleus::execution::now().to_rfc3339())
         .execute(&mut *tx)
         .await?;
         if predicate_name != placeholder {
@@ -398,7 +397,7 @@ pub async fn upsert_assertion(
         let predicate = s("predicate_uid").unwrap_or_default();
         let object = s("object_uid");
         sqlx::query("INSERT INTO record_assertion (uid, subject_uid, predicate_uid, object_uid, role, quantity_mantissa, quantity_scale, unit_uid, asserted_by, created_at, retracted_at) VALUES (?, ?, ?, ?, 'ordinary', ?, ?, ?, ?, ?, ?) ON CONFLICT(uid) DO UPDATE SET quantity_mantissa = excluded.quantity_mantissa, quantity_scale = excluded.quantity_scale, unit_uid = excluded.unit_uid")
-            .bind(uid).bind(&subject).bind(&predicate).bind(&object).bind(s("quantity_mantissa")).bind(value["quantity_scale"].as_i64()).bind(s("unit_uid")).bind(s("asserted_by")).bind(s("created_at").unwrap_or_else(|| Utc::now().to_rfc3339())).bind(Utc::now().to_rfc3339()).execute(&mut *tx).await?;
+            .bind(uid).bind(&subject).bind(&predicate).bind(&object).bind(s("quantity_mantissa")).bind(value["quantity_scale"].as_i64()).bind(s("unit_uid")).bind(s("asserted_by")).bind(s("created_at").unwrap_or_else(|| nucleus::execution::now().to_rfc3339())).bind(nucleus::execution::now().to_rfc3339()).execute(&mut *tx).await?;
         project_ordinary_assertion(&mut tx, &subject, &predicate, object.as_deref()).await?;
         tx.commit().await?;
         return Ok(());
@@ -418,7 +417,7 @@ pub async fn upsert_assertion(
     .bind(value.get("quantity_scale").and_then(|v| v.as_i64()))
     .bind(s("unit_uid"))
     .bind(s("asserted_by"))
-    .bind(s("created_at").unwrap_or_else(|| Utc::now().to_rfc3339()))
+    .bind(s("created_at").unwrap_or_else(|| nucleus::execution::now().to_rfc3339()))
     .execute(&mut *tx)
     .await?;
     if res.rows_affected() == 0 {
@@ -443,7 +442,7 @@ pub async fn retract_assertion(
           WHERE uid = ? AND retracted_at IS NULL{NOT_SUPERSEDED}"
     );
     bind_stamp(
-        sqlx::query(&sql).bind(Utc::now().to_rfc3339()).bind(uid),
+        sqlx::query(&sql).bind(nucleus::execution::now().to_rfc3339()).bind(uid),
         &stamp,
     )
     .execute(pool)
@@ -466,7 +465,7 @@ pub(crate) async fn project_ordinary_assertion(
     let winner: Option<String> = sqlx::query_scalar("SELECT a.uid FROM record_assertion a WHERE a.subject_uid = ? AND a.predicate_uid = ? AND a.object_uid IS ? AND a.role = 'ordinary' AND NOT EXISTS (SELECT 1 FROM sync_op o WHERE o.tbl = 'record_assertion' AND o.uid = a.uid AND o.kind = 'tombstone') ORDER BY a.uid DESC LIMIT 1")
         .bind(subject).bind(predicate).bind(object).fetch_optional(&mut **tx).await?;
     sqlx::query("UPDATE record_assertion SET retracted_at = COALESCE(retracted_at, ?) WHERE subject_uid = ? AND predicate_uid = ? AND object_uid IS ? AND role = 'ordinary'")
-        .bind(Utc::now().to_rfc3339()).bind(subject).bind(predicate).bind(object).execute(&mut **tx).await?;
+        .bind(nucleus::execution::now().to_rfc3339()).bind(subject).bind(predicate).bind(object).execute(&mut **tx).await?;
     if let Some(winner) = winner {
         let identity: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM record_assertion WHERE subject_uid = ? AND predicate_uid = ? AND object_uid IS ? AND role = 'identity' AND retracted_at IS NULL)")
             .bind(subject).bind(predicate).bind(object).fetch_one(&mut **tx).await?;
@@ -506,7 +505,7 @@ pub async fn upsert_concept(
     .bind(uid)
     .bind(canonical_name)
     .bind(origin_organ)
-    .bind(Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .execute(&mut *tx)
     .await?;
     if res.rows_affected() == 0 {

@@ -15,7 +15,7 @@ pub fn render(world: &mut World, parent: Entity, page: Page) {
         Page::Records => records(world, parent, false),
         Page::Kanban => records(world, parent, true),
         Page::Record(uid) => record(world, parent, &uid),
-        Page::Organ => organ(world, parent),
+        Page::Organ => crate::organ::render(world, parent),
         Page::Karma => karma(world, parent),
         Page::Frequency => frequency(world, parent),
         Page::Credits => {
@@ -77,6 +77,7 @@ fn rows(world: &World, topic: &str) -> Vec<Value> {
 }
 
 fn records(world: &mut World, parent: Entity, kanban: bool) {
+    crate::views::render(world, parent);
     let search = world.resource::<Mobile>().search.clone();
     input(
         world,
@@ -98,12 +99,45 @@ fn records(world: &mut World, parent: Entity, kanban: bool) {
         Intent::CreateRecord,
     );
     button(world, actions, "Refresh", Intent::Refresh);
-    let records = rows(world, "records");
+    let filter = if world.resource::<Mobile>().negative_only {
+        "Showing negative quantities"
+    } else {
+        "Showing all quantities"
+    };
+    button(world, parent, filter, Intent::ToggleNegative);
+    let all_records = rows(world, "records");
+    let page = world.resource::<Mobile>().record_pages.len() + 1;
+    let records: Vec<_> = all_records
+        .iter()
+        .take(crate::views::PAGE_SIZE)
+        .cloned()
+        .collect();
+    label(world, parent, &format!("Page {page}"), 14.0);
     if records.is_empty() {
         label(world, parent, "No Records to display", 18.0);
     }
     if kanban {
+        let tabs = controls::row(world, parent);
+        let selected = world.resource::<Mobile>().kanban_column;
+        for (column, (title, _, _)) in KANBAN_COLUMNS.iter().enumerate() {
+            button(
+                world,
+                tabs,
+                &format!("{}{title}", if selected == column { "✓ " } else { "" }),
+                Intent::KanbanColumn(column),
+            );
+        }
+        button(
+            world,
+            tabs,
+            "Other quantities",
+            Intent::KanbanColumn(KANBAN_COLUMNS.len()),
+        );
+        crate::kanban::settings(world, parent);
         for (column, (title, _, quantity)) in KANBAN_COLUMNS.iter().enumerate() {
+            if selected != column {
+                continue;
+            }
             label(world, parent, title, 22.0);
             for record in &records {
                 if nucleus::DecimalValue::parse_inferred(&display(&record["quantity"])).ok()
@@ -114,8 +148,13 @@ fn records(world: &mut World, parent: Entity, kanban: bool) {
                 card(world, parent, record, Some(column));
             }
         }
-        label(world, parent, "Other quantities", 22.0);
+        if selected == KANBAN_COLUMNS.len() {
+            label(world, parent, "Other quantities", 22.0);
+        }
         for record in &records {
+            if selected != KANBAN_COLUMNS.len() {
+                continue;
+            }
             let quantity =
                 nucleus::DecimalValue::parse_inferred(&display(&record["quantity"])).ok();
             if !KANBAN_COLUMNS.iter().any(|(_, _, value)| {
@@ -129,17 +168,11 @@ fn records(world: &mut World, parent: Entity, kanban: bool) {
             card(world, parent, record, None);
         }
     }
-    let limit = world.resource::<Mobile>().limit;
-    if records.len() >= limit && limit < 500 {
-        button(world, parent, "Load more", Intent::More);
+    if page > 1 {
+        button(world, parent, "Previous page", Intent::Previous);
     }
-    if records.len() >= 500 {
-        label(
-            world,
-            parent,
-            "Showing the first 500 Records. Narrow your search to see others.",
-            16.0,
-        );
+    if all_records.len() > crate::views::PAGE_SIZE {
+        button(world, parent, "Next page", Intent::More);
     }
 }
 
@@ -153,21 +186,48 @@ fn card(world: &mut World, parent: Entity, record: &Value, column: Option<usize>
         .filter(|head| !head.is_empty())
         .unwrap_or("Untitled Record");
     button(world, group, title, Intent::Open(Page::Record(uid.into())));
-    let detail = format!(
-        "{} · {}",
-        display(&record["quantity"]),
-        display(&record["due_date"])
-    );
-    label(world, group, &detail, 14.0);
+    let draft = crate::views::draft(world.resource::<Mobile>());
+    for (key, title) in crate::views::FIELDS {
+        if draft.query["fields"]
+            .as_array()
+            .is_none_or(|fields| fields.iter().any(|field| field == key))
+        {
+            label(
+                world,
+                group,
+                &format!("{title}: {}", display(&record[*key])),
+                14.0,
+            );
+        }
+    }
+    if nucleus::DecimalValue::parse_inferred(&display(&record["quantity"])).is_ok_and(|quantity| {
+        quantity
+            .exact_numeric_cmp(nucleus::DecimalValue::parse_inferred("0").expect("zero"))
+            .is_lt()
+    }) {
+        button(world, group, "Set to 0", Intent::CompleteRecord(uid.into()));
+    }
     if let Some(current) = column {
         button(world, group, "Move to…", Intent::MoveMenu(uid.into()));
         if world.resource::<Mobile>().moving.as_deref() != Some(uid) {
             return;
         }
+        let handle = button(
+            world,
+            group,
+            "Drag this task onto a destination below",
+            Intent::Nothing,
+        );
+        world
+            .entity_mut(handle)
+            .insert(crate::kanban::Handle(uid.into()));
         let moves = controls::row(world, group);
         for (index, (title, _, _)) in KANBAN_COLUMNS.iter().enumerate() {
             if current != index {
-                button(world, moves, title, Intent::Move(uid.into(), index));
+                let destination = button(world, moves, title, Intent::Move(uid.into(), index));
+                world
+                    .entity_mut(destination)
+                    .insert(crate::kanban::Destination(index));
             }
         }
     }
@@ -195,6 +255,17 @@ fn record(world: &mut World, parent: Entity, uid: &str) {
     };
     for field in protein::record_schema::fields() {
         let value = display(&record[field.key]);
+        if field.key == "body" {
+            label(world, parent, "Description preview", 22.0);
+            let draft = world.resource::<Mobile>().draft(uid, "body", &value);
+            crate::body::render(world, parent, &draft);
+            label(
+                world,
+                parent,
+                "Edit with Markdown: **bold**, _italic_, headings and lists.",
+                14.0,
+            );
+        }
         if matches!(
             field.key,
             "head" | "body" | "slug" | "quantity" | "start_date" | "due_date" | "estimate_min"
@@ -256,14 +327,121 @@ fn record(world: &mut World, parent: Entity, uid: &str) {
                 Intent::Open(Page::Record(thread_uid.into())),
             );
             for message in thread["messages"].as_array().into_iter().flatten() {
-                label(
+                crate::body::render(world, parent, message["body"].as_str().unwrap_or_default());
+                if let Some(message_uid) = message["uid"].as_str() {
+                    label(
+                        world,
+                        parent,
+                        &format!(
+                            "{} · {}",
+                            display(&message["author_name"]),
+                            display(&message["created_at"])
+                        ),
+                        12.0,
+                    );
+                    button(
+                        world,
+                        parent,
+                        "Reply",
+                        Intent::ReplyTo(thread_uid.into(), Some(message_uid.into())),
+                    );
+                    button(
+                        world,
+                        parent,
+                        "Edit message",
+                        Intent::Open(Page::Record(message_uid.into())),
+                    );
+                    button(
+                        world,
+                        parent,
+                        "Delete message",
+                        Intent::Ask(Action::DeleteRecord {
+                            target: message_uid.into(),
+                        }),
+                    );
+                    for (index, part) in message["content"]["parts"]
+                        .as_array()
+                        .into_iter()
+                        .flatten()
+                        .enumerate()
+                    {
+                        if part["kind"] == "attachment" {
+                            button(
+                                world,
+                                parent,
+                                &format!("Save {}", part["name"].as_str().unwrap_or("attachment")),
+                                Intent::Act(Action::ReadMessageAttachment {
+                                    message: message_uid.into(),
+                                    index,
+                                }),
+                            );
+                        }
+                    }
+                }
+            }
+            if thread["messages_has_more"] == true {
+                button(
                     world,
                     parent,
-                    message["body"].as_str().unwrap_or_default(),
-                    16.0,
+                    "Earlier messages",
+                    Intent::MoreMessages(thread_uid.into()),
+                );
+            }
+            if world
+                .resource::<Mobile>()
+                .thread_pages
+                .get(thread_uid)
+                .is_some_and(|pages| !pages.is_empty())
+            {
+                button(
+                    world,
+                    parent,
+                    "Newer messages",
+                    Intent::NewerMessages(thread_uid.into()),
+                );
+                button(
+                    world,
+                    parent,
+                    "Latest messages",
+                    Intent::LatestMessages(thread_uid.into()),
+                );
+            }
+            if !world
+                .resource::<Mobile>()
+                .draft(thread_uid, "parent", "")
+                .is_empty()
+            {
+                label(world, parent, "Replying to the selected message", 14.0);
+                button(
+                    world,
+                    parent,
+                    "Cancel reply",
+                    Intent::ReplyTo(thread_uid.into(), None),
                 );
             }
             input(world, parent, thread_uid, "message", "Message", "", true);
+            button(
+                world,
+                parent,
+                "Attach file (up to 4 MiB)",
+                Intent::AttachFile(thread_uid.into()),
+            );
+            let attachments = world
+                .resource::<Mobile>()
+                .attachments
+                .get(thread_uid)
+                .cloned()
+                .unwrap_or_default();
+            for (index, part) in attachments.iter().enumerate() {
+                if let nucleus::message::MessagePart::Attachment { name, .. } = part {
+                    button(
+                        world,
+                        parent,
+                        &format!("Remove {name}"),
+                        Intent::RemoveAttachment(thread_uid.into(), index),
+                    );
+                }
+            }
             button(
                 world,
                 parent,
@@ -328,6 +506,22 @@ fn assertions(world: &mut World, parent: Entity, uid: &str, record: &Value) {
         ("unit", "Unit (optional)"),
     ] {
         input(world, parent, uid, name, title, "", false);
+        if matches!(name, "predicate" | "object" | "unit") {
+            button(
+                world,
+                parent,
+                &format!("Find {title}"),
+                Intent::Pick(crate::picker::Picker {
+                    scope: uid.into(),
+                    field: name.into(),
+                    kind: if name == "object" {
+                        crate::picker::Kind::Record
+                    } else {
+                        crate::picker::Kind::Concept
+                    },
+                }),
+            );
+        }
     }
     button(
         world,
@@ -337,6 +531,16 @@ fn assertions(world: &mut World, parent: Entity, uid: &str, record: &Value) {
     );
     label(world, parent, &display(&record["assignees"]), 16.0);
     input(world, parent, uid, "assignee", "Person Record", "", false);
+    button(
+        world,
+        parent,
+        "Find Person",
+        Intent::Pick(crate::picker::Picker {
+            scope: uid.into(),
+            field: "assignee".into(),
+            kind: crate::picker::Kind::Person,
+        }),
+    );
     button(
         world,
         parent,
@@ -355,6 +559,12 @@ fn logs(world: &mut World, parent: Entity, uid: &str, record: &Value) {
             16.0,
         );
         if let Some(id) = log["id"].as_str() {
+            button(
+                world,
+                parent,
+                "Edit work log",
+                Intent::EditLog(uid.into(), id.into()),
+            );
             button(
                 world,
                 parent,
@@ -390,9 +600,29 @@ fn logs(world: &mut World, parent: Entity, uid: &str, record: &Value) {
     button(
         world,
         parent,
-        "Add work log",
+        if world
+            .resource::<Mobile>()
+            .draft(uid, "log_id", "")
+            .is_empty()
+        {
+            "Add work log"
+        } else {
+            "Save work log changes"
+        },
         Intent::RecordControl(uid.into(), RecordControl::Log),
     );
+    if !world
+        .resource::<Mobile>()
+        .draft(uid, "log_id", "")
+        .is_empty()
+    {
+        button(
+            world,
+            parent,
+            "Cancel work log changes",
+            Intent::CancelLog(uid.into()),
+        );
+    }
 }
 
 pub fn record_control(world: &mut World, uid: &str, control: RecordControl) -> Result<(), String> {
@@ -424,7 +654,8 @@ pub fn record_control(world: &mut World, uid: &str, control: RecordControl) -> R
         RecordControl::Log => mutation(
             uid,
             engine::record_change::Mutation::WorkLog {
-                log_id: format!("work.log:{}", nucleus::new_uid("log")),
+                log_id: optional("log_id")
+                    .unwrap_or_else(|| format!("work.log:{}", nucleus::new_uid("log"))),
                 value: Some(
                     serde_json::json!({"start":value("log_start"),"end":optional("log_end")}),
                 ),
@@ -433,10 +664,10 @@ pub fn record_control(world: &mut World, uid: &str, control: RecordControl) -> R
         RecordControl::Message => Action::CreateMessage {
             thread: uid.into(),
             body: value("message"),
-            content: Vec::new(),
+            content: state.attachments.get(uid).cloned().unwrap_or_default(),
             author: None,
             state: nucleus::MessageState::Finished,
-            parent: None,
+            parent: optional("parent"),
             references: Vec::new(),
         },
     };
@@ -663,119 +894,4 @@ pub fn save_frequency(world: &mut World) -> Result<(), String> {
         },
         None,
     )
-}
-
-fn organ(world: &mut World, parent: Entity) {
-    input(world, parent, "organ", "invite", "Pairing code", "", true);
-    input(world, parent, "organ", "name", "Contact name", "", false);
-    button(world, parent, "Add known Organ", Intent::Pair);
-    input(
-        world,
-        parent,
-        "organ",
-        "enrol",
-        "Device enrolment code",
-        "",
-        true,
-    );
-    button(world, parent, "Join that Organ", Intent::JoinOrgan);
-    button(
-        world,
-        parent,
-        "Show devices",
-        Intent::Act(Action::RosterStatus),
-    );
-    button(
-        world,
-        parent,
-        "Create enrolment code",
-        Intent::Act(Action::RosterEnrolToken),
-    );
-    for row in rows(world, "enrolment") {
-        if let Some(code) = row["code"].as_str() {
-            input(
-                world,
-                parent,
-                "enrolment",
-                "code",
-                "Use this code on the other device",
-                code,
-                true,
-            );
-            label(
-                world,
-                parent,
-                &format!("Expires in {} minutes", display(&row["expires_in_minutes"])),
-                16.0,
-            );
-        }
-    }
-    for row in rows(world, "pairing") {
-        if let Some(invite) = row["extension"]["invite"].as_str() {
-            input(
-                world,
-                parent,
-                "pairing",
-                "code",
-                "This Organ’s pairing code",
-                invite,
-                true,
-            );
-        }
-    }
-    for row in rows(world, "roster_records") {
-        let roster = &row["extension"];
-        label(
-            world,
-            parent,
-            &format!("Roster expires {}", display(&roster["not_after"])),
-            16.0,
-        );
-        for device in roster["cells"].as_array().into_iter().flatten() {
-            let Some(uid) = device["cell_uid"].as_str() else {
-                continue;
-            };
-            label(world, parent, device["label"].as_str().unwrap_or(uid), 18.0);
-            button(
-                world,
-                parent,
-                "Revoke device",
-                Intent::Ask(Action::RosterRevokeCell {
-                    cell_uid: uid.into(),
-                }),
-            );
-        }
-    }
-    for row in rows(world, "organs") {
-        let Some(uid) = row["uid"].as_str() else {
-            continue;
-        };
-        label(world, parent, row["head"].as_str().unwrap_or(uid), 22.0);
-        button(
-            world,
-            parent,
-            "Open Organ",
-            Intent::Open(Page::Record(uid.into())),
-        );
-        if row["slug"] == "local-organ" {
-            continue;
-        }
-        for (title, trust) in [("Trust", "known"), ("Block", "blocked")] {
-            button(
-                world,
-                parent,
-                title,
-                Intent::Ask(Action::SetContactTrust {
-                    target: uid.into(),
-                    trust: trust.into(),
-                }),
-            );
-        }
-        button(
-            world,
-            parent,
-            "Forget contact",
-            Intent::Ask(Action::ForgetOrganContact { target: uid.into() }),
-        );
-    }
 }

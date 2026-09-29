@@ -1,5 +1,43 @@
 use serde_json::{Value, json};
 
+pub fn delivery_label(cell: &Value) -> String {
+    let name = cell["label"].as_str().unwrap_or("Device");
+    let delivery = &cell["delivery"];
+    if delivery.is_null() {
+        return format!("{name}: delivery has not been checked. Changes are saved on this device.");
+    }
+    let last = delivery["succeeded_at"].as_str().unwrap_or("never");
+    if let Some(error) = delivery["error"].as_str() {
+        return format!("{name}: {error}\nLast successful exchange: {last}");
+    }
+    let pending = delivery["pending"].as_i64().unwrap_or(0);
+    let state = if pending == 0 {
+        "Delivery confirmed at last check".into()
+    } else {
+        format!("{pending} operation(s) awaiting confirmation")
+    };
+    format!("{name}: {state}\nLast successful exchange: {last}")
+}
+
+pub fn peer_network_label(network: &Value) -> String {
+    if network.is_null() {
+        return "Peer connection unavailable. Check whether another app is using this port.".into();
+    }
+    if network["relay_only"] == true {
+        return "Internet relay only. Enable LAN access to listen on this port.".into();
+    }
+    let addresses = network["addresses"]
+        .as_array()
+        .filter(|values| !values.is_empty())
+        .or_else(|| network["listening"].as_array())
+        .into_iter()
+        .flatten()
+        .filter_map(Value::as_str)
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!("Peer UDP addresses: {addresses}")
+}
+
 #[derive(Clone)]
 pub enum FieldKind {
     Text,

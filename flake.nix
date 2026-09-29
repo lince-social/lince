@@ -43,7 +43,7 @@
 
           execStart =
             if isDesktop then
-              "${package}/bin/lince"
+              "${package}/bin/lince --peer-port ${toString cfg.peerPort}"
             else
               lib.concatStringsSep " " (
                 [
@@ -52,6 +52,8 @@
                   cfg.dataDir
                   "--listen-addr"
                   cfg.listenAddr
+                  "--peer-port"
+                  (toString cfg.peerPort)
                 ]
                 ++ lib.optional (cfg.mode == "server" || cfg.mode == "front-door") "--server"
                 ++ lib.optionals (cfg.initialAdminPasswordFile != null) [
@@ -261,6 +263,16 @@
               default = false;
               description = "Open listenAddr's port. Leave off when a reverse proxy fronts it.";
             };
+            peerPort = lib.mkOption {
+              type = lib.types.port;
+              default = 6175;
+              description = "UDP port for this Cell. Use 6176 for a second test instance.";
+            };
+            openPeerFirewall = lib.mkOption {
+              type = lib.types.bool;
+              default = false;
+              description = "Allow the peer UDP port and local discovery on UDP 5353.";
+            };
           };
 
           config = lib.mkIf cfg.enable {
@@ -322,6 +334,7 @@
             networking.firewall.allowedTCPPorts = lib.mkIf cfg.openFirewall [
               (lib.toInt (lib.last (lib.splitString ":" cfg.listenAddr)))
             ];
+            networking.firewall.allowedUDPPorts = lib.mkIf cfg.openPeerFirewall [ cfg.peerPort 5353 ];
 
             systemd.services.lince = lib.mkIf (!isUserScope) unit;
             systemd.user.services.lince = lib.mkIf isUserScope unit;
@@ -721,6 +734,12 @@
                 ])
                 ++ lib.optionals ui interfaceLinuxBuildInputs;
 
+              postInstall = lib.optionalString pkgs.stdenv.isLinux ''
+                install -Dm644 packaging/linux/ufw/lince "$out/etc/ufw/applications.d/lince"
+                install -Dm644 packaging/linux/firewalld/lince.xml "$out/lib/firewalld/services/lince.xml"
+                install -Dm644 packaging/linux/firewalld/lince-test.xml "$out/lib/firewalld/services/lince-test.xml"
+              '';
+
               postFixup = lib.optionalString (pkgs.stdenv.isLinux && (ui || system == "x86_64-linux")) ''
                 wrapProgram "$out/bin/lince" ${
                   lib.escapeShellArgs (
@@ -794,6 +813,9 @@
                 install -Dm755 bin/lince "$out/bin/lince"
                 install -Dm644 LICENSE "$out/share/licenses/lince/LICENSE"
                 install -Dm644 revision "$out/share/lince/revision"
+                install -Dm644 ${./packaging/linux/ufw/lince} "$out/etc/ufw/applications.d/lince"
+                install -Dm644 ${./packaging/linux/firewalld/lince.xml} "$out/lib/firewalld/services/lince.xml"
+                install -Dm644 ${./packaging/linux/firewalld/lince-test.xml} "$out/lib/firewalld/services/lince-test.xml"
                 runHook postInstall
               '';
               postFixup = ''
@@ -1039,6 +1061,9 @@
             packages = [ pkgs.jdk17 ];
             JAVA_HOME = "${pkgs.jdk17}";
             RUSTUP_TOOLCHAIN = "1.96.0";
+            HOST_CC = "${pkgs.stdenv.cc}/bin/cc";
+            HOST_CXX = "${pkgs.stdenv.cc}/bin/c++";
+            HOST_AR = "${pkgs.stdenv.cc.bintools}/bin/ar";
             shellHook = lib.optionalString pkgs.stdenv.isLinux ''
               export LD_LIBRARY_PATH="${
                 lib.makeLibraryPath (

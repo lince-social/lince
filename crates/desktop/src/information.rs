@@ -35,9 +35,6 @@ struct InformationPanel {
     revision: Option<u64>,
 }
 
-#[derive(Component)]
-struct UpdateNotice(Entity);
-
 pub struct OpenInformation;
 
 impl Action for OpenInformation {
@@ -83,7 +80,7 @@ impl Plugin for InformationPlugin {
         app.add_plugins(sync::SyncPlugin)
             .init_resource::<InformationState>()
             .add_systems(Startup, connect)
-            .add_systems(Update, (receive, notice, render).chain())
+            .add_systems(Update, (receive, render).chain())
             .add_systems(
                 PostUpdate,
                 restart
@@ -173,47 +170,6 @@ fn restart(world: &mut World) {
     }
     world.resource_mut::<InformationState>().restart_requested = true;
     world.write_message(AppExit::Success);
-}
-
-fn notice(world: &mut World) {
-    let roots: Vec<_> = world
-        .query_filtered::<Entity, (With<EditMode>, Without<UpdateNotice>)>()
-        .iter(world)
-        .collect();
-    for root in roots {
-        let toolbar = crate::canvas_controls::toolbar(world, root);
-        let button = action_button(
-            world,
-            toolbar,
-            root,
-            "Update available",
-            crate::actions![OpenInformation],
-        );
-        world.entity_mut(root).insert(UpdateNotice(button));
-    }
-    let available = world
-        .resource::<InformationState>()
-        .current
-        .as_ref()
-        .and_then(|state| state.update.as_ref())
-        .is_some_and(|update| update.availability == Availability::Available);
-    let buttons: Vec<_> = world
-        .query::<&UpdateNotice>()
-        .iter(world)
-        .map(|notice| notice.0)
-        .collect();
-    for button in buttons {
-        if let Some(mut node) = world.get_mut::<Node>(button) {
-            let display = if available {
-                Display::Flex
-            } else {
-                Display::None
-            };
-            if node.display != display {
-                node.display = display;
-            }
-        }
-    }
 }
 
 pub(crate) fn panel(world: &mut World, root: Entity, parent: Entity) {
@@ -534,6 +490,12 @@ pub(crate) mod tests {
         EditAction::Open.apply(app.world_mut(), root);
         crate::notifications::NotificationAction::Toggle.apply(app.world_mut(), root);
         app.update();
+        assert!(
+            app.world_mut()
+                .query::<&AccessibilityNode>()
+                .iter(app.world())
+                .all(|node| node.label() != Some("Update available"))
+        );
         let button = app
             .world_mut()
             .query::<(Entity, &AccessibilityNode)>()
@@ -546,6 +508,8 @@ pub(crate) mod tests {
         app.update();
         app.update();
         let text = texts(&mut app).join("\n");
+        assert!(app.world().get::<EditMode>(root).unwrap().enabled);
+        assert!(!texts(&mut app).iter().any(|text| text == "Notifications"));
         assert!(text.contains("Available: 0.7.1 (new)"));
         assert!(text.contains("Download and restart"));
         assert!(text.contains("Automatic updates: Off"));

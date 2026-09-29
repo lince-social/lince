@@ -32,7 +32,7 @@ pub async fn begin(
     )
     .bind(record_uid)
     .bind(contact_organ)
-    .bind(chrono::Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .execute(pool)
     .await?;
     Ok(())
@@ -116,7 +116,7 @@ pub async fn still_queued(
 
 pub async fn mark_handed_over(pool: &SqlitePool, record_uid: &str) -> Result<(), StoreError> {
     sqlx::query("UPDATE record_move SET handed_over_at = ? WHERE record_uid = ?")
-        .bind(chrono::Utc::now().to_rfc3339())
+        .bind(nucleus::execution::now().to_rfc3339())
         .bind(record_uid)
         .execute(pool)
         .await?;

@@ -644,7 +644,7 @@ impl Engine {
             path: path.into(),
             body_hash: hex_sha256(body),
             timestamp: now.to_rfc3339(),
-            nonce: uuid::Uuid::new_v4().to_string(),
+            nonce: nucleus::execution::uuid().to_string(),
             key_id: signer.key_id.clone(),
             signature: String::new(),
         };

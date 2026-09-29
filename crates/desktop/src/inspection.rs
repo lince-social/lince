@@ -23,6 +23,7 @@ pub struct Inspection {
     pub events: bool,
     pub hidden: bool,
     pub selected: Option<Entity>,
+    pub(crate) selected_point: Option<Vec2>,
     pub(crate) hovered: Option<Entity>,
     suppressed: Option<Entity>,
 }
@@ -36,6 +37,7 @@ impl Default for Inspection {
             events: false,
             hidden: false,
             selected: None,
+            selected_point: None,
             hovered: None,
             suppressed: None,
         }
@@ -198,10 +200,14 @@ fn input(
     excluded: Query<(), With<InspectionExcluded>>,
     mut roots: Query<(Entity, &EditMode, &mut Inspection)>,
 ) {
-    let pressed = events.read().any(|event| {
-        event.pointer_id == PointerId::Mouse
-            && matches!(event.action, PointerAction::Press(PointerButton::Primary))
-    });
+    let pressed = events
+        .read()
+        .filter(|event| {
+            event.pointer_id == PointerId::Mouse
+                && matches!(event.action, PointerAction::Press(PointerButton::Primary))
+        })
+        .map(|event| event.location.position)
+        .last();
     let hit = hover.get(&PointerId::Mouse).and_then(|hits| {
         hits.iter()
             .min_by(|(_, a), (_, b)| a.depth.total_cmp(&b.depth))
@@ -218,6 +224,7 @@ fn input(
     for (root, mode, mut state) in &mut roots {
         if !mode.enabled {
             state.selected = None;
+            state.selected_point = None;
             state.hovered = None;
             state.suppressed = None;
             continue;
@@ -241,9 +248,12 @@ fn input(
             state.suppressed = None;
         }
         state.hovered = candidate.filter(|entity| Some(*entity) != state.suppressed);
-        if state.click && pressed && !control && chain.contains(&root) {
-            state.selected = candidate;
-            state.suppressed = None;
+        if pressed.is_some() && chain.contains(&root) {
+            state.selected_point = pressed;
+            if state.click {
+                state.selected = candidate;
+                state.suppressed = None;
+            }
         }
     }
 }
@@ -778,7 +788,7 @@ pub(crate) mod tests {
                     width: 800,
                     height: 600,
                 },
-                position: Vec2::ZERO,
+                position: Vec2::new(220.0, 180.0),
             },
             PointerAction::Press(PointerButton::Primary),
         );
@@ -792,6 +802,10 @@ pub(crate) mod tests {
         app.world_mut().write_message(press.clone());
         app.update();
         assert_eq!(app.world().get::<Inspection>(root).unwrap().selected, None);
+        assert_eq!(
+            app.world().get::<Inspection>(root).unwrap().selected_point,
+            Some(Vec2::new(220.0, 180.0))
+        );
 
         app.world_mut().get_mut::<Inspection>(root).unwrap().click = true;
         app.world_mut().write_message(press);

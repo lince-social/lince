@@ -64,8 +64,8 @@ impl crate::Engine {
             return Err(Refusal::QuotaFull);
         }
 
-        let now = chrono::Utc::now();
-        let uid = format!("mb-{}", uuid::Uuid::new_v4());
+        let now = nucleus::execution::now();
+        let uid = format!("mb-{}", nucleus::execution::uuid());
         store::mailbox::deposit(
             &self.store.pool,
             &store::mailbox::HeldBundle {
@@ -182,7 +182,7 @@ impl crate::Engine {
                 "we hold no roster for that Organ, so there is nothing to seal to".into(),
             ));
         };
-        let now = chrono::Utc::now();
+        let now = nucleus::execution::now();
         let recipients: Vec<crate::seal::SealingKey> = their_roster
             .roster
             .cells
@@ -289,11 +289,11 @@ impl crate::Engine {
     ) -> Result<String, EngineError> {
         let token = format!(
             "{}{}",
-            uuid::Uuid::new_v4().simple(),
-            uuid::Uuid::new_v4().simple()
+            nucleus::execution::uuid().simple(),
+            nucleus::execution::uuid().simple()
         );
         let expires_at =
-            (chrono::Utc::now() + chrono::Duration::days(INVITE_TTL_DAYS)).to_rfc3339();
+            (nucleus::execution::now() + chrono::Duration::days(INVITE_TTL_DAYS)).to_rfc3339();
         store::mailbox::put_invite(
             &self.store.pool,
             &crate::roster::hash_token(&token),

@@ -134,7 +134,7 @@ pub async fn append(
         }
         res.last_insert_rowid()
     };
-    let now = chrono::Utc::now().to_rfc3339();
+    let now = nucleus::execution::now().to_rfc3339();
     if from_contact.is_some() {
         return Ok(Some(seq));
     }
@@ -275,7 +275,7 @@ pub async fn log_local(
         if tbl == "record" && kind == OpKind::Set {
             crate::record_changes::note_local(pool, uid, field).await?;
         }
-        let now = chrono::Utc::now().to_rfc3339();
+        let now = nucleus::execution::now().to_rfc3339();
         match &root {
             Some(root) => {
                 sqlx::query(ENQUEUE_GRANT)
@@ -354,7 +354,7 @@ pub async fn log_local_tx(
     if tbl == "record" && kind == OpKind::Set {
         crate::record_changes::note_local_tx(tx, uid, field).await?;
     }
-    let now = chrono::Utc::now().to_rfc3339();
+    let now = nucleus::execution::now().to_rfc3339();
     match &root {
         Some(root) => {
             sqlx::query(ENQUEUE_GRANT)
@@ -993,7 +993,7 @@ pub async fn enqueue_record_for_contact(
     .bind(record_uid)
     .fetch_all(pool)
     .await?;
-    let now = chrono::Utc::now().to_rfc3339();
+    let now = nucleus::execution::now().to_rfc3339();
     let mut queued = 0usize;
     for row in &rows {
         let tbl: String = row.get("tbl");
@@ -1038,7 +1038,7 @@ pub async fn enqueue_widened_for_contact(
     )
     .fetch_all(pool)
     .await?;
-    let now = chrono::Utc::now().to_rfc3339();
+    let now = nucleus::execution::now().to_rfc3339();
     let mut queued = 0u64;
     for row in &rows {
         let tbl: String = row.get("tbl");

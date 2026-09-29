@@ -1,4 +1,7 @@
 pub mod credits;
+#[cfg(feature = "images")]
+pub mod images;
+pub mod blob_sync;
 
 #[cfg(feature = "ui")]
 pub mod controls;
@@ -20,6 +23,10 @@ pub mod karma;
 #[cfg(feature = "models")]
 pub mod organ;
 #[cfg(feature = "models")]
+pub mod qr;
+#[cfg(feature = "models")]
 pub mod queries;
 #[cfg(feature = "models")]
 pub mod records;
+#[cfg(feature = "models")]
+pub mod markup;

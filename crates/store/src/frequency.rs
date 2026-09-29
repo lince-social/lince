@@ -159,8 +159,7 @@ pub async fn delete(pool: &SqlitePool, uid: &str) -> Result<(), StoreError> {
     }
     for rule in crate::recurrence::all(pool).await? {
         if let Some(condition) = rule.condition {
-            let parsed = nucleus::karma::Condition::parse(&condition.source)
-                .map_err(|e| protocol(e.to_string()))?;
+            let parsed = condition.parsed().map_err(|e| protocol(e.to_string()))?;
             if parsed.reads().iter().any(|token| {
                 token.func == "freq" && (token.slug == frequency.slug || token.slug == uid)
             }) {
@@ -188,7 +187,7 @@ pub async fn delete(pool: &SqlitePool, uid: &str) -> Result<(), StoreError> {
     }
     let mut tx = crate::write_tx(pool).await?;
     sqlx::query("UPDATE record SET deleted_at = ? WHERE uid = ?")
-        .bind(Utc::now().to_rfc3339())
+        .bind(nucleus::execution::now().to_rfc3339())
         .bind(uid)
         .execute(&mut *tx)
         .await?;

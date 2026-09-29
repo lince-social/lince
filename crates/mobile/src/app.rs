@@ -25,11 +25,21 @@ pub struct Mobile {
     pub documents: BTreeMap<String, String>,
     pub status: String,
     pub search: String,
-    pub limit: usize,
+    pub record_pages: Vec<String>,
     pub sort: usize,
+    pub negative_only: bool,
+    pub view: Option<lince_interface::queries::ProteinDraft>,
+    pub view_settings: bool,
+    pub picker: Option<crate::picker::Picker>,
+    pub attachments: BTreeMap<String, Vec<nucleus::message::MessagePart>>,
+    pub thread_pages: BTreeMap<String, Vec<protein::MessageCursor>>,
+    pub setup_required: bool,
+    pub identity: crate::session::Identity,
     pub karma: Option<lince_interface::karma::Draft>,
     pub frequency: Option<lince_interface::frequency::Draft>,
     pub moving: Option<String>,
+    pub kanban_column: usize,
+    pub column_settings: bool,
     pub deleting: Option<Intent>,
     pub ready: bool,
     pub dirty: bool,
@@ -37,6 +47,10 @@ pub struct Mobile {
     active_record: Option<String>,
     active_topics: BTreeSet<&'static str>,
     directory: PathBuf,
+    profile_root: PathBuf,
+    pub profiles: crate::profiles::Profiles,
+    next_profile: Option<crate::profiles::Profiles>,
+    profile_error: Option<String>,
     organ: Option<String>,
     save_error: bool,
     last_saved: BTreeMap<String, String>,
@@ -45,6 +59,7 @@ pub struct Mobile {
     rendered_page: String,
     outbox: BTreeMap<String, crate::record::Prepared>,
     save_requested: bool,
+    next_status: std::time::Instant,
 }
 
 struct Pending {
@@ -59,10 +74,21 @@ struct Pending {
     clear_fields: Vec<String>,
     deleted: Option<String>,
     task_concept: bool,
+    sent_attachments: Option<(String, Vec<nucleus::message::MessagePart>)>,
+    silent: bool,
 }
+
+#[derive(Resource, Default)]
+struct DraftRecovery(BTreeMap<String, crate::storage::Saved>);
 
 impl Mobile {
     pub fn new(directory: PathBuf) -> Self {
+        let (profiles, profile_error) = match crate::profiles::Profiles::read(&directory) {
+            Ok(profiles) => (profiles, None),
+            Err(error) => (Default::default(), Some(error)),
+        };
+        let profile_root = directory;
+        let directory = profiles.directory(&profile_root);
         Self {
             navigation: Default::default(),
             rows: Default::default(),
@@ -70,11 +96,21 @@ impl Mobile {
             documents: Default::default(),
             status: "Opening this device’s Organ…".into(),
             search: String::new(),
-            limit: 50,
+            record_pages: Vec::new(),
             sort: 0,
+            negative_only: false,
+            view: None,
+            view_settings: false,
+            picker: None,
+            attachments: Default::default(),
+            thread_pages: Default::default(),
+            setup_required: false,
+            identity: Default::default(),
             karma: None,
             frequency: None,
             moving: None,
+            kanban_column: 1,
+            column_settings: false,
             deleting: None,
             ready: false,
             dirty: true,
@@ -82,6 +118,10 @@ impl Mobile {
             active_record: None,
             active_topics: Default::default(),
             directory,
+            profile_root,
+            profiles,
+            next_profile: None,
+            profile_error,
             organ: None,
             save_error: false,
             last_saved: Default::default(),
@@ -90,6 +130,7 @@ impl Mobile {
             rendered_page: String::new(),
             outbox: Default::default(),
             save_requested: false,
+            next_status: std::time::Instant::now() + std::time::Duration::from_secs(5),
         }
     }
 
@@ -98,6 +139,19 @@ impl Mobile {
             .get(&format!("{scope}/{field}"))
             .cloned()
             .unwrap_or_else(|| initial.into())
+    }
+
+    pub fn scope_key(&self) -> String {
+        format!(
+            "{}:{:?}:{:?}",
+            self.directory.display(),
+            self.organ,
+            self.identity
+        )
+    }
+
+    pub fn request_save(&mut self) {
+        self.save_requested = true;
     }
 }
 
@@ -117,19 +171,54 @@ pub(crate) struct Shell;
 #[derive(Component)]
 struct Status;
 
+#[derive(Component)]
+struct PasswordMask(Entity);
+
 #[derive(Component, Clone)]
 pub struct ButtonIntent(pub Intent);
 
 #[derive(Clone)]
 pub enum Intent {
+    OpenLink(String),
+    Nothing,
+    KanbanColumn(usize),
+    ColumnSettings,
     Menu,
     Back,
     Open(Page),
     Refresh,
     Search,
     Sort,
+    ToggleNegative,
+    CompleteRecord(String),
+    RenameCell(String),
+    Discovery(bool),
+    SavePeerPort,
+    ScanQr,
+    FreshProfile,
+    SwitchProfile(Option<String>),
+    Login,
+    Logout,
+    EditLog(String, String),
+    CancelLog(String),
     RetryDrafts,
     More,
+    Previous,
+    ViewSettings,
+    ToggleViewField(String),
+    SaveView,
+    LoadView(Option<String>),
+    Pick(crate::picker::Picker),
+    SearchPicker,
+    ClosePicker,
+    SelectItem(String),
+    AttachFile(String),
+    RemoveAttachment(String, usize),
+    ReplyTo(String, Option<String>),
+    MoreMessages(String),
+    LoadImage(String),
+    NewerMessages(String),
+    LatestMessages(String),
     CreateRecord,
     SaveField(String, String),
     DeleteRecord(String),
@@ -152,17 +241,33 @@ pub enum Intent {
 #[derive(Resource, Default)]
 struct Intents(VecDeque<Intent>);
 
+pub(crate) fn queue_intent(world: &mut World, intent: Intent) {
+    world.resource_mut::<Intents>().0.push_back(intent);
+}
+
 pub struct MobilePlugin;
 
 impl Plugin for MobilePlugin {
     fn build(&self, app: &mut App) {
         #[cfg(target_os = "android")]
         app.add_observer(crate::android::edit)
+            .init_resource::<crate::accessibility::Snapshot>()
+            .add_systems(Last, crate::accessibility::publish)
             .add_systems(Update, crate::android::receive);
         app.init_resource::<Intents>()
             .add_observer(activate)
             .add_systems(Startup, setup)
-            .add_systems(Update, (receive, keyboard).chain())
+            .add_systems(
+                Update,
+                (
+                    receive,
+                    keyboard,
+                    password_masks,
+                    poll_status,
+                    crate::images::poll,
+                )
+                    .chain(),
+            )
             .add_systems(
                 PostUpdate,
                 (capture, flush_on_suspend, apply, persist, render)
@@ -188,18 +293,7 @@ fn flush_on_suspend(
 }
 
 fn setup(world: &mut World) {
-    let proxy = world.resource::<bevy::winit::EventLoopProxyWrapper>();
-    let proxy = (**proxy).clone();
-    let wake = lince_interface::wake::WakeSignal::new(move || {
-        let _ = proxy.send_event(bevy::winit::WinitUserEvent::WakeUp);
-    });
-    #[cfg(target_os = "android")]
-    crate::android::wake(wake.clone());
-    let directory = world.resource::<Mobile>().directory.clone();
-    match Connection::open(directory, wake) {
-        Ok(connection) => world.insert_non_send(connection),
-        Err(error) => world.resource_mut::<Mobile>().status = error.to_string(),
-    }
+    connect(world);
     world.spawn(Camera2d);
     world.spawn((
         Shell,
@@ -215,6 +309,25 @@ fn setup(world: &mut World) {
     ));
 }
 
+fn connect(world: &mut World) {
+    if let Some(error) = world.resource::<Mobile>().profile_error.clone() {
+        world.resource_mut::<Mobile>().status = error;
+        return;
+    }
+    let proxy = world.resource::<bevy::winit::EventLoopProxyWrapper>();
+    let proxy = (**proxy).clone();
+    let wake = lince_interface::wake::WakeSignal::new(move || {
+        let _ = proxy.send_event(bevy::winit::WinitUserEvent::WakeUp);
+    });
+    #[cfg(target_os = "android")]
+    crate::android::wake(wake.clone());
+    let directory = world.resource::<Mobile>().directory.clone();
+    match Connection::open(directory, wake) {
+        Ok(connection) => world.insert_non_send(connection),
+        Err(error) => world.resource_mut::<Mobile>().status = error.to_string(),
+    }
+}
+
 fn activate(event: On<Activate>, buttons: Query<&ButtonIntent>, mut queue: ResMut<Intents>) {
     if let Ok(button) = buttons.get(event.entity) {
         queue.0.push_back(button.0.clone());
@@ -224,6 +337,43 @@ fn activate(event: On<Activate>, buttons: Query<&ButtonIntent>, mut queue: ResMu
 fn keyboard(keys: Res<ButtonInput<KeyCode>>, mut queue: ResMut<Intents>) {
     if keys.just_pressed(KeyCode::Escape) || keys.just_pressed(KeyCode::BrowserBack) {
         queue.0.push_back(Intent::Back);
+    }
+}
+
+fn password_masks(inputs: Query<&EditableText>, mut masks: Query<(&PasswordMask, &mut Text)>) {
+    for (mask, mut text) in &mut masks {
+        if let Ok(input) = inputs.get(mask.0) {
+            text.set_if_neq(Text::new("•".repeat(input.value().chars().count().min(32))));
+        }
+    }
+}
+
+fn poll_status(world: &mut World) {
+    let state = world.resource::<Mobile>();
+    if !state.ready
+        || state.identity == crate::session::Identity::Locked
+        || state.navigation.current != Page::Organ
+        || !state.pending.is_empty()
+        || std::time::Instant::now() < state.next_status
+    {
+        return;
+    }
+    if editing(world)
+        || world
+            .query::<&Window>()
+            .iter(world)
+            .any(|window| !window.focused)
+    {
+        return;
+    }
+    let previous = world.resource::<Mobile>().status.clone();
+    world.resource_mut::<Mobile>().next_status =
+        std::time::Instant::now() + std::time::Duration::from_secs(5);
+    if act(world, engine::actions::Action::RosterStatus, None).is_ok() {
+        for pending in world.resource_mut::<Mobile>().pending.values_mut() {
+            pending.silent = true;
+        }
+        world.resource_mut::<Mobile>().status = previous;
     }
 }
 
@@ -303,8 +453,18 @@ pub fn act(
         _ => None,
     };
     let topic = match &action {
+        engine::actions::Action::ReadMessageAttachment { .. } => "attachment-download",
+        engine::actions::Action::SyncNow => "sync",
         engine::actions::Action::RosterStatus => "roster",
         engine::actions::Action::RosterEnrolToken => "enrolment",
+        engine::actions::Action::RosterCreateOrgan => "identity",
+        engine::actions::Action::SetCellConfig { namespace, .. }
+            if namespace == "lince.discovery" || namespace == "lince.network" =>
+        {
+            "discovery"
+        }
+        engine::actions::Action::RosterRenameCell { .. }
+        | engine::actions::Action::RosterRevokeCell { .. } => "device",
         _ => "result",
     };
     let form = match &action {
@@ -318,7 +478,9 @@ pub fn act(
         _ => None,
     };
     let clear_fields = match &action {
-        engine::actions::Action::CreateMessage { thread, .. } => vec![format!("{thread}/message")],
+        engine::actions::Action::CreateMessage { thread, .. } => {
+            vec![format!("{thread}/message"), format!("{thread}/parent")]
+        }
         engine::actions::Action::AddKnownOrgan { .. } => {
             vec!["organ/invite".into(), "organ/name".into()]
         }
@@ -333,7 +495,7 @@ pub fn act(
                     &["predicate", "object", "amount", "unit"]
                 }
                 engine::record_change::Mutation::WorkLog { value: Some(_), .. } => {
-                    &["log_start", "log_end"]
+                    &["log_start", "log_end", "log_id"]
                 }
                 _ => &[],
             };
@@ -354,6 +516,12 @@ pub fn act(
         })
         .map(|(key, value)| (key.clone(), value.clone()))
         .collect();
+    let sent_attachments = match &action {
+        engine::actions::Action::CreateMessage {
+            thread, content, ..
+        } => Some((thread.clone(), content.clone())),
+        _ => None,
+    };
     send(
         world,
         ClientMessage::Act {
@@ -376,13 +544,15 @@ pub fn act(
             clear_fields,
             deleted,
             task_concept,
+            sent_attachments,
+            silent: false,
         },
     );
     state.status = "Saving…".into();
     Ok(())
 }
 
-fn subscribe(
+pub(crate) fn subscribe(
     world: &mut World,
     topic: &'static str,
     protein: protein::Protein,
@@ -398,15 +568,15 @@ fn subscribe(
     Ok(())
 }
 
-fn subscriptions(world: &mut World) -> Result<(), String> {
+pub(crate) fn subscriptions(world: &mut World) -> Result<(), String> {
     let state = world.resource::<Mobile>();
     let page = state.navigation.current.clone();
     let previous = state.active_record.clone();
     let desired: &[&str] = match &page {
-        Page::Records => &["records"],
-        Page::Kanban => &["records", "task_concept"],
+        Page::Records => &["records", "saved_views"],
+        Page::Kanban => &["records", "task_concept", "saved_views"],
         Page::Record(_) => &["record"],
-        Page::Organ => &["organs", "roster_records", "pairing"],
+        Page::Organ => &["organs", "roster_records", "pairing", "nearby"],
         Page::Karma => &["karma"],
         Page::Frequency => &["frequency"],
         Page::Credits => &[],
@@ -443,6 +613,7 @@ fn subscriptions(world: &mut World) -> Result<(), String> {
         world.resource_mut::<Mobile>().active_record = None;
         let mut state = world.resource_mut::<Mobile>();
         state.rows.remove("record");
+        state.thread_pages.clear();
         let protected: Vec<_> = state
             .drafts
             .keys()
@@ -456,21 +627,14 @@ fn subscriptions(world: &mut World) -> Result<(), String> {
     let state = world.resource::<Mobile>();
     match page {
         Page::Records | Page::Kanban => {
-            let mut query = crate::record::query(None, state.limit, &state.search);
-            query.order = vec![protein::Order::Asc(
-                crate::record::SORTS[state.sort].1.into(),
-            )];
+            let query = crate::views::query(state, page == Page::Kanban)?;
             if page == Page::Kanban {
                 let mut concepts = source_query(protein::Source::Concept);
                 concepts.filter = vec![protein::Predicate::SlugEq("task".into())];
                 subscribe(world, "task_concept", concepts)?;
-                query
-                    .filter
-                    .push(protein::Predicate::KindEq("plain".into()));
-                query
-                    .filter
-                    .push(protein::Predicate::ConceptIn("task".into()));
             }
+            let saved = serde_json::from_value(serde_json::json!({"source":"record","where":[{"kind_eq":"protein"}],"fields":["uid","head","slug","extension"],"include":{"extension":{"namespace":"lince.protein"}},"limit":100,"order":[{"asc":"head"}]})).map_err(|error| format!("Saved views: {error}"))?;
+            subscribe(world, "saved_views", saved)?;
             let draft = lince_interface::queries::ProteinDraft::from_protein(
                 page.title().into(),
                 String::new(),
@@ -479,7 +643,17 @@ fn subscriptions(world: &mut World) -> Result<(), String> {
             subscribe(world, "records", draft.compile()?)?;
         }
         Page::Record(ref uid) => {
-            subscribe(world, "record", crate::record::query(Some(uid), 1, ""))?;
+            let mut query = crate::record::query(Some(uid), 1, "");
+            if let Some(threads) = &mut query.include.threads {
+                threads.message_before = state
+                    .thread_pages
+                    .iter()
+                    .filter_map(|(thread, pages)| {
+                        pages.last().map(|cursor| (thread.clone(), cursor.clone()))
+                    })
+                    .collect();
+            }
+            subscribe(world, "record", query)?;
             send(
                 world,
                 ClientMessage::CollabJoin {
@@ -491,6 +665,7 @@ fn subscriptions(world: &mut World) -> Result<(), String> {
         Page::Karma => subscribe(world, "karma", source_query(protein::Source::KarmaRule))?,
         Page::Frequency => subscribe(world, "frequency", source_query(protein::Source::Frequency))?,
         Page::Organ => {
+            subscribe(world, "nearby", source_query(protein::Source::Nearby))?;
             let mut query = source_query(protein::Source::Record);
             query.filter = vec![protein::Predicate::KindEq("organ".into())];
             query.include.contact = true;
@@ -542,39 +717,34 @@ fn receive(world: &mut World) {
     }
     for event in events {
         match event {
-            Event::Ready(organ) => {
-                let mut state = world.resource_mut::<Mobile>();
-                state.ready = true;
-                state.status = "Connected to this device’s Organ".into();
-                match crate::storage::read(&state.directory, &organ) {
-                    Ok(Some(saved)) => {
-                        state.navigation = saved.navigation;
-                        state.drafts = saved.drafts;
-                        state.documents = saved.documents;
-                        state.karma = saved.karma;
-                        state.frequency = saved.frequency;
-                        state.search = saved.search;
-                        state.sort = saved.sort.min(crate::record::SORTS.len() - 1);
-                        state.outbox = saved.outbox;
-                        if !state.outbox.is_empty() {
-                            state.status = "An edit was interrupted. Press its Save button again to finish it safely.".into();
+            Event::Stopped => {
+                let next = world.resource_mut::<Mobile>().next_profile.take();
+                if let Some(next) = next {
+                    let root = world.resource::<Mobile>().profile_root.clone();
+                    match next.save(&root) {
+                        Ok(()) => {
+                            world.resource_mut::<Mobile>().status =
+                                "Opening the selected profile…".into();
+                            if let Err(error) = restart_profile(world, &root) {
+                                world.resource_mut::<Mobile>().status =
+                                    format!("Profile selected. Reopen Lince to continue: {error}");
+                            }
                         }
-                        state.last_saved = state.drafts.clone();
+                        Err(error) => {
+                            world.remove_non_send::<Connection>();
+                            world.insert_resource(Mobile::new(root));
+                            connect(world);
+                            world.resource_mut::<Mobile>().status = format!(
+                                "Could not switch profile: {error}. Reopening the previous profile."
+                            );
+                        }
                     }
-                    Ok(None) => {}
-                    Err(error) => {
-                        state.status = format!(
-                            "Could not restore drafts: {error}. The saved file has been kept."
-                        );
-                        state.save_error = true;
-                    }
-                }
-                state.organ = Some(organ);
-                state.dirty = true;
-                if let Err(error) = subscriptions(world) {
-                    world.resource_mut::<Mobile>().status = error;
                 }
             }
+            Event::LoginFailed(error) => {
+                world.resource_mut::<Mobile>().status = error;
+            }
+            Event::Ready(organ, setup, identity) => identity_ready(world, organ, setup, identity),
             Event::Failed(error) => {
                 let mut state = world.resource_mut::<Mobile>();
                 state.ready = false;
@@ -588,6 +758,123 @@ fn receive(world: &mut World) {
         state.ready = false;
         state.pending.clear();
         state.status = "The connection stopped. Your edits are kept; reopen Lince.".into();
+    }
+}
+
+fn identity_ready(
+    world: &mut World,
+    organ: String,
+    setup: bool,
+    identity: crate::session::Identity,
+) {
+    let changed = {
+        let state = world.resource::<Mobile>();
+        state.identity != identity || state.organ.is_some()
+    };
+    if changed {
+        capture(world);
+        if let Some(old) = world.resource::<Mobile>().organ.clone() {
+            if let Err(error) = save(world, old.clone()) {
+                let state = world.resource::<Mobile>();
+                let key = state.scope_key();
+                let saved = draft_snapshot(state, old);
+                world.init_resource::<DraftRecovery>();
+                world.resource_mut::<DraftRecovery>().0.insert(key, saved);
+                world.resource_mut::<Mobile>().status = error;
+            }
+        }
+        let root = world.resource::<Mobile>().profile_root.clone();
+        let old: Vec<_> = world
+            .query_filtered::<Entity, With<Content>>()
+            .iter(world)
+            .collect();
+        for entity in old {
+            world.despawn(entity);
+        }
+        world.insert_resource(Mobile::new(root));
+    }
+    world.resource_mut::<Mobile>().organ = Some(organ.clone());
+    world.resource_mut::<Mobile>().identity = identity.clone();
+    let key = world.resource::<Mobile>().scope_key();
+    let recovered = world
+        .get_resource_mut::<DraftRecovery>()
+        .and_then(|mut recovery| recovery.0.remove(&key));
+    let was_recovered = recovered.is_some();
+    let mut state = world.resource_mut::<Mobile>();
+    state.ready = true;
+    state.identity = identity;
+    state.status = "Connected to this device’s Organ".into();
+    if state.identity == crate::session::Identity::Locked {
+        state.organ = Some(organ);
+        state.navigation.open(Page::Organ);
+        state.status = "Sign in to open this profile".into();
+        state.dirty = true;
+        return;
+    }
+    let saved = match recovered {
+        Some(saved) => Ok(Some(saved)),
+        None => crate::storage::read(&draft_directory(&state), &organ),
+    };
+    match saved {
+        Ok(Some(saved)) => {
+            state.navigation = saved.navigation;
+            state.drafts = saved.drafts;
+            state.documents = saved.documents;
+            state.karma = saved.karma;
+            state.frequency = saved.frequency;
+            state.search = saved.search;
+            state.sort = saved.sort.min(crate::record::SORTS.len() - 1);
+            state.negative_only = saved.negative_only;
+            state.view = saved.view;
+            state.attachments = saved.attachments;
+            state.outbox = saved.outbox;
+            if !state.outbox.is_empty() {
+                state.status =
+                    "An edit was interrupted. Press its Save button again to finish it safely."
+                        .into();
+            }
+            if was_recovered {
+                state.last_saved.clear();
+                state.save_requested = true;
+                state.status = "Recovered unsaved drafts from this session. Keep Lince open until draft storage works again.".into();
+            } else {
+                state.last_saved = state.drafts.clone();
+            }
+        }
+        Ok(None) => {}
+        Err(error) => {
+            state.status =
+                format!("Could not restore drafts: {error}. The saved file has been kept.");
+            state.save_error = true;
+        }
+    }
+    state.organ = Some(organ);
+    state.setup_required = setup;
+    if setup {
+        state.navigation.open(Page::Organ);
+    }
+    state.dirty = true;
+    if let Err(error) = subscriptions(world) {
+        world.resource_mut::<Mobile>().status = error;
+    }
+    if let Err(error) = act(world, engine::actions::Action::RosterStatus, None) {
+        world.resource_mut::<Mobile>().status = error;
+    }
+}
+
+fn restart_profile(_world: &mut World, _root: &std::path::Path) -> Result<(), String> {
+    #[cfg(target_os = "android")]
+    {
+        crate::android::restart()
+    }
+    #[cfg(not(target_os = "android"))]
+    {
+        std::process::Command::new(std::env::current_exe().map_err(|error| error.to_string())?)
+            .arg(_root)
+            .spawn()
+            .map_err(|error| error.to_string())?;
+        _world.write_message(AppExit::Success);
+        Ok(())
     }
 }
 
@@ -611,16 +898,32 @@ fn persist(world: &mut World) {
 
 fn save(world: &mut World, organ: String) -> Result<(), String> {
     let state = world.resource::<Mobile>();
+    if state.identity == crate::session::Identity::Locked {
+        return Ok(());
+    }
     if state.save_error {
         return Err("Restore draft storage before saving more changes".into());
     }
-    let saved = crate::storage::Saved {
+    let saved = draft_snapshot(state, organ);
+    crate::storage::write(&draft_directory(state), &saved).map_err(|error| error.to_string())?;
+    let mut state = world.resource_mut::<Mobile>();
+    state.last_saved = state.drafts.clone();
+    state.save_requested = false;
+    Ok(())
+}
+
+fn draft_snapshot(state: &Mobile, organ: String) -> crate::storage::Saved {
+    crate::storage::Saved {
         organ,
         navigation: state.navigation.clone(),
         drafts: state
             .drafts
             .iter()
-            .filter(|(key, _)| !key.starts_with("organ/") && !key.starts_with("enrolment/"))
+            .filter(|(key, _)| {
+                !key.starts_with("organ/")
+                    && !key.starts_with("enrolment/")
+                    && !key.starts_with("login/")
+            })
             .map(|(key, value)| (key.clone(), value.clone()))
             .collect(),
         documents: state.documents.clone(),
@@ -628,18 +931,40 @@ fn save(world: &mut World, organ: String) -> Result<(), String> {
         frequency: state.frequency.clone(),
         search: state.search.clone(),
         sort: state.sort,
+        negative_only: state.negative_only,
+        view: state.view.clone(),
+        attachments: state.attachments.clone(),
         outbox: state.outbox.clone(),
-    };
-    crate::storage::write(&state.directory, &saved).map_err(|error| error.to_string())?;
-    let mut state = world.resource_mut::<Mobile>();
-    state.last_saved = state.drafts.clone();
-    state.save_requested = false;
-    Ok(())
+    }
+}
+
+fn draft_directory(state: &Mobile) -> PathBuf {
+    match &state.identity {
+        crate::session::Identity::Person(person) => state.directory.join("person-drafts").join(
+            person
+                .as_bytes()
+                .iter()
+                .map(|byte| format!("{byte:02x}"))
+                .collect::<String>(),
+        ),
+        _ => state.directory.clone(),
+    }
 }
 
 fn receive_message(world: &mut World, message: ServerMessage) {
     match message {
         ServerMessage::Snapshot { id, rows } | ServerMessage::Update { id, rows } => {
+            if id == "mobile/link" {
+                let _ = send(world, ClientMessage::Unsubscribe { id });
+                world.resource_mut::<Mobile>().active_topics.remove("link");
+                if let Some(uid) = rows.first().and_then(|row| row["uid"].as_str()) {
+                    queue_intent(world, Intent::Open(Page::Record(uid.into())));
+                } else {
+                    world.resource_mut::<Mobile>().status =
+                        "That Record is unavailable to this Person".into();
+                }
+                return;
+            }
             let Some(topic) = id.strip_prefix("mobile/") else {
                 return;
             };
@@ -798,15 +1123,67 @@ fn receive_message(world: &mut World, message: ServerMessage) {
                     }
                 }
             }
-            state.status = if warnings.is_empty() {
-                "Saved".into()
+            state.status = if pending.silent {
+                state.status.clone()
+            } else if warnings.is_empty() {
+                if pending.topic == "roster" {
+                    "Device status refreshed".into()
+                } else {
+                    "Saved on this device".into()
+                }
             } else {
                 warnings.join("\n")
             };
-            if let Some(data) = data {
-                state.rows.insert(pending.topic.into(), vec![data]);
+            #[cfg(target_os = "android")]
+            if pending.topic == "roster" {
+                let discovery = data.as_ref().map(|row| &row["discovery"]);
+                let enabled = discovery.is_some_and(|fields| fields["local"] == true);
+                let remaining = discovery
+                    .and_then(|fields| fields["local_until"].as_str())
+                    .and_then(|until| chrono::DateTime::parse_from_rfc3339(until).ok())
+                    .map(|until| {
+                        (until.with_timezone(&chrono::Utc) - chrono::Utc::now())
+                            .num_milliseconds()
+                            .max(0)
+                    })
+                    .unwrap_or(900_000);
+                let _ = crate::android::discovery(enabled && remaining > 0, remaining);
             }
-            state.dirty = true;
+            let mut changed = !pending.silent;
+            if let Some(data) = data {
+                if pending.topic == "attachment-download" {
+                    state.status = crate::attachments::save(&data).map_or_else(
+                        |error| error,
+                        |_| "Choose where to save the attachment".into(),
+                    );
+                }
+                if pending.topic == "sync" {
+                    if let Some(roster) = state
+                        .rows
+                        .get_mut("roster")
+                        .and_then(|rows| rows.first_mut())
+                    {
+                        roster["sync"] = data.clone();
+                    }
+                }
+                if pending.topic != "attachment-download" {
+                    changed |=
+                        state.rows.get(pending.topic).and_then(|rows| rows.first()) != Some(&data);
+                    state.rows.insert(pending.topic.into(), vec![data]);
+                }
+            }
+            if pending.topic == "identity" {
+                state.setup_required = false;
+            }
+            state.dirty |= changed;
+            if let Some((thread, sent)) = pending.sent_attachments {
+                if let Some(parts) = state.attachments.get_mut(&thread) {
+                    if parts.starts_with(&sent) {
+                        parts.drain(..sent.len());
+                    }
+                }
+                state.save_requested = true;
+            }
             state.moving = None;
             if let Some(uid) = pending.deleted {
                 state
@@ -833,11 +1210,21 @@ fn receive_message(world: &mut World, message: ServerMessage) {
                 state.outbox.clear();
                 state.navigation.reset();
                 state.ready = false;
-                state.status = "Device enrolled. Reopen Lince to connect to the new Organ.".into();
+                state.active_topics.clear();
+                state.active_record = None;
+                state.status = "Device enrolled. Connecting to your Organ…".into();
+                return;
+            }
+            if pending.silent {
                 return;
             }
             if let Err(error) = subscriptions(world) {
                 world.resource_mut::<Mobile>().status = error;
+            }
+            if matches!(pending.topic, "identity" | "discovery" | "device") {
+                if let Err(error) = act(world, engine::actions::Action::RosterStatus, None) {
+                    world.resource_mut::<Mobile>().status = error;
+                }
             }
         }
         ServerMessage::Error { id, message, .. } => {
@@ -910,19 +1297,235 @@ fn apply_intent(world: &mut World, intent: Intent) -> Result<(), String> {
     world.resource_mut::<Mobile>().dirty = true;
     world.resource_mut::<Mobile>().save_requested = true;
     match intent {
+        Intent::LoadImage(source) => crate::images::request(world, source)?,
+        Intent::OpenLink(reference) => {
+            if reference.starts_with("https://") || reference.starts_with("http://") {
+                #[cfg(target_os = "android")]
+                return crate::android::open_link(&reference);
+                #[cfg(not(target_os = "android"))]
+                return Err(format!("Open this link on Android: {reference}"));
+            }
+            let target = reference.strip_prefix("record:").unwrap_or(&reference);
+            if target.contains(':') || target.is_empty() {
+                return Err("This link type is unsupported".into());
+            }
+            let mut query = crate::record::query(None, 1, "");
+            query.filter = vec![protein::Predicate::Any(vec![
+                protein::Predicate::UidEq(target.into()),
+                protein::Predicate::SlugEq(target.into()),
+            ])];
+            subscribe(world, "link", query)?;
+        }
+        Intent::ReplyTo(thread, message) => {
+            if let Some(message) = message {
+                world
+                    .resource_mut::<Mobile>()
+                    .drafts
+                    .insert(format!("{thread}/parent"), message);
+            } else {
+                world
+                    .resource_mut::<Mobile>()
+                    .drafts
+                    .remove(&format!("{thread}/parent"));
+            }
+        }
+        Intent::MoreMessages(thread) => {
+            let cursor: protein::MessageCursor = world
+                .resource::<Mobile>()
+                .rows
+                .get("record")
+                .into_iter()
+                .flatten()
+                .flat_map(|row| row["threads"].as_array().into_iter().flatten())
+                .find(|row| row["uid"] == thread && row["messages_has_more"] == true)
+                .ok_or("This thread has no earlier messages")
+                .and_then(|row| {
+                    serde_json::from_value(row["messages_before"].clone())
+                        .map_err(|_| "Refresh this thread before loading earlier messages")
+                })?;
+            let mut state = world.resource_mut::<Mobile>();
+            let pages = state.thread_pages.entry(thread).or_default();
+            if pages.last() != Some(&cursor) {
+                pages.push(cursor);
+            }
+            subscriptions(world)?;
+        }
+        Intent::NewerMessages(thread) => {
+            if let Some(pages) = world.resource_mut::<Mobile>().thread_pages.get_mut(&thread) {
+                pages.pop();
+            }
+            subscriptions(world)?;
+        }
+        Intent::LatestMessages(thread) => {
+            world.resource_mut::<Mobile>().thread_pages.remove(&thread);
+            subscriptions(world)?;
+        }
+        Intent::Nothing => {}
+        Intent::ColumnSettings => {
+            let mut state = world.resource_mut::<Mobile>();
+            state.column_settings = !state.column_settings;
+        }
+        Intent::KanbanColumn(column) => {
+            let mut state = world.resource_mut::<Mobile>();
+            state.kanban_column = column.min(lince_interface::records::KANBAN_COLUMNS.len());
+            state.record_pages.clear();
+            subscriptions(world)?;
+        }
+        Intent::AttachFile(thread) => crate::attachments::choose(world, &thread)?,
+        Intent::RemoveAttachment(thread, index) => {
+            if let Some(parts) = world.resource_mut::<Mobile>().attachments.get_mut(&thread) {
+                if index < parts.len() {
+                    parts.remove(index);
+                }
+            }
+        }
+        Intent::Pick(picker) => {
+            world.resource_mut::<Mobile>().picker = Some(picker);
+            crate::picker::search(world)?;
+        }
+        Intent::SearchPicker => crate::picker::search(world)?,
+        Intent::ClosePicker => crate::picker::close(world)?,
+        Intent::SelectItem(uid) => {
+            let picker = world
+                .resource::<Mobile>()
+                .picker
+                .clone()
+                .ok_or("Open a selector first")?;
+            let value = row(world, "picker", &uid).ok_or("That item is no longer available")?;
+            let selected = if matches!(picker.kind, crate::picker::Kind::Concept) {
+                value["name"]
+                    .as_str()
+                    .ok_or("Concept name unavailable")?
+                    .to_string()
+            } else {
+                uid
+            };
+            world
+                .resource_mut::<Mobile>()
+                .drafts
+                .insert(format!("{}/{}", picker.scope, picker.field), selected);
+            crate::picker::close(world)?;
+        }
+        Intent::ViewSettings
+        | Intent::ToggleViewField(_)
+        | Intent::LoadView(_)
+        | Intent::SaveView => crate::views::apply(world, intent)?,
+        Intent::EditLog(record, id) => {
+            let row = row(world, "record", &record).ok_or("Record is unavailable")?;
+            let log = row["work_logs"]
+                .as_array()
+                .and_then(|logs| logs.iter().find(|log| log["id"] == id))
+                .ok_or("Work log is unavailable")?;
+            let mut state = world.resource_mut::<Mobile>();
+            state.drafts.insert(format!("{record}/log_id"), id);
+            state.drafts.insert(
+                format!("{record}/log_start"),
+                log["start"].as_str().unwrap_or_default().into(),
+            );
+            state.drafts.insert(
+                format!("{record}/log_end"),
+                log["end"].as_str().unwrap_or_default().into(),
+            );
+        }
+        Intent::CancelLog(record) => {
+            for key in ["log_id", "log_start", "log_end"] {
+                world
+                    .resource_mut::<Mobile>()
+                    .drafts
+                    .remove(&format!("{record}/{key}"));
+            }
+        }
+        Intent::Login | Intent::Logout => {
+            if !world.resource::<Mobile>().pending.is_empty() {
+                return Err("Wait for the current change before switching identity".into());
+            }
+            if let Some(organ) = world.resource::<Mobile>().organ.clone() {
+                save(world, organ)?;
+            }
+            if matches!(intent, Intent::Login) {
+                let username = world.resource::<Mobile>().draft("login", "username", "");
+                let password = world
+                    .resource_mut::<Mobile>()
+                    .drafts
+                    .remove("login/password")
+                    .unwrap_or_default();
+                world.non_send::<Connection>().login(username, password)?;
+                let mut inputs = world.query::<(&Input, &mut EditableText)>();
+                for (input, mut text) in inputs.iter_mut(world) {
+                    if input.key == "login/password" {
+                        text.editor.set_text("");
+                    }
+                }
+            } else {
+                world.non_send::<Connection>().logout()?;
+            }
+            world.resource_mut::<Mobile>().status = "Changing identity…".into();
+        }
         Intent::Menu => {
             let mut state = world.resource_mut::<Mobile>();
             state.navigation.menu_open = !state.navigation.menu_open;
+        }
+        Intent::FreshProfile | Intent::SwitchProfile(_) => {
+            if !world.resource::<Mobile>().pending.is_empty() {
+                return Err("Wait for current changes to finish before switching profiles".into());
+            }
+            if let Some(organ) = world.resource::<Mobile>().organ.clone() {
+                save(world, organ)?;
+            }
+            let mut profiles = world.resource::<Mobile>().profiles.clone();
+            match intent {
+                Intent::FreshProfile => {
+                    profiles.create(&world.resource::<Mobile>().draft("profile", "name", ""))?
+                }
+                Intent::SwitchProfile(selected) => {
+                    if selected
+                        .as_ref()
+                        .is_some_and(|id| !profiles.names.contains_key(id))
+                    {
+                        return Err("That profile is unavailable".into());
+                    }
+                    profiles.selected = selected;
+                }
+                _ => unreachable!(),
+            }
+            world.non_send::<Connection>().stop()?;
+            let mut state = world.resource_mut::<Mobile>();
+            state.next_profile = Some(profiles);
+            state.ready = false;
+            state.status = "Saving and closing this profile…".into();
         }
         Intent::Back => {
             back(world);
             subscriptions(world)?;
         }
         Intent::Open(page) => {
+            if world.resource::<Mobile>().identity == crate::session::Identity::Locked
+                && page != Page::Organ
+                && page != Page::Credits
+            {
+                return Err("Sign in to open this profile".into());
+            }
+            if world.resource::<Mobile>().setup_required
+                && page != Page::Organ
+                && page != Page::Credits
+            {
+                return Err("Create your Organ or join an existing Organ first".into());
+            }
+            let organ = page == Page::Organ;
+            if page != world.resource::<Mobile>().navigation.current {
+                world.resource_mut::<Mobile>().record_pages.clear();
+            }
             world.resource_mut::<Mobile>().navigation.open(page);
             subscriptions(world)?;
+            if organ {
+                act(world, Action::RosterStatus, None)?;
+            }
         }
-        Intent::Refresh => subscriptions(world)?,
+        Intent::Refresh => {
+            world.resource_mut::<Mobile>().record_pages.clear();
+            world.resource_mut::<Mobile>().thread_pages.clear();
+            subscriptions(world)?;
+        }
         Intent::RetryDrafts => {
             let mut state = world.resource_mut::<Mobile>();
             state.save_error = false;
@@ -933,17 +1536,100 @@ fn apply_intent(world: &mut World, intent: Intent) -> Result<(), String> {
             let search = world.resource::<Mobile>().draft("list", "search", "");
             let mut state = world.resource_mut::<Mobile>();
             state.search = search;
-            state.limit = 50;
+            state.record_pages.clear();
             subscriptions(world)?;
         }
         Intent::Sort => {
             let mut state = world.resource_mut::<Mobile>();
             state.sort = (state.sort + 1) % crate::record::SORTS.len();
+            let field = crate::record::SORTS[state.sort].1;
+            if let Some(view) = &mut state.view {
+                view.query["order"] = serde_json::json!([{"asc":field}]);
+            }
+            state.record_pages.clear();
             subscriptions(world)?;
+        }
+        Intent::ToggleNegative => {
+            let mut state = world.resource_mut::<Mobile>();
+            state.negative_only = !state.negative_only;
+            state.record_pages.clear();
+            subscriptions(world)?;
+        }
+        Intent::CompleteRecord(uid) => {
+            world
+                .resource_mut::<Mobile>()
+                .drafts
+                .insert(format!("{uid}/quantity"), "0".into());
+            apply_intent(world, Intent::SaveField(uid, "quantity".into()))?;
+        }
+        Intent::RenameCell(uid) => {
+            let label = world.resource::<Mobile>().draft("device", &uid, "");
+            act(
+                world,
+                Action::RosterRenameCell {
+                    cell_uid: uid,
+                    label,
+                },
+                None,
+            )?;
+        }
+        Intent::SavePeerPort => {
+            let port = world
+                .resource::<Mobile>()
+                .draft("organ", "peer_port", "6175")
+                .trim()
+                .parse::<u16>()
+                .map_err(|_| "Enter a port between 0 and 65535")?;
+            act(
+                world,
+                Action::SetCellConfig {
+                    namespace: "lince.network".into(),
+                    fds: serde_json::json!({"peer_port":port}),
+                },
+                None,
+            )?;
+        }
+        Intent::Discovery(enabled) => {
+            let until = (chrono::Utc::now() + chrono::Duration::minutes(15)).to_rfc3339();
+            let fds = serde_json::json!({"local": enabled, "internet": false, "direct": false, "local_until":until});
+            act(
+                world,
+                Action::SetCellConfig {
+                    namespace: "lince.discovery".into(),
+                    fds,
+                },
+                None,
+            )?;
+            #[cfg(target_os = "android")]
+            crate::android::discovery(enabled, 900_000)?;
+        }
+        Intent::ScanQr => {
+            #[cfg(target_os = "android")]
+            crate::android::scan()?;
+            #[cfg(not(target_os = "android"))]
+            return Err("Use the desktop Organ Castle to scan a QR, or paste its code here".into());
         }
         Intent::More => {
             let mut state = world.resource_mut::<Mobile>();
-            state.limit = (state.limit + 50).min(500);
+            let rows = state
+                .rows
+                .get("records")
+                .ok_or("Wait for the Records to load")?;
+            if rows.len() <= crate::views::PAGE_SIZE {
+                return Ok(());
+            }
+            let cursor = rows[crate::views::PAGE_SIZE - 1]["uid"]
+                .as_str()
+                .ok_or("Record cursor is unavailable")?
+                .to_owned();
+            if state.record_pages.last() != Some(&cursor) {
+                state.record_pages.push(cursor);
+            }
+            subscriptions(world)?;
+        }
+        Intent::Previous => {
+            let mut state = world.resource_mut::<Mobile>();
+            state.record_pages.pop();
             subscriptions(world)?;
         }
         Intent::CreateRecord => {
@@ -1066,21 +1752,18 @@ fn apply_intent(world: &mut World, intent: Intent) -> Result<(), String> {
         }
         Intent::JoinOrgan => {
             let code = world.resource::<Mobile>().draft("organ", "enrol", "");
+            engine::pairing::EnrolmentInvite::decode(code.trim())
+                .map_err(|error| error.to_string())?;
             world.resource_mut::<Mobile>().deleting =
                 Some(Intent::Act(Action::RosterJoinOrgan { code }));
         }
         Intent::Move(uid, column) => {
-            let (_, _, quantity) = *lince_interface::records::KANBAN_COLUMNS
-                .get(column)
-                .ok_or("Choose a column")?;
+            let changes = crate::kanban::changes(world.resource::<Mobile>(), column)?;
             act(
                 world,
                 Action::PreviewAreaTransition {
                     target: uid,
-                    changes: engine::area_transition::RecordChanges {
-                        quantity: Some(quantity.to_string()),
-                        ..default()
-                    },
+                    changes,
                     constraints: default(),
                 },
                 None,
@@ -1107,6 +1790,13 @@ pub(crate) fn queue_back(world: &mut World) {
 }
 
 pub fn back(world: &mut World) {
+    if world.resource::<Mobile>().picker.is_some() {
+        if let Err(error) = crate::picker::close(world) {
+            world.resource_mut::<Mobile>().status = error;
+        }
+        world.resource_mut::<Mobile>().dirty = true;
+        return;
+    }
     let mut state = world.resource_mut::<Mobile>();
     if state.deleting.take().is_some() {
         state.dirty = true;
@@ -1134,6 +1824,9 @@ fn render(world: &mut World) {
         return;
     }
     world.resource_mut::<Mobile>().dirty = false;
+    if let Some(proxy) = world.get_resource::<bevy::winit::EventLoopProxyWrapper>() {
+        let _ = proxy.send_event(bevy::winit::WinitUserEvent::WakeUp);
+    }
     let Some(root) = world
         .query_filtered::<Entity, With<Shell>>()
         .iter(world)
@@ -1193,8 +1886,21 @@ fn render(world: &mut World) {
             ..default()
         },
     ));
-    if world.resource::<Mobile>().navigation.menu_open {
+    if world.resource::<Mobile>().identity == crate::session::Identity::Locked {
+        crate::organ::login(world, content);
+        crate::organ::profile_controls(world, content);
+        return;
+    } else if world.resource::<Mobile>().picker.is_some() {
+        crate::picker::render(world, content);
+        return;
+    } else if world.resource::<Mobile>().navigation.menu_open {
         for page in Page::MENU {
+            if world.resource::<Mobile>().setup_required
+                && page != Page::Organ
+                && page != Page::Credits
+            {
+                continue;
+            }
             button(world, content, page.title(), Intent::Open(page));
         }
         return;
@@ -1205,7 +1911,7 @@ fn render(world: &mut World) {
                 "Delete this Record?"
             }
             Some(Intent::Act(engine::actions::Action::RosterJoinOrgan { .. })) => {
-                "Enroll this device in that Organ? Reopen Lince afterward to use it."
+                "Enrol this fresh device in the Organ shown below? Your existing Organ and Records cannot be replaced here."
             }
             Some(Intent::Act(engine::actions::Action::RosterRevokeCell { .. })) => {
                 "Remove this device from the Organ roster?"
@@ -1222,11 +1928,39 @@ fn render(world: &mut World) {
             _ => "Apply this change?",
         };
         label(world, content, message, 22.0);
+        if let Some(Intent::Act(engine::actions::Action::RosterJoinOrgan { code })) =
+            world.resource::<Mobile>().deleting.clone()
+            && let Ok(invite) = engine::pairing::EnrolmentInvite::decode(&code)
+        {
+            label(
+                world,
+                content,
+                &format!("Organ: {}", invite.organ_uid),
+                18.0,
+            );
+            label(
+                world,
+                content,
+                &format!("Identity key: {}", invite.root_key),
+                14.0,
+            );
+            label(
+                world,
+                content,
+                "Compare this identity with the device showing the code. Discovery and a contact code do not grant roster membership.",
+                16.0,
+            );
+        }
         button(world, content, "Confirm", Intent::Confirm);
         button(world, content, "Cancel", Intent::CancelDelete);
         return;
     }
-    let page = world.resource::<Mobile>().navigation.current.clone();
+    let current = world.resource::<Mobile>().navigation.current.clone();
+    let page = if world.resource::<Mobile>().setup_required && current != Page::Credits {
+        Page::Organ
+    } else {
+        current
+    };
     crate::pages::render(world, content, page);
 }
 
@@ -1238,8 +1972,10 @@ pub fn label(world: &mut World, parent: Entity, value: &str, size: f32) -> Entit
             Text::new(value),
             font,
             TextColor(INK),
+            TextLayout::linebreak(bevy::text::LineBreak::WordOrCharacter),
             Node {
                 flex_shrink: 0.0,
+                max_width: percent(100),
                 ..default()
             },
         ))
@@ -1297,6 +2033,27 @@ pub fn input(
         visible_lines: if multiline { 5.0 } else { 1.0 },
         minimum_height: 48.0,
     };
+    if scope == "login" && name == "password" {
+        world
+            .entity_mut(entity)
+            .remove::<lince_interface::style::TextToken>()
+            .insert(TextColor(Color::NONE));
+        let font = world.resource::<Typography>().text(22.0);
+        world.spawn((
+            ChildOf(entity),
+            PasswordMask(entity),
+            Text::new(""),
+            font,
+            TextColor(INK),
+            Pickable::IGNORE,
+            Node {
+                position_type: PositionType::Absolute,
+                left: px(6),
+                top: px(6),
+                ..default()
+            },
+        ));
+    }
     let mut query = world.query::<(&mut EditableText, &mut Node)>();
     let (mut text, mut node) = query.get_mut(world, entity).unwrap();
     options.apply(&mut text, &mut node);

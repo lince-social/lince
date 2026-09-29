@@ -40,7 +40,7 @@ pub async fn set_picked(
     .bind(contact_organ)
     .bind(record_uid)
     .bind(picked as i64)
-    .bind(chrono::Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .execute(pool)
     .await?;
     Ok(())
@@ -58,7 +58,7 @@ pub async fn mark_held(
     )
     .bind(contact_organ)
     .bind(record_uid)
-    .bind(chrono::Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .execute(pool)
     .await?;
     Ok(())
@@ -91,7 +91,7 @@ pub async fn set_picked_tx(
     .bind(contact_organ)
     .bind(record_uid)
     .bind(picked as i64)
-    .bind(chrono::Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .execute(&mut **tx)
     .await?;
     Ok(())

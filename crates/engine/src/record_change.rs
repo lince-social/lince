@@ -1,4 +1,3 @@
-use chrono::Utc;
 use nucleus::DecimalValue;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -237,7 +236,7 @@ async fn apply_register(
                 tx,
                 uid,
                 store::exact::difference(offset, old)?,
-                &Utc::now().to_rfc3339(),
+                &nucleus::execution::now().to_rfc3339(),
             )
             .await?;
         }
@@ -280,7 +279,7 @@ async fn apply_register(
                         .await?;
                     store::sqlx::query("UPDATE record SET slug = ?, updated_at = ? WHERE uid = ?")
                         .bind(&claim)
-                        .bind(Utc::now().to_rfc3339())
+                        .bind(nucleus::execution::now().to_rfc3339())
                         .bind(winner)
                         .execute(&mut **tx)
                         .await?;
@@ -360,7 +359,7 @@ impl Engine {
                 &mut tx,
                 &uid,
                 store::exact::difference(store::exact::zero(), offset)?,
-                &Utc::now().to_rfc3339(),
+                &nucleus::execution::now().to_rfc3339(),
             )
             .await?;
         }
@@ -421,7 +420,7 @@ impl Engine {
             return Err(invalid("Pending edits exceed their storage limit"));
         }
         store::sqlx::query("INSERT INTO record_edit_draft (source, record_uid, state, updated_at) VALUES (?, ?, ?, ?) ON CONFLICT(source, record_uid) DO UPDATE SET state = excluded.state, updated_at = excluded.updated_at")
-            .bind(source).bind(uid).bind(state).bind(Utc::now().to_rfc3339()).execute(&self.store.pool).await?;
+            .bind(source).bind(uid).bind(state).bind(nucleus::execution::now().to_rfc3339()).execute(&self.store.pool).await?;
         Ok(())
     }
 
@@ -641,18 +640,18 @@ impl Engine {
                 match (*running, active.pop()) {
                     (true, None) => (
                         format!("work.log:{}", request.id),
-                        json!({"start": Utc::now().to_rfc3339(), "end": null}),
+                        json!({"start": nucleus::execution::now().to_rfc3339(), "end": null}),
                     ),
                     (false, Some((key, raw))) => {
                         for (key, raw) in active {
                             let mut log: Value =
                                 serde_json::from_str(&raw).map_err(EngineError::Json)?;
-                            log["end"] = json!(Utc::now().to_rfc3339());
+                            log["end"] = json!(nucleus::execution::now().to_rfc3339());
                             related.push((key, log));
                         }
                         let mut log: Value =
                             serde_json::from_str(&raw).map_err(EngineError::Json)?;
-                        log["end"] = json!(Utc::now().to_rfc3339());
+                        log["end"] = json!(nucleus::execution::now().to_rfc3339());
                         (key, log)
                     }
                     _ => {
@@ -695,7 +694,7 @@ impl Engine {
             .await?;
             changes.push(json!({"property":property,"value":register.value}));
         }
-        let now = Utc::now();
+        let now = nucleus::execution::now();
         let fact = crate::append::append_one_in_transaction(
             &mut tx,
             nucleus::NewFact {
@@ -1011,7 +1010,7 @@ impl Engine {
         };
         let data = json!({"change_id": request.id, "state": "saved", "changed": changed, "assertion": assertion, "operation": if retract.is_some() { "remove" } else if numbering { "quantity" } else { "add" }});
         store::sqlx::query("INSERT INTO record_change_receipt (actor, change_uid, record_uid, payload, result) VALUES (?, ?, ?, ?, ?)").bind(actor.unwrap_or("")).bind(&request.id).bind(uid).bind(payload).bind(data.to_string()).execute(&mut *tx).await?;
-        let now = Utc::now();
+        let now = nucleus::execution::now();
         let mut facts = Vec::new();
         if changed {
             let targets: std::collections::BTreeSet<_> =

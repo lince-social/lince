@@ -20,13 +20,19 @@ pub struct EffectOutcome {
     pub result: String,
 }
 
+pub struct DatabaseEffects {
+    pub outcomes: Vec<EffectOutcome>,
+    pub pending: bool,
+    pub unsupported: bool,
+}
+
 impl Engine {
     pub fn start_effect_worker(self: Arc<Self>) -> tokio::task::JoinHandle<()> {
         let mut changed = self.effects_changed.subscribe();
         tokio::spawn(async move {
             let recovery = self.effect_execution.lock().await;
             if let Err(error) = store::sqlx::query("UPDATE effect_queue SET status = 'uncertain', result = 'Worker stopped after claiming this effect; inspect before retrying', finished_at = ? WHERE status = 'running'")
-                .bind(Utc::now().to_rfc3339()).execute(&self.store.pool).await {
+                .bind(nucleus::execution::now().to_rfc3339()).execute(&self.store.pool).await {
                 tracing::warn!(%error, "Could not recover interrupted effects");
                 return;
             }
@@ -52,10 +58,36 @@ impl Engine {
     }
 
     pub async fn run_due_effects(&self) -> Result<Vec<EffectOutcome>, EngineError> {
+        self.run_effects(false).await
+    }
+
+    pub async fn run_database_effects(&self) -> Result<DatabaseEffects, EngineError> {
+        let outcomes = self.run_effects(true).await?;
+        let pending: bool = store::sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM effect_queue WHERE status IN ('queued', 'running'))",
+        )
+        .fetch_one(&self.store.pool)
+        .await?;
+        let unsupported = pending
+            && store::misc::due_effects(&self.store.pool)
+                .await?
+                .first()
+                .is_none_or(|effect| !database_effect(effect));
+        Ok(DatabaseEffects {
+            outcomes,
+            pending,
+            unsupported,
+        })
+    }
+
+    async fn run_effects(&self, database_only: bool) -> Result<Vec<EffectOutcome>, EngineError> {
         let _guard = self.effect_execution.lock().await;
         let signer = self.signer.lock().await.clone();
         let mut out = Vec::new();
         for effect in store::misc::due_effects(&self.store.pool).await? {
+            if database_only && !database_effect(&effect) {
+                break;
+            }
             let claimed = store::sqlx::query(
                 "UPDATE effect_queue SET status = 'running' WHERE uid = ? AND status = 'queued'",
             )
@@ -83,7 +115,7 @@ impl Engine {
                         cause: Cause { kind: CauseKind::Action, uid: Some(effect.uid.clone()) },
                         payload: Some(serde_json::json!({ "effect": effect.kind, "ok": ok, "result": result }).to_string()),
                     },
-                    Utc::now(),
+                    nucleus::execution::now(),
                     signer.as_ref(),
                 ).await {
                     Ok(Some(fact)) => { let _ = self.bus.send(fact); }
@@ -160,7 +192,7 @@ impl Engine {
                         .get("signal")
                         .and_then(|value| value.as_str())
                         .expect("validated Signal");
-                    let now = Utc::now();
+                    let now = nucleus::execution::now();
                     store::misc::set_signal_sampled(&self.store.pool, signal, &now.to_rfc3339())
                         .await?;
                     if ok {
@@ -181,7 +213,9 @@ impl Engine {
             }
             "notify" => {
                 let budget = store::config::attention_budget(&self.store.pool).await?;
-                let midnight = Utc::now().format("%Y-%m-%dT00:00:00+00:00").to_string();
+                let midnight = nucleus::execution::now()
+                    .format("%Y-%m-%dT00:00:00+00:00")
+                    .to_string();
                 let delivered =
                     store::misc::notifies_delivered_since(&self.store.pool, &midnight).await?;
                 Ok((
@@ -226,8 +260,13 @@ impl Engine {
                 let carried: Option<nucleus::DecimalValue> =
                     serde_json::from_value(payload["carried"].clone())
                         .map_err(|error| EngineError::Consequence(error.to_string()))?;
-                self.execute_deferred_consequence(&rule, &consequence, carried, Utc::now())
-                    .await?;
+                self.execute_deferred_consequence(
+                    &rule,
+                    &consequence,
+                    carried,
+                    nucleus::execution::now(),
+                )
+                .await?;
                 Ok((true, "Consequence committed".into()))
             }
             other => Ok((false, format!("unknown effect kind {other}"))),
@@ -288,6 +327,30 @@ impl Engine {
             Box::pin(self.act(action, rule.actor_uid.clone())).await?;
         }
         Ok(())
+    }
+}
+
+fn database_effect(effect: &store::misc::EffectRow) -> bool {
+    use crate::actions::Action;
+    use nucleus::karma::Consequence;
+    match effect.kind.as_str() {
+        "notify" => true,
+        "action" => matches!(
+            serde_json::from_value::<Action>(effect.payload["action"].clone()),
+            Ok(Action::CaptureEntry { .. }
+                | Action::SetQuantityExact { .. }
+                | Action::SetIdentity { .. }
+                | Action::AssertRecord { .. }
+                | Action::RetractRecord { .. })
+        ),
+        "consequence" => matches!(
+            serde_json::from_value::<Consequence>(effect.payload["consequence"].clone()),
+            Ok(Consequence::SetConcept { .. }
+                | Consequence::AddConcept { .. }
+                | Consequence::RemoveConcept { .. }
+                | Consequence::SetQuantityWhere { .. })
+        ),
+        _ => false,
     }
 }
 

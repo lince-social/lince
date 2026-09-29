@@ -1,6 +1,7 @@
 use lince_interface::calendar as model;
 mod persistence;
 mod picker;
+mod projection;
 pub(crate) mod tests;
 mod ui;
 
@@ -17,6 +18,11 @@ pub const CREDITS: &[crate::credits::Attribution] = &[
     crate::credits::SYMBOLS,
     crate::credits::DEJAVU,
     crate::credits::FONTIQUE,
+    crate::credits::Attribution {
+        name: "Chrono-TZ",
+        author: "Chrono contributors; timezone data from IANA",
+        license: include_str!("../licenses/chrono-tz/LICENSE"),
+    },
     crate::credits::Attribution {
         name: "Chrono",
         author: "Kang Seonghoon and Chrono contributors",
@@ -50,6 +56,7 @@ struct View {
 
 #[derive(Clone, Copy)]
 enum Selector {
+    Timezone,
     Month,
     Year(i32),
     Source,
@@ -64,6 +71,8 @@ pub(crate) struct Picker {
 pub struct CalendarPlugin;
 impl Plugin for CalendarPlugin {
     fn build(&self, app: &mut App) {
+        app.add_message::<crate::cell_bridge::CellMessage>()
+            .add_systems(Update, projection::receive.after(crate::cell_bridge::ReceiveCell).before(crate::protein_area::UpdateProteinAreas));
         app.add_systems(
             Update,
             update.after(crate::protein_area::UpdateProteinAreas),
@@ -181,9 +190,15 @@ fn update(world: &mut World) {
             continue;
         }
         let picker_key = picker::sync(world, owner);
+        projection::maintain(world, owner);
         let feed = area(world, owner)
             .and_then(|a| crate::protein_area::calendar_feed(world, a).map(|(_, key)| key))
             .unwrap_or(picker_key);
+        let feed = if let Some(projection) = world.get::<projection::Feed>(owner) {
+            format!("{feed}:{}", projection.revision)
+        } else {
+            feed
+        };
         let current = &world.get::<CalendarSand>(owner).unwrap().0;
         let view = world.get::<View>(owner).unwrap();
         if view.rendered.as_ref() != Some(current) || view.feed != feed {
@@ -195,6 +210,7 @@ fn update(world: &mut World) {
 
 #[derive(Clone)]
 enum Command {
+    ApplyTimezone,
     Create,
     Move(i32),
     Select(String),
@@ -239,6 +255,17 @@ impl Action for Command {
             return;
         };
         match self {
+            Self::ApplyTimezone => {
+                let timezone = world.query::<(&projection::TimezoneInput, &bevy::text::EditableText)>().iter(world).find(|(input, _)| input.0 == owner).map(|(_, editor)| editor.value().to_string().trim().to_string());
+                let Some(timezone) = timezone else { return; };
+                if let Err(error) = nucleus::projection::Window::month(model.year, model.month, timezone.clone()) {
+                    world.get_mut::<View>(owner).unwrap().error = Some(error);
+                    ui::render(world, owner);
+                    return;
+                }
+                model.timezone = timezone;
+                world.get_mut::<View>(owner).unwrap().selector = None;
+            }
             Self::Move(delta) => {
                 model.move_months(*delta);
                 world.get_mut::<View>(owner).unwrap().page = 0;

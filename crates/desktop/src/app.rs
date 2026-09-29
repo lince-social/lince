@@ -135,10 +135,13 @@ fn interface_app_at(directory: std::path::PathBuf) -> App {
         crate::tutorial::TutorialPlugin,
     ))
     .add_plugins(crate::karma_castle::KarmaCastlePlugin)
+    .add_plugins(crate::simulation_castle::SimulationCastlePlugin)
     .add_plugins(crate::sound::SoundPlugin)
     .add_plugins(crate::sound_area::SoundAreaPlugin)
     .add_plugins(crate::recorder_castle::RecorderCastlePlugin)
     .add_plugins(crate::document_viewer::DocumentViewerPlugin)
+    .add_plugins(crate::file_explorer::FileExplorerPlugin)
+    .add_plugins(crate::ide::IdePlugin)
     .add_plugins(crate::frequency_castle::FrequencyCastlePlugin)
     .add_plugins(crate::transfer_castle::TransferCastlePlugin)
     .add_plugins(crate::castle_feed::FeedPlugin)

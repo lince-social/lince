@@ -70,7 +70,7 @@ fn map_fact(r: sqlx::sqlite::SqliteRow) -> Result<Fact, StoreError> {
         delta: read_decimal(&r, "delta")?,
         at: DateTime::parse_from_rfc3339(&at)
             .map(|d| d.with_timezone(&Utc))
-            .unwrap_or_else(|_| Utc::now()),
+            .unwrap_or_else(|_| nucleus::execution::now()),
         actor_uid: r.get("actor_uid"),
         cause: Cause {
             kind: CauseKind::parse(&cause_kind).unwrap_or(CauseKind::UserEdit),
@@ -85,6 +85,12 @@ fn map_fact(r: sqlx::sqlite::SqliteRow) -> Result<Fact, StoreError> {
 
 fn map_facts(rows: Vec<sqlx::sqlite::SqliteRow>) -> Result<Vec<Fact>, StoreError> {
     rows.into_iter().map(map_fact).collect()
+}
+
+pub async fn after_position(pool: &SqlitePool, after: i64, limit: i64) -> Result<Vec<(i64, Fact)>, StoreError> {
+    sqlx::query("SELECT rowid AS position, * FROM fact WHERE rowid > ? ORDER BY rowid LIMIT ?")
+        .bind(after).bind(limit).fetch_all(pool).await?.into_iter()
+        .map(|row| { let position = row.get("position"); map_fact(row).map(|fact| (position, fact)) }).collect()
 }
 
 pub async fn get(pool: &SqlitePool, uid: &str) -> Result<Option<Fact>, StoreError> {

@@ -107,8 +107,7 @@ impl ReferenceKind {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[derive(schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, schemars::JsonSchema)]
 pub struct TypedUid {
     kind: ReferenceKind,
     uid: String,
@@ -151,6 +150,7 @@ fn valid_prefixed_ulid(value: &str, prefix: &str) -> bool {
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
 struct TypedUidWire {
     kind: ReferenceKind,
     uid: String,
@@ -179,8 +179,7 @@ impl<'de> Deserialize<'de> for TypedUid {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[derive(schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, schemars::JsonSchema)]
 pub struct Slug(String);
 
 impl Slug {
@@ -233,8 +232,7 @@ impl<'de> Deserialize<'de> for Slug {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[derive(schemars::JsonSchema)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, schemars::JsonSchema)]
 pub struct LocalId(String);
 
 impl LocalId {
@@ -277,10 +275,19 @@ impl<'de> Deserialize<'de> for LocalId {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
-#[derive(schemars::JsonSchema)]
+#[derive(
+    Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize, schemars::JsonSchema,
+)]
 pub struct ResolvedReference {
     pub target: TypedUid,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub display_slug: Option<Slug>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct ConditionBinding {
+    pub reading: String,
+    pub authored: String,
+    pub target: TypedUid,
 }

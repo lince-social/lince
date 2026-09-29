@@ -321,7 +321,7 @@ impl crate::Engine {
             false
         };
         let signer = self.signer.lock().await.clone();
-        let now = chrono::Utc::now();
+        let now = nucleus::execution::now();
         let mut tx = store::write_tx(&self.store.pool).await?;
         if let Some((id, payload)) = receipt {
             let original: Option<String> = store::sqlx::query_scalar(
@@ -439,7 +439,7 @@ impl crate::Engine {
             .await?;
         drop(_serial);
         if let Some(fact) = &fact {
-            self.observe_committed_fact(fact.clone(), chrono::Utc::now())
+            self.observe_committed_fact(fact.clone(), nucleus::execution::now())
                 .await?;
         }
         Ok(fact.into_iter().collect())
@@ -487,7 +487,7 @@ impl crate::Engine {
                 .await?;
             drop(_serial);
             if let Some(fact) = fact {
-                self.observe_committed_fact(fact, chrono::Utc::now()).await
+                self.observe_committed_fact(fact, nucleus::execution::now()).await
             } else {
                 Ok(Vec::new())
             }

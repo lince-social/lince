@@ -1,14 +1,28 @@
 #![recursion_limit = "256"]
 
 #[cfg(target_os = "android")]
+mod accessibility;
+#[cfg(target_os = "android")]
 mod android;
 pub mod app;
+pub mod attachments;
+mod body;
+mod images;
 pub mod connection;
+mod kanban;
 pub mod navigation;
+mod organ;
 mod pages;
+pub mod picker;
+pub mod profiles;
+mod qr;
 pub mod record;
 mod scroll;
+pub mod session;
+#[cfg(all(target_os = "android", feature = "android-smoke", debug_assertions))]
+mod smoke;
 pub mod storage;
+pub mod views;
 
 pub fn run(directory: std::path::PathBuf) {
     use bevy::prelude::*;
@@ -35,6 +49,7 @@ pub fn run(directory: std::path::PathBuf) {
             bevy::input_focus::tab_navigation::TabNavigationPlugin,
             app::MobilePlugin,
             scroll::ScrollPlugin,
+            kanban::KanbanPlugin,
         ))
         .run();
 }

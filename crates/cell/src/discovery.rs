@@ -5,6 +5,7 @@ use store::Store;
 pub struct Discovery {
     pub reach: engine::wire::Reach,
     pub local: bool,
+    pub peer_port: u16,
 }
 
 pub async fn config(store: &Store, organ_uid: &str) -> Result<Option<serde_json::Value>> {
@@ -50,6 +51,7 @@ fn settings(fields: Option<&serde_json::Value>, internet_allowed: bool) -> Resul
             engine::wire::Reach::Relay
         },
         local,
+        peer_port: engine::wire::DEFAULT_PEER_PORT,
     })
 }
 
@@ -59,7 +61,13 @@ pub async fn for_organ(store: &Store, organ_uid: &str) -> Result<Discovery> {
         std::env::var("LINCE_DISCOVERY_INTERNET").as_deref(),
         Ok("0") | Ok("false") | Ok("no")
     );
-    settings(fields.as_ref(), internet)
+    let mut discovery = settings(fields.as_ref(), internet)?;
+    let network = store::cells::config(&store.pool, "lince.network")
+        .await
+        .map_err(Error::other)?;
+    discovery.peer_port =
+        engine::wire::configured_peer_port(network.as_ref()).map_err(Error::other)?;
+    Ok(discovery)
 }
 
 pub async fn of(store: &Store) -> Result<Discovery> {

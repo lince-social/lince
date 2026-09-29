@@ -35,8 +35,8 @@ pub enum Refusal {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Authenticated<T> {
-    auth: SignedOrganRequestV1,
-    body: T,
+    pub auth: SignedOrganRequestV1,
+    pub body: T,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -74,8 +74,8 @@ struct PullResult {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DeliveryPush {
-    policy: TransferDeliveryPolicyEventV1,
-    envelope: TransferEnvelopeV1,
+    pub policy: TransferDeliveryPolicyEventV1,
+    pub envelope: TransferEnvelopeV1,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -96,7 +96,7 @@ pub async fn receive_envelope(
     state: &CellRuntime,
     wire: Authenticated<DeliveryPush>,
 ) -> Result<serde_json::Value, CellError> {
-    let now = Utc::now();
+    let now = nucleus::execution::now();
     verify_wire(state, &wire, ENVELOPE_PATH, now).await?;
     if wire.auth.sender_organ_uid != wire.body.envelope.origin_organ_uid
         || wire.auth.recipient_organ_uid != wire.body.envelope.recipient_organ_uid
@@ -147,7 +147,7 @@ pub async fn pull_envelope(
     state: &CellRuntime,
     wire: Authenticated<PullRequest>,
 ) -> Result<serde_json::Value, CellError> {
-    let now = Utc::now();
+    let now = nucleus::execution::now();
     verify_wire(state, &wire, PULL_PATH, now).await?;
     let delivery: Option<String> = store::sqlx::query_scalar(
         "SELECT uid FROM transfer_delivery_policy
@@ -246,7 +246,7 @@ pub async fn receive_policy_event(
     state: &CellRuntime,
     wire: Authenticated<TransferDeliveryPolicyEventV1>,
 ) -> Result<serde_json::Value, CellError> {
-    let now = Utc::now();
+    let now = nucleus::execution::now();
     verify_wire(state, &wire, POLICY_PATH, now).await?;
     if wire.auth.sender_organ_uid != wire.body.origin_organ_uid
         || wire.auth.recipient_organ_uid != wire.body.recipient_organ_uid
@@ -267,7 +267,7 @@ pub async fn receive_application_attestation(
     state: &CellRuntime,
     wire: Authenticated<ApplicationAttestationRequest>,
 ) -> Result<serde_json::Value, CellError> {
-    let now = Utc::now();
+    let now = nucleus::execution::now();
     verify_wire(state, &wire, ATTESTATION_PATH, now).await?;
     if wire.auth.sender_organ_uid != wire.body.attestation.participant_organ_uid
         || wire.auth.recipient_organ_uid != wire.body.attestation.origin_organ_uid
@@ -307,7 +307,7 @@ pub async fn receive_receipt(
     state: &CellRuntime,
     wire: Authenticated<TransferPackageReceiptV1>,
 ) -> Result<serde_json::Value, CellError> {
-    let now = Utc::now();
+    let now = nucleus::execution::now();
     verify_wire(state, &wire, RECEIPT_PATH, now).await?;
     state
         .engine
@@ -378,7 +378,7 @@ pub async fn receive_command(
     state: &CellRuntime,
     wire: Authenticated<TransferRemoteCommandV1>,
 ) -> Result<serde_json::Value, CellError> {
-    let now = Utc::now();
+    let now = nucleus::execution::now();
     verify_wire(state, &wire, COMMAND_PATH, now).await?;
     if wire.auth.sender_organ_uid != wire.body.sender_organ_uid
         || wire.auth.recipient_organ_uid != wire.body.origin_organ_uid
@@ -455,13 +455,13 @@ async fn enqueue_periodic_pulls(state: &CellRuntime) -> Result<(), String> {
     .fetch_all(&state.store.pool)
     .await
     .map_err(|error| error.to_string())?;
-    let minute = Utc::now().timestamp() / 60;
+    let minute = nucleus::execution::now().timestamp() / 60;
     for reference_uid in reference_uids {
         store::transfer_delivery::enqueue_pull(
             &state.store.pool,
             &reference_uid,
             &format!("periodic-transfer-pull:{reference_uid}:{minute}"),
-            Utc::now(),
+            nucleus::execution::now(),
         )
         .await
         .map_err(|error| error.to_string())?;
@@ -470,7 +470,7 @@ async fn enqueue_periodic_pulls(state: &CellRuntime) -> Result<(), String> {
 }
 
 async fn drain_envelopes(state: &CellRuntime) -> Result<(), String> {
-    for row in store::transfer_delivery::outbox_due(&state.store.pool, Utc::now(), 32)
+    for row in store::transfer_delivery::outbox_due(&state.store.pool, nucleus::execution::now(), 32)
         .await
         .map_err(|error| error.to_string())?
     {
@@ -483,7 +483,7 @@ async fn drain_envelopes(state: &CellRuntime) -> Result<(), String> {
                 &state.store.pool,
                 &row.uid,
                 cursor,
-                Utc::now(),
+                nucleus::execution::now(),
             )
             .await
             .map_err(|error| error.to_string())?,
@@ -491,7 +491,7 @@ async fn drain_envelopes(state: &CellRuntime) -> Result<(), String> {
                 store::transfer_delivery::outbox_mark_failed(
                     &state.store.pool,
                     &row.uid,
-                    Utc::now(),
+                    nucleus::execution::now(),
                     &error,
                     5,
                     3_600,
@@ -523,6 +523,18 @@ async fn push_envelope(
     state: &CellRuntime,
     row: &store::transfer_delivery::DeliveryOutboxRow,
 ) -> Result<u64, String> {
+    let (recipient, request) = prepare_envelope(state, row).await?;
+    let receipt = post_to_peer(state, &recipient, engine::wire::TransferVerb::Envelope, &request).await?;
+    acknowledge_envelope(state, row, receipt).await
+}
+
+pub async fn prepare_envelope(
+    state: &CellRuntime,
+    row: &store::transfer_delivery::DeliveryOutboxRow,
+) -> Result<(String, Authenticated<DeliveryPush>), String> {
+    if !executor_runs_here(state, row).await? {
+        return Err("this Cell is not the Transfer executor".into());
+    }
     let policy = store::transfer_delivery::policy(&state.store.pool, &row.delivery_uid)
         .await
         .map_err(|error| error.to_string())?
@@ -551,7 +563,7 @@ async fn push_envelope(
     };
     let policy_event = state
         .engine
-        .sign_transfer_delivery_policy_event(&policy, policy_kind, Utc::now())
+        .sign_transfer_delivery_policy_event(&policy, policy_kind, nucleus::execution::now())
         .await
         .map_err(|error| error.to_string())?;
     let body = DeliveryPush {
@@ -565,18 +577,21 @@ async fn push_envelope(
             ENVELOPE_PATH,
             &body_bytes(&body).map_err(|error| error.to_string())?,
             &contact.record_uid,
-            Utc::now(),
+            nucleus::execution::now(),
         )
         .await
         .map_err(|error| error.to_string())?;
-    let receipt: Authenticated<TransferPackageReceiptV1> = post_to_peer(
-        state,
-        &contact.record_uid,
-        engine::wire::TransferVerb::Envelope,
-        &Authenticated { auth, body },
-    )
-    .await?;
-    verify_wire(state, &receipt, RECEIPT_PATH, Utc::now())
+    Ok((contact.record_uid, Authenticated { auth, body }))
+}
+
+pub async fn acknowledge_envelope(
+    state: &CellRuntime,
+    row: &store::transfer_delivery::DeliveryOutboxRow,
+    receipt: Authenticated<TransferPackageReceiptV1>,
+) -> Result<u64, String> {
+    let policy = store::transfer_delivery::policy(&state.store.pool, &row.delivery_uid).await
+        .map_err(|error| error.to_string())?.ok_or("delivery policy disappeared")?;
+    verify_wire(state, &receipt, RECEIPT_PATH, nucleus::execution::now())
         .await
         .map_err(|(_, error)| error)?;
     state
@@ -610,7 +625,7 @@ async fn push_envelope(
             local_fact_uid: None,
             request_id: &receipt.body.request_id,
         },
-        Utc::now(),
+        nucleus::execution::now(),
     )
     .await
     .map_err(|error| error.to_string())?;
@@ -618,7 +633,7 @@ async fn push_envelope(
 }
 
 async fn drain_commands(state: &CellRuntime) -> Result<(), String> {
-    for row in store::transfer_delivery::remote_commands_due(&state.store.pool, Utc::now(), 16)
+    for row in store::transfer_delivery::remote_commands_due(&state.store.pool, nucleus::execution::now(), 16)
         .await
         .map_err(|error| error.to_string())?
     {
@@ -658,7 +673,7 @@ async fn drain_commands(state: &CellRuntime) -> Result<(), String> {
                             code: result.code.as_deref().unwrap_or("remote_action_rejected"),
                             reviewed_payload: &reviewed,
                         },
-                        Utc::now(),
+                        nucleus::execution::now(),
                     )
                     .await
                     .map_err(|error| error.to_string())?;
@@ -671,7 +686,7 @@ async fn drain_commands(state: &CellRuntime) -> Result<(), String> {
                     &value,
                     result.code.as_deref(),
                     result.message.as_deref(),
-                    Utc::now(),
+                    nucleus::execution::now(),
                 )
                 .await
                 .map_err(|error| error.to_string())?;
@@ -680,7 +695,7 @@ async fn drain_commands(state: &CellRuntime) -> Result<(), String> {
                 store::transfer_delivery::remote_command_mark_failed(
                     &state.store.pool,
                     &row.command_uid,
-                    Utc::now(),
+                    nucleus::execution::now(),
                     "transport_failed",
                     &error,
                     5,
@@ -696,7 +711,7 @@ async fn drain_commands(state: &CellRuntime) -> Result<(), String> {
 
 async fn drain_application_attestations(state: &CellRuntime) -> Result<(), String> {
     for row in
-        store::transfer_delivery::application_attestations_due(&state.store.pool, Utc::now(), 16)
+        store::transfer_delivery::application_attestations_due(&state.store.pool, nucleus::execution::now(), 16)
             .await
             .map_err(|error| error.to_string())?
     {
@@ -705,14 +720,14 @@ async fn drain_application_attestations(state: &CellRuntime) -> Result<(), Strin
             Ok(()) => store::transfer_delivery::application_attestation_mark_sent(
                 &state.store.pool,
                 &row.attestation_uid,
-                Utc::now(),
+                nucleus::execution::now(),
             )
             .await
             .map_err(|error| error.to_string())?,
             Err(error) => store::transfer_delivery::application_attestation_mark_failed(
                 &state.store.pool,
                 &row.attestation_uid,
-                Utc::now(),
+                nucleus::execution::now(),
                 &error,
             )
             .await
@@ -747,7 +762,7 @@ async fn push_application_attestation(
             ATTESTATION_PATH,
             &body_bytes(&body).map_err(|error| error.to_string())?,
             &row.origin_organ_uid,
-            Utc::now(),
+            nucleus::execution::now(),
         )
         .await
         .map_err(|error| error.to_string())?;
@@ -758,7 +773,7 @@ async fn push_application_attestation(
         &Authenticated { auth, body },
     )
     .await?;
-    verify_wire(state, &wire, ATTESTATION_RESULT_PATH, Utc::now())
+    verify_wire(state, &wire, ATTESTATION_RESULT_PATH, nucleus::execution::now())
         .await
         .map_err(|(_, error)| error)?;
     if wire.auth.sender_organ_uid != row.origin_organ_uid
@@ -772,7 +787,7 @@ async fn push_application_attestation(
 }
 
 async fn drain_pulls(state: &CellRuntime) -> Result<(), String> {
-    for row in store::transfer_delivery::pulls_due(&state.store.pool, Utc::now(), 16)
+    for row in store::transfer_delivery::pulls_due(&state.store.pool, nucleus::execution::now(), 16)
         .await
         .map_err(|error| error.to_string())?
     {
@@ -782,7 +797,7 @@ async fn drain_pulls(state: &CellRuntime) -> Result<(), String> {
                 &state.store.pool,
                 &row.uid,
                 cursor,
-                Utc::now(),
+                nucleus::execution::now(),
             )
             .await
             .map_err(|error| error.to_string())?,
@@ -790,7 +805,7 @@ async fn drain_pulls(state: &CellRuntime) -> Result<(), String> {
                 store::transfer_delivery::pull_mark_failed(
                     &state.store.pool,
                     &row.uid,
-                    Utc::now(),
+                    nucleus::execution::now(),
                     &error,
                     5,
                     3_600,
@@ -837,7 +852,7 @@ async fn pull_reference(
             PULL_PATH,
             &body_bytes(&request).map_err(|error| error.to_string())?,
             &origin,
-            Utc::now(),
+            nucleus::execution::now(),
         )
         .await
         .map_err(|error| error.to_string())?;
@@ -851,19 +866,19 @@ async fn pull_reference(
         },
     )
     .await?;
-    verify_wire(state, &wire, PULL_RESULT_PATH, Utc::now())
+    verify_wire(state, &wire, PULL_RESULT_PATH, nucleus::execution::now())
         .await
         .map_err(|(_, error)| error)?;
     if wire.auth.sender_organ_uid != origin || wire.auth.recipient_organ_uid != local_organ {
         return Err("pull result Organ identity mismatch".into());
     }
-    accept_policy_event(state, &wire.body.policy, Utc::now())
+    accept_policy_event(state, &wire.body.policy, nucleus::execution::now())
         .await
         .map_err(|(_, error)| error)?;
     let Some(envelope) = wire.body.envelope else {
         return Ok(row.after_cursor);
     };
-    accept_envelope(state, &envelope, Utc::now())
+    accept_envelope(state, &envelope, nucleus::execution::now())
         .await
         .map_err(|(_, error)| error)?;
     send_received_receipt(state, &contact.record_uid, &envelope).await?;
@@ -903,7 +918,7 @@ async fn send_received_receipt(
             RECEIPT_PATH,
             &body_bytes(&receipt).map_err(|error| error.to_string())?,
             &envelope.origin_organ_uid,
-            Utc::now(),
+            nucleus::execution::now(),
         )
         .await
         .map_err(|error| error.to_string())?;
@@ -940,7 +955,7 @@ async fn push_command(
             COMMAND_PATH,
             &body_bytes(&command).map_err(|error| error.to_string())?,
             &row.origin_organ_uid,
-            Utc::now(),
+            nucleus::execution::now(),
         )
         .await
         .map_err(|error| error.to_string())?;
@@ -954,7 +969,7 @@ async fn push_command(
         },
     )
     .await?;
-    verify_wire(state, &wire, COMMAND_RESULT_PATH, Utc::now())
+    verify_wire(state, &wire, COMMAND_RESULT_PATH, nucleus::execution::now())
         .await
         .map_err(|(_, error)| error)?;
     if wire.auth.sender_organ_uid != row.origin_organ_uid

@@ -252,10 +252,17 @@ fn decode(bytes: &[u8]) -> io::Result<Document> {
         "Karma Castles",
         crate::karma_castle::SavedKarmaCastle
     );
+    let simulations = castles!("simulations", "Simulations", crate::simulation_castle::SavedSimulation);
     let recorders = castles!(
         "recorders",
         "Recorder Castles",
         crate::recorder_castle::SavedRecorder
+    );
+    let editors = castles!("editors", "IDE Castles", crate::ide::SavedIde);
+    let explorers = castles!(
+        "explorers",
+        "File Explorer Castles",
+        crate::file_explorer::SavedExplorer
     );
     let documents = castles!(
         "documents",
@@ -320,10 +327,13 @@ fn decode(bytes: &[u8]) -> io::Result<Document> {
         kanbans,
         proteins,
         karma_castles,
+        simulations,
         frequency_castles,
         transfer_castles,
         recorders,
         documents,
+        editors,
+        explorers,
         calendars,
         instincts,
         assertions,

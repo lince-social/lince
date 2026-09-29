@@ -1,4 +1,3 @@
-use chrono::Utc;
 use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;
@@ -12,7 +11,7 @@ pub async fn ensure_local(pool: &SqlitePool) -> Result<String, StoreError> {
          ON CONFLICT(uid) DO NOTHING",
     )
     .bind(LOCAL_UID)
-    .bind(Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .execute(pool)
     .await?;
     Ok(LOCAL_UID.to_string())
@@ -68,7 +67,7 @@ pub async fn create(
     .bind(name)
     .bind(owner_organ)
     .bind(visibility)
-    .bind(Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .execute(pool)
     .await?;
     Ok(uid)
@@ -133,7 +132,7 @@ pub async fn adopt(
     )
     .bind(lingua_uid)
     .bind(concept_uid)
-    .bind(Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .execute(pool)
     .await?;
     Ok(())

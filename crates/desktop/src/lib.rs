@@ -135,6 +135,8 @@ pub mod scoped_events;
 #[cfg(feature = "native-runtime")]
 pub mod calendar;
 #[cfg(feature = "native-runtime")]
+pub mod simulation_castle;
+#[cfg(feature = "native-runtime")]
 pub mod kanban;
 
 #[cfg(feature = "native-runtime")]
@@ -296,6 +298,10 @@ pub mod recorder_castle;
 
 #[cfg(feature = "native-runtime")]
 pub mod document_viewer;
+#[cfg(feature = "native-runtime")]
+pub mod file_explorer;
+#[cfg(feature = "native-runtime")]
+pub mod ide;
 
 #[cfg(feature = "native-runtime")]
 pub mod transfer_castle;

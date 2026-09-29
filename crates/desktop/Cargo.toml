@@ -14,6 +14,7 @@ native-media = ["native-runtime", "dep:lince-media", "lince-media/native"]
 native-runtime = [
     "dep:lince-interface",
     "dep:lince-document",
+    "dep:lince-editor",
     "dep:rfd",
     "dep:cpal",
     "dep:qrcode",
@@ -30,6 +31,7 @@ native-runtime = [
     "dep:bevy_gaussian_splatting",
     "dep:flexbuffers",
     "dep:cell",
+    "dep:simulation",
     "dep:tokio",
     "dep:protein",
     "dep:engine",
@@ -70,8 +72,10 @@ native-runtime = [
 ]
 
 [dependencies]
+simulation = { workspace = true, optional = true }
 lince-interface = { workspace = true, optional = true, features = ["ui", "models", "behavior-checks"] }
 lince-document = { path = "../document", optional = true }
+lince-editor = { path = "../editor", optional = true }
 rfd = { workspace = true, optional = true }
 qrcode = { workspace = true, optional = true }
 nokhwa = { version = "=0.10.11", default-features = false, features = ["input-native"], optional = true }
@@ -105,7 +109,7 @@ avian3d = { version = "=0.7.0", default-features = false, features = ["3d", "f64
 toml = { workspace = true, optional = true }
 
 [target.'cfg(unix)'.dependencies]
-rustix = { version = "=1.1.4", features = ["process", "fs"], optional = true }
+rustix = { version = "=1.1.4", features = ["process", "fs", "param"], optional = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 ksni = { version = "=0.3.6", default-features = false, features = ["async-io"], optional = true }
@@ -268,4 +272,12 @@ required-features = ["native-runtime"]
 
 [[example]]
 name = "relation_smoke"
+required-features = ["native-runtime"]
+
+[[example]]
+name = "editor_smoke"
+required-features = ["native-runtime"]
+
+[[example]]
+name = "editor_profile"
 required-features = ["native-runtime"]

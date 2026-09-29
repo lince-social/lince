@@ -11,8 +11,9 @@ description = "Shared presentation models and Bevy UI primitives for Lince hosts
 [features]
 default = ["ui"]
 ui = ["dep:bevy", "dep:fontique", "dep:tokio"]
-models = ["dep:nucleus", "dep:protein", "dep:chrono"]
+models = ["dep:nucleus", "dep:protein", "dep:chrono", "dep:qrcode", "dep:pulldown-cmark"]
 behavior-checks = ["ui"]
+images = ["dep:image", "dep:reqwest", "dep:base64"]
 
 [dependencies]
 bevy = { version = "=0.19.1", default-features = false, features = ["std", "bevy_asset", "bevy_text", "bevy_ui", "bevy_ui_widgets", "bevy_input_focus"], optional = true }
@@ -23,6 +24,11 @@ serde_json = { workspace = true, features = ["float_roundtrip"] }
 nucleus = { workspace = true, optional = true }
 protein = { workspace = true, optional = true }
 chrono = { workspace = true, optional = true }
+qrcode = { version = "=0.14.1", default-features = false, optional = true }
+pulldown-cmark = { version = "=0.13.4", default-features = false, optional = true }
+image = { workspace = true, optional = true }
+reqwest = { workspace = true, optional = true }
+base64 = { workspace = true, optional = true }
 
 [build-dependencies]
 sensei = { workspace = true }

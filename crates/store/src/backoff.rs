@@ -52,11 +52,11 @@ mod tests {
 
     #[test]
     fn a_row_that_has_never_failed_is_due_now() {
-        assert!(due(Utc::now(), None));
+        assert!(due(nucleus::execution::now(), None));
     }
 
     #[test]
     fn an_unreadable_stamp_is_due_rather_than_stranded() {
-        assert!(due(Utc::now(), Some("not a timestamp")));
+        assert!(due(nucleus::execution::now(), Some("not a timestamp")));
     }
 }

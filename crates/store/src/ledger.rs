@@ -103,7 +103,7 @@ pub async fn classify_fact(
     note: Option<&str>,
 ) -> Result<String, StoreError> {
     let uid = nucleus::new_uid("fc");
-    let at = instant(Utc::now());
+    let at = instant(nucleus::execution::now());
     let mut tx = crate::write_tx(pool).await?;
     sqlx::query(
         "INSERT INTO fact_concept_event (uid, fact_uid, concept_uid, actor_uid, note, at)

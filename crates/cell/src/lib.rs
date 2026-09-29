@@ -1,6 +1,7 @@
 #![recursion_limit = "256"]
 
 pub mod admin_bootstrap;
+pub mod blob_sync;
 pub mod discovery;
 pub mod configuration;
 pub mod organ;
@@ -8,6 +9,7 @@ pub mod fiote;
 pub mod speech;
 pub mod information;
 pub mod sync_runner;
+pub mod isolated;
 pub mod transfer;
 pub mod wire_supervisor;
 
@@ -102,6 +104,7 @@ pub struct CellOptions {
     pub data_dir: Option<PathBuf>,
     pub local_base_url: Option<String>,
     pub language: Option<String>,
+    pub peer_port: Option<u16>,
 }
 
 pub struct Cell {
@@ -133,6 +136,10 @@ impl Cell {
         )
         .await?;
 
+        if let Some(port) = options.peer_port {
+            store::cells::set_config(&store.pool, "lince.network", &serde_json::json!({"peer_port": port}))
+                .await.map_err(IoError::other)?;
+        }
         let engine = Arc::new(
             engine::Engine::new(store.clone())
                 .await
@@ -148,6 +155,10 @@ impl Cell {
             .ok_or_else(|| IoError::other("this Cell has no Cell Record"))?;
         let key_dir = utils::config::lince_data_dir()
             .ok_or_else(|| IoError::other("Cannot find the Lince data directory"))?;
+
+        if services {
+            engine.initialize_blob_sync(&key_dir.join("blob-sync")).await.map_err(IoError::other)?;
+        }
 
         let mut supervisors = Vec::new();
         if services {
@@ -187,7 +198,7 @@ impl Cell {
         };
 
         if let Some(wire) = wire.clone()
-            && let Err(error) = publish_pairing_invite(&store, &local_organ.uid, &wire).await
+            && let Err(error) = publish_pairing_invite(&engine, &local_organ.uid, &wire).await
         {
             tracing::warn!(%error, "Could not prepare the pairing invitation");
         }
@@ -209,6 +220,7 @@ impl Cell {
         }
         if let Some(fiote) = &runtime.fiote { tasks.push(fiote.spawn_assignments()); }
         if services { tasks.push(transfer::spawn_worker(runtime.clone())); }
+        if services { tasks.push(blob_sync::spawn(runtime.clone())); }
         tasks.push(sync_runner::spawn_runner(runtime.clone()));
         tasks.push(sync_runner::spawn_presence(runtime.clone()));
         tasks.push(wire_supervisor::spawn(runtime.clone(), key_dir));
@@ -233,6 +245,10 @@ impl Cell {
         }
         for handle in self.tasks.drain(..) {
             handle.abort();
+            let _ = handle.await;
+        }
+        if let Some(blobs) = self.runtime.engine.blobs.get() {
+            if let Err(error) = blobs.shutdown().await { tracing::warn!(%error, "Could not close Blob Sync storage"); }
         }
     }
 
@@ -363,12 +379,13 @@ async fn bind_wire(
             return None;
         }
     };
-    let wire = match engine::wire::Wire::bind_with_discovery(
+    let wire = match engine::wire::Wire::bind_on_port(
         engine.clone(),
         secret,
         discovery.reach,
         Some(local_organ.head.as_str()),
         discovery.local,
+        discovery.peer_port,
     )
     .await
     {
@@ -389,10 +406,11 @@ async fn bind_wire(
 }
 
 async fn publish_pairing_invite(
-    store: &Store,
+    engine: &engine::Engine,
     organ_uid: &str,
     wire: &engine::wire::Wire,
 ) -> Result<(), IoError> {
+    let store = &engine.store;
     let invite = wire.pairing_invite().await.map_err(IoError::other)?;
     let encoded = invite.encode();
     let existing = store::records::get_extension(&store.pool, organ_uid, "lince.pairing")
@@ -406,7 +424,7 @@ async fn publish_pairing_invite(
         return Ok(());
     }
     let svg = invite.qr_svg().map_err(IoError::other)?;
-    store::records::set_extension(
+    store::records::set_extension_raw(
         &store.pool,
         organ_uid,
         "lince.pairing",
@@ -414,6 +432,7 @@ async fn publish_pairing_invite(
     )
     .await
     .map_err(IoError::other)?;
+    engine.notify_query_changed();
     Ok(())
 }
 async fn publish_local_roster(
@@ -434,8 +453,8 @@ async fn publish_local_roster(
                 "root key is not on this Cell; the published roster stays valid \
                  until it expires, and enrolling or revoking a device needs it back"
             );
-            return Ok(());
         }
+        return Ok(());
     }
     let root =
         engine::trust::Signer::load_or_create(&root_path, organ_uid, engine::roster::ROOT_KEY_ID)
@@ -512,6 +531,7 @@ async fn publish_local_roster(
         tracing::warn!(%error, "could not sign the public directory record");
         return Ok(());
     }
+    engine.renew_local_roster().await.map_err(IoError::other)?;
     republish_public_record(engine, organ_uid).await;
     Ok(())
 }

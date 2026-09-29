@@ -1,5 +1,7 @@
 pub mod action_intent;
+pub mod blob_sync;
 pub mod error;
+pub mod execution;
 pub mod expr;
 pub mod fact;
 pub mod graph;
@@ -13,6 +15,8 @@ pub mod place;
 pub mod promise;
 pub mod record;
 pub mod sync;
+pub mod simulation;
+pub mod projection;
 pub mod transfer;
 pub mod transfer_delivery;
 

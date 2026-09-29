@@ -4,7 +4,9 @@ pub mod assertions;
 pub mod auth;
 pub mod backoff;
 pub mod budget;
+pub mod blob_sync;
 pub mod cells;
+pub mod peer_delivery;
 pub mod communication;
 pub mod concepts;
 pub mod config;
@@ -18,6 +20,7 @@ pub mod facts;
 pub mod frequency;
 pub mod invites;
 pub mod karma;
+pub mod karma_bindings;
 pub mod ledger;
 pub mod linguas;
 pub mod logins;
@@ -31,6 +34,7 @@ pub mod organs;
 pub mod people;
 pub mod places;
 pub mod private_contacts;
+pub mod projection;
 pub mod read_filter;
 pub mod record_changes;
 pub mod record_docs;
@@ -50,6 +54,7 @@ pub mod session_access;
 pub mod sync_activity;
 pub mod sync_apply;
 pub mod sync_ops;
+pub mod snapshot;
 pub mod transfer_delivery;
 pub mod transfers;
 pub mod visibility;
@@ -151,7 +156,8 @@ async fn migrate(pool: &SqlitePool) -> Result<(), StoreError> {
         .map_err(|e| match e {
             sqlx::migrate::MigrateError::Execute(e) => e,
             other => sqlx::Error::Protocol(other.to_string()),
-        })
+        })?;
+    projection::install(pool).await
 }
 
 async fn ensure_identity(pool: &SqlitePool) -> Result<(), StoreError> {

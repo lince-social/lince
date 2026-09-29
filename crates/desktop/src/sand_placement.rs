@@ -296,6 +296,8 @@ struct Menu {
     grouping: (bool, bool),
     layout_linked: bool,
     date_boundary: bool,
+    click: Option<Vec2>,
+    anchor: Vec2,
 }
 
 pub struct PlacementPlugin;
@@ -375,6 +377,9 @@ fn menu(world: &mut World) {
         }
         return;
     }
+    let anchor = current.anchor;
+    let click = current.click;
+    let same_target = current.target == target.map(|(_, entity)| entity);
     if let Some(entity) = world.resource_mut::<Menu>().entity.take() {
         world.despawn(entity);
     }
@@ -385,6 +390,12 @@ fn menu(world: &mut World) {
         layout_linked,
         date_boundary,
         entity: None,
+        click: if same_target { click } else { None },
+        anchor: if same_target {
+            anchor
+        } else {
+            Vec2::splat(0.5)
+        },
     };
     let Some((root, target)) = target else { return };
     let area = world.get::<crate::area::InfluenceArea>(target).is_some();
@@ -394,20 +405,15 @@ fn menu(world: &mut World) {
             PlacementMenu,
             crate::inspection::InspectionExcluded,
             crate::sand::Square,
+            Visibility::Hidden,
             Node {
                 position_type: PositionType::Absolute,
-                width: px((if area {
-                    84
-                } else if deletable {
-                    288
-                } else {
-                    252
-                }) + 36 * (i32::from(grouping.0) + 2 * i32::from(grouping.1) + 1)),
-                height: px(48),
+                flex_wrap: FlexWrap::Wrap,
                 align_items: AlignItems::Center,
                 justify_content: JustifyContent::Center,
                 padding: UiRect::all(px(4)),
                 column_gap: px(4),
+                row_gap: px(4),
                 border: UiRect::all(px(1)),
                 ..default()
             },
@@ -488,7 +494,7 @@ fn menu(world: &mut World) {
         (
             grouping.1,
             crate::canvas_selection::GroupAction::Detach,
-            Icon::Ungroup,
+            Icon::Detach,
             "Ungroup this component",
         ),
         (
@@ -521,9 +527,9 @@ fn menu(world: &mut World) {
         world.spawn((
             IconButton::new(
                 if date_boundary {
-                    Icon::Group
+                    Icon::EventsLocal
                 } else {
-                    Icon::Ungroup
+                    Icon::EventsShared
                 },
                 if date_boundary {
                     "Date events stay in this group. Click to let them leave."
@@ -543,26 +549,87 @@ fn menu(world: &mut World) {
             ChildOf(panel),
         ));
     }
+    let controls: Vec<_> = world.get::<Children>(panel).unwrap().iter().collect();
+    for control in controls {
+        world.entity_mut(control).insert((
+            crate::icons::InlineTooltip,
+            crate::icons::TooltipIcon { source: control },
+        ));
+    }
     world.resource_mut::<Menu>().entity = Some(panel);
+    if !same_target {
+        let point = world
+            .get::<Inspection>(root)
+            .filter(|state| state.selected.is_some())
+            .and_then(|state| state.selected_point)
+            .or_else(|| {
+                world
+                    .query::<&Window>()
+                    .iter(world)
+                    .filter(|window| window.focused)
+                    .find_map(Window::cursor_position)
+            });
+        set_menu_anchor(world, target, point);
+    }
     position_menu(world, root, target, panel);
     if let Some(wake) = world.get_resource::<crate::wake::WakeSignal>() {
         wake.ring();
     }
 }
 
-fn menu_position(viewport: Rect, sand: Rect, size: Vec2) -> Vec2 {
+fn menu_position(viewport: Rect, sand: Rect, size: Vec2, point: Vec2) -> Vec2 {
     let margin = Vec2::splat(8.0);
-    let below = viewport.max.y - sand.max.y;
-    let above = sand.min.y - viewport.min.y;
-    let y = if below >= above {
-        sand.max.y + margin.y
-    } else {
-        sand.min.y - size.y - margin.y
+    let min = viewport.min + margin;
+    let max = (viewport.max - size - margin).max(min);
+    let point = point.clamp(sand.min, sand.max);
+    let along = (point - size * 0.5).clamp(min, max);
+    let positions = [
+        Vec2::new(along.x, sand.min.y - size.y - margin.y),
+        Vec2::new(along.x, sand.max.y + margin.y),
+        Vec2::new(sand.min.x - size.x - margin.x, along.y),
+        Vec2::new(sand.max.x + margin.x, along.y),
+    ];
+    let score = |position: Vec2| {
+        let overflow = (min - position).max(Vec2::ZERO)
+            + (position + size + margin - viewport.max).max(Vec2::ZERO);
+        let nearest = point.clamp(position, position + size);
+        (overflow.element_sum(), nearest.distance_squared(point))
     };
-    Vec2::new(sand.center().x - size.x * 0.5, y).clamp(
-        viewport.min + margin,
-        (viewport.max - size - margin).max(viewport.min + margin),
-    ) - viewport.min
+    positions
+        .into_iter()
+        .min_by(|a, b| {
+            let a = score(*a);
+            let b = score(*b);
+            a.0.total_cmp(&b.0).then(a.1.total_cmp(&b.1))
+        })
+        .unwrap()
+        - viewport.min
+}
+
+fn set_menu_anchor(world: &mut World, target: Entity, point: Option<Vec2>) {
+    let Some(root) = world.get::<ChildOf>(target).map(ChildOf::parent) else {
+        return;
+    };
+    let Some(sand) = menu_bounds(world, root, target) else {
+        return;
+    };
+    let scale = world.get_resource::<UiScale>().map_or(1.0, |scale| scale.0);
+    let anchor = point.map_or(Vec2::splat(0.5), |point| {
+        ((point / scale - sand.min) / sand.size()).clamp(Vec2::ZERO, Vec2::ONE)
+    });
+    let mut menu = world.resource_mut::<Menu>();
+    menu.anchor = anchor;
+    menu.click = point;
+}
+
+fn menu_bounds(world: &World, root: Entity, target: Entity) -> Option<Rect> {
+    crate::canvas_selection::group_members(world, root, target)
+        .into_iter()
+        .filter_map(|member| {
+            crate::inspection::bounds(world, member)
+                .or_else(|| crate::canvas_selection::screen_bounds(world, root, member))
+        })
+        .reduce(|a, b| Rect::from_corners(a.min.min(b.min), a.max.max(b.max)))
 }
 
 fn retained_menu_target(world: &mut World) -> Option<(Entity, Entity)> {
@@ -573,7 +640,7 @@ fn retained_menu_target(world: &mut World) -> Option<(Entity, Entity)> {
     if !world.get::<crate::edit_mode::EditMode>(root)?.enabled {
         return None;
     }
-    let sand = crate::inspection::bounds(world, target)?;
+    let sand = menu_bounds(world, root, target)?;
     let controls = crate::inspection::bounds(world, panel)?;
     let corridor = Rect::from_corners(sand.min.min(controls.min), sand.max.max(controls.max));
     world
@@ -589,16 +656,44 @@ fn position_menu(world: &mut World, root: Entity, target: Entity, panel: Entity)
     let Some(viewport) = crate::inspection::bounds(world, root) else {
         return;
     };
-    let Some(sand) = crate::inspection::bounds(world, target) else {
+    let Some(sand) = menu_bounds(world, root, target) else {
         return;
     };
+    let click = world
+        .get::<Inspection>(root)
+        .filter(|state| state.selected.is_some())
+        .and_then(|state| state.selected_point);
+    if click.is_some() && click != world.resource::<Menu>().click {
+        set_menu_anchor(world, target, click);
+    }
     let size =
         crate::inspection::bounds(world, panel).map_or(Vec2::new(216.0, 48.0), |rect| rect.size());
-    let position = menu_position(viewport, sand, size);
+    let point = sand.min + sand.size() * world.resource::<Menu>().anchor;
+    let position = menu_position(viewport, sand, size, point);
+    let controls = world.get::<Children>(panel).unwrap();
+    let width = controls
+        .iter()
+        .map(|control| match world.get::<Node>(control).unwrap().width {
+            Val::Px(width) => width,
+            _ => 34.0,
+        })
+        .sum::<f32>()
+        + 4.0 * controls.len().saturating_sub(1) as f32
+        + 10.0;
+    let width = px(width.min((viewport.width() - 16.0).max(44.0)));
     let mut node = world.get_mut::<Node>(panel).unwrap();
-    if node.left != px(position.x) || node.top != px(position.y) {
+    if node.left != px(position.x) || node.top != px(position.y) || node.width != width {
         node.left = px(position.x);
         node.top = px(position.y);
+        node.width = width;
+        if let Some(wake) = world.get_resource::<crate::wake::WakeSignal>() {
+            wake.ring();
+        }
+    } else if crate::inspection::bounds(world, panel).is_some() {
+        world
+            .get_mut::<Visibility>(panel)
+            .unwrap()
+            .set_if_neq(Visibility::Inherited);
     }
 }
 
@@ -606,29 +701,180 @@ pub(crate) mod tests {
     use super::*;
 
     #[cfg_attr(test, test)]
-    fn controls_follow_screen_bounds_and_choose_the_roomier_side() {
-        let viewport = Rect::from_corners(Vec2::new(20.0, 30.0), Vec2::new(820.0, 630.0));
+    fn controls_stay_outside_the_sand_near_the_clicked_edge() {
+        let viewport = Rect::from_corners(Vec2::new(20.0, 30.0), Vec2::new(1220.0, 830.0));
+        let sand = Rect::from_corners(Vec2::new(400.0, 250.0), Vec2::new(800.0, 600.0));
         let size = Vec2::new(216.0, 48.0);
-        let top = Rect::from_corners(Vec2::new(200.0, 40.0), Vec2::new(400.0, 140.0));
-        let bottom = Rect::from_corners(Vec2::new(200.0, 500.0), Vec2::new(400.0, 600.0));
-        assert_eq!(menu_position(viewport, top, size), Vec2::new(172.0, 118.0));
-        assert_eq!(
-            menu_position(viewport, bottom, size),
-            Vec2::new(172.0, 414.0)
-        );
-        for sand in [
-            top,
-            bottom,
-            Rect::from_center_size(Vec2::splat(-1000.0), Vec2::splat(100.0)),
-            Rect::from_center_size(Vec2::splat(2000.0), Vec2::splat(100.0)),
+        for (point, expected) in [
+            (Vec2::new(520.0, 255.0), Vec2::new(412.0, 194.0)),
+            (Vec2::new(680.0, 595.0), Vec2::new(572.0, 608.0)),
+            (Vec2::new(405.0, 430.0), Vec2::new(176.0, 406.0)),
+            (Vec2::new(795.0, 430.0), Vec2::new(808.0, 406.0)),
         ] {
-            let position = menu_position(viewport, sand, size);
-            assert!(position.cmpge(Vec2::splat(8.0)).all());
-            assert!(
-                (position + size)
-                    .cmple(viewport.size() - Vec2::splat(8.0))
-                    .all()
+            assert_eq!(
+                menu_position(viewport, sand, size, point) + viewport.min,
+                expected
             );
+        }
+        for sand in [
+            Rect::from_corners(Vec2::new(30.0, 40.0), Vec2::new(1190.0, 140.0)),
+            Rect::from_corners(Vec2::new(30.0, 740.0), Vec2::new(1190.0, 820.0)),
+            Rect::from_corners(Vec2::new(30.0, 40.0), Vec2::new(500.0, 820.0)),
+            Rect::from_corners(Vec2::new(720.0, 40.0), Vec2::new(1210.0, 820.0)),
+        ] {
+            for point in [sand.min, sand.center(), sand.max] {
+                let position = menu_position(viewport, sand, size, point) + viewport.min;
+                assert!(position.cmpge(viewport.min + Vec2::splat(8.0)).all());
+                assert!(
+                    (position + size)
+                        .cmple(viewport.max - Vec2::splat(8.0))
+                        .all()
+                );
+                assert!(
+                    position.x + size.x <= sand.min.x - 8.0
+                        || position.x >= sand.max.x + 8.0
+                        || position.y + size.y <= sand.min.y - 8.0
+                        || position.y >= sand.max.y + 8.0
+                );
+            }
+        }
+        let position = menu_position(viewport, viewport, size, viewport.center()) + viewport.min;
+        assert!(position.y + size.y <= viewport.min.y - 8.0);
+    }
+
+    #[cfg_attr(test, test)]
+    fn menu_uses_the_whole_group_and_keeps_the_click_anchor_when_it_moves() {
+        let mut world = World::new();
+        world.init_resource::<Menu>();
+        world.insert_resource(UiScale(2.0));
+        let root = world.spawn(CanvasView::default()).id();
+        let mut members = Vec::new();
+        for (group, size, position) in [
+            (1, Vec2::new(300.0, 80.0), Vec2::new(400.0, 150.0)),
+            (1, Vec2::new(300.0, 400.0), Vec2::new(400.0, 400.0)),
+            (2, Vec2::splat(100.0), Vec2::new(900.0, 900.0)),
+        ] {
+            members.push(
+                world
+                    .spawn((
+                        CanvasItem {
+                            position: DVec2::ZERO,
+                            size,
+                        },
+                        crate::canvas_selection::SandGroup([group; 16]),
+                        ComputedNode { size, ..default() },
+                        UiGlobalTransform::from(bevy::math::Affine2::from_translation(position)),
+                        ChildOf(root),
+                    ))
+                    .id(),
+            );
+        }
+        let bounds = menu_bounds(&world, root, members[0]).unwrap();
+        assert_eq!(bounds.min, Vec2::new(250.0, 110.0));
+        assert_eq!(bounds.max, Vec2::new(550.0, 600.0));
+        set_menu_anchor(&mut world, members[0], Some(Vec2::new(1040.0, 240.0)));
+        let anchor = world.resource::<Menu>().anchor;
+        let point = bounds.min + bounds.size() * anchor;
+        assert!(point.distance(Vec2::new(520.0, 120.0)) < 0.01);
+        for member in &members[..2] {
+            let position = world.get::<UiGlobalTransform>(*member).unwrap().translation;
+            world.entity_mut(*member).insert(UiGlobalTransform::from(
+                bevy::math::Affine2::from_translation(position + Vec2::splat(50.0)),
+            ));
+        }
+        let moved = menu_bounds(&world, root, members[0]).unwrap();
+        assert!((moved.min + moved.size() * anchor).distance(point + Vec2::splat(50.0)) < 0.01);
+    }
+
+    #[cfg_attr(test, test)]
+    fn grouped_sand_controls_have_distinct_icons_and_direct_tooltips() {
+        let mut app = App::new();
+        crate::laboratory::isolate(app.world_mut());
+        app.init_resource::<Assets<Font>>()
+            .init_resource::<crate::theme::Typography>()
+            .init_resource::<bevy::input_focus::InputFocus>()
+            .add_plugins((
+                crate::workspace::WorkspacePlugin,
+                crate::edit_mode::EditModePlugin,
+                crate::icons::IconPlugin,
+                PlacementPlugin,
+            ));
+        let root = app.world_mut().spawn(crate::container::BoxRoot).id();
+        app.update();
+        crate::edit_mode::EditAction::Open.apply(app.world_mut(), root);
+        let mut sands = Vec::new();
+        for group in [1, 1, 2] {
+            sands.push(
+                app.world_mut()
+                    .spawn((
+                        CanvasItem {
+                            position: DVec2::ZERO,
+                            size: Vec2::splat(100.0),
+                        },
+                        crate::canvas_selection::SandGroup([group; 16]),
+                        ChildOf(root),
+                    ))
+                    .id(),
+            );
+        }
+        app.world_mut()
+            .entity_mut(root)
+            .insert(crate::canvas_selection::SandSelection(sands.clone()));
+        app.world_mut()
+            .get_mut::<Inspection>(root)
+            .unwrap()
+            .selected = Some(sands[0]);
+        for enabled in [false, true] {
+            app.world_mut()
+                .resource_mut::<crate::icons::TooltipSettings>()
+                .enabled = enabled;
+            for _ in 0..3 {
+                app.update();
+            }
+            let panel = app.world().resource::<Menu>().entity.unwrap();
+            assert_eq!(app.world().get::<ChildOf>(panel).unwrap().parent(), root);
+            let controls = app.world().get::<Children>(panel).unwrap();
+            let mut icons = Vec::new();
+            for control in controls.iter() {
+                let button = app
+                    .world()
+                    .get::<crate::icons::IconButton>(control)
+                    .unwrap();
+                assert!(
+                    !icons.contains(&button.icon),
+                    "duplicate icon: {}",
+                    button.label
+                );
+                icons.push(button.icon);
+                assert_eq!(
+                    app.world().get::<crate::icons::Tooltip>(control).unwrap().0,
+                    button.label
+                );
+                assert!(
+                    app.world()
+                        .get::<crate::icons::InlineTooltip>(control)
+                        .is_some()
+                );
+                assert_eq!(
+                    app.world()
+                        .get::<crate::icons::TooltipIcon>(control)
+                        .unwrap()
+                        .source,
+                    control
+                );
+                assert!(
+                    app.world()
+                        .get::<Children>(control)
+                        .unwrap()
+                        .iter()
+                        .all(|child| {
+                            app.world()
+                                .get::<crate::icons::TooltipIcon>(child)
+                                .is_none()
+                        })
+                );
+            }
+            assert_eq!(icons.len(), 11);
         }
     }
 
@@ -720,7 +966,9 @@ pub(crate) mod tests {
     }
 
     crate::laboratory_cases! {
-        controls_follow_screen_bounds_and_choose_the_roomier_side,
+        controls_stay_outside_the_sand_near_the_clicked_edge,
+        menu_uses_the_whole_group_and_keeps_the_click_anchor_when_it_moves,
+        grouped_sand_controls_have_distinct_icons_and_direct_tooltips,
         pinned_projection_keeps_screen_fraction_and_scale_after_viewport_resize,
         layer_commands_reorder_whole_sands_without_crossing_workspaces_or_screen_layer,
     }

@@ -1,4 +1,3 @@
-use chrono::Utc;
 use nucleus::RecordKind;
 use serde::{Deserialize, Serialize};
 use sqlx::SqlitePool;
@@ -308,7 +307,7 @@ pub async fn open_session(
     conversation_uid: &str,
     media: &str,
 ) -> Result<RecordRow, StoreError> {
-    let now = Utc::now().to_rfc3339();
+    let now = nucleus::execution::now().to_rfc3339();
     let head = format!("Call · {now}");
     let session = records::create(
         pool,
@@ -364,7 +363,7 @@ pub async fn close_session(
     peak_participants: i64,
 ) -> Result<(), StoreError> {
     if let Some(mut sidecar) = get_session(pool, session_uid).await? {
-        sidecar.ended_at = Some(Utc::now().to_rfc3339());
+        sidecar.ended_at = Some(nucleus::execution::now().to_rfc3339());
         sidecar.peak_participants = peak_participants;
         let fds = serde_json::to_value(&sidecar)
             .map_err(|e| sqlx::Error::Protocol(format!("serialize session sidecar: {e}")))?;

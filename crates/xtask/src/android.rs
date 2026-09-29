@@ -12,9 +12,6 @@ use std::{
 
 use crate::{Result, checked};
 
-const PACKAGE: &str = "social.lince.mobile.debug";
-const COMPONENT: &str = "social.lince.mobile.debug/social.lince.mobile.MainActivity";
-
 #[derive(Debug)]
 struct Options {
     action: String,
@@ -23,6 +20,7 @@ struct Options {
     apk: Option<PathBuf>,
     device: Option<String>,
     headless: bool,
+    release: bool,
 }
 
 impl Options {
@@ -34,6 +32,7 @@ impl Options {
             apk: None,
             device: None,
             headless: false,
+            release: false,
         };
         let mut args = args.iter().peekable();
         if args
@@ -46,6 +45,7 @@ impl Options {
             match arg.to_str() {
                 Some("--help" | "-h") => options.action = "help".into(),
                 Some("--headless") => options.headless = true,
+                Some("--release") => options.release = true,
                 Some("--sdk") => options.sdk = Some(PathBuf::from(value(&mut args, "--sdk")?)),
                 Some("--apk") => options.apk = Some(PathBuf::from(value(&mut args, "--apk")?)),
                 Some("--avd") => options.avd = identifier(value(&mut args, "--avd")?, "AVD name")?,
@@ -65,7 +65,20 @@ impl Options {
         if options.action == "setup" && options.device.is_some() {
             return Err("setup creates an emulator, so it does not accept --device".into());
         }
+        if options.action == "setup" && options.release {
+            return Err(
+                "--release selects an installed app; setup only creates an emulator".into(),
+            );
+        }
         Ok(options)
+    }
+
+    fn package(&self) -> &'static str {
+        if self.release {
+            "social.lince.mobile"
+        } else {
+            "social.lince.mobile.debug"
+        }
     }
 }
 
@@ -92,8 +105,10 @@ pub(crate) fn dispatch(root: &Path, args: &[OsString]) -> Result<()> {
     if options.action == "help" {
         println!("cargo xtask android setup [--sdk PATH] [--avd NAME]");
         println!("cargo xtask android [run] [--sdk PATH] [--avd NAME] [--apk PATH] [--headless]");
-        println!("cargo xtask android run --device SERIAL [--apk PATH] [--sdk PATH]");
-        println!("cargo xtask android logs [--device SERIAL] [--avd NAME] [--sdk PATH]");
+        println!("cargo xtask android run --device SERIAL [--apk PATH] [--sdk PATH] [--release]");
+        println!(
+            "cargo xtask android logs [--device SERIAL] [--avd NAME] [--sdk PATH] [--release]"
+        );
         println!(
             "Requires Android Command-line Tools, a JDK for setup, and hardware virtualization."
         );
@@ -104,7 +119,7 @@ pub(crate) fn dispatch(root: &Path, args: &[OsString]) -> Result<()> {
             "setup downloads the emulator and Android 35 Google APIs image for this computer."
         );
         println!(
-            "run builds nothing. It opens the emulator and optionally installs an existing debug APK."
+            "run builds nothing. It installs an existing APK; --release selects the signed release app."
         );
         println!(
             "If Lince is installed, run restarts it and saves ten seconds of startup logs under target/android."
@@ -118,6 +133,8 @@ pub(crate) fn dispatch(root: &Path, args: &[OsString]) -> Result<()> {
         return Ok(());
     }
     let sdk = sdk_path(&options)?;
+    let package = options.package();
+    let component = format!("{package}/social.lince.mobile.MainActivity");
     if options.action == "setup" {
         return setup(&sdk, &options.avd);
     }
@@ -152,8 +169,8 @@ pub(crate) fn dispatch(root: &Path, args: &[OsString]) -> Result<()> {
     };
     println!("Android device: {serial}");
     if options.action == "logs" {
-        let uid =
-            app_uid(&adb, &serial)?.ok_or("Lince debug APK is not installed on this device")?;
+        let uid = app_uid(&adb, &serial, package)?
+            .ok_or("The selected Lince app is not installed on this device")?;
         return checked(&mut logcat(&adb, &serial, uid, "1"));
     }
     if let Some(apk) = apk {
@@ -172,13 +189,19 @@ pub(crate) fn dispatch(root: &Path, args: &[OsString]) -> Result<()> {
             ));
         }
     }
-    let Some(uid) = app_uid(&adb, &serial)? else {
+    let Some(uid) = app_uid(&adb, &serial, package)? else {
         println!(
-            "Emulator ready. Install Lince with cargo xtask android --apk /path/to/app-debug.apk"
+            "Device ready. Install {package} with cargo xtask android run --device {serial}{} --apk /path/to/{}",
+            if options.release { " --release" } else { "" },
+            if options.release {
+                "app-release.apk"
+            } else {
+                "app-debug.apk"
+            }
         );
         return Ok(());
     };
-    checked(Command::new(&adb).args(["-s", &serial, "shell", "am", "force-stop", PACKAGE]))?;
+    checked(Command::new(&adb).args(["-s", &serial, "shell", "am", "force-stop", package]))?;
     let since = output(Command::new(&adb).args(["-s", &serial, "shell", "date", "+%s.%N"]))?;
     let log = target.join(format!("{}.log", serial.replace(':', "_")));
     let file = File::create(&log).map_err(|e| e.to_string())?;
@@ -188,9 +211,9 @@ pub(crate) fn dispatch(root: &Path, args: &[OsString]) -> Result<()> {
         .spawn()
         .map_err(|e| e.to_string())?;
     println!("Starting Lince; startup logs: {}", log.display());
-    let launched = output(
-        Command::new(&adb).args(["-s", &serial, "shell", "am", "start", "-W", "-n", COMPONENT]),
-    );
+    let launched = output(Command::new(&adb).args([
+        "-s", &serial, "shell", "am", "start", "-W", "-n", &component,
+    ]));
     let launched = launched.map(|report| {
         print!("{report}");
         report
@@ -210,7 +233,7 @@ pub(crate) fn dispatch(root: &Path, args: &[OsString]) -> Result<()> {
     let captured = fs::read_to_string(&log).map_err(|e| e.to_string())?;
     startup_result(&report, &captured).map_err(|e| format!("{e}; see {}", log.display()))?;
     let alive = Command::new(&adb)
-        .args(["-s", &serial, "shell", "pidof", PACKAGE])
+        .args(["-s", &serial, "shell", "pidof", package])
         .output()
         .map_err(|e| e.to_string())?;
     if !alive.status.success() || alive.stdout.is_empty() {
@@ -223,17 +246,20 @@ pub(crate) fn dispatch(root: &Path, args: &[OsString]) -> Result<()> {
         "Lince stayed running for ten seconds. Startup logs: {}",
         log.display()
     );
-    println!("For live logs: cargo xtask android logs --device {serial}");
+    println!(
+        "For live logs: cargo xtask android logs --device {serial}{}",
+        if options.release { " --release" } else { "" }
+    );
     Ok(())
 }
 
-fn app_uid(adb: &Path, serial: &str) -> Result<Option<u32>> {
+fn app_uid(adb: &Path, serial: &str, package: &str) -> Result<Option<u32>> {
     let packages = output(Command::new(adb).args([
-        "-s", serial, "shell", "pm", "list", "packages", "-U", PACKAGE,
+        "-s", serial, "shell", "pm", "list", "packages", "-U", package,
     ]))?;
     for line in packages.lines() {
         let mut fields = line.split_whitespace();
-        if fields.next() == Some(&format!("package:{PACKAGE}")) {
+        if fields.next() == Some(&format!("package:{package}")) {
             return fields
                 .find_map(|field| field.strip_prefix("uid:"))
                 .ok_or("Android did not report the app UID")?
@@ -525,6 +551,19 @@ fn stop(child: &mut Child) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn release_selection_uses_the_release_package_for_launch_and_logs() {
+        for action in ["run", "logs"] {
+            let options = Options::parse(&[action.into(), "--release".into()]).unwrap();
+            assert_eq!(options.package(), "social.lince.mobile");
+        }
+        assert_eq!(
+            Options::parse(&[]).unwrap().package(),
+            "social.lince.mobile.debug"
+        );
+        assert!(Options::parse(&["setup".into(), "--release".into()]).is_err());
+    }
 
     #[test]
     fn keeps_physical_devices_out_of_automatic_selection() {

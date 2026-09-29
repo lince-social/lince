@@ -1,0 +1,99 @@
+{
+  "version": "lince.real-network.v1",
+  "coverage": "four-full-cells; same-LAN mDNS; outbound-to-public across two home NATs; partition; reconnect; durable restart",
+  "build": "sha256:a892eb7a7bbf2dfba558bd5c7db902aaca18c3080fa1aa0580a5c665983d5f13",
+  "exact_replay": false,
+  "checks": [
+    {
+      "kind": "discovery",
+      "observer": "29bf182b343f1697f6d16a7bd745823b1ff6e356d2c1965697118b258d76bbab",
+      "peer": "05c24fdedeb50ee42f5605653f807e144a6cea5728b77d0ce4383be4db95a755",
+      "observed": [
+        "05c24fdedeb50ee42f5605653f807e144a6cea5728b77d0ce4383be4db95a755"
+      ],
+      "passed": true
+    },
+    {
+      "kind": "sync",
+      "source": "r_01M3JT30528SXA0CQXHZQQBS4W",
+      "target": "r_01M3JT2XWS83QBYKZ0XQKDAYH2",
+      "record": "r_01M3JT35VJ9KSA9PGRN6RR378C",
+      "expected": {
+        "scale": 0,
+        "value": "10"
+      },
+      "observed": {
+        "scale": 0,
+        "value": "10"
+      },
+      "passed": true
+    },
+    {
+      "kind": "sync",
+      "source": "r_01M3JT32KF9JKV2NE7K90P9BYP",
+      "target": "r_01M3JT2XWS83QBYKZ0XQKDAYH2",
+      "record": "r_01M3JT36BQ9GJ9P7KYQDDH687K",
+      "expected": {
+        "scale": 0,
+        "value": "10"
+      },
+      "observed": {
+        "scale": 0,
+        "value": "10"
+      },
+      "passed": true
+    },
+    {
+      "kind": "sync",
+      "source": "r_01M3JT35049T9S636JDTKB2XYQ",
+      "target": "r_01M3JT2XWS83QBYKZ0XQKDAYH2",
+      "record": "r_01M3JT36XA9DDAWC2FJ0A5X98H",
+      "expected": {
+        "scale": 0,
+        "value": "10"
+      },
+      "observed": {
+        "scale": 0,
+        "value": "10"
+      },
+      "passed": true
+    },
+    {
+      "kind": "partition",
+      "record": "r_01M3JT37GA8TH8SBQ3CVKZDPPP",
+      "expected": {
+        "scale": 0,
+        "value": "1"
+      },
+      "observed": {
+        "scale": 0,
+        "value": "1"
+      },
+      "passed": true
+    },
+    {
+      "kind": "sync",
+      "source": "r_01M3JT30528SXA0CQXHZQQBS4W",
+      "target": "r_01M3JT2XWS83QBYKZ0XQKDAYH2",
+      "record": "r_01M3JT37GA8TH8SBQ3CVKZDPPP",
+      "expected": {
+        "scale": 0,
+        "value": "2"
+      },
+      "observed": {
+        "scale": 0,
+        "value": "2"
+      },
+      "passed": true
+    },
+    {
+      "kind": "restart",
+      "expected_cell": "r_01M3JT35049T9S636JDTKB2XYQ",
+      "observed_cell": "r_01M3JT35049T9S636JDTKB2XYQ",
+      "expected_node": "05c24fdedeb50ee42f5605653f807e144a6cea5728b77d0ce4383be4db95a755",
+      "observed_node": "05c24fdedeb50ee42f5605653f807e144a6cea5728b77d0ce4383be4db95a755",
+      "passed": true
+    }
+  ],
+  "error": null
+}

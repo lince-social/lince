@@ -14,6 +14,22 @@ fn main() -> Result<(), Error> {
     if has_arg(&args, "--fiote-provider") {
         return cell::serve_provider_adapter();
     }
+    if has_arg(&args, "--simulation") {
+        let result = std::thread::Builder::new()
+            .name("lince-simulation".into())
+            .stack_size(32 * 1024 * 1024)
+            .spawn(move || -> simulation::Result<u8> {
+                let runtime = tokio::runtime::Builder::new_current_thread().enable_all().build()?;
+                runtime.block_on(simulation::cli::run(&args))
+            })?
+            .join()
+            .map_err(|_| Error::other("simulation thread panicked"))?;
+        let code = match result {
+            Ok(code) => code,
+            Err(error) => { eprintln!("{error}"); 3 }
+        };
+        std::process::exit(i32::from(code));
+    }
     cell::register_provider_adapter(env::current_exe()?);
     if args.iter().any(|arg| arg == "--help" || arg == "-h") {
         print_help();
@@ -130,6 +146,9 @@ fn main() -> Result<(), Error> {
             data_dir: None,
             local_base_url: listen_addr.as_ref().map(|addr| format!("http://{addr}")),
             language,
+            peer_port: arg_value(&args, "--peer-port")
+                .map(|port| port.parse::<u16>().map_err(|error| Error::other(format!("Invalid peer port: {error}"))))
+                .transpose()?,
         }))
         .map_err(|error| {
             diagnostics.report(
@@ -262,9 +281,14 @@ fn print_help() {
     println!("Options:");
     println!("  -h, --help            Show this help message");
     println!("      --directory <path> Override the Lince data directory");
-    println!("      --port <port>     Override only the peer/local listen port");
+    println!("      --port <port>     Override the local HTTP listen port");
+    println!("      --peer-port <port> Save the peer UDP port for this Cell (default 6175; 0 automatic)");
     println!("      --listen-addr <addr>  Override the local listen address");
     println!("      --quiet          Suppress normal status output");
+    println!("      --simulation [cases]  Run scenarios, or resume a generated campaign");
+    println!("      --cases <count>      Stop a generated campaign after this many cases");
+    println!("      --simulation --replay <run>  Verify a saved deterministic run");
+    println!("      --simulation-output <path>  Save run bundles in this directory");
     #[cfg(feature = "ui")]
     println!("      --no-tray        Skip the tray icon and quit when the window closes");
     #[cfg(feature = "facade")]

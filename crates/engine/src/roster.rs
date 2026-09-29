@@ -107,7 +107,7 @@ pub fn roster_signature_is_valid(signed: &SignedRoster) -> bool {
         return false;
     }
     DateTime::parse_from_rfc3339(&signed.roster.not_after)
-        .map(|when| when.with_timezone(&Utc) > Utc::now())
+        .map(|when| when.with_timezone(&Utc) > nucleus::execution::now())
         .unwrap_or(false)
 }
 
@@ -242,7 +242,7 @@ impl Engine {
             organ_uid: organ_uid.clone(),
             root_key: root.public_key_b64(),
             version: previous.map(|row| row.version).unwrap_or(0) + 1,
-            not_after: (Utc::now() + Duration::days(ROSTER_VALIDITY_DAYS)).to_rfc3339(),
+            not_after: (nucleus::execution::now() + Duration::days(ROSTER_VALIDITY_DAYS)).to_rfc3339(),
             cells,
             pickup,
         };
@@ -385,7 +385,7 @@ impl Engine {
             return Ok(RosterOutcome::Refused);
         }
         let fresh = DateTime::parse_from_rfc3339(&signed.roster.not_after)
-            .map(|when| when.with_timezone(&Utc) > Utc::now())
+            .map(|when| when.with_timezone(&Utc) > nucleus::execution::now())
             .unwrap_or(false);
         if !fresh {
             return Ok(RosterOutcome::Expired);
@@ -398,6 +398,14 @@ impl Engine {
             return Ok(RosterOutcome::NotNewer);
         }
         self.store_roster(signed).await?;
+        if store::organs::local(&self.store.pool).await?.is_some_and(|organ| organ.uid == signed.roster.organ_uid) {
+            self.mirror_roster(signed).await?;
+            if let Some(local) = store::cells::local(&self.store.pool).await?
+                && let Some(member) = signed.roster.cells.iter().find(|member| member.cell_uid == local.uid)
+            {
+                store::cells::set_label(&self.store.pool, &member.label).await?;
+            }
+        }
         Ok(RosterOutcome::Accepted)
     }
 
@@ -406,8 +414,18 @@ impl Engine {
             return Ok(false);
         };
         Ok(DateTime::parse_from_rfc3339(&stored.not_after)
-            .map(|when| when.with_timezone(&Utc) <= Utc::now())
+            .map(|when| when.with_timezone(&Utc) <= nucleus::execution::now())
             .unwrap_or(true))
+    }
+
+    pub async fn renew_local_roster(&self) -> Result<(), EngineError> {
+        let Some(root) = self.root_signer().await? else { return Ok(()); };
+        let Some(signed) = self.roster_of(&root.actor_uid).await? else { return Ok(()); };
+        let due = DateTime::parse_from_rfc3339(&signed.roster.not_after)
+            .map(|expiry| expiry.with_timezone(&Utc) <= nucleus::execution::now() + Duration::days(7))
+            .unwrap_or(true);
+        if due { self.publish_roster(&root, signed.roster.cells).await?; }
+        Ok(())
     }
 
     pub async fn cell_may(
@@ -473,6 +491,7 @@ impl Engine {
             }),
         )
         .await?;
+        self.query_changed.send_modify(|revision| *revision = revision.wrapping_add(1));
         Ok(())
     }
 
@@ -559,10 +578,10 @@ impl Engine {
     pub async fn issue_enrolment_token(&self) -> Result<String, EngineError> {
         let token = format!(
             "{}{}",
-            uuid::Uuid::new_v4().simple(),
-            uuid::Uuid::new_v4().simple()
+            nucleus::execution::uuid().simple(),
+            nucleus::execution::uuid().simple()
         );
-        let expires_at = (Utc::now() + Duration::minutes(ENROLMENT_TOKEN_TTL_MINUTES)).to_rfc3339();
+        let expires_at = (nucleus::execution::now() + Duration::minutes(ENROLMENT_TOKEN_TTL_MINUTES)).to_rfc3339();
         store::roster::put_enrolment_token(&self.store.pool, &hash_token(&token), &expires_at)
             .await?;
         Ok(token)
@@ -613,7 +632,7 @@ impl Engine {
             organ_uid: organ_uid.clone(),
             root_key: root.public_key_b64(),
             version: previous.map(|row| row.version).unwrap_or(0) + 1,
-            not_after: (Utc::now() + Duration::days(ROSTER_VALIDITY_DAYS)).to_rfc3339(),
+            not_after: (nucleus::execution::now() + Duration::days(ROSTER_VALIDITY_DAYS)).to_rfc3339(),
             cells,
             pickup,
         };
@@ -669,6 +688,28 @@ impl Engine {
         self.publish_roster(root, cells).await
     }
 
+    pub async fn rename_roster_cell(
+        &self,
+        root: &Signer,
+        cell_uid: &str,
+        label: &str,
+    ) -> Result<SignedRoster, EngineError> {
+        let label = label.trim();
+        if label.is_empty() || label.len() > 128 || label.chars().any(char::is_control) {
+            return Err(EngineError::Consequence("Use a device name between 1 and 128 bytes without control characters".into()));
+        }
+        let mut signed = self.roster_of(&root.actor_uid).await?
+            .ok_or_else(|| EngineError::Consequence("This Organ has no roster".into()))?;
+        let cell = signed.roster.cells.iter_mut().find(|cell| cell.cell_uid == cell_uid)
+            .ok_or_else(|| EngineError::Consequence("That device is no longer in the roster".into()))?;
+        cell.label = label.to_string();
+        let signed = self.publish_roster(root, signed.roster.cells).await?;
+        if store::cells::local(&self.store.pool).await?.is_some_and(|cell| cell.uid == cell_uid) {
+            store::cells::set_label(&self.store.pool, label).await?;
+        }
+        Ok(signed)
+    }
+
     pub async fn sign_succession(
         &self,
         old_root: &Signer,
@@ -676,7 +717,7 @@ impl Engine {
     ) -> Result<(), EngineError> {
         let organ_uid = old_root.actor_uid.clone();
         let old_key = old_root.public_key_b64();
-        let created_at = Utc::now().to_rfc3339();
+        let created_at = nucleus::execution::now().to_rfc3339();
         let payload = succession_signing_payload(&organ_uid, &old_key, new_key_b64, &created_at);
         let signature = old_root.sign_bytes(&payload);
         store::roster::record_succession(

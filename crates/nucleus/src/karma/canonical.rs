@@ -10,6 +10,7 @@ const CANONICAL_DOMAIN: &[u8] = b"lince.canonical-json.v1\0";
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[derive(schemars::JsonSchema)]
+#[schemars(with = "String")]
 pub struct CanonicalHash(String);
 
 impl CanonicalHash {

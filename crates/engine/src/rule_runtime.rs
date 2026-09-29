@@ -3,8 +3,8 @@ use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
 use nucleus::karma::{
-    Condition, DefinitionStatus, FrequencyAst, KarmaOccurrenceSource, NodeOperation, Slug,
-    TimestampMs, TriggerSource,
+    DefinitionStatus, FrequencyAst, KarmaOccurrenceSource, NodeOperation, Slug, TimestampMs,
+    TriggerSource,
 };
 use nucleus::{Cause, Fact, NewFact};
 use store::karma::frequencies::{
@@ -186,7 +186,8 @@ impl Engine {
         }
         if let Some(condition) = condition {
             let mut reads = Vec::new();
-            for token in Condition::parse(&condition.source)
+            for token in condition
+                .parsed()
                 .map_err(|error| invalid(error.to_string()))?
                 .reads()
             {
@@ -595,7 +596,8 @@ impl Engine {
                 continue;
             }
             if let Some(condition) = &rule.condition {
-                for token in Condition::parse(&condition.source)
+                for token in condition
+                    .parsed()
                     .map_err(|e| invalid(e.to_string()))?
                     .reads()
                 {
@@ -644,7 +646,8 @@ impl Engine {
                 let Some(condition) = &rule.condition else {
                     continue;
                 };
-                for token in Condition::parse(&condition.source)
+                for token in condition
+                    .parsed()
                     .map_err(|error| invalid(error.to_string()))?
                     .reads()
                 {

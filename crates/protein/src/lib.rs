@@ -3,6 +3,7 @@
 pub mod authority;
 mod decimal_operand;
 mod karma_rules;
+pub mod calendar;
 pub mod read_rules;
 pub mod record_query;
 
@@ -98,6 +99,7 @@ pub enum Source {
     Karma,
     KarmaRule,
     Timeline,
+    Calendar,
     Entry,
     Frequency,
     Recurrence,
@@ -116,6 +118,7 @@ fn part_of_kind() -> String {
 #[derive(Debug, Clone, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(rename_all = "snake_case", deny_unknown_fields)]
 pub enum Predicate {
+    ProjectionWindow(nucleus::projection::Window),
     All(Vec<Predicate>),
     Any(Vec<Predicate>),
     Not(Box<Predicate>),
@@ -197,6 +200,8 @@ pub enum DateComparison {
 #[derive(Debug, Clone, Default, Serialize, Deserialize, schemars::JsonSchema)]
 #[serde(deny_unknown_fields)]
 pub struct Include {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub record_after: Option<String>,
     pub facts: Option<FactsInclude>,
     pub promises: Option<PromisesInclude>,
     pub links: Option<LinksInclude>,
@@ -275,11 +280,20 @@ pub struct ThreadsInclude {
     pub messages_limit: usize,
     #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
     pub message_limits: std::collections::BTreeMap<String, usize>,
+    #[serde(default, skip_serializing_if = "std::collections::BTreeMap::is_empty")]
+    pub message_before: std::collections::BTreeMap<String, MessageCursor>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
+#[serde(deny_unknown_fields)]
+pub struct MessageCursor {
+    pub created_at: String,
+    pub uid: String,
 }
 
 impl Default for ThreadsInclude {
     fn default() -> Self {
-        Self { messages_limit: 50, message_limits: Default::default() }
+        Self { messages_limit: 50, message_limits: Default::default(), message_before: Default::default() }
     }
 }
 
@@ -384,6 +398,7 @@ pub async fn execute_for_with_context(
         }
         Source::Fact => execute_facts(store, protein, visible).await?,
         Source::Timeline => execute_timeline(store, protein, visible).await?,
+        Source::Calendar => calendar::execute(store, protein, visible, subject).await?,
         Source::Entry => execute_entries(store, protein, visible).await?,
         Source::Frequency => execute_frequency(store, visible).await?,
         Source::Recurrence => execute_recurrence(store, protein, visible).await?,
@@ -476,7 +491,7 @@ async fn read_filter_targets(
 
 fn read_permission_keys(source: Source) -> Option<&'static [&'static str]> {
     match source {
-        Source::Record | Source::Fact | Source::Timeline | Source::Entry | Source::Assertion => {
+        Source::Record | Source::Fact | Source::Timeline | Source::Calendar | Source::Entry | Source::Assertion => {
             Some(&["record:read"])
         }
         Source::Promise
@@ -492,8 +507,14 @@ fn read_permission_keys(source: Source) -> Option<&'static [&'static str]> {
 const MAX_FILTER_INDENT: usize = 10;
 
 pub fn validate(protein: &Protein) -> Result<(), ProteinError> {
-    fn visit(predicate: &Predicate, group_depth: usize) -> Result<(), ProteinError> {
+    fn visit(predicate: &Predicate, group_depth: usize, source: Source) -> Result<(), ProteinError> {
         match predicate {
+            Predicate::ProjectionWindow(window) => {
+                if source != Source::Calendar || group_depth != 0 {
+                    return Err(store::StoreError::Protocol("protein_calendar_invalid:projection window must be a top-level Calendar filter".into()));
+                }
+                window.validate().map_err(store::StoreError::Protocol)?;
+            }
             Predicate::All(children) | Predicate::Any(children) => {
                 if group_depth > MAX_FILTER_INDENT {
                     return Err(store::sqlx::Error::Protocol(
@@ -502,7 +523,7 @@ pub fn validate(protein: &Protein) -> Result<(), ProteinError> {
                     ));
                 }
                 for child in children {
-                    visit(child, group_depth + 1)?;
+                    visit(child, group_depth + 1, source)?;
                 }
             }
             Predicate::Not(child) => {
@@ -512,7 +533,7 @@ pub fn validate(protein: &Protein) -> Result<(), ProteinError> {
                             .into(),
                     ));
                 }
-                visit(child, group_depth)?;
+                visit(child, group_depth + 1, source)?;
             }
             Predicate::WorkDate { op, value, .. } => {
                 if *op != DateComparison::Exists {
@@ -532,7 +553,20 @@ pub fn validate(protein: &Protein) -> Result<(), ProteinError> {
     }
 
     for predicate in &protein.filter {
-        visit(predicate, 0)?;
+        visit(predicate, 0, protein.source)?;
+    }
+    if let Some(after) = &protein.include.record_after {
+        if protein.source != Source::Record || protein.aggregate.is_some() || after.is_empty() || after.len() > 256 {
+            return Err(store::StoreError::Protocol("Record paging needs a Record list and a valid cursor".into()));
+        }
+    }
+    if let Some(threads) = &protein.include.threads {
+        if threads.message_before.len() > 100 || threads.message_before.values().any(|cursor| {
+            cursor.uid.is_empty() || cursor.uid.len() > 256 || cursor.created_at.len() > 64
+                || chrono::DateTime::parse_from_rfc3339(&cursor.created_at).is_err()
+        }) {
+            return Err(store::StoreError::Protocol("Invalid message history cursor".into()));
+        }
     }
     if protein.source == Source::Record
         && protein
@@ -1497,6 +1531,12 @@ pub async fn select_records(
     rows.retain(|row| row.slug.as_deref() != Some(store::cells::LOCAL_CELL_SLUG));
     if protein.aggregate.is_none() {
         rows = order_records(store, rows, &protein.order).await?;
+        if let Some(after) = &protein.include.record_after {
+            let position = rows.iter().position(|row| &row.uid == after).ok_or_else(|| {
+                store::StoreError::Protocol("This page changed. Press Refresh to return to the first page.".into())
+            })?;
+            rows.drain(..=position);
+        }
         if let Some(limit) = protein.limit {
             rows.truncate(limit);
         }
@@ -2110,17 +2150,22 @@ async fn threads_for_record(
         if thread.kind != "thread" || !thread.quantity.is_positive() {
             continue;
         }
-        let messages_limit = settings.message_limits.get(&thread.uid).copied().unwrap_or(settings.messages_limit);
+        let messages_limit = settings.message_limits.get(&thread.uid).copied().unwrap_or(settings.messages_limit).clamp(1, 2000);
+        let before = settings.message_before.get(&thread.uid);
         let mut messages = Vec::new();
         let mut linked_messages = match &message_in {
             Some(message_in) => {
-                store::assertions::recent_messages(&store.pool, message_in, &thread.uid, messages_limit.saturating_add(1))
+                store::assertions::messages_before(&store.pool, message_in, &thread.uid, messages_limit + 1, before.map(|cursor| (cursor.created_at.as_str(), cursor.uid.as_str())))
                     .await?
             }
             None => Vec::new(),
         };
         let has_more = linked_messages.len() > messages_limit;
         linked_messages.truncate(messages_limit);
+        let next_cursor = linked_messages.last().map(|message| MessageCursor {
+            created_at: message.created_at.clone(),
+            uid: message.uid.clone(),
+        });
         linked_messages.reverse();
         for message in linked_messages {
             if message.kind != "message" || !message.quantity.is_positive() {
@@ -2247,6 +2292,7 @@ async fn threads_for_record(
             "messages": messages,
             "calls": calls,
             "messages_has_more": has_more,
+            "messages_before": next_cursor,
             "messages_limit": messages_limit,
         }));
     }
@@ -2473,6 +2519,7 @@ impl PredicateCtx {
     {
         Box::pin(async move {
             Ok(match p {
+                Predicate::ProjectionWindow(_) => false,
                 Predicate::All(ps) => {
                     for p in ps {
                         if !self.matches_one(store, r, p).await? {
@@ -3535,6 +3582,7 @@ async fn execute_concepts(store: &Store, protein: &Protein) -> Result<Vec<Value>
         let name_matches = protein.filter.iter().all(|p| match p {
             Predicate::UidEq(uid) => c.uid == *uid,
             Predicate::SlugEq(name) => c.canonical_name == *name,
+            Predicate::TextContains(text) => c.canonical_name.to_lowercase().contains(&text.to_lowercase()),
             _ => true,
         });
         if !name_matches {
@@ -4380,6 +4428,7 @@ fn transfer_query_error(code: &str, detail: impl std::fmt::Display) -> ProteinEr
 
 fn transfer_predicate_name(predicate: &Predicate) -> &'static str {
     match predicate {
+        Predicate::ProjectionWindow(_) => "projection_window",
         Predicate::All(_) => "all",
         Predicate::Any(_) => "any",
         Predicate::Not(_) => "not",

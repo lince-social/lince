@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<service>
+  <short>Lince Test</short>
+  <description>Separate disposable test instance and local network discovery.</description>
+  <port protocol="udp" port="6176"/>
+  <port protocol="udp" port="5353"/>
+</service>

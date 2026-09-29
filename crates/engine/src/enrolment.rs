@@ -24,10 +24,24 @@ impl Drop for Joining<'_> {
 
 #[async_trait::async_trait]
 pub trait CellTransport: Send + Sync {
-    async fn call(&self, _node: &str, _request: crate::calls::Request) -> Result<crate::calls::Snapshot, EngineError> {
-        Err(EngineError::Consequence("Calls are unavailable on this transport".into()))
+    async fn pairing_invite(&self) -> Result<Option<crate::pairing::PairingInvite>, EngineError> {
+        Ok(None)
     }
-    fn local_node_id(&self) -> Option<String> { None }
+    async fn call(
+        &self,
+        _node: &str,
+        _request: crate::calls::Request,
+    ) -> Result<crate::calls::Snapshot, EngineError> {
+        Err(EngineError::Consequence(
+            "Calls are unavailable on this transport".into(),
+        ))
+    }
+    fn local_node_id(&self) -> Option<String> {
+        None
+    }
+    fn peer_network(&self) -> Option<serde_json::Value> {
+        None
+    }
     async fn enrol(&self, invite: &EnrolmentInvite) -> Result<SignedRoster, EngineError>;
     async fn audit_against(
         &self,
@@ -45,6 +59,63 @@ pub trait CellTransport: Send + Sync {
 }
 
 impl crate::Engine {
+    pub(crate) fn peer_network_status(&self) -> Option<serde_json::Value> {
+        self.transport_for("read network status").ok().and_then(|transport| transport.peer_network())
+    }
+
+    pub async fn current_pairing_invite(
+        &self,
+    ) -> Result<Option<crate::pairing::PairingInvite>, EngineError> {
+        self.transport_for("issue a reachable invitation")?
+            .pairing_invite()
+            .await
+    }
+    pub async fn create_organ_identity(&self) -> Result<SignedRoster, EngineError> {
+        let organ = store::organs::local(&self.store.pool)
+            .await?
+            .ok_or_else(|| EngineError::Consequence("This Cell has no Organ".into()))?;
+        if let Some(roster) = self.roster_of(&organ.uid).await? {
+            return Ok(roster);
+        }
+        let node_id = self
+            .transport_for("create its Organ")?
+            .local_node_id()
+            .ok_or_else(|| {
+                EngineError::Consequence("Wait for the network endpoint to open".into())
+            })?;
+        let path = self
+            .root_key_path
+            .lock()
+            .expect("root key path")
+            .clone()
+            .ok_or_else(|| EngineError::Consequence("This Cell has no key directory".into()))?;
+        let cell = store::cells::local(&self.store.pool)
+            .await?
+            .ok_or_else(|| EngineError::Consequence("This Cell has no device identity".into()))?;
+        let operational_key = self
+            .local_organ_public_key()
+            .await?
+            .ok_or_else(|| EngineError::Consequence("This Cell has no operational key".into()))?;
+        let root = Signer::load_or_create(&path, &organ.uid, ROOT_KEY_ID)?;
+        self.publish_root_key(&root).await?;
+        let roster = self
+            .publish_roster(
+                &root,
+                vec![crate::roster::CellEntry {
+                    cell_uid: cell.uid,
+                    node_id,
+                    label: cell.label,
+                    operational_key,
+                    sealing_key: self.published_sealing_key().await?,
+                    front_door: false,
+                    capabilities: crate::roster::full_capabilities(),
+                }],
+            )
+            .await?;
+        self.notify_config_changed();
+        Ok(roster)
+    }
+
     pub fn set_enroller(&self, enroller: std::sync::Weak<dyn CellTransport>) {
         *self.enroller.lock().expect("enroller") = Some(enroller);
     }
@@ -143,7 +214,7 @@ impl crate::Engine {
             .await
     }
 
-    fn transport_for(&self, what: &str) -> Result<std::sync::Arc<dyn CellTransport>, EngineError> {
+    pub(crate) fn transport_for(&self, what: &str) -> Result<std::sync::Arc<dyn CellTransport>, EngineError> {
         self.enroller
             .lock()
             .expect("enroller")
@@ -188,6 +259,7 @@ impl crate::Engine {
         signed: &SignedRoster,
         operational: Signer,
     ) -> Result<(), EngineError> {
+        self.may_enrol().await?;
         let cell = store::cells::local(&self.store.pool)
             .await?
             .ok_or_else(|| EngineError::Consequence("this Cell has no Cell Record".into()))?;
@@ -211,6 +283,35 @@ impl crate::Engine {
         {
             return Err(EngineError::Consequence(
                 "the roster returned does not list this device".into(),
+            ));
+        }
+
+        if signed.roster.version < 1 || !crate::roster::roster_signature_is_valid(signed) {
+            return Err(EngineError::Consequence(
+                "The returned roster has an invalid signature or has expired".into(),
+            ));
+        }
+        let member = signed
+            .roster
+            .cells
+            .iter()
+            .find(|member| member.cell_uid == cell.uid)
+            .expect("membership checked");
+        if member.operational_key != operational.public_key_b64() {
+            return Err(EngineError::Consequence(
+                "The roster does not authorize this device's key".into(),
+            ));
+        }
+        let mut cells = std::collections::HashSet::new();
+        let mut nodes = std::collections::HashSet::new();
+        if signed.roster.cells.iter().any(|member| {
+            member.cell_uid.is_empty()
+                || member.node_id.is_empty()
+                || !cells.insert(&member.cell_uid)
+                || !nodes.insert(&member.node_id)
+        }) {
+            return Err(EngineError::Consequence(
+                "The roster contains duplicate or missing device identities".into(),
             ));
         }
 
@@ -241,6 +342,7 @@ impl crate::Engine {
             }
         }
         self.set_organ_signer(operational).await?;
+        self.notify_config_changed();
         tracing::info!(
             organ = %invite.organ_uid,
             cell = %cell.uid,

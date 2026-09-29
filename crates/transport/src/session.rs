@@ -637,6 +637,10 @@ impl Session {
         &self,
         protein: &Protein,
     ) -> Result<Vec<serde_json::Value>, protein::ProteinError> {
+        if protein.source == protein::Source::Calendar {
+            let context = protein::calendar::context(protein, self.subject.as_deref())?;
+            self.engine.request_projection(context).await.map_err(|error| store::StoreError::Protocol(error.to_string()))?;
+        }
         let signer_actor = self.available_signer_actor().await;
         let nearby = protein::is_ephemeral(protein).then(|| self.engine.nearby_peers());
         protein::execute_for_with_context(

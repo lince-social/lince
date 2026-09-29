@@ -1,4 +1,3 @@
-use chrono::Utc;
 use nucleus::karma::{
     CanonicalHash, DefinitionStatus, FrequencyActivationEpoch, FrequencyAst, ProgramAst,
     format_frequency, format_program, prove_program,
@@ -73,7 +72,7 @@ async fn import_program(
     program_uid: &str,
     payload: &Value,
 ) -> Result<(), StoreError> {
-    let at = Utc::now().to_rfc3339();
+    let at = nucleus::execution::now().to_rfc3339();
     let Some(object) = payload.as_object() else {
         sqlx::query(
             "UPDATE karma_program SET status = 'paused', active_revision_hash = NULL,
@@ -168,7 +167,7 @@ async fn import_frequency(
     frequency_uid: &str,
     payload: &Value,
 ) -> Result<(), StoreError> {
-    let at = Utc::now().to_rfc3339();
+    let at = nucleus::execution::now().to_rfc3339();
     let Some(object) = payload.as_object() else {
         sqlx::query(
             "UPDATE karma_frequency SET status = 'paused', active_revision_hash = NULL,

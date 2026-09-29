@@ -4,7 +4,7 @@ use std::borrow::Cow;
 pub(crate) fn prepare(query: &Protein) -> Result<Cow<'_, Protein>, ProteinError> {
     if matches!(
         query.source,
-        Source::Record | Source::Promise | Source::Transfer | Source::Karma
+        Source::Record | Source::Calendar | Source::Promise | Source::Transfer | Source::Karma
     ) {
         return Ok(Cow::Borrowed(query));
     }

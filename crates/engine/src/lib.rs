@@ -8,6 +8,7 @@ pub mod actions;
 pub mod append;
 pub mod area_transition;
 pub mod body_links;
+pub mod blob_sync;
 pub mod checkpoint;
 pub mod collab;
 pub mod collab_guard;
@@ -25,6 +26,7 @@ pub mod expiry;
 pub mod file_sync;
 pub mod operation_origin;
 pub mod imagination;
+pub mod projection;
 pub mod instinct;
 pub mod karma_control;
 pub mod karma_grants;
@@ -38,6 +40,7 @@ mod role_management;
 pub mod mailbox;
 pub mod pairing;
 pub mod peers;
+pub mod peer_sync;
 pub mod private_admin_catalog;
 pub mod private_auth;
 pub mod private_files;
@@ -91,7 +94,9 @@ use tokio::sync::{Mutex, broadcast, watch};
 pub use error::EngineError;
 
 pub struct Engine {
+    pub projection: projection::Controller,
     pub store: Store,
+    pub blobs: tokio::sync::OnceCell<blob_sync::BlobSync>,
     pub passwords: private_password::PasswordWork,
     access_gate: tokio::sync::RwLock<()>,
     fiote_config_lock: Mutex<()>,
@@ -150,7 +155,9 @@ impl Engine {
         let (config_changed, _) = watch::channel(0);
         let (effects_changed, _) = watch::channel(0);
         let engine = Engine {
+            projection: projection::Controller::default(),
             store,
+            blobs: tokio::sync::OnceCell::new(),
             passwords: private_password::PasswordWork::new(2)
                 .map_err(|error| EngineError::Consequence(error.to_string()))?,
             fiote_config_lock: Mutex::new(()),
@@ -202,6 +209,10 @@ impl Engine {
         self.query_changed.subscribe()
     }
 
+    pub fn notify_query_changed(&self) {
+        self.query_changed.send_modify(|revision| *revision = revision.wrapping_add(1));
+    }
+
     pub fn watch_notifications(&self) -> watch::Receiver<u64> {
         self.notifications_changed.subscribe()
     }
@@ -221,7 +232,7 @@ impl Engine {
     }
 
     pub async fn notifications(&self) -> Result<Vec<serde_json::Value>, EngineError> {
-        Ok(store::invites::pending(&self.store.pool)
+        let mut notifications: Vec<serde_json::Value> = store::invites::pending(&self.store.pool)
             .await?
             .into_iter()
             .map(|invite| {
@@ -237,7 +248,19 @@ impl Engine {
                     "organId": invite.from_organ,
                 })
             })
-            .collect())
+            .collect();
+        for transfer in self.blob_transfers().await? {
+            if transfer.direction == "incoming" && transfer.state == "offered" {
+                notifications.push(serde_json::json!({
+                    "id": transfer.id,
+                    "kind": "blob_sync",
+                    "title": "File copy request",
+                    "body": format!("{} offered a fixed copy of {} bytes. Open Sync Castle to accept or decline.", transfer.label, transfer.manifest.bytes()),
+                    "nodeId": transfer.peer,
+                }));
+            }
+        }
+        Ok(notifications)
     }
 
     pub fn notify_karma_deadline_change(&self) {
@@ -309,7 +332,7 @@ impl Engine {
     ) -> Result<Vec<Fact>, EngineError> {
         self.append(
             NewFact::quantity_f64(record_uid, delta, Cause::user_edit()),
-            Utc::now(),
+            nucleus::execution::now(),
         )
         .await
     }
@@ -338,7 +361,7 @@ impl Engine {
                 tokio::time::interval(std::time::Duration::from_secs(period_secs.max(1)));
             loop {
                 interval.tick().await;
-                let _ = self.heartbeat(Utc::now()).await;
+                let _ = self.heartbeat(nucleus::execution::now()).await;
             }
         })
     }

@@ -27,6 +27,318 @@ fn secret(seed: u8) -> SecretKey {
     SecretKey::from_bytes(&[seed; 32])
 }
 
+#[tokio::test]
+async fn sibling_delivery_checkpoints_survive_restart_and_report_revocation() {
+    let (owner, organ, root, host) = enroller(125).await;
+    let operational = owner.operational_key_for(&organ).await.unwrap();
+    owner.set_signer(operational.clone()).await.unwrap();
+    owner.set_organ_signer(operational.clone()).await.unwrap();
+    let mut members = owner.roster_of(&organ).await.unwrap().unwrap().roster.cells;
+    members[0].operational_key = operational.public_key_b64();
+    owner.publish_roster(&root, members).await.unwrap();
+    let (phone, _) = cell("http://phone.test").await;
+    let mobile = Wire::bind_with_discovery(phone.clone(), secret(126), Reach::Local, None, false)
+        .await
+        .unwrap();
+    host.set_local_discovery(false).unwrap();
+    let host_port = host.endpoint().bound_sockets()[0].port();
+    let invite = invite_from(&owner, &organ, &root, &host).await;
+    let server = host.clone();
+    let serving = tokio::spawn(async move { server.serve().await });
+    mobile.enrol(&invite).await.unwrap();
+    phone
+        .set_signer(phone.operational_key_for(&organ).await.unwrap())
+        .await
+        .unwrap();
+    mobile.sync_once().await.unwrap();
+    let first = phone.cell_delivery_status().await.unwrap();
+    assert!(first["cells"][0]["delivery"]["error"].is_null(), "{first}");
+    assert_eq!(first["cells"][0]["delivery"]["pending"], 0);
+    assert!(
+        !first["cells"][0]["delivery"]["addresses"]
+            .as_array()
+            .unwrap()
+            .is_empty()
+    );
+    let phone_cell = store::cells::local(&phone.store.pool)
+        .await
+        .unwrap()
+        .unwrap()
+        .uid;
+    mobile.shutdown().await;
+    drop(mobile);
+    host.shutdown().await;
+    serving.abort();
+    let _ = serving.await;
+    drop(host);
+    let host = Wire::bind_on_port(
+        owner.clone(),
+        secret(125),
+        Reach::Local,
+        None,
+        false,
+        host_port,
+    )
+    .await
+    .unwrap();
+    let server = host.clone();
+    let serving = tokio::spawn(async move { server.serve().await });
+    let mobile = Wire::bind_with_discovery(phone.clone(), secret(126), Reach::Local, None, false)
+        .await
+        .unwrap();
+    let record = owner
+        .act(
+            engine::actions::Action::CreateRecordDraft {
+                draft: engine::record_creation::Draft {
+                    head: "After both endpoints restarted".into(),
+                    ..Default::default()
+                },
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    let queued = phone
+        .act(
+            engine::actions::Action::CreateRecordDraft {
+                draft: engine::record_creation::Draft {
+                    head: "Queued on phone".into(),
+                    ..Default::default()
+                },
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    let pending = phone.cell_delivery_status().await.unwrap();
+    assert!(pending["cells"][0]["delivery"]["pending"].as_i64().unwrap() > 0);
+    assert!(
+        store::records::get(&owner.store.pool, &queued)
+            .await
+            .unwrap()
+            .is_none()
+    );
+    mobile.sync_once().await.unwrap();
+    assert_eq!(
+        store::records::get(&phone.store.pool, &record)
+            .await
+            .unwrap()
+            .unwrap()
+            .head,
+        "After both endpoints restarted"
+    );
+    assert_eq!(
+        store::records::get(&owner.store.pool, &queued)
+            .await
+            .unwrap()
+            .unwrap()
+            .head,
+        "Queued on phone"
+    );
+    let after = phone.cell_delivery_status().await.unwrap();
+    assert!(after["cells"][0]["delivery"]["error"].is_null(), "{after}");
+    assert_eq!(after["cells"][0]["delivery"]["pending"], 0);
+    assert!(
+        after["cells"][0]["delivery"]["succeeded_at"]
+            .as_str()
+            .unwrap()
+            > first["cells"][0]["delivery"]["succeeded_at"]
+                .as_str()
+                .unwrap()
+    );
+    owner.revoke_cell(&root, &phone_cell).await.unwrap();
+    mobile.sync_once().await.unwrap();
+    let rejected = phone.cell_delivery_status().await.unwrap();
+    assert!(
+        !rejected["cells"][0]["delivery"]["error"].is_null() || !rejected["recovery"].is_null(),
+        "{rejected}"
+    );
+    mobile.shutdown().await;
+    host.shutdown().await;
+    serving.abort();
+}
+
+#[tokio::test]
+async fn peer_port_settings_reject_invalid_values_without_changing_the_saved_port() {
+    let (engine, _) = cell("http://unused.test").await;
+    assert_eq!(engine::wire::configured_peer_port(None).unwrap(), 6175);
+    engine
+        .act(
+            engine::actions::Action::SetCellConfig {
+                namespace: "lince.network".into(),
+                fds: serde_json::json!({"peer_port": 6176}),
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    for invalid in [
+        serde_json::json!({"peer_port": -1}),
+        serde_json::json!({"peer_port": 65536}),
+        serde_json::json!({"peer_port": "6176"}),
+        serde_json::json!([]),
+    ] {
+        assert!(
+            engine
+                .act(
+                    engine::actions::Action::SetCellConfig {
+                        namespace: "lince.network".into(),
+                        fds: invalid,
+                    },
+                    None
+                )
+                .await
+                .is_err()
+        );
+        assert_eq!(
+            store::cells::config(&engine.store.pool, "lince.network")
+                .await
+                .unwrap()
+                .unwrap()["peer_port"],
+            6176
+        );
+    }
+}
+
+#[tokio::test]
+async fn a_fixed_peer_port_is_kept_when_discovery_stops_and_can_be_reused_after_shutdown() {
+    let (engine, _) = cell("http://unused.test").await;
+    let available = std::net::UdpSocket::bind("127.0.0.1:0").unwrap();
+    let port = available.local_addr().unwrap().port();
+    drop(available);
+    let wire = Wire::bind_on_port(engine.clone(), secret(123), Reach::Local, None, true, port)
+        .await
+        .unwrap();
+    assert!(
+        wire.endpoint()
+            .bound_sockets()
+            .iter()
+            .all(|addr| addr.port() == port)
+    );
+    assert!(
+        Wire::bind_on_port(engine.clone(), secret(124), Reach::Local, None, false, port)
+            .await
+            .is_err()
+    );
+    wire.set_local_discovery(false).unwrap();
+    assert!(!wire.local_discovery());
+    assert!(
+        wire.endpoint()
+            .bound_sockets()
+            .iter()
+            .all(|addr| addr.port() == port)
+    );
+    wire.shutdown().await;
+    drop(wire);
+    let reopened = Wire::bind_on_port(engine, secret(123), Reach::Local, None, false, port)
+        .await
+        .unwrap();
+    assert!(
+        reopened
+            .endpoint()
+            .bound_sockets()
+            .iter()
+            .all(|addr| addr.port() == port)
+    );
+    reopened.shutdown().await;
+}
+
+#[tokio::test]
+async fn rejected_rosters_leave_the_bootstrap_identity_and_trust_untouched() {
+    for invalid in ["signature", "expiry", "device-key", "duplicate"] {
+        let (engine, original) = cell("http://unused.test").await;
+        let organ = nucleus::new_uid("r");
+        let root = Signer::generate(&organ, ROOT_KEY_ID);
+        let operational = engine.operational_key_for(&organ).await.unwrap();
+        let local = store::cells::local(&engine.store.pool)
+            .await
+            .unwrap()
+            .unwrap();
+        let mut roster = engine::roster::Roster {
+            organ_uid: organ.clone(),
+            root_key: root.public_key_b64(),
+            version: 1,
+            not_after: (chrono::Utc::now() + chrono::Duration::days(30)).to_rfc3339(),
+            pickup: vec![],
+            cells: vec![CellEntry {
+                cell_uid: local.uid.clone(),
+                node_id: "test-node".into(),
+                label: "Phone".into(),
+                operational_key: operational.public_key_b64(),
+                sealing_key: None,
+                front_door: false,
+                capabilities: full_capabilities(),
+            }],
+        };
+        match invalid {
+            "expiry" => {
+                roster.not_after = (chrono::Utc::now() - chrono::Duration::seconds(1)).to_rfc3339()
+            }
+            "device-key" => {
+                roster.cells[0].operational_key = Signer::generate(&organ, "other").public_key_b64()
+            }
+            "duplicate" => roster.cells.push(roster.cells[0].clone()),
+            _ => {}
+        }
+        let signature = if invalid == "signature" {
+            "forged".into()
+        } else {
+            root.sign_bytes(&engine::roster::roster_signing_payload(&roster).unwrap())
+        };
+        let invite = EnrolmentInvite {
+            node_id: "enroller".into(),
+            organ_uid: organ.clone(),
+            root_key: root.public_key_b64(),
+            token: "unused".into(),
+            addrs: vec![],
+        };
+        assert!(
+            engine
+                .join_organ(
+                    &invite,
+                    &engine::roster::SignedRoster { roster, signature },
+                    operational
+                )
+                .await
+                .is_err(),
+            "{invalid}"
+        );
+        assert_eq!(
+            store::organs::local(&engine.store.pool)
+                .await
+                .unwrap()
+                .unwrap()
+                .uid,
+            original,
+            "{invalid}"
+        );
+        assert_eq!(
+            store::cells::local(&engine.store.pool)
+                .await
+                .unwrap()
+                .unwrap()
+                .organ_uid,
+            original,
+            "{invalid}"
+        );
+        assert!(
+            engine.roster_of(&organ).await.unwrap().is_none(),
+            "{invalid}"
+        );
+        assert!(
+            !engine
+                .key_chains(&organ, &root.public_key_b64())
+                .await
+                .unwrap(),
+            "{invalid}"
+        );
+    }
+}
+
 fn addrs(wire: &Wire) -> Vec<String> {
     wire.endpoint()
         .bound_sockets()
@@ -76,6 +388,60 @@ async fn invite_from(engine: &Engine, organ: &str, root: &Signer, wire: &Wire) -
         token: engine.issue_enrolment_token().await.expect("token"),
         addrs: addrs(wire),
     }
+}
+
+#[tokio::test]
+async fn the_root_holder_renews_near_expiry_without_changing_members() {
+    let (engine, organ, root, wire) = enroller(119).await;
+    let initial = engine.roster_of(&organ).await.unwrap().unwrap();
+    engine.renew_local_roster().await.unwrap();
+    assert_eq!(engine.roster_of(&organ).await.unwrap().unwrap(), initial);
+    let mut due = initial.clone();
+    due.roster.version += 1;
+    due.roster.not_after = (chrono::Utc::now() + chrono::Duration::days(2)).to_rfc3339();
+    due.signature = root.sign_bytes(&engine::roster::roster_signing_payload(&due.roster).unwrap());
+    assert_eq!(
+        engine.adopt_roster(&due).await.unwrap(),
+        engine::roster::RosterOutcome::Accepted
+    );
+    engine.renew_local_roster().await.unwrap();
+    let renewed = engine.roster_of(&organ).await.unwrap().unwrap();
+    assert_eq!(renewed.roster.version, due.roster.version + 1);
+    assert_eq!(renewed.roster.cells, initial.roster.cells);
+    assert!(engine::roster::roster_signature_is_valid(&renewed));
+    assert!(
+        chrono::DateTime::parse_from_rfc3339(&renewed.roster.not_after).unwrap()
+            > chrono::Utc::now() + chrono::Duration::days(29)
+    );
+    wire.shutdown().await;
+}
+
+#[tokio::test]
+async fn an_unresponsive_enroller_times_out_without_replacing_the_local_identity() {
+    let (owner, organ, root, owner_wire) = enroller(121).await;
+    let invite = invite_from(&owner, &organ, &root, &owner_wire).await;
+    let (phone, original) = cell("http://waiting-phone.test").await;
+    let phone_wire = Wire::bind(phone.clone(), secret(122), Reach::Local)
+        .await
+        .unwrap();
+    let result = tokio::time::timeout(
+        std::time::Duration::from_secs(20),
+        phone_wire.enrol(&invite),
+    )
+    .await
+    .expect("an unanswered enrolment must return control to the user");
+    assert!(result.is_err());
+    assert_eq!(
+        store::organs::local(&phone.store.pool)
+            .await
+            .unwrap()
+            .unwrap()
+            .uid,
+        original
+    );
+    assert!(phone.may_enrol().await.is_ok());
+    phone_wire.shutdown().await;
+    owner_wire.shutdown().await;
 }
 
 #[tokio::test]
@@ -152,6 +518,63 @@ async fn a_new_device_joins_an_existing_organ() {
         .await
         .expect("a freshly enrolled Cell must be able to replay its own log");
 
+    serving.abort();
+}
+
+#[tokio::test]
+async fn revocation_closes_an_already_authorized_sync_connection() {
+    let (owner, organ, root, wire) = enroller(117).await;
+    let invite = invite_from(&owner, &organ, &root, &wire).await;
+    let target = iroh::EndpointAddr::new(wire.node_id())
+        .with_ip_addr(invite.addrs[0].parse::<SocketAddr>().unwrap());
+    let wire = Arc::new(wire);
+    let server = wire.clone();
+    let serving = tokio::spawn(async move { server.serve().await });
+    let (phone, _) = cell("http://connected-phone.test").await;
+    let phone_wire = Wire::bind(phone.clone(), secret(118), Reach::Local)
+        .await
+        .unwrap();
+    phone_wire.enrol(&invite).await.unwrap();
+    let connection = phone_wire
+        .endpoint()
+        .connect(target, engine::wire::ALPN_SYNC)
+        .await
+        .unwrap();
+    let request = serde_json::to_vec(&engine::wire::WireRequest::FetchRoster).unwrap();
+    let (mut send, mut receive) = connection.open_bi().await.unwrap();
+    send.write_all(&request).await.unwrap();
+    send.finish().unwrap();
+    let first = receive
+        .read_to_end(engine::wire::MAX_FRAME_BYTES)
+        .await
+        .unwrap();
+    assert!(matches!(
+        serde_json::from_slice::<engine::wire::WireResponse>(&first).unwrap(),
+        engine::wire::WireResponse::Roster { roster: Some(_) }
+    ));
+    let uid = store::cells::local(&phone.store.pool)
+        .await
+        .unwrap()
+        .unwrap()
+        .uid;
+    owner.revoke_cell(&root, &uid).await.unwrap();
+    let attempt = tokio::time::timeout(std::time::Duration::from_secs(5), async {
+        let (mut send, mut receive) = connection.open_bi().await.map_err(|_| ())?;
+        send.write_all(&request).await.map_err(|_| ())?;
+        send.finish().map_err(|_| ())?;
+        receive
+            .read_to_end(engine::wire::MAX_FRAME_BYTES)
+            .await
+            .map_err(|_| ())
+    })
+    .await
+    .expect("revocation must close promptly");
+    assert!(
+        attempt.is_err(),
+        "an existing connection must lose its permission"
+    );
+    phone_wire.shutdown().await;
+    wire.shutdown().await;
     serving.abort();
 }
 
@@ -1190,4 +1613,36 @@ async fn a_capability_less_cell_can_still_publish_its_own_mail_key() {
     );
 
     serving.abort();
+}
+
+#[test]
+fn camera_frames_decode_enrolment_codes_and_reject_invalid_dimensions() {
+    let invite = EnrolmentInvite {
+        node_id: "test-node".into(),
+        organ_uid: "test-organ".into(),
+        root_key: "test-key".into(),
+        token: "one-use-token".into(),
+        addrs: vec!["192.168.1.20:4000".into()],
+    };
+    let qr = qrcode::QrCode::new(invite.encode()).unwrap();
+    let width = (qr.width() + 8) * 4;
+    let mut pixels = vec![255; width * width];
+    for y in 0..qr.width() {
+        for x in 0..qr.width() {
+            if qr[(x, y)] == qrcode::Color::Dark {
+                for dy in 0..4 {
+                    for dx in 0..4 {
+                        pixels[((y + 4) * 4 + dy) * width + (x + 4) * 4 + dx] = 0;
+                    }
+                }
+            }
+        }
+    }
+    assert_eq!(
+        engine::pairing::decode_qr_luma(width as u32, width as u32, pixels).unwrap(),
+        Some(invite.encode())
+    );
+    assert!(engine::pairing::decode_qr_luma(0, 480, vec![]).is_err());
+    assert!(engine::pairing::decode_qr_luma(4001, 1000, vec![]).is_err());
+    assert!(engine::pairing::decode_qr_luma(640, 480, vec![0; 20]).is_err());
 }

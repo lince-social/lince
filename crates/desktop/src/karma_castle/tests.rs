@@ -48,6 +48,8 @@ fn header_filter_hides_unmatched_rules_without_changing_the_draft() {
         fields: vec![field()],
         revision: 1,
         state: "active".into(),
+        bindings: Vec::new(),
+        record: String::new(),
     }];
     ui::Command::New.apply(app.world_mut(), owner);
     let form = app.world().get::<View>(owner).unwrap().form;
@@ -86,6 +88,8 @@ fn typing_filters_shared_conditions_and_basic_records_without_copying_identity()
         fields: vec![field()],
         revision: 1,
         state: "active".into(),
+        bindings: Vec::new(),
+        record: String::new(),
     }];
     let choices = model::suggestions(
         RuleFieldKind::Condition,
@@ -416,6 +420,8 @@ fn cells_edit_individually_and_rows_confirm_deletion() {
             fields: vec![field()],
             revision: 1,
             state: "active".into(),
+            bindings: Vec::new(),
+            record: String::new(),
         })
         .collect();
     ui::render_list(world, owner);
@@ -595,6 +601,8 @@ fn table_text_has_visible_glyphs_and_editing_preserves_cell_bounds() {
         ],
         revision: 1,
         state: "active".into(),
+        bindings: Vec::new(),
+        record: String::new(),
     }];
     ui::render_list(app.world_mut(), owner);
     for scheme in [

@@ -246,6 +246,8 @@ async fn write_rule(
     sqlx::query("INSERT INTO recurrence_revision(uid, recurrence_uid, revision, kind, consequences_json, condition_src, gate, carry, note, cadence_json, anchor_at, state, request_id, actor_uid, at, name, slug) SELECT ?, uid, revision, ?, consequences_json, condition_src, gate, carry, note, cadence_json, anchor_at, state, ?, actor_uid, updated_at, name, slug FROM recurrence WHERE uid = ?")
         .bind(nucleus::new_uid("recr")).bind(if rule.revision == 0 { "created" } else { "revised" })
         .bind(request).bind(&rule.uid).execute(&mut **tx).await?;
+    crate::karma_bindings::save(tx, &rule.uid, Some(&condition.source), &condition.bindings)
+        .await?;
     Ok(())
 }
 

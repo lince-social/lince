@@ -1,4 +1,3 @@
-use chrono::Utc;
 use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;
@@ -76,7 +75,7 @@ pub async fn register(
     .bind(root_key)
     .bind(label)
     .bind(quota_bytes)
-    .bind(Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .execute(pool)
     .await?;
     Ok(())
@@ -198,7 +197,7 @@ pub async fn waiting(pool: &SqlitePool, organ_uid: &str) -> Result<Waiting, Stor
 }
 
 pub async fn sweep_expired(pool: &SqlitePool) -> Result<u64, StoreError> {
-    let now = Utc::now().to_rfc3339();
+    let now = nucleus::execution::now().to_rfc3339();
     let mut tx = crate::write_tx(pool).await?;
     sqlx::query(
         "INSERT OR IGNORE INTO mailbox_expiry_notice
@@ -264,7 +263,7 @@ pub async fn notices_handed(pool: &SqlitePool, from_node: &str) -> Result<(), St
         "UPDATE mailbox_expiry_notice SET notified_at = ?
           WHERE from_node = ? AND notified_at IS NULL",
     )
-    .bind(Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .bind(from_node)
     .execute(pool)
     .await?;
@@ -317,7 +316,7 @@ pub async fn ask_to_be_carried(
     .bind(organ_uid)
     .bind(root_key)
     .bind(label)
-    .bind(Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .execute(pool)
     .await?;
     Ok(())
@@ -383,7 +382,7 @@ pub async fn put_invite(
     .bind(label)
     .bind(quota_bytes)
     .bind(expires_at)
-    .bind(Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .execute(pool)
     .await?;
     Ok(())
@@ -394,7 +393,7 @@ pub async fn redeem_invite(
     token_hash: &str,
     organ_uid: &str,
 ) -> Result<Option<(String, i64)>, StoreError> {
-    let now = Utc::now().to_rfc3339();
+    let now = nucleus::execution::now().to_rfc3339();
     let claimed = sqlx::query(
         "UPDATE mailbox_invite SET used_at = ?, used_by = ?
           WHERE token_hash = ? AND used_at IS NULL AND expires_at > ?",

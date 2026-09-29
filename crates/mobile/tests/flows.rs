@@ -81,6 +81,57 @@ fn private_drafts_restore_only_for_their_organ() {
 }
 
 #[tokio::test]
+async fn mobile_record_sorts_keep_equal_titles_in_stable_order() {
+    let (engine, first) = fixture().await;
+    let second = engine
+        .act(
+            Action::CreateRecordDraft {
+                draft: engine::record_creation::Draft {
+                    head: "Task".into(),
+                    ..Default::default()
+                },
+            },
+            None,
+        )
+        .await
+        .unwrap()
+        .created
+        .unwrap();
+    let mut expected = vec![first.clone(), second.clone()];
+    expected.sort();
+    for uid in [&first, &second] {
+        engine
+            .act(record::change(uid, "quantity", "-2", None).unwrap(), None)
+            .await
+            .unwrap();
+    }
+    for (label, field) in record::SORTS {
+        let mut query = record::query(None, 100, "Task");
+        query.order = vec![protein::Order::Asc(field.into())];
+        query.filter.push(protein::Predicate::QuantityLt(
+            nucleus::DecimalValue::parse_inferred("0").unwrap(),
+        ));
+        let query = lince_interface::queries::ProteinDraft::from_protein(
+            label.into(),
+            String::new(),
+            query,
+        )
+        .compile()
+        .unwrap();
+        let rows = protein::execute(&engine.store, &query).await.unwrap();
+        let actual: Vec<_> = rows
+            .iter()
+            .map(|row| row["uid"].as_str().unwrap())
+            .collect();
+        if field == "created_at" {
+            assert_eq!(actual, [&first, &second], "{label}");
+        } else {
+            assert_eq!(actual, expected, "{label}");
+        }
+    }
+}
+
+#[tokio::test]
 async fn mobile_text_change_merges_concurrent_desktop_typing_and_survives_replay() {
     let (engine, uid) = fixture().await;
     let snapshot = engine.collab_snapshot(&uid).await.unwrap();
@@ -217,6 +268,36 @@ async fn quantity_changes_remain_exact_and_protein_search_and_delete_use_existin
             .unwrap()
             .is_empty()
     );
+}
+
+#[tokio::test]
+async fn completing_a_negative_record_removes_it_from_the_protein_view_once() {
+    let (engine, uid) = fixture().await;
+    engine
+        .act(record::change(&uid, "quantity", "-2", None).unwrap(), None)
+        .await
+        .unwrap();
+    let mut query = record::query(None, 50, "Task");
+    query.filter.push(protein::Predicate::QuantityLt(
+        nucleus::DecimalValue::parse_inferred("0").unwrap(),
+    ));
+    assert_eq!(
+        protein::execute(&engine.store, &query).await.unwrap().len(),
+        1
+    );
+    let completion = record::change(&uid, "quantity", "0", None).unwrap();
+    engine.act(completion.clone(), None).await.unwrap();
+    engine.act(completion, None).await.unwrap();
+    assert!(
+        protein::execute(&engine.store, &query)
+            .await
+            .unwrap()
+            .is_empty()
+    );
+    let unfiltered = protein::execute(&engine.store, &record::query(Some(&uid), 1, ""))
+        .await
+        .unwrap();
+    assert_eq!(unfiltered[0]["quantity"], "0");
 }
 
 #[tokio::test]

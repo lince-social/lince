@@ -18,6 +18,7 @@ facade = ["dep:lince-facade"]
 
 [dependencies]
 cell = { workspace = true }
+simulation = { workspace = true }
 lince-facade = { workspace = true, optional = true }
 lince-desktop = { workspace = true, optional = true }
 utils = { workspace = true, features = ["update-net"] }

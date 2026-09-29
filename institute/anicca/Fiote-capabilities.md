@@ -1,8 +1,4 @@
-# Fiote: remaining capabilities and verification
-
-Reviewed 2026-09-26 against the implementation. Completed tasks have been removed. This list separates unfinished verification, possible additions, and limitations of the tested tools. It does not authorize new implementation.
-
-## Finish verification and installation
+# Finish verification and installation
 
 - [ ] Install the updated Lince executable and Nix wrapper, restart the user service, and exercise login, connection checks, cancellation, and session resume outside the development shell. The private configuration now shares Lince's pinned prebuilt Goose between the terminal and service, but changing the configuration does not activate it. Its Lince binary input was still pinned to the older executable when last checked; updating the source input alone does not update that binary.
 - [ ] Exercise the complete visible workflow in human-only and Fiote threads: mixed attachments, questions, progress, commands, and conversation settings. Automated fixture tests and cargo checks passed; these do not replace a complete installed-app check.

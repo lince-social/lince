@@ -18,6 +18,31 @@ pub struct Rule {
     pub fields: Vec<SharedField>,
     pub revision: i64,
     pub state: String,
+    #[serde(default)]
+    pub bindings: Vec<nucleus::karma::ConditionBinding>,
+    #[serde(default)]
+    pub record: String,
+}
+
+pub fn bound_reading(rule: &Rule, source: &str) -> String {
+    let reads = nucleus::karma::Condition::parse(source)
+        .map(|condition| condition.reads())
+        .unwrap_or_default();
+    fragments(source)
+        .into_iter()
+        .map(|(text, slug)| {
+            slug.and_then(|slug| {
+                rule.bindings.iter().find(|binding| {
+                    binding.authored == slug
+                        && reads.iter().any(|read| {
+                            read.func == binding.reading
+                                && read.slug.split('|').any(|name| name == slug)
+                        })
+                })
+            })
+            .map_or(text, |binding| format!("@{}", binding.target.as_str()))
+        })
+        .collect()
 }
 
 #[derive(Clone, Default, Debug, PartialEq, Eq, Serialize, Deserialize)]

@@ -78,7 +78,7 @@ async fn insert(
     displaced: Option<&str>,
     displaced_local: bool,
 ) -> Result<(), StoreError> {
-    let now = Utc::now();
+    let now = nucleus::execution::now();
     sqlx::query(
         "INSERT INTO record_change
              (record_uid, field, cause, winner_organ, displaced, displaced_local, at)
@@ -103,7 +103,7 @@ pub async fn note_local_tx(
     record_uid: &str,
     field: &str,
 ) -> Result<(), StoreError> {
-    let now = Utc::now();
+    let now = nucleus::execution::now();
     sqlx::query(
         "INSERT INTO record_change
              (record_uid, field, cause, winner_organ, displaced, displaced_local, at)

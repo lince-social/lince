@@ -1,5 +1,7 @@
 use bevy::prelude::*;
 
+mod cjk;
+
 pub const PAPER: Color = Color::srgb(18.0 / 255.0, 18.0 / 255.0, 20.0 / 255.0);
 pub const INK: Color = Color::srgb(248.0 / 255.0, 250.0 / 255.0, 252.0 / 255.0);
 pub const PURPLE: Color = Color::srgb(99.0 / 255.0, 102.0 / 255.0, 241.0 / 255.0);
@@ -71,13 +73,22 @@ fn configure_fallbacks(fonts: &mut bevy::text::FontCx) {
 pub struct TypographyPlugin;
 impl Plugin for TypographyPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<Typography>().add_systems(
-            PostUpdate,
-            symbol_fallbacks
-                .after(bevy::text::load_font_assets_into_font_collection)
-                .before(bevy::text::EditableTextSystems)
-                .before(bevy::ui::UiSystems::Content),
-        );
+        app.init_resource::<Typography>()
+            .init_resource::<cjk::Fallback>()
+            .add_systems(
+                PostUpdate,
+                cjk::load.before(bevy::text::load_font_assets_into_font_collection),
+            )
+            .add_systems(
+                PostUpdate,
+                (symbol_fallbacks, cjk::configure)
+                    .chain()
+                    .after(bevy::text::load_font_assets_into_font_collection)
+                    .before(bevy::text::detect_text_needs_rerender)
+                    .before(bevy::text::EditableTextSystems)
+                    .before(bevy::ui::UiSystems::Content),
+            )
+            .add_systems(Last, cjk::load);
     }
 }
 

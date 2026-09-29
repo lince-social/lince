@@ -37,8 +37,15 @@ pub struct Recurrence {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RuleCondition {
     pub source: String,
+    pub bindings: Vec<crate::karma_bindings::ReferenceBinding>,
     pub gate: Gate,
     pub carry: Carry,
+}
+
+impl RuleCondition {
+    pub fn parsed(&self) -> Result<nucleus::karma::Condition, nucleus::karma::ConditionError> {
+        crate::karma_bindings::apply(&self.source, &self.bindings)
+    }
 }
 
 impl Recurrence {
@@ -105,6 +112,8 @@ fn read_condition(row: &sqlx::sqlite::SqliteRow) -> Result<Option<RuleCondition>
         .ok_or_else(|| protocol("rule has a condition but no carry"))?;
     Ok(Some(RuleCondition {
         source,
+        bindings: serde_json::from_str(&row.get::<String, _>("bindings_json"))
+            .map_err(|error| protocol(&error.to_string()))?,
         gate: Gate::parse(&gate).map_err(|_| protocol("rule has an unreadable gate"))?,
         carry: Carry::parse(&carry).map_err(|_| protocol("rule has an unreadable carry"))?,
     }))
@@ -227,7 +236,9 @@ pub async fn create_identified(
         return Ok(RecurrenceCommit::Replayed(existing));
     }
 
-    let uid = uid.map(str::to_owned).unwrap_or_else(|| nucleus::new_uid("rec"));
+    let uid = uid
+        .map(str::to_owned)
+        .unwrap_or_else(|| nucleus::new_uid("rec"));
     let at = instant(now);
     let anchor_at = instant(
         DateTime::from_timestamp_millis(input.anchor_at.timestamp_millis())
@@ -283,6 +294,16 @@ pub async fn create_identified(
     )
     .await?;
     crate::karma_fields::replace_inline(&mut tx, &uid).await?;
+    crate::karma_bindings::save(
+        &mut tx,
+        &uid,
+        condition_src.as_deref(),
+        input
+            .condition
+            .as_ref()
+            .map_or(&[], |condition| condition.bindings.as_slice()),
+    )
+    .await?;
     tx.commit().await?;
 
     get(pool, &uid)
@@ -380,6 +401,16 @@ pub async fn revise(
     )
     .await?;
     crate::karma_fields::replace_inline(&mut tx, input.recurrence_uid).await?;
+    crate::karma_bindings::save(
+        &mut tx,
+        input.recurrence_uid,
+        condition_src.as_deref(),
+        current
+            .condition
+            .as_ref()
+            .map_or(&[], |condition| condition.bindings.as_slice()),
+    )
+    .await?;
     tx.commit().await?;
 
     get(pool, input.recurrence_uid)
@@ -509,7 +540,8 @@ pub async fn occurrences(
     let mut anchor = parse_instant(&rule.anchor_at)?;
     let mut cadence = rule.cadence.clone();
     if let Some(condition) = &rule.condition {
-        let parsed = nucleus::karma::Condition::parse(&condition.source)
+        let parsed = condition
+            .parsed()
             .map_err(|error| protocol(&error.to_string()))?;
         if let Some(token) = parsed.reads().iter().find(|token| token.func == "freq")
             && let Some(frequency) = crate::frequency::resolve(pool, &token.slug).await?
@@ -688,6 +720,9 @@ async fn insert_revision(
     .bind(row.at)
     .execute(&mut **tx)
     .await?;
+    sqlx::query("UPDATE recurrence_revision SET bindings_json = (SELECT bindings_json FROM recurrence WHERE uid = ?) WHERE recurrence_uid = ? AND revision = ?")
+        .bind(row.recurrence_uid).bind(row.recurrence_uid).bind(row.revision)
+        .execute(&mut **tx).await?;
     Ok(())
 }
 

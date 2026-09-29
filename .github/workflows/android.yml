@@ -2,6 +2,15 @@ name: lince-android
 
 on:
   workflow_dispatch:
+    inputs:
+      signed_release:
+        description: Assemble a release APK using the configured Android signing secrets
+        type: boolean
+        default: false
+      play_bundle:
+        description: Assemble a Play bundle using the separate upload key
+        type: boolean
+        default: false
   pull_request:
     paths:
       - 'crates/**'
@@ -30,17 +39,32 @@ concurrency:
 jobs:
   apk:
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - abi: arm64-v8a
+            target: aarch64-linux-android
+            smoke: false
+          - abi: x86_64
+            target: x86_64-linux-android
+            smoke: true
     env:
       CARGO_INCREMENTAL: '0'
       RUSTUP_TOOLCHAIN: '1.96.0'
       RUSTFLAGS: '-D warnings -C link-arg=-Wl,-z,max-page-size=16384'
     steps:
+      - name: Restrict signing to main
+        if: github.event_name == 'workflow_dispatch' && (inputs.signed_release || inputs.play_bundle) && github.ref != 'refs/heads/main'
+        run: |
+          echo 'Signed distribution builds must run from main.' >&2
+          exit 1
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: '1.96.0'
-          targets: aarch64-linux-android
+          targets: ${{ matrix.target }}
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -55,25 +79,127 @@ jobs:
         run: sdkmanager 'platform-tools' 'platforms;android-35' 'build-tools;35.0.0' 'ndk;28.2.13676358'
       - uses: Swatinem/rust-cache@v2
         with:
-          shared-key: android-arm64-ndk28
+          shared-key: android-${{ matrix.abi }}-ndk28
       - name: Install cargo-ndk
         run: cargo install cargo-ndk --version 4.1.2 --locked
       - name: Check Android library
         run: |
           export ANDROID_NDK_HOME="$ANDROID_HOME/ndk/28.2.13676358"
-          cargo ndk -t arm64-v8a --platform 28 check --locked -p lince-mobile --lib
+          cargo ndk -t '${{ matrix.abi }}' --platform 28 check --locked -p lince-mobile --lib
       - name: Check app and assemble debug APK
-        run: gradle -p crates/mobile/android --no-daemon lintDebug assembleDebug
+        run: |
+          export LINCE_ANDROID_VERSION_CODE=$((GITHUB_RUN_NUMBER * 100 + GITHUB_RUN_ATTEMPT))
+          gradle -p crates/mobile/android --no-daemon -PlinceAbi='${{ matrix.abi }}' -PlinceSmoke='${{ matrix.smoke }}' lintDebug assembleDebug
       - name: Verify APK
         run: |
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify crates/mobile/android/app/build/outputs/apk/debug/app-debug.apk
           "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 -v 4 crates/mobile/android/app/build/outputs/apk/debug/app-debug.apk
           cd crates/mobile/android/app/build/outputs/apk/debug
           sha256sum app-debug.apk > app-debug.apk.sha256
+      - name: Enable emulator acceleration
+        if: matrix.smoke
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Install, launch, edit and restart on 16 KB Android
+        if: matrix.smoke
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis_ps16k
+          arch: x86_64
+          profile: pixel_6
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: RUSTFLAGS='-D warnings' cargo run --locked -p xtask -- android-smoke --device emulator-5554 --pagesize 16384 --apk crates/mobile/android/app/build/outputs/apk/debug/app-debug.apk --output target/android-smoke
+      - uses: actions/upload-artifact@v4
+        if: always() && matrix.smoke
+        with:
+          name: android-smoke-evidence
+          path: target/android-smoke
       - uses: actions/upload-artifact@v4
         with:
-          name: lince-android-arm64-debug
+          name: lince-android-${{ matrix.abi }}-${{ matrix.smoke && 'smoketest' || 'debug' }}
           path: |
             crates/mobile/android/app/build/outputs/apk/debug/app-debug.apk
             crates/mobile/android/app/build/outputs/apk/debug/app-debug.apk.sha256
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lince-android-${{ matrix.abi }}-native-symbols
+          path: crates/mobile/android/app/build/rust/debug/jniLibs/${{ matrix.abi }}/liblince_mobile.so
+          if-no-files-found: error
+      - name: Assemble signed release
+        if: github.event_name == 'workflow_dispatch' && inputs.signed_release && github.ref == 'refs/heads/main' && !matrix.smoke
+        env:
+          LINCE_ANDROID_KEYSTORE_BASE64: ${{ secrets.LINCE_ANDROID_KEYSTORE_BASE64 }}
+          LINCE_ANDROID_STORE_PASSWORD: ${{ secrets.LINCE_ANDROID_STORE_PASSWORD }}
+          LINCE_ANDROID_KEY_ALIAS: ${{ secrets.LINCE_ANDROID_KEY_ALIAS }}
+          LINCE_ANDROID_KEY_PASSWORD: ${{ secrets.LINCE_ANDROID_KEY_PASSWORD }}
+        run: |
+          test -n "$LINCE_ANDROID_KEYSTORE_BASE64"
+          test -n "$LINCE_ANDROID_STORE_PASSWORD"
+          test -n "$LINCE_ANDROID_KEY_ALIAS"
+          test -n "$LINCE_ANDROID_KEY_PASSWORD"
+          umask 077
+          export LINCE_ANDROID_KEYSTORE="$RUNNER_TEMP/lince-signing.jks"
+          trap 'rm -f "$LINCE_ANDROID_KEYSTORE"' EXIT
+          printf '%s' "$LINCE_ANDROID_KEYSTORE_BASE64" | base64 --decode > "$LINCE_ANDROID_KEYSTORE"
+          export LINCE_ANDROID_VERSION_CODE=$((GITHUB_RUN_NUMBER * 100 + GITHUB_RUN_ATTEMPT))
+          gradle -p crates/mobile/android --no-daemon lintRelease assembleRelease
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs crates/mobile/android/app/build/outputs/apk/release/app-release.apk
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 4 crates/mobile/android/app/build/outputs/apk/release/app-release.apk
+          cd crates/mobile/android/app/build/outputs/apk/release
+          sha256sum app-release.apk > app-release.apk.sha256
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          Path('build-info.json').write_text(json.dumps({
+              'package': 'social.lince.mobile',
+              'apk': 'app-release.apk',
+              'commit': os.environ['GITHUB_SHA'],
+              'version_code': int(os.environ['LINCE_ANDROID_VERSION_CODE']),
+              'workflow_run': os.environ['GITHUB_RUN_ID'],
+              'install': 'Open app-release.apk on the phone to install or update Lince.',
+          }, indent=2) + '\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'workflow_dispatch' && inputs.signed_release && github.ref == 'refs/heads/main' && !matrix.smoke
+        with:
+          name: lince-android-arm64-release
+          path: |
+            crates/mobile/android/app/build/outputs/apk/release/app-release.apk
+            crates/mobile/android/app/build/outputs/apk/release/app-release.apk.sha256
+            crates/mobile/android/app/build/outputs/apk/release/build-info.json
+            crates/mobile/android/app/build/outputs/native-debug-symbols/release/native-debug-symbols.zip
+          if-no-files-found: error
+      - name: Assemble Play bundle
+        if: github.event_name == 'workflow_dispatch' && inputs.play_bundle && github.ref == 'refs/heads/main' && !matrix.smoke
+        env:
+          LINCE_ANDROID_UPLOAD_KEYSTORE_BASE64: ${{ secrets.LINCE_ANDROID_UPLOAD_KEYSTORE_BASE64 }}
+          LINCE_ANDROID_UPLOAD_STORE_PASSWORD: ${{ secrets.LINCE_ANDROID_UPLOAD_STORE_PASSWORD }}
+          LINCE_ANDROID_UPLOAD_KEY_ALIAS: ${{ secrets.LINCE_ANDROID_UPLOAD_KEY_ALIAS }}
+          LINCE_ANDROID_UPLOAD_KEY_PASSWORD: ${{ secrets.LINCE_ANDROID_UPLOAD_KEY_PASSWORD }}
+        run: |
+          test -n "$LINCE_ANDROID_UPLOAD_KEYSTORE_BASE64"
+          test -n "$LINCE_ANDROID_UPLOAD_STORE_PASSWORD"
+          test -n "$LINCE_ANDROID_UPLOAD_KEY_ALIAS"
+          test -n "$LINCE_ANDROID_UPLOAD_KEY_PASSWORD"
+          umask 077
+          export LINCE_ANDROID_UPLOAD_KEYSTORE="$RUNNER_TEMP/lince-upload.p12"
+          trap 'rm -f "$LINCE_ANDROID_UPLOAD_KEYSTORE"' EXIT
+          printf '%s' "$LINCE_ANDROID_UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$LINCE_ANDROID_UPLOAD_KEYSTORE"
+          export LINCE_ANDROID_VERSION_CODE=$((GITHUB_RUN_NUMBER * 100 + GITHUB_RUN_ATTEMPT))
+          gradle -p crates/mobile/android --no-daemon -PlinceSigning=upload bundleRelease
+          jarsigner -verify crates/mobile/android/app/build/outputs/bundle/release/app-release.aab
+          cd crates/mobile/android/app/build/outputs/bundle/release
+          sha256sum app-release.aab > app-release.aab.sha256
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'workflow_dispatch' && inputs.play_bundle && github.ref == 'refs/heads/main' && !matrix.smoke
+        with:
+          name: lince-android-arm64-play-bundle
+          path: |
+            crates/mobile/android/app/build/outputs/bundle/release/app-release.aab
+            crates/mobile/android/app/build/outputs/bundle/release/app-release.aab.sha256
+            crates/mobile/android/app/build/outputs/native-debug-symbols/release/native-debug-symbols.zip
           if-no-files-found: error

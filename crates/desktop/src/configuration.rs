@@ -11,6 +11,8 @@ pub struct ConfigurationSand {
     toggles: [Entity; 4],
     discovery: [bool; 4],
     discovery_minutes: Entity,
+    peer_port: Entity,
+    peer_network: Entity,
     relays: Entity,
     budget: Entity,
     usage: Entity,
@@ -99,6 +101,14 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
         "Where this Cell can be found. These settings do not create trust.",
         14.0,
     );
+    panel::button(
+        world,
+        pages[1],
+        sand,
+        "Find devices on this Wi-Fi",
+        Command::FindLan,
+    );
+    crate::edit_mode::label(world, pages[1], "Visible for 15 minutes. Uses LAN only.", 13.0);
     let toggles = std::array::from_fn(|index| {
         panel::button(
             world,
@@ -127,6 +137,9 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
         "Save discovery",
         Command::SaveDiscovery,
     );
+    let peer_port = panel::field(world, pages[1], "Peer UDP port (0 chooses automatically)", "6175");
+    panel::button(world, pages[1], sand, "Save peer port", Command::SavePeerPort);
+    let peer_network = crate::edit_mode::label(world, pages[1], "Loading peer addresses…", 13.0);
     let budget = panel::field(
         world,
         pages[2],
@@ -170,6 +183,8 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
         toggles,
         discovery: [false, true, false, false],
         discovery_minutes,
+        peer_port,
+        peer_network,
         relays,
         budget,
         usage,
@@ -194,6 +209,8 @@ enum Command {
     Toggle(usize),
     SaveIdentity,
     SaveDiscovery,
+    FindLan,
+    SavePeerPort,
     SaveBudget,
     Contact(String),
     Trust(&'static str),
@@ -241,7 +258,11 @@ impl Action for Command {
                 Ok(())
             }
             Self::SaveBudget => save_budget(world, owner),
-            Self::SaveIdentity | Self::SaveDiscovery | Self::SaveContact => {
+            Self::SaveIdentity
+            | Self::SaveDiscovery
+            | Self::FindLan
+            | Self::SavePeerPort
+            | Self::SaveContact => {
                 actions(world, owner, self).and_then(|actions| {
                     if crate::laboratory::active(world) {
                         return Err("Changes are unavailable in the Laboratory".into());
@@ -288,6 +309,32 @@ fn actions(
                 target: snapshot.organ_uid.clone(),
                 head: Some(name),
                 body: Some(address),
+            }])
+        }
+        Command::SavePeerPort => {
+            let port = panel::value(world, view.peer_port)?.trim().parse::<u16>()
+                .map_err(|_| "Enter a port between 0 and 65535")?;
+            Ok(vec![Action::SetCellConfig {
+                namespace: "lince.network".into(),
+                fds: serde_json::json!({"peer_port":port}),
+            }])
+        }
+        Command::FindLan => {
+            let mut fields = snapshot
+                .discovery
+                .as_object()
+                .cloned()
+                .ok_or("Invalid discovery settings; refresh before changing them")?;
+            fields.insert("local".into(), true.into());
+            fields.insert("internet".into(), false.into());
+            fields.insert("direct".into(), false.into());
+            fields.insert(
+                "local_until".into(),
+                (chrono::Utc::now() + chrono::Duration::minutes(15)).to_rfc3339().into(),
+            );
+            Ok(vec![Action::SetCellConfig {
+                namespace: "lince.discovery".into(),
+                fds: fields.into(),
             }])
         }
         Command::SaveDiscovery => {
@@ -558,7 +605,9 @@ fn loaded(world: &mut World, owner: Entity, snapshot: Configuration) {
     set_text(world, identity[0], &snapshot.name);
     set_text(world, identity[1], &snapshot.address);
     let view = world.get::<ConfigurationSand>(owner).unwrap();
-    let (minutes_field, relays_field) = (view.discovery_minutes, view.relays);
+    let (minutes_field, relays_field, port_field, network_status) = (view.discovery_minutes, view.relays, view.peer_port, view.peer_network);
+    set_text(world, port_field, &snapshot.peer_port.to_string());
+    panel::status(world, network_status, lince_interface::organ::peer_network_label(&snapshot.peer_network));
     let minutes = snapshot.discovery["local_until"]
         .as_str()
         .and_then(|value| chrono::DateTime::parse_from_rfc3339(value).ok())

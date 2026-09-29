@@ -11,17 +11,16 @@ pub fn spawn(state: CellRuntime, key_dir: std::path::PathBuf) -> tokio::task::Jo
     tokio::spawn(async move {
         let mut bus = state.engine.subscribe();
         let mut config = state.engine.watch_config();
-        let mut current = if state.wire.read().await.is_some() {
-            match discovery_of(&state.store).await {
-                Ok(discovery) => Some(discovery),
-                Err(error) => {
-                    tracing::warn!(%error, "Cannot read discovery settings. Keeping the current peer connection");
-                    None
-                }
-            }
-        } else {
-            None
-        };
+        let mut identity = store::organs::local(&state.store.pool)
+            .await
+            .ok()
+            .flatten()
+            .map(|organ| organ.uid);
+        let mut current = state.wire.read().await.as_ref().map(|wire| Discovery {
+            reach: wire.reach(),
+            local: wire.local_discovery(),
+            peer_port: wire.configured_port(),
+        });
         let mut retry = tokio::time::interval(std::time::Duration::from_secs(30));
         retry.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
         loop {
@@ -48,10 +47,42 @@ pub fn spawn(state: CellRuntime, key_dir: std::path::PathBuf) -> tokio::task::Jo
                     continue;
                 }
             };
-            if (current != Some(wanted) || state.wire.read().await.is_none())
-                && rebind(&state, &key_dir, wanted).await
+            let next_identity = store::organs::local(&state.store.pool)
+                .await
+                .ok()
+                .flatten()
+                .map(|organ| organ.uid);
+            if current.map(|discovery| discovery.reach) != Some(wanted.reach)
+                || current.map(|discovery| discovery.peer_port) != Some(wanted.peer_port)
+                || state.wire.read().await.is_none()
             {
+                if rebind(&state, &key_dir, wanted).await {
+                    current = state.wire.read().await.as_ref().map(|wire| Discovery {
+                        reach: wire.reach(),
+                        local: wire.local_discovery(),
+                        peer_port: wire.configured_port(),
+                    });
+                    identity = next_identity;
+                }
+            } else if let Some(wire) = state.wire.read().await.clone() {
+                if let Err(error) = wire.set_local_discovery(wanted.local) {
+                    tracing::warn!(%error, "Could not update LAN discovery");
+                    continue;
+                }
+                if identity != next_identity
+                    && let Ok(Some(organ)) = store::organs::local(&state.store.pool).await
+                {
+                    wire.set_display_name(&organ.head);
+                }
                 current = Some(wanted);
+                identity = next_identity;
+            }
+            if let Some(wire) = state.wire.read().await.clone()
+                && let Ok(Some(organ)) = store::organs::local(&state.store.pool).await
+                && let Err(error) =
+                    crate::publish_pairing_invite(&state.engine, &organ.uid, &wire).await
+            {
+                tracing::warn!(%error, "Could not refresh the pairing code");
             }
         }
     })
@@ -81,12 +112,13 @@ async fn rebind(state: &CellRuntime, key_dir: &std::path::Path, discovery: Disco
     if let Some(previous) = previous {
         previous.shutdown().await;
     }
-    match engine::wire::Wire::bind_with_discovery(
+    match engine::wire::Wire::bind_on_port(
         state.engine.clone(),
         secret,
         discovery.reach,
         Some(&label),
         discovery.local,
+        discovery.peer_port,
     )
     .await
     {
@@ -116,7 +148,8 @@ async fn rebind(state: &CellRuntime, key_dir: &std::path::Path, discovery: Disco
                     return true;
                 }
             };
-            if let Err(error) = crate::publish_pairing_invite(&state.store, &organ.uid, &wire).await
+            if let Err(error) =
+                crate::publish_pairing_invite(&state.engine, &organ.uid, &wire).await
             {
                 tracing::warn!(%error, "Could not refresh the pairing invitation");
             }

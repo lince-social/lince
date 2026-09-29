@@ -1,4 +1,3 @@
-use chrono::Utc;
 use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;
@@ -21,7 +20,7 @@ pub async fn put(
     title: &str,
 ) -> Result<Option<Invite>, StoreError> {
     let uid = nucleus::new_uid("r");
-    let now = Utc::now().to_rfc3339();
+    let now = nucleus::execution::now().to_rfc3339();
     let title = if title.trim().is_empty() {
         "A conversation"
     } else {

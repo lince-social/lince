@@ -1,4 +1,3 @@
-use chrono::Utc;
 use nucleus::RecordKind;
 use sqlx::{Row, SqlitePool};
 
@@ -30,7 +29,7 @@ pub async fn ensure_local(
         return Ok(existing);
     }
     let uid = nucleus::new_uid("r");
-    let now = Utc::now().to_rfc3339();
+    let now = nucleus::execution::now().to_rfc3339();
     sqlx::query(
         "INSERT INTO record (uid, slug, kind, head, body, quantity_mantissa, quantity_scale,
                              organ_uid, created_at, updated_at)
@@ -62,7 +61,7 @@ pub async fn local(pool: &SqlitePool) -> Result<Option<CellRecord>, StoreError> 
 pub async fn set_label(pool: &SqlitePool, label: &str) -> Result<(), StoreError> {
     sqlx::query("UPDATE record SET head = ?, updated_at = ? WHERE slug = ? AND kind = ?")
         .bind(label)
-        .bind(Utc::now().to_rfc3339())
+        .bind(nucleus::execution::now().to_rfc3339())
         .bind(LOCAL_CELL_SLUG)
         .bind(RecordKind::Device.as_str())
         .execute(pool)
@@ -98,7 +97,7 @@ pub async fn set_config(
     sqlx::query(
         "INSERT INTO record_extension (record_uid, namespace, fds) VALUES (?, ?, ?)
          ON CONFLICT(record_uid, namespace)
-         DO UPDATE SET fds = excluded.fds, version = version + 1",
+         DO UPDATE SET fds = excluded.fds, version = version + 1 WHERE fds <> excluded.fds",
     )
     .bind(&cell.uid)
     .bind(namespace)

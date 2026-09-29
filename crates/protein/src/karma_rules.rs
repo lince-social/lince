@@ -1,6 +1,5 @@
 use std::collections::HashSet;
 
-use nucleus::karma::{Condition, rule_field::RuleConsequence};
 use serde_json::{Value, json};
 use store::Store;
 
@@ -24,16 +23,20 @@ pub(crate) async fn execute(
         if !readable(store, visible, &rule.record_uid).await? {
             continue;
         }
-        let parsed = Condition::parse(&condition.source)
+        let parsed = condition
+            .parsed()
             .map_err(|error| store::karma_fields::invalid(&error.to_string()))?;
         let mut allowed = true;
-        for read in parsed.reads() {
-            if read.func == nucleus::expr::ASSERTION {
+        for read in parsed.reads().into_iter().filter(|_| visible.is_some()) {
+            if read.func == nucleus::expr::ASSERTION || read.func == "demand" {
                 if let Some(concept) = store::concepts::resolve(&store.pool, &read.slug).await? {
                     for uid in store::ledger::records_with_concept(&store.pool, &concept).await? {
                         allowed &= readable(store, visible, &uid).await?;
                     }
                 }
+            } else if read.func == "promise_state" || read.func == "confidence" {
+                let record: Option<String> = store::sqlx::query_scalar("SELECT record_uid FROM promise WHERE uid = ?").bind(&read.slug).fetch_optional(&store.pool).await?;
+                allowed &= match record { Some(uid) => readable(store, visible, &uid).await?, None => false };
             } else {
                 for slug in read.slug.split('|') {
                     allowed &= readable(store, visible, slug).await?;
@@ -64,19 +67,7 @@ pub(crate) async fn execute(
         if !allowed {
             continue;
         }
-        let mut fields = store::karma_fields::for_rule(&store.pool, &rule.uid).await?;
-        for field in &mut fields {
-            if field.kind == nucleus::karma::rule_field::RuleFieldKind::Consequence {
-                let mut consequence = RuleConsequence::parse(&field.source)
-                    .map_err(|error| store::karma_fields::invalid(&error))?;
-                if let Some(record) =
-                    store::records::resolve(&store.pool, &consequence.target).await?
-                {
-                    consequence.target = record.slug.unwrap_or(record.uid);
-                }
-                field.source = consequence.as_text();
-            }
-        }
+        let fields = store::karma_fields::for_rule(&store.pool, &rule.uid).await?;
         let identity = store::karma_fields::identity(&store.pool, &rule.uid).await?;
         let name = identity
             .as_ref()
@@ -85,7 +76,7 @@ pub(crate) async fn execute(
         let slug = identity
             .as_ref()
             .map_or(fallback_slug.as_str(), |identity| identity.slug.as_str());
-        rows.push(json!({"name": name, "slug": slug, "uid": rule.uid, "record": rule.record_uid, "fields": fields, "revision": rule.revision, "state": rule.state}));
+        rows.push(json!({"name": name, "slug": slug, "uid": rule.uid, "record": rule.record_uid, "bindings": condition.bindings, "fields": fields, "revision": rule.revision, "state": rule.state}));
         if query
             .limit
             .is_some_and(|limit| rows.len() >= limit as usize)
@@ -101,6 +92,7 @@ async fn readable(
     visible: Option<&HashSet<String>>,
     token: &str,
 ) -> Result<bool, ProteinError> {
+    if visible.is_none() { return Ok(true); }
     Ok(store::records::resolve(&store.pool, token)
         .await?
         .is_some_and(|record| visible.is_none_or(|visible| visible.contains(&record.uid))))

@@ -83,7 +83,7 @@ pub async fn backing_off(
     let Some(until) = until.as_deref().and_then(parse_time) else {
         return Ok(None);
     };
-    if until <= Utc::now() {
+    if until <= nucleus::execution::now() {
         return Ok(None);
     }
     Ok(Some(
@@ -97,7 +97,7 @@ pub async fn spend(
     from_organ: &str,
     kind: RateKind,
 ) -> Result<Option<String>, StoreError> {
-    let now = Utc::now();
+    let now = nucleus::execution::now();
     let mut tx = crate::write_tx(pool).await?;
     let row = sqlx::query(
         "SELECT window_start, count, backoff_until FROM contact_rate

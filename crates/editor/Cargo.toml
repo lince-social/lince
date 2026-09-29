@@ -1,0 +1,29 @@
+[package]
+name = "lince-editor"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+loro.workspace = true
+ropey.workspace = true
+regex.workspace = true
+serde.workspace = true
+sha2.workspace = true
+cap-std = "=4.0.3"
+notify = "=8.2.0"
+ignore = "=0.4.25"
+similar = "=2.7.0"
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+rustix = { version = "=1.1.4", features = ["fs"] }
+
+[build-dependencies]
+sensei.workspace = true
+
+[dev-dependencies]
+tempfile = "=3.27.0"
+
+[lints]
+workspace = true

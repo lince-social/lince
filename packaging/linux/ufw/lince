@@ -1,0 +1,9 @@
+[Lince]
+title=Lince device sync
+description=Encrypted device connections and local network discovery
+ports=6175,5353/udp
+
+[Lince Test]
+title=Lince disposable test instance
+description=Separate test device connections and local network discovery
+ports=6176,5353/udp

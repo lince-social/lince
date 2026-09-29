@@ -14,8 +14,10 @@ members = [
     "crates/interface",
     "crates/mobile",
     "crates/document",
+    "crates/editor",
     "crates/fiote",
     "crates/cell",
+    "crates/simulation",
     "crates/facade",
     "crates/media",
     "crates/xtask",
@@ -40,6 +42,7 @@ homepage = "https://lince.social"
 lince = { version = "=0.7.0", path = "crates/lince" }
 utils = { version = "=0.7.0", path = "crates/utils", package = "lince-utils" }
 cell = { version = "=0.7.0", path = "crates/cell", package = "lince-cell" }
+simulation = { version = "=0.7.0", path = "crates/simulation", package = "lince-simulation" }
 lince-desktop = { version = "=0.7.0", path = "crates/desktop" }
 lince-interface = { version = "=0.7.0", path = "crates/interface", default-features = false }
 lince-media = { version = "=0.7.0", path = "crates/media" }

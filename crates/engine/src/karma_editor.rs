@@ -86,6 +86,7 @@ impl Engine {
         }
         let condition = RuleCondition {
             source: source.into(),
+            bindings: Vec::new(),
             gate: Gate::Always,
             carry: Carry::Value,
         };
@@ -141,6 +142,8 @@ impl Engine {
             }
         }
         let mut selections = Vec::new();
+        let mut shared_bindings = None;
+        let mut shared_target = None;
         for (kind, input) in RuleFieldKind::ALL.into_iter().zip(fields) {
             let selection = match input {
                 RuleFieldInput::Text { source } => Selection {
@@ -167,7 +170,37 @@ impl Engine {
                         let rule = store::recurrence::get(&self.store.pool, &reader)
                             .await?
                             .ok_or_else(|| invalid("Rule not found"))?;
-                        self.refuse_unreadable(actor, &[rule.record_uid]).await?;
+                        self.refuse_unreadable(actor, &[rule.record_uid.clone()])
+                            .await?;
+                        match kind {
+                            RuleFieldKind::Condition => {
+                                let bindings =
+                                    rule.condition
+                                        .map(|condition| condition.bindings)
+                                        .ok_or_else(|| invalid("Shared condition is missing"))?;
+                                if shared_bindings
+                                    .as_ref()
+                                    .is_some_and(|saved| saved != &bindings)
+                                {
+                                    return Err(invalid(
+                                        "Shared condition has conflicting bindings",
+                                    ));
+                                }
+                                shared_bindings = Some(bindings);
+                            }
+                            RuleFieldKind::Consequence => {
+                                if shared_target
+                                    .as_ref()
+                                    .is_some_and(|saved| saved != &rule.record_uid)
+                                {
+                                    return Err(invalid(
+                                        "Shared consequence has conflicting targets",
+                                    ));
+                                }
+                                shared_target = Some(rule.record_uid);
+                            }
+                            RuleFieldKind::Threshold => {}
+                        }
                     }
                     Selection {
                         field,
@@ -196,7 +229,14 @@ impl Engine {
             .map(|selection| selection.field.source.clone())
             .collect();
         let mut rule = self
-            .prepare_editor_rule(previous, &sources, actor, now)
+            .prepare_editor_rule(
+                previous,
+                &sources,
+                shared_bindings,
+                shared_target,
+                actor,
+                now,
+            )
             .await?;
         rule.actor_uid = actor.map(str::to_owned);
         store::karma_fields::save_rule(
@@ -265,7 +305,7 @@ impl Engine {
                 })
                 .collect::<Result<_, _>>()?;
             let rule = self
-                .prepare_editor_rule(Some(current), &sources, actor, now)
+                .prepare_editor_rule(Some(current), &sources, None, None, actor, now)
                 .await?;
             self.authorize_rule_target(&rule.record_uid, rule.actor_uid.as_deref())
                 .await?;
@@ -302,6 +342,8 @@ impl Engine {
         &self,
         previous: Option<Recurrence>,
         sources: &[String],
+        shared_bindings: Option<Vec<nucleus::karma::ConditionBinding>>,
+        shared_target: Option<String>,
         actor: Option<&str>,
         now: DateTime<Utc>,
     ) -> Result<Recurrence, EngineError> {
@@ -310,16 +352,20 @@ impl Engine {
             .canonical_condition(Some(sources[0].clone()))
             .await?
             .ok_or_else(|| invalid("A condition is required"))?;
-        let parsed = Condition::parse(&source).map_err(invalid)?;
-        for token in parsed.reads() {
-            if token.func != nucleus::expr::ASSERTION && token.func != "freq" {
-                for slug in token.slug.split('|') {
-                    self.resolve(slug).await?;
-                }
-            }
-        }
+        let bindings = store::karma_bindings::resolve(
+            &self.store.pool,
+            &source,
+            shared_bindings.as_deref().unwrap_or_else(|| {
+                previous
+                    .as_ref()
+                    .and_then(|rule| rule.condition.as_ref())
+                    .map_or(&[], |condition| condition.bindings.as_slice())
+            }),
+        )
+        .await?;
         let condition = RuleCondition {
             source,
+            bindings,
             gate: Gate::parse(&sources[1]).map_err(invalid)?,
             carry: previous
                 .as_ref()
@@ -327,7 +373,21 @@ impl Engine {
                 .map_or(Carry::Value, |condition| condition.carry.clone()),
         };
         let consequence = RuleConsequence::parse(&sources[2]).map_err(invalid)?;
-        let target = self.resolve(&consequence.target).await?;
+        let previous_target = if let Some(previous) = &previous {
+            store::karma_fields::for_rule(&self.store.pool, &previous.uid)
+                .await?
+                .into_iter()
+                .find(|field| field.kind == RuleFieldKind::Consequence)
+                .and_then(|field| RuleConsequence::parse(&field.source).ok())
+                .filter(|old| old.target == consequence.target)
+                .map(|_| previous.record_uid.clone())
+        } else {
+            None
+        };
+        let target = match shared_target.or(previous_target) {
+            Some(target) => target,
+            None => self.resolve(&consequence.target).await?,
+        };
         self.authorize_rule_target(&target, actor).await?;
         let consequences = self.resolve_consequences(consequence.consequences).await?;
         Box::pin(self.validate_automatic_rule(&consequences, Some(&condition), actor)).await?;

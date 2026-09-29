@@ -1,4 +1,3 @@
-use chrono::Utc;
 use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;
@@ -30,7 +29,7 @@ pub async fn hold(
     organ_uid: &str,
     intro: &str,
 ) -> Result<(), StoreError> {
-    let now = Utc::now().to_rfc3339();
+    let now = nucleus::execution::now().to_rfc3339();
     sqlx::query(
         "INSERT INTO door_request (uid, node_id, organ_uid, intro, received_at)
          VALUES (?, ?, ?, ?, ?)

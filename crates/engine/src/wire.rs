@@ -1,5 +1,7 @@
 mod presence;
 mod groups;
+mod discovery;
+mod siblings;
 
 use std::collections::HashMap;
 use std::net::SocketAddr;
@@ -27,6 +29,20 @@ pub const ALPN_LIVE: &[u8] = b"lince/live/2";
 pub const ALPN_HELLO: &[u8] = b"lince/hello/1";
 
 pub const ALPN_MAILBOX: &[u8] = b"lince/mailbox/1";
+
+pub const DEFAULT_PEER_PORT: u16 = 6175;
+
+pub fn configured_peer_port(fields: Option<&serde_json::Value>) -> Result<u16, EngineError> {
+    match fields {
+        None => Ok(DEFAULT_PEER_PORT),
+        Some(fields) if fields.is_object() => match fields.get("peer_port") {
+            None => Ok(DEFAULT_PEER_PORT),
+            Some(value) => value.as_u64().and_then(|port| u16::try_from(port).ok())
+                .ok_or_else(|| EngineError::Consequence("Peer port must be between 0 and 65535; 0 chooses an available port".into())),
+        },
+        Some(_) => Err(EngineError::Consequence("Network settings must be an object".into())),
+    }
+}
 
 fn not_your_mailbox() -> WireResponse {
     WireResponse::Refused {
@@ -460,17 +476,21 @@ pub struct HeldIntroduction {
 #[derive(Clone)]
 pub struct Wire {
     endpoint: Endpoint,
-    engine: Arc<Engine>,
+    pub(crate) engine: Arc<Engine>,
     nearby: Nearby,
     known_addrs: iroh::address_lookup::MemoryLookup,
     open_per_peer: Arc<Mutex<HashMap<String, usize>>>,
     presence_connections: Arc<tokio::sync::Mutex<HashMap<String, Connection>>>,
     reach: Reach,
+    peer_port: u16,
+    local_discovery: discovery::LocalDiscovery,
     live: Arc<Mutex<Option<Arc<dyn LiveSessions>>>>,
     live_connections: Arc<Mutex<HashMap<String, Connection>>>,
     transfer: Arc<Mutex<Option<Arc<dyn TransferPeer>>>>,
     private: Option<PrivateWireConfig>,
     connection_slots: Arc<tokio::sync::Semaphore>,
+    sync_lock: Arc<tokio::sync::Mutex<()>>,
+    pub(crate) blob_slots: Arc<tokio::sync::Semaphore>,
 }
 
 impl Wire {
@@ -498,7 +518,18 @@ impl Wire {
         display_name: Option<&str>,
         local_discovery: bool,
     ) -> Result<Wire, EngineError> {
-        Self::bind_inner(engine, secret, reach, display_name, local_discovery, None).await
+        Self::bind_on_port(engine, secret, reach, display_name, local_discovery, 0).await
+    }
+
+    pub async fn bind_on_port(
+        engine: Arc<Engine>,
+        secret: SecretKey,
+        reach: Reach,
+        display_name: Option<&str>,
+        local_discovery: bool,
+        peer_port: u16,
+    ) -> Result<Wire, EngineError> {
+        Self::bind_inner(engine, secret, reach, display_name, local_discovery, peer_port, None).await
     }
 
     pub async fn bind_private(
@@ -507,7 +538,7 @@ impl Wire {
         config: PrivateWireConfig,
     ) -> Result<Wire, EngineError> {
         config.validate()?;
-        Self::bind_inner(engine, secret, Reach::Local, None, false, Some(config)).await
+        Self::bind_inner(engine, secret, Reach::Local, None, false, 0, Some(config)).await
     }
 
     async fn bind_inner(
@@ -516,6 +547,7 @@ impl Wire {
         reach: Reach,
         display_name: Option<&str>,
         local_discovery: bool,
+        peer_port: u16,
         private: Option<PrivateWireConfig>,
     ) -> Result<Wire, EngineError> {
         let alpns = if private.is_some() {
@@ -527,6 +559,8 @@ impl Wire {
                 ALPN_LIVE.to_vec(),
                 ALPN_HELLO.to_vec(),
                 ALPN_MAILBOX.to_vec(),
+                crate::blob_sync::ALPN.to_vec(),
+                crate::blob_sync::DATA_ALPN.to_vec(),
             ]
         };
         let mut builder = match reach {
@@ -546,6 +580,12 @@ impl Wire {
                         config.listen_addr
                     ))
                 })?;
+        } else if reach != Reach::Relay {
+            builder = builder
+                .bind_addr(SocketAddr::from(([0, 0, 0, 0], peer_port)))
+                .map_err(|error| EngineError::Consequence(format!("Peer IPv4 port: {error}")))?
+                .bind_addr_with_opts(SocketAddr::from(([0u16; 8], peer_port)), iroh::endpoint::BindOpts::default().set_is_required(false))
+                .map_err(|error| EngineError::Consequence(format!("Peer IPv6 port: {error}")))?;
         }
         let endpoint = builder
             .secret_key(secret)
@@ -561,25 +601,18 @@ impl Wire {
                 ))
             })?;
 
-        if let Some(name) = display_name {
-            let clipped: String = name
-                .chars()
-                .take(iroh::address_lookup::UserData::MAX_LENGTH / 4)
-                .collect();
-            match iroh::address_lookup::UserData::try_from(clipped) {
-                Ok(data) => endpoint.set_user_data_for_address_lookup(Some(data)),
-                Err(error) => tracing::warn!(%error, "display name rejected for discovery"),
-            }
-        }
-
         let known_addrs = iroh::address_lookup::MemoryLookup::new();
+        let local_lookup = discovery::LocalDiscovery::default();
         if let Ok(services) = endpoint.address_lookup() {
             services.add(known_addrs.clone());
+            services.add(local_lookup.clone());
         }
         let wire = Wire {
             endpoint,
             engine,
             reach,
+            peer_port,
+            local_discovery: local_lookup,
             open_per_peer: Arc::new(Mutex::new(HashMap::new())),
             presence_connections: Arc::new(tokio::sync::Mutex::new(HashMap::new())),
             nearby: Nearby::default(),
@@ -588,12 +621,20 @@ impl Wire {
             live_connections: Arc::new(Mutex::new(HashMap::new())),
             transfer: Arc::new(Mutex::new(None)),
             private,
+            sync_lock: Arc::new(tokio::sync::Mutex::new(())),
+            blob_slots: Arc::new(tokio::sync::Semaphore::new(8)),
             connection_slots: Arc::new(tokio::sync::Semaphore::new(
                 private.map_or(64, |config| config.max_connections),
             )),
         };
-        if local_discovery {
-            wire.spawn_mdns();
+        if private.is_none() {
+            wire.restore_sibling_routes().await?;
+        }
+        if let Some(name) = display_name {
+            wire.set_display_name(name);
+        }
+        if let Err(error) = wire.set_local_discovery(local_discovery) {
+            tracing::warn!(%error, "mDNS unavailable; nearby list will stay empty");
         }
         if private.is_none() {
             *wire.engine.nearby.lock().expect("nearby handle") = Some(wire.nearby.clone());
@@ -738,28 +779,25 @@ impl Wire {
         let operational = self.engine.operational_key_for(&invite.organ_uid).await?;
         let operational_key = operational.public_key_b64();
         let sealing_key = self.engine.published_sealing_key().await?;
-        let response = self
-            .request(
-                addr,
-                ALPN_THREAD,
-                &WireRequest::Enrol {
-                    token: invite.token.clone(),
-                    cell_uid: cell.uid.clone(),
-                    node_id: self.node_id().to_string(),
-                    label: cell.label.clone(),
-                    operational_key,
-                    sealing_key,
-                },
-            )
-            .await
-            .map_err(|error| {
-                EngineError::Consequence(format!(
-                    "the other Cell did not accept the connection. An enrolment code works \
-                     once and expires after {} minutes — ask that Cell for a new one. \
-                     ({error})",
-                    crate::roster::ENROLMENT_TOKEN_TTL_MINUTES
-                ))
-            })?;
+        let request = WireRequest::Enrol {
+            token: invite.token.clone(),
+            cell_uid: cell.uid.clone(),
+            node_id: self.node_id().to_string(),
+            label: cell.label.clone(),
+            operational_key,
+            sealing_key,
+        };
+        let response = tokio::time::timeout(
+            DIAL_TIMEOUT * 2,
+            self.request(addr, ALPN_THREAD, &request),
+        )
+        .await
+        .map_err(|_| EngineError::Consequence("The other device did not answer within 12 seconds. Check its network connection and allow Lince's UDP port through its firewall, then try again.".into()))?
+        .map_err(|error| {
+            EngineError::Consequence(format!(
+                "Could not connect to the other device. Check its network connection and firewall. If the code was already used or expired, create a new one. ({error})"
+            ))
+        })?;
         let signed = match response {
             WireResponse::Roster {
                 roster: Some(signed),
@@ -778,6 +816,9 @@ impl Wire {
                 )));
             }
         };
+        if !signed.roster.cells.iter().any(|member| member.cell_uid == cell.uid && member.node_id == self.node_id().to_string()) {
+            return Err(EngineError::Consequence("The returned roster does not name this network endpoint".into()));
+        }
         self.engine.join_organ(invite, &signed, operational).await?;
         Ok(signed)
     }
@@ -1042,52 +1083,23 @@ impl Wire {
     }
 
     pub async fn shutdown(&self) {
+        let _ = self.set_local_discovery(false);
         self.endpoint.close().await;
     }
 
-    fn spawn_mdns(&self) {
-        use n0_future::StreamExt as _;
-
-        let mdns = match iroh_mdns_address_lookup::MdnsAddressLookup::builder()
-            .service_name(MDNS_SERVICE_NAME)
-            .build(self.endpoint.id())
-        {
-            Ok(mdns) => mdns,
-            Err(error) => {
-                tracing::warn!(%error, "mDNS unavailable; nearby list will stay empty");
-                return;
-            }
-        };
-        if let Ok(services) = self.endpoint.address_lookup() {
-            services.add(mdns.clone());
+    pub fn set_local_discovery(&self, enabled: bool) -> Result<(), EngineError> {
+        if enabled && self.private.is_some() {
+            return Err(EngineError::Consequence("Private connections cannot advertise on the LAN".into()));
         }
+        self.local_discovery.set_enabled(enabled, self.node_id(), self.nearby.clone())
+    }
 
-        let nearby = self.nearby.clone();
-        tokio::spawn(async move {
-            let mut events = mdns.subscribe().await;
-            while let Some(event) = events.next().await {
-                match event {
-                    iroh_mdns_address_lookup::DiscoveryEvent::Discovered {
-                        endpoint_info, ..
-                    } => {
-                        let id = endpoint_info.endpoint_id;
-                        nearby.observe(
-                            id.to_string(),
-                            node_fingerprint(&id),
-                            endpoint_info
-                                .data
-                                .user_data()
-                                .map(|data| data.to_string())
-                                .unwrap_or_default(),
-                        );
-                    }
-                    iroh_mdns_address_lookup::DiscoveryEvent::Expired { endpoint_id } => {
-                        nearby.forget(&endpoint_id.to_string());
-                    }
-                    _ => {}
-                }
-            }
-        });
+    pub fn set_display_name(&self, name: &str) {
+        let clipped: String = name.chars().take(iroh::address_lookup::UserData::MAX_LENGTH / 4).collect();
+        match iroh::address_lookup::UserData::try_from(clipped) {
+            Ok(data) => self.endpoint.set_user_data_for_address_lookup(Some(data)),
+            Err(error) => tracing::warn!(%error, "display name rejected for discovery"),
+        }
     }
 
     pub fn nearby(&self) -> &Nearby {
@@ -1132,6 +1144,23 @@ impl Wire {
 
     pub fn reach(&self) -> Reach {
         self.reach
+    }
+
+    pub fn local_discovery(&self) -> bool {
+        self.local_discovery.enabled()
+    }
+
+    pub fn configured_port(&self) -> u16 {
+        self.peer_port
+    }
+
+    pub fn network_status(&self) -> serde_json::Value {
+        serde_json::json!({
+            "configured_port": self.peer_port,
+            "relay_only": self.reach == Reach::Relay,
+            "listening": self.endpoint.bound_sockets().iter().map(ToString::to_string).collect::<Vec<_>>(),
+            "addresses": self.endpoint.addr().ip_addrs().map(ToString::to_string).collect::<Vec<_>>(),
+        })
     }
 
     pub fn endpoint(&self) -> &Endpoint {
@@ -1261,6 +1290,7 @@ impl Wire {
         let Ok(Some(signed)) = self.engine.roster_of(&organ.uid).await else {
             return false;
         };
+        if !crate::roster::roster_signature_is_valid(&signed) { return false; }
         signed
             .roster
             .cells
@@ -1271,6 +1301,7 @@ impl Wire {
     pub async fn sibling_organ(&self, node_id: &str) -> Option<String> {
         let organ = store::organs::local(&self.engine.store.pool).await.ok()??;
         let signed = self.engine.roster_of(&organ.uid).await.ok()??;
+        if !crate::roster::roster_signature_is_valid(&signed) { return None; }
         let ours = store::cells::local(&self.engine.store.pool)
             .await
             .ok()??
@@ -1287,7 +1318,7 @@ impl Wire {
             .map(|_| organ.uid)
     }
 
-    async fn may_represent(&self) -> bool {
+    pub(crate) async fn may_represent(&self) -> bool {
         let pool = &self.engine.store.pool;
         let (Ok(Some(organ)), Ok(Some(cell))) = (
             store::organs::local(pool).await,
@@ -1380,6 +1411,10 @@ impl Wire {
             return Ok(());
         }
 
+        if alpn == crate::blob_sync::ALPN || alpn == crate::blob_sync::DATA_ALPN {
+            return self.serve_blob_connection(connection).await;
+        }
+
         let sibling = self.sibling_organ(&peer.to_string()).await;
 
         let known = sibling.is_some() || contact.as_ref().is_some_and(|c| c.trust == "known");
@@ -1462,6 +1497,7 @@ impl Wire {
             }
         }
 
+        let was_sibling = sibling.is_some();
         let from_organ = sibling
             .or_else(|| contact.map(|contact| contact.record_uid))
             .unwrap_or_default();
@@ -1475,6 +1511,14 @@ impl Wire {
                 .read_to_end(MAX_FRAME_BYTES)
                 .await
                 .map_err(|error| EngineError::Consequence(format!("peer frame: {error}")))?;
+            if (was_sibling && self.sibling_organ(&peer.to_string()).await.as_deref() != Some(from_organ.as_str()))
+                || (listed && !self.roster_names_node(&peer.to_string()).await)
+                || store::organs::contact_by_node_id(&self.engine.store.pool, &peer.to_string()).await?
+                    .is_some_and(|contact| contact.trust == "blocked")
+            {
+                connection.close(0u32.into(), b"peer authorization changed");
+                return Ok(());
+            }
             let response = match serde_json::from_slice::<WireRequest>(&raw) {
                 Ok(request)
                     if alpn.as_slice() == ALPN_LIVE
@@ -1636,7 +1680,7 @@ impl Wire {
                         message: "the batch does not belong to the Organ on this connection".into(),
                     };
                 }
-                match self.engine.import_op_batch(&batch).await {
+                match self.engine.receive_sync_batch(authenticated, &batch).await {
                     Ok(applied) => WireResponse::BatchSaved {
                         applied,
                         complete: self.engine.batch_is_saved(&batch).await.unwrap_or(false),
@@ -1969,133 +2013,10 @@ impl Wire {
                 }
             }
             WireRequest::FetchOpsSince { vector, limit } => {
-                let limit = limit.clamp(1, 2000);
-                if vector.is_empty() {
-                    match store::contact_rate::backing_off(
-                        &self.engine.store.pool,
-                        authenticated,
-                        store::contact_rate::RateKind::FullLogServe,
-                    )
-                    .await
-                    {
-                        Ok(Some(message)) => {
-                            return WireResponse::Refused {
-                                code: "rate_limited".into(),
-                                message,
-                            };
-                        }
-                        Ok(None) => {
-                            if let Err(error) = store::contact_rate::spend(
-                                &self.engine.store.pool,
-                                authenticated,
-                                store::contact_rate::RateKind::FullLogServe,
-                            )
-                            .await
-                            {
-                                tracing::warn!(%error, "could not record a full-log serve");
-                            }
-                        }
-                        Err(error) => tracing::warn!(%error, "could not read the serve allowance"),
-                    }
-                }
-                let local = match store::organs::local(&self.engine.store.pool).await {
-                    Ok(organ) => organ.map(|organ| organ.uid).unwrap_or_default(),
-                    Err(error) => {
-                        return WireResponse::Error {
-                            message: error.to_string(),
-                        };
-                    }
-                };
-                match store::sync_ops::seq_covered_by_vector(
-                    &self.engine.store.pool,
-                    &local,
-                    &vector,
-                )
-                .await
-                {
-                    Ok(covered) => {
-                        if let Err(error) = store::organs::advance_peer_acked_seq(
-                            &self.engine.store.pool,
-                            authenticated,
-                            covered,
-                        )
-                        .await
-                        {
-                            tracing::warn!(%error, "could not record peer retention floor");
-                        }
-                    }
-                    Err(error) => tracing::warn!(%error, "could not derive retention floor"),
-                }
-                let rows = match store::sync_ops::ops_missing_from_vector(
-                    &self.engine.store.pool,
-                    &local,
-                    &vector,
-                    limit,
-                )
-                .await
-                {
-                    Ok(rows) => rows,
-                    Err(error) => {
-                        return WireResponse::Error {
-                            message: error.to_string(),
-                        };
-                    }
-                };
-                let head = rows.last().map(|row| row.seq).unwrap_or_default();
-                let scope = store::organs::contact(&self.engine.store.pool, authenticated)
-                    .await
-                    .ok()
-                    .flatten()
-                    .and_then(|contact| contact.scope_fields);
-                let links =
-                    store::sync_ops::resolve_link_scope(&self.engine.store.pool, scope.as_deref())
-                        .await
-                        .unwrap_or_default();
-                let rows = store::sync_ops::narrow_ops_to_scope(rows, scope.as_deref(), &links);
-                let rows = match store::visibility::hidden_from_organ(
-                    &self.engine.store.pool,
-                    authenticated,
-                )
-                .await
-                {
-                    Ok(hidden) if !hidden.is_empty() => {
-                        let mut kept = Vec::with_capacity(rows.len());
-                        for row in rows {
-                            match store::visibility::op_hidden_from(
-                                &self.engine.store.pool,
-                                &hidden,
-                                &row.tbl,
-                                &row.uid,
-                            )
-                            .await
-                            {
-                                Ok(false) => kept.push(row),
-                                Ok(true) => {}
-                                Err(error) => {
-                                    return WireResponse::Error {
-                                        message: error.to_string(),
-                                    };
-                                }
-                            }
-                        }
-                        kept
-                    }
-                    Ok(_) => rows,
-                    Err(error) => {
-                        return WireResponse::Error {
-                            message: error.to_string(),
-                        };
-                    }
-                };
-                match self.engine.hydrate_ops(rows).await {
-                    Ok(ops) => WireResponse::Ops {
-                        from_organ: local,
-                        ops,
-                        head,
-                    },
-                    Err(error) => WireResponse::Error {
-                        message: error.to_string(),
-                    },
+                match self.engine.export_sync_page(authenticated, &vector, limit).await {
+                    Ok(page) => WireResponse::Ops { from_organ: page.batch.from_organ, ops: page.batch.ops, head: page.head },
+                    Err(EngineError::Conflict { code, message }) => WireResponse::Refused { code: code.into(), message },
+                    Err(error) => WireResponse::Error { message: error.to_string() },
                 }
             }
             WireRequest::FetchReference { root, record } => {
@@ -2400,6 +2321,7 @@ impl Wire {
     }
 
     pub async fn sync_once(&self) -> Result<usize, EngineError> {
+        let _sync = self.sync_lock.lock().await;
         self.engine.sweep_calls().await?;
         if let Err(error) = self.sync_groups().await {
             tracing::debug!(%error, "group membership was not exchanged this pass");
@@ -2698,7 +2620,7 @@ impl Wire {
         batch: &OpBatch,
     ) -> Delivery {
         let unreachable = format!("{} unreachable", contact.record_uid);
-        let now = chrono::Utc::now();
+        let now = nucleus::execution::now();
         let since = match store::organs::contact(&self.engine.store.pool, &contact.record_uid).await
         {
             Ok(Some(fresh)) => fresh,
@@ -2739,55 +2661,6 @@ impl Wire {
             }
             Ok(_) | Err(_) => Delivery::Failed(unreachable),
         }
-    }
-
-    async fn pull_siblings(&self) -> Result<usize, EngineError> {
-        let pool = &self.engine.store.pool;
-        let Some(organ) = store::organs::local(pool).await? else {
-            return Ok(0);
-        };
-        let Some(signed) = self.engine.roster_of(&organ.uid).await? else {
-            return Ok(0);
-        };
-        let Some(ours) = store::cells::local(pool).await? else {
-            return Ok(0);
-        };
-        let mut pulled = 0usize;
-        for member in &signed.roster.cells {
-            if member.cell_uid == ours.uid {
-                continue;
-            }
-            let Ok(id) = member.node_id.parse::<EndpointId>() else {
-                continue;
-            };
-            let Ok(Ok(connection)) = tokio::time::timeout(
-                DIAL_TIMEOUT,
-                self.endpoint.connect(EndpointAddr::new(id), ALPN_SYNC),
-            )
-            .await
-            else {
-                self.note_if_stale(member, id).await;
-                continue;
-            };
-            if let Err(error) = self.collect_door_requests(&connection).await {
-                tracing::debug!(%error, cell = %member.label, "door not collected this pass");
-            }
-            if !member.may(crate::roster::CAP_WRITE) {
-                continue;
-            }
-            let vector = store::sync_ops::version_vector_for_organ(pool, &organ.uid).await?;
-            let request = WireRequest::FetchOpsSince { vector, limit: 500 };
-            if let Ok(WireResponse::Ops { ops, .. }) = self.exchange(&connection, &request).await {
-                let batch = OpBatch {
-                    from_organ: organ.uid.clone(),
-                    ops,
-                };
-                if !batch.ops.is_empty() && self.engine.import_op_batch(&batch).await.is_ok() {
-                    pulled += 1;
-                }
-            }
-        }
-        Ok(pulled)
     }
 
     pub async fn hello(&self, addr: EndpointAddr) -> Option<u32> {
@@ -3537,6 +3410,9 @@ impl Wire {
 
 #[async_trait::async_trait]
 impl crate::enrolment::CellTransport for Wire {
+    async fn pairing_invite(&self) -> Result<Option<crate::pairing::PairingInvite>, EngineError> {
+        Wire::pairing_invite(self).await.map(Some)
+    }
     async fn call(&self, node: &str, request: crate::calls::Request) -> Result<crate::calls::Snapshot, EngineError> {
         let mut target = node.to_owned();
         for _ in 0..2 {
@@ -3554,6 +3430,7 @@ impl crate::enrolment::CellTransport for Wire {
         Err(EngineError::Consequence("Call coordinator could not be reached".into()))
     }
     fn local_node_id(&self) -> Option<String> { Some(self.node_id().to_string()) }
+    fn peer_network(&self) -> Option<serde_json::Value> { Some(self.network_status()) }
     async fn enrol(&self, invite: &EnrolmentInvite) -> Result<SignedRoster, EngineError> {
         Wire::enrol(self, invite).await
     }

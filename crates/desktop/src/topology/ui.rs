@@ -570,7 +570,7 @@ pub fn store_controls(world: &mut World, root: Entity, panel: Entity) {
     crate::edit_mode::label(world, panel, "glTF / GLB / Gaussian cloud", 14.0);
     let typography = world.resource::<crate::theme::Typography>();
     let editor = crate::sand::text_editor("", typography, 0);
-    world
+    let import_path = world
         .spawn((
             ImportPath(root),
             editor,
@@ -581,7 +581,19 @@ pub fn store_controls(world: &mut World, root: Entity, panel: Entity) {
             width: percent(100),
             min_height: px(30),
             ..default()
-        });
+        })
+        .id();
+    crate::sand_panel::button(
+        world,
+        panel,
+        root,
+        "Browse…",
+        crate::file_explorer::BrowseFor {
+            input: import_path,
+            extensions: vec!["gltf".into(), "glb".into(), "gcloud".into()],
+            directories: false,
+        },
+    );
     button(world, panel, root, "Import", TopologyAction::Import);
     button(
         world,

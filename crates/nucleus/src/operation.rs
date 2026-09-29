@@ -22,12 +22,7 @@ pub struct Cost {
 }
 
 pub fn now_ms() -> u64 {
-    std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap_or_default()
-        .as_millis()
-        .try_into()
-        .unwrap_or(u64::MAX)
+    crate::execution::now().timestamp_millis().max(0) as u64
 }
 
 impl Usage {

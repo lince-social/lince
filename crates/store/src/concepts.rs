@@ -1,4 +1,3 @@
-use chrono::Utc;
 use sqlx::{Row, SqlitePool};
 use std::collections::{HashSet, VecDeque};
 
@@ -23,7 +22,7 @@ pub async fn create_in(
     sqlx::query("INSERT INTO concept (uid, canonical_name, created_at) VALUES (?, ?, ?)")
         .bind(&uid)
         .bind(canonical_name)
-        .bind(Utc::now().to_rfc3339())
+        .bind(nucleus::execution::now().to_rfc3339())
         .execute(pool)
         .await?;
     for parent in parents {
@@ -240,7 +239,7 @@ pub async fn adopt(
     .bind(uid)
     .bind(canonical_name)
     .bind(origin_organ)
-    .bind(chrono::Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .execute(pool)
     .await?;
     for parent in parents {

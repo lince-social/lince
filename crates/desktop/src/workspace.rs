@@ -119,6 +119,8 @@ struct Document {
     #[serde(default)]
     karma_castles: Vec<crate::karma_castle::SavedKarmaCastle>,
     #[serde(default)]
+    simulations: Vec<crate::simulation_castle::SavedSimulation>,
+    #[serde(default)]
     frequency_castles: Vec<crate::frequency_castle::SavedFrequencyCastle>,
     #[serde(default)]
     transfer_castles: Vec<crate::transfer_castle::SavedTransferCastle>,
@@ -126,6 +128,10 @@ struct Document {
     recorders: Vec<crate::recorder_castle::SavedRecorder>,
     #[serde(default)]
     documents: Vec<crate::document_viewer::SavedDocumentViewer>,
+    #[serde(default)]
+    editors: Vec<crate::ide::SavedIde>,
+    #[serde(default)]
+    explorers: Vec<crate::file_explorer::SavedExplorer>,
     #[serde(default)]
     calendars: Vec<crate::calendar::SavedCalendar>,
     #[serde(default)]
@@ -139,6 +145,7 @@ impl Document {
         let ids: HashSet<_> = self.workspaces.iter().map(|space| space.id).collect();
         let area_ids: HashSet<_> = self.areas.iter().map(|saved| &saved.area.id).collect();
         self.theme.validate()
+            && self.simulations.iter().all(|saved| ids.contains(&saved.workspace) && saved.valid())
             && self
                 .assertions
                 .iter()
@@ -153,6 +160,14 @@ impl Document {
                 .all(|saved| ids.contains(&saved.workspace) && saved.valid())
             && self
                 .recorders
+                .iter()
+                .all(|saved| ids.contains(&saved.workspace) && saved.valid())
+            && self
+                .editors
+                .iter()
+                .all(|saved| ids.contains(&saved.workspace) && saved.valid())
+            && self
+                .explorers
                 .iter()
                 .all(|saved| ids.contains(&saved.workspace) && saved.valid())
             && self
@@ -375,7 +390,14 @@ fn initialize(world: &mut World) {
                 for saved in document.karma_castles {
                     saved.restore(world, root);
                 }
+                for saved in document.simulations { saved.restore(world, root); }
                 for saved in document.recorders {
+                    saved.restore(world, root);
+                }
+                for saved in document.editors {
+                    saved.restore(world, root);
+                }
+                for saved in document.explorers {
                     saved.restore(world, root);
                 }
                 for saved in document.documents {
@@ -786,10 +808,13 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
         shaders: crate::shader_castle::snapshot(world, root),
         assertions: crate::assertion_castle::snapshot(world, root),
         karma_castles: crate::karma_castle::snapshot(world, root),
+        simulations: crate::simulation_castle::snapshot(world, root),
         frequency_castles: crate::frequency_castle::snapshot(world, root),
         transfer_castles: crate::transfer_castle::snapshot(world, root),
         recorders: crate::recorder_castle::snapshot(world, root),
         documents: crate::document_viewer::snapshot(world, root),
+        editors: crate::ide::snapshot(world, root),
+        explorers: crate::file_explorer::snapshot(world, root),
         calendars: crate::calendar::snapshot(world, root),
         kanbans: crate::kanban::snapshot(world, root),
         instincts: crate::instinct::snapshot(world, root),
@@ -797,6 +822,9 @@ fn snapshot(world: &mut World, root: Entity) -> Document {
 }
 
 fn persist(world: &mut World) {
+    if !world.resource::<Messages<AppExit>>().is_empty() && crate::ide::protect(world, None) {
+        world.resource_mut::<Messages<AppExit>>().clear();
+    }
     if crate::laboratory::active(world) {
         if world.resource::<Messages<AppExit>>().is_empty() {
             return;

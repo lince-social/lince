@@ -1,4 +1,3 @@
-use chrono::Utc;
 use nucleus::RecordKind;
 use sqlx::{Row, SqlitePool};
 
@@ -106,7 +105,7 @@ pub async fn upsert_remote_open(pool: &SqlitePool, row: &RemoteOpenRow) -> Resul
     .bind(&row.window_start)
     .bind(&row.window_end)
     .bind(row.confidence)
-    .bind(Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .execute(pool)
     .await?;
     Ok(())

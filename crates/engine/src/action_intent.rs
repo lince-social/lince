@@ -2,7 +2,6 @@ use std::collections::HashSet;
 
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD as B64;
-use chrono::Utc;
 use ed25519_dalek::{Signature, Verifier as _, VerifyingKey};
 use nucleus::action_intent::{ActionIntentSessionProof, SignedActionIntent};
 
@@ -86,8 +85,8 @@ impl Engine {
 
         Ok(ActionIntentSession {
             person_uid: person.uid,
-            session_id: uuid::Uuid::new_v4().to_string(),
-            challenge: format!("v1:{}", uuid::Uuid::new_v4()),
+            session_id: nucleus::execution::uuid().to_string(),
+            challenge: format!("v1:{}", nucleus::execution::uuid()),
             bound_key_id: None,
             next_sequence: 1,
             used_message_ids: HashSet::new(),
@@ -277,7 +276,7 @@ impl Engine {
                     action_base64: &intent.action_base64,
                     signature: &intent.signature,
                 },
-                Utc::now(),
+                nucleus::execution::now(),
             )
             .await?
             .uid
@@ -331,13 +330,13 @@ impl Engine {
                     &verified.intent_uid,
                     error.code(),
                     &error.to_string(),
-                    Utc::now(),
+                    nucleus::execution::now(),
                 )
                 .await;
             }
             return Err(error);
         }
-        let now = Utc::now();
+        let now = nucleus::execution::now();
         let VerifiedActionIntent {
             intent_uid,
             action,
@@ -398,7 +397,7 @@ impl Engine {
                     &self.store.pool,
                     &intent_uid,
                     &fact_uids,
-                    Utc::now(),
+                    nucleus::execution::now(),
                 )
                 .await?;
                 Ok(outcome)
@@ -409,7 +408,7 @@ impl Engine {
                     &intent_uid,
                     error.code(),
                     &error.to_string(),
-                    Utc::now(),
+                    nucleus::execution::now(),
                 )
                 .await;
                 Err(error)

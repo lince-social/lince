@@ -1335,6 +1335,12 @@ fn render_panel_content(world: &mut World, root: Entity) {
         crate::document_viewer::store_entry(world, root, entry);
         castle_entries.push(entry);
         let entry = store_group(world, castles_group);
+        crate::file_explorer::store_entry(world, root, entry);
+        castle_entries.push(entry);
+        let entry = store_group(world, castles_group);
+        crate::ide::store_entry(world, root, entry);
+        castle_entries.push(entry);
+        let entry = store_group(world, castles_group);
         crate::shader_castle::store_entry(world, root, entry);
         castle_entries.push(entry);
         let entry = store_group(world, castles_group);
@@ -1342,6 +1348,9 @@ fn render_panel_content(world: &mut World, root: Entity) {
         castle_entries.push(entry);
         let entry = store_group(world, castles_group);
         crate::calendar::store_entry(world, root, entry);
+        castle_entries.push(entry);
+        let entry = store_group(world, castles_group);
+        crate::simulation_castle::store_entry(world, root, entry);
         castle_entries.push(entry);
         let entry = store_group(world, castles_group);
         crate::kanban::store_entry(world, root, entry);

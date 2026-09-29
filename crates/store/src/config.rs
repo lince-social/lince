@@ -70,16 +70,19 @@ pub async fn set_interface_storage(
 ) -> Result<(), StoreError> {
     settings.validate()?;
     ensure_default(pool).await?;
-    sqlx::query("UPDATE configuration SET interface_snapshot_seconds = ?, interface_history_seconds = ?, interface_history_count = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1")
+    sqlx::query("UPDATE configuration SET interface_snapshot_seconds = ?, interface_history_seconds = ?, interface_history_count = ?, updated_at = ? WHERE id = 1")
         .bind(settings.snapshot_seconds as i64)
         .bind(settings.history_seconds as i64)
         .bind(settings.history_count as i64)
+        .bind(nucleus::execution::now().to_rfc3339())
         .execute(pool).await?;
     Ok(())
 }
 
 pub async fn ensure_default(pool: &SqlitePool) -> Result<(), StoreError> {
-    sqlx::query("INSERT OR IGNORE INTO configuration (id) VALUES (1)")
+    sqlx::query("INSERT OR IGNORE INTO configuration (id, created_at, updated_at) VALUES (1, ?, ?)")
+        .bind(nucleus::execution::now().to_rfc3339())
+        .bind(nucleus::execution::now().to_rfc3339())
         .execute(pool)
         .await?;
     Ok(())
@@ -155,9 +158,10 @@ pub async fn set_interface_close_suspends(
 ) -> Result<(), StoreError> {
     ensure_default(pool).await?;
     sqlx::query(
-        "UPDATE configuration SET interface_close_suspends = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1",
+        "UPDATE configuration SET interface_close_suspends = ?, updated_at = ? WHERE id = 1",
     )
     .bind(i64::from(enabled))
+    .bind(nucleus::execution::now().to_rfc3339())
     .execute(pool)
     .await?;
     Ok(())
@@ -184,9 +188,10 @@ pub async fn set_transfer_reservation_default(
     ensure_default(pool).await?;
     sqlx::query(
         "UPDATE configuration
-         SET transfer_reservation_default = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1",
+         SET transfer_reservation_default = ?, updated_at = ? WHERE id = 1",
     )
     .bind(reserve_from)
+    .bind(nucleus::execution::now().to_rfc3339())
     .execute(pool)
     .await?;
     Ok(())
@@ -214,9 +219,10 @@ pub async fn set_transfer_application_formula(
     ensure_default(pool).await?;
     sqlx::query(
         "UPDATE configuration
-         SET transfer_application_formula = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1",
+         SET transfer_application_formula = ?, updated_at = ? WHERE id = 1",
     )
     .bind(formula)
+    .bind(nucleus::execution::now().to_rfc3339())
     .execute(pool)
     .await?;
     Ok(())
@@ -243,9 +249,10 @@ pub async fn set_transfer_remainder_policy(
     ensure_default(pool).await?;
     sqlx::query(
         "UPDATE configuration
-         SET transfer_remainder_policy = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1",
+         SET transfer_remainder_policy = ?, updated_at = ? WHERE id = 1",
     )
     .bind(policy)
+    .bind(nucleus::execution::now().to_rfc3339())
     .execute(pool)
     .await?;
     Ok(())
@@ -267,10 +274,10 @@ pub async fn set_deletion_confirmation(
 ) -> Result<(bool, bool), StoreError> {
     ensure_default(pool).await?;
     let query = if records {
-        "UPDATE configuration SET delete_confirmation = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1"
+        "UPDATE configuration SET delete_confirmation = ?, updated_at = ? WHERE id = 1"
     } else {
-        "UPDATE configuration SET sand_delete_confirmation = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1"
+        "UPDATE configuration SET sand_delete_confirmation = ?, updated_at = ? WHERE id = 1"
     };
-    sqlx::query(query).bind(enabled).execute(pool).await?;
+    sqlx::query(query).bind(enabled).bind(nucleus::execution::now().to_rfc3339()).execute(pool).await?;
     deletion_confirmations(pool).await
 }

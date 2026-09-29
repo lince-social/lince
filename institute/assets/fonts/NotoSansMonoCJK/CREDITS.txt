@@ -1,0 +1,13 @@
+Noto Sans Mono CJK JP Regular, version 2.004
+© 2014-2021 Adobe (http://www.adobe.com/).
+
+Designers:
+Ryoko NISHIZUKA 西塚涼子 (kana, bopomofo & ideographs)
+Paul D. Hunt (Latin, Greek & Cyrillic)
+Sandoll Communications 산돌커뮤니케이션, Soo-young JANG 장수영 & Joo-yeon KANG 강주연 (hangul elements, letters & syllables)
+
+Source: https://github.com/notofonts/noto-cjk
+Commit: f8d157532fbfaeda587e826d4cd5b21a49186f7c
+Font: Sans/Mono/NotoSansMonoCJKjp-Regular.otf
+License: Sans/LICENSE (included as OFL.txt)
+SHA-256: 4d01725be822d144cf9a56ade981e6fb920cd7a610b8fc24cc601a920beea5b9

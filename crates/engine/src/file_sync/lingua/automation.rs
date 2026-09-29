@@ -235,6 +235,7 @@ fn rule_condition(
     nucleus::karma::Condition::parse(source).map_err(invalid)?;
     Ok(Some(store::recurrence::RuleCondition {
         source: source.clone(),
+        bindings: Vec::new(),
         gate: Gate::parse(rule.gate.as_deref().unwrap_or("!=0")).map_err(invalid)?,
         carry: Carry::parse(rule.carry.as_deref().unwrap_or("value")).map_err(invalid)?,
     }))
@@ -352,7 +353,7 @@ impl Engine {
             let definition = frequency_definition(frequency)?;
             let handle = frequencies::get_handle(&self.store.pool, &frequency.uid).await?;
             let before = handle.clone();
-            let now = Utc::now();
+            let now = nucleus::execution::now();
             if let Some(handle) = handle {
                 let revision =
                     frequencies::get_revision(&self.store.pool, &handle.head_revision_hash)
@@ -449,7 +450,7 @@ impl Engine {
                 .as_deref()
                 .map(instant)
                 .transpose()?
-                .unwrap_or_else(Utc::now);
+                .unwrap_or_else(nucleus::execution::now);
             if !rule.frequency_slug.is_empty() {
                 let frequency = store::frequency::resolve(&self.store.pool, &rule.frequency_slug)
                     .await?
@@ -463,14 +464,23 @@ impl Engine {
                 .resolve_consequences(consequences.as_slice().to_vec())
                 .await?;
             let mut condition = rule_condition(rule)?;
+            let current = store::recurrence::get(&self.store.pool, &rule.uid).await?;
             if let Some(condition) = &mut condition {
                 condition.source = self
                     .canonical_condition(Some(condition.source.clone()))
                     .await?
                     .ok_or_else(|| invalid("Empty condition"))?;
+                condition.bindings = store::karma_bindings::resolve(
+                    &self.store.pool,
+                    &condition.source,
+                    current
+                        .as_ref()
+                        .and_then(|rule| rule.condition.as_ref())
+                        .map_or(&[], |condition| condition.bindings.as_slice()),
+                )
+                .await?;
             }
             Box::pin(self.validate_automatic_rule(&consequences, condition.as_ref(), None)).await?;
-            let current = store::recurrence::get(&self.store.pool, &rule.uid).await?;
             let before = current.clone();
             if let Some(current) = current {
                 if current.record_uid != *target {
@@ -514,7 +524,7 @@ impl Engine {
                         actor_uid: None,
                     },
                     Some(&rule.uid),
-                    Utc::now(),
+                    nucleus::execution::now(),
                 )
                 .await?;
             }

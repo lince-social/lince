@@ -1,4 +1,3 @@
-use chrono::Utc;
 use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;
@@ -40,7 +39,7 @@ pub async fn record(
     .bind(carrier_organ)
     .bind(carrier_node)
     .bind(to_organ)
-    .bind(Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .execute(pool)
     .await?;
     Ok(())
@@ -99,7 +98,7 @@ pub async fn outstanding(pool: &SqlitePool) -> Result<i64, StoreError> {
 }
 
 pub async fn prune(pool: &SqlitePool, keep_days: i64) -> Result<u64, StoreError> {
-    let cutoff = (Utc::now() - chrono::Duration::days(keep_days)).to_rfc3339();
+    let cutoff = (nucleus::execution::now() - chrono::Duration::days(keep_days)).to_rfc3339();
     Ok(sqlx::query("DELETE FROM mail_left WHERE left_at < ?")
         .bind(&cutoff)
         .execute(pool)

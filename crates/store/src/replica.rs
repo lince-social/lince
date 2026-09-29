@@ -1,4 +1,3 @@
-use chrono::Utc;
 use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;
@@ -15,7 +14,7 @@ pub async fn offer(pool: &SqlitePool, root: &str, contact: &str) -> Result<(), S
     .bind(root)
     .bind(contact)
     .bind(OFFERED)
-    .bind(Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .execute(pool)
     .await?;
     Ok(())
@@ -30,7 +29,7 @@ pub async fn accept(pool: &SqlitePool, root: &str, contact: &str) -> Result<(), 
     .bind(root)
     .bind(contact)
     .bind(ACCEPTED)
-    .bind(Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .execute(pool)
     .await?;
     Ok(())
@@ -250,7 +249,7 @@ pub async fn note_reference_read(
     .bind(reader_organ)
     .bind(record)
     .bind(root)
-    .bind(chrono::Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .execute(pool)
     .await?;
     Ok(())

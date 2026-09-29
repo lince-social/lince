@@ -27,6 +27,130 @@ fn fixture() -> World {
 }
 
 #[test]
+fn person_drafts_are_separate_and_passwords_never_reach_disk() {
+    let directory = tempfile::tempdir().unwrap();
+    let mut world = fixture();
+    world.insert_resource(Mobile::new(directory.path().into()));
+    world.resource_mut::<Mobile>().identity =
+        crate::session::Identity::Person("r_person_one".into());
+    world
+        .resource_mut::<Mobile>()
+        .drafts
+        .insert("r_one/body".into(), "Private draft".into());
+    world
+        .resource_mut::<Mobile>()
+        .drafts
+        .insert("login/password".into(), "secret".into());
+    save(&mut world, "organ".into()).unwrap();
+    let first = draft_directory(world.resource::<Mobile>());
+    let bytes = std::fs::read_to_string(first.join("mobile-drafts.json")).unwrap();
+    assert!(!bytes.contains("secret"));
+    world.resource_mut::<Mobile>().identity =
+        crate::session::Identity::Person("r_person_two".into());
+    let second = draft_directory(world.resource::<Mobile>());
+    assert_ne!(first, second);
+    assert!(crate::storage::read(&second, "organ").unwrap().is_none());
+    world.resource_mut::<Mobile>().identity =
+        crate::session::Identity::Person("../../elsewhere".into());
+    assert!(
+        draft_directory(world.resource::<Mobile>())
+            .starts_with(directory.path().join("person-drafts"))
+    );
+}
+
+#[test]
+fn expired_session_keeps_unsaved_drafts_private_until_the_same_person_returns() {
+    let directory = tempfile::tempdir().unwrap();
+    let mut world = fixture();
+    world.insert_resource(Mobile::new(directory.path().into()));
+    let person = crate::session::Identity::Person("one".into());
+    {
+        let mut state = world.resource_mut::<Mobile>();
+        state.organ = Some("organ".into());
+        state.identity = person.clone();
+        state
+            .drafts
+            .insert("record/body".into(), "Unsaved private text".into());
+        state
+            .drafts
+            .insert("login/password".into(), "Never retain this".into());
+    }
+    std::fs::write(
+        directory.path().join("person-drafts"),
+        "blocks directory creation",
+    )
+    .unwrap();
+    assert!(save(&mut world, "organ".into()).is_err());
+    identity_ready(
+        &mut world,
+        "organ".into(),
+        false,
+        crate::session::Identity::Locked,
+    );
+    assert!(world.resource::<Mobile>().drafts.is_empty());
+    assert_eq!(world.resource::<DraftRecovery>().0.len(), 1);
+    identity_ready(
+        &mut world,
+        "organ".into(),
+        false,
+        crate::session::Identity::Person("two".into()),
+    );
+    assert!(
+        !world
+            .resource::<Mobile>()
+            .drafts
+            .contains_key("record/body")
+    );
+    identity_ready(&mut world, "organ".into(), false, person);
+    assert_eq!(
+        world.resource::<Mobile>().drafts["record/body"],
+        "Unsaved private text"
+    );
+    assert!(
+        !world
+            .resource::<Mobile>()
+            .drafts
+            .contains_key("login/password")
+    );
+    std::fs::remove_file(directory.path().join("person-drafts")).unwrap();
+    world.resource_mut::<Mobile>().save_error = false;
+    save(&mut world, "organ".into()).unwrap();
+    let restored = crate::storage::read(&draft_directory(world.resource::<Mobile>()), "organ")
+        .unwrap()
+        .unwrap();
+    assert_eq!(restored.drafts["record/body"], "Unsaved private text");
+}
+
+#[test]
+fn negative_cards_offer_completion_without_hiding_the_all_records_view() {
+    let mut world = fixture();
+    world.resource_mut::<Mobile>().rows.insert(
+        "records".into(),
+        vec![
+            serde_json::json!({"uid":"negative","head":"Needs work","quantity":"-2"}),
+            serde_json::json!({"uid":"zero","head":"Done","quantity":"0"}),
+            serde_json::json!({"uid":"positive","head":"Contribution","quantity":"1"}),
+        ],
+    );
+    render(&mut world);
+    let complete: Vec<_> = world
+        .query::<&ButtonIntent>()
+        .iter(&world)
+        .filter_map(|button| match &button.0 {
+            Intent::CompleteRecord(uid) => Some(uid.clone()),
+            _ => None,
+        })
+        .collect();
+    assert_eq!(complete, ["negative"]);
+    assert!(
+        world
+            .query::<&ButtonIntent>()
+            .iter(&world)
+            .any(|button| matches!(button.0, Intent::ToggleNegative))
+    );
+}
+
+#[test]
 fn phone_pages_mount_without_desktop_canvas_and_keep_drafts_when_navigating() {
     let mut world = fixture();
     let uid = nucleus::new_uid("r");

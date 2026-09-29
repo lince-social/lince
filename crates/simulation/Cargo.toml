@@ -1,0 +1,32 @@
+[package]
+name = "lince-simulation"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+description = "Isolated Lince worlds, typed evidence and reproducible scenario execution."
+
+[lib]
+name = "simulation"
+
+[dependencies]
+cell = { workspace = true }
+engine = { workspace = true }
+store = { workspace = true }
+nucleus = { workspace = true }
+protein = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+schemars = { workspace = true }
+sha2 = { workspace = true }
+chrono = { workspace = true }
+tokio = { workspace = true, features = ["macros", "rt-multi-thread", "signal"] }
+tempfile = "=3.27.0"
+
+[build-dependencies]
+sha2 = { workspace = true }
+sensei = { workspace = true }
+
+[lints]
+workspace = true

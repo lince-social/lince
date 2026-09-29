@@ -27,8 +27,8 @@ impl Signer {
 
     pub fn generate(actor_uid: &str, key_id: &str) -> Signer {
         let mut secret = [0u8; 32];
-        secret[..16].copy_from_slice(uuid::Uuid::new_v4().as_bytes());
-        secret[16..].copy_from_slice(uuid::Uuid::new_v4().as_bytes());
+        secret[..16].copy_from_slice(nucleus::execution::uuid().as_bytes());
+        secret[16..].copy_from_slice(nucleus::execution::uuid().as_bytes());
         Self::from_bytes(actor_uid, key_id, secret)
     }
 
@@ -223,8 +223,12 @@ pub async fn verify_fact(store: &Store, fact: &Fact) -> Result<bool, EngineError
         if let Ok(sig_bytes) = B64.decode(signature) {
             if let Ok(sig) = Signature::from_slice(&sig_bytes) {
                 let keys: Vec<String> = store::sqlx::query_scalar(
-                    "SELECT public_key FROM identity_key WHERE actor_uid = ?",
+                    "SELECT public_key FROM identity_key WHERE actor_uid = ?
+                     UNION SELECT json_extract(member.value, '$.operational_key')
+                     FROM organ_roster AS roster, json_each(roster.payload, '$.cells') AS member
+                     WHERE roster.organ_uid = ? AND json_type(member.value, '$.operational_key') = 'text'",
                 )
+                .bind(actor)
                 .bind(actor)
                 .fetch_all(&store.pool)
                 .await?;

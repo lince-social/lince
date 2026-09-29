@@ -9,6 +9,8 @@ use engine::file_sync::FileFormat;
 use serde_json::{Value, json};
 use std::collections::HashSet;
 
+mod blobs;
+
 #[derive(Component)]
 struct SyncCastle {
     enabled: bool,
@@ -39,6 +41,7 @@ pub struct SyncCastlePlugin;
 impl Plugin for SyncCastlePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Requests>()
+            .add_systems(Update, blobs::update)
             .add_message::<CellMessage>()
             .add_systems(Update, (receive.after(ReceiveCell), maintain).chain());
     }
@@ -321,6 +324,7 @@ pub(crate) fn populate(world: &mut World, root: Entity, sand: Entity) -> Entity 
         names: Default::default(),
     });
     set_enabled(world, sand, false);
+    blobs::populate(world, sand);
     crate::information::sync::panel(world, root, sand);
     sand
 }

@@ -139,6 +139,11 @@ jobs:
           mkdir -p binary-artifacts package/lince/bin
           install -m755 "target/$BUILD_TARGET/release/lince$BINARY_EXTENSION" "package/lince/bin/lince$BINARY_EXTENSION"
           install -m644 LICENSE package/lince/LICENSE
+          if [ "$RUNNER_OS" = Linux ]; then
+            install -Dm644 packaging/linux/ufw/lince package/lince/etc/ufw/applications.d/lince
+            install -Dm644 packaging/linux/firewalld/lince.xml package/lince/lib/firewalld/services/lince.xml
+            install -Dm644 packaging/linux/firewalld/lince-test.xml package/lince/lib/firewalld/services/lince-test.xml
+          fi
           printf '%s\n' "$GITHUB_SHA" > package/lince/revision
           if [ "$RUNNER_OS" = Windows ]; then
             asset="lince-$BUILD_TARGET.zip"
@@ -331,7 +336,7 @@ jobs:
               for name in ('flake.nix', 'flake.lock', 'Cargo.toml'):
                   (root / name).write_bytes(Path(name).read_bytes())
               (root / 'institute').mkdir()
-              (root / 'institute' / 'institute.nix').write_bytes(Path('institute/institute.nix').read_bytes())
+              (root / 'institute' / 'configuration.nix').write_bytes(Path('institute/configuration.nix').read_bytes())
               (root / 'binary.json').write_text(json.dumps(release, indent=2) + '\n')
               destination = artifacts / 'lince-flake.tar.gz'
               with tarfile.open(destination, 'w:gz') as archive:
@@ -487,7 +492,7 @@ jobs:
               || [ "$(findmnt -no FSTYPE /boot)" != vfat ] \
               || [ "$(readlink -f /dev/disk/by-label/nixos)" != "$(readlink -f "$(findmnt -no SOURCE /)")" ] \
               || [ "$(readlink -f /dev/disk/by-label/ESP)" != "$(readlink -f "$(findmnt -no SOURCE /boot)")" ]; then
-              echo "Server boot mode or disk mounts do not match institute/institute.nix" >&2
+              echo "Server boot mode or disk mounts do not match institute/configuration.nix" >&2
               exit 1
             fi
             if ! sudo test -s /var/lib/lince/initial-admin-password; then

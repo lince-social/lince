@@ -1,4 +1,3 @@
-use chrono::Utc;
 use sqlx::{Row, SqlitePool};
 
 use crate::StoreError;
@@ -54,7 +53,7 @@ pub async fn put(pool: &SqlitePool, roster: &StoredRoster) -> Result<(), StoreEr
     .bind(&roster.not_after)
     .bind(&roster.payload)
     .bind(&roster.signature)
-    .bind(Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .execute(pool)
     .await?;
     Ok(())
@@ -119,7 +118,7 @@ pub async fn put_public_packet(
     )
     .bind(organ_uid)
     .bind(packet)
-    .bind(Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .execute(pool)
     .await?;
     Ok(())
@@ -156,7 +155,7 @@ pub async fn put_enrolment_token(
     )
     .bind(token_hash)
     .bind(expires_at)
-    .bind(Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .execute(pool)
     .await?;
     Ok(())
@@ -166,7 +165,7 @@ pub async fn redeem_enrolment_token(
     pool: &SqlitePool,
     token_hash: &str,
 ) -> Result<bool, StoreError> {
-    let now = Utc::now().to_rfc3339();
+    let now = nucleus::execution::now().to_rfc3339();
     let affected = sqlx::query(
         "UPDATE enrolment_token SET used_at = ?
           WHERE token_hash = ? AND used_at IS NULL AND expires_at > ?",
@@ -181,7 +180,7 @@ pub async fn redeem_enrolment_token(
 }
 
 pub async fn enrolment_is_open(pool: &SqlitePool) -> Result<bool, StoreError> {
-    let now = Utc::now().to_rfc3339();
+    let now = nucleus::execution::now().to_rfc3339();
     let outstanding: i64 = sqlx::query_scalar(
         "SELECT COUNT(*) FROM enrolment_token WHERE used_at IS NULL AND expires_at > ?",
     )
@@ -271,7 +270,7 @@ pub async fn record_revocation(
     .bind(organ_uid)
     .bind(revoked_key)
     .bind(signature)
-    .bind(Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .execute(pool)
     .await?;
     Ok(())

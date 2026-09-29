@@ -1,4 +1,3 @@
-use chrono::Utc;
 use nucleus::DecimalValue;
 use nucleus::graph::Edge;
 use sqlx::{Row, Sqlite, SqlitePool, Transaction};
@@ -335,7 +334,7 @@ pub async fn insert_tx(
         quantity: new.quantity,
         unit_uid: new.unit_uid.map(str::to_owned),
         asserted_by: new.asserted_by.map(str::to_owned),
-        created_at: Utc::now().to_rfc3339(),
+        created_at: nucleus::execution::now().to_rfc3339(),
         retracted_at: None,
         retracted_by: None,
     };
@@ -382,7 +381,7 @@ pub async fn retract_tx(
             sqlx::query(
                 "UPDATE record_assertion SET retracted_at = ?, retracted_by = ? WHERE uid = ?",
             )
-            .bind(Utc::now().to_rfc3339())
+            .bind(nucleus::execution::now().to_rfc3339())
             .bind(retracted_by)
             .bind(member)
             .execute(&mut **tx)
@@ -395,7 +394,7 @@ pub async fn retract_tx(
         return Ok(false);
     }
     sqlx::query("UPDATE record_assertion SET retracted_at = ?, retracted_by = ? WHERE uid = ?")
-        .bind(Utc::now().to_rfc3339())
+        .bind(nucleus::execution::now().to_rfc3339())
         .bind(retracted_by)
         .bind(uid)
         .execute(&mut **tx)
@@ -542,7 +541,7 @@ pub async fn assert(pool: &SqlitePool, new: NewAssertion<'_>) -> Result<String, 
         return Ok(existing.get("uid"));
     }
     let uid = nucleus::new_uid("a");
-    let now = Utc::now().to_rfc3339();
+    let now = nucleus::execution::now().to_rfc3339();
     let quantity = new.quantity.map(crate::exact::decimal_columns);
     sqlx::query(
         "INSERT INTO record_assertion
@@ -612,7 +611,7 @@ pub async fn retract(
         "UPDATE record_assertion SET retracted_at = ?, retracted_by = ?
           WHERE uid = ? AND retracted_at IS NULL",
     )
-    .bind(Utc::now().to_rfc3339())
+    .bind(nucleus::execution::now().to_rfc3339())
     .bind(actor_uid)
     .bind(uid)
     .execute(pool)
@@ -633,7 +632,7 @@ pub async fn set_identity(
     actor_uid: Option<&str>,
 ) -> Result<Option<String>, StoreError> {
     let mut transaction = crate::write_tx(pool).await?;
-    let now = Utc::now().to_rfc3339();
+    let now = nucleus::execution::now().to_rfc3339();
     let displaced: Vec<String> = sqlx::query(
         "SELECT uid FROM record_assertion
           WHERE subject_uid = ? AND role = 'identity' AND retracted_at IS NULL
@@ -887,7 +886,7 @@ pub async fn transition_unary(
     assert_predicates: &[String],
     actor_uid: Option<&str>,
 ) -> Result<(), StoreError> {
-    let now = Utc::now().to_rfc3339();
+    let now = nucleus::execution::now().to_rfc3339();
     for predicate_uid in retract_predicates {
         let displaced: Vec<String> = sqlx::query(
             "SELECT uid FROM record_assertion
@@ -973,7 +972,7 @@ pub async fn refine(
     actor_uid: Option<&str>,
 ) -> Result<String, StoreError> {
     let mut transaction = crate::write_tx(pool).await?;
-    let now = Utc::now().to_rfc3339();
+    let now = nucleus::execution::now().to_rfc3339();
     if let Some(row) = sqlx::query(
         "SELECT uid FROM record_assertion
           WHERE subject_uid = ? AND predicate_uid = ? AND object_uid IS NULL
@@ -1118,6 +1117,16 @@ pub async fn recent_messages(
     thread: &str,
     limit: usize,
 ) -> Result<Vec<crate::records::RecordRow>, StoreError> {
+    messages_before(pool, predicate_uid, thread, limit, None).await
+}
+
+pub async fn messages_before(
+    pool: &SqlitePool,
+    predicate_uid: &str,
+    thread: &str,
+    limit: usize,
+    before: Option<(&str, &str)>,
+) -> Result<Vec<crate::records::RecordRow>, StoreError> {
     sqlx::query(
         "SELECT r.*,
                 (SELECT predicate_uid FROM record_assertion identity
@@ -1129,10 +1138,14 @@ pub async fn recent_messages(
             AND EXISTS (SELECT 1 FROM record_assertion a
                 WHERE a.subject_uid = r.uid AND a.predicate_uid = ?
                   AND a.object_uid = ? AND a.retracted_at IS NULL)
+            AND (? IS NULL OR (r.created_at, r.uid) < (?, ?))
           ORDER BY r.created_at DESC, r.uid DESC LIMIT ?",
     )
     .bind(predicate_uid)
     .bind(thread)
+    .bind(before.map(|(at, _)| at))
+    .bind(before.map(|(at, _)| at))
+    .bind(before.map(|(_, uid)| uid))
     .bind(i64::try_from(limit).unwrap_or(i64::MAX))
     .fetch_all(pool)
     .await?

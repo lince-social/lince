@@ -20,11 +20,14 @@ pub fn counter(hlc: i64) -> u16 {
 pub const MAX_CLOCK_DRIFT_MS: i64 = 5 * 60 * 1000;
 
 pub fn within_drift(seen: i64) -> bool {
-    wall_ms(seen) <= chrono::Utc::now().timestamp_millis() + MAX_CLOCK_DRIFT_MS
+    wall_ms(seen) <= crate::execution::now().timestamp_millis() + MAX_CLOCK_DRIFT_MS
 }
 
 pub fn next() -> i64 {
-    let floor = chrono::Utc::now().timestamp_millis() << COUNTER_BITS;
+    if let Some(execution) = crate::execution::current() {
+        return execution.next_hlc();
+    }
+    let floor = crate::execution::now().timestamp_millis() << COUNTER_BITS;
     let prev = LAST
         .try_update(Ordering::SeqCst, Ordering::SeqCst, |last| {
             Some(if floor > last {
@@ -39,12 +42,15 @@ pub fn next() -> i64 {
 
 pub fn observe(seen: i64) {
     if within_drift(seen) {
-        LAST.fetch_max(seen, Ordering::SeqCst);
+        adopt_own(seen);
     }
 }
 
 pub fn adopt_own(seen: i64) {
-    LAST.fetch_max(seen, Ordering::SeqCst);
+    match crate::execution::current() {
+        Some(execution) => execution.observe_hlc(seen),
+        None => { LAST.fetch_max(seen, Ordering::SeqCst); }
+    }
 }
 
 #[cfg(test)]

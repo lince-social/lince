@@ -7,6 +7,7 @@ const REPUBLISH_INTERVAL: Duration = Duration::from_secs(3600);
 pub fn spawn_runner(state: CellRuntime) -> tokio::task::JoinHandle<()> {
     tokio::spawn(async move {
         let mut bus = state.engine.subscribe();
+        let mut queries = state.engine.watch_query_changes();
         let mut next_republish = tokio::time::Instant::now() + REPUBLISH_INTERVAL;
         loop {
             let wire = state.wire.read().await.clone();
@@ -22,6 +23,7 @@ pub fn spawn_runner(state: CellRuntime) -> tokio::task::JoinHandle<()> {
                 next_republish = tokio::time::Instant::now() + REPUBLISH_INTERVAL;
                 republish(&state, wire.as_deref()).await;
             }
+            drop(wire);
             let sleep_secs = match shortest_interval(&state).await {
                 Ok(seconds) => seconds,
                 Err(error) => {
@@ -30,6 +32,10 @@ pub fn spawn_runner(state: CellRuntime) -> tokio::task::JoinHandle<()> {
                 }
             };
             tokio::select! {
+                changed = queries.changed() => {
+                    if changed.is_err() { break; }
+                    tokio::time::sleep(Duration::from_millis(250)).await;
+                }
                 _ = tokio::time::sleep(Duration::from_secs(sleep_secs)) => {}
                 received = bus.recv() => {
                     if matches!(received, Err(tokio::sync::broadcast::error::RecvError::Closed)) { break; }
@@ -44,6 +50,9 @@ pub fn spawn_runner(state: CellRuntime) -> tokio::task::JoinHandle<()> {
 }
 
 async fn republish(state: &CellRuntime, wire: Option<&engine::wire::Wire>) {
+    if let Err(error) = state.engine.renew_local_roster().await {
+        tracing::warn!(%error, "Could not renew the device roster");
+    }
     if wire.map(engine::wire::Wire::reach) == Some(engine::wire::Reach::Local) || wire.is_none() {
         return;
     }
@@ -88,7 +97,9 @@ pub fn spawn_presence(state: CellRuntime) -> tokio::task::JoinHandle<()> {
             }
             let next = !state.engine.presence.records().is_empty();
             let wire = state.wire.read().await.clone();
-            if (active || next) && let Some(wire) = wire {
+            if (active || next)
+                && let Some(wire) = wire
+            {
                 if let Err(error) = wire.sync_presence().await {
                     tracing::debug!(%error, "Cursor presence exchange failed");
                 }

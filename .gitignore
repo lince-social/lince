@@ -15,3 +15,9 @@ trash/
 *.gltf
 institute/assets/3DGS/*
 testsync/
+/simulation-runs/
+*.p12
+*.jks
+*.keystore
+app-signing.password
+play-upload.password

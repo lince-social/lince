@@ -4,6 +4,7 @@ use crate::StoreError;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum OfferKind {
+    BlobSync,
     ThreadInvite,
     ReplicaGrant,
     RecordMove,
@@ -13,6 +14,7 @@ pub enum OfferKind {
 impl OfferKind {
     pub fn as_str(self) -> &'static str {
         match self {
+            OfferKind::BlobSync => "blob-sync",
             OfferKind::ThreadInvite => "thread-invite",
             OfferKind::ReplicaGrant => "replica-grant",
             OfferKind::RecordMove => "record-move",
@@ -49,6 +51,15 @@ pub struct Offer {
 
 pub async fn pending(pool: &SqlitePool) -> Result<Vec<Offer>, StoreError> {
     let mut out = Vec::new();
+
+    if let Some(organ) = crate::organs::local(pool).await? {
+        for row in sqlx::query("SELECT id, peer, label, created_at FROM blob_sync WHERE owner = ? AND direction = 'incoming' AND state = 'offered'")
+            .bind(&organ.uid).fetch_all(pool).await? {
+            out.push(Offer { kind: OfferKind::BlobSync, direction: Direction::Incoming,
+                subject_uid: row.get("id"), title: format!("File copy from {}", row.get::<String, _>("label")),
+                other_party: row.get("peer"), created_at: row.get("created_at"), previously_refused: false });
+        }
+    }
 
     for invite in crate::invites::pending(pool).await? {
         out.push(Offer {
@@ -154,7 +165,7 @@ pub async fn refuse(
     subject_uid: &str,
     other_party: &str,
 ) -> Result<(), StoreError> {
-    let now = chrono::Utc::now();
+    let now = nucleus::execution::now();
     let until = now + chrono::Duration::days(REFUSAL_WINDOW_DAYS);
     sqlx::query(
         "INSERT INTO offer_refusal (kind, subject_uid, other_party, at, until)
@@ -191,7 +202,7 @@ pub async fn standing_refusal(
         return Ok(false);
     };
     Ok(chrono::DateTime::parse_from_rfc3339(&until)
-        .map(|when| when.with_timezone(&chrono::Utc) > chrono::Utc::now())
+        .map(|when| when.with_timezone(&chrono::Utc) > nucleus::execution::now())
         .unwrap_or(false))
 }
 
@@ -206,7 +217,7 @@ pub async fn refused_by_party(
             .bind(other_party)
             .fetch_all(pool)
             .await?;
-    let now = chrono::Utc::now();
+    let now = nucleus::execution::now();
     Ok(rows.iter().any(|until| {
         chrono::DateTime::parse_from_rfc3339(until)
             .map(|when| when.with_timezone(&chrono::Utc) > now)

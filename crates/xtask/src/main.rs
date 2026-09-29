@@ -5,6 +5,8 @@ use std::path::PathBuf;
 use std::process::{Command, Stdio};
 
 mod android;
+mod android_clean;
+mod android_smoke;
 mod prune;
 
 type Result<T> = std::result::Result<T, String>;
@@ -29,6 +31,8 @@ fn dispatch() -> Result<()> {
 
     match task.to_str() {
         Some("android") => android::dispatch(&root, &extra),
+        Some("android-clean") => android_clean::run(&extra),
+        Some("android-smoke") => android_smoke::run(&extra),
         Some("mobile-preview") => {
             if extra.len() > 1 {
                 return Err("usage: cargo xtask mobile-preview [data-directory]".into());
@@ -105,12 +109,15 @@ fn dispatch() -> Result<()> {
         Some("help") | None | Some("--help") | Some("-h") => {
             no_extra(&extra)?;
             println!(
-                "cargo xtask <dev|test|test-all|release|server|facade|version|android|mobile-preview>"
+                "cargo xtask <dev|test|test-all|release|server|facade|version|android|android-clean|android-smoke|mobile-preview>"
             );
             println!(
                 "android opens an Android emulator; android help lists setup and APK options."
             );
             println!("mobile-preview [data-directory] runs the mobile UI in a desktop window.");
+            println!(
+                "android-clean previews retired Android cache files; --apply removes them; --builds also clears compiled artifacts."
+            );
             println!("dev passes additional arguments to Lince.");
             println!(
                 "test forwards arguments to cargo test; test-all runs every workspace target."

@@ -335,6 +335,8 @@ Blood (@blood: 0, #instinct, #part-of @ontology) {
 If your Lince is a Cell, we call Blood the capability of interacting with other systems. Several protocols exist that allow for really useful apps, we should try to integrate with that: Nostr, irc, Matrix, ActivityPub... And not only protocols but simple file formats, the act of saving something to a simple markdown already allows for so much. Putting the mapped Karma into .ics may be a very simple way of scheduling changes to Records.
 
 This is a good step in interoperability of systems, less isolation and complex APIs and more common formats easy to deal with, allowing for extraction of data in a simple, readable and continuous way.
+
+- [ ]**Export scheduled Karma activity as `.ics`:**
 }
 
 Karma (@karma: 0, is #chapter, #instinct, #done) { r_K7T3ZG08G5EBWRSTF8NBWMTZYV
@@ -579,6 +581,50 @@ On Trust: When interacting with other parties, it is important to know how much 
 
 Interface (@interface: 1, is #chapter, #instinct, #done) { r_99NWECF19VKV94HQQ3G3ASMC4M
 Interfaces should ask for as little attention as possible throughout the user's life. The best interface is Interfaceless. Built-in UI is minimal, not taking screenspace from users and flexible, fitting many Needs. Choices can be done quickly. Full control is always available. Components are flat by default, preffering 2D forces us to convey information only with flat data, not layers and composition, constraining the space forces minimalism. Shadows and hints can be used for subtle differentiation of areas, components and data. Built-in castles shoudld be focused in displaying mainly inputs or buttons, never phrases or paragraphs, to force self-explanatory design. Tooltips and placeholders should contain minimal text. The defaults are flat, quiet and mostly black and white, with the purple palette already in the Record. Common choices should be quick, and the person should be able to inspect and change the details. Sands: the widgets/components that live in the Box. Smaller pieces can be composed into groups, with interactions between them and other sands, receiving data from a Protein stream and executing Protein Actions in certain interactions. We should have the fundamental blocks to construct several types of workflows. Protein supplies authorized reads. Backend Actions remain responsible for writes and permissions. Files, network messages and imported packages are validated where they enter Lince. Lince's visual identity is black and white by default, with purple as the supporting color. Purple Cobalt: #3730A3, Nocturnal Purple: #6366F1, Deep Lead: #121214, Gray: #A7B4C2, Ice White: #F8FAFC.
+
+There are several components made, here is the documentation on how to use them:
+
+### IDE
+
+A local text editor with a reusable File Explorer Castle. Rust handles directory listing and file operations directly. Loro retains edits and merges independent changes made on disk; competing changes require review. This is separate from Record sync and blob transfers. Opening a folder creates no File Records or database copies. Unsaved recovery drafts are stored locally beside the workspace.
+
+Add the project folder, open a file, then open **Language tools**. Lince uses installed programs; connecting is manual and downloads nothing.
+
+Install the tools you use:
+
+- **NixOS or Linux with Nix:** `nix shell nixpkgs#bash-language-server nixpkgs#shfmt nixpkgs#shellcheck --command lince`. For permanent installation, add those packages to `environment.systemPackages` or Home Manager's `home.packages`. For Nix files, install `nixd nixfmt statix` instead. [Nix setup](https://wiki.nixos.org/wiki/Adding_programs_to_PATH)
+- **Arch:** `sudo pacman -Syu bash-language-server shfmt shellcheck`.
+- **Debian/Ubuntu:** `sudo apt install shfmt shellcheck`; with Node.js 20+ and npm, run `npm install --global --prefix "$HOME/.local" bash-language-server`, then `export PATH="$HOME/.local/bin:$PATH"`. [Server installation](https://github.com/bash-lsp/bash-language-server#installation)
+
+Launch Lince from that terminal. From a configured checkout, use `cargo run -p lince`. With Nix, first enter `nix develop .#interface`, then use the tooling shell above with `--command cargo run -p lince`.
+
+Check the prefilled fields for the open file's language:
+
+| Language | Server | Formatter | Linter |
+| --- | --- | --- | --- |
+| Bash (`.sh`) | `["bash-language-server","start"]` | `["shfmt"]` | `["shellcheck","-"]` |
+| Nix (`.nix`) | `["nixd"]` | `["nixfmt"]` | `["statix","check","--stdin"]` |
+
+Fields are JSON lists: executable, then arguments. Use PATH names or full paths; `~`, `$HOME`, aliases and pipes are not expanded. `[]` disables a command. Connecting or running saves the settings. The deepest selected folder containing the file is its project root; otherwise its parent is used.
+
+Click **Connect / Restart** and wait for Connected. **Ctrl+Space** requests completion; click a diagnostic to visit it. **Ctrl+Shift+I / Format** uses the server when supported, otherwise the formatter. **Format with command** always uses the formatter; **Run linter** shows its output. Formatting is one undo step and reaches disk through Save or autosave. **Disconnect** leaves normal editing and highlighting available.
+
+Test with a small Bash file: expect a warning for unquoted `$1`, completion of a function name, and undoable formatting. Keep autosave off to check that only Save changes disk contents.
+
+If a tool is missing, run `command -v bash-language-server shfmt shellcheck`, then restart Lince from that environment or enter the full path. An already running Lince does not inherit later environment changes.
+
+Tools handle files up to 2 MiB, with four shared servers. Completion is plain text. Server settings currently use defaults; custom NixOS/Home Manager option completion may need settings the UI does not expose. [nixd settings](https://github.com/nix-community/nixd/blob/main/nixd/docs/configuration.md)
+
 } r_99NWECF19VKV94HQQ3G3ASMC4M
 
+Ideas (@ideas: 0) {
+Things that wont enter v1.0.0, maybe later minor versions. Good to keep saved, not needed to maintain next to other tasks more certain to be implemented.
 
+# Simulation:
+Simulation is the basis of controlling several Lince instances, each with their state. Karma runs on top of it, and the future changes of Records according to Karma's Rules are cached so we can display how a Record will recurringly have some state, like a quantity being some value, seen in a calendar.
+
+- [ ]  Simulation not only of a random db, but the user's. If i have an appointment to day X i should be able to simulate it happening in day X+1. If i then send a scenario to someone, they can run that diff (like git's diff) and simulate a scenario of their db+diff. If its affecting only me i can simulate some state, doesnt need to be my current one, can be with a diff applied. If it affects others i send the diff, they simulate and aprove or not, they can also send that diff and a chain of approvals (or hide it) and get the results back before aproving themselves (if not before).
+	- [ ] The Record Editor could also get the same 'simulation' which can actually be just a scenario of it writing something else, a version of a Record. How could we do it well? Not a frankestein of features for this?
+	- [ ] It would be nice to be able to save different versions of the Record's description/title, or maybe quantity/link. Putting a limit to it in mb per total local history of edits, maybe keyed by amount of seconds spent not editing, makes a new save + explicit save. Again, how to not frankestein? Loro?
+	- [ ] Be able to set Constraints, that are enforced, so the state doesnt reach an undesired point. Maybe this means putting a lot of constraints that need to be checked to make sure they are true in one run and not activating them in another, only a part of it. The one with less Constraints will be able to simulate more events per second happening since it doesnt need to be constantly checked to make sure it didnt pass thorugh an undesired state. Similar to the difference of unit tests and end-to-end ones. But instead of it being a division by part it is a division by period of Constraint checking, we can still have a difference of the equivalent of unit tests and e2e and several other types of tests, and still make them be checked in different times.
+}
